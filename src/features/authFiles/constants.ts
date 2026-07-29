@@ -73,6 +73,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#ede5fd', text: '#5530c7' },
     dark: { bg: '#36208a', text: '#b5a3f0' },
   },
+  qianwen: {
+    light: { bg: '#ede5fd', text: '#5530c7' },
+    dark: { bg: '#36208a', text: '#b5a3f0' },
+  },
   // Kimi logo: 亮蓝 #027AFF（K字 + 蓝色圆点）
   kimi: {
     light: { bg: '#dce8ff', text: '#0560cf' },
@@ -138,6 +142,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   iflow: iconIflow,
   kimi: { light: iconKimiDark, dark: iconKimiLight },
   qwen: iconQwen,
+  qianwen: iconQwen,
   vertex: iconVertex,
 };
 

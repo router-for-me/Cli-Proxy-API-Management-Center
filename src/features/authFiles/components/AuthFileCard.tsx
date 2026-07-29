@@ -124,7 +124,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
             ? styles.kimiCard
             : quotaType === 'xai'
               ? styles.xaiCard
-              : '';
+              : quotaType === 'qianwen'
+                ? styles.kimiCard
+                : '';
 
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);

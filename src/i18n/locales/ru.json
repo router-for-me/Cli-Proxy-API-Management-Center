@@ -675,6 +675,12 @@
     "qianwen_oauth_title": "Qwen (Bailian)",
     "qianwen_oauth_button": "Начать вход Qwen",
     "qianwen_oauth_hint": "Войдите в Alibaba Cloud Bailian через OAuth для запроса использования и квот Token Plan. Отдельно от qwen-api-key для инференса.",
+    "qianwen_oauth_url_label": "URL авторизации:",
+    "qianwen_oauth_status_waiting": "Ожидание аутентификации...",
+    "qianwen_oauth_status_success": "Аутентификация успешна!",
+    "qianwen_oauth_status_error": "Ошибка аутентификации:",
+    "qianwen_oauth_start_error": "Не удалось запустить Qianwen OAuth:",
+    "qianwen_oauth_polling_error": "Не удалось проверить статус аутентификации:",
     "xai_oauth_url_label": "URL авторизации:",
     "xai_open_link": "Открыть ссылку",
     "xai_copy_link": "Скопировать ссылку",
@@ -722,7 +728,18 @@
     "iflow_oauth_status_error": "Ошибка аутентификации:",
     "iflow_oauth_start_error": "Не удалось запустить iFlow OAuth:",
     "iflow_oauth_polling_error": "Не удалось проверить статус аутентификации:",
-    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost."
+    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost.",
+    "qwen_quota": {
+      "title": "Qwen Token Plan",
+      "empty_title": "Нет файлов авторизации Qianwen",
+      "empty_desc": "Войдите в Qianwen через OAuth на странице OAuth, чтобы увидеть использование Token Plan.",
+      "idle": "Нажмите, чтобы обновить использование Token Plan",
+      "loading": "Загрузка использования Token Plan...",
+      "load_failed": "Не удалось загрузить использование: {{message}}",
+      "missing_auth_index": "В файле авторизации нет auth_index",
+      "empty_data": "Активный Token Plan не найден",
+      "expires_at": "истекает {{date}}"
+    }
   },
   "stats": {
     "success": "Успех",

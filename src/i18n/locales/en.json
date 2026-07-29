@@ -688,6 +688,12 @@
     "qianwen_oauth_title": "Qwen (Bailian)",
     "qianwen_oauth_button": "Start Qwen Login",
     "qianwen_oauth_hint": "Login to Alibaba Cloud Bailian through OAuth flow to query Token Plan usage and quota. This is separate from the qwen-api-key used for inference.",
+    "qianwen_oauth_url_label": "Authorization URL:",
+    "qianwen_oauth_status_waiting": "Waiting for authentication...",
+    "qianwen_oauth_status_success": "Authentication successful!",
+    "qianwen_oauth_status_error": "Authentication failed:",
+    "qianwen_oauth_start_error": "Failed to start Qianwen OAuth:",
+    "qianwen_oauth_polling_error": "Failed to check authentication status:",
     "xai_oauth_url_label": "Authorization URL:",
     "xai_open_link": "Open Link",
     "xai_copy_link": "Copy Link",
@@ -735,7 +741,18 @@
     "iflow_oauth_status_error": "Authentication failed:",
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "qwen_quota": {
+      "title": "Qwen Token Plan",
+      "empty_title": "No Qianwen Auth Files",
+      "empty_desc": "Login to Qianwen via OAuth on the OAuth page to view Token Plan usage.",
+      "idle": "Click here to refresh Token Plan usage",
+      "loading": "Loading Token Plan usage...",
+      "load_failed": "Failed to load usage: {{message}}",
+      "missing_auth_index": "Auth file missing auth_index",
+      "empty_data": "No active Token Plan found",
+      "expires_at": "expires {{date}}"
+    }
   },
   "stats": {
     "success": "Success",

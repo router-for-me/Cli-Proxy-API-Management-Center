@@ -24,7 +24,7 @@ import type {
   CodexUsagePayload,
   KimiQuotaRow,
   KimiQuotaState,
-  QianwenBalance,
+  QianwenTokenPlan,
   QianwenQuotaState,
   XaiBillingSummary,
   XaiQuotaState,
@@ -1906,56 +1906,117 @@ export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiBillingSummary> = {
 };
 
 // ────────────────────────────────────────────────────────────────────
-// Qianwen (Alibaba Cloud Bailian) — account balance via BSS gateway
+// Qianwen (Alibaba Cloud Bailian) — Token Plan usage via BSS gateway
 // ────────────────────────────────────────────────────────────────────
 
 const QIANWEN_GATEWAY_URL = 'https://cli.qianwenai.com/data/v2/api.json';
 
+// Token Plan commodity codes (CN site). Personal and team editions are queried
+// separately so an account with both shows both.
+const QIANWEN_TOKEN_PLAN_CODES: Array<{ edition: QianwenTokenPlan['edition']; code: string }> = [
+  { edition: 'personal', code: 'sfm_tokenplanpersonal_dp_cn' },
+  { edition: 'team', code: 'sfm_tokenplanteams_dp_cn' },
+  { edition: 'addon', code: 'sfm_tokenplanteamsaddon_dp_cn' },
+];
+
 const buildQianwenGatewayBody = (action: string, params: Record<string, unknown>): string =>
   JSON.stringify({ product: 'BssOpenAPI-V3', action, region: 'cn-beijing', params });
 
-const fetchQianwenQuota = async (file: AuthFileItem, t: TFunction): Promise<QianwenBalance> => {
+const toQianwenNumber = (value: unknown): number => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'string') {
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+};
+
+const parseQianwenFrInstance = (
+  item: Record<string, unknown>,
+  edition: QianwenTokenPlan['edition']
+): QianwenTokenPlan | null => {
+  const total = toQianwenNumber(item.InitCapacityBaseValue);
+  const remaining = toQianwenNumber(item.CurrCapacityBaseValue);
+  if (total <= 0 && remaining <= 0) return null;
+  const used = total > 0 ? Math.max(0, Math.min(100, Math.round(((total - remaining) / total) * 100))) : 0;
+  const commodity = item.Commodity as { Name?: string } | undefined;
+  const status = item.Status as { Code?: string } | undefined;
+  const planName =
+    (typeof item.CommodityName === 'string' && item.CommodityName) ||
+    (commodity?.Name ?? '') ||
+    (edition === 'team' ? 'Token Plan Team' : edition === 'addon' ? 'Token Plan Addon' : 'Token Plan Personal');
+  const endTimeRaw = item.EndTime;
+  const endTime = typeof endTimeRaw === 'number' ? endTimeRaw : null;
+  return {
+    planName,
+    edition,
+    totalCredits: total,
+    remainingCredits: remaining,
+    usedPercent: used,
+    unit: (typeof item.CurrCapacityViewUnit === 'string' && item.CurrCapacityViewUnit) || 'Credits',
+    status: (typeof item.StatusCode === 'string' && item.StatusCode) || (status?.Code ?? ''),
+    endTime,
+    enableRenew: item.EnableRenew === true,
+    instanceId: (typeof item.InstanceId === 'string' && item.InstanceId) || '',
+  };
+};
+
+const fetchQianwenTokenPlans = async (
+  authIndex: string,
+  edition: QianwenTokenPlan['edition'],
+  code: string
+): Promise<QianwenTokenPlan[]> => {
+  const result = await apiCallApi.request({
+    authIndex,
+    method: 'POST',
+    url: QIANWEN_GATEWAY_URL,
+    header: { 'Content-Type': 'application/json', Authorization: 'Bearer $TOKEN$' },
+    data: buildQianwenGatewayBody('DescribeFrInstances', {
+      Group: 'tokenPlan',
+      CommodityCode: code,
+      PageNum: 1,
+      PageSize: 10,
+    }),
+  });
+  if (result.statusCode < 200 || result.statusCode >= 300) return [];
+  const envelope = result.body as { code?: string; data?: { Data?: unknown } } | null;
+  if (!envelope || envelope.code !== '200' || !envelope.data) return [];
+  const items = envelope.data.Data;
+  if (!Array.isArray(items)) return [];
+  const plans: QianwenTokenPlan[] = [];
+  for (const raw of items) {
+    if (raw && typeof raw === 'object') {
+      const plan = parseQianwenFrInstance(raw as Record<string, unknown>, edition);
+      if (plan) plans.push(plan);
+    }
+  }
+  return plans;
+};
+
+const fetchQianwenQuota = async (file: AuthFileItem, t: TFunction): Promise<QianwenTokenPlan[]> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('qwen_quota.missing_auth_index'));
   }
 
-  const result = await apiCallApi.request({
-    authIndex,
-    method: 'POST',
-    url: QIANWEN_GATEWAY_URL,
-    header: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer $TOKEN$',
-    },
-    data: buildQianwenGatewayBody('GetFundAccountAvailableAmount', {}),
-  });
-
-  if (result.statusCode < 200 || result.statusCode >= 300) {
-    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
-  }
-
-  const envelope = result.body as
-    | { code?: string; message?: string; data?: Record<string, unknown> }
-    | null;
-  if (!envelope || envelope.code !== '200' || !envelope.data) {
-    throw new Error(envelope?.message || t('qwen_quota.empty_data'));
-  }
-
-  const data = envelope.data;
-  const availableAmount = typeof data.AvailableAmount === 'string' ? data.AvailableAmount : '';
-  if (availableAmount === '') {
+  const results = await Promise.all(
+    QIANWEN_TOKEN_PLAN_CODES.map(({ edition, code }) =>
+      fetchQianwenTokenPlans(authIndex, edition, code).catch(() => [] as QianwenTokenPlan[])
+    )
+  );
+  const plans = results.flat();
+  if (plans.length === 0) {
     throw new Error(t('qwen_quota.empty_data'));
   }
+  return plans;
+};
 
-  return {
-    availableAmount,
-    currency: typeof data.Currency === 'string' ? data.Currency : 'CNY',
-    cashAmount: typeof data.CashAmount === 'string' ? data.CashAmount : null,
-    creditAmount: typeof data.CreditAmount === 'string' ? data.CreditAmount : null,
-    status: typeof data.FundAccountStatus === 'string' ? data.FundAccountStatus : null,
-  };
+const formatQianwenExpiry = (t: TFunction, endTime: number | null): string => {
+  if (!endTime) return '';
+  const date = new Date(endTime);
+  if (Number.isNaN(date.getTime())) return '';
+  return t('qwen_quota.expires_at', { date: date.toLocaleDateString() });
 };
 
 const renderQianwenItems = (
@@ -1963,50 +2024,54 @@ const renderQianwenItems = (
   t: TFunction,
   helpers: QuotaRenderHelpers
 ): ReactNode => {
-  const { styles: styleMap } = helpers;
+  const { styles: styleMap, QuotaProgressBar } = helpers;
   const { createElement: h } = React;
-  const balance = quota.balance;
+  const plans = quota.plans ?? [];
 
-  if (!balance) {
+  if (plans.length === 0) {
     return h('div', { className: styleMap.quotaMessage }, t('qwen_quota.empty_data'));
   }
 
-  const rows: Array<{ label: string; value: string }> = [
-    { label: t('qwen_quota.available_amount'), value: `${balance.availableAmount} ${balance.currency}` },
-  ];
-  if (balance.cashAmount !== null) {
-    rows.push({ label: t('qwen_quota.cash_amount'), value: `${balance.cashAmount} ${balance.currency}` });
-  }
-  if (balance.creditAmount !== null) {
-    rows.push({ label: t('qwen_quota.credit_amount'), value: `${balance.creditAmount} ${balance.currency}` });
-  }
-
-  return rows.map((row, index) =>
-    h(
+  return plans.map((plan, index) => {
+    const remainingPct = Math.max(0, Math.min(100, 100 - plan.usedPercent));
+    const creditsLabel = `${plan.remainingCredits.toLocaleString()} / ${plan.totalCredits.toLocaleString()} ${plan.unit}`;
+    const expiryLabel = formatQianwenExpiry(t, plan.endTime);
+    return h(
       'div',
-      { key: `qianwen-${index}`, className: styleMap.quotaRow },
+      { key: plan.instanceId || `qianwen-${index}`, className: styleMap.quotaRow },
       h(
         'div',
         { className: styleMap.quotaRowHeader },
-        h('span', { className: styleMap.quotaModel }, row.label),
-        h('div', { className: styleMap.quotaMeta }, h('span', { className: styleMap.quotaPercent }, row.value))
-      )
-    )
-  );
+        h('span', { className: styleMap.quotaModel }, plan.planName),
+        h(
+          'div',
+          { className: styleMap.quotaMeta },
+          h('span', { className: styleMap.quotaPercent }, `${remainingPct}%`),
+          expiryLabel ? h('span', { className: styleMap.quotaReset }, expiryLabel) : null
+        )
+      ),
+      h('div', { className: styleMap.quotaMessage }, creditsLabel),
+      h(QuotaProgressBar, {
+        percent: remainingPct,
+        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+      })
+    );
+  });
 };
 
-export const QIANWEN_CONFIG: QuotaConfig<QianwenQuotaState, QianwenBalance> = {
+export const QIANWEN_CONFIG: QuotaConfig<QianwenQuotaState, QianwenTokenPlan[]> = {
   type: 'qianwen',
   i18nPrefix: 'qwen_quota',
   filterFn: (file) => isQianwenFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchQianwenQuota,
   storeSelector: (state) => state.qianwenQuota,
   storeSetter: 'setQianwenQuota',
-  buildLoadingState: () => ({ status: 'loading', balance: null }),
-  buildSuccessState: (balance) => ({ status: 'success', balance }),
+  buildLoadingState: () => ({ status: 'loading', plans: [] }),
+  buildSuccessState: (plans) => ({ status: 'success', plans }),
   buildErrorState: (message, status) => ({
     status: 'error',
-    balance: null,
+    plans: [],
     error: message,
     errorStatus: status,
   }),
