@@ -1,23 +1,7 @@
 @use '../../styles/mixins' as *;
 
-/*
- * 可视化配色：与主题的语义色同源，但深色模式下重新取步阶。
- * 主题自带的 #10b981 在深色卡面上亮度超出 OKLCH 0.48–0.67 区间，
- * 且与失败色的色盲分离度不足，因此深色单独降一档。
- * 三套主题均已通过对比度/色盲/亮度校验。
- */
+/* 可视化配色与动效 tokens（--viz-*、--ease-out-strong、--dur-*）已提升到 themes.scss :root。 */
 .page {
-  --viz-success: #10b981;
-  --viz-failure: #c65746;
-
-  /*
-   * 动效词汇表：内置 ease 太弱，交互反馈统一用强减速曲线。
-   * 按压 160ms / 悬停 200ms，UI 动效不超过 300ms。
-   */
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
-  --dur-press: 160ms;
-  --dur-hover: 200ms;
-
   position: relative;
   max-width: 1120px;
   width: 100%;
@@ -25,11 +9,6 @@
   display: flex;
   flex-direction: column;
   gap: clamp(44px, 6.5vh, 76px);
-}
-
-:global(html[data-theme='dark']) .page {
-  --viz-success: #0fae78;
-  --viz-failure: #cf4b3a;
 }
 
 /* ---------- 环境层（ambient）---------- */
