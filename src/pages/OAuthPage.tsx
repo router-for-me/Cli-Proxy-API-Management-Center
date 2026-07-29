@@ -22,6 +22,7 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
+import iconQwen from '@/assets/icons/qwen.svg';
 
 interface ProviderState {
   url?: string;
@@ -102,6 +103,12 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'xai',
     titleKey: 'auth_login.xai_oauth_title',
     icon: { light: iconGrok, dark: iconGrokDark },
+  },
+  {
+    kind: 'builtin',
+    id: 'qianwen',
+    titleKey: 'auth_login.qianwen_oauth_title',
+    icon: iconQwen,
   },
 ];
 

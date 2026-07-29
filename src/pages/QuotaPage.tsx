@@ -14,6 +14,7 @@ import {
   CODEX_CONFIG,
   KIMI_CONFIG,
   XAI_CONFIG,
+  QIANWEN_CONFIG,
 } from '@/components/quota';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -83,6 +84,12 @@ export function QuotaPage() {
       />
       <QuotaSection
         config={KIMI_CONFIG}
+        files={files}
+        loading={loading}
+        disabled={disableControls}
+      />
+      <QuotaSection
+        config={QIANWEN_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}

@@ -7,6 +7,7 @@ import {
   CODEX_CONFIG,
   KIMI_CONFIG,
   XAI_CONFIG,
+  QIANWEN_CONFIG,
 } from '@/components/quota';
 import {
   captureQuotaCacheGeneration,
@@ -38,6 +39,7 @@ const getQuotaConfig = (type: QuotaProviderType) => {
   if (type === 'codex') return CODEX_CONFIG;
   if (type === 'kimi') return KIMI_CONFIG;
   if (type === 'xai') return XAI_CONFIG;
+  if (type === 'qianwen') return QIANWEN_CONFIG;
   return assertNever(type);
 };
 
@@ -60,6 +62,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'codex') return state.codexQuota[file.name] as QuotaState;
     if (quotaType === 'kimi') return state.kimiQuota[file.name] as QuotaState;
     if (quotaType === 'xai') return state.xaiQuota[file.name] as QuotaState;
+    if (quotaType === 'qianwen') return state.qianwenQuota[file.name] as QuotaState;
     return assertNever(quotaType);
   });
 
@@ -71,6 +74,8 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'codex') return state.setCodexQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'kimi') return state.setKimiQuota as unknown as (updater: unknown) => void;
     if (quotaType === 'xai') return state.setXaiQuota as unknown as (updater: unknown) => void;
+    if (quotaType === 'qianwen')
+      return state.setQianwenQuota as unknown as (updater: unknown) => void;
     return assertNever(quotaType);
   });
 

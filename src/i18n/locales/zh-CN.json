@@ -503,6 +503,19 @@
     "pay_as_you_go_enabled": "已启用，封顶 {{cap}}",
     "pay_as_you_go_disabled": "未启用"
   },
+  "qwen_quota": {
+    "title": "通义千问（百炼）余额",
+    "empty_title": "无通义千问凭证",
+    "empty_desc": "请先在 OAuth 页面登录通义千问，以查看账户余额。",
+    "idle": "点击此处刷新余额",
+    "loading": "正在加载余额...",
+    "load_failed": "加载余额失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无余额数据",
+    "available_amount": "可用余额",
+    "cash_amount": "现金余额",
+    "credit_amount": "代金券余额"
+  },
   "vertex_import": {
     "title": "Vertex JSON 登录",
     "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",
@@ -672,6 +685,9 @@
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "开始 xAI 登录",
     "xai_oauth_hint": "通过 OAuth 流程登录 xAI Grok 服务，自动获取并保存认证文件。",
+    "qianwen_oauth_title": "通义千问（百炼）",
+    "qianwen_oauth_button": "开始通义千问登录",
+    "qianwen_oauth_hint": "通过 OAuth 流程登录阿里云百炼，用于查询 Token Plan 用量与配额。与推理用的 qwen-api-key 相互独立。",
     "xai_oauth_url_label": "授权链接:",
     "xai_open_link": "打开链接",
     "xai_copy_link": "复制链接",

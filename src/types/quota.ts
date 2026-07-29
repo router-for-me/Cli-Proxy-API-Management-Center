@@ -356,3 +356,19 @@ export interface XaiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Qianwen (Alibaba Cloud Bailian) account balance from GetFundAccountAvailableAmount.
+export interface QianwenBalance {
+  availableAmount: string;
+  currency: string;
+  cashAmount: string | null;
+  creditAmount: string | null;
+  status: string | null;
+}
+
+export interface QianwenQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  balance: QianwenBalance | null;
+  error?: string;
+  errorStatus?: number;
+}

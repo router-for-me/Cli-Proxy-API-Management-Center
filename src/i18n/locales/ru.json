@@ -490,6 +490,19 @@
     "pay_as_you_go_enabled": "Включено, лимит {{cap}}",
     "pay_as_you_go_disabled": "Отключено"
   },
+  "qwen_quota": {
+    "title": "Баланс Qwen (Bailian)",
+    "empty_title": "Нет файлов авторизации Qianwen",
+    "empty_desc": "Войдите в Qianwen через OAuth на странице OAuth, чтобы увидеть баланс.",
+    "idle": "Нажмите, чтобы обновить баланс",
+    "loading": "Загрузка баланса...",
+    "load_failed": "Не удалось загрузить баланс: {{message}}",
+    "missing_auth_index": "В файле авторизации нет auth_index",
+    "empty_data": "Нет данных о балансе",
+    "available_amount": "Доступный баланс",
+    "cash_amount": "Денежный баланс",
+    "credit_amount": "Кредитный баланс"
+  },
   "vertex_import": {
     "title": "Вход с Vertex JSON",
     "description": "Загрузите JSON ключа сервисного аккаунта Google, чтобы сохранить его как auth-dir/vertex-<project>.json по тем же правилам, что и помощник CLI vertex-import.",
@@ -659,6 +672,9 @@
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "Начать вход xAI",
     "xai_oauth_hint": "Выполните вход в xAI Grok через OAuth и автоматически получите/сохраните файлы авторизации.",
+    "qianwen_oauth_title": "Qwen (Bailian)",
+    "qianwen_oauth_button": "Начать вход Qwen",
+    "qianwen_oauth_hint": "Войдите в Alibaba Cloud Bailian через OAuth для запроса использования и квот Token Plan. Отдельно от qwen-api-key для инференса.",
     "xai_oauth_url_label": "URL авторизации:",
     "xai_open_link": "Открыть ссылку",
     "xai_copy_link": "Скопировать ссылку",

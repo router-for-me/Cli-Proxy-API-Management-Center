@@ -24,6 +24,8 @@ import type {
   CodexUsagePayload,
   KimiQuotaRow,
   KimiQuotaState,
+  QianwenBalance,
+  QianwenQuotaState,
   XaiBillingSummary,
   XaiQuotaState,
 } from '@/types';
@@ -84,6 +86,7 @@ import {
   isKimiFile,
   isPaidXaiAuthFile,
   isXaiFile,
+  isQianwenFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { formatDateTimeValue } from '@/utils/format';
@@ -92,7 +95,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai';
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai' | 'qianwen';
 
 type AntigravityQuotaData = {
   groups: AntigravityQuotaGroup[];
@@ -126,11 +129,13 @@ export interface QuotaStore {
   codexQuota: Record<string, CodexQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   xaiQuota: Record<string, XaiQuotaState>;
+  qianwenQuota: Record<string, QianwenQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
+  setQianwenQuota: (updater: QuotaUpdater<Record<string, QianwenQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1898,4 +1903,114 @@ export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiBillingSummary> = {
   cardClassName: styles.xaiCard,
   gridClassName: styles.xaiGrid,
   renderQuotaItems: renderXaiItems,
+};
+
+// ────────────────────────────────────────────────────────────────────
+// Qianwen (Alibaba Cloud Bailian) — account balance via BSS gateway
+// ────────────────────────────────────────────────────────────────────
+
+const QIANWEN_GATEWAY_URL = 'https://cli.qianwenai.com/data/v2/api.json';
+
+const buildQianwenGatewayBody = (action: string, params: Record<string, unknown>): string =>
+  JSON.stringify({ product: 'BssOpenAPI-V3', action, region: 'cn-beijing', params });
+
+const fetchQianwenQuota = async (file: AuthFileItem, t: TFunction): Promise<QianwenBalance> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('qwen_quota.missing_auth_index'));
+  }
+
+  const result = await apiCallApi.request({
+    authIndex,
+    method: 'POST',
+    url: QIANWEN_GATEWAY_URL,
+    header: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer $TOKEN$',
+    },
+    data: buildQianwenGatewayBody('GetFundAccountAvailableAmount', {}),
+  });
+
+  if (result.statusCode < 200 || result.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+  }
+
+  const envelope = result.body as
+    | { code?: string; message?: string; data?: Record<string, unknown> }
+    | null;
+  if (!envelope || envelope.code !== '200' || !envelope.data) {
+    throw new Error(envelope?.message || t('qwen_quota.empty_data'));
+  }
+
+  const data = envelope.data;
+  const availableAmount = typeof data.AvailableAmount === 'string' ? data.AvailableAmount : '';
+  if (availableAmount === '') {
+    throw new Error(t('qwen_quota.empty_data'));
+  }
+
+  return {
+    availableAmount,
+    currency: typeof data.Currency === 'string' ? data.Currency : 'CNY',
+    cashAmount: typeof data.CashAmount === 'string' ? data.CashAmount : null,
+    creditAmount: typeof data.CreditAmount === 'string' ? data.CreditAmount : null,
+    status: typeof data.FundAccountStatus === 'string' ? data.FundAccountStatus : null,
+  };
+};
+
+const renderQianwenItems = (
+  quota: QianwenQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap } = helpers;
+  const { createElement: h } = React;
+  const balance = quota.balance;
+
+  if (!balance) {
+    return h('div', { className: styleMap.quotaMessage }, t('qwen_quota.empty_data'));
+  }
+
+  const rows: Array<{ label: string; value: string }> = [
+    { label: t('qwen_quota.available_amount'), value: `${balance.availableAmount} ${balance.currency}` },
+  ];
+  if (balance.cashAmount !== null) {
+    rows.push({ label: t('qwen_quota.cash_amount'), value: `${balance.cashAmount} ${balance.currency}` });
+  }
+  if (balance.creditAmount !== null) {
+    rows.push({ label: t('qwen_quota.credit_amount'), value: `${balance.creditAmount} ${balance.currency}` });
+  }
+
+  return rows.map((row, index) =>
+    h(
+      'div',
+      { key: `qianwen-${index}`, className: styleMap.quotaRow },
+      h(
+        'div',
+        { className: styleMap.quotaRowHeader },
+        h('span', { className: styleMap.quotaModel }, row.label),
+        h('div', { className: styleMap.quotaMeta }, h('span', { className: styleMap.quotaPercent }, row.value))
+      )
+    )
+  );
+};
+
+export const QIANWEN_CONFIG: QuotaConfig<QianwenQuotaState, QianwenBalance> = {
+  type: 'qianwen',
+  i18nPrefix: 'qwen_quota',
+  filterFn: (file) => isQianwenFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchQianwenQuota,
+  storeSelector: (state) => state.qianwenQuota,
+  storeSetter: 'setQianwenQuota',
+  buildLoadingState: () => ({ status: 'loading', balance: null }),
+  buildSuccessState: (balance) => ({ status: 'success', balance }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    balance: null,
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.kimiCard,
+  gridClassName: styles.kimiGrid,
+  renderQuotaItems: renderQianwenItems,
 };

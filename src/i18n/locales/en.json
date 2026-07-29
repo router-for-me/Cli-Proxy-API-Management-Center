@@ -503,6 +503,19 @@
     "pay_as_you_go_enabled": "Enabled, cap {{cap}}",
     "pay_as_you_go_disabled": "Disabled"
   },
+  "qwen_quota": {
+    "title": "Qwen (Bailian) Balance",
+    "empty_title": "No Qianwen Auth Files",
+    "empty_desc": "Login to Qianwen via OAuth on the OAuth page to view account balance.",
+    "idle": "Click here to refresh balance",
+    "loading": "Loading balance...",
+    "load_failed": "Failed to load balance: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No balance data available",
+    "available_amount": "Available balance",
+    "cash_amount": "Cash balance",
+    "credit_amount": "Credit balance"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
@@ -672,6 +685,9 @@
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "Start xAI Login",
     "xai_oauth_hint": "Login to xAI Grok through OAuth flow, automatically obtain and save authentication files.",
+    "qianwen_oauth_title": "Qwen (Bailian)",
+    "qianwen_oauth_button": "Start Qwen Login",
+    "qianwen_oauth_hint": "Login to Alibaba Cloud Bailian through OAuth flow to query Token Plan usage and quota. This is separate from the qwen-api-key used for inference.",
     "xai_oauth_url_label": "Authorization URL:",
     "xai_open_link": "Open Link",
     "xai_copy_link": "Copy Link",
