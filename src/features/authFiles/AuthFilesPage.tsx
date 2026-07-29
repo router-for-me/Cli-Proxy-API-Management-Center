@@ -690,7 +690,11 @@ export function AuthFilesPage() {
             description={t('auth_files.empty_desc')}
             action={
               <div className={styles.emptyActions}>
-                <Button size="sm" onClick={handleUploadClick} disabled={disableControls}>
+                <Button
+                  size="sm"
+                  onClick={handleUploadClick}
+                  disabled={disableControls || uploading}
+                >
                   {t('auth_files.upload_button')}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/oauth')}>

@@ -85,6 +85,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadPendingRef = useRef(false);
   const manualRefreshPendingRef = useRef<Set<string>>(new Set());
   const batchStatusPendingRef = useRef(false);
   /** 列表请求代号：变更操作会使在途响应过期，防止旧轮询复活已删/已改文件。 */
@@ -218,6 +219,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
   );
 
   const handleUploadClick = useCallback(() => {
+    if (uploadPendingRef.current) return;
     fileInputRef.current?.click();
   }, []);
 
@@ -257,7 +259,12 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         event.target.value = '';
         return;
       }
+      if (uploadPendingRef.current) {
+        event.target.value = '';
+        return;
+      }
 
+      uploadPendingRef.current = true;
       setUploading(true);
       try {
         const result = await authFilesApi.uploadFiles(validFiles);
@@ -282,6 +289,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
       } finally {
+        uploadPendingRef.current = false;
         setUploading(false);
         event.target.value = '';
       }
