@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,17 @@ import {
   supportsAuthFileWebsockets,
 } from '@/features/authFiles/constants';
 import styles from './AuthFileDetailsSheet.module.scss';
+
+/** API 边界归一化补写的派生字段——INFO 视图里只展示后端原始形状，避免重复噪音。 */
+const DERIVED_INFO_KEYS = [
+  'successCount',
+  'failureCount',
+  'recentRequests',
+  'runtimeOnly',
+  'authIndex',
+  'statusMessage',
+  'modified',
+];
 
 export type AuthFileDetailsSheetProps = {
   disableControls: boolean;
@@ -69,6 +80,23 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
   };
   const previewText = formatJsonText(updatedText);
   const invalidContentPreview = editor?.invalidContentPreview ?? '';
+  const fileInfoText = editor?.fileInfoText ?? '';
+  const displayInfoText = useMemo(() => {
+    if (!fileInfoText) return '';
+    try {
+      const parsed = JSON.parse(fileInfoText) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const record = parsed as Record<string, unknown>;
+        DERIVED_INFO_KEYS.forEach((key) => {
+          delete record[key];
+        });
+        return JSON.stringify(record, null, 2);
+      }
+    } catch {
+      /* 非 JSON 原样展示 */
+    }
+    return fileInfoText;
+  }, [fileInfoText]);
 
   return (
     <Sheet
@@ -126,12 +154,7 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               {editor.error && <div className={styles.error}>{editor.error}</div>}
               <div className={styles.jsonWrapper}>
                 <label className={styles.label}>{t('auth_files.prefix_proxy_info_label')}</label>
-                <textarea
-                  className={styles.textarea}
-                  rows={8}
-                  readOnly
-                  value={editor.fileInfoText}
-                />
+                <textarea className={styles.textarea} rows={8} readOnly value={displayInfoText} />
               </div>
               <div className={styles.jsonWrapper}>
                 <label className={styles.label}>

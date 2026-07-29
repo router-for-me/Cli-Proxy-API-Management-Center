@@ -432,14 +432,36 @@
   gap: 4px;
 }
 
-/* 图标按钮：方形紧凑，覆盖全局 .btn-sm 的内边距 */
-.actions .iconButton {
+/* 图标按钮：方形紧凑的安静描边风——危险动作静默存在，hover 才显色块 */
+.card .actions .iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 30px;
   height: 30px;
   padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.card .actions .iconButton:global(.btn-danger) {
+  color: var(--danger-color);
+  border-color: color-mix(in srgb, var(--danger-color) 28%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card .actions .iconButton:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: var(--bg-tertiary);
+  }
+
+  .card .actions .iconButton:global(.btn-danger):hover:not(:disabled) {
+    color: var(--danger-color);
+    border-color: color-mix(in srgb, var(--danger-color) 45%, transparent);
+    background: var(--destructive-10);
+  }
 }
 
 /* 按压反馈：所有可点元素 scale 0.96（reduced-motion 下豁免） */

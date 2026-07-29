@@ -16,19 +16,21 @@
 .bars {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
   height: 100%;
-  /* 两端渐隐：与 LiveWire 的水平 mask 同语汇 */
+  /* 基线 + 两端渐隐：与 LiveWire 的水平 mask 同语汇 */
+  padding-bottom: 3px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 85%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
 }
 
 .bar {
   flex: 1 1 0;
   min-width: 2px;
-  max-width: 5px;
-  border-radius: 1.5px;
+  max-width: 14px;
+  border-radius: 2px 2px 1px 1px;
   transform-origin: bottom;
   animation: pulse-bar-in 0.45s var(--ease-out-strong, ease-out) both;
   animation-delay: calc(0.35s + var(--bar-delay, 0s));
