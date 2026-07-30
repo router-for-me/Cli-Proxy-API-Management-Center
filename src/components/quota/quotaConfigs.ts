@@ -1380,10 +1380,7 @@ export const CODEX_CONFIG: QuotaConfig<CodexQuotaState, CodexQuotaData> = {
   filterFn: (file) => isCodexFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchCodexQuota,
   resetQuota: resetCodexQuota,
-  canResetQuota: (quota) =>
-    (quota.rateLimitResetCreditsApplicableAvailableCount ??
-      quota.rateLimitResetCreditsAvailableCount ??
-      0) > 0,
+  canResetQuota: (quota) => (quota.rateLimitResetCreditsAvailableCount ?? 0) > 0,
   storeSelector: (state) => state.codexQuota,
   storeSetter: 'setCodexQuota',
   buildLoadingState: () => ({
