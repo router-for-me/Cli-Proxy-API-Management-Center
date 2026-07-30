@@ -118,6 +118,8 @@
 /* 句号即状态灯，颜色由 TSX 按语义色注入 */
 .heroPeriod {
   display: inline;
+  margin-inline-start: clamp(4px, 0.08em, 7px);
+  letter-spacing: 0;
 }
 
 /* 有活流量时状态灯极缓呼吸（仅 opacity，inline 元素安全） */
