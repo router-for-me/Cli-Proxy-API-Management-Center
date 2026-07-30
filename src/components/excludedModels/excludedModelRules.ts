@@ -1,9 +1,9 @@
 /**
  * 排除模型规则 —— 唯一的纯逻辑源。
  *
- * 合并自 `features/authFiles/excludedModelSelection.ts`（文本/数组式）与
- * `features/authFiles/oauthExcludedRules.ts`（Set 式）。两者是同一个领域模型写了两遍：
- * `parseExcludedModelRules(t)` 与 `normalizeOAuthExcludedRules(t.split(/\r?\n/))` 逻辑逐字相同。
+ * 由两个已删除的模块合并而来：`excludedModelSelection.ts`（文本/数组式）与
+ * `oauthExcludedRules.ts`（Set 式），二者曾是同一个领域模型写了两遍——
+ * 其 normalize 实现逐字相同，只是一个吃换行文本、一个吃可迭代对象。
  *
  * 规则语义（与后端一致）：
  * - 大小写不敏感；
