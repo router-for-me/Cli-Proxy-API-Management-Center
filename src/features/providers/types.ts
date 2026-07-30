@@ -6,6 +6,7 @@ import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@
 
 export type ProviderBrand =
   | 'gemini'
+  | 'interactions'
   | 'codex'
   | 'xai'
   | 'claude'
@@ -28,6 +29,7 @@ export type SortDir = (typeof SORT_DIR_VALUES)[number];
 
 export type ProviderResourceSelector =
   | { brand: 'gemini'; apiKey: string; baseUrl?: string; index: number }
+  | { brand: 'interactions'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'xai'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }

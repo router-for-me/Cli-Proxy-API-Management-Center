@@ -8,6 +8,7 @@ import {
   normalizeRecentRequestUsageEntry,
   type RecentRequestBucket,
 } from '@/utils/recentRequests';
+import type { Config } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import {
   TRAFFIC_BUCKET_MINUTES,
@@ -96,6 +97,16 @@ const createAccumulator = (): ProviderAccumulator => ({
   bucketGroups: [],
 });
 
+export const getProviderKeyCounts = (config: Config) => ({
+  gemini: config.geminiApiKeys?.length ?? 0,
+  interactions: config.interactionsApiKeys?.length ?? 0,
+  codex: config.codexApiKeys?.length ?? 0,
+  xai: config.xaiApiKeys?.length ?? 0,
+  claude: config.claudeApiKeys?.length ?? 0,
+  vertex: config.vertexApiKeys?.length ?? 0,
+  openai: config.openaiCompatibility?.length ?? 0,
+});
+
 /**
  * 汇总仪表盘所需的全部数据。
  *
@@ -164,17 +175,7 @@ export function useDashboardOverview() {
     ]);
   }, [connected, fetchConfig, loadAuthFiles, loadModels, refreshRecentRequests]);
 
-  const providerKeyCounts = useMemo(() => {
-    if (!config) return null;
-    return {
-      gemini: config.geminiApiKeys?.length ?? 0,
-      codex: config.codexApiKeys?.length ?? 0,
-      xai: config.xaiApiKeys?.length ?? 0,
-      claude: config.claudeApiKeys?.length ?? 0,
-      vertex: config.vertexApiKeys?.length ?? 0,
-      openai: config.openaiCompatibility?.length ?? 0,
-    };
-  }, [config]);
+  const providerKeyCounts = useMemo(() => (config ? getProviderKeyCounts(config) : null), [config]);
 
   const { traffic, providers } = useMemo(() => {
     const accumulators = new Map<string, ProviderAccumulator>();

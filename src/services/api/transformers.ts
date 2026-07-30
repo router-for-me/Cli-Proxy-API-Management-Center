@@ -350,6 +350,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as GeminiKeyConfig[];
   }
 
+  const interactionsList = raw['interactions-api-key'];
+  if (Array.isArray(interactionsList)) {
+    config.interactionsApiKeys = interactionsList
+      .map((item) => normalizeGeminiKeyConfig(item))
+      .filter(Boolean) as GeminiKeyConfig[];
+  }
+
   const codexList = raw['codex-api-key'];
   if (Array.isArray(codexList)) {
     config.codexApiKeys = codexList

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { formatCompactNumber, formatPercent } from '../src/utils/format';
+import { getProviderKeyCounts } from '../src/features/dashboard/hooks/useDashboardOverview';
 import {
   axisMax,
   niceCeil,
@@ -104,10 +105,24 @@ describe('splitWindowMinutes', () => {
   });
 });
 
+describe('provider key counts', () => {
+  test('includes native Interactions API keys in the dashboard total inputs', () => {
+    const counts = getProviderKeyCounts({
+      geminiApiKeys: [{ apiKey: 'gemini-key' }],
+      interactionsApiKeys: [{ apiKey: 'interactions-1' }, { apiKey: 'interactions-2' }],
+      codexApiKeys: [{ apiKey: 'codex-key' }],
+    });
+
+    expect(counts.interactions).toBe(2);
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+  });
+});
+
 describe('providerLabel', () => {
   test('uses the brand spelling for known providers', () => {
     expect(providerLabel('xai', 'Unattributed')).toBe('xAI');
     expect(providerLabel('aistudio', 'Unattributed')).toBe('AI Studio');
+    expect(providerLabel('gemini-interactions', 'Unattributed')).toBe('Interactions API');
   });
 
   test('falls back to a capitalised id, and localises unknown', () => {

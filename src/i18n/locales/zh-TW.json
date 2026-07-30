@@ -1420,6 +1420,7 @@
     },
     "providerNames": {
       "gemini": "Gemini",
+      "interactions": "Interactions API",
       "codex": "Codex",
       "xai": "xAI",
       "claude": "Claude",

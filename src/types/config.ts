@@ -24,6 +24,7 @@ export interface Config {
   routingStrategy?: string;
   apiKeys?: string[];
   geminiApiKeys?: GeminiKeyConfig[];
+  interactionsApiKeys?: GeminiKeyConfig[];
   codexApiKeys?: ProviderKeyConfig[];
   xaiApiKeys?: ProviderKeyConfig[];
   claudeApiKeys?: ProviderKeyConfig[];
@@ -46,6 +47,7 @@ export type RawConfigSection =
   | 'routing/strategy'
   | 'api-keys'
   | 'gemini-api-key'
+  | 'interactions-api-key'
   | 'codex-api-key'
   | 'xai-api-key'
   | 'claude-api-key'
