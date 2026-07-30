@@ -3,6 +3,7 @@
  */
 
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type { ThinkingLevel } from './thinkingLevels';
 
 export type ProviderBrand =
   | 'gemini'
@@ -142,7 +143,10 @@ export interface ModelEntryInput {
   priority?: number;
   testModel?: string;
   image?: boolean;
+  /** Original backend value, preserved until the standard-level selector is changed. */
   thinkingJson?: string;
+  thinkingLevels?: ThinkingLevel[];
+  thinkingLevelsTouched?: boolean;
 }
 
 export type SponsorProtocol = 'openai' | 'codex' | 'claude' | 'gemini';

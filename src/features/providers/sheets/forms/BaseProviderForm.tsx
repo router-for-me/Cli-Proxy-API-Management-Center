@@ -14,6 +14,7 @@ import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
+import { readThinkingLevels } from '../../thinkingLevels';
 import type {
   ApiKeyEntryInput,
   ModelEntryInput,
@@ -119,6 +120,7 @@ function buildInitialForm(
             testModel: m.testModel,
             image: m.image === true,
             thinkingJson: formatJsonObject(m.thinking),
+            thinkingLevels: readThinkingLevels(m.thinking),
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -162,6 +164,7 @@ function buildInitialForm(
           priority: m.priority,
           testModel: m.testModel,
           thinkingJson: formatJsonObject(m.thinking),
+          thinkingLevels: readThinkingLevels(m.thinking),
         }))
       : [emptyModel()],
     headers: cfg.headers

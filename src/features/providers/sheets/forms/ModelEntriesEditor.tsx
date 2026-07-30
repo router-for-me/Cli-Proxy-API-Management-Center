@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconPlus, IconX } from '@/components/ui/icons';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { THINKING_LEVELS, type ThinkingLevel } from '../../thinkingLevels';
 import type { ModelEntryInput } from '../../types';
 import styles from './sharedForm.module.scss';
 
@@ -56,7 +58,16 @@ export function ModelEntriesEditor({
       {visible.map((entry, idx) => {
         const hasExtendedOptions = supportsImage || supportsThinking;
         const expanded = hasExtendedOptions && expandedIdx === idx;
-        const hasThinking = (entry.thinkingJson ?? '').trim().length > 0;
+        const thinkingLevels = entry.thinkingLevels ?? [];
+        const hasThinking = entry.thinkingLevelsTouched
+          ? thinkingLevels.length > 0
+          : (entry.thinkingJson ?? '').trim().length > 0;
+        const toggleThinkingLevel = (level: ThinkingLevel) => {
+          const nextLevels = thinkingLevels.includes(level)
+            ? thinkingLevels.filter((item) => item !== level)
+            : THINKING_LEVELS.filter((item) => item === level || thinkingLevels.includes(item));
+          onUpdate(idx, { thinkingLevels: nextLevels, thinkingLevelsTouched: true });
+        };
         return (
           <div key={idx} className={styles.modelEntry}>
             <div className={styles.modelAliasRow}>
@@ -133,23 +144,36 @@ export function ModelEntriesEditor({
                   </label>
                 ) : null}
                 {supportsThinking ? (
-                  <div className={styles.field}>
-                    <label className={styles.label}>
+                  <fieldset className={styles.thinkingFieldset}>
+                    <legend className={styles.label}>
                       {t('providersPage.form.thinkingConfig')}
-                      <span className={styles.labelHint}>
-                        {' '}
-                        · {t('providersPage.form.thinkingConfigHint')}
-                      </span>
-                    </label>
-                    <textarea
-                      className={styles.textarea}
-                      rows={4}
-                      value={entry.thinkingJson ?? ''}
-                      onChange={(e) => onUpdate(idx, { thinkingJson: e.target.value })}
-                      disabled={mutating}
-                      placeholder={'{"levels":["low","medium","high"]}'}
-                    />
-                  </div>
+                    </legend>
+                    <div className={styles.thinkingLevelGrid}>
+                      {THINKING_LEVELS.map((level) => (
+                        <SelectionCheckbox
+                          key={level}
+                          checked={thinkingLevels.includes(level)}
+                          disabled={mutating}
+                          onChange={() => toggleThinkingLevel(level)}
+                          className={`${styles.thinkingLevelOption} ${
+                            thinkingLevels.includes(level) ? styles.thinkingLevelOptionSelected : ''
+                          }`}
+                          labelClassName={styles.thinkingLevelLabel}
+                          label={
+                            <>
+                              <span>{t(`providersPage.form.thinkingLevels.${level}`)}</span>
+                              <code>{level}</code>
+                            </>
+                          }
+                        />
+                      ))}
+                    </div>
+                    {(entry.thinkingJson ?? '').trim() && !entry.thinkingLevelsTouched ? (
+                      <p className={styles.thinkingExistingHint}>
+                        {t('providersPage.form.thinkingExistingHint')}
+                      </p>
+                    ) : null}
+                  </fieldset>
                 ) : null}
               </div>
             ) : null}

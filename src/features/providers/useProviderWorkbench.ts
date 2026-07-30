@@ -24,6 +24,7 @@ import {
   xaiToResource,
 } from './adapters';
 import { PROVIDER_BRAND_ORDER } from './descriptors';
+import { buildThinkingFromLevels } from './thinkingLevels';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -136,7 +137,9 @@ const buildModelAliases = (
         alias: m.alias?.trim() || undefined,
         priority: m.priority,
         testModel: m.testModel,
-        thinking: parseThinkingJson(m.thinkingJson),
+        thinking: m.thinkingLevelsTouched
+          ? buildThinkingFromLevels(m.thinkingLevels)
+          : parseThinkingJson(m.thinkingJson),
       };
       if (includeImage) {
         entry.image = m.image === true;

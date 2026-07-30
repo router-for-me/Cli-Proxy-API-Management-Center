@@ -19,6 +19,7 @@ import { maskApiKey } from '@/utils/format';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
+import { readThinkingLevels } from '../../thinkingLevels';
 import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
 import {
   discoveryBrandForSponsorProtocol,
@@ -161,6 +162,7 @@ const modelsFromConfig = (
         testModel: model.testModel,
         image: model.image === true,
         thinkingJson: model.thinking ? JSON.stringify(model.thinking, null, 2) : '',
+        thinkingLevels: readThinkingLevels(model.thinking),
       }))
     : [emptyModel()];
 
