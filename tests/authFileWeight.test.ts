@@ -26,6 +26,8 @@ const makeEditor = (json: Record<string, unknown>, weight: string): PrefixProxyE
   usingApiTouched: false,
   note: '',
   noteTouched: false,
+  excludedModelsText: '',
+  excludedModelsTouched: false,
   headersText: '',
   headersTouched: false,
   headersError: null,
@@ -55,5 +57,46 @@ describe('auth-file credential weight patch', () => {
     expect(() => buildAuthFileFieldsPatch(makeEditor({}, '1000001'), resolveError)).toThrow(
       'auth_files.weight_invalid_max'
     );
+  });
+});
+
+describe('auth-file excluded models patch', () => {
+  test('writes normalized model patterns to the canonical field', () => {
+    const editor = {
+      ...makeEditor({}, ''),
+      excludedModelsText: ' gpt-5-*\nGPT-5-*\nclaude-opus ',
+      excludedModelsTouched: true,
+    };
+
+    expect(buildAuthFileFieldsPatch(editor, resolveError)).toEqual({
+      excluded_models: ['gpt-5-*', 'claude-opus'],
+    });
+  });
+
+  test('preserves the legacy hyphenated field name', () => {
+    const editor = {
+      ...makeEditor({ 'excluded-models': ['old-model'] }, ''),
+      excludedModelsText: 'new-model',
+      excludedModelsTouched: true,
+    };
+
+    expect(buildAuthFileFieldsPatch(editor, resolveError)).toEqual({
+      'excluded-models': ['new-model'],
+    });
+  });
+
+  test('clears exclusions with an empty array and ignores untouched values', () => {
+    const original = { excluded_models: ['gpt-5-*'] };
+    expect(buildAuthFileFieldsPatch(makeEditor(original, ''), resolveError)).toEqual({});
+    expect(
+      buildAuthFileFieldsPatch(
+        {
+          ...makeEditor(original, ''),
+          excludedModelsText: '',
+          excludedModelsTouched: true,
+        },
+        resolveError
+      )
+    ).toEqual({ excluded_models: [] });
   });
 });

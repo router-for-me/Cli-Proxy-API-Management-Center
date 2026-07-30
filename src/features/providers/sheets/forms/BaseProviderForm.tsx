@@ -161,6 +161,7 @@ function buildInitialForm(
           alias: m.alias ?? '',
           priority: m.priority,
           testModel: m.testModel,
+          thinkingJson: formatJsonObject(m.thinking),
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -438,7 +439,7 @@ export function BaseProviderForm({
     brand === 'xai' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
-  const supportsOpenAIModelOptions = brand === 'openaiCompatibility';
+  const supportsModelImage = brand === 'openaiCompatibility';
   const singleConnectivity =
     brand === 'codex' || brand === 'xai'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
@@ -859,7 +860,8 @@ export function BaseProviderForm({
             ) : null}
             <ModelEntriesEditor
               models={modelsList}
-              extendedOptions={supportsOpenAIModelOptions}
+              supportsImage={supportsModelImage}
+              supportsThinking
               mutating={mutating}
               removeDisabled={modelsList.length <= 1}
               onUpdate={updateModelEntry}

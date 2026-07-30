@@ -39,6 +39,7 @@ import type {
   SponsorProviderRaw,
 } from '../../types';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
+import { ModelEntriesEditor } from './ModelEntriesEditor';
 import { useModelDiscovery, type UseModelDiscoveryResult } from './useModelDiscovery';
 import { useSponsorUsageCheck, type SponsorUsageMessages } from './useSponsorUsageCheck';
 import styles from './sharedForm.module.scss';
@@ -57,6 +58,7 @@ interface SponsorProviderFormProps {
 interface SponsorModelSectionProps {
   label: string;
   description: string;
+  protocol: SponsorProtocol;
   models: ModelEntryInput[];
   discovery: UseModelDiscoveryResult;
   mutating: boolean;
@@ -141,7 +143,15 @@ const isHealthyUsageSummary = (summary: ApiKeyFunUsageSummary): boolean => {
 
 const modelsFromConfig = (
   models:
-    Array<{ name?: string; alias?: string; priority?: number; testModel?: string }> | undefined
+    | Array<{
+        name?: string;
+        alias?: string;
+        priority?: number;
+        testModel?: string;
+        image?: boolean;
+        thinking?: Record<string, unknown>;
+      }>
+    | undefined
 ): ModelEntryInput[] =>
   models?.length
     ? models.map((model) => ({
@@ -149,6 +159,8 @@ const modelsFromConfig = (
         alias: model.alias ?? '',
         priority: model.priority,
         testModel: model.testModel,
+        image: model.image === true,
+        thinkingJson: model.thinking ? JSON.stringify(model.thinking, null, 2) : '',
       }))
     : [emptyModel()];
 
@@ -243,6 +255,7 @@ const applyDiscoveredModels = (
 function SponsorModelSection({
   label,
   description,
+  protocol,
   models,
   discovery,
   mutating,
@@ -265,17 +278,6 @@ function SponsorModelSection({
     if (!discovery.loading && !discovery.hasFetched) {
       void discovery.fetch();
     }
-  };
-
-  const updateModelEntry = (modelIndex: number, patch: Partial<ModelEntryInput>) => {
-    onChange(
-      modelsList.map((item, itemIndex) => (itemIndex === modelIndex ? { ...item, ...patch } : item))
-    );
-  };
-
-  const removeModelEntry = (modelIndex: number) => {
-    const next = modelsList.filter((_, itemIndex) => itemIndex !== modelIndex);
-    onChange(next.length ? next : [emptyModel()]);
   };
 
   return (
@@ -306,41 +308,25 @@ function SponsorModelSection({
             onClose={() => setDiscoveryOpen(false)}
           />
         ) : null}
-        {modelsList.map((entry, modelIndex) => (
-          <div key={modelIndex} className={styles.modelAliasRow}>
-            <input
-              className={styles.input}
-              placeholder="model-name"
-              value={entry.name}
-              onChange={(event) => updateModelEntry(modelIndex, { name: event.target.value })}
-              disabled={mutating}
-            />
-            <input
-              className={styles.input}
-              placeholder="alias (optional)"
-              value={entry.alias ?? ''}
-              onChange={(event) => updateModelEntry(modelIndex, { alias: event.target.value })}
-              disabled={mutating}
-            />
-            <button
-              type="button"
-              className={styles.removeBtn}
-              disabled={mutating || modelsList.length <= 1}
-              onClick={() => removeModelEntry(modelIndex)}
-            >
-              <IconX size={12} />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className={styles.addBtn}
-          disabled={mutating}
-          onClick={() => onChange([...modelsList, emptyModel()])}
-        >
-          <IconPlus size={12} />
-          <span>{t('providersPage.form.addModel')}</span>
-        </button>
+        <ModelEntriesEditor
+          models={modelsList}
+          supportsImage={protocol === 'openai'}
+          supportsThinking
+          mutating={mutating}
+          removeDisabled={modelsList.length <= 1}
+          onUpdate={(modelIndex, patch) =>
+            onChange(
+              modelsList.map((item, itemIndex) =>
+                itemIndex === modelIndex ? { ...item, ...patch } : item
+              )
+            )
+          }
+          onAdd={() => onChange([...modelsList, emptyModel()])}
+          onRemove={(modelIndex) => {
+            const next = modelsList.filter((_, itemIndex) => itemIndex !== modelIndex);
+            onChange(next.length ? next : [emptyModel()]);
+          }}
+        />
       </div>
     </Collapsible>
   );
@@ -755,6 +741,7 @@ function SponsorKeyEntryCard({
           <SponsorModelSection
             label={t(`providersPage.sponsor.protocolModels.${modelKey}`)}
             description={t(`providersPage.sponsor.protocolModelHints.${modelKey}`)}
+            protocol={entry.protocol}
             models={entry.models}
             discovery={discovery}
             mutating={mutating}

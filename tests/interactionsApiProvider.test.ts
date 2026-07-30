@@ -34,7 +34,13 @@ describe('Interactions API key provider', () => {
           'base-url': 'https://generativelanguage.googleapis.com',
           'proxy-url': 'direct',
           headers: { 'X-Custom': 'value' },
-          models: [{ name: 'gemini-3.1-flash-lite', alias: 'native-flash' }],
+          models: [
+            {
+              name: 'gemini-3.1-flash-lite',
+              alias: 'native-flash',
+              thinking: { levels: ['low', 'medium', 'high'] },
+            },
+          ],
           'excluded-models': ['gemini-2.5-*'],
           'disable-cooling': true,
           'auth-index': 'gemini-interactions:apikey:1',
@@ -51,7 +57,13 @@ describe('Interactions API key provider', () => {
         baseUrl: 'https://generativelanguage.googleapis.com',
         proxyUrl: 'direct',
         headers: { 'X-Custom': 'value' },
-        models: [{ name: 'gemini-3.1-flash-lite', alias: 'native-flash' }],
+        models: [
+          {
+            name: 'gemini-3.1-flash-lite',
+            alias: 'native-flash',
+            thinking: { levels: ['low', 'medium', 'high'] },
+          },
+        ],
         excludedModels: ['gemini-2.5-*'],
         disableCooling: true,
         authIndex: 'gemini-interactions:apikey:1',
@@ -182,7 +194,13 @@ describe('Interactions API key provider', () => {
       baseUrl: 'https://generativelanguage.googleapis.com',
       proxyUrl: 'direct',
       headers: { 'X-Custom': 'value' },
-      models: [{ name: 'gemini-3.1-flash-lite', alias: 'native-flash' }],
+      models: [
+        {
+          name: 'gemini-3.1-flash-lite',
+          alias: 'native-flash',
+          thinking: { min: 128, max: 8192, dynamic_allowed: true },
+        },
+      ],
       excludedModels: ['gemini-2.5-*'],
       disableCooling: true,
     });
@@ -211,7 +229,13 @@ describe('Interactions API key provider', () => {
             'proxy-url': 'direct',
             'disable-cooling': true,
             headers: { 'X-Custom': 'value' },
-            models: [{ name: 'gemini-3.1-flash-lite', alias: 'native-flash' }],
+            models: [
+              {
+                name: 'gemini-3.1-flash-lite',
+                alias: 'native-flash',
+                thinking: { min: 128, max: 8192, dynamic_allowed: true },
+              },
+            ],
             'excluded-models': ['gemini-2.5-*'],
           },
         ],

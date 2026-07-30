@@ -8,8 +8,10 @@ const COLLAPSED_LIMIT = 10;
 
 interface ModelEntriesEditorProps {
   models: ModelEntryInput[];
-  /** OpenAI-compatible entries expose image/thinking options behind a per-row expander. */
-  extendedOptions: boolean;
+  /** Only OpenAI-compatible entries can expose the image-generation capability. */
+  supportsImage: boolean;
+  /** Every backend provider model can override its thinking capability. */
+  supportsThinking: boolean;
   mutating: boolean;
   removeDisabled: boolean;
   onUpdate: (idx: number, patch: Partial<ModelEntryInput>) => void;
@@ -19,7 +21,8 @@ interface ModelEntriesEditorProps {
 
 export function ModelEntriesEditor({
   models,
-  extendedOptions,
+  supportsImage,
+  supportsThinking,
   mutating,
   removeDisabled,
   onUpdate,
@@ -51,7 +54,8 @@ export function ModelEntriesEditor({
   return (
     <>
       {visible.map((entry, idx) => {
-        const expanded = extendedOptions && expandedIdx === idx;
+        const hasExtendedOptions = supportsImage || supportsThinking;
+        const expanded = hasExtendedOptions && expandedIdx === idx;
         const hasThinking = (entry.thinkingJson ?? '').trim().length > 0;
         return (
           <div key={idx} className={styles.modelEntry}>
@@ -71,17 +75,17 @@ export function ModelEntriesEditor({
                 disabled={mutating}
               />
               <div className={styles.modelEntryActions}>
-                {extendedOptions && !expanded && entry.image === true ? (
+                {supportsImage && !expanded && entry.image === true ? (
                   <span className={styles.entryBadge}>
                     {t('providersPage.form.modelBadgeImage')}
                   </span>
                 ) : null}
-                {extendedOptions && !expanded && hasThinking ? (
+                {supportsThinking && !expanded && hasThinking ? (
                   <span className={styles.entryBadge}>
                     {t('providersPage.form.modelBadgeThinking')}
                   </span>
                 ) : null}
-                {extendedOptions ? (
+                {hasExtendedOptions ? (
                   <button
                     type="button"
                     className={styles.entryCardIconBtn}
@@ -113,36 +117,40 @@ export function ModelEntriesEditor({
             </div>
             {expanded ? (
               <div className={styles.modelEntryDetails}>
-                <label className={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    className={styles.checkboxBox}
-                    checked={entry.image === true}
-                    disabled={mutating}
-                    onChange={(e) => onUpdate(idx, { image: e.target.checked })}
-                  />
-                  <span className={styles.checkboxText}>
-                    <span>{t('providersPage.form.modelImage')}</span>
-                    <small>{t('providersPage.form.modelImageHint')}</small>
-                  </span>
-                </label>
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {t('providersPage.form.thinkingConfig')}
-                    <span className={styles.labelHint}>
-                      {' '}
-                      · {t('providersPage.form.thinkingConfigHint')}
+                {supportsImage ? (
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkboxBox}
+                      checked={entry.image === true}
+                      disabled={mutating}
+                      onChange={(e) => onUpdate(idx, { image: e.target.checked })}
+                    />
+                    <span className={styles.checkboxText}>
+                      <span>{t('providersPage.form.modelImage')}</span>
+                      <small>{t('providersPage.form.modelImageHint')}</small>
                     </span>
                   </label>
-                  <textarea
-                    className={styles.textarea}
-                    rows={4}
-                    value={entry.thinkingJson ?? ''}
-                    onChange={(e) => onUpdate(idx, { thinkingJson: e.target.value })}
-                    disabled={mutating}
-                    placeholder={'{"levels":["low","medium","high"]}'}
-                  />
-                </div>
+                ) : null}
+                {supportsThinking ? (
+                  <div className={styles.field}>
+                    <label className={styles.label}>
+                      {t('providersPage.form.thinkingConfig')}
+                      <span className={styles.labelHint}>
+                        {' '}
+                        · {t('providersPage.form.thinkingConfigHint')}
+                      </span>
+                    </label>
+                    <textarea
+                      className={styles.textarea}
+                      rows={4}
+                      value={entry.thinkingJson ?? ''}
+                      onChange={(e) => onUpdate(idx, { thinkingJson: e.target.value })}
+                      disabled={mutating}
+                      placeholder={'{"levels":["low","medium","high"]}'}
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

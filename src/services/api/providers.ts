@@ -65,8 +65,8 @@ const OPENAI_PROVIDER_FIELDS = [
   'disable-cooling',
 ] as const;
 
-const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model'] as const;
-const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image', 'thinking'] as const;
+const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model', 'thinking'] as const;
+const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image'] as const;
 
 const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url', 'weight'] as const;
 
@@ -302,13 +302,11 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
           if (model.testModel) {
             payload['test-model'] = model.testModel;
           }
-          if (includeOpenAIFields) {
-            if (model.image) {
-              payload.image = true;
-            }
-            if (model.thinking) {
-              payload.thinking = model.thinking;
-            }
+          if (includeOpenAIFields && model.image) {
+            payload.image = true;
+          }
+          if (model.thinking) {
+            payload.thinking = model.thinking;
           }
           return payload;
         })
@@ -367,7 +365,11 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
           const name = typeof model?.name === 'string' ? model.name.trim() : '';
           const alias = typeof model?.alias === 'string' ? model.alias.trim() : '';
           if (!name || !alias) return null;
-          return { name, alias };
+          return {
+            name,
+            alias,
+            ...(model.thinking ? { thinking: model.thinking } : {}),
+          };
         })
         .filter(Boolean)
     : undefined;

@@ -38,6 +38,7 @@ export type PrefixProxyEditorField =
   | 'websockets'
   | 'usingApi'
   | 'note'
+  | 'excludedModelsText'
   | 'headersText';
 
 export type PrefixProxyEditorFieldValue = string | boolean;
@@ -64,6 +65,8 @@ export type PrefixProxyEditorState = {
   usingApiTouched: boolean;
   note: string;
   noteTouched: boolean;
+  excludedModelsText: string;
+  excludedModelsTouched: boolean;
   headersText: string;
   headersTouched: boolean;
   headersError: string | null;
@@ -127,6 +130,36 @@ const credentialWeightErrorKey = (error: CredentialWeightError): AuthFileWeightE
 
 const normalizeTextField = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
+
+const normalizeExcludedModels = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  value.forEach((item) => {
+    if (typeof item !== 'string') return;
+    const model = item.trim();
+    const key = model.toLowerCase();
+    if (!model || seen.has(key)) return;
+    seen.add(key);
+    result.push(model);
+  });
+  return result;
+};
+
+const parseExcludedModelsText = (value: string): string[] =>
+  normalizeExcludedModels(value.split(/\r?\n/));
+
+const readExcludedModels = (value: Record<string, unknown>): string[] =>
+  normalizeExcludedModels(
+    value.excluded_models !== undefined ? value.excluded_models : value['excluded-models']
+  );
+
+const getExcludedModelsField = (
+  value: Record<string, unknown>
+): 'excluded_models' | 'excluded-models' =>
+  value.excluded_models === undefined && value['excluded-models'] !== undefined
+    ? 'excluded-models'
+    : 'excluded_models';
 
 const INVALID_CONTENT_PREVIEW_LIMIT = 1000;
 
@@ -288,6 +321,14 @@ export const buildAuthFileFieldsPatch = (
     }
   }
 
+  if (editor.excludedModelsTouched) {
+    const originalExcludedModels = readExcludedModels(original);
+    const nextExcludedModels = parseExcludedModelsText(editor.excludedModelsText);
+    if (JSON.stringify(nextExcludedModels) !== JSON.stringify(originalExcludedModels)) {
+      patch[getExcludedModelsField(original)] = nextExcludedModels;
+    }
+  }
+
   if (supportsAuthFileWebsockets(editor.providerKey) && editor.websocketsTouched) {
     const originalWebsockets = readAuthFileWebsockets(original);
     const nextWebsockets = Boolean(editor.websockets);
@@ -367,6 +408,13 @@ const buildPrefixProxyUpdatedText = (
     }
   }
 
+  if (patch.excluded_models !== undefined) {
+    next.excluded_models = patch.excluded_models;
+  }
+  if (patch['excluded-models'] !== undefined) {
+    next['excluded-models'] = patch['excluded-models'];
+  }
+
   applyHeadersPatch(next, patch.headers);
 
   if (patch.websockets !== undefined) {
@@ -441,6 +489,8 @@ export function useAuthFilesPrefixProxyEditor(
       usingApiTouched: false,
       note: '',
       noteTouched: false,
+      excludedModelsText: '',
+      excludedModelsTouched: false,
       headersText: '',
       headersTouched: false,
       headersError: null,
@@ -489,6 +539,7 @@ export function useAuthFilesPrefixProxyEditor(
         : false;
       const usingApi = supportsAuthFileUsingApi(providerKey) ? readAuthFileUsingApi(json) : false;
       const note = typeof json.note === 'string' ? json.note : '';
+      const excludedModelsText = readExcludedModels(json).join('\n');
       const headers = json.headers;
       let headersText = '';
       let headersError: string | null = null;
@@ -519,6 +570,8 @@ export function useAuthFilesPrefixProxyEditor(
           usingApiTouched: false,
           note,
           noteTouched: false,
+          excludedModelsText,
+          excludedModelsTouched: false,
           headersText,
           headersTouched: false,
           headersError,
@@ -560,6 +613,13 @@ export function useAuthFilesPrefixProxyEditor(
         return { ...prev, usingApi: Boolean(value), usingApiTouched: true };
       }
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
+      if (field === 'excludedModelsText') {
+        return {
+          ...prev,
+          excludedModelsText: String(value),
+          excludedModelsTouched: true,
+        };
+      }
       if (field === 'headersText') {
         const headersText = String(value);
         const { errorKey } = parseHeadersText(headersText);
