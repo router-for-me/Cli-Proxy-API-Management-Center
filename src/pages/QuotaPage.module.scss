@@ -676,225 +676,288 @@
   }
 }
 
-/* Codex Pro 20x —— 钻石徽章。
- * 金卡（premiumPlanValue）之上的一档：金卡亮度已用满（HDR 超白），
- * 再进一档只能换材质。冷调切工宝石 vs 暖调金箔，一眼两个物种。
+/* Codex Pro 20x —— 液态铂金（B2：精修液态铬 + 呼吸光晕，2026-07-31 定稿）。
+ * 与金卡（premiumPlanValue）的档差来自「材质行为」而非颜色：金是静止的贵金属，
+ * 20x 是一枚会流动的镜面铬 —— 三层异速反光带永续对流（12s）+ 光晕呼吸（7s）
+ * + 每 7.5s 一道巡回扫光。全程零彩色，唯一的色彩暗示是第三层几乎无色的冰蓝微光。
  *
- * 构图要点（踩过坑，别回退）：
- * 1. 冠面/火彩/星芒全部收在左侧约 40% 的「宝石区」，文字压在右侧平静的台面上。
- *    早先把切面铺满整枚胶囊，12px 字被切面和火彩切碎，完全不能读。
- * 2. 石体是深色的。真钻在浅背景上是「近黑刻面紧贴灿白刻面」的极端明暗对比 ——
- *    浅冰蓝石体在 20px 高度上会糊成一枚普通蓝色 chip，既不像钻，也压不住金卡。
- * 3. 高光是硬边的。金发软光、钻打硬光，这是两档的材质分野。 */
+ * 试过并被推翻的方向（勿回退）：MC 青绿换色（太保守）、切面宝石区（20px 糊成噪点）、
+ * 黑曜/紫晶/全息黑钻（弃暗体）、棱镜彩虹环、极光/油膜/星云晶体（太花）。
+ * 口味锚点：单色金属 + 慢动态。文字两主题同为深灰蓝 —— 铬体恒亮，
+ * 主题只微调石体明度与光晕强度。 */
 .elitePlanValue {
   position: relative;
   display: inline-flex;
   align-items: center;
   font-weight: 700;
   font-size: 12px;
-  letter-spacing: 0.02em;
-  // 左内边距为星芒与冠面让出宝石区，不与字重叠。
-  padding: 2px 9px 2px 21px;
-  // ⚠ 宝石区宽度必须用 px 且小于 padding-left（见下方 background-size，含 HDR 分支共 4 处）。
-  // 用百分比会随文案长度伸缩：短文案时冠面折线会盖到「Pr」上，字就读不清了。
+  letter-spacing: 0.03em;
+  padding: 2px 9px;
   border-radius: 999px;
   white-space: nowrap;
   flex: 0 0 auto;
   overflow: visible;
   isolation: isolate;
-  // 由上到下：火彩（色散：青—白核—洋红—暖金，棱面分光的真实结构）
-  //         → 冠面切割（conic 硬色标 = 平面 = 切面）
-  //         → 台面（平静，承载文字）
+  border: 1px solid transparent;
   background:
+    radial-gradient(
+        circle at 20% 20%,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.3) 22%,
+        rgba(255, 255, 255, 0) 46%
+      )
+      padding-box,
     linear-gradient(
-        122deg,
-        transparent 30%,
-        rgba(0, 229, 255, 0.55) 44%,
-        rgba(255, 255, 255, 0.96) 54%,
-        rgba(255, 92, 232, 0.5) 64%,
-        rgba(255, 208, 80, 0.34) 72%,
-        transparent 84%
+        100deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.38) 46%,
+        rgba(255, 255, 255, 0.96) 50%,
+        rgba(255, 255, 255, 0.38) 54%,
+        transparent 60%
       )
-      no-repeat left center / 18px 100%,
-    conic-gradient(
-        from 196deg at 50% 28%,
-        #ffffff 0deg 40deg,
-        #0b1828 40deg 112deg,
-        #dceeff 112deg 172deg,
-        #16283f 172deg 240deg,
-        #a8cbe8 240deg 300deg,
-        #091421 300deg 360deg
+      padding-box,
+    linear-gradient(78deg, transparent 28%, rgba(80, 96, 118, 0.42) 50%, transparent 72%)
+      padding-box,
+    linear-gradient(92deg, transparent 44%, rgba(196, 226, 252, 0.32) 50%, transparent 56%)
+      padding-box,
+    linear-gradient(
+        to bottom,
+        #ffffff 0%,
+        #e3eaf1 26%,
+        #a5b2c2 45%,
+        #78879a 54%,
+        #c3cdd8 78%,
+        #f2f6fa 100%
       )
-      no-repeat left center / 18px 100%,
-    linear-gradient(150deg, #1a2f4c 0%, #122540 55%, #0a1728 100%);
-  border: 1px solid rgba(200, 226, 255, 0.78);
+      padding-box,
+    linear-gradient(135deg, #ffffff 0%, rgba(140, 158, 178, 0.6) 42%, rgba(56, 66, 80, 0.95) 100%)
+      border-box;
+  background-repeat: no-repeat;
+  background-size:
+    auto,
+    200% 100%,
+    260% 100%,
+    300% 100%,
+    auto,
+    auto;
+  background-position:
+    0 0,
+    -50% 0,
+    170% 0,
+    -80% 0,
+    0 0,
+    0 0;
+  animation: eliteLiquid 12s ease-in-out infinite alternate;
   box-shadow:
-    0 1px 4px rgba(3, 10, 22, 0.4),
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 0 18px rgba(140, 200, 255, 0.38);
-  color: #f2f8ff;
-  text-shadow: 0 1px 2px rgba(4, 12, 26, 0.6);
+    0 1px 3px rgba(30, 42, 58, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -1.5px 2px rgba(60, 74, 92, 0.4),
+    0 0 14px rgba(130, 160, 200, 0.36);
+  color: #1f2a38;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
   text-transform: capitalize;
 
-  // 星芒：四芒星是「钻石在闪」的通用符号，比针尖圆点在 20px 高度上更可读。
-  // 静止基线 opacity: 0，全靠动画驱动（减弱动态效果时改为静态微亮，见文件末降级块）。
+  /* 呼吸光晕：与金卡同一套 blur 光晕构造，外加 7s 极缓呼吸 */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -6px -9px;
+    border-radius: inherit;
+    background: radial-gradient(
+      circle at 24% 30%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(196, 220, 244, 0.5) 38%,
+      rgba(178, 205, 238, 0) 74%
+    );
+    --glass-blur: 9px;
+    filter: var(--glass-filter);
+    opacity: 0.75;
+    animation: eliteBreathe 7s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* 巡回扫光：一道冷白亮带扫过镜面，只占 7.5s 周期的前 13%，其余时间静止 */
   &::after {
     content: '';
     position: absolute;
-    inset: 0;
+    inset: 1px;
     border-radius: inherit;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='4.5' fill='url(%23g)'/%3E%3Cpath d='M12 0.5 L13 11 L23.5 12 L13 13 L12 23.5 L11 13 L0.5 12 L11 11 Z' fill='%23fff'/%3E%3C/svg%3E");
-    background-size: 13px 13px;
-    background-position: 3px 50%;
+    background-image: linear-gradient(
+      105deg,
+      transparent 38%,
+      rgba(255, 255, 255, 0.08) 44%,
+      rgba(255, 255, 255, 0.75) 50%,
+      rgba(255, 255, 255, 0.08) 56%,
+      transparent 62%
+    );
     background-repeat: no-repeat;
-    mix-blend-mode: screen;
-    opacity: 0;
-    // 硬起慢落：--ease-out-strong 作用在每段之间，升段瞬间到位、衰减段先快后拖。
-    animation: gemFlash 11s var(--ease-out-strong) infinite;
-    // 负延迟 = 直接落在周期中段，让同屏多卡错峰（偏移由 .codexGrid 的 nth-child 派发）。
-    animation-delay: var(--gem-flash-delay, 0s);
+    background-size: 260% 100%;
+    background-position: 240% 0;
+    animation: eliteSheen 7.5s cubic-bezier(0.4, 0, 0.2, 1) 1.2s infinite;
     pointer-events: none;
   }
 
-  @media (dynamic-range: high) {
-    background:
-      linear-gradient(
-          122deg,
-          transparent 30%,
-          color(display-p3 0.1 0.88 1 / 0.6) 44%,
-          color(display-p3 1 1 1 / 0.96) 54%,
-          color(display-p3 1 0.32 0.9 / 0.54) 64%,
-          color(display-p3 1 0.8 0.28 / 0.36) 72%,
-          transparent 84%
-        )
-        no-repeat left center / 18px 100%,
-      conic-gradient(
-          from 196deg at 50% 28%,
-          color(display-p3 1 1 1) 0deg 40deg,
-          color(display-p3 0.04 0.09 0.16) 40deg 112deg,
-          color(display-p3 0.86 0.93 1) 112deg 172deg,
-          color(display-p3 0.08 0.16 0.25) 172deg 240deg,
-          color(display-p3 0.66 0.8 0.91) 240deg 300deg,
-          color(display-p3 0.03 0.08 0.13) 300deg 360deg
-        )
-        no-repeat left center / 18px 100%,
-      linear-gradient(
-        150deg,
-        color(display-p3 0.1 0.18 0.3),
-        color(display-p3 0.07 0.14 0.25) 55%,
-        color(display-p3 0.04 0.09 0.16)
-      );
-    border-color: color(display-p3 0.78 0.88 1 / 0.82);
-    box-shadow:
-      0 1px 4px color(display-p3 0.01 0.04 0.09 / 0.42),
-      0 1px 0 color(display-p3 1 1 1 / 0.52) inset,
-      0 0 20px color(display-p3 0.55 0.78 1 / 0.42);
-  }
-
+  /* 中性铬没有彩度可扩，P3 分支无收益（金卡需要它是因为暖金有色域外的彩度）。
+   * HDR 增益全部走 rec2100 超白：扫光与外发光在 HDR 屏上亮过 SDR 白。 */
   @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
     @media (dynamic-range: high) {
       dynamic-range-limit: no-limit;
       box-shadow:
-        0 1px 4px color(display-p3 0.01 0.04 0.09 / 0.42),
-        0 1px 0 color(display-p3 1 1 1 / 0.52) inset,
-        0 0 14px color(display-p3 0.55 0.78 1 / 0.42),
-        0 0 28px #{'color(rec2100-linear 1.5 2.3 3.4 / 0.4)'};
+        0 1px 3px rgba(30, 42, 58, 0.28),
+        inset 0 1px 1px rgba(255, 255, 255, 0.92),
+        inset 0 -1.5px 2px rgba(60, 74, 92, 0.4),
+        0 0 22px #{'color(rec2100-linear 1.5 1.8 2.3 / 0.42)'};
 
-      // 星芒芯真的亮过白 —— 镜面反射本就该超出白点，这是 HDR 的正当用途。
       &::after {
-        background-image:
-          radial-gradient(
-            circle 4px at center,
-            #{'color(rec2100-linear 6 6.4 7 / 0.95)'} 0%,
-            #{'color(rec2100-linear 1 1 1 / 0)'} 100%
-          ),
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='4.5' fill='url(%23g)'/%3E%3Cpath d='M12 0.5 L13 11 L23.5 12 L13 13 L12 23.5 L11 13 L0.5 12 L11 11 Z' fill='%23fff'/%3E%3C/svg%3E");
-        background-size:
-          13px 13px,
-          13px 13px;
-        background-position:
-          3px 50%,
-          3px 50%;
-        background-repeat: no-repeat;
+        background-image: linear-gradient(
+          105deg,
+          transparent 38%,
+          #{'color(rec2100-linear 1.2 1.3 1.5 / 0.1)'} 44%,
+          #{'color(rec2100-linear 2.6 2.8 3.2 / 0.8)'} 50%,
+          #{'color(rec2100-linear 1.2 1.3 1.5 / 0.1)'} 56%,
+          transparent 62%
+        );
       }
     }
   }
 }
 
-/* 一个周期两次闪，峰值不同 + 2deg 微旋 —— 读作“石头两次接到光、角度不同”，
- * 而不是一段循环播放。停在 opacity: 0 的静止帧上，animation: none 天然安全。 */
-@keyframes gemFlash {
-  0%,
+@keyframes eliteLiquid {
+  from {
+    background-position:
+      0 0,
+      -50% 0,
+      170% 0,
+      -80% 0,
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      0 0,
+      150% 0,
+      -70% 0,
+      190% 0,
+      0 0,
+      0 0;
+  }
+}
+
+@keyframes eliteSheen {
+  0% {
+    background-position: 240% 0;
+  }
+  13% {
+    background-position: -140% 0;
+  }
   100% {
-    opacity: 0;
-    transform: rotate(0deg);
-  }
-
-  0.9% {
-    opacity: 1;
-  }
-
-  1.5% {
-    opacity: 1;
-  }
-
-  3.8% {
-    opacity: 0;
-  }
-
-  38% {
-    opacity: 0;
-    transform: rotate(2deg);
-  }
-
-  38.9% {
-    opacity: 0.65;
-  }
-
-  39.5% {
-    opacity: 0.65;
-  }
-
-  41.8% {
-    opacity: 0;
-    transform: rotate(2deg);
+    background-position: -140% 0;
   }
 }
 
-/* 同屏多卡错峰：变量能穿透 CSS Module 边界，> * 又不依赖子元素类名，
- * 所以不必给组件传 index。三相错开，永不齐闪。 */
-.codexGrid > *:nth-child(3n + 2) {
-  --gem-flash-delay: -3.7s;
+@keyframes eliteBreathe {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0.9;
+  }
 }
 
-.codexGrid > *:nth-child(3n + 3) {
-  --gem-flash-delay: -7.1s;
-}
-
-/* 暗色：石体不变（深色石头在深背景上同样成立），靠更亮的琢边与冷晕析出。 */
+/* 暗色：铬体不换血统只提亮 —— 暗卡上它自己就是光源；文字保持深灰蓝。 */
 :global([data-theme='dark']) .elitePlanValue {
-  border-color: rgba(214, 235, 255, 0.86);
+  background:
+    radial-gradient(
+        circle at 20% 20%,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.3) 22%,
+        rgba(255, 255, 255, 0) 46%
+      )
+      padding-box,
+    linear-gradient(
+        100deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.4) 46%,
+        #ffffff 50%,
+        rgba(255, 255, 255, 0.4) 54%,
+        transparent 60%
+      )
+      padding-box,
+    linear-gradient(78deg, transparent 28%, rgba(80, 96, 118, 0.46) 50%, transparent 72%)
+      padding-box,
+    linear-gradient(92deg, transparent 44%, rgba(196, 226, 252, 0.34) 50%, transparent 56%)
+      padding-box,
+    linear-gradient(
+        to bottom,
+        #ffffff 0%,
+        #eef2f6 30%,
+        #c2ccd7 47%,
+        #8b98a8 54%,
+        #d6dee6 80%,
+        #f7fafc 100%
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(155, 175, 195, 0.55) 45%,
+        rgba(90, 104, 120, 0.9) 100%
+      )
+      border-box;
+  background-repeat: no-repeat;
+  background-size:
+    auto,
+    200% 100%,
+    260% 100%,
+    300% 100%,
+    auto,
+    auto;
+  background-position:
+    0 0,
+    -50% 0,
+    170% 0,
+    -80% 0,
+    0 0,
+    0 0;
   box-shadow:
-    0 1px 5px rgba(0, 0, 0, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 0 20px rgba(150, 205, 255, 0.44);
-
-  @media (dynamic-range: high) {
-    border-color: color(display-p3 0.84 0.92 1 / 0.9);
-    box-shadow:
-      0 1px 5px color(display-p3 0 0 0 / 0.48),
-      0 1px 0 color(display-p3 1 1 1 / 0.58) inset,
-      0 0 22px color(display-p3 0.59 0.8 1 / 0.48);
-  }
+    0 1px 5px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.92),
+    inset 0 -1.5px 2px rgba(74, 90, 110, 0.4),
+    0 0 18px rgba(190, 218, 250, 0.36);
 
   @supports (color: #{'color(rec2100-linear 1 1 1)'}) {
     @media (dynamic-range: high) {
       dynamic-range-limit: no-limit;
       box-shadow:
-        0 1px 5px color(display-p3 0 0 0 / 0.48),
-        0 1px 0 color(display-p3 1 1 1 / 0.58) inset,
-        0 0 16px color(display-p3 0.59 0.8 1 / 0.48),
-        0 0 30px #{'color(rec2100-linear 1.8 2.7 4 / 0.44)'};
+        0 1px 5px rgba(0, 0, 0, 0.4),
+        inset 0 1px 1px rgba(255, 255, 255, 0.92),
+        inset 0 -1.5px 2px rgba(74, 90, 110, 0.4),
+        0 0 26px #{'color(rec2100-linear 1.7 2.1 2.6 / 0.44)'};
+    }
+  }
+}
+
+/* 减动效：三条动画全停，亮带冻结在压字前的一帧 —— 静态也是完成品。 */
+@media (prefers-reduced-motion: reduce) {
+  .elitePlanValue,
+  :global([data-theme='dark']) .elitePlanValue {
+    animation: none;
+    background-position:
+      0 0,
+      42% 0,
+      60% 0,
+      30% 0,
+      0 0,
+      0 0;
+
+    &::before {
+      animation: none;
+      opacity: 0.75;
+    }
+
+    &::after {
+      content: none;
     }
   }
 }
@@ -935,29 +998,27 @@
       0 0 10px rgba(255, 196, 44, 0.18);
   }
 
-  // 钻石移动端：只收一档冷晕（小屏不需要这么大的辉光预算）。
-  // 切面、火彩、星芒全部保留 —— 材质本身不依赖模糊层，无需像金卡那样砍 ::before。
+  // 铂金徽章移动端：与金卡同一刀 —— 砍模糊光晕层（呼吸随之消失）、收一档外发光。
+  // 液态对流与扫光只是 background-position 重绘，~70×20px 成本可忽略，保留。
   .elitePlanValue {
+    overflow: hidden;
     box-shadow:
-      0 1px 3px rgba(3, 10, 22, 0.36),
-      0 1px 0 rgba(255, 255, 255, 0.5) inset,
-      0 0 10px rgba(140, 200, 255, 0.28);
+      0 1px 3px rgba(30, 42, 58, 0.28),
+      inset 0 1px 1px rgba(255, 255, 255, 0.92),
+      inset 0 -1.5px 2px rgba(60, 74, 92, 0.4),
+      0 0 9px rgba(130, 160, 200, 0.3);
+
+    &::before {
+      content: none;
+    }
   }
 
   :global([data-theme='dark']) .elitePlanValue {
     box-shadow:
-      0 1px 4px rgba(0, 0, 0, 0.42),
-      0 1px 0 rgba(255, 255, 255, 0.55) inset,
-      0 0 11px rgba(150, 205, 255, 0.32);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  // 不删星芒，只让它停下：石头仍然“抛过光”，只是不再闪。
-  // 基线 opacity 为 0（由动画驱动），停掉动画后必须自己给一个静态亮度。
-  .elitePlanValue::after {
-    animation: none;
-    opacity: 0.42;
+      0 1px 5px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.92),
+      inset 0 -1.5px 2px rgba(74, 90, 110, 0.4),
+      0 0 10px rgba(190, 218, 250, 0.3);
   }
 }
 

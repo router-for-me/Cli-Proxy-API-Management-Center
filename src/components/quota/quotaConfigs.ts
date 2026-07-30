@@ -905,7 +905,7 @@ const renderAntigravityItems = (
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
 // Pro 20x（plan=pro）在金色 premium 之上再进一档：钻石徽章。
-// 金卡亮度已用满（HDR 超白），再上一档只能换材质，不能再加亮。
+// 与金卡同一套构造，只换色相（Minecraft 钻石青），见 QuotaPage.module.scss。
 const ELITE_CODEX_PLAN_TYPE = 'pro';
 
 const renderCodexItems = (

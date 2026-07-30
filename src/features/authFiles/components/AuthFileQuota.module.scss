@@ -177,107 +177,25 @@ button.quotaMessageAction {
   color: var(--amber-text);
 }
 
-/* Codex Pro 20x 钻石徽章（紧凑版）：与配额页同一块石头，小一号镶在中性胶囊里。
+/* Codex Pro 20x 铂金（紧凑版）：与 5x 金色值完全同构，只换色相为铂金钢蓝灰。
  *
- * 这里刻意不动父胶囊 .codexPlanItem —— 父胶囊同时包着「Plan」标签与值，
- * 把整枚胶囊变成宝石会让标签压在冠面上，而且浅蓝底整枚胶囊会被读成「已选中」。
- * 宝石只做在值本身，于是：行内节奏与兄弟 chip 一致，且完全不需要 :has()
- * （旧版依赖 :has 升级父胶囊，不支持时 20x 与 5x 像素级相同 —— 那个缺口没了）。
+ * 这一行里 5x 就是一枚变了色的 mono 文本（premiumPlanValue = amber 文字），
+ * 所以 20x 也只是一枚变了色的 mono 文本。之前这里镶了整块切面宝石：
+ * 15px 宽的切面在 11px 行里糊成噪点，还得吃掉 18px 左内边距把文字挤偏，
+ * 而兄弟 chip 全是朴素文字 —— 一枚发光石头在其中只是吵，不是贵。
  *
- * 本模块沿用其既有立场：不引入 HDR。 */
+ * 色值与配额页同族（液态铂金，2026-07-31 起替代 MC 钻石青）：
+ * 浅色 #526379 对白底 6.1:1；深色提亮成银蓝。钢灰在 mono 文本里偏安静，
+ * 但这正是该档的性格 —— 铂金的贵是冷的，吵的留给 amber。 */
 .elitePlanValue {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
   font-family: $font-mono;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.01em;
-  // 左内边距为星芒与冠面让出宝石区，不与字重叠。
-  // 纵向内边距为 0：加上 1px 琢边后，这枚宝石胶囊才与兄弟 chip 等高，行不会参差。
-  padding: 0 7px 0 18px;
-  // ⚠ 宝石区宽度必须用 px 且小于 padding-left（见下方 background-size）。
-  // 用百分比会随文案长度伸缩：短文案时冠面折线会盖到「Pr」上，字就读不清了。
-  border-radius: $radius-full;
-  white-space: nowrap;
-  flex: 0 0 auto;
-  overflow: visible;
-  isolation: isolate;
-  // 同配额页：火彩 → 冠面切割 → 平静台面，全部收在左侧宝石区。
-  background:
-    linear-gradient(
-        122deg,
-        transparent 28%,
-        rgba(0, 229, 255, 0.55) 44%,
-        rgba(255, 255, 255, 0.96) 55%,
-        rgba(255, 92, 232, 0.5) 66%,
-        transparent 82%
-      )
-      no-repeat left center / 15px 100%,
-    conic-gradient(
-        from 196deg at 50% 28%,
-        #ffffff 0deg 40deg,
-        #0b1828 40deg 112deg,
-        #dceeff 112deg 172deg,
-        #16283f 172deg 240deg,
-        #a8cbe8 240deg 300deg,
-        #091421 300deg 360deg
-      )
-      no-repeat left center / 15px 100%,
-    linear-gradient(150deg, #1a2f4c 0%, #122540 55%, #0a1728 100%);
-  border: 1px solid rgba(200, 226, 255, 0.72);
-  box-shadow:
-    0 1px 3px rgba(3, 10, 22, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 0 12px rgba(140, 200, 255, 0.32);
-  color: #f2f8ff;
-  text-shadow: 0 1px 2px rgba(4, 12, 26, 0.6);
-
-  // 紧凑版一个周期只闪一次 —— 密度越高，动效越要克制。
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='4.5' fill='url(%23g)'/%3E%3Cpath d='M12 0.5 L13 11 L23.5 12 L13 13 L12 23.5 L11 13 L0.5 12 L11 11 Z' fill='%23fff'/%3E%3C/svg%3E");
-    background-size: 11px 11px;
-    background-position: 2px 50%;
-    background-repeat: no-repeat;
-    mix-blend-mode: screen;
-    opacity: 0;
-    animation: gemGlint 11s var(--ease-out-strong) infinite;
-    animation-delay: var(--gem-flash-delay, 0s);
-    pointer-events: none;
-  }
+  color: #526379;
 }
 
 :global([data-theme='dark']) .elitePlanValue {
-  border-color: rgba(214, 235, 255, 0.8);
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.42),
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 0 13px rgba(150, 205, 255, 0.36);
-}
-
-/* 单次硬闪：0 → 峰值约 100ms（硬起），持约 60ms，衰减约 250ms。
- * 其余约 96% 的周期完全静止，停在 opacity: 0 上。 */
-@keyframes gemGlint {
-  0%,
-  100% {
-    opacity: 0;
-  }
-
-  0.9% {
-    opacity: 1;
-  }
-
-  1.5% {
-    opacity: 1;
-  }
-
-  3.8% {
-    opacity: 0;
-  }
+  color: #c3d3e4;
 }
 
 /* ---------- Antigravity 分组 ---------- */
@@ -382,12 +300,5 @@ button.quotaMessageAction {
 @media (prefers-reduced-motion: reduce) {
   .quotaBarFill {
     transition: none;
-  }
-
-  // 钻石不删星芒，只让它停下：石头仍然“抛过光”，只是不再闪。
-  // 基线 opacity 由动画驱动，停掉动画后必须自己给一个静态亮度。
-  .elitePlanValue::after {
-    animation: none;
-    opacity: 0.42;
   }
 }

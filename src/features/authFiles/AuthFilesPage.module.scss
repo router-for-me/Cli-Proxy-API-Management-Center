@@ -54,16 +54,6 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
 }
 
-/* Codex Pro 20x 钻石徽章的闪耀错峰偏移（消费方见 AuthFileQuota.module.scss 的 gemGlint）。
- * 变量能穿透 CSS Module 边界，> * 又不依赖子元素类名，所以不必给卡片传 index。 */
-.grid > *:nth-child(3n + 2) {
-  --gem-flash-delay: -3.7s;
-}
-
-.grid > *:nth-child(3n + 3) {
-  --gem-flash-delay: -7.1s;
-}
-
 .emptyActions {
   display: flex;
   align-items: center;
