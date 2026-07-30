@@ -1,29 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Select, type SelectOption } from '@/components/ui/Select';
-import { IconX } from '@/components/ui/icons';
+import {
+  ExcludedModelsPicker,
+  formatExcludedRulesText,
+  parseExcludedRulesText,
+  type ExcludedModelsCatalogState,
+} from '@/components/excludedModels';
 import { authFilesApi } from '@/services/api';
 import type { AuthFileModelItem } from '@/features/authFiles/constants';
-import {
-  isModelExcludedByWildcard,
-  parseExcludedModelRules,
-  replaceCustomExcludedModelRules,
-  splitExcludedModelRules,
-  toggleExcludedModel,
-} from '@/features/authFiles/excludedModelSelection';
-import styles from './AuthFileDetailsSheet.module.scss';
 
 interface AuthFileExcludedModelsFieldProps {
   fileName: string;
+  /** 换行分隔的规则文本——凭证编辑器的 dirty diff 依赖这个形状，不要改成数组。 */
   value: string;
   disabled: boolean;
   onChange: (value: string) => void;
 }
-
-const modelOptionLabel = (model: AuthFileModelItem): string => {
-  const displayName = model.display_name?.trim();
-  return displayName && displayName !== model.id ? `${model.id} — ${displayName}` : model.id;
-};
 
 export function AuthFileExcludedModelsField({
   fileName,
@@ -32,6 +24,8 @@ export function AuthFileExcludedModelsField({
   onChange,
 }: AuthFileExcludedModelsFieldProps) {
   const { t } = useTranslation();
+  // 凭证文件名可能含点/斜杠等字符，不适合直接当 HTML id。
+  const labelId = `${useId()}-excluded-models-label`;
   const latestValueRef = useRef(value);
   const [models, setModels] = useState<AuthFileModelItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,7 +50,8 @@ export function AuthFileExcludedModelsField({
           const id = item.id?.trim();
           if (id) byId.set(id.toLowerCase(), { ...item, id });
         });
-        parseExcludedModelRules(latestValueRef.current).forEach((rule) => {
+        // 已配置但目录里没有的精确规则也塞进候选，否则它们会在列表里凭空消失。
+        parseExcludedRulesText(latestValueRef.current).forEach((rule) => {
           if (!rule.includes('*') && !byId.has(rule.toLowerCase())) {
             byId.set(rule.toLowerCase(), { id: rule });
           }
@@ -79,82 +74,28 @@ export function AuthFileExcludedModelsField({
     };
   }, [fileName]);
 
-  const rules = useMemo(() => parseExcludedModelRules(value), [value]);
-  const candidateIds = useMemo(() => models.map((model) => model.id), [models]);
-  const { selectedIds, customRules } = useMemo(
-    () => splitExcludedModelRules(rules, candidateIds),
-    [candidateIds, rules]
+  const rules = useMemo(() => parseExcludedRulesText(value), [value]);
+  const candidates = useMemo(
+    () => models.map((model) => ({ id: model.id, displayName: model.display_name })),
+    [models]
   );
-  const selectedKeys = useMemo(
-    () => new Set(selectedIds.map((id) => id.toLowerCase())),
-    [selectedIds]
-  );
-  const availableOptions = useMemo<SelectOption[]>(
-    () =>
-      models
-        .filter(
-          (model) =>
-            !selectedKeys.has(model.id.toLowerCase()) &&
-            !isModelExcludedByWildcard(customRules, model.id)
-        )
-        .map((model) => ({ value: model.id, label: modelOptionLabel(model) })),
-    [customRules, models, selectedKeys]
-  );
-
-  const commitRules = (nextRules: string[]) => onChange(nextRules.join('\n'));
+  const catalogState: ExcludedModelsCatalogState = loading
+    ? 'loading'
+    : loadFailed
+      ? 'error'
+      : 'ready';
 
   return (
     <div className="form-group">
-      <label>{t('auth_files.excluded_models_label')}</label>
-      <Select
-        value=""
-        options={availableOptions}
-        onChange={(modelId) => commitRules(toggleExcludedModel(rules, modelId, true))}
-        placeholder={
-          loading
-            ? t('auth_files.excluded_models_loading')
-            : t('auth_files.excluded_models_select', { count: selectedIds.length })
-        }
-        ariaLabel={t('auth_files.excluded_models_select_label')}
-        disabled={disabled || loading || availableOptions.length === 0}
-      />
-
-      {selectedIds.length > 0 ? (
-        <div className={styles.excludedModelChips}>
-          {selectedIds.map((modelId) => (
-            <span key={modelId.toLowerCase()} className={styles.excludedModelChip}>
-              <span>{modelId}</span>
-              <button
-                type="button"
-                onClick={() => commitRules(toggleExcludedModel(rules, modelId, false))}
-                disabled={disabled}
-                aria-label={t('auth_files.excluded_models_remove', { model: modelId })}
-              >
-                <IconX size={12} />
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      <label className={styles.excludedRulesLabel}>
-        {t('auth_files.excluded_models_custom_label')}
-      </label>
-      <textarea
-        className="input"
-        value={customRules.join('\n')}
-        placeholder={t('auth_files.excluded_models_custom_placeholder')}
-        rows={3}
+      <label id={labelId}>{t('auth_files.excluded_models_label')}</label>
+      <ExcludedModelsPicker
+        value={rules}
+        onChange={(next) => onChange(formatExcludedRulesText(next))}
+        candidates={candidates}
+        catalogState={catalogState}
         disabled={disabled}
-        onChange={(event) =>
-          commitRules(replaceCustomExcludedModelRules(rules, candidateIds, event.target.value))
-        }
+        labelledBy={labelId}
       />
-      <div className="hint">
-        {loadFailed
-          ? t('auth_files.excluded_models_load_failed')
-          : t('auth_files.excluded_models_hint')}
-      </div>
     </div>
   );
 }
