@@ -24,6 +24,9 @@ import {
   normalizeStringValue,
   normalizeCodexResetCreditsPayload,
   parseCodexUsagePayload,
+  parseOffsetSecondsToMs,
+  periodHoursFromSeconds,
+  resolveResetMs,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
@@ -100,12 +103,21 @@ export const buildCodexQuotaWindows = (
     const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
     const isLimitReached = Boolean(limitReached) || allowed === false;
     const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
+    // Keep the raw instant beside the label — see utils/quota/resetInstants.
+    const resetAtMs =
+      resolveResetMs([window.reset_at, window.resetAt]) ??
+      parseOffsetSecondsToMs(window.reset_after_seconds ?? window.resetAfterSeconds, Date.now());
+    const periodHours = periodHoursFromSeconds(
+      window.limit_window_seconds ?? window.limitWindowSeconds
+    );
     windows.push({
       id,
       label,
       labelKey,
       labelParams,
       usedPercent,
+      resetAtMs,
+      periodHours,
       resetLabel,
     });
   };

@@ -18,10 +18,12 @@ import {
   CLAUDE_USAGE_URL,
   CLAUDE_REQUEST_HEADERS,
   CLAUDE_USAGE_WINDOW_KEYS,
+  claudePeriodHours,
   normalizeNumberValue,
   normalizeStringValue,
   parseClaudeUsagePayload,
   formatQuotaResetTime,
+  resolveResetMs,
   createStatusError,
   isClaudeFile,
   isDisabledAuthFile,
@@ -70,6 +72,10 @@ export const buildClaudeQuotaWindows = (
       labelKey,
       usedPercent,
       resetLabel,
+      // Claude states the period nowhere in the payload, so it comes from the
+      // key: `five_hour` is the rolling window, everything else is weekly.
+      resetAtMs: resolveResetMs([typedWindow.resets_at]),
+      periodHours: claudePeriodHours(key),
     });
   }
 
@@ -82,6 +88,10 @@ export const buildClaudeQuotaWindows = (
         labelKey: 'claude_quota.seven_day_fable',
         usedPercent,
         resetLabel: formatQuotaResetTime(fableLimit.resets_at ?? undefined),
+        // `weekly_scoped` is a 7-day window by definition, so the timeline can
+        // place this row alongside the ones derived from the named keys.
+        resetAtMs: resolveResetMs([fableLimit.resets_at]),
+        periodHours: claudePeriodHours('seven_day'),
       });
     }
   }

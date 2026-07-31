@@ -21,6 +21,7 @@ import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
+import { QuotaTimeline } from './components/QuotaTimeline';
 import {
   CARD_ENTRANCE_BUDGET_MS,
   QUOTA_PAGE_SIZE,
@@ -43,6 +44,12 @@ import styles from './QuotaPage.module.scss';
 
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_CARD_COUNT = 6;
+
+/**
+ * 时间线泳道名 = 卡片标题，两者必须一致。卡片显示的就是文件名，所以这里是恒等。
+ * 提到模块级是为了引用稳定 —— 它进了泳道 memo 的依赖数组。
+ */
+const displayNameFor = (name: string) => name;
 
 export function QuotaPage() {
   const { t } = useTranslation();
@@ -304,6 +311,15 @@ export function QuotaPage() {
             </Button>
           </div>
         )}
+
+        {/* 时间线跟随当前 tab，但不跟随分页：它回答的是「额度会不会同时恢复」，
+            那是泳道之间的关系，只画当页 12 条就失去了对比的意义。 */}
+        <QuotaTimeline
+          entries={filteredEntries}
+          quotaFor={getQuota}
+          displayNameFor={displayNameFor}
+          resolvedTheme={resolvedTheme}
+        />
       </section>
     </div>
   );
