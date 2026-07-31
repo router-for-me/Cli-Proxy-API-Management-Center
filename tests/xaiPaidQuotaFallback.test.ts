@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
-import { XAI_CONFIG } from '@/components/quota/quotaConfigs';
+import { XAI_CONFIG } from '@/features/quota/providers/xai/data';
 import { apiCallApi, type ApiCallRequest, type ApiCallResult } from '@/services/api';
 import {
   XAI_API_CHAT_URL,

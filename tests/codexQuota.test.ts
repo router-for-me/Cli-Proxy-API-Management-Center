@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
-import { CODEX_CONFIG, buildCodexQuotaWindows } from '@/components/quota/quotaConfigs';
+import { CODEX_CONFIG, buildCodexQuotaWindows } from '@/features/quota/providers/codex/data';
 import type { CodexQuotaState, CodexUsagePayload } from '@/types';
 import { normalizeCodexResetCreditsPayload, parseCodexUsagePayload } from '@/utils/quota';
 
