@@ -2,12 +2,13 @@
  * Antigravity 额度渲染体：套餐 chip 行（ultra/ultra-lite=金卡）+ 分组水位条。
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { AntigravityQuotaState, AntigravityQuotaSubscription } from '@/types';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import type { QuotaBodyProps } from '../../types';
+import { getNextAntigravityCountdownUpdateDelay } from './countdown';
 
 const formatAntigravityDuration = (t: TFunction, deltaMs: number): string => {
   const totalMinutes = Math.max(1, Math.ceil(deltaMs / 60000));
@@ -112,9 +113,36 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
   const planLabel = getAntigravityPlanLabel(quota.subscription, t);
   const normalizedPlan = quota.subscription?.plan?.toLowerCase() ?? '';
   const isPremiumPlan = normalizedPlan === 'ultra' || normalizedPlan === 'ultra-lite';
-  // 倒计时基准取「本次数据到达」时刻：随 quota 刷新重算，渲染间保持稳定（purity）。
-  // eslint-disable-next-line react-hooks/purity -- Date.now 以 quota 为键缓存，等价于数据时间戳
-  const nowMs = useMemo(() => Date.now() + (quota.serverTimeOffsetMs ?? 0), [quota]);
+  const serverTimeOffsetMs = quota.serverTimeOffsetMs ?? 0;
+  const resetTimestamps = useMemo(
+    () =>
+      (quota.groups ?? []).flatMap((group) =>
+        group.buckets
+          .map((bucket) => (bucket.resetTime ? new Date(bucket.resetTime).getTime() : Number.NaN))
+          .filter(Number.isFinite)
+      ),
+    [quota.groups]
+  );
+  // 首屏直接显示准确文案；后续 effect 会在最近的分钟边界更新并重新排程。
+  const [nowMs, setNowMs] = useState(() => Date.now() + serverTimeOffsetMs);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const updateCountdown = () => {
+      const currentNowMs = Date.now() + serverTimeOffsetMs;
+      setNowMs(currentNowMs);
+      const delay = getNextAntigravityCountdownUpdateDelay(resetTimestamps, currentNowMs);
+      if (delay !== null) {
+        timeoutId = setTimeout(updateCountdown, delay);
+      }
+    };
+
+    updateCountdown();
+    return () => {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
+  }, [resetTimestamps, serverTimeOffsetMs]);
 
   return (
     <>
