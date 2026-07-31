@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -19,16 +19,11 @@ import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
 import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
-import {
-  QuotaProgressBar,
-  type QuotaProgressBarProps,
-} from '@/components/quota/QuotaProgressBar';
+import { bindQuotaClasses, type QuotaBodyProps } from '@/features/quota/types';
 import styles from './AuthFileQuota.module.scss';
 
-/** 认证文件卡片外衣的进度条：绑定本页样式，满足 quotaConfigs 的 helpers 契约。 */
-const BoundQuotaProgressBar = (props: QuotaProgressBarProps) => (
-  <QuotaProgressBar {...props} styles={styles} />
-);
+/** 认证文件卡片外衣：紧凑额度样式绑定成类型化契约（缺键在模块初始化即抛）。 */
+const compactQuotaClasses = bindQuotaClasses(styles, 'AuthFileQuota.module.scss');
 
 type QuotaState = { status?: string; error?: string; errorStatus?: number } | undefined;
 
@@ -90,7 +85,6 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       buildLoadingState: () => unknown;
       buildSuccessState: (data: unknown) => unknown;
       buildErrorState: (message: string, status?: number) => unknown;
-      renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
     };
     const cacheGeneration = captureQuotaCacheGeneration();
 
@@ -181,7 +175,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     i18nPrefix: string;
     resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
     canResetQuota?: (quota: unknown) => boolean;
-    renderQuotaItems: (quota: unknown, t: TFunction, helpers: unknown) => unknown;
+    Body: ComponentType<QuotaBodyProps<unknown>>;
   };
 
   const quotaStatus = quota?.status ?? 'idle';
@@ -231,10 +225,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           })}
         </div>
       ) : quota ? (
-        (config.renderQuotaItems(quota, t, {
-          styles,
-          QuotaProgressBar: BoundQuotaProgressBar,
-        }) as ReactNode)
+        <config.Body quota={quota} classes={compactQuotaClasses} />
       ) : (
         <div className={styles.quotaMessage}>{t(`${config.i18nPrefix}.idle`)}</div>
       )}

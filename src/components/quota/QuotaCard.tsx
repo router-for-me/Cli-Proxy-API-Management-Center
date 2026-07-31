@@ -3,13 +3,12 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import type { ReactElement, ReactNode } from 'react';
-import type { TFunction } from 'i18next';
+import type { ComponentType, ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { TYPE_COLORS, resolveQuotaErrorMessage } from '@/utils/quota';
-import { QuotaProgressBar, type QuotaProgressBarProps } from './QuotaProgressBar';
+import { bindQuotaClasses, type QuotaBodyProps } from '@/features/quota/types';
 import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -20,17 +19,8 @@ export interface QuotaStatusState {
   errorStatus?: number;
 }
 
-export type { QuotaProgressBarProps } from './QuotaProgressBar';
-
-/** 配额页外衣的进度条：绑定 QuotaPage 模块样式，满足 QuotaRenderHelpers 契约。 */
-const BoundQuotaProgressBar = (props: QuotaProgressBarProps) => (
-  <QuotaProgressBar {...props} styles={styles} />
-);
-
-export interface QuotaRenderHelpers {
-  styles: typeof styles;
-  QuotaProgressBar: (props: QuotaProgressBarProps) => ReactElement;
-}
+/** 配额页外衣：QuotaPage 模块样式绑定成类型化契约（缺键在模块初始化即抛）。 */
+const quotaClasses = bindQuotaClasses(styles, 'QuotaPage.module.scss');
 
 interface QuotaCardProps<TState extends QuotaStatusState> {
   item: AuthFileItem;
@@ -42,7 +32,7 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   canRefresh?: boolean;
   onRefresh?: () => void;
   resetQuotaAction?: ReactNode;
-  renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
+  Body: ComponentType<QuotaBodyProps<TState>>;
 }
 
 export function QuotaCard<TState extends QuotaStatusState>({
@@ -55,7 +45,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
   canRefresh = false,
   onRefresh,
   resetQuotaAction,
-  renderQuotaItems,
+  Body,
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
 
@@ -120,7 +110,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
             })}
           </div>
         ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar: BoundQuotaProgressBar })
+          <Body quota={quota} classes={quotaClasses} />
         ) : (
           <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
         )}
