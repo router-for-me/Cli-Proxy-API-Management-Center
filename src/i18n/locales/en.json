@@ -1166,6 +1166,7 @@
     "windows_mode_session": "5-hour",
     "windows_credential": "Credential",
     "windows_idle": "no window counting down",
+    "windows_empty_session": "No credentials on this page report a 5-hour quota window.",
     "windows_legend_current": "current window",
     "windows_legend_upcoming": "upcoming",
     "windows_legend_elapsed": "elapsed",

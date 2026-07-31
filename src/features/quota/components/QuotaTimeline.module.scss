@@ -85,6 +85,16 @@ $lane-width: 210px;
   overflow: hidden;
 }
 
+.empty {
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  padding: $spacing-lg;
+  color: var(--text-quaternary);
+  font-size: 12px;
+  text-align: center;
+}
+
 .axis,
 .lane {
   display: grid;

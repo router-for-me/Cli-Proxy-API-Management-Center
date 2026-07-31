@@ -1166,6 +1166,7 @@
     "windows_mode_session": "5 小时",
     "windows_credential": "凭证",
     "windows_idle": "没有正在计时的窗口",
+    "windows_empty_session": "当前页面没有凭证提供 5 小时配额窗口。",
     "windows_legend_current": "当前窗口",
     "windows_legend_upcoming": "即将开始",
     "windows_legend_elapsed": "已结束",

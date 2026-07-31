@@ -1153,6 +1153,7 @@
     "windows_mode_session": "5 часов",
     "windows_credential": "Учётные данные",
     "windows_idle": "нет активного окна",
+    "windows_empty_session": "Ни одни учётные данные на этой странице не предоставляют 5-часовое окно квоты.",
     "windows_legend_current": "текущее окно",
     "windows_legend_upcoming": "предстоящее",
     "windows_legend_elapsed": "прошедшее",

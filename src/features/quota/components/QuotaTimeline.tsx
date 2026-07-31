@@ -53,6 +53,8 @@ export interface QuotaTimelineProps {
   resolvedTheme: ResolvedTheme;
   /** Injectable for tests/screenshots; defaults to the real clock. */
   now?: number;
+  /** Injectable initial zoom for tests/screenshots; defaults to the weekly view. */
+  initialMode?: TimelineMode;
 }
 
 export function QuotaTimeline({
@@ -61,9 +63,10 @@ export function QuotaTimeline({
   displayNameFor,
   resolvedTheme,
   now: nowProp,
+  initialMode = 'weekly',
 }: QuotaTimelineProps) {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<TimelineMode>('weekly');
+  const [mode, setMode] = useState<TimelineMode>(initialMode);
   const [offset, setOffset] = useState(0);
 
   // The clock is state, not a read during render: bars are classified
@@ -81,29 +84,39 @@ export function QuotaTimeline({
 
   const span = useMemo(() => timelineSpan(mode, offset, now), [mode, offset, now]);
 
-  // Lanes with nothing to draw are dropped, not rendered blank: an xAI account
-  // on a monthly plan has no weekly window and never will, and a credential
-  // whose quota hasn't been loaded has nothing to show yet. The chart grows as
-  // data arrives rather than opening as a wall of empty rows.
+  const laneInputs = useMemo(
+    () =>
+      entries.map((entry) => ({
+        name: entry.file.name,
+        displayName: displayNameFor(entry.file.name),
+        provider: entry.type,
+        quota: quotaFor(entry),
+      })),
+    [entries, quotaFor, displayNameFor]
+  );
+
+  // Keep the timeline hidden until at least one loaded credential exposes a
+  // real quota window. Once there is timeline data, however, changing zoom must
+  // never remove the whole panel just because that mode has no matching lanes.
+  const hasAnyLane = useMemo(
+    () => laneInputs.some((input) => laneHasWindow(buildTimelineLane(input))),
+    [laneInputs]
+  );
+
   const lanes = useMemo(
     () =>
-      entries
-        .map((entry) =>
+      laneInputs
+        .map((input) =>
           buildTimelineLane({
-            name: entry.file.name,
-            displayName: displayNameFor(entry.file.name),
-            provider: entry.type,
-            quota: quotaFor(entry),
+            ...input,
             // Weekly mode prefers the longest readable window. Session mode
             // asks specifically for a real 5-hour window; longer periods must
             // not be reinterpreted as 5-hour resets.
             maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
           })
         )
-        .filter(
-          (lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)
-        ),
-    [entries, quotaFor, displayNameFor, mode, span.days]
+        .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
+    [laneInputs, mode, span.days]
   );
 
   /** Weekly: one cell per day. Session: one per 6 hours. */
@@ -136,7 +149,7 @@ export function QuotaTimeline({
       ? ((now - span.startMs) / (span.endMs - span.startMs)) * 100
       : null;
 
-  if (lanes.length === 0) return null;
+  if (!hasAnyLane) return null;
 
   return (
     <section className={styles.timeline}>
@@ -151,7 +164,8 @@ export function QuotaTimeline({
             {mode === 'weekly'
               ? t('quota_management.windows_span_weekly', { defaultValue: 'two weeks' })
               : t('quota_management.windows_span_session', { defaultValue: 'three days' })}
-            {offset === 0 && ` · ${t('quota_management.windows_current', { defaultValue: 'current' })}`}
+            {offset === 0 &&
+              ` · ${t('quota_management.windows_current', { defaultValue: 'current' })}`}
           </p>
         </div>
 
@@ -197,65 +211,79 @@ export function QuotaTimeline({
       </header>
 
       <div className={styles.chart}>
-        <div className={styles.axis}>
-          <div className={styles.axisLabel}>
-            {t('quota_management.windows_credential', { defaultValue: 'Credential' })}
+        {lanes.length === 0 ? (
+          <div className={styles.empty} role="status">
+            {t('quota_management.windows_empty_session', {
+              defaultValue: 'No credentials on this page report a 5-hour quota window.',
+            })}
           </div>
-          <div className={styles.axisCells}>
-            {cells.map((cell) => (
-              <div
-                key={cell.at}
-                className={styles.axisCell}
-                data-today={cell.isToday ? 1 : 0}
-                data-weekend={cell.isWeekend ? 1 : 0}
-                data-daystart={cell.isDayStart ? 1 : 0}
-              >
-                <span className={styles.axisWeekday}>{cell.isDayStart ? cell.weekday : ''}</span>
-                <span className={styles.axisDate}>{cell.label}</span>
+        ) : (
+          <>
+            <div className={styles.axis}>
+              <div className={styles.axisLabel}>
+                {t('quota_management.windows_credential', { defaultValue: 'Credential' })}
               </div>
-            ))}
-          </div>
-        </div>
+              <div className={styles.axisCells}>
+                {cells.map((cell) => (
+                  <div
+                    key={cell.at}
+                    className={styles.axisCell}
+                    data-today={cell.isToday ? 1 : 0}
+                    data-weekend={cell.isWeekend ? 1 : 0}
+                    data-daystart={cell.isDayStart ? 1 : 0}
+                  >
+                    <span className={styles.axisWeekday}>
+                      {cell.isDayStart ? cell.weekday : ''}
+                    </span>
+                    <span className={styles.axisDate}>{cell.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {lanes.map((lane) => (
-          <Lane
-            key={lane.name}
-            lane={lane}
-            span={span}
-            now={now}
-            mode={mode}
-            cells={cells}
-            nowPercent={nowPercent}
-            resolvedTheme={resolvedTheme}
-          />
-        ))}
+            {lanes.map((lane) => (
+              <Lane
+                key={lane.name}
+                lane={lane}
+                span={span}
+                now={now}
+                mode={mode}
+                cells={cells}
+                nowPercent={nowPercent}
+                resolvedTheme={resolvedTheme}
+              />
+            ))}
+          </>
+        )}
       </div>
 
-      <footer className={styles.legend}>
-        <span className={styles.legendItem}>
-          <span className={`${styles.swatch} ${styles.swatchLive}`} />
-          {t('quota_management.windows_legend_current', { defaultValue: 'current window' })}
-        </span>
-        <span className={styles.legendItem}>
-          <span className={`${styles.swatch} ${styles.swatchNext}`} />
-          {t('quota_management.windows_legend_upcoming', { defaultValue: 'upcoming' })}
-        </span>
-        <span className={styles.legendItem}>
-          <span className={`${styles.swatch} ${styles.swatchPast}`} />
-          {t('quota_management.windows_legend_elapsed', { defaultValue: 'elapsed' })}
-        </span>
-        <span className={styles.legendNote}>
-          {mode === 'weekly'
-            ? t('quota_management.windows_note_weekly', {
-                defaultValue:
-                  'Each bar is one full quota window, drawn from when it opened to when it resets. Lanes ending together compete for the same days.',
-              })
-            : t('quota_management.windows_note_session', {
-                defaultValue:
-                  'Each bar is one 5-hour window. Only credentials with a window counting down can be projected; the rest stay empty rather than invented.',
-              })}
-        </span>
-      </footer>
+      {lanes.length > 0 && (
+        <footer className={styles.legend}>
+          <span className={styles.legendItem}>
+            <span className={`${styles.swatch} ${styles.swatchLive}`} />
+            {t('quota_management.windows_legend_current', { defaultValue: 'current window' })}
+          </span>
+          <span className={styles.legendItem}>
+            <span className={`${styles.swatch} ${styles.swatchNext}`} />
+            {t('quota_management.windows_legend_upcoming', { defaultValue: 'upcoming' })}
+          </span>
+          <span className={styles.legendItem}>
+            <span className={`${styles.swatch} ${styles.swatchPast}`} />
+            {t('quota_management.windows_legend_elapsed', { defaultValue: 'elapsed' })}
+          </span>
+          <span className={styles.legendNote}>
+            {mode === 'weekly'
+              ? t('quota_management.windows_note_weekly', {
+                  defaultValue:
+                    'Each bar is one full quota window, drawn from when it opened to when it resets. Lanes ending together compete for the same days.',
+                })
+              : t('quota_management.windows_note_session', {
+                  defaultValue:
+                    'Each bar is one 5-hour window. Only credentials with a window counting down can be projected; the rest stay empty rather than invented.',
+                })}
+          </span>
+        </footer>
+      )}
     </section>
   );
 }

@@ -247,22 +247,22 @@ export interface CodexQuotaState {
 
 // Kimi API payload types
 export interface KimiUsageDetail {
-  used?: number;
-  limit?: number;
-  remaining?: number;
+  used?: number | string;
+  limit?: number | string;
+  remaining?: number | string;
   name?: string;
   title?: string;
   resetAt?: string;
   reset_at?: string;
   resetTime?: string;
   reset_time?: string;
-  resetIn?: number;
-  reset_in?: number;
-  ttl?: number;
+  resetIn?: number | string;
+  reset_in?: number | string;
+  ttl?: number | string;
 }
 
 export interface KimiLimitWindow {
-  duration?: number;
+  duration?: number | string;
   timeUnit?: string;
 }
 
@@ -272,16 +272,16 @@ export interface KimiLimitItem {
   scope?: string;
   detail?: KimiUsageDetail;
   window?: KimiLimitWindow;
-  used?: number;
-  limit?: number;
-  remaining?: number;
-  duration?: number;
+  used?: number | string;
+  limit?: number | string;
+  remaining?: number | string;
+  duration?: number | string;
   timeUnit?: string;
   resetAt?: string;
   reset_at?: string;
-  resetIn?: number;
-  reset_in?: number;
-  ttl?: number;
+  resetIn?: number | string;
+  reset_in?: number | string;
+  ttl?: number | string;
 }
 
 export interface KimiUsagePayload {
@@ -299,7 +299,7 @@ export interface KimiQuotaRow {
   resetHint?: string;
   /** Reset instant in epoch ms; null when only a relative hint was available. */
   resetAtMs?: number | null;
-  /** Window length in hours, inferred from the limit's daily/weekly/monthly scope. */
+  /** Window length in hours, derived from explicit duration metadata or the limit scope. */
   periodHours?: number | null;
 }
 

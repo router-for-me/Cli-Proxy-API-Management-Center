@@ -1192,6 +1192,7 @@
     "windows_mode_session": "5 小時",
     "windows_credential": "憑證",
     "windows_idle": "沒有正在計時的視窗",
+    "windows_empty_session": "目前頁面沒有憑證提供 5 小時配額視窗。",
     "windows_legend_current": "目前視窗",
     "windows_legend_upcoming": "即將開始",
     "windows_legend_elapsed": "已結束",
