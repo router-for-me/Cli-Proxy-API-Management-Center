@@ -484,16 +484,24 @@ export function mergeXaiBillingSummaries(
   if (!primary) return fallback;
   if (!fallback) return primary;
 
-  const periodStart = primary.periodStart ?? fallback.periodStart;
-  const periodEnd = primary.periodEnd ?? fallback.periodEnd;
-  // Recomputed from the merged pair rather than merged field-by-field, so the
-  // instant and the label can't come from different summaries.
+  // Keep the active period atomic. The primary (weekly endpoint) and fallback
+  // (monthly endpoint) describe different clocks, so borrowing one endpoint's
+  // dates for the other's period type would turn a billing rollover into a
+  // quota reset.
+  const periodSummary =
+    primary.periodType !== 'unknown'
+      ? primary
+      : fallback.periodType !== 'unknown'
+        ? fallback
+        : primary;
+  const periodStart = periodSummary.periodStart;
+  const periodEnd = periodSummary.periodEnd;
   const periodInstants = xaiPeriodInstants(periodStart, periodEnd);
 
   return {
     mode: 'billing',
     source: 'cli-chat-proxy',
-    periodType: primary.periodType !== 'unknown' ? primary.periodType : fallback.periodType,
+    periodType: periodSummary.periodType,
     usagePercent: primary.usagePercent ?? fallback.usagePercent,
     periodStart,
     periodEnd,

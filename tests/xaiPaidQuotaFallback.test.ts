@@ -105,7 +105,14 @@ describe('xAI paid OAuth quota fallback', () => {
         });
       }
       if (payload.url === XAI_BILLING_MONTHLY_URL) {
-        return result(200, { config: { monthlyLimit: { val: 10000 }, used: { val: 2500 } } });
+        return result(200, {
+          config: {
+            monthlyLimit: { val: 10000 },
+            used: { val: 2500 },
+            billingPeriodStart: '2026-07-01T00:00:00Z',
+            billingPeriodEnd: '2026-08-01T00:00:00Z',
+          },
+        });
       }
       throw new Error(`Unexpected URL: ${payload.url}`);
     };
@@ -121,9 +128,15 @@ describe('xAI paid OAuth quota fallback', () => {
     expect(summary).toMatchObject({
       mode: 'billing',
       source: 'cli-chat-proxy',
+      periodType: 'weekly',
       usagePercent: 25,
       monthlyLimitCents: 10000,
+      billingPeriodEnd: '2026-08-01T00:00:00Z',
+      resetAtMs: null,
+      periodHours: null,
     });
+    expect(summary.periodStart).toBeUndefined();
+    expect(summary.periodEnd).toBeUndefined();
   });
 
   test('falls back to paid health after both free billing probes fail', async () => {
