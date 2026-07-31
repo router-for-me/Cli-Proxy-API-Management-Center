@@ -11,11 +11,8 @@ export const QUOTA_TAB_ORDER: readonly QuotaProviderType[] = [
 
 export type QuotaTabId = 'all' | QuotaProviderType;
 
-/**
- * 页级分页固定 12/页：可被 1/2/3/4 列整除（网格永远满行收尾），
- * 同时把「刷新全部」的上游并发压到 ≤12（旧分区制上限是 25）。
- */
-export const QUOTA_PAGE_SIZE = 12;
+/** 页级分页固定 20/页，同时把「刷新全部」的上游并发限制在 20。 */
+export const QUOTA_PAGE_SIZE = 20;
 
 /** 与 useRevealGroup 的 GROUP_MAX_TOTAL 一致：卡片级联总预算 360ms。 */
 export const CARD_ENTRANCE_BUDGET_MS = 360;

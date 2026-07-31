@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { QUOTA_PAGE_SIZE } from '@/features/quota/constants';
 import {
   buildTabCounts,
   classifyQuotaFiles,
@@ -82,23 +83,28 @@ describe('isQuotaRefreshDisabled', () => {
 });
 
 describe('paginate', () => {
-  const items = Array.from({ length: 26 }, (_, index) => index);
+  const items = Array.from({ length: 45 }, (_, index) => index);
 
-  test('slices the requested page', () => {
-    expect(paginate(items, 2, 12)).toEqual({
-      pageItems: items.slice(12, 24),
+  test('uses the configured 20-item page size', () => {
+    expect(QUOTA_PAGE_SIZE).toBe(20);
+    expect(paginate(items, 2, QUOTA_PAGE_SIZE)).toEqual({
+      pageItems: items.slice(20, 40),
       currentPage: 2,
       totalPages: 3,
     });
   });
 
   test('clamps an out-of-range page instead of returning an empty slice', () => {
-    expect(paginate(items, 9, 12).currentPage).toBe(3);
-    expect(paginate(items, 9, 12).pageItems).toEqual(items.slice(24));
-    expect(paginate(items, 0, 12).currentPage).toBe(1);
+    expect(paginate(items, 9, QUOTA_PAGE_SIZE).currentPage).toBe(3);
+    expect(paginate(items, 9, QUOTA_PAGE_SIZE).pageItems).toEqual(items.slice(40));
+    expect(paginate(items, 0, QUOTA_PAGE_SIZE).currentPage).toBe(1);
   });
 
   test('keeps at least one page when the list is empty', () => {
-    expect(paginate([], 1, 12)).toEqual({ pageItems: [], currentPage: 1, totalPages: 1 });
+    expect(paginate([], 1, QUOTA_PAGE_SIZE)).toEqual({
+      pageItems: [],
+      currentPage: 1,
+      totalPages: 1,
+    });
   });
 });

@@ -312,10 +312,9 @@ export function QuotaPage() {
           </div>
         )}
 
-        {/* 时间线跟随当前 tab，但不跟随分页：它回答的是「额度会不会同时恢复」，
-            那是泳道之间的关系，只画当页 12 条就失去了对比的意义。 */}
+        {/* 时间线只比较当前页凭证，避免大量凭证一次性生成无界泳道。 */}
         <QuotaTimeline
-          entries={filteredEntries}
+          entries={pageItems}
           quotaFor={getQuota}
           displayNameFor={displayNameFor}
           resolvedTheme={resolvedTheme}
