@@ -57,6 +57,8 @@ import {
   normalizeNumberValue,
   normalizePlanType,
   normalizeStringValue,
+  resolvePlanTier,
+  PREMIUM_CODEX_PLAN_TYPES,
   normalizeCodexResetCreditsPayload,
   parseAntigravityPayload,
   parseClaudeUsagePayload,
@@ -903,11 +905,6 @@ const renderAntigravityItems = (
   return h(Fragment, null, ...nodes);
 };
 
-const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
-// Pro 20x（plan=pro）在金色 premium 之上再进一档：钻石徽章。
-// 与金卡同一套构造，只换色相（Minecraft 钻石青），见 QuotaPage.module.scss。
-const ELITE_CODEX_PLAN_TYPE = 'pro';
-
 const renderCodexItems = (
   quota: CodexQuotaState,
   t: TFunction,
@@ -936,20 +933,18 @@ const renderCodexItems = (
   };
 
   const planLabel = getPlanLabel(planType);
-  const normalizedPlanType = normalizePlanType(planType) ?? '';
-  const isPremiumPlan = PREMIUM_CODEX_PLAN_TYPES.has(normalizedPlanType);
-  const isElitePlan = normalizedPlanType === ELITE_CODEX_PLAN_TYPE;
+  const planTier = resolvePlanTier(planType);
   const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const nodes: ReactNode[] = [];
 
   if (planLabel || expiryLabel || rateLimitResetCreditsAvailableCount !== null) {
-    // 顺序敏感：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，elite 分支必须留在最前，
-    // 否则 Pro 20x 会静默退回金卡（无测试覆盖类名契约，改这里请手动目视）。
-    const planValueClass = isElitePlan
-      ? styleMap.elitePlanValue
-      : isPremiumPlan
-        ? styleMap.premiumPlanValue
-        : styleMap.codexPlanValue;
+    // elite/premium 顺序契约由 resolvePlanTier 承载（tests/quotaPlanTier.test.ts 守护）。
+    const planValueClass =
+      planTier === 'elite'
+        ? styleMap.elitePlanValue
+        : planTier === 'premium'
+          ? styleMap.premiumPlanValue
+          : styleMap.codexPlanValue;
     const planNodes: ReactNode[] = [];
 
     const appendPlanItem = (
