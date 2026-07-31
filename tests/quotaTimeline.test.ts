@@ -121,8 +121,19 @@ describe('projectLane', () => {
     expect(live.length).toBe(1);
     expect(live[0].startMs).toBeLessThanOrEqual(now);
     expect(live[0].endMs).toBeGreaterThan(now);
+    expect(live[0].remaining).toBe(40);
     expect(windows.filter((w) => w.state === 'past').every((w) => w.endMs <= now)).toBe(true);
     expect(windows.filter((w) => w.state === 'next').every((w) => w.startMs > now)).toBe(true);
+  });
+
+  test('does not carry stale remaining usage past the reported reset', () => {
+    const nowAfterReset = at(2026, 6, 30, 12);
+    const windows = projectLane(lane(), span.startMs, span.endMs, nowAfterReset, 'weekly');
+    const live = windows.find((window) => window.state === 'live');
+
+    expect(live).toBeDefined();
+    expect(live?.startMs).toBe(at(2026, 6, 29, 20));
+    expect(live?.remaining).toBeNull();
   });
 
   test('clips bars to the visible span', () => {

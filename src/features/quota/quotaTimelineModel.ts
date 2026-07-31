@@ -42,7 +42,7 @@ export interface TimelineLane {
   anchorMs: number | null;
   /** Window length in hours. */
   periodHours: number | null;
-  /** Remaining percent for the window being drawn, or null when unknown. */
+  /** Remaining percent reported for the window ending at `anchorMs`. */
   remaining: number | null;
   limits: TimelineLimit[];
 }
@@ -55,6 +55,8 @@ export interface TimelineWindow {
   leftPercent: number;
   widthPercent: number;
   state: 'past' | 'live' | 'next';
+  /** Remaining percent only when this is the API-reported current window. */
+  remaining: number | null;
 }
 
 /**
@@ -164,6 +166,9 @@ export function projectLane(
         leftPercent: left,
         widthPercent: right - left,
         state,
+        // `lane.remaining` belongs to the current payload window ending at the
+        // anchor. Once that reset passes, projected windows must not reuse it.
+        remaining: state === 'live' && window.endMs === lane.anchorMs ? lane.remaining : null,
       };
     })
     .filter((window): window is TimelineWindow => window !== null);

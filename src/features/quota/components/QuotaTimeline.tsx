@@ -350,24 +350,20 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
                 title={`${lane.displayName}\n${formatDay(window.startMs)} ${formatTime(
                   window.startMs
                 )} → ${formatDay(window.endMs)} ${formatTime(window.endMs)}${
-                  window.state === 'live' && lane.remaining !== null
-                    ? `\n${lane.remaining}% remaining`
-                    : ''
+                  window.remaining !== null ? `\n${window.remaining}% remaining` : ''
                 }`}
               >
-                {/* Consumed portion of the *current* window only — a past or
-                    future window has no meaningful fill. */}
-                {window.state === 'live' && lane.remaining !== null && (
+                {/* Only the API-reported current window has meaningful usage;
+                    projected windows intentionally have no fill. */}
+                {window.remaining !== null && (
                   <span
                     className={styles.windowFill}
-                    style={{ width: `${100 - lane.remaining}%` }}
+                    style={{ width: `${100 - window.remaining}%` }}
                   />
                 )}
                 {showLabel && (
                   <span className={styles.windowLabel}>
-                    {window.state === 'live' && lane.remaining !== null
-                      ? `${lane.remaining}% · `
-                      : ''}
+                    {window.remaining !== null ? `${window.remaining}% · ` : ''}
                     {endText}
                   </span>
                 )}
