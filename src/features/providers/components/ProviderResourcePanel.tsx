@@ -65,9 +65,12 @@ export function ProviderResourcePanel({
       ? CLAUDE_API_AFFILIATE_URL
       : group.id === 'kimi'
         ? getKimiAffiliateUrl(i18n.resolvedLanguage ?? i18n.language)
-      : group.id === 'code0' || group.id === 'fennoAI' || group.id === 'qiniuCloud'
-        ? getSponsorProviderDefinition(group.id).affiliateUrl
-        : null;
+        : group.id === 'code0' ||
+            group.id === 'lmuAI' ||
+            group.id === 'fennoAI' ||
+            group.id === 'qiniuCloud'
+          ? getSponsorProviderDefinition(group.id).affiliateUrl
+          : null;
   const registrationLabel = t(
     group.id === 'kimi' ? 'providersPage.sponsor.registerNow' : 'providersPage.sponsor.registerLink'
   );
@@ -144,9 +147,7 @@ export function ProviderResourcePanel({
                 target="_blank"
                 rel="noreferrer"
               >
-                <span className={styles.sponsorLinkText}>
-                  {registrationLabel}
-                </span>
+                <span className={styles.sponsorLinkText}>{registrationLabel}</span>
                 <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>
             ) : null}
