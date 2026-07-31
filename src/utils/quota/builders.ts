@@ -177,7 +177,7 @@ function kimiResetHint(data: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
-type KimiTimeUnit = 'second' | 'minute' | 'hour' | 'day';
+type KimiTimeUnit = 'second' | 'minute' | 'hour' | 'day' | 'week';
 
 /** Kimi currently sends protobuf-style values such as TIME_UNIT_MINUTE. */
 function normalizeKimiTimeUnit(rawTimeUnit: unknown): KimiTimeUnit | null {
@@ -192,6 +192,7 @@ function normalizeKimiTimeUnit(rawTimeUnit: unknown): KimiTimeUnit | null {
   if (!unit || unit === 'MINUTES' || unit === 'MINUTE') return 'minute';
   if (unit === 'HOURS' || unit === 'HOUR') return 'hour';
   if (unit === 'DAYS' || unit === 'DAY') return 'day';
+  if (unit === 'WEEKS' || unit === 'WEEK') return 'week';
   return null;
 }
 
@@ -200,6 +201,7 @@ function kimiDurationToken(duration: number, rawTimeUnit: unknown): string {
   if (unit === 'second') return `${duration}s`;
   if (unit === 'hour') return `${duration}h`;
   if (unit === 'day') return `${duration}d`;
+  if (unit === 'week') return `${duration}w`;
   return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
 }
 
@@ -270,6 +272,7 @@ function kimiPeriodHours(
     if (unit === 'second') return duration / 3600;
     if (unit === 'hour') return duration;
     if (unit === 'day') return duration * 24;
+    if (unit === 'week') return duration * 7 * 24;
     // Match the card-label fallback: an absent or unknown unit is treated as minutes.
     return duration / 60;
   }
