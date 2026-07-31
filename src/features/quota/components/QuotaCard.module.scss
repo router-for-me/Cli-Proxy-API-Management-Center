@@ -29,6 +29,19 @@
   }
 }
 
+/* 首次数据到达时的一次性级联入场；切 tab / 翻页 / 刷新不重播 */
+.cardEnter {
+  animation: quota-card-in 0.45s var(--ease-out-strong, ease-out) both;
+  animation-delay: var(--card-delay, 0s);
+}
+
+@keyframes quota-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
 /* ---------- 头部：品牌图标 + 文件名 ---------- */
 
 .head {
@@ -152,11 +165,30 @@
   gap: 6px;
 }
 
+/* 骨架：底色 + 一道 1.2s 匀速扫光（linear —— 环境性匀速运动的唯一例外） */
 .skeletonLabel,
 .skeletonTrack {
   display: block;
   border-radius: $radius-full;
-  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  background-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  background-image: linear-gradient(
+    90deg,
+    transparent 20%,
+    color-mix(in srgb, var(--text-primary) 6%, transparent) 50%,
+    transparent 80%
+  );
+  background-repeat: no-repeat;
+  background-size: 220% 100%;
+  animation: quota-skeleton-sweep 1.2s linear infinite;
+}
+
+@keyframes quota-skeleton-sweep {
+  from {
+    background-position: -110% 0;
+  }
+  to {
+    background-position: 210% 0;
+  }
 }
 
 .skeletonLabel {
@@ -269,6 +301,9 @@
     transform: none;
   }
 
+  .cardEnter,
+  .skeletonLabel,
+  .skeletonTrack,
   .spinning {
     animation: none;
   }

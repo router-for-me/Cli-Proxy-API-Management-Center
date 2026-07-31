@@ -15,12 +15,18 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
+import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
-import { QUOTA_PAGE_SIZE, QUOTA_TAB_ORDER, type QuotaTabId } from './constants';
+import {
+  CARD_ENTRANCE_BUDGET_MS,
+  QUOTA_PAGE_SIZE,
+  QUOTA_TAB_ORDER,
+  type QuotaTabId,
+} from './constants';
 import {
   buildTabCounts,
   classifyQuotaFiles,
@@ -48,6 +54,8 @@ export function QuotaPage() {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<QuotaTabId>(() => readQuotaUiState()?.tab ?? 'all');
   const [page, setPage] = useState(1);
+  // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
+  const revealRef = useRevealGroup<HTMLDivElement>();
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -174,12 +182,30 @@ export function QuotaPage() {
 
   const canUseActions = !disableControls && !loading;
 
+  /* ---------- 首屏卡片一次性级联入场 ----------
+   * 首批数据渲染后立即翻转 cardsAnimated；已挂载的卡片在挂载时捕获过自己的
+   * 延迟（QuotaCard 内 useState 初始化），后续切 tab/翻页/刷新新挂载的卡片
+   * 拿到 null —— 不重播。 */
+
+  const [cardsAnimated, setCardsAnimated] = useState(false);
+  const enableCardEntrance = !cardsAnimated && !loading && pageItems.length > 0;
+  useEffect(() => {
+    if (enableCardEntrance) {
+      setCardsAnimated(true);
+    }
+  }, [enableCardEntrance]);
+  const cardEntranceDelay = (index: number): number | null => {
+    if (!enableCardEntrance) return null;
+    if (pageItems.length <= 1) return 0;
+    return Math.round((index / (pageItems.length - 1)) * CARD_ENTRANCE_BUDGET_MS);
+  };
+
   /* ---------- 渲染 ---------- */
 
   const isEmpty = !loading && filteredEntries.length === 0;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={revealRef}>
       <QuotaHeader
         totalCount={entries.length}
         loadedCount={loadedCount}
@@ -190,13 +216,16 @@ export function QuotaPage() {
       />
 
       <section className={styles.workbench}>
-        <ProviderTabs
-          types={TAB_IDS}
-          counts={tabCounts}
-          active={tab}
-          resolvedTheme={resolvedTheme}
-          onChange={handleTabChange}
-        />
+        {/* tabs 作为一个整体入场（不做逐 tab 级差 —— 克制优先） */}
+        <div data-reveal>
+          <ProviderTabs
+            types={TAB_IDS}
+            counts={tabCounts}
+            active={tab}
+            resolvedTheme={resolvedTheme}
+            onChange={handleTabChange}
+          />
+        </div>
 
         {error && (
           <div className={styles.errorBanner} role="alert">
@@ -232,7 +261,7 @@ export function QuotaPage() {
           />
         ) : (
           <div className={styles.grid}>
-            {pageItems.map((entry) => (
+            {pageItems.map((entry, index) => (
               <QuotaCard
                 key={`${entry.type}:${entry.file.name}`}
                 entry={entry}
@@ -240,6 +269,7 @@ export function QuotaPage() {
                 resolvedTheme={resolvedTheme}
                 canRefresh={canUseActions && !entry.file.disabled}
                 resetting={resettingQuotaName === entry.file.name}
+                entranceDelayMs={cardEntranceDelay(index)}
                 onRefresh={() => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
                 onReset={() => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
               />

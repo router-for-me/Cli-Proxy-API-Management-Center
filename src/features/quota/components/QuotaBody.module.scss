@@ -89,6 +89,17 @@
   border-radius: $radius-full;
   /* 刷新时平滑重定向到新水位（可中断） */
   transition: width 360ms var(--ease-out-strong, ease);
+  /* 数据到达是本页的高潮时刻：水位逐行铺开（每行 40ms 级差）。
+   * 走 scaleX 而非 width，避免与上面的 width 过渡互相抢夺同一属性。 */
+  transform-origin: left center;
+  animation: quota-meter-fill 480ms var(--ease-out-strong, ease-out) both;
+  animation-delay: calc(var(--meter-index, 0) * 40ms);
+}
+
+@keyframes quota-meter-fill {
+  from {
+    transform: scaleX(0);
+  }
 }
 
 .quotaBarFillHigh {
@@ -157,6 +168,7 @@
 @media (prefers-reduced-motion: reduce) {
   .quotaBarFill {
     transition: none;
+    animation: none;
   }
 }
 

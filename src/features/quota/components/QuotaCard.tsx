@@ -7,6 +7,7 @@
  * - success：provider Body（穿 QuotaBody.module.scss 全页外衣）。
  */
 
+import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
 import type { ResolvedTheme } from '@/types';
@@ -32,15 +33,33 @@ export type QuotaCardProps = {
   resolvedTheme: ResolvedTheme;
   canRefresh: boolean;
   resetting: boolean;
+  /** 首屏级联入场延迟；null = 不入场（切 tab / 翻页 / 刷新新挂载的卡片）。 */
+  entranceDelayMs?: number | null;
   onRefresh: () => void;
   onReset: () => void;
 };
 
 export function QuotaCard(props: QuotaCardProps) {
-  const { entry, quota, resolvedTheme, canRefresh, resetting, onRefresh, onReset } = props;
+  const {
+    entry,
+    quota,
+    resolvedTheme,
+    canRefresh,
+    resetting,
+    entranceDelayMs,
+    onRefresh,
+    onReset,
+  } = props;
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
+
+  // 挂载时捕获一次延迟：后续 props 变 null 不影响本卡（React 19 禁渲染期读 ref）
+  const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
+  const entranceStyle =
+    mountEntranceDelayMs === null
+      ? undefined
+      : ({ '--card-delay': `${mountEntranceDelayMs}ms` } as CSSProperties);
 
   const status = quota?.status ?? 'idle';
   const loading = status === 'loading';
@@ -58,7 +77,10 @@ export function QuotaCard(props: QuotaCardProps) {
     Boolean(adapter.canResetQuota?.(quota));
 
   return (
-    <article className={styles.card}>
+    <article
+      className={`${styles.card} ${mountEntranceDelayMs === null ? '' : styles.cardEnter}`}
+      style={entranceStyle}
+    >
       <header className={styles.head}>
         <span
           className={styles.iconWrap}
