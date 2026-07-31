@@ -1,0 +1,69 @@
+@use '../../styles/mixins' as *;
+
+/* ============================================================
+ * 额度页壳层：纯布局，视觉细节都在各组件的 colocated 模块里。
+ * ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- 工作区（tabs + 网格 + 分页） ---------- */
+
+.workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.errorBanner {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 卡片网格 ----------
+ * 列宽由 CSS 决定（不再用 JS 测量）：额度卡承载水位条，取 340px 下限，
+ * 与认证文件页配额模式（.gridQuota）同一档。 */
+
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  align-items: stretch;
+}
+
+/* ---------- 分页 ---------- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pageInfo {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@include mobile {
+  .page {
+    gap: 16px;
+  }
+}

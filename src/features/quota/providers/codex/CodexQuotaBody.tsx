@@ -67,9 +67,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
           )}
           {rateLimitResetCreditsAvailableCount !== null && (
             <span className={classes.codexPlanItem}>
-              <span className={classes.codexPlanLabel}>
-                {t('codex_quota.reset_credits_label')}
-              </span>
+              <span className={classes.codexPlanLabel}>{t('codex_quota.reset_credits_label')}</span>
               <span className={classes.codexPlanValue}>
                 {rateLimitResetCreditsAvailableCount.toString()}
               </span>

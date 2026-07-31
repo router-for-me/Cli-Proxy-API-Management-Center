@@ -1152,7 +1152,12 @@
   "quota_management": {
     "title": "配额管理",
     "description": "集中查看 OAuth 额度与剩余情况",
-    "refresh_all_credentials": "刷新全部凭证"
+    "refresh_all_credentials": "刷新全部凭证",
+    "meta_credentials": "{{count}} 个凭证",
+    "meta_loaded": "{{count}} 个已加载",
+    "meta_attention": "{{count}} 个需关注",
+    "empty_title": "暂无可查额度的凭证",
+    "empty_desc": "接入 Antigravity、Claude、Codex、xAI 或 Kimi 凭证后即可在此查看额度。"
   },
   "plugin_management": {
     "title": "插件管理",
