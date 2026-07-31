@@ -42,6 +42,7 @@
   background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
 
   .head,
+  .fileName, /* 满宽文件名副行已移出 .head，必须单列 */
   .note,
   .health,
   .metaRow {
@@ -176,13 +177,33 @@
   border-color: var(--border-hover);
 }
 
-.fileName {
-  font-family: $font-mono;
+/* 主行：账号（email / 项目 ID）领衔 */
+.account {
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
   color: var(--text-primary);
   @include text-ellipsis;
+}
+
+/* 无账号线索时主行回落到文件名，沿用 mono 语汇。
+   必须声明在 .account 之后——两者同为单类选择器，letter-spacing 靠源序决胜。 */
+.accountMono {
+  font-family: $font-mono;
+  letter-spacing: -0.01em;
+}
+
+/* 副行：满卡宽的文件名。email 在 codex 名字的中段，必须能换行才不丢信息，
+   overflow-wrap + -webkit-box 的组合与本文件 .warning span 同配方。 */
+.fileName {
+  margin: -4px 0 0;
+  font-family: $font-mono;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+  @include text-ellipsis-multiline(2);
 }
 
 .note {

@@ -28,6 +28,8 @@ const DERIVED_INFO_KEYS = [
   'authIndex',
   'statusMessage',
   'modified',
+  // 'email' 不在此列：后端原始键名与 camelCase 同形，删掉会藏起真实数据。
+  'projectId',
 ];
 
 export type AuthFileDetailsSheetProps = {

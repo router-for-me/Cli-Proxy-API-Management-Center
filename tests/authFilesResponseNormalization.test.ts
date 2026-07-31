@@ -41,4 +41,68 @@ describe('auth-files response normalization', () => {
 
     expect(result.files.map((file) => file.priority)).toEqual([undefined, -3]);
   });
+
+  test('surfaces the trimmed account email', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([{ name: 'codex-a.json', email: '  user@example.com  ' }])
+    );
+
+    expect(result.files[0]?.email).toBe('user@example.com');
+  });
+
+  test('leaves an empty backend email as the raw empty string', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([{ name: 'kimi-1.json', email: '' }])
+    );
+
+    expect(result.files[0]?.email).toBe('');
+  });
+
+  test('normalizes project_id to projectId while keeping the raw key', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([{ name: 'vertex-a.json', project_id: ' my-proj ' }])
+    );
+
+    expect(result.files[0]?.projectId).toBe('my-proj');
+    expect(result.files[0]?.project_id).toBe(' my-proj ');
+  });
+
+  test('recovers a non-empty email from the lower-priority duplicate entry', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([
+        { name: 'codex-a.json', source: 'file', path: '/auths/codex-a.json', email: '' },
+        { name: 'codex-a.json', source: 'memory', email: 'user@example.com' },
+      ])
+    );
+
+    expect(result.files).toHaveLength(1);
+    expect(result.files[0]?.email).toBe('user@example.com');
+  });
+
+  test('prefers the higher-scored entry when both emails are non-empty and differ', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([
+        { name: 'codex-a.json', source: 'memory', email: 'stale@example.com' },
+        {
+          name: 'codex-a.json',
+          source: 'file',
+          path: '/auths/codex-a.json',
+          email: 'fresh@example.com',
+        },
+      ])
+    );
+
+    expect(result.files[0]?.email).toBe('fresh@example.com');
+  });
+
+  test('passes account through raw without deriving a camelCase field', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([
+        { name: 'gemini-apikey.json', account: 'sk-live-abcd', account_type: 'api_key' },
+      ])
+    );
+
+    expect(result.files[0]?.account).toBe('sk-live-abcd');
+    expect(result.files[0]?.accountType).toBeUndefined();
+  });
 });

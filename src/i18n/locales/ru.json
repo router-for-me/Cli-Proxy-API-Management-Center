@@ -270,7 +270,7 @@
     "pagination_next": "Следующая",
     "pagination_info": "Страница {{current}} / {{total}} · {{count}} файлов",
     "search_label": "Поиск конфигов",
-    "search_placeholder": "Фильтр по имени, типу или провайдеру, поддерживается wildcard *",
+    "search_placeholder": "Фильтр по имени, аккаунту, типу или провайдеру, поддерживается wildcard *",
     "problem_filter_label": "Фильтр статуса",
     "problem_filter_all": "Все",
     "problem_filter_enabled": "Вкл.",

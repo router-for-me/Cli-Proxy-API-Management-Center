@@ -271,7 +271,7 @@
     "pagination_next": "下一页",
     "pagination_info": "第 {{current}} / {{total}} 页 · 共 {{count}} 个文件",
     "search_label": "搜索配置文件",
-    "search_placeholder": "输入名称、类型或提供方关键字，支持 * 通配",
+    "search_placeholder": "输入名称、账号、类型或提供方关键字，支持 * 通配",
     "problem_filter_label": "状态筛选",
     "problem_filter_all": "全部",
     "problem_filter_enabled": "启用",

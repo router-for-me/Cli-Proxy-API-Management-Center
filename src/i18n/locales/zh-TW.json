@@ -271,7 +271,7 @@
     "pagination_next": "下一頁",
     "pagination_info": "第 {{current}} / {{total}} 頁 · 共 {{count}} 個檔案",
     "search_label": "搜尋設定檔",
-    "search_placeholder": "輸入名稱、類型或供應方關鍵字，支援 * 萬用字元",
+    "search_placeholder": "輸入名稱、帳號、類型或供應方關鍵字，支援 * 萬用字元",
     "problem_filter_label": "狀態篩選",
     "problem_filter_all": "全部",
     "problem_filter_enabled": "啟用",

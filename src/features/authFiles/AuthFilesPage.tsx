@@ -30,6 +30,11 @@ import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { VaultHeader } from '@/features/authFiles/components/VaultHeader';
 import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
 import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInvalidation';
+import {
+  buildWildcardSearch,
+  matchesAuthFileSearch,
+  sortAuthFiles,
+} from '@/features/authFiles/logic';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
@@ -53,14 +58,6 @@ const DEFAULT_COMPACT_PAGE_SIZE = 12;
 const SKELETON_CARD_COUNT = 6;
 /** 首屏卡片级联入场总预算，与 useRevealGroup 同一 360ms 语汇。 */
 const CARD_ENTRANCE_BUDGET_MS = 360;
-
-const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const buildWildcardSearch = (value: string): RegExp | null => {
-  if (!value.includes('*')) return null;
-  const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
-  return new RegExp(pattern, 'i');
-};
 
 const resolveStatusFilterMode = (
   problemOnly: boolean,
@@ -431,45 +428,17 @@ export function AuthFilesPage() {
   const normalizedSearch = search.trim();
   const wildcardSearch = useMemo(() => buildWildcardSearch(normalizedSearch), [normalizedSearch]);
 
-  const filtered = useMemo(() => {
-    const normalizedTerm = normalizedSearch.toLowerCase();
+  const filtered = useMemo(
+    () =>
+      filesMatchingStatusFilters.filter((item) => {
+        const type = normalizeProviderKey(String(item.type ?? item.provider ?? ''));
+        const matchType = normalizedFilter === 'all' || type === normalizedFilter;
+        return matchType && matchesAuthFileSearch(item, normalizedSearch, wildcardSearch);
+      }),
+    [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, wildcardSearch]
+  );
 
-    return filesMatchingStatusFilters.filter((item) => {
-      const type = normalizeProviderKey(String(item.type ?? item.provider ?? ''));
-      const matchType = normalizedFilter === 'all' || type === normalizedFilter;
-      const matchSearch =
-        !normalizedSearch ||
-        [item.name, item.type, item.provider].some((value) => {
-          const content = (value || '').toString();
-          return wildcardSearch
-            ? wildcardSearch.test(content)
-            : content.toLowerCase().includes(normalizedTerm);
-        });
-      return matchType && matchSearch;
-    });
-  }, [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, wildcardSearch]);
-
-  const sorted = useMemo(() => {
-    const copy = [...filtered];
-    if (sortMode === 'default') {
-      copy.sort((a, b) => {
-        const providerA = normalizeProviderKey(String(a.provider ?? a.type ?? 'unknown'));
-        const providerB = normalizeProviderKey(String(b.provider ?? b.type ?? 'unknown'));
-        const providerCompare = providerA.localeCompare(providerB);
-        if (providerCompare !== 0) return providerCompare;
-        return a.name.localeCompare(b.name);
-      });
-    } else if (sortMode === 'az') {
-      copy.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortMode === 'priority') {
-      copy.sort((a, b) => {
-        const pa = typeof a.priority === 'number' ? a.priority : 0;
-        const pb = typeof b.priority === 'number' ? b.priority : 0;
-        return pb - pa; // 高优先级排前面
-      });
-    }
-    return copy;
-  }, [filtered, sortMode]);
+  const sorted = useMemo(() => sortAuthFiles(filtered, sortMode), [filtered, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -496,10 +465,7 @@ export function AuthFilesPage() {
 
   /* ---------- 头部遥测计数 ---------- */
 
-  const activeCount = useMemo(
-    () => files.filter((file) => file.disabled !== true).length,
-    [files]
-  );
+  const activeCount = useMemo(() => files.filter((file) => file.disabled !== true).length, [files]);
   const problemCount = useMemo(() => files.filter(isProblemAuthFile).length, [files]);
 
   /* ---------- 首屏卡片一次性级联入场 ----------
@@ -508,8 +474,7 @@ export function AuthFilesPage() {
    * 而过滤/翻页/轮询新挂载的卡片拿到 null——不重播。 */
 
   const [cardsAnimated, setCardsAnimated] = useState(false);
-  const enableCardEntrance =
-    !cardsAnimated && isCurrentLayer && !loading && pageItems.length > 0;
+  const enableCardEntrance = !cardsAnimated && isCurrentLayer && !loading && pageItems.length > 0;
   useEffect(() => {
     if (enableCardEntrance) {
       setCardsAnimated(true);
@@ -681,7 +646,7 @@ export function AuthFilesPage() {
         {loading ? (
           <div className={gridClasses} aria-hidden="true">
             {Array.from({ length: SKELETON_CARD_COUNT }, (_, index) => (
-              <Skeleton key={index} height={188} rounded={14} />
+              <Skeleton key={index} height={206} rounded={14} />
             ))}
           </div>
         ) : isFirstRunEmpty ? (
