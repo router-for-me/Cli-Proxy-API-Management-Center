@@ -60,6 +60,12 @@ export function buildTabCounts(entries: QuotaFileEntry[]): Record<string, number
   return counts;
 }
 
+export const isQuotaRefreshDisabled = (
+  canRefresh: boolean,
+  loading: boolean,
+  resetting: boolean
+): boolean => !canRefresh || loading || resetting;
+
 export interface QuotaPagination<T> {
   pageItems: T[];
   currentPage: number;

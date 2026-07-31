@@ -3,6 +3,7 @@ import {
   buildTabCounts,
   classifyQuotaFiles,
   filterEntriesByTab,
+  isQuotaRefreshDisabled,
   paginate,
   resolveQuotaProviderType,
 } from '@/features/quota/logic';
@@ -70,6 +71,13 @@ describe('filterEntriesByTab', () => {
       'codex-b.json',
     ]);
     expect(filterEntriesByTab(entries, 'antigravity')).toEqual([]);
+  });
+});
+
+describe('isQuotaRefreshDisabled', () => {
+  test('blocks a single-card refresh while the same quota is resetting', () => {
+    expect(isQuotaRefreshDisabled(true, false, true)).toBe(true);
+    expect(isQuotaRefreshDisabled(true, false, false)).toBe(false);
   });
 });
 

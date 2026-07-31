@@ -20,7 +20,7 @@ import {
 } from '@/features/authFiles/constants';
 import { bindQuotaClasses } from '../types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
-import type { QuotaFileEntry } from '../logic';
+import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -152,7 +152,7 @@ export function QuotaCard(props: QuotaCardProps) {
             type="button"
             className={styles.actionPill}
             onClick={onRefresh}
-            disabled={!canRefresh || loading}
+            disabled={isQuotaRefreshDisabled(canRefresh, loading, resetting)}
             title={t('auth_files.quota_refresh_hint')}
           >
             <IconRefreshCw size={13} className={loading ? styles.spinning : undefined} />

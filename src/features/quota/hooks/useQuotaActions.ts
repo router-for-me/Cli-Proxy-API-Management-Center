@@ -27,6 +27,7 @@ export function useQuotaActions(disableControls: boolean) {
   const refreshQuota = useCallback(
     async (file: AuthFileItem, adapter: QuotaAdapter) => {
       if (disableControls || file.disabled) return;
+      if (resettingQuotaName === file.name) return;
       if (getQuotaState(adapter, file.name)?.status === 'loading') return;
       const cacheGeneration = captureQuotaCacheGeneration();
       const setQuota = getQuotaSetter(adapter);
@@ -60,7 +61,7 @@ export function useQuotaActions(disableControls: boolean) {
         });
       }
     },
-    [disableControls, showNotification, t]
+    [disableControls, resettingQuotaName, showNotification, t]
   );
 
   const resetQuota = useCallback(
