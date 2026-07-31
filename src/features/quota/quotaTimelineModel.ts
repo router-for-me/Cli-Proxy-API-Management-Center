@@ -140,8 +140,9 @@ export function projectLane(
   now: number,
   mode: TimelineMode
 ): TimelineWindow[] {
-  const periodHours = mode === 'session' ? SESSION_PERIOD_HOURS : lane.periodHours;
+  const periodHours = lane.periodHours;
   if (lane.anchorMs === null || !periodHours) return [];
+  if (mode === 'session' && periodHours !== SESSION_PERIOD_HOURS) return [];
 
   const span = spanEndMs - spanStartMs;
   if (span <= 0) return [];

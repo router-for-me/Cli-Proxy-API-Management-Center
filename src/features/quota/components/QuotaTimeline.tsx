@@ -94,13 +94,16 @@ export function QuotaTimeline({
             displayName: displayNameFor(entry.file.name),
             provider: entry.type,
             quota: quotaFor(entry),
-            // Bound the lane's window to the visible span, so a fortnight view
-            // draws weekly bars rather than ~67 five-hour slivers.
-            maxPeriodHours: span.days * 24,
+            // Weekly mode prefers the longest readable window. Session mode
+            // asks specifically for a real 5-hour window; longer periods must
+            // not be reinterpreted as 5-hour resets.
+            maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
           })
         )
-        .filter(laneHasWindow),
-    [entries, quotaFor, displayNameFor, span.days]
+        .filter(
+          (lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)
+        ),
+    [entries, quotaFor, displayNameFor, mode, span.days]
   );
 
   /** Weekly: one cell per day. Session: one per 6 hours. */

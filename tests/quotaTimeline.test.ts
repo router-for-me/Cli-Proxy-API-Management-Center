@@ -144,13 +144,20 @@ describe('projectLane', () => {
     ).toEqual([]);
   });
 
-  test('session mode projects 5-hour windows regardless of the lane period', () => {
+  test('session mode projects only real 5-hour windows', () => {
     const now = at(2026, 6, 29, 12);
     const sessionSpan = timelineSpan('session', 0, now);
-    const windows = projectLane(lane(), sessionSpan.startMs, sessionSpan.endMs, now, 'session');
 
-    const full = windows.find((w) => w.endMs - w.startMs === 5 * HOUR_MS);
-    expect(full).toBeDefined();
+    expect(projectLane(lane(), sessionSpan.startMs, sessionSpan.endMs, now, 'session')).toEqual([]);
+
+    const windows = projectLane(
+      lane({ periodHours: 5 }),
+      sessionSpan.startMs,
+      sessionSpan.endMs,
+      now,
+      'session'
+    );
+    expect(windows.some((w) => w.endMs - w.startMs === 5 * HOUR_MS)).toBe(true);
   });
 });
 
