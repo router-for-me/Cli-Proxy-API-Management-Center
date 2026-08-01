@@ -9,8 +9,9 @@ import {
   normalizePlanType,
   resolvePlanTier,
   PREMIUM_CODEX_PLAN_TYPES,
-  formatShanghaiDateTime,
+  formatQuotaResetTime,
 } from '@/utils/quota';
+import { resolveTimeZoneLabel } from '@/utils/time/timezone';
 import { formatDateTimeValue } from '@/utils/format';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
@@ -78,21 +79,24 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
       {rateLimitResetCredits.length > 0 ? (
         <div className={classes.codexResetCredits}>
           <div className={classes.codexResetCreditsTitle}>
-            {t('codex_quota.reset_credits_expiry_label')}
+            {t('codex_quota.reset_credits_expiry_label', { timezone: resolveTimeZoneLabel() })}
           </div>
-          {rateLimitResetCredits.map((credit, index) => (
-            <div
-              key={credit.id || `${credit.expiresAt}-${index}`}
-              className={classes.codexResetCreditRow}
-            >
-              <span className={classes.codexResetCreditLabel}>
-                {t('codex_quota.reset_credit_number', { index: index + 1 })}
-              </span>
-              <span className={classes.codexResetCreditTime}>
-                {formatShanghaiDateTime(credit.expiresAt) || credit.expiresAt}
-              </span>
-            </div>
-          ))}
+          {rateLimitResetCredits.map((credit, index) => {
+            const expiresLabel = formatQuotaResetTime(credit.expiresAt);
+            return (
+              <div
+                key={credit.id || `${credit.expiresAt}-${index}`}
+                className={classes.codexResetCreditRow}
+              >
+                <span className={classes.codexResetCreditLabel}>
+                  {t('codex_quota.reset_credit_number', { index: index + 1 })}
+                </span>
+                <span className={classes.codexResetCreditTime}>
+                  {expiresLabel === '-' ? credit.expiresAt : expiresLabel}
+                </span>
+              </div>
+            );
+          })}
         </div>
       ) : rateLimitResetCreditsError ? (
         <div className={classes.codexResetCreditsError}>
