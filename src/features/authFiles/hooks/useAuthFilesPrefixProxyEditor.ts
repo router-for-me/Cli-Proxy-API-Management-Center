@@ -8,6 +8,7 @@ import {
   applyAuthFileUsingApi,
   normalizeProviderKey,
   parsePriorityValue,
+  readAuthFileDisableCooling,
   readAuthFileWebsockets,
   readAuthFileUsingApi,
   supportsAuthFileWebsockets,
@@ -35,6 +36,7 @@ export type PrefixProxyEditorField =
   | 'proxyUrl'
   | 'priority'
   | 'weight'
+  | 'disableCooling'
   | 'websockets'
   | 'usingApi'
   | 'note'
@@ -59,6 +61,8 @@ export type PrefixProxyEditorState = {
   priority: string;
   weight: string;
   weightError: string | null;
+  disableCooling: boolean;
+  disableCoolingTouched: boolean;
   websockets: boolean;
   websocketsTouched: boolean;
   usingApi: boolean;
@@ -313,6 +317,18 @@ export const buildAuthFileFieldsPatch = (
     patch.weight = nextWeight;
   }
 
+  if (editor.disableCoolingTouched) {
+    const originalDisableCooling = readAuthFileDisableCooling(original);
+    const nextDisableCooling = Boolean(editor.disableCooling);
+    if (nextDisableCooling !== originalDisableCooling) {
+      const field =
+        original.disable_cooling === undefined && original['disable-cooling'] !== undefined
+          ? 'disable-cooling'
+          : 'disable_cooling';
+      patch[field] = nextDisableCooling;
+    }
+  }
+
   if (editor.noteTouched) {
     const originalNote = normalizeTextField(original.note);
     const nextNote = editor.note.trim();
@@ -400,6 +416,13 @@ const buildPrefixProxyUpdatedText = (
     }
   }
 
+  if (patch.disable_cooling !== undefined) {
+    next.disable_cooling = patch.disable_cooling;
+  }
+  if (patch['disable-cooling'] !== undefined) {
+    next['disable-cooling'] = patch['disable-cooling'];
+  }
+
   if (patch.note !== undefined) {
     if (patch.note) {
       next.note = patch.note;
@@ -483,6 +506,8 @@ export function useAuthFilesPrefixProxyEditor(
       priority: '',
       weight: '',
       weightError: null,
+      disableCooling: false,
+      disableCoolingTouched: false,
       websockets: false,
       websocketsTouched: false,
       usingApi: false,
@@ -534,6 +559,7 @@ export function useAuthFilesPrefixProxyEditor(
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
       const priority = parsePriorityValue(json.priority);
       const weight = readCredentialWeight(json.weight);
+      const disableCooling = readAuthFileDisableCooling(json);
       const websockets = supportsAuthFileWebsockets(providerKey)
         ? readAuthFileWebsockets(json)
         : false;
@@ -564,6 +590,8 @@ export function useAuthFilesPrefixProxyEditor(
           priority: priority !== undefined ? String(priority) : '',
           weight: weight !== undefined ? String(weight) : '',
           weightError: null,
+          disableCooling,
+          disableCoolingTouched: false,
           websockets,
           websocketsTouched: false,
           usingApi,
@@ -604,6 +632,13 @@ export function useAuthFilesPrefixProxyEditor(
           ...prev,
           weight,
           weightError: error ? t(credentialWeightErrorKey(error)) : null,
+        };
+      }
+      if (field === 'disableCooling') {
+        return {
+          ...prev,
+          disableCooling: Boolean(value),
+          disableCoolingTouched: true,
         };
       }
       if (field === 'websockets') {

@@ -194,6 +194,12 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
   return undefined;
 };
 
+export const readAuthFileDisableCooling = (value: Record<string, unknown>): boolean => {
+  const canonical = parseDisableCoolingValue(value.disable_cooling);
+  if (canonical !== undefined) return canonical;
+  return parseDisableCoolingValue(value['disable-cooling']) ?? false;
+};
+
 export const supportsAuthFileWebsockets = (providerKey: string): boolean =>
   AUTH_FILE_WEBSOCKET_PROVIDERS.has(normalizeProviderKey(providerKey));
 
