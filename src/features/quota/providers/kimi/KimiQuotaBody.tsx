@@ -2,14 +2,23 @@
  * Kimi 额度渲染体：用量行水位条。
  */
 
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KimiQuotaState } from '@/types';
 import { formatKimiResetHint } from '@/utils/quota';
+import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
+import { collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>) {
   const { t } = useTranslation();
+  // Ahead of the early return below — hooks cannot be conditional.
+  const now = useNow();
+  const soonestRowId = useMemo(
+    () => pickSoonestRowId(collectQuotaRowInstants('kimi', quota), now),
+    [quota, now]
+  );
   const rows = quota.rows ?? [];
 
   if (rows.length === 0) {
@@ -32,14 +41,29 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
           ? t(row.labelKey, (row.labelParams ?? {}) as Record<string, string | number>)
           : (row.label ?? '');
         const resetLabel = formatKimiResetHint(t, row.resetHint);
+        const soon = row.id === soonestRowId;
 
         return (
-          <div key={row.id} className={classes.quotaRow}>
+          <div
+            key={row.id}
+            className={soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+            title={soon ? t('quota_management.soonest_row_hint') : undefined}
+          >
             <div className={classes.quotaRowHeader}>
               <span className={classes.quotaModel}>{rowLabel}</span>
               <div className={classes.quotaMeta}>
                 <span className={classes.quotaPercent}>{percentLabel}</span>
-                {resetLabel && <span className={classes.quotaReset}>{resetLabel}</span>}
+                {resetLabel && (
+                  <span
+                    className={
+                      soon
+                        ? `${classes.quotaReset} ${classes.quotaResetRelativeSoon}`
+                        : classes.quotaReset
+                    }
+                  >
+                    {resetLabel}
+                  </span>
+                )}
               </div>
             </div>
             <QuotaMeter percent={remaining} classes={classes} index={index} />

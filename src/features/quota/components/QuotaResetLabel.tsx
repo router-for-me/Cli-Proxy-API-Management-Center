@@ -12,13 +12,25 @@ import type { QuotaClassMap } from '../types';
 export interface QuotaResetLabelProps {
   display: ResetDisplay;
   classes: QuotaClassMap;
+  /** True on the row that recovers first for this credential. */
+  soon?: boolean;
 }
 
-export function QuotaResetLabel({ display, classes }: QuotaResetLabelProps) {
+export function QuotaResetLabel({ display, classes, soon = false }: QuotaResetLabelProps) {
   return (
     <>
       <span className={classes.quotaReset}>{display.absolute}</span>
-      {display.relative && <span className={classes.quotaResetRelative}>{display.relative}</span>}
+      {display.relative && (
+        <span
+          className={
+            soon
+              ? `${classes.quotaResetRelative} ${classes.quotaResetRelativeSoon}`
+              : classes.quotaResetRelative
+          }
+        >
+          {display.relative}
+        </span>
+      )}
     </>
   );
 }

@@ -1160,6 +1160,7 @@
     "windows_legend_upcoming": "предстоящее",
     "windows_legend_elapsed": "прошедшее",
     "windows_legend_reset_credit": "срок ручного сброса",
+    "soonest_row_hint": "Восстановится первым у этих учётных данных",
     "windows_reset_credit": "Ручной сброс",
     "windows_credit_granted": "Предоставлен",
     "windows_credit_expires": "Истекает",

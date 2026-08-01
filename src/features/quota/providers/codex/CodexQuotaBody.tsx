@@ -3,6 +3,7 @@
  * 重置积分明细、用量窗口水位条。
  */
 
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CodexQuotaState } from '@/types';
 import {
@@ -19,6 +20,7 @@ import { formatDateTimeValue } from '@/utils/format';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
+import { collectQuotaRowInstants, pickSoonestRowId, resetCreditRowId } from '../../resetSchedule';
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
 
 const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): string => {
@@ -33,6 +35,12 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
   const { t, i18n } = useTranslation();
   const now = useNow();
   const locale = i18n.resolvedLanguage;
+  // Windows and reset credits compete for the same emphasis: a credit expiring
+  // tonight matters more than a weekly window resetting on Friday.
+  const soonestRowId = useMemo(
+    () => pickSoonestRowId(collectQuotaRowInstants('codex', quota), now),
+    [quota, now]
+  );
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
   const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
@@ -111,16 +119,27 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
               now,
               locale
             );
+            // One expression for both the key and the highlight — two copies
+            // that drift would emphasize the wrong row.
+            const rowId = resetCreditRowId(credit, index);
+            const soon = rowId === soonestRowId;
             return (
               <div
-                key={credit.id || `${credit.expiresAt}-${index}`}
-                className={classes.codexResetCreditRow}
+                key={rowId}
+                className={
+                  soon
+                    ? `${classes.codexResetCreditRow} ${classes.codexResetCreditRowSoon}`
+                    : classes.codexResetCreditRow
+                }
+                title={soon ? t('quota_management.soonest_row_hint') : undefined}
               >
                 <span className={classes.codexResetCreditLabel}>
                   {t('codex_quota.reset_credit_number', { index: index + 1 })}
                 </span>
                 <span className={classes.codexResetCreditTime}>
-                  {expiresDisplay && <QuotaResetLabel display={expiresDisplay} classes={classes} />}
+                  {expiresDisplay && (
+                    <QuotaResetLabel display={expiresDisplay} classes={classes} soon={soon} />
+                  )}
                 </span>
               </div>
             );
@@ -147,13 +166,21 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
             : window.label;
           const resetDisplay = buildResetDisplay(window.resetLabel, window.resetAtMs, now, locale);
 
+          const soon = window.id === soonestRowId;
+
           return (
-            <div key={window.id} className={classes.quotaRow}>
+            <div
+              key={window.id}
+              className={soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+              title={soon ? t('quota_management.soonest_row_hint') : undefined}
+            >
               <div className={classes.quotaRowHeader}>
                 <span className={classes.quotaModel}>{windowLabel}</span>
                 <div className={classes.quotaMeta}>
                   <span className={classes.quotaPercent}>{percentLabel}</span>
-                  {resetDisplay && <QuotaResetLabel display={resetDisplay} classes={classes} />}
+                  {resetDisplay && (
+                    <QuotaResetLabel display={resetDisplay} classes={classes} soon={soon} />
+                  )}
                 </div>
               </div>
               <QuotaMeter percent={remaining} classes={classes} index={index} />

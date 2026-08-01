@@ -20,6 +20,17 @@
   min-width: 0;
 }
 
+/* The limit that governs what this credential can do next.
+   Deliberately no transition: the emphasis moves to another row the moment a
+   window resets, and cross-fading a target that jumps reads as flicker. */
+.quotaRowSoon {
+  padding: 4px 8px;
+  margin: 0 -8px;
+  border-left: 2px solid var(--warning-border);
+  border-radius: $radius-sm;
+  background-color: var(--warning-bg);
+}
+
 .quotaRowHeader {
   display: flex;
   align-items: baseline;
@@ -69,6 +80,11 @@
     margin: 0 4px;
     color: var(--text-quaternary);
   }
+}
+
+.quotaResetRelativeSoon {
+  color: var(--warning-text);
+  font-weight: 600;
 }
 
 .quotaAmount {
@@ -245,6 +261,11 @@
   font-size: 12px;
   line-height: 1.35;
   min-width: 0;
+}
+
+.codexResetCreditRowSoon {
+  border-color: var(--warning-border);
+  background-color: var(--warning-bg);
 }
 
 .codexResetCreditLabel {

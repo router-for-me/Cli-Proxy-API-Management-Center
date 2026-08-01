@@ -1173,6 +1173,7 @@
     "windows_legend_upcoming": "upcoming",
     "windows_legend_elapsed": "elapsed",
     "windows_legend_reset_credit": "manual reset expiry",
+    "soonest_row_hint": "Recovers first on this credential",
     "windows_reset_credit": "Manual reset",
     "windows_credit_granted": "Granted",
     "windows_credit_expires": "Expires",

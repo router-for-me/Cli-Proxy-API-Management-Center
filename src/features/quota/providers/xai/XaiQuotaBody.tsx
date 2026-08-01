@@ -3,12 +3,14 @@
  * 周/月账单水位条、按量付费余额。
  */
 
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { XaiBillingSummary, XaiQuotaState } from '@/types';
 import { buildResetDisplay, formatQuotaResetTime, parseIsoToMs } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
+import { XAI_WEEKLY_ROW_ID, collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 const formatUsdFromCents = (cents: number | null): string => {
@@ -66,6 +68,12 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
   // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
   const locale = i18n.resolvedLanguage;
+  // Only the weekly limit is a quota window; the monthly figure is a billing
+  // cycle, so it is never the row that "recovers first".
+  const weeklySoon = useMemo(
+    () => pickSoonestRowId(collectQuotaRowInstants('xai', quota), now) === XAI_WEEKLY_ROW_ID,
+    [quota, now]
+  );
   const billing = quota.billing;
 
   if (!billing) {
@@ -140,7 +148,10 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
         </div>
       )}
       {hasWeeklyData && (
-        <div className={classes.quotaRow}>
+        <div
+          className={weeklySoon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+          title={weeklySoon ? t('quota_management.soonest_row_hint') : undefined}
+        >
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('xai_quota.weekly_limit')}</span>
             <div className={classes.quotaMeta}>
@@ -150,7 +161,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
                 })}
               </span>
               {weeklyResetDisplay && (
-                <QuotaResetLabel display={weeklyResetDisplay} classes={classes} />
+                <QuotaResetLabel display={weeklyResetDisplay} classes={classes} soon={weeklySoon} />
               )}
             </div>
           </div>

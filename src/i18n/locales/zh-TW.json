@@ -1199,6 +1199,7 @@
     "windows_legend_upcoming": "即將開始",
     "windows_legend_elapsed": "已結束",
     "windows_legend_reset_credit": "主動重設過期",
+    "soonest_row_hint": "該憑證中最先恢復",
     "windows_reset_credit": "主動重設",
     "windows_credit_granted": "取得時間",
     "windows_credit_expires": "過期時間",

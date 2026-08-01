@@ -10,12 +10,15 @@
 export interface QuotaClassMap {
   // 额度行（五个提供商共用）
   quotaRow: string;
+  /** Applied to the row that recovers first on this credential. */
+  quotaRowSoon: string;
   quotaRowHeader: string;
   quotaModel: string;
   quotaMeta: string;
   quotaPercent: string;
   quotaReset: string;
   quotaResetRelative: string;
+  quotaResetRelativeSoon: string;
   quotaAmount: string;
   quotaMessage: string;
   // 套餐 chip 行（codex 命名，claude/antigravity/kimi/xai 复用；
@@ -30,6 +33,7 @@ export interface QuotaClassMap {
   codexResetCredits: string;
   codexResetCreditsTitle: string;
   codexResetCreditRow: string;
+  codexResetCreditRowSoon: string;
   codexResetCreditLabel: string;
   codexResetCreditTime: string;
   codexResetCreditsError: string;
@@ -48,12 +52,14 @@ export interface QuotaClassMap {
 
 export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'quotaRow',
+  'quotaRowSoon',
   'quotaRowHeader',
   'quotaModel',
   'quotaMeta',
   'quotaPercent',
   'quotaReset',
   'quotaResetRelative',
+  'quotaResetRelativeSoon',
   'quotaAmount',
   'quotaMessage',
   'codexPlan',
@@ -65,6 +71,7 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'codexResetCredits',
   'codexResetCreditsTitle',
   'codexResetCreditRow',
+  'codexResetCreditRowSoon',
   'codexResetCreditLabel',
   'codexResetCreditTime',
   'codexResetCreditsError',

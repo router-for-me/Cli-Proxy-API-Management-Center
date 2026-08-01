@@ -74,6 +74,46 @@ describe('CodexQuotaBody', () => {
     expect(markup).toMatch(/11 days/);
   });
 
+  test('highlights the credit when it expires before every window resets', () => {
+    const creditFirst: CodexQuotaState = {
+      ...quota,
+      windows: [{ ...quota.windows[0], resetAtMs: now + 5 * DAY_MS }],
+      rateLimitResetCredits: [
+        {
+          id: 'credit-1',
+          status: 'available',
+          grantedAt: new Date(now - DAY_MS).toISOString(),
+          expiresAt: new Date(now + 2 * HOUR_MS).toISOString(),
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, { quota: creditFirst, classes })
+    );
+
+    expect(markup).toContain('codexResetCreditRowSoon');
+    expect(markup).not.toContain('quotaRowSoon');
+  });
+
+  test('highlights the window when it resets before any credit expires', () => {
+    const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
+
+    expect(markup).toContain('quotaRowSoon');
+    expect(markup).not.toContain('codexResetCreditRowSoon');
+  });
+
+  test('highlights nothing once every instant is in the past', () => {
+    const stale: CodexQuotaState = {
+      ...quota,
+      windows: [{ ...quota.windows[0], resetAtMs: now - HOUR_MS }],
+      rateLimitResetCredits: [],
+      rateLimitResetCreditsAvailableCount: null,
+    };
+    const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota: stale, classes }));
+
+    expect(markup).not.toContain('Soon');
+  });
+
   test('keeps the baked label alone when the store entry predates resetAtMs', () => {
     const stale: CodexQuotaState = {
       ...quota,

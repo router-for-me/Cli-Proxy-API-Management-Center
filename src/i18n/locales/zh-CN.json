@@ -1173,6 +1173,7 @@
     "windows_legend_upcoming": "即将开始",
     "windows_legend_elapsed": "已结束",
     "windows_legend_reset_credit": "主动重置过期",
+    "soonest_row_hint": "该凭证中最先恢复",
     "windows_reset_credit": "主动重置",
     "windows_credit_granted": "获得时间",
     "windows_credit_expires": "过期时间",
