@@ -67,11 +67,11 @@ export function ExcludedModelsPanel({
   }, [autoFocus]);
 
   useEffect(() => {
-    if (activeIndex < 0) return;
+    if (!autoFocus || activeIndex < 0) return;
     document
       .getElementById(`${listboxId}-opt-${activeIndex}`)
       ?.scrollIntoView({ block: 'nearest' });
-  }, [activeIndex, listboxId]);
+  }, [activeIndex, autoFocus, listboxId]);
 
   const toggleAt = (index: number) => {
     const candidate = visible[index];
