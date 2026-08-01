@@ -9,11 +9,16 @@ import {
   normalizePlanType,
   resolvePlanTier,
   PREMIUM_CODEX_PLAN_TYPES,
-  formatQuotaResetTime,
+  buildResetDisplay,
+  formatInstantShort,
+  parseIsoToMs,
+  resolveResetMs,
 } from '@/utils/quota';
 import { resolveTimeZoneLabel } from '@/utils/time/timezone';
 import { formatDateTimeValue } from '@/utils/format';
+import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
+import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
 
 const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): string => {
@@ -25,7 +30,9 @@ const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): str
 };
 
 export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaState>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const now = useNow();
+  const locale = i18n.resolvedLanguage;
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
   const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
@@ -47,12 +54,24 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
   };
 
   const planLabel = getPlanLabel(planType);
-  const expiryLabel = subscriptionActiveUntil ? formatDateTimeValue(subscriptionActiveUntil) : '';
   const planValueClass = getPlanValueClass(planType, classes);
+
+  // Renewal was the one date on this card in a different shape (a full
+  // toLocaleString). Reformatted from the instant so it reads like the rest,
+  // falling back to the old rendering when the payload isn't parseable.
+  const subscriptionMs = resolveResetMs([subscriptionActiveUntil]);
+  const expiryDisplay = subscriptionActiveUntil
+    ? buildResetDisplay(
+        subscriptionMs === null ? formatDateTimeValue(subscriptionActiveUntil) : null,
+        subscriptionMs,
+        now,
+        locale
+      )
+    : null;
 
   return (
     <>
-      {(planLabel || expiryLabel || rateLimitResetCreditsAvailableCount !== null) && (
+      {(planLabel || expiryDisplay || rateLimitResetCreditsAvailableCount !== null) && (
         <div className={classes.codexPlan}>
           {planLabel && (
             <span className={classes.codexPlanItem}>
@@ -60,10 +79,13 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
               <span className={planValueClass}>{planLabel}</span>
             </span>
           )}
-          {expiryLabel && (
+          {expiryDisplay && (
             <span className={classes.codexPlanItem}>
               <span className={classes.codexPlanLabel}>{t('codex_quota.expires_label')}</span>
-              <span className={classes.codexPlanValue}>{expiryLabel}</span>
+              <span className={classes.codexPlanValue}>{expiryDisplay.absolute}</span>
+              {expiryDisplay.relative && (
+                <span className={classes.quotaResetRelative}>{expiryDisplay.relative}</span>
+              )}
             </span>
           )}
           {rateLimitResetCreditsAvailableCount !== null && (
@@ -82,7 +104,13 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
             {t('codex_quota.reset_credits_expiry_label', { timezone: resolveTimeZoneLabel() })}
           </div>
           {rateLimitResetCredits.map((credit, index) => {
-            const expiresLabel = formatQuotaResetTime(credit.expiresAt);
+            const expiresAtMs = parseIsoToMs(credit.expiresAt);
+            const expiresDisplay = buildResetDisplay(
+              expiresAtMs === null ? credit.expiresAt : formatInstantShort(expiresAtMs),
+              expiresAtMs,
+              now,
+              locale
+            );
             return (
               <div
                 key={credit.id || `${credit.expiresAt}-${index}`}
@@ -92,7 +120,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
                   {t('codex_quota.reset_credit_number', { index: index + 1 })}
                 </span>
                 <span className={classes.codexResetCreditTime}>
-                  {expiresLabel === '-' ? credit.expiresAt : expiresLabel}
+                  {expiresDisplay && <QuotaResetLabel display={expiresDisplay} classes={classes} />}
                 </span>
               </div>
             );
@@ -117,6 +145,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
           const windowLabel = window.labelKey
             ? t(window.labelKey, window.labelParams as Record<string, string | number>)
             : window.label;
+          const resetDisplay = buildResetDisplay(window.resetLabel, window.resetAtMs, now, locale);
 
           return (
             <div key={window.id} className={classes.quotaRow}>
@@ -124,7 +153,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
                 <span className={classes.quotaModel}>{windowLabel}</span>
                 <div className={classes.quotaMeta}>
                   <span className={classes.quotaPercent}>{percentLabel}</span>
-                  <span className={classes.quotaReset}>{window.resetLabel}</span>
+                  {resetDisplay && <QuotaResetLabel display={resetDisplay} classes={classes} />}
                 </div>
               </div>
               <QuotaMeter percent={remaining} classes={classes} index={index} />

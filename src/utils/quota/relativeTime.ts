@@ -24,17 +24,24 @@ export interface RelativeTimeParts {
  *
  * Signed on purpose: the earlier timeline-local version clamped with
  * `Math.max(0, …)`, so a credit that expired last week read "in 1 minute" —
- * technically monotonic, actively misleading. Sub-minute gaps floor to a
- * magnitude of 1 so nothing ever renders "in 0 minutes".
+ * technically monotonic, actively misleading.
+ *
+ * Truncated, not rounded up, for two reasons. It is the ordinary countdown
+ * convention ("2 hours left" holds from 2:59 down to 2:00), and rounding up
+ * crosses the unit thresholds: `DAY_MS - 1` picks the hour unit and then
+ * ceils to "24 hours", `HOUR_MS - 1` to "60 minutes". For a deadline it also
+ * errs in the safe direction — never claiming more time than remains.
+ *
+ * Sub-minute gaps floor to a magnitude of 1 so nothing renders "in 0 minutes".
  */
 export function relativeTimeParts(targetMs: number, nowMs: number): RelativeTimeParts {
   const delta = targetMs - nowMs;
   const sign = delta < 0 ? -1 : 1;
   const abs = Math.abs(delta);
 
-  if (abs >= DAY_MS) return { value: sign * Math.ceil(abs / DAY_MS), unit: 'day' };
-  if (abs >= HOUR_MS) return { value: sign * Math.ceil(abs / HOUR_MS), unit: 'hour' };
-  return { value: sign * Math.max(1, Math.ceil(abs / MINUTE_MS)), unit: 'minute' };
+  if (abs >= DAY_MS) return { value: sign * Math.floor(abs / DAY_MS), unit: 'day' };
+  if (abs >= HOUR_MS) return { value: sign * Math.floor(abs / HOUR_MS), unit: 'hour' };
+  return { value: sign * Math.max(1, Math.floor(abs / MINUTE_MS)), unit: 'minute' };
 }
 
 /**

@@ -15,6 +15,7 @@ export interface QuotaClassMap {
   quotaMeta: string;
   quotaPercent: string;
   quotaReset: string;
+  quotaResetRelative: string;
   quotaAmount: string;
   quotaMessage: string;
   // 套餐 chip 行（codex 命名，claude/antigravity/kimi/xai 复用；
@@ -52,6 +53,7 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'quotaMeta',
   'quotaPercent',
   'quotaReset',
+  'quotaResetRelative',
   'quotaAmount',
   'quotaMessage',
   'codexPlan',

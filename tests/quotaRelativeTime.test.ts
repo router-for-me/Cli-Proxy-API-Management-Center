@@ -17,15 +17,23 @@ const NOW = new Date(2026, 7, 2, 12, 0, 0).getTime();
 describe('relativeTimeParts', () => {
   test('picks the coarsest unit that still describes the gap', () => {
     expect(relativeTimeParts(NOW + DAY_MS, NOW)).toEqual({ value: 1, unit: 'day' });
-    expect(relativeTimeParts(NOW + DAY_MS - 1, NOW)).toEqual({ value: 24, unit: 'hour' });
     expect(relativeTimeParts(NOW + HOUR_MS, NOW)).toEqual({ value: 1, unit: 'hour' });
-    expect(relativeTimeParts(NOW + HOUR_MS - 1, NOW)).toEqual({ value: 60, unit: 'minute' });
     expect(relativeTimeParts(NOW + 30_000, NOW)).toEqual({ value: 1, unit: 'minute' });
   });
 
-  test('rounds up, so a partial unit never reads as fewer', () => {
-    expect(relativeTimeParts(NOW + 11 * DAY_MS + 1, NOW)).toEqual({ value: 12, unit: 'day' });
-    expect(relativeTimeParts(NOW + 90 * MINUTE_MS, NOW)).toEqual({ value: 2, unit: 'hour' });
+  test('never renders a magnitude that should have been the next unit up', () => {
+    // Rounding up here would produce "24 hours" and "60 minutes".
+    expect(relativeTimeParts(NOW + DAY_MS - 1, NOW)).toEqual({ value: 23, unit: 'hour' });
+    expect(relativeTimeParts(NOW + HOUR_MS - 1, NOW)).toEqual({ value: 59, unit: 'minute' });
+  });
+
+  test('truncates, so a deadline never appears further off than it is', () => {
+    expect(relativeTimeParts(NOW + 11 * DAY_MS + 1, NOW)).toEqual({ value: 11, unit: 'day' });
+    expect(relativeTimeParts(NOW + 11 * DAY_MS + 23 * HOUR_MS, NOW)).toEqual({
+      value: 11,
+      unit: 'day',
+    });
+    expect(relativeTimeParts(NOW + 90 * MINUTE_MS, NOW)).toEqual({ value: 1, unit: 'hour' });
   });
 
   test('past instants are negative rather than clamped to zero', () => {

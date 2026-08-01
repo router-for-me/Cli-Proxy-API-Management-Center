@@ -58,6 +58,19 @@
   color: var(--text-quaternary);
 }
 
+/* Countdown beside the absolute reset time. The separator is a pseudo-element
+   so the two spans stay independently styleable (the relative half turns
+   warning-coloured when this is the row that recovers first). */
+.quotaResetRelative {
+  color: var(--text-tertiary);
+
+  &::before {
+    content: '·';
+    margin: 0 4px;
+    color: var(--text-quaternary);
+  }
+}
+
 .quotaAmount {
   font-family: $font-mono;
   font-variant-numeric: tabular-nums;

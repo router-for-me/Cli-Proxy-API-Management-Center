@@ -106,6 +106,17 @@ button.quotaMessageAction {
   color: var(--text-quaternary);
 }
 
+/* Compact host: same contract class as QuotaBody.module.scss, tighter gutter. */
+.quotaResetRelative {
+  color: var(--text-tertiary);
+
+  &::before {
+    content: '·';
+    margin: 0 3px;
+    color: var(--text-quaternary);
+  }
+}
+
 .quotaAmount {
   font-family: $font-mono;
   font-size: 11px;

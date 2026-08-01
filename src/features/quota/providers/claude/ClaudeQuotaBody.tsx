@@ -4,11 +4,15 @@
 
 import { useTranslation } from 'react-i18next';
 import type { ClaudeQuotaState } from '@/types';
+import { buildResetDisplay } from '@/utils/quota';
+import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
+import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import type { QuotaBodyProps } from '../../types';
 
 export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaState>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const now = useNow();
   const windows = quota.windows ?? [];
   const extraUsage = quota.extraUsage ?? null;
   const planType = quota.planType ?? null;
@@ -39,6 +43,12 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
             clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
           const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
           const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
+          const resetDisplay = buildResetDisplay(
+            window.resetLabel,
+            window.resetAtMs,
+            now,
+            i18n.resolvedLanguage
+          );
 
           return (
             <div key={window.id} className={classes.quotaRow}>
@@ -46,7 +56,7 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
                 <span className={classes.quotaModel}>{windowLabel}</span>
                 <div className={classes.quotaMeta}>
                   <span className={classes.quotaPercent}>{percentLabel}</span>
-                  <span className={classes.quotaReset}>{window.resetLabel}</span>
+                  {resetDisplay && <QuotaResetLabel display={resetDisplay} classes={classes} />}
                 </div>
               </div>
               <QuotaMeter percent={remaining} classes={classes} index={index} />
