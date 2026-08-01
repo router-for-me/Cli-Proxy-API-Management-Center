@@ -10,7 +10,7 @@ import { CODEX_CONFIG } from './providers/codex/data';
 import { KIMI_CONFIG } from './providers/kimi/data';
 import { XAI_CONFIG } from './providers/xai/data';
 import type { QuotaProviderType } from './providers/types';
-import { QUOTA_TAB_ORDER, type QuotaTabId } from './constants';
+import { QUOTA_TAB_ORDER, type QuotaSortMode, type QuotaTabId } from './constants';
 
 const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolean> = {
   antigravity: ANTIGRAVITY_CONFIG.filterFn,
@@ -47,6 +47,41 @@ export function classifyQuotaFiles(files: AuthFileItem[]): QuotaFileEntry[] {
 export function filterEntriesByTab(entries: QuotaFileEntry[], tab: QuotaTabId): QuotaFileEntry[] {
   if (tab === 'all') return entries;
   return entries.filter((entry) => entry.type === tab);
+}
+
+/**
+ * Order the grid by whichever credential recovers first.
+ *
+ * The instant is injected rather than read here: quota lives in the store and
+ * arrives asynchronously, and keeping this function store-free is what makes
+ * the ordering rules directly testable.
+ *
+ * Credentials with no instant — not loaded yet, failed, or reporting no
+ * upcoming reset — sink to the bottom rather than sorting as "now". They keep
+ * their incoming provider-grouped order, so the unloaded tail still reads like
+ * the default view instead of an arbitrary shuffle. Because loading is
+ * click-to-fetch, that tail is most of the list until the user asks for data.
+ *
+ * The original index is the final tiebreak, making stability an asserted
+ * property rather than an assumption about the engine's sort.
+ */
+export function sortQuotaEntries(
+  entries: QuotaFileEntry[],
+  mode: QuotaSortMode,
+  resolveNextRecoveryMs: (entry: QuotaFileEntry) => number | null
+): QuotaFileEntry[] {
+  if (mode !== 'soonest') return [...entries];
+
+  // Decorate once — resolving pokes at provider-shaped state per entry.
+  return entries
+    .map((entry, index) => ({ entry, index, atMs: resolveNextRecoveryMs(entry) }))
+    .sort((a, b) => {
+      if (a.atMs === null && b.atMs === null) return a.index - b.index;
+      if (a.atMs === null) return 1;
+      if (b.atMs === null) return -1;
+      return a.atMs - b.atMs || a.index - b.index;
+    })
+    .map((decorated) => decorated.entry);
 }
 
 export function buildTabCounts(entries: QuotaFileEntry[]): Record<string, number> {
