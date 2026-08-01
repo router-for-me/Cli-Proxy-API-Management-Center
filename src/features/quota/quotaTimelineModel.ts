@@ -10,10 +10,10 @@
  * week, and no per-card percentage shows that.
  */
 
+import { DAY_MS, HOUR_MS } from '@/utils/time/durations';
 import type { QuotaProviderType } from './providers/types';
 
-export const HOUR_MS = 3_600_000;
-export const DAY_MS = 24 * HOUR_MS;
+export { DAY_MS, HOUR_MS };
 
 /** Weekly view spans a fortnight; the session view zooms to three days. */
 export type TimelineMode = 'weekly' | 'session';

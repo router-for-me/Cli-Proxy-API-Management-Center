@@ -12,10 +12,11 @@
  * quotaTimeline.ts.)
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TYPE_COLORS } from '@/utils/quota';
+import { formatRelativeInstant, TYPE_COLORS } from '@/utils/quota';
+import { useNow } from '@/hooks/useNow';
 import type { ResolvedTheme, ThemeColors } from '@/types';
 import {
   buildTimelineLane,
@@ -24,7 +25,6 @@ import {
   projectResetCredits,
   timelineSpan,
   DAY_MS,
-  HOUR_MS,
 } from '../quotaTimelineModel';
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
@@ -41,19 +41,6 @@ const formatDay = (ms: number) => {
 const formatTime = (ms: number) => {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-
-const formatRelativeTime = (expiresAtMs: number, now: number, locale?: string) => {
-  const remainingMs = Math.max(0, expiresAtMs - now);
-  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
-
-  if (remainingMs >= DAY_MS) {
-    return formatter.format(Math.ceil(remainingMs / DAY_MS), 'day');
-  }
-  if (remainingMs >= HOUR_MS) {
-    return formatter.format(Math.ceil(remainingMs / HOUR_MS), 'hour');
-  }
-  return formatter.format(Math.max(1, Math.ceil(remainingMs / 60_000)), 'minute');
 };
 
 export interface QuotaTimelineProps {
@@ -84,17 +71,11 @@ export function QuotaTimeline({
   const [mode, setMode] = useState<TimelineMode>(initialMode);
   const [offset, setOffset] = useState(0);
 
-  // The clock is state, not a read during render: bars are classified
-  // past/live/next against it and the marker is positioned by it, so it has to
-  // advance on its own or the chart quietly goes stale on a long-lived tab.
-  // A minute is finer than any window boundary here (the shortest is 5 hours).
-  const [tick, setTick] = useState(() => Date.now());
-  useEffect(() => {
-    if (nowProp !== undefined) return; // fixed clock: tests and screenshots
-    const id = setInterval(() => setTick(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, [nowProp]);
-
+  // The clock has to advance on its own: bars are classified past/live/next
+  // against it and the marker is positioned by it, so a long-lived tab would
+  // quietly go stale. Shared app-wide so the cards above tick in lockstep with
+  // the chart rather than each running its own timer.
+  const tick = useNow(nowProp === undefined); // fixed clock: tests and screenshots
   const now = nowProp ?? tick;
 
   const span = useMemo(() => timelineSpan(mode, offset, now), [mode, offset, now]);
@@ -438,7 +419,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
               ? `${grantedLabel}: ${formatDay(credit.grantedAtMs)} ${formatTime(credit.grantedAtMs)}`
               : null,
             `${expiresLabel}: ${formatDay(credit.expiresAtMs)} ${formatTime(credit.expiresAtMs)}`,
-            formatRelativeTime(credit.expiresAtMs, now, i18n.resolvedLanguage),
+            formatRelativeInstant(credit.expiresAtMs, now, i18n.resolvedLanguage),
           ]
             .filter((line): line is string => line !== null)
             .join('\n');

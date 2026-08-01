@@ -5,31 +5,20 @@
 import type { TFunction } from 'i18next';
 import type { CodexUsageWindow } from '@/types';
 import { normalizeNumberValue } from './parsers';
+import { formatInstantShort } from './relativeTime';
 
 export function formatQuotaResetTime(value?: string): string {
   if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString(undefined, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const ms = new Date(value).getTime();
+  if (Number.isNaN(ms)) return '-';
+  return formatInstantShort(ms);
 }
 
 export function formatUnixSeconds(value: number | null): string {
   if (!value) return '-';
-  const date = new Date(value * 1000);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString(undefined, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
+  const ms = value * 1000;
+  if (Number.isNaN(ms)) return '-';
+  return formatInstantShort(ms);
 }
 
 export function formatCodexResetLabel(window?: CodexUsageWindow | null): string {
