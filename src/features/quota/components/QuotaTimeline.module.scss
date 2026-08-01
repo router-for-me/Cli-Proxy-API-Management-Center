@@ -309,6 +309,25 @@ $lane-width: 210px;
   font-variant-numeric: tabular-nums;
 }
 
+// A reset credit is use-it-or-lose-it, so its expiry sits above the window bar
+// as a narrow amber tick without competing with the bar's own label.
+.resetCreditTick {
+  position: absolute;
+  z-index: 3;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--amber-color);
+  box-shadow: 0 0 0 1px var(--bg-primary);
+  cursor: help;
+
+  &:hover {
+    width: 4px;
+  }
+}
+
 .laneIdle {
   position: relative;
   z-index: 2;
@@ -349,6 +368,13 @@ $lane-width: 210px;
 
 .swatchPast {
   background: color-mix(in srgb, var(--text-tertiary, #888) 12%, transparent);
+}
+
+.swatchCredit {
+  width: 2px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--amber-color);
 }
 
 .legendNote {

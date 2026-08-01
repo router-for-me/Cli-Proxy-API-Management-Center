@@ -21,8 +21,10 @@ import {
   buildTimelineLane,
   laneHasWindow,
   projectLane,
+  projectResetCredits,
   timelineSpan,
   DAY_MS,
+  HOUR_MS,
 } from '../quotaTimelineModel';
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
@@ -39,6 +41,19 @@ const formatDay = (ms: number) => {
 const formatTime = (ms: number) => {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const formatRelativeTime = (expiresAtMs: number, now: number, locale?: string) => {
+  const remainingMs = Math.max(0, expiresAtMs - now);
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
+
+  if (remainingMs >= DAY_MS) {
+    return formatter.format(Math.ceil(remainingMs / DAY_MS), 'day');
+  }
+  if (remainingMs >= HOUR_MS) {
+    return formatter.format(Math.ceil(remainingMs / HOUR_MS), 'hour');
+  }
+  return formatter.format(Math.max(1, Math.ceil(remainingMs / 60_000)), 'minute');
 };
 
 export interface QuotaTimelineProps {
@@ -271,6 +286,12 @@ export function QuotaTimeline({
             <span className={`${styles.swatch} ${styles.swatchPast}`} />
             {t('quota_management.windows_legend_elapsed', { defaultValue: 'elapsed' })}
           </span>
+          <span className={styles.legendItem}>
+            <span className={styles.swatchCredit} />
+            {t('quota_management.windows_legend_reset_credit', {
+              defaultValue: 'manual reset expiry',
+            })}
+          </span>
           <span className={styles.legendNote}>
             {mode === 'weekly'
               ? t('quota_management.windows_note_weekly', {
@@ -299,11 +320,15 @@ interface LaneProps {
 }
 
 function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const windows = useMemo(
     () => projectLane(lane, span.startMs, span.endMs, now, mode),
     [lane, span, now, mode]
+  );
+  const resetCredits = useMemo(
+    () => projectResetCredits(lane, span.startMs, span.endMs, now),
+    [lane, span, now]
   );
 
   const colorSet = TYPE_COLORS[lane.provider] || TYPE_COLORS.unknown;
@@ -399,6 +424,36 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
             );
           })
         )}
+
+        {resetCredits.map((credit, index) => {
+          const grantedLabel = t('quota_management.windows_credit_granted', {
+            defaultValue: 'Granted',
+          });
+          const expiresLabel = t('quota_management.windows_credit_expires', {
+            defaultValue: 'Expires',
+          });
+          const title = [
+            t('quota_management.windows_reset_credit', { defaultValue: 'Manual reset' }),
+            credit.grantedAtMs !== null
+              ? `${grantedLabel}: ${formatDay(credit.grantedAtMs)} ${formatTime(credit.grantedAtMs)}`
+              : null,
+            `${expiresLabel}: ${formatDay(credit.expiresAtMs)} ${formatTime(credit.expiresAtMs)}`,
+            formatRelativeTime(credit.expiresAtMs, now, i18n.resolvedLanguage),
+          ]
+            .filter((line): line is string => line !== null)
+            .join('\n');
+
+          return (
+            <span
+              key={credit.id || `${credit.expiresAtMs}-${index}`}
+              className={styles.resetCreditTick}
+              style={{ left: `${credit.leftPercent}%` }}
+              title={title}
+              role="img"
+              aria-label={title.split('\n').join(', ')}
+            />
+          );
+        })}
       </div>
     </div>
   );
