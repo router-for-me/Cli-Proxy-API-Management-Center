@@ -8,7 +8,7 @@ import type { KimiQuotaState } from '@/types';
 import { formatKimiResetHint } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
-import { collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
+import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>) {
@@ -16,7 +16,7 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
   // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
   const soonestRowId = useMemo(
-    () => pickSoonestRowId(collectQuotaRowInstants('kimi', quota), now),
+    () => pickUrgentRowId(collectQuotaRowInstants('kimi', quota), now),
     [quota, now]
   );
   const rows = quota.rows ?? [];
@@ -46,7 +46,7 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
         return (
           <div
             key={row.id}
-            className={soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+            className={classes.quotaRow}
             title={soon ? t('quota_management.soonest_row_hint') : undefined}
           >
             <div className={classes.quotaRowHeader}>

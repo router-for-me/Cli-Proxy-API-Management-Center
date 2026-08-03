@@ -72,15 +72,6 @@ button.quotaMessageAction {
   gap: 4px;
 }
 
-/* Compact host: same contract class, tighter gutter. */
-.quotaRowSoon {
-  padding: 3px 6px;
-  margin: 0 -6px;
-  border-left: 2px solid var(--warning-border);
-  border-radius: $radius-sm;
-  background-color: var(--warning-bg);
-}
-
 .quotaRowHeader {
   display: flex;
   align-items: baseline;

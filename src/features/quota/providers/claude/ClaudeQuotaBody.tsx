@@ -9,14 +9,14 @@ import { buildResetDisplay } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
-import { collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
+import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaState>) {
   const { t, i18n } = useTranslation();
   const now = useNow();
   const soonestRowId = useMemo(
-    () => pickSoonestRowId(collectQuotaRowInstants('claude', quota), now),
+    () => pickUrgentRowId(collectQuotaRowInstants('claude', quota), now),
     [quota, now]
   );
   const windows = quota.windows ?? [];
@@ -61,7 +61,7 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
           return (
             <div
               key={window.id}
-              className={soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+              className={classes.quotaRow}
               title={soon ? t('quota_management.soonest_row_hint') : undefined}
             >
               <div className={classes.quotaRowHeader}>

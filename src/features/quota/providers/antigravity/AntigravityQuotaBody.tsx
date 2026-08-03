@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { AntigravityQuotaState, AntigravityQuotaSubscription } from '@/types';
 import { QuotaMeter } from '../../components/QuotaMeter';
-import { collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
+import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 import { getNextAntigravityCountdownUpdateDelay } from './countdown';
 
@@ -146,9 +146,9 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
   }, [resetTimestamps, serverTimeOffsetMs]);
 
   // Ranked against this provider's own server-corrected clock rather than the
-  // shared one, so the highlight and the countdown beside it always agree.
+  // shared one, so the final-hour warning and the countdown always agree.
   const soonestRowId = useMemo(
-    () => pickSoonestRowId(collectQuotaRowInstants('antigravity', quota), nowMs),
+    () => pickUrgentRowId(collectQuotaRowInstants('antigravity', quota), nowMs),
     [quota, nowMs]
   );
 
@@ -208,12 +208,7 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
                 const soon = bucket.id === soonestRowId;
 
                 return (
-                  <div
-                    key={bucket.id}
-                    className={
-                      soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow
-                    }
-                  >
+                  <div key={bucket.id} className={classes.quotaRow}>
                     <div className={classes.quotaRowHeader}>
                       <span className={classes.quotaModel} title={bucketDescription}>
                         {bucketLabel}

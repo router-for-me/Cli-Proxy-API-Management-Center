@@ -10,7 +10,7 @@ import { buildResetDisplay, formatQuotaResetTime, parseIsoToMs } from '@/utils/q
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
-import { XAI_WEEKLY_ROW_ID, collectQuotaRowInstants, pickSoonestRowId } from '../../resetSchedule';
+import { XAI_WEEKLY_ROW_ID, collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 const formatUsdFromCents = (cents: number | null): string => {
@@ -71,7 +71,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
   // Only the weekly limit is a quota window; the monthly figure is a billing
   // cycle, so it is never the row that "recovers first".
   const weeklySoon = useMemo(
-    () => pickSoonestRowId(collectQuotaRowInstants('xai', quota), now) === XAI_WEEKLY_ROW_ID,
+    () => pickUrgentRowId(collectQuotaRowInstants('xai', quota), now) === XAI_WEEKLY_ROW_ID,
     [quota, now]
   );
   const billing = quota.billing;
@@ -149,7 +149,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
       )}
       {hasWeeklyData && (
         <div
-          className={weeklySoon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+          className={classes.quotaRow}
           title={weeklySoon ? t('quota_management.soonest_row_hint') : undefined}
         >
           <div className={classes.quotaRowHeader}>

@@ -19,6 +19,7 @@
  */
 
 import { parseIsoToMs } from '@/utils/quota';
+import { HOUR_MS } from '@/utils/time/durations';
 import type { QuotaProviderType } from './providers/types';
 
 export interface QuotaRowInstant {
@@ -154,6 +155,23 @@ export function pickSoonestRowId(
     }
   }
   return best?.rowId ?? null;
+}
+
+/**
+ * The recovery row whose countdown should receive warning emphasis.
+ *
+ * A nearest reset that is still hours or days away is informational, not
+ * urgent. Only the final hour is highlighted, and exactly one hour remaining
+ * is deliberately excluded to match the "less than one hour" UI rule.
+ */
+export function pickUrgentRowId(
+  instants: readonly QuotaRowInstant[],
+  nowMs: number
+): string | null {
+  return pickSoonestRowId(
+    instants.filter((instant) => instant.atMs - nowMs > 0 && instant.atMs - nowMs < HOUR_MS),
+    nowMs
+  );
 }
 
 /**

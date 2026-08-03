@@ -74,7 +74,7 @@ describe('CodexQuotaBody', () => {
     expect(markup).toMatch(/11 days/);
   });
 
-  test('highlights the credit when it expires before every window resets', () => {
+  test('highlights a credit expiring within the final hour', () => {
     const creditFirst: CodexQuotaState = {
       ...quota,
       windows: [{ ...quota.windows[0], resetAtMs: now + 5 * DAY_MS }],
@@ -83,7 +83,7 @@ describe('CodexQuotaBody', () => {
           id: 'credit-1',
           status: 'available',
           grantedAt: new Date(now - DAY_MS).toISOString(),
-          expiresAt: new Date(now + 2 * HOUR_MS).toISOString(),
+          expiresAt: new Date(now + 30 * 60_000).toISOString(),
         },
       ],
     };
@@ -95,11 +95,22 @@ describe('CodexQuotaBody', () => {
     expect(markup).not.toContain('quotaRowSoon');
   });
 
-  test('highlights the window when it resets before any credit expires', () => {
+  test('does not emphasize a reset countdown more than one hour away', () => {
     const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
 
-    expect(markup).toContain('quotaRowSoon');
+    expect(markup).not.toContain('quotaRowSoon');
+    expect(markup).not.toContain('quotaResetRelativeSoon');
     expect(markup).not.toContain('codexResetCreditRowSoon');
+  });
+
+  test('emphasizes a reset countdown within the final hour', () => {
+    const urgent: CodexQuotaState = {
+      ...quota,
+      windows: [{ ...quota.windows[0], resetAtMs: now + 30 * 60_000 }],
+    };
+    const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota: urgent, classes }));
+
+    expect(markup).toContain('quotaResetRelativeSoon');
   });
 
   test('highlights nothing once every instant is in the past', () => {

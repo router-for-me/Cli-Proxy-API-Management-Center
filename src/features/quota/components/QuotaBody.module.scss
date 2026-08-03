@@ -20,17 +20,6 @@
   min-width: 0;
 }
 
-/* The limit that governs what this credential can do next.
-   Deliberately no transition: the emphasis moves to another row the moment a
-   window resets, and cross-fading a target that jumps reads as flicker. */
-.quotaRowSoon {
-  padding: 4px 8px;
-  margin: 0 -8px;
-  border-left: 2px solid var(--warning-border);
-  border-radius: $radius-sm;
-  background-color: var(--warning-bg);
-}
-
 .quotaRowHeader {
   display: flex;
   align-items: baseline;

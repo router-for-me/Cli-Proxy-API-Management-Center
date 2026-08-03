@@ -8,6 +8,7 @@ import {
   collectQuotaRowInstants,
   nextRecoveryMs,
   pickSoonestRowId,
+  pickUrgentRowId,
   resetCreditRowId,
 } from '@/features/quota/resetSchedule';
 import { DAY_MS, HOUR_MS } from '@/utils/time/durations';
@@ -166,6 +167,30 @@ describe('pickSoonestRowId', () => {
     ];
     expect(pickSoonestRowId(a, NOW)).toBe('a');
     expect(pickSoonestRowId([...a].reverse(), NOW)).toBe('a');
+  });
+});
+
+describe('pickUrgentRowId', () => {
+  test('highlights only the nearest reset strictly inside the final hour', () => {
+    const instants = [
+      { rowId: 'later-urgent', atMs: NOW + 45 * 60_000, kind: 'window' as const },
+      { rowId: 'nearest-urgent', atMs: NOW + 30 * 60_000, kind: 'window' as const },
+      { rowId: 'past', atMs: NOW - 1, kind: 'window' as const },
+    ];
+
+    expect(pickUrgentRowId(instants, NOW)).toBe('nearest-urgent');
+  });
+
+  test('does not highlight at exactly one hour or beyond', () => {
+    expect(
+      pickUrgentRowId(
+        [
+          { rowId: 'exactly-one-hour', atMs: NOW + HOUR_MS, kind: 'window' },
+          { rowId: 'later', atMs: NOW + 2 * HOUR_MS, kind: 'window' },
+        ],
+        NOW
+      )
+    ).toBeNull();
   });
 });
 

@@ -10,8 +10,6 @@
 export interface QuotaClassMap {
   // 额度行（五个提供商共用）
   quotaRow: string;
-  /** Applied to the row that recovers first on this credential. */
-  quotaRowSoon: string;
   quotaRowHeader: string;
   quotaModel: string;
   quotaMeta: string;
@@ -52,7 +50,6 @@ export interface QuotaClassMap {
 
 export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'quotaRow',
-  'quotaRowSoon',
   'quotaRowHeader',
   'quotaModel',
   'quotaMeta',

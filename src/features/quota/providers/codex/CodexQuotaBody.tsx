@@ -20,7 +20,7 @@ import { formatDateTimeValue } from '@/utils/format';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
-import { collectQuotaRowInstants, pickSoonestRowId, resetCreditRowId } from '../../resetSchedule';
+import { collectQuotaRowInstants, pickUrgentRowId, resetCreditRowId } from '../../resetSchedule';
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
 
 const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): string => {
@@ -35,10 +35,10 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
   const { t, i18n } = useTranslation();
   const now = useNow();
   const locale = i18n.resolvedLanguage;
-  // Windows and reset credits compete for the same emphasis: a credit expiring
-  // tonight matters more than a weekly window resetting on Friday.
+  // Windows and reset credits compete for the same emphasis, but only during
+  // the final hour before the reset or expiry.
   const soonestRowId = useMemo(
-    () => pickSoonestRowId(collectQuotaRowInstants('codex', quota), now),
+    () => pickUrgentRowId(collectQuotaRowInstants('codex', quota), now),
     [quota, now]
   );
   const windows = quota.windows ?? [];
@@ -171,7 +171,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
           return (
             <div
               key={window.id}
-              className={soon ? `${classes.quotaRow} ${classes.quotaRowSoon}` : classes.quotaRow}
+              className={classes.quotaRow}
               title={soon ? t('quota_management.soonest_row_hint') : undefined}
             >
               <div className={classes.quotaRowHeader}>
