@@ -1,0 +1,139 @@
+@use '../../../styles/mixins' as *;
+
+.card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: clamp($spacing-lg, 2.4vw, 28px);
+  border: 1px solid color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--primary-color) 8%, transparent),
+      transparent 42%
+    ),
+    color-mix(in srgb, var(--bg-primary) 82%, transparent);
+}
+
+.header,
+.content,
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.header,
+.content {
+  justify-content: space-between;
+  gap: $spacing-md;
+}
+
+.header {
+  align-items: flex-start;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+
+  i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.badgerunning {
+  border-color: color-mix(in srgb, var(--viz-success) 42%, transparent);
+  color: var(--success-badge-text);
+  background: color-mix(in srgb, var(--viz-success) 12%, transparent);
+}
+
+.badgestarting,
+.badgechecking {
+  border-color: color-mix(in srgb, var(--amber-color) 45%, transparent);
+  color: var(--amber-text);
+  background: color-mix(in srgb, var(--amber-color) 12%, transparent);
+}
+
+.badgestopped,
+.badgeunconfigured,
+.badgedisconnected,
+.badgeunavailable {
+  color: var(--text-tertiary);
+}
+
+.copy {
+  min-width: 0;
+}
+
+.model {
+  margin: 0;
+  font-family: $font-mono;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail {
+  max-width: 680px;
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.actions {
+  flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}
+
+@media (max-width: 760px) {
+  .content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
+
+@include mobile {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

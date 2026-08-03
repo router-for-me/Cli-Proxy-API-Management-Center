@@ -17,6 +17,7 @@ import { LiveWire } from './components/LiveWire';
 import { Meter } from './components/Meter';
 import { Sparkline } from './components/Sparkline';
 import { ThroughputChart } from './components/ThroughputChart';
+import { CCVibeCard } from './components/CCVibeCard';
 import { useCountUp, useRevealGroup, useRevealOnScroll } from '@/hooks/motion';
 import { providerLabel, splitWindowMinutes, toneForSuccessRate, type MeterTone } from './utils';
 import styles from './dashboard.module.scss';
@@ -516,6 +517,8 @@ export function DashboardPage() {
           </Link>
         </div>
       </section>
+
+      <CCVibeCard connected={connected} />
 
       {/* ---------- CTA ---------- */}
       <section className={styles.section} ref={ctaRef}>
