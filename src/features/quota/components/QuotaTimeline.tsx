@@ -57,6 +57,8 @@ export interface QuotaTimelineProps {
   now?: number;
   /** Injectable initial zoom for tests/screenshots; defaults to the weekly view. */
   initialMode?: TimelineMode;
+  /** Injectable initial date offset for tests/screenshots; defaults to the current period. */
+  initialOffset?: number;
 }
 
 export function QuotaTimeline({
@@ -66,10 +68,11 @@ export function QuotaTimeline({
   resolvedTheme,
   now: nowProp,
   initialMode = 'weekly',
+  initialOffset = 0,
 }: QuotaTimelineProps) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<TimelineMode>(initialMode);
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(initialOffset);
 
   // The clock has to advance on its own: bars are classified past/live/next
   // against it and the marker is positioned by it, so a long-lived tab would
@@ -79,6 +82,11 @@ export function QuotaTimeline({
   const now = nowProp ?? tick;
 
   const span = useMemo(() => timelineSpan(mode, offset, now), [mode, offset, now]);
+  const todayLabel = t('quota_management.windows_today', { defaultValue: 'Today' });
+  // This button doubles as the selected-period indicator and the shortcut back
+  // to the current period. Keeping its visible text hard-coded to "Today" made
+  // successful previous/next navigation look as though the date never changed.
+  const navigationLabel = offset === 0 ? todayLabel : formatDay(span.startMs);
 
   const laneInputs = useMemo(
     () =>
@@ -174,8 +182,14 @@ export function QuotaTimeline({
             >
               ‹
             </button>
-            <button type="button" onClick={() => setOffset(0)} disabled={offset === 0}>
-              {t('quota_management.windows_today', { defaultValue: 'Today' })}
+            <button
+              type="button"
+              onClick={() => setOffset(0)}
+              disabled={offset === 0}
+              aria-label={todayLabel}
+              title={offset === 0 ? undefined : todayLabel}
+            >
+              {navigationLabel}
             </button>
             <button
               type="button"

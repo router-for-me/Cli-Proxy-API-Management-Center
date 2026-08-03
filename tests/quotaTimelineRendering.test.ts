@@ -21,6 +21,33 @@ const baseProps = {
 };
 
 describe('QuotaTimeline rendering', () => {
+  test('shows the selected period date instead of always labelling it Today', () => {
+    const markup = renderToStaticMarkup(
+      createElement(QuotaTimeline, {
+        ...baseProps,
+        initialOffset: 1,
+        quotaFor: () => ({
+          status: 'success',
+          windows: [
+            {
+              label: '7-day',
+              usedPercent: 25,
+              resetAtMs: new Date(2026, 7, 1, 12).getTime(),
+              periodHours: 168,
+            },
+          ],
+        }),
+      })
+    );
+
+    // The next weekly period starts on Sunday 08/02. The button remains the
+    // shortcut back to Today (aria-label/title), but its visible label now
+    // reflects the period selected with the previous/next arrows.
+    expect(markup).toMatch(
+      /<button type="button" aria-label="[^"]+" title="[^"]+">08\/02<\/button>/
+    );
+  });
+
   test('keeps the panel and controls visible when 5-hour mode has no matching lanes', () => {
     const weeklyOnlyQuota = {
       status: 'success' as const,
