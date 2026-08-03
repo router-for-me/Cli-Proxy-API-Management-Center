@@ -13,10 +13,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
 import { CodexQuotaBody } from '@/features/quota/providers/codex/CodexQuotaBody';
 import { ClaudeQuotaBody } from '@/features/quota/providers/claude/ClaudeQuotaBody';
+import { KimiQuotaBody } from '@/features/quota/providers/kimi/KimiQuotaBody';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import { formatInstantShort } from '@/utils/quota';
 import { DAY_MS, HOUR_MS } from '@/utils/time/durations';
-import type { ClaudeQuotaState, CodexQuotaState } from '@/types';
+import type { ClaudeQuotaState, CodexQuotaState, KimiQuotaState } from '@/types';
 
 const classes = bindQuotaClasses(
   Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, key])),
@@ -136,6 +137,32 @@ describe('CodexQuotaBody', () => {
 
     expect(markup).toContain('08-02 18:00');
     expect(markup).not.toContain('quotaResetRelative');
+  });
+});
+
+describe('KimiQuotaBody', () => {
+  test('renders the concrete reset time alongside its countdown', () => {
+    const resetAtMs = now + 3 * HOUR_MS;
+    const quota: KimiQuotaState = {
+      status: 'success',
+      rows: [
+        {
+          id: 'summary',
+          label: 'Weekly limit',
+          used: 34,
+          limit: 100,
+          resetHint: '3h',
+          resetAtMs,
+          periodHours: 168,
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(createElement(KimiQuotaBody, { quota, classes }));
+
+    expect(markup).toContain(formatInstantShort(resetAtMs));
+    expect(markup).toContain('quotaResetRelative');
+    expect(markup).toMatch(/3 hours/);
+    expect(markup).not.toContain('resets in 3h');
   });
 });
 
