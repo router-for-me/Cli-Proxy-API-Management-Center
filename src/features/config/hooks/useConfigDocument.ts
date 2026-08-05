@@ -277,6 +277,27 @@ export function useConfigDocument({
     });
   }, [isDirty, loadConfig, showConfirmation, t]);
 
+  /** 无需联网，直接恢复最近一次成功读取的原始服务端 YAML。 */
+  const handleDiscard = useCallback(() => {
+    if (!isDirty) return;
+
+    showConfirmation({
+      title: t('common.unsaved_changes_title'),
+      message: t('config_management.discard_confirm_message'),
+      confirmText: t('config_management.actions.discard'),
+      cancelText: t('common.cancel'),
+      variant: 'danger',
+      onConfirm: () => {
+        setContent(previewServerYaml);
+        setDirty(false);
+        setDiffModalOpen(false);
+        setServerYaml(previewServerYaml);
+        setMergedYaml(previewServerYaml);
+        loadVisualValuesFromYaml(previewServerYaml);
+      },
+    });
+  }, [isDirty, loadVisualValuesFromYaml, previewServerYaml, showConfirmation, t]);
+
   const closeDiff = useCallback(() => setDiffModalOpen(false), []);
 
   return {
@@ -297,6 +318,7 @@ export function useConfigDocument({
     handleConfirmSave,
     handleChange,
     handleReload,
+    handleDiscard,
     closeDiff,
   };
 }

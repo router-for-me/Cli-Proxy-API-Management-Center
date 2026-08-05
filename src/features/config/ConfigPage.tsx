@@ -277,11 +277,7 @@ export function ConfigPage() {
         ) : (
           <SourceSearchBar search={sourceSearch} disabled={disableControls || doc.loading} />
         )}
-        <ModeSwitch
-          mode={mode}
-          disabled={doc.saving || doc.loading}
-          onChange={handleModeChange}
-        />
+        <ModeSwitch mode={mode} disabled={doc.saving || doc.loading} onChange={handleModeChange} />
       </div>
 
       {mode === 'visual' ? (
@@ -322,7 +318,7 @@ export function ConfigPage() {
         saveDisabled={saveDisabled}
         discardDisabled={doc.loading || doc.saving}
         onSave={doc.handleSave}
-        onDiscard={doc.handleReload}
+        onDiscard={doc.handleDiscard}
       />
 
       <DiffModal

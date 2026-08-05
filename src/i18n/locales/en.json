@@ -840,6 +840,7 @@
       "discard": "Discard changes",
       "save": "Save changes"
     },
+    "discard_confirm_message": "Discard all unsaved changes and restore the last server version?",
     "mode": {
       "label": "Editor mode",
       "visual": "Visual",

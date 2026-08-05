@@ -866,6 +866,7 @@
       "discard": "放棄變更",
       "save": "儲存變更"
     },
+    "discard_confirm_message": "確定放棄所有未儲存的變更並還原到最近的伺服器版本嗎？",
     "mode": {
       "label": "編輯模式",
       "visual": "視覺化",

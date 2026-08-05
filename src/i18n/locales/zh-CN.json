@@ -840,6 +840,7 @@
       "discard": "放弃更改",
       "save": "保存更改"
     },
+    "discard_confirm_message": "确定放弃所有未保存的更改并恢复到最近的服务器版本吗？",
     "mode": {
       "label": "编辑模式",
       "visual": "可视化",
