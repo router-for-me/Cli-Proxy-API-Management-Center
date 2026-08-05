@@ -74,6 +74,15 @@ export function ConfigTabs({
         const Icon = CONFIG_TAB_ICONS[id];
         const isActive = active === id;
         const errorCount = errorCounts[id] ?? 0;
+        const isDirty = dirtyTabs.has(id);
+        const tabLabel = t(`config_management.visual.sections.${id}.title`);
+        const accessibleLabel = [
+          tabLabel,
+          errorCount > 0 ? t('config_management.meta_errors', { count: errorCount }) : null,
+          isDirty ? t('config_management.status_dirty_short') : null,
+        ]
+          .filter(Boolean)
+          .join(', ');
 
         return (
           <button
@@ -86,6 +95,7 @@ export function ConfigTabs({
             id={configTabDomId(id)}
             aria-selected={isActive}
             aria-controls={configPanelDomId(id)}
+            aria-label={accessibleLabel}
             tabIndex={isActive ? 0 : -1}
             className={`${styles.tab} ${isActive ? styles.tabActive : ''}`}
             disabled={disabled}
@@ -93,15 +103,13 @@ export function ConfigTabs({
             onKeyDown={handleKeyDown}
           >
             <Icon size={15} className={styles.tabGlyph} />
-            <span className={styles.tabLabel}>
-              {t(`config_management.visual.sections.${id}.title`)}
-            </span>
+            <span className={styles.tabLabel}>{tabLabel}</span>
             {errorCount > 0 ? (
               <span className={styles.tabBadge} aria-hidden="true">
                 {errorCount}
               </span>
             ) : null}
-            {dirtyTabs.has(id) ? <span className={styles.tabDirtyDot} aria-hidden="true" /> : null}
+            {isDirty ? <span className={styles.tabDirtyDot} aria-hidden="true" /> : null}
           </button>
         );
       })}
