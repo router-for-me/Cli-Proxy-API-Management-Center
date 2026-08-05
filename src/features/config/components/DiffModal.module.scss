@@ -1,7 +1,7 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
 
-$diff-mono: 'Consolas', 'Monaco', 'Menlo', 'SF Mono', monospace;
+$diff-mono: $font-mono;
 $diff-font-size: 12px;
 $diff-line-height: 20px;
 $diff-gutter-width: 50px;
