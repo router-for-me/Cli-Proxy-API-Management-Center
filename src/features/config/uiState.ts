@@ -179,7 +179,7 @@ export function resolveStatus(input: ConfigStatusInput): ConfigStatus {
 }
 
 export type HeaderMetaSegment = {
-  key: 'fields' | 'loading' | 'yaml_error' | 'dirty' | 'dirty_source' | 'errors' | 'synced';
+  key: 'fields' | ConfigStatusKey | 'dirty_source' | 'errors';
   labelKey: string;
   count?: number;
   tone: 'muted' | 'warning' | 'error' | 'ok';
@@ -187,16 +187,15 @@ export type HeaderMetaSegment = {
 
 export type HeaderMetaInput = {
   fieldCount: number;
-  loading: boolean;
-  yamlError: boolean;
+  status: ConfigStatus;
   dirtyCount: number;
   sourceDirty: boolean;
   errorCount: number;
 };
 
 /**
- * 头部 ▍mono meta 行的段落序列：字段总数常驻，之后按状态追加
- * （加载中 / YAML 错误 / 待保存 / 校验错误），全部干净时以「已同步」收尾。
+ * 头部 ▍mono meta 行直接消费页面状态机，避免 Header 与保存栏各自推导连接/加载状态。
+ * 字段总数常驻；阻断状态优先，编辑状态再补充待保存和校验错误数量。
  */
 export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
   const segments: HeaderMetaSegment[] = [
@@ -207,18 +206,25 @@ export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
       tone: 'muted',
     },
   ];
-  if (input.loading) {
+  const { status } = input;
+
+  if (
+    status.key === 'disconnected' ||
+    status.key === 'loading' ||
+    status.key === 'load_failed' ||
+    status.key === 'saving'
+  ) {
     segments.push({
-      key: 'loading',
-      labelKey: 'config_management.status_loading',
-      tone: 'muted',
+      key: status.key,
+      labelKey: status.labelKey,
+      tone: status.tone === 'busy' ? 'muted' : status.tone,
     });
     return segments;
   }
-  if (input.yamlError) {
+  if (status.key === 'yaml_error') {
     segments.push({
-      key: 'yaml_error',
-      labelKey: 'config_management.visual_mode_unavailable_short',
+      key: status.key,
+      labelKey: status.shortLabelKey,
       tone: 'error',
     });
   }
@@ -244,8 +250,8 @@ export function buildHeaderMeta(input: HeaderMetaInput): HeaderMetaSegment[] {
       tone: 'error',
     });
   }
-  if (segments.length === 1 && !input.yamlError) {
-    segments.push({ key: 'synced', labelKey: 'config_management.meta_synced', tone: 'ok' });
+  if (status.key === 'synced') {
+    segments.push({ key: status.key, labelKey: 'config_management.meta_synced', tone: 'ok' });
   }
   return segments;
 }

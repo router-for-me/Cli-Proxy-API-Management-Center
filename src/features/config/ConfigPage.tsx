@@ -191,19 +191,6 @@ export function ConfigPage() {
     [visualHasPayloadValidationErrors, visualValidationErrors]
   );
 
-  const headerMeta = useMemo(
-    () =>
-      buildHeaderMeta({
-        fieldCount: CONFIG_FIELD_COUNT,
-        loading: doc.loading,
-        yamlError: hasVisualModeError,
-        dirtyCount: visualDirtyFields.size,
-        sourceDirty: doc.dirty,
-        errorCount: mode === 'visual' ? totalErrors : 0,
-      }),
-    [doc.dirty, doc.loading, hasVisualModeError, mode, totalErrors, visualDirtyFields.size]
-  );
-
   const status = resolveStatus({
     disconnected: disableControls,
     loading: doc.loading,
@@ -212,6 +199,13 @@ export function ConfigPage() {
     validationBlocked: hasVisualValidationErrors,
     saving: doc.saving,
     dirty: doc.isDirty,
+  });
+  const headerMeta = buildHeaderMeta({
+    fieldCount: CONFIG_FIELD_COUNT,
+    status,
+    dirtyCount: visualDirtyFields.size,
+    sourceDirty: doc.dirty,
+    errorCount: mode === 'visual' ? totalErrors : 0,
   });
 
   const saveDisabled =
