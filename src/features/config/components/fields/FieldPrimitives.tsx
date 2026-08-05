@@ -125,6 +125,15 @@ export function FieldShell({
   );
 }
 
+/** 独立的字段提示行（FieldShell 之外的裸 hint）。 */
+export function FieldHint({ id, children }: { id?: string; children: ReactNode }) {
+  return (
+    <div id={id} className={styles.fieldHint}>
+      {children}
+    </div>
+  );
+}
+
 /** 数字输入右侧的「已禁用」pill 宿主（流式 keepalive 的 0/空 提示）。 */
 export function FieldControl({ children }: { children: ReactNode }) {
   return <div className={styles.fieldControl}>{children}</div>;
