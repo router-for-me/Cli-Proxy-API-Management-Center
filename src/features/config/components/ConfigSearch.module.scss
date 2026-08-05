@@ -45,7 +45,10 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--floating-surface, var(--bg-primary));
-  box-shadow: var(--floating-shadow, 0 14px 32px color-mix(in srgb, var(--text-primary) 16%, transparent));
+  box-shadow: var(
+    --floating-shadow,
+    0 14px 32px color-mix(in srgb, var(--text-primary) 16%, transparent)
+  );
   transform-origin: top center;
   animation: config-search-in var(--dur-press, 160ms) var(--ease-out-strong, ease-out) both;
 }

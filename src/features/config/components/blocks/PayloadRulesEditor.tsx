@@ -23,11 +23,11 @@ import styles from './Blocks.module.scss';
 function hasPayloadModelAdvancedSettings(model: PayloadModelEntry) {
   return Boolean(
     model.fromProtocol ||
-      (model.headers?.length ?? 0) > 0 ||
-      (model.match?.length ?? 0) > 0 ||
-      (model.notMatch?.length ?? 0) > 0 ||
-      (model.exist?.length ?? 0) > 0 ||
-      (model.notExist?.length ?? 0) > 0
+    (model.headers?.length ?? 0) > 0 ||
+    (model.match?.length ?? 0) > 0 ||
+    (model.notMatch?.length ?? 0) > 0 ||
+    (model.exist?.length ?? 0) > 0 ||
+    (model.notExist?.length ?? 0) > 0
   );
 }
 

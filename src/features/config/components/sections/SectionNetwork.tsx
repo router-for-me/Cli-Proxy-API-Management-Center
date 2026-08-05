@@ -6,7 +6,13 @@ import type { VisualConfigValues } from '@/types/visualConfig';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
 import { SectionCard } from '../SectionCard';
-import { FieldAnchor, FieldGrid, FieldShell, FieldStack, ToggleRow } from '../fields/FieldPrimitives';
+import {
+  FieldAnchor,
+  FieldGrid,
+  FieldShell,
+  FieldStack,
+  ToggleRow,
+} from '../fields/FieldPrimitives';
 import { ProxyUrlField } from '../fields/sharedFields';
 import { getValidationMessage } from '../blocks/shared';
 

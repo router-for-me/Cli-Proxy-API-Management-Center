@@ -208,9 +208,7 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
               <FieldAnchor fieldId="claudeHeaderStabilizeDeviceProfile">
                 <ToggleRow
                   title={t('config_management.visual.sections.headers.stabilize_device')}
-                  description={t(
-                    'config_management.visual.sections.headers.stabilize_device_desc'
-                  )}
+                  description={t('config_management.visual.sections.headers.stabilize_device_desc')}
                   checked={values.claudeHeaderStabilizeDeviceProfile}
                   disabled={disabled}
                   onChange={(claudeHeaderStabilizeDeviceProfile) =>

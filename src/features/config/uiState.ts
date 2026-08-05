@@ -13,6 +13,9 @@ import {
 } from './constants';
 import { CONFIG_FIELD_SEARCH_INDEX, type VisualSectionId } from './searchIndex';
 
+/** 可视化编辑器暴露的配置项总数（头部 meta 行的「N 项配置」）。 */
+export const CONFIG_FIELD_COUNT = CONFIG_FIELD_SEARCH_INDEX.length;
+
 /** 叶值键（= useVisualConfig dirtyFields 的键）→ fieldId 反查表。 */
 const VALUE_KEY_TO_FIELD_ID: ReadonlyMap<string, string> = (() => {
   const map = new Map<string, string>();

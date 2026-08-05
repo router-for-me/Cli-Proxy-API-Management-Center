@@ -69,22 +69,20 @@ export const COMMON_FIELD_IDS = [
  * 每个分区承载的校验字段路径（tab 错误徽章的分桶依据）。
  * payload 的校验不走字段路径，由 hasPayloadValidationErrors 旗标补记。
  */
-export const SECTION_VALIDATION_FIELDS: Record<
-  VisualSectionId,
-  readonly VisualConfigFieldPath[]
-> = {
-  connectivity: ['port'],
-  network: ['requestRetry', 'maxRetryCredentials', 'maxRetryInterval', 'authAutoRefreshWorkers'],
-  logging: ['errorLogsMaxFiles', 'logsMaxTotalSizeMb', 'redisUsageQueueRetentionSeconds'],
-  quota: [],
-  streaming: [
-    'streaming.keepaliveSeconds',
-    'streaming.bootstrapRetries',
-    'streaming.nonstreamKeepaliveInterval',
-  ],
-  advanced: [],
-  payload: [],
-};
+export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualConfigFieldPath[]> =
+  {
+    connectivity: ['port'],
+    network: ['requestRetry', 'maxRetryCredentials', 'maxRetryInterval', 'authAutoRefreshWorkers'],
+    logging: ['errorLogsMaxFiles', 'logsMaxTotalSizeMb', 'redisUsageQueueRetentionSeconds'],
+    quota: [],
+    streaming: [
+      'streaming.keepaliveSeconds',
+      'streaming.bootstrapRetries',
+      'streaming.nonstreamKeepaliveInterval',
+    ],
+    advanced: [],
+    payload: [],
+  };
 
 /**
  * fieldId → useVisualConfig dirtyFields 的键（= VisualConfigValues 叶值键，streaming 用点号叶）。
