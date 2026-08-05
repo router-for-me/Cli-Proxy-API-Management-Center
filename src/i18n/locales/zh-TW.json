@@ -905,21 +905,7 @@
       "confirm": "確認儲存",
       "no_changes": "未偵測到變更"
     },
-    "tabs": {
-      "visual": "視覺化編輯",
-      "source": "原始檔編輯"
-    },
     "visual": {
-      "notice": "視覺化模式涵蓋常用欄位，未涵蓋的設定仍需在原始檔模式中查看或編輯。",
-      "quick_jump": "快速跳轉",
-      "mode": {
-        "simple": "簡單",
-        "full": "完整",
-        "label": "編輯模式",
-        "more_settings": "切換到完整模式，檢視全部 {{total}} 個設定分區",
-        "validation_banner": "部分進階設定項存在驗證錯誤，已阻止儲存。請切換到完整模式進行修正。",
-        "switch_to_full": "切換完整模式"
-      },
       "search": {
         "placeholder": "搜尋設定項（標籤或 YAML 鍵名）",
         "no_results": "沒有符合的設定項"
@@ -944,8 +930,6 @@
           "signature_title": "Antigravity 簽章"
         },
         "server": {
-          "title": "伺服器設定",
-          "description": "基本伺服器設定",
           "host": "主機位址",
           "port": "連接埠"
         },
@@ -971,14 +955,10 @@
           "panel_repo": "面板儲存庫"
         },
         "auth": {
-          "title": "驗證設定",
-          "description": "API 金鑰與驗證檔案目錄設定",
           "auth_dir": "驗證檔案目錄（auth-dir）",
           "auth_dir_hint": "存放驗證檔案的目錄路徑（支援 ~）"
         },
         "system": {
-          "title": "系統設定",
-          "description": "除錯、記錄、統計與效能調整設定",
           "debug": "除錯模式",
           "debug_desc": "啟用詳細的除錯記錄",
           "commercial_mode": "商業模式",

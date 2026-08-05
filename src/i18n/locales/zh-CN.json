@@ -879,21 +879,7 @@
       "confirm": "确认保存",
       "no_changes": "未检测到变更"
     },
-    "tabs": {
-      "visual": "可视化编辑",
-      "source": "源文件编辑"
-    },
     "visual": {
-      "notice": "可视化模式覆盖常用字段，未覆盖的配置仍需在源文件模式中查看或编辑。",
-      "quick_jump": "快速跳转",
-      "mode": {
-        "simple": "简单",
-        "full": "完整",
-        "label": "编辑模式",
-        "more_settings": "切换到完整模式，查看全部 {{total}} 个配置分区",
-        "validation_banner": "部分高级配置项存在校验错误，已阻止保存。请切换到完整模式进行修复。",
-        "switch_to_full": "切换完整模式"
-      },
       "search": {
         "placeholder": "搜索配置项（标签或 YAML 键名）",
         "no_results": "没有匹配的配置项"
@@ -918,8 +904,6 @@
           "signature_title": "Antigravity 签名"
         },
         "server": {
-          "title": "服务器配置",
-          "description": "基础服务器设置",
           "host": "主机地址",
           "port": "端口"
         },
@@ -945,14 +929,10 @@
           "panel_repo": "面板仓库"
         },
         "auth": {
-          "title": "认证配置",
-          "description": "API 密钥与认证文件目录设置",
           "auth_dir": "认证文件目录 (auth-dir)",
           "auth_dir_hint": "存放认证文件的目录路径（支持 ~）"
         },
         "system": {
-          "title": "系统配置",
-          "description": "调试、日志、统计与性能调试设置",
           "debug": "调试模式",
           "debug_desc": "启用详细的调试日志",
           "commercial_mode": "商业模式",

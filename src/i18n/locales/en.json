@@ -879,21 +879,7 @@
       "confirm": "Confirm Save",
       "no_changes": "No changes detected"
     },
-    "tabs": {
-      "visual": "Visual Editor",
-      "source": "Source File Editor"
-    },
     "visual": {
-      "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",
-      "quick_jump": "Quick Jump",
-      "mode": {
-        "simple": "Simple",
-        "full": "Full",
-        "label": "Editor mode",
-        "more_settings": "Switch to full mode to see all {{total}} sections",
-        "validation_banner": "Some advanced settings have validation errors and are blocking save. Switch to full mode to fix them.",
-        "switch_to_full": "Switch to full mode"
-      },
       "search": {
         "placeholder": "Search settings (label or YAML key)",
         "no_results": "No matching settings"
@@ -918,8 +904,6 @@
           "signature_title": "Antigravity Signature"
         },
         "server": {
-          "title": "Server Configuration",
-          "description": "Basic server settings",
           "host": "Host Address",
           "port": "Port"
         },
@@ -945,14 +929,10 @@
           "panel_repo": "Panel Repository"
         },
         "auth": {
-          "title": "Authentication Configuration",
-          "description": "API keys and authentication directory settings",
           "auth_dir": "Auth Directory (auth-dir)",
           "auth_dir_hint": "Directory path for authentication files (supports ~)"
         },
         "system": {
-          "title": "System Configuration",
-          "description": "Debug, logging, statistics, and performance settings",
           "debug": "Debug Mode",
           "debug_desc": "Enable verbose debug logging",
           "commercial_mode": "Commercial Mode",
