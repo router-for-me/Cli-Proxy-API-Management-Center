@@ -119,7 +119,7 @@ export function ConfigPage() {
     dialog: unsavedChangesDialog,
   });
 
-  // YAML 解析失败：强制切换并锁定源码模式（ModeSwitch 的可视化段同时禁用）。
+  // YAML 解析失败：切换到源码模式；修复后仍可重试进入可视化模式。
   useEffect(() => {
     if (mode !== 'visual' || !visualParseError) return;
 
@@ -285,7 +285,6 @@ export function ConfigPage() {
         )}
         <ModeSwitch
           mode={mode}
-          locked={hasVisualModeError}
           disabled={doc.saving || doc.loading}
           onChange={handleModeChange}
         />

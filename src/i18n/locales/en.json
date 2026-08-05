@@ -843,8 +843,7 @@
     "mode": {
       "label": "Editor mode",
       "visual": "Visual",
-      "source": "Source",
-      "locked_tooltip": "YAML parse error — locked to source mode"
+      "source": "Source"
     },
     "reload": "Reload",
     "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",

@@ -869,8 +869,7 @@
     "mode": {
       "label": "編輯模式",
       "visual": "視覺化",
-      "source": "原始碼",
-      "locked_tooltip": "YAML 解析失敗，已鎖定原始碼模式"
+      "source": "原始碼"
     },
     "reload": "重新載入",
     "reload_confirm_message": "重新載入將捨棄你目前未儲存的修改，確定繼續嗎？",

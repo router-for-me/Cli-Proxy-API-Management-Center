@@ -843,8 +843,7 @@
     "mode": {
       "label": "编辑模式",
       "visual": "可视化",
-      "source": "源码",
-      "locked_tooltip": "YAML 解析失败，已锁定源码模式"
+      "source": "源码"
     },
     "reload": "重新加载",
     "reload_confirm_message": "重新加载将丢弃你当前未保存的修改，确定继续吗？",
