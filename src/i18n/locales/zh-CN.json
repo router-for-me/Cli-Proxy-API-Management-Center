@@ -831,6 +831,21 @@
   },
   "config_management": {
     "title": "配置面板",
+    "meta_fields": "{{count}} 项配置",
+    "meta_dirty": "{{count}} 项待保存",
+    "meta_dirty_source": "源码有未保存修改",
+    "meta_errors": "{{count}} 项校验错误",
+    "meta_synced": "已同步",
+    "actions": {
+      "discard": "放弃更改",
+      "save": "保存更改"
+    },
+    "mode": {
+      "label": "编辑模式",
+      "visual": "可视化",
+      "source": "源码",
+      "locked_tooltip": "YAML 解析失败，已锁定源码模式"
+    },
     "reload": "重新加载",
     "reload_confirm_message": "重新加载将丢弃你当前未保存的修改，确定继续吗？",
     "save": "保存",
@@ -884,6 +899,10 @@
         "no_results": "没有匹配的配置项"
       },
       "sections": {
+        "common": {
+          "title": "常用",
+          "description": "最常调整的配置项，与完整分区共享同一份数据"
+        },
         "connectivity": {
           "title": "接入与认证",
           "description": "服务地址、端口、认证目录与 API 密钥"

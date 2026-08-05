@@ -857,6 +857,21 @@
   },
   "config_management": {
     "title": "設定面板",
+    "meta_fields": "{{count}} 項設定",
+    "meta_dirty": "{{count}} 項待儲存",
+    "meta_dirty_source": "原始碼有未儲存修改",
+    "meta_errors": "{{count}} 項驗證錯誤",
+    "meta_synced": "已同步",
+    "actions": {
+      "discard": "放棄變更",
+      "save": "儲存變更"
+    },
+    "mode": {
+      "label": "編輯模式",
+      "visual": "視覺化",
+      "source": "原始碼",
+      "locked_tooltip": "YAML 解析失敗，已鎖定原始碼模式"
+    },
     "reload": "重新載入",
     "reload_confirm_message": "重新載入將捨棄你目前未儲存的修改，確定繼續嗎？",
     "save": "儲存",
@@ -910,6 +925,10 @@
         "no_results": "沒有符合的設定項"
       },
       "sections": {
+        "common": {
+          "title": "常用",
+          "description": "最常調整的設定項，與完整分區共享同一份資料"
+        },
         "connectivity": {
           "title": "接入與認證",
           "description": "服務位址、連接埠、認證目錄與 API 金鑰"

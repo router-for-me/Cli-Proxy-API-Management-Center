@@ -831,6 +831,21 @@
   },
   "config_management": {
     "title": "Config Panel",
+    "meta_fields": "{{count}} settings",
+    "meta_dirty": "{{count}} unsaved",
+    "meta_dirty_source": "Unsaved source edits",
+    "meta_errors": "{{count}} validation errors",
+    "meta_synced": "In sync",
+    "actions": {
+      "discard": "Discard changes",
+      "save": "Save changes"
+    },
+    "mode": {
+      "label": "Editor mode",
+      "visual": "Visual",
+      "source": "Source",
+      "locked_tooltip": "YAML parse error — locked to source mode"
+    },
     "reload": "Reload",
     "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",
     "save": "Save",
@@ -884,6 +899,10 @@
         "no_results": "No matching settings"
       },
       "sections": {
+        "common": {
+          "title": "Common",
+          "description": "The most-used settings, backed by the same data as the full sections"
+        },
         "connectivity": {
           "title": "Access & Authentication",
           "description": "Server address, port, auth directory, and API keys"
