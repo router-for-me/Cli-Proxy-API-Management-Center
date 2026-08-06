@@ -1103,7 +1103,15 @@
         "input_placeholder": "貼上你的 API 金鑰",
         "input_hint": "此處僅修改本地設定檔內容，不會自動同步到 API 金鑰管理介面",
         "error_empty": "請輸入 API 金鑰",
-        "error_invalid": "API 金鑰包含無效字元"
+        "error_invalid": "API 金鑰包含無效字元",
+        "strength": {
+          "label": "API 金鑰強度",
+          "empty": "待輸入",
+          "weak": "弱",
+          "fair": "一般",
+          "good": "良好",
+          "strong": "很強"
+        }
       },
       "payload_rules": {
         "rule": "規則",

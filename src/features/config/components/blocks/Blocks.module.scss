@@ -151,6 +151,67 @@
   }
 }
 
+/* 强度参考条：四段承载档位，颜色承载严重度。
+   段的填充走 scaleX（只碰 transform），键入时逐字重算也不掉帧。 */
+
+.strengthMeter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.strengthTrack {
+  display: flex;
+  gap: 6px;
+}
+
+.strengthSegment {
+  flex: 1;
+  height: 4px;
+  border-radius: $radius-full;
+  overflow: hidden;
+  // 轨道 = 填充色的淡化步阶，未点亮的段也带着当前状态
+  background: color-mix(in srgb, var(--strength-color) 16%, transparent);
+  transition: background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+}
+
+.strengthSegmentFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--strength-color);
+  transform: scaleX(0);
+  transform-origin: left center;
+  // 段内比常规交互再快一档，把预算让给段间的 stagger
+  transition:
+    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
+    background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  // 延迟写在目标态上：点亮时依次排队，熄灭是系统响应，立刻发生
+  &[data-filled='true'] {
+    transform: scaleX(1);
+    transition-delay: var(--segment-delay, 0ms);
+  }
+
+  // 降级只去掉位移和排队，颜色变化保留（它才是状态本身）
+  @media (prefers-reduced-motion: reduce) {
+    transition: background-color var(--dur-hover, 200ms) linear;
+
+    &[data-filled='true'] {
+      transition-delay: 0ms;
+    }
+  }
+}
+
+.strengthLabel {
+  min-height: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--strength-color);
+  transition: color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+}
+
 /* ---------- 插件源认证 ---------- */
 
 .storeAuthEditor {

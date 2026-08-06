@@ -8,6 +8,7 @@ import { makeClientId } from '@/types/visualConfig';
 import { generateSecureApiKey } from '@/utils/apiKey';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
+import { ApiKeyStrengthMeter } from './ApiKeyStrengthMeter';
 import styles from './Blocks.module.scss';
 
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
@@ -219,6 +220,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
               {t('config_management.visual.api_keys.generate')}
             </Button>
           </div>
+          <ApiKeyStrengthMeter value={inputValue} />
           <div id={apiKeyHintId} className="hint">
             {t('config_management.visual.api_keys.input_hint')}
           </div>
