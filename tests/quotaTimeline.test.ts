@@ -281,6 +281,39 @@ describe('buildTimelineLane', () => {
     ]);
   });
 
+  test('codex: keeps the weekly lane on the account quota instead of Spark quota', () => {
+    const accountReset = at(2026, 7, 1, 20);
+    const sparkReset = at(2026, 6, 29, 20);
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'codex',
+      quota: {
+        status: 'success',
+        windows: [
+          {
+            id: 'weekly',
+            label: 'Weekly limit',
+            usedPercent: 70,
+            resetAtMs: accountReset,
+            periodHours: 168,
+          },
+          {
+            id: 'gpt-5-3-codex-spark-weekly-0',
+            label: 'GPT-5.3-Codex-Spark weekly limit',
+            usedPercent: 2,
+            resetAtMs: sparkReset,
+            periodHours: 168,
+          },
+        ],
+      },
+      maxPeriodHours: 14 * 24,
+    });
+
+    expect(lane.anchorMs).toBe(accountReset);
+    expect(lane.periodHours).toBe(168);
+    expect(lane.remaining).toBe(30);
+  });
+
   test('codex: includes available reset credits with parseable expiry dates', () => {
     const expiresAt = '2026-08-02T12:00:00Z';
     const lane = buildTimelineLane({

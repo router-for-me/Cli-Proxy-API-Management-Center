@@ -268,6 +268,7 @@ export function laneHasWindow(lane: TimelineLane): boolean {
 
 /** Shape the lane builder reads. Deliberately structural — see the note below. */
 interface WindowLike {
+  id?: string;
   label?: string;
   usedPercent?: number | null;
   resetAtMs?: number | null;
@@ -352,7 +353,25 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     const windows = ((quota as { windows?: WindowLike[] }).windows ?? []).filter(
       (window) => typeof window.resetAtMs === 'number'
     );
-    const chosen = pickLaneWindow(windows, maxPeriodHours);
+    const preferredCodexId =
+      maxPeriodHours !== undefined && maxPeriodHours <= SESSION_PERIOD_HOURS
+        ? 'five-hour'
+        : 'weekly';
+    // Codex can report model-scoped windows with the same period as the account
+    // window (for example GPT-5.3-Codex-Spark weekly). A reset-time tie-break
+    // would make the lane silently switch to that model's quota. Keep the lane
+    // anchored to the standard account window whenever it fits this view.
+    const preferredCodexWindow =
+      provider === 'codex'
+        ? windows.find(
+            (window) =>
+              window.id === preferredCodexId &&
+              typeof window.periodHours === 'number' &&
+              window.periodHours > 0 &&
+              (maxPeriodHours === undefined || window.periodHours <= maxPeriodHours)
+          )
+        : undefined;
+    const chosen = preferredCodexWindow ?? pickLaneWindow(windows, maxPeriodHours);
     if (!chosen) return empty;
 
     const resetCredits =
