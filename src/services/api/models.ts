@@ -43,13 +43,26 @@ const buildV1ModelsEndpoint = (baseUrl: string): string => {
   return `${trimmed}/v1/models`;
 };
 
-const buildClaudeModelsEndpoint = (baseUrl: string): string => {
+const normalizeClaudeEndpointBase = (baseUrl: string): string => {
   const normalized = normalizeApiBase(baseUrl);
   const fallback = normalized || DEFAULT_CLAUDE_BASE_URL;
   let trimmed = fallback.replace(/\/+$/g, '');
   trimmed = trimmed.replace(/\/v1\/models$/i, '');
   trimmed = trimmed.replace(/\/v1(?:\/.*)?$/i, '');
-  return `${trimmed}/v1/models`;
+  return trimmed;
+};
+
+const buildClaudeModelsEndpoints = (baseUrl: string): string[] => {
+  const endpointBase = normalizeClaudeEndpointBase(baseUrl);
+  const primary = `${endpointBase}/v1/models`;
+  if (!/\/anthropic$/i.test(endpointBase)) {
+    return [primary];
+  }
+
+  // Multi-protocol gateways may expose Messages below /anthropic while keeping
+  // model discovery at the sibling /v1/models endpoint.
+  const sibling = `${endpointBase.replace(/\/anthropic$/i, '')}/v1/models`;
+  return sibling === primary ? [primary] : [primary, sibling];
 };
 
 const buildGeminiModelsEndpoint = (baseUrl: string): string => {
@@ -188,7 +201,8 @@ export const modelsApi = {
     headers: Record<string, string> = {},
     authIndex?: string
   ) {
-    const endpoint = buildClaudeModelsEndpoint(baseUrl);
+    const endpoints = buildClaudeModelsEndpoints(baseUrl);
+    const endpoint = endpoints[0];
     if (!endpoint) {
       throw new Error('Invalid base url');
     }
@@ -209,17 +223,26 @@ export const modelsApi = {
       resolvedHeaders['anthropic-version'] = DEFAULT_ANTHROPIC_VERSION;
     }
 
-    const signature = buildRequestSignature(endpoint, resolvedHeaders, trimmedAuthIndex);
+    const signature = buildRequestSignature(endpoints.join('|'), resolvedHeaders, trimmedAuthIndex);
     const existing = CLAUDE_MODELS_IN_FLIGHT.get(signature);
     if (existing) return existing;
 
     const request = (async () => {
-      const result = await apiCallApi.request({
+      let result = await apiCallApi.request({
         authIndex: trimmedAuthIndex,
         method: 'GET',
         url: endpoint,
         header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
       });
+
+      if (result.statusCode === 404 && endpoints[1]) {
+        result = await apiCallApi.request({
+          authIndex: trimmedAuthIndex,
+          method: 'GET',
+          url: endpoints[1],
+          header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
+        });
+      }
 
       if (result.statusCode < 200 || result.statusCode >= 300) {
         throw new Error(getApiCallErrorMessage(result));
