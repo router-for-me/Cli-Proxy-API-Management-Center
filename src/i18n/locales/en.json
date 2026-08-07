@@ -1472,6 +1472,7 @@
       "fennoAI": "FennoAI",
       "qiniuCloud": "Qiniu Cloud",
       "lmuAI": "LMU AI (Lingmou AI)",
+      "infistar": "Infistar",
       "kimi": "Kimi"
     },
     "table": {
@@ -1524,11 +1525,15 @@
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
-        "overseas": "Overseas route"
+        "overseas": "Overseas route",
+        "mainlandChina": "Mainland China (recommended)",
+        "global": "Global"
       },
       "urlOptionDescriptions": {
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
-        "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models."
+        "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
+        "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
+        "global": "For users and workloads in all other regions."
       },
       "modelsTitle": "Protocol model settings",
       "modelsHint": "Configure model allowlists or aliases separately for Codex API, Anthropic, Gemini, and OpenAI-compatible routes.",

@@ -1472,6 +1472,7 @@
       "fennoAI": "FennoAI",
       "qiniuCloud": "七牛云",
       "lmuAI": "LMU AI（灵眸AI）",
+      "infistar": "无限星河",
       "kimi": "Kimi"
     },
     "table": {
@@ -1524,11 +1525,15 @@
         "standard": "普通 URL",
         "direct": "专线直连 URL",
         "domestic": "国内线路",
-        "overseas": "海外线路"
+        "overseas": "海外线路",
+        "mainlandChina": "中国大陆（推荐）",
+        "global": "全球"
       },
       "urlOptionDescriptions": {
         "domestic": "面向中国大陆用户和部署在中国大陆网络环境中的业务，通常可获得更低延迟。",
-        "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。"
+        "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。",
+        "mainlandChinaRecommended": "推荐中国大陆用户和部署在中国大陆网络环境中的业务使用。",
+        "global": "适用于全球其他地区的用户和部署环境。"
       },
       "modelsTitle": "协议模型配置",
       "modelsHint": "可分别限制或别名映射 Codex API、Anthropic、Gemini 与 OpenAI 兼容入口的模型。",

@@ -45,6 +45,15 @@ import {
   resolveLmuAIBaseUrl,
 } from './lmuAI';
 import {
+  INFISTAR_AFFILIATE_URL,
+  INFISTAR_BASE_URL_OPTIONS,
+  INFISTAR_DISPLAY_NAME,
+  INFISTAR_PROTOCOL_LABELS,
+  INFISTAR_PROVIDER_NAME,
+  getInfistarProtocolUrls,
+  resolveInfistarBaseUrl,
+} from './infistar';
+import {
   KIMI_BASE_URL_OPTIONS,
   KIMI_DISPLAY_NAME,
   KIMI_PROTOCOL_LABELS,
@@ -158,6 +167,19 @@ const SPONSOR_DEFINITIONS: Record<SponsorProviderBrand, SponsorProviderDefinitio
     resolveBaseUrl: resolveLmuAIBaseUrl,
     getProtocolUrls: getLmuAIProtocolUrls,
   },
+  infistar: {
+    brand: 'infistar',
+    displayName: INFISTAR_DISPLAY_NAME,
+    providerName: INFISTAR_PROVIDER_NAME,
+    affiliateUrl: INFISTAR_AFFILIATE_URL,
+    protocols: ['openai', 'claude', 'gemini', 'codex'],
+    protocolLabels: INFISTAR_PROTOCOL_LABELS,
+    defaultProtocol: 'openai',
+    baseUrlOptions: INFISTAR_BASE_URL_OPTIONS,
+    supportsUsageCheck: false,
+    resolveBaseUrl: resolveInfistarBaseUrl,
+    getProtocolUrls: getInfistarProtocolUrls,
+  },
   kimi: {
     brand: 'kimi',
     displayName: KIMI_DISPLAY_NAME,
@@ -178,6 +200,7 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'fennoAI' ||
   brand === 'qiniuCloud' ||
   brand === 'lmuAI' ||
+  brand === 'infistar' ||
   brand === 'kimi';
 
 export type SponsorAggregationConflict = 'multiple-configs' | 'multiple-openai-keys';
