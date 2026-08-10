@@ -24,6 +24,18 @@ interface BatchFetchResult {
   errorStatus?: number;
 }
 
+export async function fetchQuotaGroup<T>(
+  type: QuotaProviderType,
+  entries: QuotaFileEntry[],
+  fetchEntry: (entry: QuotaFileEntry) => Promise<T>
+): Promise<T[]> {
+  if (type !== 'codex') return Promise.all(entries.map(fetchEntry));
+
+  const results: T[] = [];
+  for (const entry of entries) results.push(await fetchEntry(entry));
+  return results;
+}
+
 export function useQuotaBatchLoader() {
   const { t } = useTranslation();
   const [batchLoading, setBatchLoading] = useState(false);
@@ -62,8 +74,10 @@ export function useQuotaBatchLoader() {
               });
             });
 
-            const results = await Promise.all(
-              entries.map(async ({ file }): Promise<BatchFetchResult> => {
+            const results = await fetchQuotaGroup(
+              type,
+              entries,
+              async ({ file }): Promise<BatchFetchResult> => {
                 try {
                   const data = await adapter.fetchQuota(file, t);
                   return { name: file.name, status: 'success', data };
@@ -76,7 +90,7 @@ export function useQuotaBatchLoader() {
                     errorStatus: getStatusFromError(err),
                   };
                 }
-              })
+              }
             );
 
             if (requestId !== requestIdRef.current) return;
