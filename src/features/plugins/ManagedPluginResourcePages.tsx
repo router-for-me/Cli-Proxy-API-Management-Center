@@ -7,10 +7,11 @@ import {
   IconAlertTriangle,
   IconCheckCircle2,
   IconExternalLink,
+  IconNetwork,
   IconRefreshCw,
+  IconSatellite,
   IconSettings,
   IconShield,
-  IconTimer,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { apiClient } from '@/services/api/client';
@@ -153,9 +154,42 @@ export function QuotaSchedulerManagementPage({ connected }: { connected: boolean
   const runtimeHealthy = Boolean(
     status?.enabled && status.generationActive && status.generationManaged && status.serialActive
   );
+  const protectionActive = Boolean(
+    (status?.activeBans ?? 0) > 0 || (status?.total429s ?? 0) > 0 || status?.lastError
+  );
   const modeText = formatValue(status?.schedulerMode ?? null);
   const generationText = formatValue(status?.runtimeGeneration ?? null);
   const snapshotText = formatValue(status?.freshSnapshots ?? null);
+  const activeAuthText = formatValue(status?.activeAuthLabel || status?.activeAuthId || null);
+  const snapshotCoverage = status?.snapshotCount
+    ? `${formatValue(status.freshSnapshots)}/${status.snapshotCount}`
+    : snapshotText;
+  const warmupSummary = status?.warmupSummary;
+  const warmupAttention = Boolean(
+    (warmupSummary?.failed ?? 0) > 0 || (warmupSummary?.blocked ?? 0) > 0
+  );
+  const warmupQueueClear = status?.warmupCandidates === 0;
+  const runtimeStatusText = !runtimeHealthy
+    ? t('plugin_resource.scheduler_runtime_attention')
+    : protectionActive
+      ? t('plugin_resource.scheduler_runtime_guarded')
+      : t('plugin_resource.scheduler_runtime_healthy');
+  const formatWarmupState = (value: string) => {
+    switch (value) {
+      case 'confirmed':
+        return t('plugin_resource.warmup_confirmed');
+      case 'pending_confirmation':
+        return t('plugin_resource.warmup_pending');
+      case 'failed':
+        return t('plugin_resource.warmup_failed');
+      case 'blocked':
+        return t('plugin_resource.warmup_blocked');
+      case 'attempted':
+        return t('plugin_resource.warmup_attempted');
+      default:
+        return t('plugin_resource.unknown');
+    }
+  };
 
   return (
     <div className={styles.managedPage}>
@@ -190,72 +224,109 @@ export function QuotaSchedulerManagementPage({ connected }: { connected: boolean
           <div className={styles.statusPanel}>{t('common.loading')}</div>
         ) : (
           <div className={styles.schedulerSurface}>
-            <section className={styles.schedulerOverview}>
-              <div className={styles.overviewLead}>
+            <section
+              className={`${styles.schedulerCommand} ${
+                runtimeHealthy && !protectionActive
+                  ? styles.commandRunning
+                  : styles.commandAttention
+              }`}
+            >
+              <div className={styles.commandLead}>
                 <div
                   className={`${styles.healthPill} ${
-                    runtimeHealthy ? styles.healthGood : styles.healthWarning
+                    runtimeHealthy && !protectionActive ? styles.healthGood : styles.healthWarning
                   }`}
                 >
-                  {runtimeHealthy ? (
+                  {runtimeHealthy && !protectionActive ? (
                     <IconCheckCircle2 size={15} />
                   ) : (
                     <IconAlertTriangle size={15} />
                   )}
-                  {runtimeHealthy
-                    ? t('plugin_resource.scheduler_runtime_healthy')
-                    : t('plugin_resource.scheduler_runtime_attention')}
+                  {runtimeStatusText}
                 </div>
-                <h2>{t('plugin_resource.scheduler_overview_title')}</h2>
-                <p>
-                  {t('plugin_resource.scheduler_overview_desc', {
-                    generation: generationText,
-                    snapshots: snapshotText,
-                  })}
-                </p>
+
+                <div className={styles.activeLaneLabel}>
+                  <IconNetwork size={17} />
+                  <span>{t('plugin_resource.scheduler_active_lane')}</span>
+                </div>
+                <div className={styles.activeIdentity}>
+                  <span
+                    className={`${styles.liveDot} ${protectionActive ? styles.liveDotWarning : ''}`}
+                    aria-hidden={true}
+                  />
+                  <strong title={status?.activeAuthLabel || status?.activeAuthId || undefined}>
+                    {activeAuthText}
+                  </strong>
+                </div>
+                <div className={styles.activeMeta}>
+                  <span>
+                    {t('plugin_resource.scheduler_active_since')}
+                    <time
+                      dateTime={status?.serialSelectedAt || undefined}
+                      title={status?.serialSelectedAt}
+                    >
+                      {formatTimestamp(status?.serialSelectedAt ?? '')}
+                    </time>
+                  </span>
+                  <span>
+                    {t('plugin_resource.scheduler_switches')}
+                    <strong>{formatValue(status?.serialSwitches ?? null)}</strong>
+                  </span>
+                </div>
               </div>
-              <div className={styles.refreshStamp}>
-                <span>{t('plugin_resource.last_refresh')}</span>
-                <time dateTime={status?.lastRefresh || undefined} title={status?.lastRefresh}>
-                  {formatTimestamp(status?.lastRefresh ?? '')}
-                </time>
+
+              <div className={styles.commandTelemetry}>
+                <div>
+                  <span>{t('plugin_resource.scheduler_mode')}</span>
+                  <strong className={styles.monoValue}>{modeText}</strong>
+                </div>
+                <div>
+                  <span>{t('plugin_resource.scheduler_snapshot_coverage')}</span>
+                  <strong>{snapshotCoverage}</strong>
+                </div>
+                <div>
+                  <span>{t('plugin_resource.scheduler_switch_threshold')}</span>
+                  <strong>
+                    {status?.serialSwitchPercent === null ||
+                    status?.serialSwitchPercent === undefined
+                      ? t('plugin_resource.unknown')
+                      : `${status.serialSwitchPercent}%`}
+                  </strong>
+                </div>
+                <div>
+                  <span>{t('plugin_resource.runtime_generation')}</span>
+                  <strong>{generationText}</strong>
+                </div>
+                <div className={styles.telemetryRefresh}>
+                  <span>{t('plugin_resource.last_refresh')}</span>
+                  <time dateTime={status?.lastRefresh || undefined} title={status?.lastRefresh}>
+                    {formatTimestamp(status?.lastRefresh ?? '')}
+                  </time>
+                </div>
               </div>
             </section>
 
-            <div className={styles.schedulerPanelGrid}>
-              <section className={`${styles.schedulerPanel} ${styles.runtimePanel}`}>
-                <header className={styles.panelHeader}>
+            <div className={styles.schedulerOperationsGrid}>
+              <section
+                className={`${styles.operationPanel} ${
+                  warmupAttention ? styles.operationWarning : ''
+                }`}
+              >
+                <header className={styles.operationHeader}>
                   <div>
-                    <IconTimer size={17} />
-                    <h3>{t('plugin_resource.scheduler_runtime_title')}</h3>
-                  </div>
-                  <span className={styles.modeBadge}>{modeText}</span>
-                </header>
-                <div className={styles.runtimeMetrics}>
-                  <div className={styles.primaryMetric}>
-                    <span>{t('plugin_resource.runtime_generation')}</span>
-                    <strong>{generationText}</strong>
-                  </div>
-                  <div className={styles.inlineMetric}>
-                    <span>{t('plugin_resource.scheduler_active_auth')}</span>
-                    <strong className={status?.serialActive ? styles.valueGood : undefined}>
-                      {status?.serialActive
-                        ? t('plugin_resource.scheduler_locked')
-                        : t('plugin_resource.scheduler_unassigned')}
-                    </strong>
-                  </div>
-                  <div className={styles.inlineMetric}>
-                    <span>{t('plugin_resource.fresh_snapshots')}</span>
-                    <strong>{snapshotText}</strong>
-                  </div>
-                </div>
-              </section>
-
-              <section className={styles.schedulerPanel}>
-                <header className={styles.panelHeader}>
-                  <div>
-                    <IconRefreshCw size={17} />
-                    <h3>{t('plugin_resource.scheduler_warmup_title')}</h3>
+                    <span className={styles.operationIcon} aria-hidden={true}>
+                      <IconSatellite size={18} />
+                    </span>
+                    <div>
+                      <h3>{t('plugin_resource.scheduler_warmup_title')}</h3>
+                      <p>
+                        {warmupQueueClear
+                          ? t('plugin_resource.scheduler_warmup_clear')
+                          : t('plugin_resource.scheduler_warmup_waiting', {
+                              count: formatValue(status?.warmupCandidates ?? null),
+                            })}
+                      </p>
+                    </div>
                   </div>
                   <span
                     className={`${styles.modeBadge} ${
@@ -265,52 +336,135 @@ export function QuotaSchedulerManagementPage({ connected }: { connected: boolean
                     {formatBoolean(status?.warmupEnabled ?? null)}
                   </span>
                 </header>
-                <div className={styles.warmupContent}>
-                  <div className={styles.warmupTotal}>
-                    <strong>{formatValue(status?.warmups ?? null)}</strong>
-                    <span>{t('plugin_resource.warmups')}</span>
-                  </div>
-                  <div className={styles.warmupRows}>
+
+                <div className={styles.warmupDashboard}>
+                  <div className={styles.warmupHeadline}>
                     <div>
                       <span>{t('plugin_resource.warmup_candidates')}</span>
-                      <strong>{formatValue(status?.warmupCandidates ?? null)}</strong>
+                      <strong
+                        className={
+                          (status?.warmupCandidates ?? 0) > 0
+                            ? styles.valueWarning
+                            : styles.valueGood
+                        }
+                      >
+                        {formatValue(status?.warmupCandidates ?? null)}
+                      </strong>
+                      <small>
+                        {t('plugin_resource.scheduler_warmup_executed', {
+                          count: formatValue(status?.warmups ?? null),
+                        })}
+                      </small>
                     </div>
-                    <div>
+                    <div className={styles.warmupMode}>
                       <span>{t('plugin_resource.warmup_execution')}</span>
-                      <strong>{formatValue(status?.warmupExecutionMode ?? null)}</strong>
+                      <strong className={styles.monoValue}>
+                        {formatValue(status?.warmupExecutionMode ?? null)}
+                      </strong>
                     </div>
+                  </div>
+
+                  <div className={styles.warmupPipeline}>
+                    <div className={styles.pipelineGood}>
+                      <strong>{formatValue(warmupSummary?.confirmed ?? null)}</strong>
+                      <span>{t('plugin_resource.warmup_confirmed')}</span>
+                    </div>
+                    <div className={styles.pipelinePending}>
+                      <strong>{formatValue(warmupSummary?.pending ?? null)}</strong>
+                      <span>{t('plugin_resource.warmup_pending')}</span>
+                    </div>
+                    <div className={styles.pipelineBad}>
+                      <strong>{formatValue(warmupSummary?.failed ?? null)}</strong>
+                      <span>{t('plugin_resource.warmup_failed')}</span>
+                    </div>
+                    <div className={styles.pipelineBlocked}>
+                      <strong>{formatValue(warmupSummary?.blocked ?? null)}</strong>
+                      <span>{t('plugin_resource.warmup_blocked')}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.warmupLatest}>
+                    <span>{t('plugin_resource.scheduler_warmup_latest')}</span>
+                    {warmupSummary?.latestAt ? (
+                      <strong>
+                        {formatWarmupState(warmupSummary.latestState)}
+                        {warmupSummary.latestWindow ? ` · ${warmupSummary.latestWindow}` : ''}
+                        <time dateTime={warmupSummary.latestAt} title={warmupSummary.latestAt}>
+                          {formatTimestamp(warmupSummary.latestAt)}
+                        </time>
+                      </strong>
+                    ) : (
+                      <strong>{t('plugin_resource.scheduler_no_warmup_history')}</strong>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section
+                className={`${styles.operationPanel} ${
+                  protectionActive ? styles.operationWarning : styles.operationHealthy
+                }`}
+              >
+                <header className={styles.operationHeader}>
+                  <div>
+                    <span className={styles.operationIcon} aria-hidden={true}>
+                      <IconShield size={18} />
+                    </span>
+                    <div>
+                      <h3>{t('plugin_resource.scheduler_protection_title')}</h3>
+                      <p>
+                        {protectionActive
+                          ? t('plugin_resource.scheduler_protection_active')
+                          : t('plugin_resource.scheduler_protection_healthy')}
+                      </p>
+                    </div>
+                  </div>
+                </header>
+
+                <div className={styles.protectionMetrics}>
+                  <div
+                    className={(status?.activeBans ?? 0) > 0 ? styles.protectionAlert : undefined}
+                  >
+                    <strong>{formatValue(status?.activeBans ?? null)}</strong>
+                    <span>{t('plugin_resource.scheduler_isolated_accounts')}</span>
+                  </div>
+                  <div
+                    className={(status?.total429s ?? 0) > 0 ? styles.protectionAlert : undefined}
+                  >
+                    <strong>{formatValue(status?.total429s ?? null)}</strong>
+                    <span>{t('plugin_resource.total_429s')}</span>
+                  </div>
+                </div>
+
+                <div className={styles.switchActivity}>
+                  <div>
+                    <span>{t('plugin_resource.scheduler_switch_reason')}</span>
+                    <strong className={styles.monoValue} title={status?.serialSwitchReason}>
+                      {formatValue(status?.serialSwitchReason || null)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>{t('plugin_resource.scheduler_last_switch')}</span>
+                    <time
+                      dateTime={status?.serialLastSwitchAt || undefined}
+                      title={status?.serialLastSwitchAt}
+                    >
+                      {formatTimestamp(status?.serialLastSwitchAt ?? '')}
+                    </time>
                   </div>
                 </div>
               </section>
             </div>
 
-            <section className={styles.guardRail}>
-              <div className={styles.guardTitle}>
-                <IconShield size={17} />
+            {status?.lastError ? (
+              <section className={styles.schedulerErrorStrip}>
+                <IconAlertTriangle size={17} />
                 <div>
-                  <h3>{t('plugin_resource.scheduler_guard_title')}</h3>
-                  <p>{t('plugin_resource.scheduler_guard_desc')}</p>
+                  <span>{t('plugin_resource.scheduler_last_error')}</span>
+                  <strong>{status.lastError}</strong>
                 </div>
-              </div>
-              <div className={styles.guardItems}>
-                <div
-                  className={`${styles.guardItem} ${
-                    (status?.activeBans ?? 0) > 0 ? styles.guardWarning : styles.guardGood
-                  }`}
-                >
-                  <strong>{formatValue(status?.activeBans ?? null)}</strong>
-                  <span>{t('plugin_resource.active_bans')}</span>
-                </div>
-                <div
-                  className={`${styles.guardItem} ${
-                    (status?.total429s ?? 0) > 0 ? styles.guardWarning : styles.guardGood
-                  }`}
-                >
-                  <strong>{formatValue(status?.total429s ?? null)}</strong>
-                  <span>{t('plugin_resource.total_429s')}</span>
-                </div>
-              </div>
-            </section>
+              </section>
+            ) : null}
           </div>
         )}
       </div>

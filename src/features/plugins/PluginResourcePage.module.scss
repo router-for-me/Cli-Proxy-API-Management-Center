@@ -48,7 +48,7 @@
   gap: 20px;
   align-items: center;
   justify-content: space-between;
-  max-width: 1120px;
+  max-width: 1240px;
   margin: 0 auto 20px;
 }
 
@@ -101,14 +101,17 @@
 }
 
 .managedBody {
-  max-width: 1120px;
+  max-width: 1240px;
   margin: 0 auto;
 }
 
 .introCard,
 .schedulerOverview,
 .schedulerPanel,
-.guardRail {
+.guardRail,
+.schedulerCommand,
+.operationPanel,
+.schedulerErrorStrip {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
@@ -606,6 +609,576 @@
 
 @media (prefers-reduced-motion: reduce) {
   .schedulerSurface {
+    animation: none;
+  }
+}
+
+/* Scheduler operations console: dense enough for diagnosis, quiet enough for daily use. */
+.schedulerSurface {
+  gap: 14px;
+  animation: scheduler-enter 260ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
+}
+
+.schedulerCommand {
+  display: grid;
+  position: relative;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  min-height: 250px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--bg-tertiary) 70%, var(--bg-primary)) 0%,
+    var(--bg-primary) 52%
+  );
+
+  &::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+    content: '';
+  }
+}
+
+.commandRunning::before {
+  background: var(--success-color);
+}
+
+.commandAttention::before {
+  background: var(--warning-color);
+}
+
+.commandLead {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(26px, 3.3vw, 42px);
+}
+
+.activeLaneLabel {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.activeIdentity {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  margin-top: 9px;
+
+  strong {
+    min-width: 0;
+    overflow: hidden;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 720;
+    letter-spacing: -0.045em;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.liveDot {
+  --scheduler-live-color: var(--success-color);
+
+  position: relative;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  background: var(--scheduler-live-color);
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--scheduler-live-color) 13%, transparent);
+
+  &::after {
+    position: absolute;
+    inset: -5px;
+    border: 1px solid color-mix(in srgb, var(--scheduler-live-color) 38%, transparent);
+    border-radius: inherit;
+    content: '';
+    animation: scheduler-pulse 2.4s ease-out infinite;
+  }
+}
+
+.liveDotWarning {
+  --scheduler-live-color: var(--warning-color);
+}
+
+.activeMeta {
+  display: flex;
+  gap: 8px 20px;
+  align-items: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+
+  > span {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong,
+  time {
+    color: var(--text-primary);
+    font-weight: 650;
+  }
+}
+
+.commandTelemetry {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  align-self: stretch;
+  margin: 18px 18px 18px 0;
+  overflow: hidden;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+
+  > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    padding: 18px 20px;
+    background: color-mix(in srgb, var(--bg-primary) 88%, var(--bg-secondary));
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  strong,
+  time {
+    margin-top: 7px;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .telemetryRefresh {
+    grid-column: 1 / -1;
+    padding-top: 13px;
+    padding-bottom: 13px;
+
+    time {
+      font-size: 13px;
+    }
+  }
+}
+
+.monoValue {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.schedulerOperationsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.42fr) minmax(330px, 0.58fr);
+  gap: 14px;
+}
+
+.operationPanel {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.operationWarning {
+  border-color: color-mix(in srgb, var(--warning-color) 30%, var(--border-color));
+
+  &::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    height: 2px;
+    background: var(--warning-color);
+    content: '';
+  }
+}
+
+.operationHealthy {
+  border-color: color-mix(in srgb, var(--success-color) 24%, var(--border-color));
+}
+
+.operationHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--border-color);
+
+  > div {
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+}
+
+.operationIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.valueWarning {
+  color: var(--warning-color);
+}
+
+.warmupDashboard {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.warmupHeadline {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.7fr) minmax(180px, 0.3fr);
+  gap: 12px;
+
+  > div {
+    display: flex;
+    min-width: 0;
+    min-height: 108px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 18px 20px;
+    background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+    border-radius: 12px;
+  }
+
+  span,
+  small {
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+
+  strong {
+    margin: 6px 0 5px;
+    font-size: 38px;
+    line-height: 1;
+  }
+
+  .warmupMode strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.warmupPipeline {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+
+  > div {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: baseline;
+    padding: 11px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+
+  strong {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  span {
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.pipelineGood strong {
+  color: var(--success-color);
+}
+
+.pipelinePending strong {
+  color: var(--warning-color);
+}
+
+.pipelineBad strong,
+.pipelineBlocked strong {
+  color: var(--error-color);
+}
+
+.warmupLatest {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding-top: 1px;
+
+  > span {
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+
+  > strong {
+    display: flex;
+    min-width: 0;
+    gap: 10px;
+    align-items: center;
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  time {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+}
+
+.protectionMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 18px 18px 14px;
+
+  > div {
+    display: flex;
+    min-height: 112px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+
+    strong {
+      font-size: 36px;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    span {
+      margin-top: 8px;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+  }
+
+  .protectionAlert {
+    background: color-mix(in srgb, var(--warning-color) 8%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--warning-color) 30%, var(--border-color));
+
+    strong {
+      color: var(--warning-color);
+    }
+  }
+}
+
+.switchActivity {
+  display: grid;
+  gap: 1px;
+  margin: 0 18px 18px;
+  overflow: hidden;
+  background: var(--border-color);
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+
+  > div {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 11px 12px;
+    background: var(--bg-primary);
+  }
+
+  span {
+    flex: 0 0 auto;
+    color: var(--text-secondary);
+    font-size: 10px;
+  }
+
+  strong,
+  time {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 650;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.schedulerErrorStrip {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 7%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--error-color) 30%, var(--border-color));
+  border-radius: 13px;
+
+  svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+  }
+
+  div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  strong {
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
+@keyframes scheduler-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.72);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+@media (max-width: 980px) {
+  .schedulerCommand,
+  .schedulerOperationsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .commandTelemetry {
+    margin: 0 22px 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .commandLead {
+    padding: 24px;
+  }
+
+  .activeIdentity strong {
+    font-size: clamp(22px, 7vw, 31px);
+  }
+
+  .warmupPipeline {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .commandTelemetry,
+  .warmupHeadline,
+  .protectionMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .commandTelemetry .telemetryRefresh {
+    grid-column: auto;
+  }
+
+  .activeMeta,
+  .warmupLatest {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .warmupPipeline {
+    grid-template-columns: 1fr;
+  }
+
+  .operationHeader {
+    align-items: flex-start;
+  }
+
+  .switchActivity > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .switchActivity strong,
+  .switchActivity time {
+    text-align: left;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot::after {
     animation: none;
   }
 }
