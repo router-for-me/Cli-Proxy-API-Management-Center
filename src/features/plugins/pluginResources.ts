@@ -13,10 +13,36 @@ export interface PluginResourceEntry {
   pluginLogo: string;
   menuIndex: number;
   menu: PluginMenu;
+  kind: PluginResourceKind;
   label: string;
   description: string;
   route: string;
 }
+
+export type PluginResourceKind =
+  'resource' | 'agentIdentityManagement' | 'quotaSchedulerManagement';
+
+export const AGENT_IDENTITY_PLUGIN_ID = 'codex-agent-identity';
+export const QUOTA_SCHEDULER_PLUGIN_ID = 'codex-quota-scheduler';
+
+interface ManagedPluginResourceDefinition {
+  kind: Exclude<PluginResourceKind, 'resource'>;
+  title: string;
+  description: string;
+}
+
+const MANAGED_PLUGIN_RESOURCES: Record<string, ManagedPluginResourceDefinition> = {
+  [AGENT_IDENTITY_PLUGIN_ID]: {
+    kind: 'agentIdentityManagement',
+    title: 'Codex Agent Identity',
+    description: 'Identity management and credential import',
+  },
+  [QUOTA_SCHEDULER_PLUGIN_ID]: {
+    kind: 'quotaSchedulerManagement',
+    title: 'Codex Quota Scheduler',
+    description: 'Quota scheduling and warmup status',
+  },
+};
 
 export const getPluginTitle = (plugin: PluginListEntry) =>
   plugin.metadata?.name.trim() || plugin.id;
@@ -91,6 +117,29 @@ export const collectPluginResourceEntries = (plugins: PluginListEntry[]): Plugin
     const pluginTitle = getPluginTitle(plugin);
     const pluginLogo = plugin.logo || plugin.metadata?.logo || '';
 
+    // Dynamic and privileged plugin UIs must stay under authenticated Management
+    // routes. These two integrations intentionally expose no /v0/resource menu,
+    // so the WebUI supplies a local route only when the plugin declares no menu
+    // at all. A future real static menu always wins and avoids a duplicate entry.
+    if (plugin.menus.length === 0) {
+      const managed = MANAGED_PLUGIN_RESOURCES[plugin.id];
+      if (!managed) return [];
+
+      return [
+        {
+          pluginID: plugin.id,
+          pluginTitle: pluginTitle || managed.title,
+          pluginLogo,
+          menuIndex: 0,
+          menu: { path: '', menu: managed.title, description: managed.description },
+          kind: managed.kind,
+          label: managed.title,
+          description: managed.description,
+          route: buildPluginResourceRoute(plugin.id, 0),
+        },
+      ];
+    }
+
     return plugin.menus
       .map((menu, menuIndex): PluginResourceEntry | null => {
         const path = menu.path.trim();
@@ -103,6 +152,7 @@ export const collectPluginResourceEntries = (plugins: PluginListEntry[]): Plugin
           pluginLogo,
           menuIndex,
           menu: { ...menu, path },
+          kind: 'resource',
           label: menuLabel || pluginTitle,
           description: menu.description.trim() || pluginTitle,
           route: buildPluginResourceRoute(plugin.id, menuIndex),

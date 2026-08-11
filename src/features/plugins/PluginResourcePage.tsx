@@ -12,6 +12,10 @@ import {
   PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
 } from './pluginResources';
+import {
+  AgentIdentityManagementPage,
+  QuotaSchedulerManagementPage,
+} from './ManagedPluginResourcePages';
 import styles from './PluginResourcePage.module.scss';
 
 const hasStatus = (error: unknown, status: number) => isRecord(error) && error.status === status;
@@ -86,6 +90,14 @@ export function PluginResourcePage() {
   }, [data?.plugins, menuIndex, pluginID]);
 
   const iframeSrc = resource ? resolvePluginAssetURL(resource.menu.path, apiBase) : '';
+
+  if (!loading && !error && resource?.kind === 'agentIdentityManagement') {
+    return <AgentIdentityManagementPage apiBase={apiBase} />;
+  }
+
+  if (!loading && !error && resource?.kind === 'quotaSchedulerManagement') {
+    return <QuotaSchedulerManagementPage connected={connected} />;
+  }
 
   return (
     <div className={styles.page}>

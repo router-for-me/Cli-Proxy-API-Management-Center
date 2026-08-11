@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
+  IconExternalLink,
   IconGithub,
   IconPlug,
   IconRefreshCw,
@@ -20,11 +21,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginsApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
-import type {
-  PluginConfigField,
-  PluginListEntry,
-  PluginListResponse,
-} from '@/types';
+import type { PluginConfigField, PluginListEntry, PluginListResponse } from '@/types';
 import {
   buildPluginConfigDraft,
   buildPluginConfigPatch,
@@ -36,6 +33,11 @@ import {
   notifyPluginResourcesChanged,
   resolvePluginAssetURL,
 } from './pluginResources';
+import {
+  AGENT_IDENTITY_PLUGIN_ID,
+  buildAgentIdentityManagementURL,
+  openAgentIdentityManagement,
+} from './agentIdentityManagement';
 import { waitForPluginState } from './pluginPolling';
 import styles from './PluginsPage.module.scss';
 
@@ -77,6 +79,7 @@ export function PluginsPage() {
   const [mutatingID, setMutatingID] = useState('');
   const [deletingID, setDeletingID] = useState('');
   const [openingConfigID, setOpeningConfigID] = useState('');
+  const [openingManagementID, setOpeningManagementID] = useState('');
   const configRequestSeq = useRef(0);
 
   const connected = connectionStatus === 'connected';
@@ -195,6 +198,24 @@ export function PluginsPage() {
       if (configRequestSeq.current === requestSeq) {
         setOpeningConfigID('');
       }
+    }
+  };
+
+  const openAgentIdentityManager = async (plugin: PluginListEntry) => {
+    if (openingManagementID || mutatingID || openingConfigID || deletingID) return;
+    setOpeningManagementID(plugin.id);
+    try {
+      await openAgentIdentityManagement(apiBase);
+    } catch (err: unknown) {
+      showNotification(
+        `${t('plugin_management.agent_identity_management_open_failed')}: ${getErrorMessage(
+          err,
+          t('plugin_management.agent_identity_management_open_failed')
+        )}`,
+        'error'
+      );
+    } finally {
+      setOpeningManagementID('');
     }
   };
 
@@ -571,9 +592,16 @@ export function PluginsPage() {
             const github = plugin.metadata?.githubRepository.trim();
             const openingConfig = openingConfigID === plugin.id;
             const deletingPlugin = deletingID === plugin.id;
-            const actionBusy = Boolean(mutatingID || openingConfigID || deletingID);
+            const openingManagement = openingManagementID === plugin.id;
+            const actionBusy = Boolean(
+              mutatingID || openingConfigID || openingManagementID || deletingID
+            );
             const version = plugin.metadata?.version;
             const author = plugin.metadata?.author;
+            const isAgentIdentity = plugin.id === AGENT_IDENTITY_PLUGIN_ID;
+            const agentIdentityManagementURL = isAgentIdentity
+              ? buildAgentIdentityManagementURL(apiBase)
+              : null;
 
             return (
               <article key={plugin.id} className={styles.pluginRow}>
@@ -642,6 +670,24 @@ export function PluginsPage() {
 
                 {/* Actions */}
                 <div className={styles.rowActions}>
+                  {isAgentIdentity ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void openAgentIdentityManager(plugin)}
+                      disabled={
+                        !connected ||
+                        actionBusy ||
+                        !plugin.effectiveEnabled ||
+                        !agentIdentityManagementURL
+                      }
+                      loading={openingManagement}
+                      title={t('plugin_management.agent_identity_management_hint')}
+                    >
+                      <IconExternalLink size={14} />
+                      {t('plugin_management.agent_identity_management')}
+                    </Button>
+                  ) : null}
                   <ToggleSwitch
                     checked={plugin.enabled}
                     onChange={(enabled) => handleTogglePlugin(plugin, enabled)}
