@@ -104,7 +104,17 @@ describe('plugin resource entries', () => {
             { auth_id: 'standby-auth', eligible: false },
           ],
         },
-        { bans: [{ id: 'a' }, { id: 'b' }], total_429s: 4 }
+        { bans: [{ id: 'a' }, { id: 'b' }], total_429s: 4 },
+        {
+          files: [
+            {
+              auth_index: 'codex-team-alpha.json',
+              email: 'member@example.test',
+              account_type: 'team',
+              name: 'codex-team-alpha.json',
+            },
+          ],
+        }
       )
     ).toMatchObject({
       enabled: true,
@@ -112,7 +122,7 @@ describe('plugin resource entries', () => {
       generationManaged: true,
       serialActive: true,
       activeAuthId: 'redacted-active-auth',
-      activeAuthLabel: 'codex-team-alpha.json',
+      activeAuthLabel: 'member@example.test · Team',
       serialSelectedAt: '2026-08-11T10:00:00Z',
       serialSwitches: 7,
       serialLastSwitchAt: '2026-08-11T09:00:00Z',
@@ -141,5 +151,30 @@ describe('plugin resource entries', () => {
       total429s: 4,
       lastError: '',
     });
+  });
+
+  test('falls back safely when scheduler account metadata is partial or unavailable', () => {
+    const quota = {
+      serial_active_auth_id: 'active-auth',
+      snapshots: [{ auth_id: 'active-auth', auth_index: 'opaque-index' }],
+    };
+
+    expect(
+      normalizeQuotaSchedulerStatus(
+        quota,
+        {},
+        {
+          files: [{ authIndex: 'opaque-index', name: 'friendly-account.json' }],
+        }
+      ).activeAuthLabel
+    ).toBe('friendly-account');
+    expect(normalizeQuotaSchedulerStatus(quota, {}).activeAuthLabel).toBe('opaque-index');
+    expect(
+      normalizeQuotaSchedulerStatus(
+        { serial_active_auth_id: 'active-auth', snapshots: [] },
+        {},
+        { files: [] }
+      ).activeAuthLabel
+    ).toBe('active-auth');
   });
 });

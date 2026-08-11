@@ -29,6 +29,62 @@ const readCount = (value: unknown): number | null => {
 const readRecords = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value) ? value.filter(isRecord) : [];
 
+const readIdentifier = (value: unknown): string => {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return '';
+};
+
+const readAuthFiles = (value: unknown): Record<string, unknown>[] => {
+  if (Array.isArray(value)) return readRecords(value);
+  if (!isRecord(value)) return [];
+  return readRecords(value.files);
+};
+
+const cleanAuthFileName = (value: unknown): string => {
+  const rawName = readString(value);
+  if (!rawName) return '';
+  const fileName = rawName.split(/[\\/]/).pop() || rawName;
+  return fileName.replace(/\.(json|ya?ml|toml)$/i, '').trim();
+};
+
+const formatAccountType = (value: unknown): string => {
+  const rawType = readString(value);
+  if (!rawType) return '';
+  return rawType
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+};
+
+const resolveActiveAuthLabel = (
+  activeAuthId: string,
+  activeSnapshot: Record<string, unknown> | undefined,
+  authFilesValue: unknown
+): string => {
+  const authIndex = activeSnapshot
+    ? readIdentifier(activeSnapshot.auth_index) || readIdentifier(activeSnapshot.authIndex)
+    : '';
+  if (!authIndex) return activeAuthId;
+
+  const authFile = readAuthFiles(authFilesValue).find((entry) => {
+    const entryAuthIndex = readIdentifier(entry.auth_index) || readIdentifier(entry.authIndex);
+    return entryAuthIndex !== '' && entryAuthIndex.toLowerCase() === authIndex.toLowerCase();
+  });
+  if (!authFile) return authIndex || activeAuthId;
+
+  const label =
+    readString(authFile.label) ||
+    readString(authFile.email) ||
+    readString(authFile.account) ||
+    cleanAuthFileName(authFile.name) ||
+    authIndex ||
+    activeAuthId;
+  const accountType = formatAccountType(authFile.account_type ?? authFile.accountType);
+  return accountType ? `${label} · ${accountType}` : label;
+};
+
 const readWarmupTimestamp = (warmup: Record<string, unknown>): string =>
   readString(warmup.activated_at) ||
   readString(warmup.completed_at) ||
@@ -81,7 +137,8 @@ export interface QuotaSchedulerStatus {
 
 export const normalizeQuotaSchedulerStatus = (
   quotaValue: unknown,
-  bansValue: unknown
+  bansValue: unknown,
+  authFilesValue?: unknown
 ): QuotaSchedulerStatus => {
   const quota = isRecord(quotaValue) ? quotaValue : {};
   const bans = isRecord(bansValue) ? bansValue : {};
@@ -128,9 +185,7 @@ export const normalizeQuotaSchedulerStatus = (
     generationManaged: readBoolean(quota.generation_managed),
     serialActive: activeAuthId !== '',
     activeAuthId,
-    activeAuthLabel: activeSnapshot
-      ? readString(activeSnapshot.auth_index) || activeAuthId
-      : activeAuthId,
+    activeAuthLabel: resolveActiveAuthLabel(activeAuthId, activeSnapshot, authFilesValue),
     serialSelectedAt: readString(quota.serial_selected_at),
     serialSwitches: readNumber(quota.serial_switches),
     serialLastSwitchAt: readString(quota.serial_last_switch_at),

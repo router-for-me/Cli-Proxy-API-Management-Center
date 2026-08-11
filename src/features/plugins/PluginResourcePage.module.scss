@@ -45,11 +45,13 @@
 
 .managedHeader {
   display: flex;
+  box-sizing: border-box;
   gap: 20px;
   align-items: center;
   justify-content: space-between;
   max-width: 1240px;
   margin: 0 auto 20px;
+  padding-right: clamp(176px, 17vw, 220px);
 }
 
 .managedHeading {
@@ -520,20 +522,27 @@
   }
 }
 
+@media (max-width: 1180px) {
+  .managedHeader {
+    gap: 14px;
+    align-items: flex-start;
+    flex-direction: column;
+    padding-right: 0;
+  }
+
+  .managedActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 760px) {
   .managedPage {
     padding-top: 28px;
   }
 
   .managedHeader {
-    gap: 14px;
     align-items: stretch;
-    flex-direction: column;
-  }
-
-  .managedActions {
-    width: 100%;
-    flex-wrap: wrap;
   }
 
   .schedulerOverview {

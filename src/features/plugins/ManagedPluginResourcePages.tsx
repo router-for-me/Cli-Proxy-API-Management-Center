@@ -112,11 +112,12 @@ export function QuotaSchedulerManagementPage({ connected }: { connected: boolean
     setLoading(true);
     setError('');
     try {
-      const [quota, bans] = await Promise.all([
+      const [quota, bans, authFiles] = await Promise.all([
         apiClient.get('/plugins/codex-quota-scheduler/quota'),
         apiClient.get('/plugins/codex-quota-scheduler/bans'),
+        apiClient.get('/auth-files'),
       ]);
-      setStatus(normalizeQuotaSchedulerStatus(quota, bans));
+      setStatus(normalizeQuotaSchedulerStatus(quota, bans, authFiles));
     } catch (err: unknown) {
       setError(getErrorMessage(err, t('plugin_resource.scheduler_load_failed')));
     } finally {
