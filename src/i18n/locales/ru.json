@@ -1072,7 +1072,9 @@
           "fair": "Средний",
           "good": "Хороший",
           "strong": "Надёжный"
-        }
+        },
+        "name_label": "Name",
+        "name_placeholder": "Optional name for this key"
       },
       "payload_rules": {
         "rule": "Правило",

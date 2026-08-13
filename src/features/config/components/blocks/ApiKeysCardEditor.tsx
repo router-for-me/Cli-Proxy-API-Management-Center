@@ -11,25 +11,29 @@ import { isValidApiKeyCharset } from '@/utils/validation';
 import { ApiKeyStrengthMeter } from './ApiKeyStrengthMeter';
 import styles from './Blocks.module.scss';
 
+const splitLines = (text: string): string[] =>
+  text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   value,
+  namesValue,
   disabled,
   onChange,
+  onNamesChange,
 }: {
   value: string;
+  namesValue?: string;
   disabled?: boolean;
   onChange: (nextValue: string) => void;
+  onNamesChange?: (nextNames: string) => void;
 }) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
-  const apiKeys = useMemo(
-    () =>
-      value
-        .split('\n')
-        .map((key) => key.trim())
-        .filter(Boolean),
-    [value]
-  );
+  const apiKeys = useMemo(() => splitLines(value), [value]);
+  const apiKeyNames = useMemo(() => splitLines(namesValue ?? ''), [namesValue]);
   const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
   const renderApiKeyIds = useMemo(() => {
     if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
@@ -41,16 +45,19 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   }, [apiKeyIds, apiKeys.length]);
 
   const apiKeyInputId = useId();
+  const apiKeyNameInputId = useId();
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
+  const [inputNameValue, setInputNameValue] = useState('');
   const [formError, setFormError] = useState('');
 
   const openAddModal = () => {
     setEditingApiKeyId(null);
     setInputValue('');
+    setInputNameValue('');
     setFormError('');
     setModalOpen(true);
   };
@@ -59,6 +66,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     setEditingApiKeyId(apiKeyId);
     setInputValue(apiKeys[editingIndex] ?? '');
+    setInputNameValue(apiKeyNames[editingIndex] ?? '');
     setFormError('');
     setModalOpen(true);
   };
@@ -66,6 +74,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const closeModal = () => {
     setModalOpen(false);
     setInputValue('');
+    setInputNameValue('');
     setEditingApiKeyId(null);
     setFormError('');
   };
@@ -74,11 +83,16 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     onChange(nextKeys.join('\n'));
   };
 
+  const updateApiKeyNames = (nextNames: (string | undefined)[]) => {
+    if (onNamesChange) onNamesChange(nextNames.map((n) => n ?? '').join('\n'));
+  };
+
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    updateApiKeyNames(apiKeyNames.filter((_, i) => i !== index));
   };
 
   const handleSave = () => {
@@ -95,14 +109,20 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     const editingIndex = editingApiKeyId
       ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
       : -1;
+    const trimmedName = inputNameValue.trim();
     const nextKeys =
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
         : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
+    const nextNames: (string | undefined)[] =
+      editingApiKeyId === null
+        ? [...apiKeyNames, trimmedName || undefined]
+        : apiKeyNames.map((name, idx) => (idx === editingIndex ? trimmedName || undefined : name));
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
     updateApiKeys(nextKeys);
+    updateApiKeyNames(nextNames);
     closeModal();
   };
 
@@ -132,43 +152,44 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <div className="item-list" style={{ marginTop: 4 }}>
-          {apiKeys.map((key, index) => (
-            <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
-              <div className="item-meta">
-                <div className="pill">#{index + 1}</div>
-                <div className="item-title">
-                  {t('config_management.visual.api_keys.input_label')}
+          {apiKeys.map((key, index) => {
+            const name = apiKeyNames[index];
+            return (
+              <div key={renderApiKeyIds[index] ?? `${key}-${index}`} className="item-row">
+                <div className="item-meta">
+                  <div className="pill">#{index + 1}</div>
+                  <div className="item-title">{name || t('config_management.visual.api_keys.input_label')}</div>
+                  <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
                 </div>
-                <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
+                <div className="item-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleCopy(key)}
+                    disabled={disabled}
+                  >
+                    {t('common.copy')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.edit')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.delete')}
+                  </Button>
+                </div>
               </div>
-              <div className="item-actions">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -196,6 +217,17 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
         }
       >
         <div className="form-group">
+          <label htmlFor={apiKeyNameInputId}>
+            {t('config_management.visual.api_keys.name_label')}
+          </label>
+          <input
+            id={apiKeyNameInputId}
+            className="input"
+            placeholder={t('config_management.visual.api_keys.name_placeholder')}
+            value={inputNameValue}
+            onChange={(e) => setInputNameValue(e.target.value)}
+            disabled={disabled}
+          />
           <label htmlFor={apiKeyInputId}>
             {t('config_management.visual.api_keys.input_label')}
           </label>

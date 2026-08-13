@@ -1111,7 +1111,9 @@
           "fair": "一般",
           "good": "良好",
           "strong": "很強"
-        }
+        },
+        "name_label": "名称",
+        "name_placeholder": "给这个 Key 起个名字（可选）"
       },
       "payload_rules": {
         "rule": "規則",

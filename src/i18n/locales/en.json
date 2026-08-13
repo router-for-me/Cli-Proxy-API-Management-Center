@@ -1085,7 +1085,9 @@
           "fair": "Fair",
           "good": "Good",
           "strong": "Strong"
-        }
+        },
+        "name_label": "Name",
+        "name_placeholder": "Optional name for this key"
       },
       "payload_rules": {
         "rule": "Rule",

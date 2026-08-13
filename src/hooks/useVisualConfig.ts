@@ -70,6 +70,21 @@ function resolveApiKeysText(parsed: Record<string, unknown>): string {
   return parseApiKeysText(configApiKeyProvider['api-keys']);
 }
 
+function resolveApiKeyNamesText(parsed: Record<string, unknown>): string {
+  const names = parsed['api-key-names'];
+  if (!names || typeof names !== 'object' || Array.isArray(names)) return '';
+  const keys = (parsed['api-keys'] as unknown[]) ?? [];
+  if (!Array.isArray(keys)) return '';
+  const nameByKey = names as Record<string, unknown>;
+  const lines: string[] = [];
+  for (const item of keys) {
+    const key = extractApiKeyValue(item);
+    const name = key ? nameByKey[key] : undefined;
+    lines.push(typeof name === 'string' ? name : '');
+  }
+  return lines.join('\n');
+}
+
 type YamlDocument = ReturnType<typeof parseDocument>;
 type YamlPath = string[];
 
@@ -902,6 +917,7 @@ function getNextDirtyFields(
       'rmPanelRepo',
       'authDir',
       'apiKeysText',
+      'apiKeyNamesText',
       'debug',
       'commercialMode',
       'loggingToFile',
@@ -1099,6 +1115,7 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
+        apiKeyNamesText: resolveApiKeyNamesText(parsed),
         pluginsEnabled: Boolean(plugins?.enabled),
         pluginStoreSources: parseStringList(plugins?.['store-sources']),
         pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
@@ -1268,7 +1285,7 @@ export function useVisualConfig() {
         }
 
         if (dirtyFields.has('authDir')) setStringInDoc(doc, ['auth-dir'], values.authDir);
-        if (dirtyFields.has('apiKeysText')) {
+        if (dirtyFields.has('apiKeysText') || dirtyFields.has('apiKeyNamesText')) {
           const apiKeys = values.apiKeysText
             .split('\n')
             .map((key) => key.trim())
@@ -1279,6 +1296,19 @@ export function useVisualConfig() {
             doc.deleteIn(['api-keys']);
           }
           deleteLegacyApiKeysProvider(doc);
+
+          // api-key-names: line-per-key, aligned with api-keys order
+          const nameLines = values.apiKeyNamesText.split('\n');
+          const names: Record<string, string> = {};
+          apiKeys.forEach((key, idx) => {
+            const name = (nameLines[idx] ?? '').trim();
+            if (name) names[key] = name;
+          });
+          if (Object.keys(names).length > 0) {
+            doc.setIn(['api-key-names'], names);
+          } else if (docHas(doc, ['api-key-names'])) {
+            doc.deleteIn(['api-key-names']);
+          }
         }
 
         const pluginsDirty =
