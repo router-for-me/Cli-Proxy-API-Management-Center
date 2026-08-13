@@ -33,6 +33,11 @@ const AUTH_FILES_STATUS_FILTER_MODE_SET = new Set<AuthFilesStatusFilterMode>(
 export const isAuthFilesSortMode = (value: unknown): value is AuthFilesSortMode =>
   typeof value === 'string' && AUTH_FILES_SORT_MODE_SET.has(value as AuthFilesSortMode);
 
+export const resolveAuthFilesSortMode = (value: unknown): AuthFilesSortMode => {
+  if (!isAuthFilesSortMode(value) || value === 'default') return 'priority';
+  return value;
+};
+
 export const isAuthFilesStatusFilterMode = (value: unknown): value is AuthFilesStatusFilterMode =>
   typeof value === 'string' &&
   AUTH_FILES_STATUS_FILTER_MODE_SET.has(value as AuthFilesStatusFilterMode);

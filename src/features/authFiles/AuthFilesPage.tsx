@@ -45,6 +45,7 @@ import {
   isAuthFilesSortMode,
   readAuthFilesUiState,
   readPersistedAuthFilesCompactMode,
+  resolveAuthFilesSortMode,
   writeAuthFilesUiState,
   writePersistedAuthFilesCompactMode,
   type AuthFilesStatusFilterMode,
@@ -93,7 +94,8 @@ export function AuthFilesPage() {
   });
   const [pageSizeInput, setPageSizeInput] = useState('9');
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
-  const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
+  // Weekly keeper writes the routing order into priority; make that order visible by default.
+  const [sortMode, setSortMode] = useState<AuthFilesSortMode>('priority');
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
 
   const {
@@ -240,7 +242,7 @@ export function AuthFilesPage() {
         compact: compactPageSize,
       });
       if (isAuthFilesSortMode(persisted.sortMode)) {
-        setSortMode(persisted.sortMode);
+        setSortMode(resolveAuthFilesSortMode(persisted.sortMode));
       }
     }
 

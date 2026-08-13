@@ -141,6 +141,22 @@ describe('sortAuthFiles', () => {
     ]);
   });
 
+  test("'priority' renders weekly Antigravity routing order ahead of file-name order", () => {
+    const files = [
+      authFile({ name: 'antigravity-ntbptest1.json', type: 'antigravity', priority: 105 }),
+      authFile({ name: 'antigravity-ntbptest2.json', type: 'antigravity', priority: 101 }),
+      authFile({ name: 'antigravity-ntbptest6.json', type: 'antigravity', priority: 107 }),
+      authFile({ name: 'antigravity-ntbptest9.json', type: 'antigravity', priority: 106 }),
+    ];
+
+    expect(sortAuthFiles(files, 'priority').map((file) => file.priority)).toEqual([
+      107,
+      106,
+      105,
+      101,
+    ]);
+  });
+
   test('returns a new array and leaves the input untouched', () => {
     const files = [authFile({ name: 'b.json' }), authFile({ name: 'a.json' })];
     const result = sortAuthFiles(files, 'az');
