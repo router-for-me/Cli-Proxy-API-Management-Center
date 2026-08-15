@@ -310,6 +310,8 @@ export function mergeOpenCodeCompatAuthFiles(
         label: providerName,
         disabled: false,
         source: 'openai-compatibility',
+        runtime_only: true,
+        runtimeOnly: true,
       } as AuthFileItem);
       existingAuthIndexes.add(authIndex);
     }

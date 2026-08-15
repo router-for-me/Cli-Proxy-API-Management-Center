@@ -99,7 +99,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const quotaType =
     quotaFilterType && resolveQuotaType(file) === quotaFilterType ? quotaFilterType : null;
-  const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
+  const showQuotaLayout = Boolean(quotaType) && !compact;
 
   const successCount = file.successCount ?? 0;
   const failureCount = file.failureCount ?? 0;
