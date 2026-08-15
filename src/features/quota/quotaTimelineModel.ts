@@ -349,7 +349,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
 
   if (!quota || quota.status !== 'success') return empty;
 
-  if (provider === 'claude' || provider === 'codex') {
+  if (provider === 'claude' || provider === 'codex' || provider === 'opencode') {
     const windows = ((quota as { windows?: WindowLike[] }).windows ?? []).filter(
       (window) => typeof window.resetAtMs === 'number'
     );

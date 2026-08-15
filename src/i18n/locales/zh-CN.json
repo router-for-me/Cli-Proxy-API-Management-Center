@@ -365,7 +365,8 @@
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新该认证文件的额度",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "filter_opencode": "OpenCode Go"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1157,7 +1158,7 @@
   },
   "quota_management": {
     "title": "配额管理",
-    "description": "集中查看 OAuth 额度与剩余情况",
+    "description": "监控 Antigravity、Codex、Claude、Kimi、xAI 与 OpenCode Go 凭证的额度状态。",
     "refresh_all_credentials": "刷新全部凭证",
     "sort_label": "排序",
     "sort_default": "默认",
@@ -1166,7 +1167,7 @@
     "meta_loaded": "{{count}} 个已加载",
     "meta_attention": "{{count}} 个需关注",
     "empty_title": "暂无可查额度的凭证",
-    "empty_desc": "接入 Antigravity、Claude、Codex、xAI 或 Kimi 凭证后即可在此查看额度。",
+    "empty_desc": "连接 Antigravity、Claude、Codex、xAI、Kimi 或 OpenCode Go 凭证后可在此跟踪额度。",
     "windows_title": "配额窗口",
     "windows_span_weekly": "两周",
     "windows_span_session": "三天",
@@ -1720,5 +1721,27 @@
     "modelCatalog": {
       "notLoaded": "未加载"
     }
+  },
+  "opencode_quota": {
+    "title": "OpenCode Go 额度",
+    "empty_title": "没有 OpenCode Go 凭证",
+    "empty_desc": "添加 base URL 为 https://opencode.ai/zen/go 的 openai-compatibility 提供商后，可在此查看 OpenCode Go 用量。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "加载额度失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无额度数据",
+    "invalid_response": "OpenCode Go 用量响应无效",
+    "unauthorized": "OpenCode Go 凭证未授权",
+    "subscription_required": "需要 OpenCode Go 订阅",
+    "rate_limited": "OpenCode Go 上游限流",
+    "upstream_unavailable": "OpenCode Go 上游不可用",
+    "request_failed": "OpenCode Go 额度请求失败",
+    "request_failed_with_message": "OpenCode Go 额度请求失败：{{message}}",
+    "refresh_button": "刷新额度",
+    "fetch_all": "全部获取",
+    "window_5h": "5H",
+    "window_week": "Week",
+    "window_month": "Month"
   }
 }

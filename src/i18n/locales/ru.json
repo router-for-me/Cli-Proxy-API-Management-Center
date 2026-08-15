@@ -358,7 +358,8 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "filter_opencode": "OpenCode Go"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -1144,7 +1145,7 @@
   },
   "quota_management": {
     "title": "Управление квотами",
-    "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex, Claude, Kimi и xAI.",
+    "description": "Мониторинг квот Antigravity, Codex, Claude, Kimi, xAI и OpenCode Go.",
     "refresh_all_credentials": "Обновить все учётные данные",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
@@ -1153,7 +1154,7 @@
     "meta_loaded": "{{count}} загружено",
     "meta_attention": "{{count}} требуют внимания",
     "empty_title": "Нет учётных данных с квотами",
-    "empty_desc": "Подключите учётные данные Antigravity, Claude, Codex, xAI или Kimi, чтобы отслеживать квоту здесь.",
+    "empty_desc": "Подключите Antigravity, Claude, Codex, xAI, Kimi или OpenCode Go, чтобы отслеживать квоту здесь.",
     "windows_title": "Окна квот",
     "windows_span_weekly": "две недели",
     "windows_span_session": "три дня",
@@ -1698,5 +1699,27 @@
     "modelCatalog": {
       "notLoaded": "Не загружено"
     }
+  },
+  "opencode_quota": {
+    "title": "Квота OpenCode Go",
+    "empty_title": "Нет учётных данных OpenCode Go",
+    "empty_desc": "Добавьте openai-compatibility провайдера с base URL https://opencode.ai/zen/go, чтобы отслеживать usage OpenCode Go.",
+    "idle": "Нажмите, чтобы обновить квоту",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле авторизации нет auth_index",
+    "empty_data": "Нет данных о квоте",
+    "invalid_response": "Некорректный ответ usage OpenCode Go",
+    "unauthorized": "Учётные данные OpenCode Go не авторизованы",
+    "subscription_required": "Требуется подписка OpenCode Go",
+    "rate_limited": "Upstream OpenCode Go ограничил частоту запросов",
+    "upstream_unavailable": "Upstream OpenCode Go недоступен",
+    "request_failed": "Запрос квоты OpenCode Go не выполнен",
+    "request_failed_with_message": "Запрос квоты OpenCode Go не выполнен: {{message}}",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Загрузить все",
+    "window_5h": "5H",
+    "window_week": "Week",
+    "window_month": "Month"
   }
 }

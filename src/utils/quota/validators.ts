@@ -38,3 +38,6 @@ export function isDisabledAuthFile(file: AuthFileItem): boolean {
   if (typeof raw === 'string') return raw.trim().toLowerCase() === 'true';
   return false;
 }
+
+// OpenCode Go detector (strict base-URL match).
+export { isOpenCodeGoFile } from './opencode';

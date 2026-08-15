@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi } from '@/services/api';
+import { authFilesApi, providersApi } from '@/services/api';
+import { attachOpenAICompatBaseUrls } from '@/utils/quota';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
@@ -200,9 +201,13 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       }
 
       try {
-        const data = await authFilesApi.list();
+        const [data, openaiCompat] = await Promise.all([
+          authFilesApi.list(),
+          providersApi.getOpenAIProviders().catch(() => []),
+        ]);
         if (requestId !== loadRequestIdRef.current) return; // 已被更新的请求/变更取代
-        setFiles(data?.files || []);
+        // /auth-files omits openai-compat Attributes.base_url; join via auth_index.
+        setFiles(attachOpenAICompatBaseUrls(data?.files || [], openaiCompat || []));
         setError('');
       } catch (err: unknown) {
         if (requestId !== loadRequestIdRef.current) return;

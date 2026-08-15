@@ -310,6 +310,43 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
+
+
+// OpenCode Go usage payload / state types
+export interface OpenCodeUsageBucket {
+  percent?: number | string | null;
+  resetsAt?: string | null;
+  resets_at?: string | null;
+}
+
+export interface OpenCodeUsagePayload {
+  useBalance?: boolean | null;
+  use_balance?: boolean | null;
+  rollingUsage?: OpenCodeUsageBucket | null;
+  rolling_usage?: OpenCodeUsageBucket | null;
+  weeklyUsage?: OpenCodeUsageBucket | null;
+  weekly_usage?: OpenCodeUsageBucket | null;
+  monthlyUsage?: OpenCodeUsageBucket | null;
+  monthly_usage?: OpenCodeUsageBucket | null;
+}
+
+export interface OpenCodeQuotaWindow {
+  id: '5h' | 'weekly' | 'monthly';
+  labelKey: string;
+  usedPercent: number | null;
+  remainingPercent: number | null;
+  resetAtMs?: number | null;
+  resetLabel: string;
+}
+
+export interface OpenCodeQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  windows: OpenCodeQuotaWindow[];
+  useBalance?: boolean | null;
+  error?: string;
+  errorStatus?: number;
+}
+
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;

@@ -365,7 +365,8 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "filter_opencode": "OpenCode Go"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1183,7 +1184,7 @@
   },
   "quota_management": {
     "title": "配額管理",
-    "description": "集中查看 OAuth 配額與剩餘情況",
+    "description": "監控 Antigravity、Codex、Claude、Kimi、xAI 與 OpenCode Go 憑證的額度狀態。",
     "refresh_all_credentials": "重新整理全部憑證",
     "sort_label": "排序",
     "sort_default": "預設",
@@ -1192,7 +1193,7 @@
     "meta_loaded": "{{count}} 個已載入",
     "meta_attention": "{{count}} 個需關注",
     "empty_title": "暫無可查配額的憑證",
-    "empty_desc": "接入 Antigravity、Claude、Codex、xAI 或 Kimi 憑證後即可在此查看配額。",
+    "empty_desc": "連接 Antigravity、Claude、Codex、xAI、Kimi 或 OpenCode Go 憑證後可在此追蹤額度。",
     "windows_title": "配額視窗",
     "windows_span_weekly": "兩週",
     "windows_span_session": "三天",
@@ -1746,5 +1747,27 @@
     "modelCatalog": {
       "notLoaded": "未載入"
     }
+  },
+  "opencode_quota": {
+    "title": "OpenCode Go 額度",
+    "empty_title": "沒有 OpenCode Go 憑證",
+    "empty_desc": "新增 base URL 為 https://opencode.ai/zen/go 的 openai-compatibility 提供者後，可在此查看 OpenCode Go 用量。",
+    "idle": "點此重新整理額度",
+    "loading": "正在載入額度...",
+    "load_failed": "載入額度失敗：{{message}}",
+    "missing_auth_index": "認證檔缺少 auth_index",
+    "empty_data": "暫無額度資料",
+    "invalid_response": "OpenCode Go 用量回應無效",
+    "unauthorized": "OpenCode Go 憑證未授權",
+    "subscription_required": "需要 OpenCode Go 訂閱",
+    "rate_limited": "OpenCode Go 上游限流",
+    "upstream_unavailable": "OpenCode Go 上游無法使用",
+    "request_failed": "OpenCode Go 額度請求失敗",
+    "request_failed_with_message": "OpenCode Go 額度請求失敗：{{message}}",
+    "refresh_button": "重新整理額度",
+    "fetch_all": "全部取得",
+    "window_5h": "5H",
+    "window_week": "Week",
+    "window_month": "Month"
   }
 }

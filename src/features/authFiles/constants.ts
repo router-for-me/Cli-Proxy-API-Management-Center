@@ -10,6 +10,8 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconOpenaiDark from '@/assets/icons/openai-dark.svg';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 import { parseTimestamp } from '@/utils/timestamp';
@@ -24,7 +26,7 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai';
+export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai' | 'opencode';
 export type OAuthConfigLoadError = 'loading' | 'unsupported' | 'load' | null;
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
@@ -33,6 +35,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'kimi',
   'xai',
+  'opencode',
 ]);
 
 export const OAUTH_PROVIDER_PRESETS = [
@@ -77,6 +80,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   kimi: { light: iconKimiDark, dark: iconKimiLight },
   qwen: iconQwen,
   vertex: iconVertex,
+  opencode: { light: iconOpenaiLight, dark: iconOpenaiDark },
 };
 
 export const clampCardPageSize = (value: number) =>
@@ -162,7 +166,7 @@ export const getAuthFileIcon = (type: string, resolvedTheme: ResolvedTheme): str
 
 // 与 AI 提供商界面（PROVIDER_LOGOS 的 themeSurface）保持一致：
 // 这些提供商的图标底座颜色随主题切换（浅色主题黑底，深色主题白底）
-export const THEME_SURFACE_ICON_PROVIDERS = new Set(['kimi']);
+export const THEME_SURFACE_ICON_PROVIDERS = new Set(['kimi', 'opencode']);
 
 export const isThemeSurfaceIconProvider = (type: string): boolean =>
   THEME_SURFACE_ICON_PROVIDERS.has(normalizeProviderKey(type));

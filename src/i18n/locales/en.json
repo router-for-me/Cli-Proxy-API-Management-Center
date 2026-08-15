@@ -365,7 +365,8 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "filter_opencode": "OpenCode Go"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -1157,7 +1158,7 @@
   },
   "quota_management": {
     "title": "Quota Management",
-    "description": "Monitor OAuth quota status for Antigravity, Codex, Claude, Kimi, and xAI credentials.",
+    "description": "Monitor OAuth and OpenCode Go quota status for Antigravity, Codex, Claude, Kimi, xAI, and OpenCode Go credentials.",
     "refresh_all_credentials": "Refresh all credentials",
     "sort_label": "Sort",
     "sort_default": "Default",
@@ -1166,7 +1167,7 @@
     "meta_loaded": "{{count}} loaded",
     "meta_attention": "{{count}} need attention",
     "empty_title": "No quota-capable credentials",
-    "empty_desc": "Connect an Antigravity, Claude, Codex, xAI, or Kimi credential to track its quota here.",
+    "empty_desc": "Connect an Antigravity, Claude, Codex, xAI, Kimi, or OpenCode Go credential to track its quota here.",
     "windows_title": "Quota windows",
     "windows_span_weekly": "two weeks",
     "windows_span_session": "three days",
@@ -1720,5 +1721,27 @@
     "modelCatalog": {
       "notLoaded": "Not loaded"
     }
+  },
+  "opencode_quota": {
+    "title": "OpenCode Go Quota",
+    "empty_title": "No OpenCode Go credentials",
+    "empty_desc": "Add an openai-compatibility provider whose base URL is https://opencode.ai/zen/go to track OpenCode Go usage here.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "invalid_response": "Invalid OpenCode Go usage response",
+    "unauthorized": "OpenCode Go credential unauthorized",
+    "subscription_required": "OpenCode Go subscription required",
+    "rate_limited": "OpenCode Go upstream rate limited",
+    "upstream_unavailable": "OpenCode Go upstream unavailable",
+    "request_failed": "OpenCode Go quota request failed",
+    "request_failed_with_message": "OpenCode Go quota request failed: {{message}}",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "window_5h": "5H",
+    "window_week": "Week",
+    "window_month": "Month"
   }
 }
