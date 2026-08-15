@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi, providersApi } from '@/services/api';
-import { attachOpenAICompatBaseUrls } from '@/utils/quota';
+import { mergeOpenCodeCompatAuthFiles } from '@/utils/quota';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
@@ -206,8 +206,9 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
           providersApi.getOpenAIProviders().catch(() => []),
         ]);
         if (requestId !== loadRequestIdRef.current) return; // 已被更新的请求/变更取代
-        // /auth-files omits openai-compat Attributes.base_url; join via auth_index.
-        setFiles(attachOpenAICompatBaseUrls(data?.files || [], openaiCompat || []));
+        // Join openai-compat base URLs and synthesize OpenCode Go API-key rows
+        // when they are absent from /auth-files.
+        setFiles(mergeOpenCodeCompatAuthFiles(data?.files || [], openaiCompat || []));
         setError('');
       } catch (err: unknown) {
         if (requestId !== loadRequestIdRef.current) return;

@@ -7,6 +7,7 @@ import {
   extractAuthFileBaseUrl,
   isOpenCodeGoBaseUrl,
   isOpenCodeGoFile,
+  mergeOpenCodeCompatAuthFiles,
   parseOpenCodeUsagePayload,
   remainingFromUsedPercent,
 } from '@/utils/quota/opencode';
@@ -73,6 +74,28 @@ describe('OpenCode Go file detection', () => {
     ).toBe(true);
   });
 
+  test('mergeOpenCodeCompatAuthFiles synthesizes missing OpenCode Go API-key rows', () => {
+    const files = [file('codex-a', { authIndex: 'codex-1', provider: 'codex' })];
+    const merged = mergeOpenCodeCompatAuthFiles(files, [
+      {
+        name: 'OpenCode Go',
+        baseUrl: 'https://opencode.ai/zen/go/v1',
+        apiKeyEntries: [{ authIndex: 'oc-auth-1' }],
+      },
+      {
+        name: 'OpenRouter',
+        baseUrl: 'https://openrouter.ai/api/v1',
+        apiKeyEntries: [{ authIndex: 'or-1' }],
+      },
+    ]);
+    const oc = merged.filter((f) => isOpenCodeGoFile(f));
+    expect(oc).toHaveLength(1);
+    expect(oc[0]?.authIndex).toBe('oc-auth-1');
+    expect(extractAuthFileBaseUrl(oc[0]!)).toBe('https://opencode.ai/zen/go/v1');
+    // non-OpenCode compat providers are not synthesized
+    expect(merged.some((f) => f.authIndex === 'or-1')).toBe(false);
+  });
+
   test('attachOpenAICompatBaseUrls joins auth_index to base URL', () => {
     const files = [
       file('oc-1', { authIndex: 'idx-1', provider: 'openai-compatible-opencode-go' }),
@@ -132,6 +155,24 @@ describe('OpenCode Go payload parsing', () => {
     expect(parseOpenCodeUsagePayload({})).toBeNull();
     expect(parseOpenCodeUsagePayload({ foo: 1 })).toBeNull();
     expect(parseOpenCodeUsagePayload(payload)).not.toBeNull();
+  });
+
+  test('accepts nested usage.rolling shape from live OpenCode Go endpoint', () => {
+    const nested = {
+      usage: {
+        rolling: { status: 'ok', percent: 2, resetsAt: '2026-08-15T18:05:45.783Z' },
+        weekly: { status: 'ok', percent: 16, resetsAt: '2026-08-17T00:00:00.783Z' },
+        monthly: { status: 'ok', percent: 54, resetsAt: '2026-09-03T11:42:09.783Z' },
+      },
+    };
+    const parsed = parseOpenCodeUsagePayload(nested);
+    expect(parsed).not.toBeNull();
+    const windows = buildOpenCodeQuotaWindows(parsed!);
+    expect(windows.map((w) => w.id)).toEqual(['5h', 'weekly', 'monthly']);
+    expect(windows[0]?.usedPercent).toBe(2);
+    expect(windows[0]?.remainingPercent).toBe(98);
+    expect(windows[1]?.remainingPercent).toBe(84);
+    expect(windows[2]?.remainingPercent).toBe(46);
   });
 });
 

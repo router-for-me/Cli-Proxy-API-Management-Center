@@ -20,7 +20,7 @@ import { useNow } from '@/hooks/useNow';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
-import { attachOpenAICompatBaseUrls } from '@/utils/quota';
+import { mergeOpenCodeCompatAuthFiles } from '@/utils/quota';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
@@ -87,8 +87,9 @@ export function QuotaPage() {
         providersApi.getOpenAIProviders().catch(() => []),
       ]);
       const rawFiles = data?.files || [];
-      // /auth-files omits openai-compat Attributes.base_url; join via auth_index.
-      setFiles(attachOpenAICompatBaseUrls(rawFiles, openaiCompat || []));
+      // Join openai-compat base URLs and synthesize OpenCode Go API-key rows
+      // when they are absent from /auth-files.
+      setFiles(mergeOpenCodeCompatAuthFiles(rawFiles, openaiCompat || []));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);

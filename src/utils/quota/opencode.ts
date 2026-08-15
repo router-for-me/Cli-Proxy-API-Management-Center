@@ -145,16 +145,47 @@ export function remainingFromUsedPercent(usedPercent: number | null): number | n
   return Math.max(0, Math.min(100, 100 - usedPercent));
 }
 
+/**
+ * Live OpenCode Go `/usage` may return either:
+ * 1) flat: { rollingUsage, weeklyUsage, monthlyUsage }
+ * 2) nested: { usage: { rolling, weekly, monthly } }
+ * Normalize both into the flat shape used by the adapter.
+ */
 export function parseOpenCodeUsagePayload(input: unknown): OpenCodeUsagePayload | null {
   if (!isRecord(input)) return null;
-  // Accept either the authoritative shape or a JSON string body.
-  const rolling = input.rollingUsage ?? input.rolling_usage;
-  const weekly = input.weeklyUsage ?? input.weekly_usage;
-  const monthly = input.monthlyUsage ?? input.monthly_usage;
+
+  const nestedUsage = isRecord(input.usage) ? input.usage : null;
+  const rolling =
+    input.rollingUsage ??
+    input.rolling_usage ??
+    nestedUsage?.rollingUsage ??
+    nestedUsage?.rolling_usage ??
+    nestedUsage?.rolling;
+  const weekly =
+    input.weeklyUsage ??
+    input.weekly_usage ??
+    nestedUsage?.weeklyUsage ??
+    nestedUsage?.weekly_usage ??
+    nestedUsage?.weekly;
+  const monthly =
+    input.monthlyUsage ??
+    input.monthly_usage ??
+    nestedUsage?.monthlyUsage ??
+    nestedUsage?.monthly_usage ??
+    nestedUsage?.monthly;
+
   if (!isRecord(rolling) && !isRecord(weekly) && !isRecord(monthly)) {
     return null;
   }
-  return input as OpenCodeUsagePayload;
+
+  const useBalanceRaw = input.useBalance ?? input.use_balance;
+  const normalized: OpenCodeUsagePayload = {
+    useBalance: typeof useBalanceRaw === 'boolean' ? useBalanceRaw : null,
+    rollingUsage: isRecord(rolling) ? (rolling as OpenCodeUsagePayload['rollingUsage']) : null,
+    weeklyUsage: isRecord(weekly) ? (weekly as OpenCodeUsagePayload['weeklyUsage']) : null,
+    monthlyUsage: isRecord(monthly) ? (monthly as OpenCodeUsagePayload['monthlyUsage']) : null,
+  };
+  return normalized;
 }
 
 const readUsageWindow = (
@@ -163,7 +194,16 @@ const readUsageWindow = (
 ): { percent: number | null; resetsAt: string | null } => {
   const snake =
     key === 'rollingUsage' ? 'rolling_usage' : key === 'weeklyUsage' ? 'weekly_usage' : 'monthly_usage';
-  const raw = (payload as Record<string, unknown>)[key] ?? (payload as Record<string, unknown>)[snake];
+  const short = key === 'rollingUsage' ? 'rolling' : key === 'weeklyUsage' ? 'weekly' : 'monthly';
+  const nestedUsage = isRecord((payload as Record<string, unknown>).usage)
+    ? ((payload as Record<string, unknown>).usage as Record<string, unknown>)
+    : null;
+  const raw =
+    (payload as Record<string, unknown>)[key] ??
+    (payload as Record<string, unknown>)[snake] ??
+    nestedUsage?.[key] ??
+    nestedUsage?.[snake] ??
+    nestedUsage?.[short];
   if (!isRecord(raw)) return { percent: null, resetsAt: null };
   const percent = clampPercent(raw.percent);
   const resetsAt = readString(raw.resetsAt ?? raw.resets_at) || null;
@@ -194,9 +234,16 @@ export function buildOpenCodeQuotaWindows(payload: OpenCodeUsagePayload): OpenCo
  * Attach openai-compatibility base URLs onto auth-file entries by auth_index.
  * Required because /auth-files does not expose Attributes.base_url.
  */
+type OpenAICompatProviderLike = {
+  name?: string;
+  baseUrl?: string;
+  disabled?: boolean;
+  apiKeyEntries?: Array<{ authIndex?: string; apiKey?: string }>;
+};
+
 export function attachOpenAICompatBaseUrls(
   files: AuthFileItem[],
-  compatProviders: Array<{ baseUrl?: string; apiKeyEntries?: Array<{ authIndex?: string }> }>
+  compatProviders: OpenAICompatProviderLike[]
 ): AuthFileItem[] {
   const byAuthIndex = new Map<string, string>();
   for (const provider of compatProviders) {
@@ -224,4 +271,49 @@ export function attachOpenAICompatBaseUrls(
       'base-url': baseUrl,
     };
   });
+}
+
+/**
+ * OpenAI-compatibility API-key credentials (e.g. OpenCode Go) may not appear in
+ * /auth-files. Synthesize stable virtual auth-file rows for OpenCode Go only so
+ * Quota / AuthFile quota cards can load via auth_index + api-call.
+ */
+export function mergeOpenCodeCompatAuthFiles(
+  files: AuthFileItem[],
+  compatProviders: OpenAICompatProviderLike[]
+): AuthFileItem[] {
+  const withBase = attachOpenAICompatBaseUrls(files, compatProviders);
+  const existingAuthIndexes = new Set<string>();
+  for (const file of withBase) {
+    const authIndex = readString(file.authIndex ?? file['auth_index']);
+    if (authIndex) existingAuthIndexes.add(authIndex);
+  }
+
+  const synthesized: AuthFileItem[] = [];
+  for (const provider of compatProviders) {
+    const baseUrl = readString(provider.baseUrl);
+    if (!isOpenCodeGoBaseUrl(baseUrl)) continue;
+    if (provider.disabled === true) continue;
+    const providerName = readString(provider.name) || 'OpenCode Go';
+    for (const entry of provider.apiKeyEntries ?? []) {
+      const authIndex = readString(entry.authIndex);
+      if (!authIndex || existingAuthIndexes.has(authIndex)) continue;
+      const name = `openai-compat:${providerName}:${authIndex}`;
+      synthesized.push({
+        name,
+        authIndex,
+        auth_index: authIndex,
+        baseUrl,
+        'base-url': baseUrl,
+        provider: 'openai-compatible',
+        type: 'openai-compatible',
+        label: providerName,
+        disabled: false,
+        source: 'openai-compatibility',
+      } as AuthFileItem);
+      existingAuthIndexes.add(authIndex);
+    }
+  }
+
+  return synthesized.length ? [...withBase, ...synthesized] : withBase;
 }
