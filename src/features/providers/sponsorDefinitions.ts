@@ -203,6 +203,19 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'infistar' ||
   brand === 'kimi';
 
+/**
+ * 临时隐藏的赞助商品牌：入口从提供商列表隐藏，其配置改由对应协议分组
+ * （codex/claude/gemini/openaiCompatibility）直接显示与管理。
+ * 以后恢复时，把对应 brand 从集合中删除即可。
+ */
+export const TEMPORARILY_HIDDEN_SPONSOR_BRANDS: ReadonlySet<SponsorProviderBrand> = new Set([
+  'fennoAI',
+  'qiniuCloud',
+]);
+
+export const isTemporarilyHiddenSponsorBrand = (brand: ProviderBrand): boolean =>
+  TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has(brand as SponsorProviderBrand);
+
 export type SponsorAggregationConflict = 'multiple-configs' | 'multiple-openai-keys';
 
 export const getSponsorAggregationConflict = (
