@@ -1026,6 +1026,7 @@
           "title": "網路設定",
           "description": "代理、重試和路由設定",
           "proxy_url": "代理 URL",
+          "proxy_url_sponsor_hint": "沒有合適的代理？",
           "request_retry": "請求重試次數",
           "max_retry_credentials": "最大重試憑證數",
           "max_retry_credentials_hint": "留空表示不設定；設為 0 表示保留 legacy 行為，並嘗試所有可用憑證。",
