@@ -157,6 +157,63 @@
   scroll-margin-top: calc(var(--header-height, 64px) + 16px);
 }
 
+/* 跨两列的字段（如长文本的代理 URL）；移动端单列布局下回退为一列。 */
+.fieldAnchorWide {
+  grid-column: span 2;
+
+  @include mobile {
+    grid-column: auto;
+  }
+}
+
+/* 字段标签下方的赞助跳转小字行（代理 URL 字段）。 */
+.fieldSponsorHint {
+  margin: -2px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 与赞助行同字号同高度的隐形占位：同排右侧字段用它补齐标签区高度，让输入框与代理 URL 对齐。
+   移动端单列堆叠时无需对齐，直接隐藏。 */
+.fieldSponsorSpacer {
+  margin: -2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  visibility: hidden;
+
+  @include mobile {
+    display: none;
+  }
+}
+
+/* 与正文融为一体的高亮链接：同字号，复用全站金色（amber）badge 配方，hover 底色加深。 */
+.fieldSponsorLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border: 1px solid var(--amber-30);
+  border-radius: 5px;
+  background: var(--amber-10);
+  color: var(--amber-text);
+  font-weight: 600;
+  text-decoration: none;
+  vertical-align: baseline;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--amber-30);
+    text-decoration: none;
+  }
+}
+
+.fieldSponsorLogo {
+  display: block;
+  width: auto;
+  height: 13px;
+}
+
 .fieldHighlightActive {
   border-radius: 10px;
   animation: config-field-highlight 1.8s ease-out;

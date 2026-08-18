@@ -2,6 +2,10 @@ import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  /** 渲染在标签正下方的小字行（如赞助跳转链接）。 */
+  labelExtra?: ReactNode;
+  /** 渲染在标签上方的占位行（用于与同排带 labelExtra 的字段保持输入框对齐）。 */
+  topExtra?: ReactNode;
   hint?: string;
   error?: string;
   rightElement?: ReactNode;
@@ -9,6 +13,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Input({
   label,
+  labelExtra,
+  topExtra,
   hint,
   error,
   rightElement,
@@ -25,7 +31,9 @@ export function Input({
 
   return (
     <div className="form-group">
+      {topExtra}
       {label && <label htmlFor={inputId}>{label}</label>}
+      {labelExtra}
       <div style={{ position: 'relative' }}>
         <input
           id={inputId}

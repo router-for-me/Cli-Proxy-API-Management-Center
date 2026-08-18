@@ -1000,6 +1000,7 @@
           "title": "网络配置",
           "description": "代理、重试和路由设置",
           "proxy_url": "代理 URL",
+          "proxy_url_sponsor_hint": "没有合适的代理？",
           "request_retry": "请求重试次数",
           "max_retry_credentials": "最大重试凭据数",
           "max_retry_credentials_hint": "留空表示不设置；设为 0 表示保留 legacy 行为，并尝试所有可用凭据。",
