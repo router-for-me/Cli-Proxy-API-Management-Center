@@ -9,6 +9,36 @@ const modernReset = '2026-07-27T10:00:00.000000+00:00';
 const legacyReset = '2026-07-28T10:00:00.000000+00:00';
 
 describe('Claude Fable quota', () => {
+  test('explains an untouched five-hour window instead of leaving its reset blank', () => {
+    const windows = buildClaudeQuotaWindows(
+      {
+        five_hour: { utilization: 0, resets_at: null },
+        seven_day: { utilization: 20, resets_at: legacyReset },
+      },
+      t
+    );
+
+    expect(windows[0]).toMatchObject({
+      id: 'five-hour',
+      usedPercent: 0,
+      resetLabel: 'claude_quota.five_hour_starts_on_use',
+      resetAtMs: null,
+      periodHours: 5,
+    });
+  });
+
+  test('does not invent a reset hint when a used five-hour window lacks a timestamp', () => {
+    const windows = buildClaudeQuotaWindows(
+      {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 20, resets_at: legacyReset },
+      },
+      t
+    );
+
+    expect(windows[0]?.resetLabel).toBe('-');
+  });
+
   test('builds a Fable window from the modern scoped limits payload', () => {
     const windows = buildClaudeQuotaWindows(
       {

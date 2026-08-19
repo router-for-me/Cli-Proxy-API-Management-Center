@@ -65,7 +65,10 @@ export const buildClaudeQuotaWindows = (
     if (!window || typeof window !== 'object' || !('utilization' in window)) continue;
     const typedWindow = window as { utilization: number; resets_at: string | null };
     const usedPercent = normalizeNumberValue(typedWindow.utilization);
-    const resetLabel = formatQuotaResetTime(typedWindow.resets_at ?? undefined);
+    const resetLabel =
+      key === 'five_hour' && usedPercent === 0 && !typedWindow.resets_at
+        ? t('claude_quota.five_hour_starts_on_use')
+        : formatQuotaResetTime(typedWindow.resets_at ?? undefined);
     windows.push({
       id,
       label: t(labelKey),
