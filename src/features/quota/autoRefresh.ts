@@ -1,0 +1,1 @@
+export const QUOTA_AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000;

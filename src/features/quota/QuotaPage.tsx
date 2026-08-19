@@ -2,7 +2,7 @@
  * 额度查询页：提供商 tabs + 统一卡网格。
  *
  * 保留的行为契约（重设计不改）：
- * - 点击加载：卡片挂载为 idle，额度只在用户点击/刷新时才打上游；
+ * - 页面打开时自动加载额度，并每五分钟刷新全部凭证；
  * - cacheGeneration 会话隔离 + request-id 去重（见 useQuotaBatchLoader）；
  * - 文件列表变化后按 provider 剪枝额度缓存（已删文件不残留）；
  * - useHeaderRefresh 单槽位：本页唯一注册者，全局刷新 = 重取文件列表。
@@ -45,6 +45,7 @@ import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers
 import type { QuotaProviderType } from './providers/types';
 import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
+import { QUOTA_AUTO_REFRESH_INTERVAL_MS } from './autoRefresh';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
 import styles from './QuotaPage.module.scss';
 
@@ -92,10 +93,6 @@ export function QuotaPage() {
   }, [t]);
 
   useHeaderRefresh(loadFiles);
-
-  useEffect(() => {
-    void loadFiles();
-  }, [loadFiles]);
 
   /* ---------- 额度缓存 ----------
    * 排在归类/排序之前：「最快恢复优先」要读它算排序键。 */
@@ -205,14 +202,29 @@ export function QuotaPage() {
   const { resettingQuotaName, refreshQuota, resetQuota } = useQuotaActions(disableControls);
 
   const pendingRefreshRef = useRef(false);
+  const autoRefreshStartedRef = useRef(false);
   const prevLoadingRef = useRef(loading);
 
   // 刷新全部：先重取文件列表，待其落定（loading 下降沿）再批量拉当前页额度
   const handleRefreshAll = useCallback(() => {
-    if (disableControls) return;
+    if (disableControls || loading || batchLoading || pendingRefreshRef.current) return;
     pendingRefreshRef.current = true;
     void loadFiles();
-  }, [disableControls, loadFiles]);
+  }, [batchLoading, disableControls, loadFiles, loading]);
+
+  // 首次打开额度页时自动拉取凭证额度；页面保持挂载时每五分钟重复一次。
+  useEffect(() => {
+    if (disableControls) return;
+
+    if (!autoRefreshStartedRef.current) {
+      autoRefreshStartedRef.current = true;
+      pendingRefreshRef.current = true;
+      void loadFiles();
+    }
+
+    const intervalId = window.setInterval(handleRefreshAll, QUOTA_AUTO_REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [disableControls, handleRefreshAll, loadFiles]);
 
   useEffect(() => {
     const wasLoading = prevLoadingRef.current;
@@ -222,8 +234,8 @@ export function QuotaPage() {
     if (loading || !wasLoading) return;
 
     pendingRefreshRef.current = false;
-    void loadQuota(pageItems);
-  }, [loading, loadQuota, pageItems]);
+    void loadQuota(entries);
+  }, [entries, loading, loadQuota]);
 
   const canUseActions = !disableControls && !loading;
 
