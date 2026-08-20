@@ -286,7 +286,7 @@ export function useConnectivityTest(
   }, [apiKeyEntries, brand, runOpenAIKey]);
 
   const runCodex = useCallback(async (): Promise<void> => {
-    if (brand !== 'codex' && brand !== 'xai') return;
+    if (brand !== 'codex' && brand !== 'xai' && brand !== 'codebuddyCn') return;
 
     const trimmedBase = baseUrl.trim();
     if (!trimmedBase) {
@@ -294,7 +294,10 @@ export function useConnectivityTest(
       return;
     }
 
-    const endpoint = buildCodexResponsesEndpoint(trimmedBase);
+    const endpoint =
+      brand === 'codebuddyCn'
+        ? buildOpenAIChatCompletionsEndpoint(trimmedBase)
+        : buildCodexResponsesEndpoint(trimmedBase);
     if (!endpoint) {
       setCodexStatus({ state: 'error', message: messages.endpointInvalid });
       return;
@@ -339,11 +342,20 @@ export function useConnectivityTest(
           method: 'POST',
           url: endpoint,
           header: headerObj,
-          data: JSON.stringify({
-            model,
-            input: 'Hi',
-            stream: false,
-          }),
+          data: JSON.stringify(
+            brand === 'codebuddyCn'
+              ? {
+                  model,
+                  messages: [{ role: 'user', content: 'Hi' }],
+                  stream: true,
+                  max_tokens: 5,
+                }
+              : {
+                  model,
+                  input: 'Hi',
+                  stream: false,
+                }
+          ),
         },
         { timeout: DEFAULT_TIMEOUT_MS }
       );

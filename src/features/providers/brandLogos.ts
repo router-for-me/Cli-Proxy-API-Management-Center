@@ -13,6 +13,7 @@ import lmuAILogo from '@/assets/icons/lmu-ai.png';
 import infistarLogo from '@/assets/icons/infistar.png';
 import xaiLightLogo from '@/assets/icons/grok.svg';
 import xaiDarkLogo from '@/assets/icons/grok-dark.svg';
+import codebuddyLogo from '@/assets/icons/codebuddy.svg';
 import kimiLightLogo from '@/assets/icons/kimi-light.svg';
 import kimiDarkLogo from '@/assets/icons/kimi-dark.svg';
 import type { ProviderBrand } from './types';
@@ -32,6 +33,7 @@ export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
   claudeApi: { src: claudeApiLogo },
   codex: { src: codexLogo },
   xai: { src: xaiLightLogo, darkSrc: xaiDarkLogo, transparent: true },
+  codebuddyCn: { src: codebuddyLogo },
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLightLogo, darkSrc: openaiDarkLogo, transparent: true },
   apikeyFun: { src: apikeyFunLogo },
