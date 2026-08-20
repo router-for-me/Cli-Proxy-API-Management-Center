@@ -473,6 +473,25 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "cursor_quota": {
+    "title": "Cursor 额度",
+    "empty_title": "没有 Cursor 凭证",
+    "empty_desc": "在插件面板中登录 Cursor 后即可查看剩余额度。",
+    "idle": "点击刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "加载额度失败：{{message}}",
+    "missing_auth_index": "凭证缺少 auth_index",
+    "empty_data": "暂无额度数据",
+    "refresh_button": "刷新额度",
+    "fetch_all": "全部获取",
+    "plan_label": "套餐",
+    "price_label": "价格",
+    "included_usage": "包含额度",
+    "auto_used": "Auto 已用",
+    "api_used": "API 已用",
+    "by_model": "按模型（{{amount}}）",
+    "reset_at": "{{time}} 重置"
+  },
   "kimi_quota": {
     "title": "Kimi 额度",
     "empty_title": "暂无 Kimi 认证",

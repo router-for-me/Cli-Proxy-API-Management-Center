@@ -460,6 +460,25 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "cursor_quota": {
+    "title": "Квота Cursor",
+    "empty_title": "Нет учётных данных Cursor",
+    "empty_desc": "Войдите в Cursor на панели плагина, чтобы увидеть остаток квоты.",
+    "idle": "Нажмите, чтобы обновить квоту",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В учётных данных нет auth_index",
+    "empty_data": "Нет данных о квоте",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Загрузить все",
+    "plan_label": "План",
+    "price_label": "Цена",
+    "included_usage": "Включённый объём",
+    "auto_used": "Auto использовано",
+    "api_used": "API использовано",
+    "by_model": "По моделям ({{amount}})",
+    "reset_at": "сброс {{time}}"
+  },
   "kimi_quota": {
     "title": "Квота Kimi",
     "empty_title": "Файлы авторизации Kimi отсутствуют",

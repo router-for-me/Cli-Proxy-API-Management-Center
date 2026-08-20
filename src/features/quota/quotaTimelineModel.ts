@@ -466,6 +466,36 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
+  if (provider === 'cursor') {
+    const summary = (
+      quota as {
+        summary?: {
+          cycleEndMs?: number | null;
+          periodHours?: number | null;
+          remainingPercent?: number | null;
+        } | null;
+      }
+    ).summary;
+    if (!summary) return empty;
+    if (typeof summary.cycleEndMs !== 'number' || !Number.isFinite(summary.cycleEndMs)) return empty;
+
+    const remaining =
+      typeof summary.remainingPercent === 'number' ? clampPercent(summary.remainingPercent) : null;
+
+    return {
+      ...empty,
+      anchorMs: summary.cycleEndMs,
+      // A cycle that reported no start cannot state its own length; Cursor
+      // bills monthly, so 30 days is the shape, not a guess at the boundary.
+      periodHours:
+        typeof summary.periodHours === 'number' && summary.periodHours > 0
+          ? summary.periodHours
+          : 24 * 30,
+      remaining,
+      limits: remaining === null ? [] : [{ label: 'included', remaining }],
+    };
+  }
+
   if (provider === 'kimi') {
     const rows = ((quota as { rows?: KimiRowLike[] }).rows ?? []).filter(
       (row) => typeof row.resetAtMs === 'number'

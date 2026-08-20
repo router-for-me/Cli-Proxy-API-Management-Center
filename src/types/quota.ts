@@ -397,3 +397,78 @@ export interface XaiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// Cursor payload types (aiserver.v1.DashboardService)
+export interface CursorPlanInfo {
+  planInfo?: {
+    planName?: string;
+    includedAmountCents?: number | string;
+    price?: string;
+    billingCycleEnd?: string;
+    planOwner?: string;
+  };
+}
+
+export interface CursorCurrentPeriodUsage {
+  billingCycleStart?: string;
+  billingCycleEnd?: string;
+  planUsage?: {
+    totalSpend?: number | string;
+    includedSpend?: number | string;
+    remaining?: number | string;
+    limit?: number | string;
+    autoPercentUsed?: number | string;
+    apiPercentUsed?: number | string;
+    totalPercentUsed?: number | string;
+  };
+  spendLimitUsage?: { limitType?: string };
+}
+
+export interface CursorAggregatedUsage {
+  aggregations?: {
+    modelIntent?: string;
+    inputTokens?: string;
+    outputTokens?: string;
+    cacheReadTokens?: string;
+    cacheWriteTokens?: string;
+    totalCents?: number | string;
+    tier?: number;
+  }[];
+  totalCostCents?: number | string;
+}
+
+/** One model's share of the period's spend. */
+export interface CursorModelSpend {
+  model: string;
+  cents: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
+export interface CursorQuotaSummary {
+  planName: string | null;
+  planPrice: string | null;
+  spendLimitType: string | null;
+  limitCents: number | null;
+  usedCents: number | null;
+  remainingCents: number | null;
+  /** Remaining share of the included allowance, 0..100. */
+  remainingPercent: number | null;
+  autoPercentUsed: number | null;
+  apiPercentUsed: number | null;
+  cycleStartMs: number | null;
+  /** Instant the allowance returns, in epoch ms. */
+  cycleEndMs: number | null;
+  periodHours: number | null;
+  models: CursorModelSpend[];
+  totalSpendCents: number | null;
+}
+
+export interface CursorQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  summary: CursorQuotaSummary | null;
+  error?: string;
+  errorStatus?: number;
+}

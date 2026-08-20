@@ -21,6 +21,7 @@ const FILES: AuthFileItem[] = [
   file('kimi-a.json', 'kimi'),
   file('codex-b.json', 'codex'),
   file('grok-a.json', 'grok'), // 别名归一到 xai
+  file('cursor-a.json', 'cursor'),
   file('gemini-a.json', 'gemini'), // 不支持额度
   file('claude-off.json', 'claude', { disabled: true }), // 停用
 ];
@@ -29,6 +30,7 @@ describe('resolveQuotaProviderType', () => {
   test('maps provider aliases and rejects unsupported or disabled files', () => {
     expect(resolveQuotaProviderType(file('a', 'grok'))).toBe('xai');
     expect(resolveQuotaProviderType(file('a', 'antigravity'))).toBe('antigravity');
+    expect(resolveQuotaProviderType(file('a', 'cursor'))).toBe('cursor');
     expect(resolveQuotaProviderType(file('a', 'gemini'))).toBeNull();
     expect(resolveQuotaProviderType(file('a', 'claude', { disabled: true }))).toBeNull();
   });
@@ -39,24 +41,32 @@ describe('classifyQuotaFiles', () => {
     const entries = classifyQuotaFiles(FILES);
     expect(entries.map((entry) => entry.file.name)).not.toContain('gemini-a.json');
     expect(entries.map((entry) => entry.file.name)).not.toContain('claude-off.json');
-    expect(entries).toHaveLength(5);
+    expect(entries).toHaveLength(6);
   });
 
   test('orders entries by provider tab order', () => {
     const entries = classifyQuotaFiles(FILES);
-    expect(entries.map((entry) => entry.type)).toEqual(['claude', 'codex', 'codex', 'xai', 'kimi']);
+    expect(entries.map((entry) => entry.type)).toEqual([
+      'claude',
+      'codex',
+      'codex',
+      'xai',
+      'kimi',
+      'cursor',
+    ]);
   });
 });
 
 describe('buildTabCounts', () => {
   test('counts per provider plus an all total, zero-filling empty tabs', () => {
     expect(buildTabCounts(classifyQuotaFiles(FILES))).toEqual({
-      all: 5,
+      all: 6,
       claude: 1,
       antigravity: 0,
       codex: 2,
       xai: 1,
       kimi: 1,
+      cursor: 1,
     });
   });
 });
@@ -65,7 +75,7 @@ describe('filterEntriesByTab', () => {
   const entries = classifyQuotaFiles(FILES);
 
   test("passes everything through on the 'all' tab", () => {
-    expect(filterEntriesByTab(entries, 'all')).toHaveLength(5);
+    expect(filterEntriesByTab(entries, 'all')).toHaveLength(6);
   });
 
   test('filters to a single provider', () => {
@@ -135,11 +145,13 @@ describe('sortQuotaEntries', () => {
         'kimi-a.json': 200,
         'codex-b.json': 400,
         'grok-a.json': 50,
+        'cursor-a.json': 150,
       })
     );
     expect(byName(sorted)).toEqual([
       'grok-a.json',
       'claude-a.json',
+      'cursor-a.json',
       'kimi-a.json',
       'codex-a.json',
       'codex-b.json',
@@ -160,6 +172,7 @@ describe('sortQuotaEntries', () => {
       'claude-a.json',
       'codex-a.json',
       'grok-a.json',
+      'cursor-a.json',
     ]);
   });
 

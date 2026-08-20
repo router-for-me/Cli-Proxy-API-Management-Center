@@ -473,6 +473,25 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "cursor_quota": {
+    "title": "Cursor Quota",
+    "empty_title": "No Cursor Auth Files",
+    "empty_desc": "Sign in to Cursor from the plugin panel to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "plan_label": "Plan",
+    "price_label": "Price",
+    "included_usage": "Included usage",
+    "auto_used": "Auto used",
+    "api_used": "API used",
+    "by_model": "By model ({{amount}})",
+    "reset_at": "resets {{time}}"
+  },
   "kimi_quota": {
     "title": "Kimi Quota",
     "empty_title": "No Kimi Auth Files",
