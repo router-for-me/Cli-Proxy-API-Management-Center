@@ -5,15 +5,19 @@
 import type { TFunction } from 'i18next';
 import type {
   AuthFileItem,
+  CursorAgentUsage,
   CursorAggregatedUsage,
   CursorCurrentPeriodUsage,
+  CursorFastRequests,
   CursorPlanInfo,
   CursorQuotaState,
   CursorQuotaSummary,
 } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import {
+  CURSOR_AGENT_USAGE_URL,
   CURSOR_AGGREGATED_USAGE_URL,
+  CURSOR_FAST_REQUESTS_URL,
   CURSOR_PERIOD_USAGE_URL,
   CURSOR_PLAN_INFO_URL,
   CURSOR_REQUEST_HEADERS,
@@ -58,17 +62,19 @@ const fetchCursorQuota = async (file: AuthFileItem, t: TFunction): Promise<Curso
     throw new Error(t('cursor_quota.missing_auth_index'));
   }
 
-  const [plan, period, usage] = await Promise.all([
+  const [plan, period, usage, agent, fast] = await Promise.all([
     read<CursorPlanInfo>(authIndex, CURSOR_PLAN_INFO_URL, false),
     read<CursorCurrentPeriodUsage>(authIndex, CURSOR_PERIOD_USAGE_URL, true),
     read<CursorAggregatedUsage>(authIndex, CURSOR_AGGREGATED_USAGE_URL, false),
+    read<CursorAgentUsage>(authIndex, CURSOR_AGENT_USAGE_URL, false),
+    read<CursorFastRequests>(authIndex, CURSOR_FAST_REQUESTS_URL, false),
   ]);
 
   if (!period) {
     throw new Error(t('cursor_quota.empty_data'));
   }
 
-  const summary = buildCursorQuotaSummary(plan, period, usage);
+  const summary = buildCursorQuotaSummary(plan, period, usage, agent, fast);
   if (summary.limitCents === null && summary.usedCents === null) {
     throw new Error(t('cursor_quota.empty_data'));
   }

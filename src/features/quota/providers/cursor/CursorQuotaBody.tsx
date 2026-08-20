@@ -9,7 +9,12 @@ import { buildResetDisplay, formatCursorCents, formatQuotaResetTime } from '@/ut
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
-import { CURSOR_INCLUDED_ROW_ID, collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
+import {
+  CURSOR_AGENT_ROW_ID,
+  CURSOR_INCLUDED_ROW_ID,
+  collectQuotaRowInstants,
+  pickUrgentRowId,
+} from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 
 /**
@@ -27,10 +32,12 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
   const { t, i18n } = useTranslation();
   // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
-  const includedSoon = useMemo(
-    () => pickUrgentRowId(collectQuotaRowInstants('cursor', quota), now) === CURSOR_INCLUDED_ROW_ID,
+  const urgentRowId = useMemo(
+    () => pickUrgentRowId(collectQuotaRowInstants('cursor', quota), now),
     [quota, now]
   );
+  const includedSoon = urgentRowId === CURSOR_INCLUDED_ROW_ID;
+  const agentSoon = urgentRowId === CURSOR_AGENT_ROW_ID;
 
   const summary = quota.summary;
   if (!summary) {
@@ -48,6 +55,16 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
   const resetDisplay = buildResetDisplay(
     resetLabel === '-' ? null : t('cursor_quota.reset_at', { time: resetLabel }),
     summary.cycleEndMs,
+    now,
+    i18n.resolvedLanguage
+  );
+
+  const agentResetLabel = formatQuotaResetTime(
+    summary.agent?.resetAtMs == null ? undefined : new Date(summary.agent.resetAtMs).toISOString()
+  );
+  const agentResetDisplay = buildResetDisplay(
+    agentResetLabel === '-' ? null : t('cursor_quota.reset_at', { time: agentResetLabel }),
+    summary.agent?.resetAtMs ?? null,
     now,
     i18n.resolvedLanguage
   );
@@ -90,7 +107,30 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
         </div>
       )}
 
-      {(summary.autoPercentUsed !== null || summary.apiPercentUsed !== null) && (
+      {summary.agent && (
+        <div
+          className={classes.quotaRow}
+          title={agentSoon ? t('quota_management.soonest_row_hint') : undefined}
+        >
+          <div className={classes.quotaRowHeader}>
+            <span className={classes.quotaModel}>{t('cursor_quota.agent_usage')}</span>
+            <div className={classes.quotaMeta}>
+              <span className={classes.quotaPercent}>
+                {formatPercent(summary.agent.remainingPercent)}
+              </span>
+              {agentResetDisplay && (
+                <QuotaResetLabel display={agentResetDisplay} classes={classes} soon={agentSoon} />
+              )}
+            </div>
+          </div>
+          <QuotaMeter percent={summary.agent.remainingPercent} classes={classes} index={1} />
+          {summary.agent.exhausted && (
+            <div className={classes.quotaMessage}>{t('cursor_quota.agent_exhausted')}</div>
+          )}
+        </div>
+      )}
+
+      {(summary.autoPercentUsed !== null || summary.apiPercentUsed !== null || summary.fastRequestQuota !== null) && (
         <div className={classes.codexPlan}>
           {summary.autoPercentUsed !== null && (
             <span className={classes.codexPlanItem}>
@@ -102,6 +142,14 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
             <span className={classes.codexPlanItem}>
               <span className={classes.codexPlanLabel}>{t('cursor_quota.api_used')}</span>
               <span className={classes.codexPlanValue}>{formatPercent(summary.apiPercentUsed)}</span>
+            </span>
+          )}
+          {summary.fastRequestQuota !== null && (
+            <span className={classes.codexPlanItem}>
+              <span className={classes.codexPlanLabel}>{t('cursor_quota.fast_requests')}</span>
+              <span className={classes.codexPlanValue}>
+                {summary.fastRequestQuota.toLocaleString()}
+              </span>
             </span>
           )}
         </div>

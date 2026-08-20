@@ -477,7 +477,10 @@
     "auto_used": "Auto использовано",
     "api_used": "API использовано",
     "by_model": "По моделям ({{amount}})",
-    "reset_at": "сброс {{time}}"
+    "reset_at": "сброс {{time}}",
+    "agent_usage": "Использование агента (за неделю)",
+    "agent_exhausted": "Недельная квота агента исчерпана",
+    "fast_requests": "Быстрые запросы"
   },
   "kimi_quota": {
     "title": "Квота Kimi",

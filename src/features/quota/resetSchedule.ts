@@ -65,6 +65,9 @@ export const XAI_WEEKLY_ROW_ID = 'xai:weekly';
 /** Row id for Cursor's included-allowance window, which has no id of its own. */
 export const CURSOR_INCLUDED_ROW_ID = 'cursor:included';
 
+/** Row id for Cursor's agent window, a weekly limit beside the monthly one. */
+export const CURSOR_AGENT_ROW_ID = 'cursor:agent';
+
 const isUsableMs = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
@@ -136,9 +139,29 @@ export function collectQuotaRowInstants(
     // Unlike xAI's monthly figure, this billing cycle IS the quota window: the
     // included allowance is what rate-limits the account, and it returns in
     // full when the cycle rolls. There is no separate shorter window to prefer.
-    const summary = (quota as { summary?: { cycleEndMs?: number | null } | null }).summary;
-    if (!summary || !isUsableMs(summary.cycleEndMs)) return [];
-    return [{ rowId: CURSOR_INCLUDED_ROW_ID, atMs: summary.cycleEndMs, kind: 'window' }];
+    const summary = (
+      quota as {
+        summary?: {
+          cycleEndMs?: number | null;
+          agent?: { resetAtMs?: number | null } | null;
+        } | null;
+      }
+    ).summary;
+    if (!summary) return [];
+    const instants: QuotaRowInstant[] = [];
+    if (isUsableMs(summary.cycleEndMs)) {
+      instants.push({ rowId: CURSOR_INCLUDED_ROW_ID, atMs: summary.cycleEndMs, kind: 'window' });
+    }
+    // The weekly agent window usually recovers long before the monthly one, so
+    // omitting it would rank this card by the wrong date under "soonest".
+    if (isUsableMs(summary.agent?.resetAtMs)) {
+      instants.push({
+        rowId: CURSOR_AGENT_ROW_ID,
+        atMs: summary.agent?.resetAtMs as number,
+        kind: 'window',
+      });
+    }
+    return instants;
   }
 
   return [];

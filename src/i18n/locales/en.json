@@ -490,7 +490,10 @@
     "auto_used": "Auto used",
     "api_used": "API used",
     "by_model": "By model ({{amount}})",
-    "reset_at": "resets {{time}}"
+    "reset_at": "resets {{time}}",
+    "agent_usage": "Agent usage (weekly)",
+    "agent_exhausted": "Weekly agent usage is exhausted",
+    "fast_requests": "Fast requests"
   },
   "kimi_quota": {
     "title": "Kimi Quota",

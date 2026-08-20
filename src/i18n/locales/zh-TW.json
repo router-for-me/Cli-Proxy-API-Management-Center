@@ -490,7 +490,10 @@
     "auto_used": "Auto 已用",
     "api_used": "API 已用",
     "by_model": "依模型（{{amount}}）",
-    "reset_at": "{{time}} 重置"
+    "reset_at": "{{time}} 重置",
+    "agent_usage": "Agent 用量（每週）",
+    "agent_exhausted": "本週 Agent 用量已用盡",
+    "fast_requests": "快速請求"
   },
   "kimi_quota": {
     "title": "Kimi 配額",

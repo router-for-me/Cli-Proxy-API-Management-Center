@@ -11,7 +11,11 @@ import {
   parseCursorNumber,
   parseCursorPayload,
 } from '../src/utils/quota/cursor';
-import { collectQuotaRowInstants, CURSOR_INCLUDED_ROW_ID } from '../src/features/quota/resetSchedule';
+import {
+  collectQuotaRowInstants,
+  CURSOR_AGENT_ROW_ID,
+  CURSOR_INCLUDED_ROW_ID,
+} from '../src/features/quota/resetSchedule';
 import type {
   CursorAggregatedUsage,
   CursorCurrentPeriodUsage,
@@ -165,5 +169,66 @@ describe('collectQuotaRowInstants for cursor', () => {
   test('a card that has not loaded contributes no instant', () => {
     expect(collectQuotaRowInstants('cursor', { status: 'idle', summary: null })).toEqual([]);
     expect(collectQuotaRowInstants('cursor', { status: 'success', summary: null })).toEqual([]);
+  });
+});
+
+const AGENT = {
+  currentPeriodStart: '2026-08-19T15:16:39.259Z',
+  nextResetTimestampUtc: '2026-08-26T15:16:39.259Z',
+  usagePercent: 1.188947,
+  hasAvailableUsage: true,
+  hasNonZeroIncludedLimit: true,
+};
+
+describe('the agent window, which is a second quota', () => {
+  test('is read as its own weekly window, not as a view of the allowance', () => {
+    const summary = buildCursorQuotaSummary(PLAN, PERIOD, USAGE, AGENT, { requestQuota: 500 });
+    expect(summary.agent).not.toBeNull();
+    expect(summary.agent?.usedPercent).toBeCloseTo(1.1889, 3);
+    expect(summary.agent?.remainingPercent).toBeCloseTo(98.811, 3);
+    expect(summary.agent?.resetAtMs).toBe(Date.parse('2026-08-26T15:16:39.259Z'));
+    expect(summary.agent?.periodHours).toBe(168);
+    expect(summary.fastRequestQuota).toBe(500);
+  });
+
+  test('a plan that includes none of it contributes no row', () => {
+    const summary = buildCursorQuotaSummary(PLAN, PERIOD, USAGE, {
+      ...AGENT,
+      hasNonZeroIncludedLimit: false,
+    });
+    expect(summary.agent).toBeNull();
+  });
+
+  test('exhaustion is carried, because zero remaining and no data look alike', () => {
+    const summary = buildCursorQuotaSummary(PLAN, PERIOD, USAGE, {
+      ...AGENT,
+      usagePercent: 100,
+      hasAvailableUsage: false,
+    });
+    expect(summary.agent?.exhausted).toBe(true);
+    expect(summary.agent?.remainingPercent).toBe(0);
+  });
+
+  test('both windows are offered to the recovery sort, weekly one included', () => {
+    const quota = {
+      status: 'success',
+      summary: buildCursorQuotaSummary(PLAN, PERIOD, USAGE, AGENT, null),
+    };
+    const instants = collectQuotaRowInstants('cursor', quota);
+    expect(instants.map((instant) => instant.rowId).sort()).toEqual([
+      CURSOR_AGENT_ROW_ID,
+      CURSOR_INCLUDED_ROW_ID,
+    ]);
+    // The weekly window recovers first, which is the whole reason it is here.
+    const agent = instants.find((instant) => instant.rowId === CURSOR_AGENT_ROW_ID);
+    const included = instants.find((instant) => instant.rowId === CURSOR_INCLUDED_ROW_ID);
+    expect(agent!.atMs).toBeLessThan(included!.atMs);
+  });
+
+  test('an account with no agent read still reports the allowance', () => {
+    const summary = buildCursorQuotaSummary(PLAN, PERIOD, USAGE, null, null);
+    expect(summary.agent).toBeNull();
+    expect(summary.fastRequestQuota).toBeNull();
+    expect(summary.limitCents).toBe(40000);
   });
 });

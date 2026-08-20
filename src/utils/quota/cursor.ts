@@ -8,8 +8,11 @@
  */
 
 import type {
+  CursorAgentUsage,
+  CursorAgentWindow,
   CursorAggregatedUsage,
   CursorCurrentPeriodUsage,
+  CursorFastRequests,
   CursorModelSpend,
   CursorPlanInfo,
   CursorQuotaSummary,
@@ -21,6 +24,10 @@ const CURSOR_DASHBOARD = 'https://api2.cursor.sh/aiserver.v1.DashboardService';
 export const CURSOR_PLAN_INFO_URL = `${CURSOR_DASHBOARD}/GetPlanInfo`;
 export const CURSOR_PERIOD_USAGE_URL = `${CURSOR_DASHBOARD}/GetCurrentPeriodUsage`;
 export const CURSOR_AGGREGATED_USAGE_URL = `${CURSOR_DASHBOARD}/GetAggregatedUsageEvents`;
+/** The agent product's own weekly window, separate from the dollar allowance. */
+export const CURSOR_AGENT_USAGE_URL = `${CURSOR_DASHBOARD}/GetSandUsageStatus`;
+/** Legacy request pool, still reported and still consumed by some surfaces. */
+export const CURSOR_FAST_REQUESTS_URL = `${CURSOR_DASHBOARD}/GetFastRequests`;
 
 export const CURSOR_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
@@ -106,10 +113,19 @@ export function buildCursorModelRows(usage: CursorAggregatedUsage | null): Curso
  * allowance returns, which is what makes this a quota window rather than an
  * invoice.
  */
+/** Milliseconds for an ISO instant, or null when it is absent or unparseable. */
+const isoToMs = (value: unknown): number | null => {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 export function buildCursorQuotaSummary(
   plan: CursorPlanInfo | null,
   period: CursorCurrentPeriodUsage | null,
-  usage: CursorAggregatedUsage | null
+  usage: CursorAggregatedUsage | null,
+  agent: CursorAgentUsage | null = null,
+  fast: CursorFastRequests | null = null
 ): CursorQuotaSummary {
   const planUsage = period?.planUsage;
 
@@ -148,5 +164,36 @@ export function buildCursorQuotaSummary(
     periodHours,
     models: buildCursorModelRows(usage),
     totalSpendCents: parseCursorNumber(usage?.totalCostCents),
+    agent: buildCursorAgentWindow(agent),
+    fastRequestQuota: parseCursorNumber(fast?.requestQuota),
+  };
+}
+
+/**
+ * The agent product's weekly window.
+ *
+ * It is a second quota, not a view of the first: it runs on its own weekly
+ * period and its own percentage, and an account can exhaust it with the dollar
+ * allowance barely touched. `hasNonZeroIncludedLimit` false means the plan
+ * includes none of it, which is different from having used none.
+ */
+export function buildCursorAgentWindow(agent: CursorAgentUsage | null): CursorAgentWindow | null {
+  if (!agent) return null;
+  if (agent.hasNonZeroIncludedLimit === false) return null;
+
+  const usedPercent = parseCursorNumber(agent.usagePercent);
+  const resetAtMs = isoToMs(agent.nextResetTimestampUtc);
+  const startedAtMs = isoToMs(agent.currentPeriodStart);
+  if (usedPercent === null && resetAtMs === null) return null;
+
+  return {
+    usedPercent,
+    remainingPercent: usedPercent === null ? null : Math.max(0, Math.min(100, 100 - usedPercent)),
+    resetAtMs,
+    periodHours:
+      startedAtMs !== null && resetAtMs !== null && resetAtMs > startedAtMs
+        ? (resetAtMs - startedAtMs) / HOUR_MS
+        : null,
+    exhausted: agent.hasAvailableUsage === false,
   };
 }
