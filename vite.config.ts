@@ -37,6 +37,14 @@ function getVersion(): string {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      '/v0/management': {
+        target: 'http://127.0.0.1:8317',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     react(),
     viteSingleFile({

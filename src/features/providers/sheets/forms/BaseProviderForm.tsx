@@ -60,6 +60,7 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   weight: undefined,
 });
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
+const CODEBUDDY_CN_API_BASE_URL = 'https://copilot.tencent.com/v2/chat/completions';
 
 const stripDisableAllRule = (list?: string[]): string[] =>
   (list ?? []).filter((s) => s.trim() !== '*');
@@ -82,7 +83,13 @@ function buildInitialForm(
       apiKey: '',
       name: '',
       baseUrl:
-        brand === 'claudeApi' ? CLAUDE_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
+        brand === 'claudeApi'
+          ? CLAUDE_API_BASE_URL
+          : brand === 'xai'
+            ? XAI_API_BASE_URL
+            : brand === 'codebuddyCn'
+              ? CODEBUDDY_CN_API_BASE_URL
+              : '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
@@ -101,6 +108,7 @@ function buildInitialForm(
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
         brand === 'xai' ||
+        brand === 'codebuddyCn' ||
         isClaudeLikeBrand(brand) ||
         brand === 'gemini' ||
         brand === 'interactions'
@@ -199,6 +207,7 @@ function buildInitialForm(
     testModel:
       brand === 'codex' ||
       brand === 'xai' ||
+      brand === 'codebuddyCn' ||
       isClaudeLikeBrand(brand) ||
       brand === 'gemini' ||
       brand === 'interactions'
@@ -483,11 +492,12 @@ export function BaseProviderForm({
     brand === 'interactions' ||
     brand === 'codex' ||
     brand === 'xai' ||
+    brand === 'codebuddyCn' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
   const supportsModelImage = brand === 'openaiCompatibility';
   const singleConnectivity =
-    brand === 'codex' || brand === 'xai'
+    brand === 'codex' || brand === 'xai' || brand === 'codebuddyCn'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
       : brand === 'gemini' || brand === 'interactions'
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
