@@ -19,6 +19,7 @@ import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
+import iconCodeBuddy from '@/assets/icons/codebuddy.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
@@ -84,6 +85,12 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'codex',
     titleKey: 'auth_login.codex_oauth_title',
     icon: iconCodex,
+  },
+  {
+    kind: 'builtin',
+    id: 'codebuddy-cn',
+    titleKey: 'auth_login.codebuddy_cn_oauth_title',
+    icon: iconCodeBuddy,
   },
   {
     kind: 'builtin',
