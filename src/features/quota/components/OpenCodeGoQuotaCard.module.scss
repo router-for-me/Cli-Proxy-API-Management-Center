@@ -1,0 +1,200 @@
+@use '../../../styles/mixins' as *;
+
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 17px 18px 18px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  border-radius: 15px;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--primary-color) 7%, transparent), transparent 42%),
+    color-mix(in srgb, var(--bg-primary) 86%, transparent);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-color));
+  opacity: 0.7;
+}
+
+.header,
+.identity,
+.titleRow,
+.windowHead,
+.meta {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 15px;
+}
+
+.identity {
+  min-width: 0;
+  gap: 11px;
+}
+
+.mark {
+  display: grid;
+  flex: 0 0 auto;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.titleRow {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.titleRow h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.plan {
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 28%, var(--border-color));
+  border-radius: 999px;
+  color: var(--primary-color);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.identity p {
+  margin: 2px 0 0;
+  color: var(--text-tertiary);
+  font-size: 11.5px;
+}
+
+.windows {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  background: var(--border-color);
+}
+
+.window {
+  min-width: 0;
+  padding: 12px 13px;
+  background: color-mix(in srgb, var(--bg-primary) 96%, transparent);
+}
+
+.windowHead {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+}
+
+.windowName {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.limit {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+}
+
+.windowHead strong {
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 300ms ease;
+}
+
+.healthy { background: var(--viz-success); }
+.warning { background: var(--warning-color); }
+.critical { background: var(--viz-failure); }
+
+.meta {
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta span:last-child {
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error,
+.loading {
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.error {
+  color: var(--viz-failure);
+  background: color-mix(in srgb, var(--viz-failure) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--viz-failure) 28%, transparent);
+}
+
+.loading {
+  grid-column: 1 / -1;
+  color: var(--text-tertiary);
+  background: var(--bg-primary);
+}
+
+@include mobile {
+  .header {
+    align-items: flex-start;
+  }
+
+  .windows {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill { transition: none; }
+}

@@ -23,6 +23,7 @@ import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
+import { OpenCodeGoQuotaCard } from './components/OpenCodeGoQuotaCard';
 import { QuotaTimeline } from './components/QuotaTimeline';
 import {
   CARD_ENTRANCE_BUDGET_MS,
@@ -70,6 +71,7 @@ export function QuotaPage() {
     () => readQuotaUiState()?.sortMode ?? 'default'
   );
   const [page, setPage] = useState(1);
+  const [openCodeRefreshToken, setOpenCodeRefreshToken] = useState(0);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -211,6 +213,7 @@ export function QuotaPage() {
   const handleRefreshAll = useCallback(() => {
     if (disableControls) return;
     pendingRefreshRef.current = true;
+    setOpenCodeRefreshToken((value) => value + 1);
     void loadFiles();
   }, [disableControls, loadFiles]);
 
@@ -281,6 +284,11 @@ export function QuotaPage() {
             />
           </div>
         </div>
+
+        <OpenCodeGoQuotaCard
+          refreshToken={openCodeRefreshToken}
+          disabled={disableControls}
+        />
 
         {error && (
           <div className={styles.errorBanner} role="alert">
