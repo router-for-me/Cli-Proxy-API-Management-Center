@@ -28,6 +28,7 @@ import {
   IconSidebarQuota,
   IconSidebarStore,
   IconSidebarSystem,
+  IconKey,
   IconChevronDown,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
@@ -63,6 +64,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
+  accessControl: <IconKey size={18} />,
 };
 
 interface SidebarNavLinkItem {
@@ -630,6 +632,12 @@ export function MainLayout() {
           labelKey: 'nav.oauth',
           metaKey: 'nav_meta.oauth',
           icon: sidebarIcons.oauth,
+        },
+        {
+          path: '/access-control',
+          labelKey: 'nav.access_control',
+          metaKey: 'nav_meta.access_control',
+          icon: sidebarIcons.accessControl,
         },
         ...(isApiKeyFunConfigured ? [quickStartNavItem] : []),
       ],

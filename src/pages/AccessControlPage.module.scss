@@ -1,0 +1,135 @@
+@use '../styles/mixins' as *;
+
+.container {
+  width: 100%;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    margin: 0 0 $spacing-xs;
+    color: var(--text-primary);
+    font-size: 28px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+
+  @include mobile {
+    flex-direction: column;
+  }
+}
+
+.tabs,
+.actions,
+.providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.layout {
+  display: grid;
+  gap: $spacing-xl;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: $spacing-md;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.list {
+  display: grid;
+  gap: $spacing-sm;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
+
+  > div:first-child {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  span,
+  small {
+    color: var(--text-secondary);
+  }
+
+  code {
+    overflow-wrap: anywhere;
+  }
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.active,
+.disabled {
+  padding: 4px 9px;
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.active {
+  color: #16a34a !important;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.disabled {
+  color: var(--text-tertiary) !important;
+  background: color-mix(in srgb, var(--text-tertiary) 12%, transparent);
+}
+
+.secret {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 45%, var(--border-color));
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+
+  code {
+    flex: 1 1 320px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.usage {
+  color: var(--text-secondary);
+}
