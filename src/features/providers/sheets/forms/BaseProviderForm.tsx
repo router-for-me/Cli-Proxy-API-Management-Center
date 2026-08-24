@@ -117,7 +117,7 @@ function buildInitialForm(
       apiKey: '',
       name: cfg.name ?? '',
       baseUrl: cfg.baseUrl ?? '',
-      proxyUrl: '',
+      proxyUrl: cfg.proxyUrl ?? '',
       prefix: cfg.prefix ?? '',
       disabled: cfg.disabled === true,
       disableCooling: cfg.disableCooling === true,

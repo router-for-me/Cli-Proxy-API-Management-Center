@@ -162,7 +162,7 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
     supportsDisabled: true,
     supportsBaseUrl: true,
     baseUrlRequired: true,
-    supportsProxyUrl: false,
+    supportsProxyUrl: true,
     supportsPrefix: true,
     supportsModels: true,
     supportsHeaders: true,

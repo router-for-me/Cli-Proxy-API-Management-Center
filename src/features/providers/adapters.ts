@@ -172,7 +172,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     apiKey: null,
     authIndex: config.authIndex ?? null,
     baseUrl: config.baseUrl ?? null,
-    proxyUrl: null,
+    proxyUrl: config.proxyUrl ?? firstEntry?.proxyUrl ?? null,
     prefix: config.prefix ?? null,
     modelCount: config.models?.length ?? 0,
     models: collectModelNames(config.models),

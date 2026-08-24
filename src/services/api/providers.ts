@@ -58,6 +58,7 @@ const OPENAI_PROVIDER_FIELDS = [
   'disabled',
   'prefix',
   'base-url',
+  'proxy-url',
   'api-key-entries',
   'headers',
   'models',
@@ -417,6 +418,7 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
       ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
       : [],
   };
+  if (provider.proxyUrl?.trim()) payload['proxy-url'] = provider.proxyUrl.trim();
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
   const headers = serializeHeaders(provider.headers);

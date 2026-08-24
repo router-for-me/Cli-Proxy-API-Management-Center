@@ -254,6 +254,9 @@ const normalizeOpenAIProvider = (
     apiKeyEntries,
   };
 
+  const proxyUrl = normalizePrefix(provider['proxy-url']);
+  if (proxyUrl) result.proxyUrl = proxyUrl;
+
   const disabled = normalizeBoolean(provider.disabled);
   if (disabled !== undefined) result.disabled = disabled;
   const disableCooling = normalizeBoolean(provider['disable-cooling']);
