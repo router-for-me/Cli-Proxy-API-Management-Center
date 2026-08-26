@@ -30,6 +30,7 @@ import {
   type IconProps,
 } from '@/components/ui/icons';
 import { ConfigSection } from '@/components/config/ConfigSection';
+import { TorConfigPanel } from '@/components/config/TorConfigPanel';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { apiClient } from '@/services/api/client';
 import type {
@@ -1507,6 +1508,12 @@ export function VisualConfigEditor({
                 </SectionGrid>
               </SectionStack>
             </ConfigSection>
+
+            <TorConfigPanel
+              values={values}
+              onChange={onChange}
+              disabled={disabled}
+            />
 
             <ConfigSection
               id="logging"

@@ -1084,6 +1084,93 @@
   }
 }
 
+/* Tor Config Panel */
+.torStatusCard {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.torStatusHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.torStatusBody {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.torStatusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.torStatusLabel {
+  color: var(--text-secondary);
+}
+
+.torStatusValue {
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.torActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.torResultSuccess {
+  font-size: 12px;
+  color: var(--color-success, #22c55e);
+  line-height: 1.3;
+}
+
+.torResultError {
+  font-size: 12px;
+  color: var(--color-error, #ef4444);
+  line-height: 1.3;
+}
+
+.torConfigGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.torPasswordToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
 @media (max-width: 380px) {
   .subsection,
   .ruleCard,
