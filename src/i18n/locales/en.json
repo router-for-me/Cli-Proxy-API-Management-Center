@@ -1030,6 +1030,20 @@
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
           "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+          ,
+          "proxy_mode": "Proxy Mode",
+          "proxy_mode_hint": "Select proxy mode: proxy (default) or tor (route through Tor network)",
+          "proxy_mode_proxy": "Proxy (default)",
+          "proxy_mode_tor": "Tor (route through Tor network)",
+          "tor_proxy_addr": "Tor SOCKS5 Proxy Address",
+          "tor_control_addr": "Tor Control Port Address",
+          "tor_control_password": "Tor Control Port Password",
+          "tor_control_password_placeholder": "Optional",
+          "tor_control_password_hint": "Password for Tor control port authentication",
+          "tor_retry_attempts": "Tor Retry Attempts",
+          "tor_retry_attempts_hint": "0 = unlimited retries",
+          "tor_retry_on_codes": "Tor Retry on HTTP Codes",
+          "tor_retry_on_codes_hint": "Comma-separated status codes that trigger IP rotation"
         },
         "quota": {
           "title": "Quota Fallback",
