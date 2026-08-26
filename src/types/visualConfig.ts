@@ -1,11 +1,10 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
+export type RoutingStrategy = 'round-robin' | 'weighted-round-robin' | 'fill-first';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
-  | 'payload_invalid_number'
-  | 'payload_invalid_boolean'
-  | 'payload_invalid_json';
+  'payload_invalid_number' | 'payload_invalid_boolean' | 'payload_invalid_json';
 
 export type VisualConfigFieldPath =
   | 'port'
@@ -21,9 +20,7 @@ export type VisualConfigFieldPath =
   | 'streaming.nonstreamKeepaliveInterval';
 
 export type VisualConfigValidationErrorCode =
-  | 'port_range'
-  | 'non_negative_integer'
-  | 'integer_range_1_3600';
+  'port_range' | 'non_negative_integer' | 'integer_range_1_3600';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
@@ -110,6 +107,11 @@ export type VisualConfigValues = {
   redisUsageQueueRetentionSeconds: string;
   proxyUrl: string;
   proxyMode: string;
+  torProxyAddr: string;
+  torControlAddr: string;
+  torControlPassword: string;
+  torRetryAttempts: string;
+  torRetryOnCodesText: string;
   forceModelPrefix: boolean;
   passthroughHeaders: boolean;
   requestRetry: string;
@@ -119,15 +121,10 @@ export type VisualConfigValues = {
   disableImageGeneration: DisableImageGenerationMode;
   gptImage2BaseModel: string;
   authAutoRefreshWorkers: string;
-  torControlAddr: string;
-  torControlPassword: string;
-  torProxyAddr: string;
-  torRetryAttempts: string;
-  torRetryOnCodesText: string;
   quotaSwitchProject: boolean;
   quotaSwitchPreviewModel: boolean;
   quotaAntigravityCredits: boolean;
-  routingStrategy: 'round-robin' | 'fill-first';
+  routingStrategy: RoutingStrategy;
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
@@ -142,7 +139,6 @@ export type VisualConfigValues = {
   claudeHeaderStabilizeDeviceProfile: boolean;
   codexHeaderUserAgent: string;
   codexHeaderBetaFeatures: string;
-  codexIdentityConfuse: boolean;
   payloadDefaultRules: PayloadRule[];
   payloadDefaultRawRules: PayloadRule[];
   payloadOverrideRules: PayloadRule[];
@@ -181,6 +177,11 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   redisUsageQueueRetentionSeconds: '',
   proxyUrl: '',
   proxyMode: 'proxy',
+  torProxyAddr: '127.0.0.1:9050',
+  torControlAddr: '127.0.0.1:9051',
+  torControlPassword: '',
+  torRetryAttempts: '3',
+  torRetryOnCodesText: '429, 403, 500, 502, 503',
   forceModelPrefix: false,
   passthroughHeaders: false,
   requestRetry: '',
@@ -190,11 +191,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   disableImageGeneration: 'false',
   gptImage2BaseModel: '',
   authAutoRefreshWorkers: '',
-  torControlAddr: '127.0.0.1:9051',
-  torControlPassword: '',
-  torProxyAddr: '127.0.0.1:9050',
-  torRetryAttempts: '3',
-  torRetryOnCodesText: '429, 403, 500, 502, 503',
   quotaSwitchProject: true,
   quotaSwitchPreviewModel: true,
   quotaAntigravityCredits: false,
@@ -213,7 +209,6 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   claudeHeaderStabilizeDeviceProfile: false,
   codexHeaderUserAgent: '',
   codexHeaderBetaFeatures: '',
-  codexIdentityConfuse: false,
   payloadDefaultRules: [],
   payloadDefaultRawRules: [],
   payloadOverrideRules: [],

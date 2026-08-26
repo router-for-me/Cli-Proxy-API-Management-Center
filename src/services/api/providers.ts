@@ -21,6 +21,7 @@ const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
 const PROVIDER_COMMON_KEY_FIELDS = [
   'api-key',
   'priority',
+  'weight',
   'prefix',
   'base-url',
   'proxy-url',
@@ -31,6 +32,7 @@ const PROVIDER_COMMON_KEY_FIELDS = [
 ] as const;
 
 const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
+const INTERACTIONS_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
 const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
 const CLAUDE_KEY_FIELDS = [
@@ -43,6 +45,7 @@ const CLAUDE_KEY_FIELDS = [
 const VERTEX_KEY_FIELDS = [
   'api-key',
   'priority',
+  'weight',
   'prefix',
   'base-url',
   'proxy-url',
@@ -64,10 +67,10 @@ const OPENAI_PROVIDER_FIELDS = [
   'disable-cooling',
 ] as const;
 
-const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model'] as const;
-const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image', 'thinking'] as const;
+const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model', 'thinking'] as const;
+const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image'] as const;
 
-const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url'] as const;
+const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url', 'weight'] as const;
 
 const CLOAK_FIELDS = ['mode', 'strict-mode', 'sensitive-words', 'cache-user-id'] as const;
 
@@ -301,13 +304,11 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
           if (model.testModel) {
             payload['test-model'] = model.testModel;
           }
-          if (includeOpenAIFields) {
-            if (model.image) {
-              payload.image = true;
-            }
-            if (model.thinking) {
-              payload.thinking = model.thinking;
-            }
+          if (includeOpenAIFields && model.image) {
+            payload.image = true;
+          }
+          if (model.thinking) {
+            payload.thinking = model.thinking;
           }
           return payload;
         })
@@ -317,12 +318,14 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   const payload: Record<string, unknown> = { 'api-key': entry.apiKey };
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
+  if (entry.weight !== undefined) payload.weight = entry.weight;
   return payload;
 };
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.websockets !== undefined) payload.websockets = config.websockets;
@@ -364,7 +367,11 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
           const name = typeof model?.name === 'string' ? model.name.trim() : '';
           const alias = typeof model?.alias === 'string' ? model.alias.trim() : '';
           if (!name || !alias) return null;
-          return { name, alias };
+          return {
+            name,
+            alias,
+            ...(model.thinking ? { thinking: model.thinking } : {}),
+          };
         })
         .filter(Boolean)
     : undefined;
@@ -372,6 +379,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -388,6 +396,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -442,6 +451,26 @@ export const providersApi = {
 
   deleteGeminiKey: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/gemini-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  createInteractionsKey: (config: GeminiKeyConfig) =>
+    mutateLatestProviderList('interactions-api-key', (latestItems) =>
+      appendLatestProviderRecord(latestItems, serializeGeminiKey(config), (raw, payload) =>
+        mergeProviderKeyPayload(raw, payload, INTERACTIONS_KEY_FIELDS)
+      )
+    ),
+
+  updateInteractionsKey: (apiKey: string, baseUrl: string | undefined, config: GeminiKeyConfig) =>
+    mutateLatestProviderList('interactions-api-key', (latestItems) =>
+      replaceLatestProviderRecord(
+        latestItems,
+        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        serializeGeminiKey(config),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, INTERACTIONS_KEY_FIELDS)
+      )
+    ),
+
+  deleteInteractionsKey: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/interactions-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
   createCodexConfig: (config: ProviderKeyConfig) =>
     mutateLatestProviderList('codex-api-key', (latestItems) =>

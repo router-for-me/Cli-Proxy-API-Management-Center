@@ -10,6 +10,14 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 
 Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
+## Sponsor
+
+[![https://go.apimart.ai/gh-cli-proxy-api-management-center](./assets/apimart-en.png)](https://go.apimart.ai/gh-cli-proxy-api-management-center)
+
+Thanks to APIMart for sponsoring this project!
+
+APIMart is a low-cost API platform for AI image & video generation — GPT-Image-2 from $0.006/image, 160+ images per dollar. One async API covers both image and video: submit a task, get an ID, fetch results via polling or callback. Batch tens of thousands of images without timeouts, switch models without changing code. Pay-as-you-go with no monthly fee — [sign up here](https://go.apimart.ai/gh-cli-proxy-api-management-center) to get started.
+
 ## What this is (and isn’t)
 
 - This repository is the Web UI only. It talks to the CLI Proxy API **Management API** (`/v0/management`) to read/update config, upload credentials, and view logs.

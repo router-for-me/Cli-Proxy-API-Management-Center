@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { VisualConfigValues } from '@/hooks/useVisualConfig';
+import type { VisualConfigValues } from '@/types/visualConfig';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';

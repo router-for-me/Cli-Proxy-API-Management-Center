@@ -9,6 +9,7 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { maskApiKey } from '@/utils/format';
+import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import type { ApiKeyEntryInput } from '../../types';
 import type { ConnectivityState, ConnectivityStatus } from './useConnectivityTest';
 import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
@@ -236,6 +237,24 @@ export function ApiKeyEntriesEditor({
                     disabled={mutating}
                     placeholder="http://127.0.0.1:7890"
                   />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>{t('providersPage.form.weight')}</label>
+                  <input
+                    className={styles.input}
+                    type="number"
+                    step="1"
+                    max={MAX_CREDENTIAL_WEIGHT}
+                    value={entry.weight ?? ''}
+                    onChange={(e) =>
+                      onUpdate(idx, {
+                        weight: e.target.value === '' ? undefined : Number(e.target.value),
+                      })
+                    }
+                    disabled={mutating}
+                    placeholder="1"
+                  />
+                  <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
                 </div>
               </div>
             ) : null}

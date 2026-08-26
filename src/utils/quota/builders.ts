@@ -18,6 +18,7 @@ import type {
   XaiProductUsageSummary,
 } from '@/types';
 import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
+import { parseOffsetSecondsToMs, resolveResetMs } from './resetInstants';
 
 const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
   ['5h', 0],
@@ -40,6 +41,27 @@ function getAntigravityWindowOrder(bucket: AntigravityQuotaBucket): number {
   const window = bucket.window?.toLowerCase();
   if (!window) return Number.MAX_SAFE_INTEGER;
   return ANTIGRAVITY_BUCKET_WINDOW_ORDER.get(window) ?? Number.MAX_SAFE_INTEGER;
+}
+
+/**
+ * Window length in hours for an Antigravity bucket.
+ *
+ * Antigravity states the period explicitly in `window`, so unlike Kimi this is
+ * a lookup rather than a keyword guess. The accepted spellings mirror
+ * ANTIGRAVITY_BUCKET_WINDOW_ORDER above.
+ */
+function antigravityPeriodHours(window: string | undefined): number | null {
+  switch ((window ?? '').trim().toLowerCase()) {
+    case '5h':
+    case 'five-hour':
+    case 'five_hour':
+      return 5;
+    case 'weekly':
+    case 'week':
+      return 24 * 7;
+    default:
+      return null;
+  }
 }
 
 export function buildAntigravityQuotaGroups(
@@ -67,13 +89,18 @@ export function buildAntigravityQuotaGroups(
             `${groupId}-${window ?? `bucket-${bucketIndex + 1}`}`;
           const label = normalizeStringValue(bucket.displayName ?? bucket.display_name) ?? rawId;
 
+          const resetTime =
+            normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined;
+
           return {
             id: rawId,
             label,
             window,
             remainingFraction,
-            resetTime: normalizeStringValue(bucket.resetTime ?? bucket.reset_time) ?? undefined,
+            resetTime,
             description: normalizeStringValue(bucket.description) ?? undefined,
+            resetAtMs: resolveResetMs([resetTime]),
+            periodHours: antigravityPeriodHours(window),
           };
         })
         .filter((bucket): bucket is AntigravityQuotaBucket => bucket !== null)
@@ -106,6 +133,18 @@ function toInt(value: unknown): number | null {
 
 type KimiRowLabel = Pick<KimiQuotaRow, 'label' | 'labelKey' | 'labelParams'>;
 
+function formatKimiResetDuration(totalMinutes: number): string {
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  if (minutes > 0) return `${minutes}m`;
+  return '<1m';
+}
+
 function kimiResetHint(data: Record<string, unknown>): string | undefined {
   const absoluteKeys = ['reset_at', 'resetAt', 'reset_time', 'resetTime'];
   for (const key of absoluteKeys) {
@@ -119,12 +158,7 @@ function kimiResetHint(data: Record<string, unknown>): string | undefined {
         const delta = date.getTime() - now;
         if (delta <= 0) return undefined;
         const totalMinutes = Math.floor(delta / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-        if (hours > 0) return `${hours}h`;
-        if (minutes > 0) return `${minutes}m`;
-        return '<1m';
+        return formatKimiResetDuration(totalMinutes);
       } catch {
         continue;
       }
@@ -135,26 +169,39 @@ function kimiResetHint(data: Record<string, unknown>): string | undefined {
   for (const key of relativeKeys) {
     const raw = toInt(data[key]);
     if (raw !== null && raw > 0) {
-      const hours = Math.floor(raw / 3600);
-      const minutes = Math.floor((raw % 3600) / 60);
-      if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-      if (hours > 0) return `${hours}h`;
-      if (minutes > 0) return `${minutes}m`;
-      return '<1m';
+      const totalMinutes = Math.floor(raw / 60);
+      return formatKimiResetDuration(totalMinutes);
     }
   }
 
   return undefined;
 }
 
+type KimiTimeUnit = 'second' | 'minute' | 'hour' | 'day' | 'week';
+
+/** Kimi currently sends protobuf-style values such as TIME_UNIT_MINUTE. */
+function normalizeKimiTimeUnit(rawTimeUnit: unknown): KimiTimeUnit | null {
+  const unit =
+    typeof rawTimeUnit === 'string'
+      ? rawTimeUnit
+          .trim()
+          .toUpperCase()
+          .replace(/^TIME_UNIT_/, '')
+      : '';
+  if (unit === 'SECONDS' || unit === 'SECOND') return 'second';
+  if (!unit || unit === 'MINUTES' || unit === 'MINUTE') return 'minute';
+  if (unit === 'HOURS' || unit === 'HOUR') return 'hour';
+  if (unit === 'DAYS' || unit === 'DAY') return 'day';
+  if (unit === 'WEEKS' || unit === 'WEEK') return 'week';
+  return null;
+}
+
 function kimiDurationToken(duration: number, rawTimeUnit: unknown): string {
-  const unit = typeof rawTimeUnit === 'string' ? rawTimeUnit.trim().toUpperCase() : '';
-  if (unit === 'SECONDS' || unit === 'SECOND') return `${duration}s`;
-  if (!unit || unit === 'MINUTES' || unit === 'MINUTE') {
-    return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
-  }
-  if (unit === 'HOURS' || unit === 'HOUR') return `${duration}h`;
-  if (unit === 'DAYS' || unit === 'DAY') return `${duration}d`;
+  const unit = normalizeKimiTimeUnit(rawTimeUnit);
+  if (unit === 'second') return `${duration}s`;
+  if (unit === 'hour') return `${duration}h`;
+  if (unit === 'day') return `${duration}d`;
+  if (unit === 'week') return `${duration}w`;
   return duration % 60 === 0 ? `${duration / 60}h` : `${duration}m`;
 }
 
@@ -195,10 +242,63 @@ function kimiLimitLabel(
   };
 }
 
+/**
+ * Absolute reset instant for a Kimi row.
+ *
+ * Kimi sends either an absolute timestamp or a relative countdown; the display
+ * hint collapses both to something like "3h 20m", which can't be positioned on
+ * a timeline. This keeps the instant.
+ */
+function kimiResetMs(data: Record<string, unknown>): number | null {
+  const absolute = resolveResetMs([data.reset_at, data.resetAt, data.reset_time, data.resetTime]);
+  if (absolute !== null) return absolute;
+
+  const now = Date.now();
+  for (const key of ['reset_in', 'resetIn', 'ttl']) {
+    const relative = parseOffsetSecondsToMs(data[key], now);
+    if (relative !== null) return relative;
+  }
+  return null;
+}
+
+/** Window length in hours from explicit duration metadata, then label/scope. */
+function kimiPeriodHours(
+  label: string | undefined,
+  duration: number | null = null,
+  rawTimeUnit?: unknown
+): number | null {
+  if (duration !== null && duration > 0) {
+    const unit = normalizeKimiTimeUnit(rawTimeUnit);
+    if (unit === 'second') return duration / 3600;
+    if (unit === 'hour') return duration;
+    if (unit === 'day') return duration * 24;
+    if (unit === 'week') return duration * 7 * 24;
+    // Match the card-label fallback: an absent or unknown unit is treated as minutes.
+    return duration / 60;
+  }
+
+  const text = (label ?? '').toLowerCase();
+  if (text.includes('daily') || text.includes('day')) return 24;
+  if (text.includes('weekly') || text.includes('week')) return 24 * 7;
+  if (text.includes('monthly') || text.includes('month')) return 24 * 30;
+  if (text.includes('5h') || text.includes('hour')) return 5;
+  return null;
+}
+
 function toKimiUsageRow(
   data: Record<string, unknown>,
-  fallbackLabel: KimiRowLabel
-): (KimiRowLabel & { used: number; limit: number; resetHint?: string }) | null {
+  fallbackLabel: KimiRowLabel,
+  duration: number | null = null,
+  timeUnit?: unknown
+):
+  | (KimiRowLabel & {
+      used: number;
+      limit: number;
+      resetHint?: string;
+      resetAtMs?: number | null;
+      periodHours?: number | null;
+    })
+  | null {
   const limit = toInt(data.limit);
   let used = toInt(data.used);
   if (used === null) {
@@ -217,11 +317,46 @@ function toKimiUsageRow(
     used: used ?? 0,
     limit: limit ?? 0,
     resetHint: kimiResetHint(data),
+    resetAtMs: kimiResetMs(data),
+    periodHours: kimiPeriodHours(
+      explicitLabel || fallbackLabel.label || fallbackLabel.labelKey,
+      duration,
+      timeUnit
+    ),
   };
 }
 
 export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
   const rows: KimiQuotaRow[] = [];
+
+  const limits = payload.limits;
+  if (Array.isArray(limits)) {
+    limits.forEach((item, idx) => {
+      const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as
+        KimiUsageDetail | KimiLimitItem;
+      const window = (
+        item.window && typeof item.window === 'object' ? item.window : {}
+      ) as KimiLimitWindow;
+      const fallbackLabel = kimiLimitLabel(item, detail, window, idx);
+      const duration =
+        toInt(window.duration) ??
+        toInt((item as Record<string, unknown>).duration) ??
+        toInt((detail as Record<string, unknown>).duration);
+      const timeUnit =
+        (window as Record<string, unknown>).timeUnit ??
+        (item as Record<string, unknown>).timeUnit ??
+        (detail as Record<string, unknown>).timeUnit;
+      const row = toKimiUsageRow(
+        detail as Record<string, unknown>,
+        fallbackLabel,
+        duration,
+        timeUnit
+      );
+      if (row) {
+        rows.push({ id: `limit-${idx}`, ...row });
+      }
+    });
+  }
 
   const usage = payload.usage;
   if (usage && typeof usage === 'object') {
@@ -231,23 +366,6 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
     if (summary) {
       rows.push({ id: 'summary', ...summary });
     }
-  }
-
-  const limits = payload.limits;
-  if (Array.isArray(limits)) {
-    limits.forEach((item, idx) => {
-      const detail = (item.detail && typeof item.detail === 'object' ? item.detail : item) as
-        | KimiUsageDetail
-        | KimiLimitItem;
-      const window = (
-        item.window && typeof item.window === 'object' ? item.window : {}
-      ) as KimiLimitWindow;
-      const fallbackLabel = kimiLimitLabel(item, detail, window, idx);
-      const row = toKimiUsageRow(detail as Record<string, unknown>, fallbackLabel);
-      if (row) {
-        rows.push({ id: `limit-${idx}`, ...row });
-      }
-    });
   }
 
   return rows;
@@ -285,6 +403,8 @@ function normalizeXaiProductUsage(
 }
 
 const emptyXaiBillingSummary = (): XaiBillingSummary => ({
+  mode: 'billing',
+  source: 'cli-chat-proxy',
   periodType: 'unknown',
   usagePercent: null,
   productUsage: [],
@@ -296,6 +416,27 @@ const emptyXaiBillingSummary = (): XaiBillingSummary => ({
   onDemandUsedPercent: null,
   usedPercent: null,
 });
+
+/**
+ * Reset instant and length of an xAI period.
+ *
+ * The length comes from the period's own start → end span rather than being
+ * assumed, so a non-standard cycle still positions correctly. Null when the
+ * payload states an end without a start; the caller supplies the default it
+ * knows is right for the period type.
+ */
+function xaiPeriodInstants(
+  periodStart: string | undefined,
+  periodEnd: string | undefined
+): { resetAtMs: number | null; periodHours: number | null } {
+  const resetAtMs = resolveResetMs([periodEnd]);
+  const startMs = resolveResetMs([periodStart]);
+  const periodHours =
+    resetAtMs !== null && startMs !== null && resetAtMs > startMs
+      ? (resetAtMs - startMs) / 3_600_000
+      : null;
+  return { resetAtMs, periodHours };
+}
 
 export function buildXaiBillingSummary(
   config: XaiBillingConfig | null | undefined
@@ -380,6 +521,10 @@ export function buildXaiBillingSummary(
   summary.billingPeriodEnd = hasMonthlyData ? billingPeriodEnd : undefined;
   summary.usedPercent = usedPercent;
 
+  const periodInstants = xaiPeriodInstants(summary.periodStart, summary.periodEnd);
+  summary.resetAtMs = periodInstants.resetAtMs;
+  summary.periodHours = periodInstants.periodHours;
+
   return summary;
 }
 
@@ -390,11 +535,29 @@ export function mergeXaiBillingSummaries(
   if (!primary) return fallback;
   if (!fallback) return primary;
 
+  // Keep the active period atomic. The primary (weekly endpoint) and fallback
+  // (monthly endpoint) describe different clocks, so borrowing one endpoint's
+  // dates for the other's period type would turn a billing rollover into a
+  // quota reset.
+  const periodSummary =
+    primary.periodType !== 'unknown'
+      ? primary
+      : fallback.periodType !== 'unknown'
+        ? fallback
+        : primary;
+  const periodStart = periodSummary.periodStart;
+  const periodEnd = periodSummary.periodEnd;
+  const periodInstants = xaiPeriodInstants(periodStart, periodEnd);
+
   return {
-    periodType: primary.periodType !== 'unknown' ? primary.periodType : fallback.periodType,
+    mode: 'billing',
+    source: 'cli-chat-proxy',
+    periodType: periodSummary.periodType,
     usagePercent: primary.usagePercent ?? fallback.usagePercent,
-    periodStart: primary.periodStart ?? fallback.periodStart,
-    periodEnd: primary.periodEnd ?? fallback.periodEnd,
+    periodStart,
+    periodEnd,
+    resetAtMs: periodInstants.resetAtMs,
+    periodHours: periodInstants.periodHours,
     productUsage: primary.productUsage.length > 0 ? primary.productUsage : fallback.productUsage,
     monthlyLimitCents: primary.monthlyLimitCents ?? fallback.monthlyLimitCents,
     usedCents: primary.usedCents ?? fallback.usedCents,

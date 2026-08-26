@@ -10,6 +10,7 @@ import type {
   PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
+  RoutingStrategy,
   VisualConfigValues,
   VisualConfigValidationErrors,
   PayloadParamValidationErrorCode,
@@ -432,6 +433,17 @@ function parsePayloadProtocol(raw: unknown): string | undefined {
   return raw.trim() ? raw : undefined;
 }
 
+export function parseRoutingStrategy(raw: unknown): RoutingStrategy {
+  const normalized = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (['weighted-round-robin', 'weightedroundrobin', 'wrr'].includes(normalized)) {
+    return 'weighted-round-robin';
+  }
+  if (['fill-first', 'fillfirst', 'ff'].includes(normalized)) return 'fill-first';
+  return 'round-robin';
+}
+
 export function parseDisableImageGenerationMode(raw: unknown): DisableImageGenerationMode {
   if (raw === true) return 'true';
   if (typeof raw === 'string') {
@@ -488,27 +500,6 @@ function parsePayloadConditions(raw: unknown, idPrefix: string): PayloadParamEnt
 
 function parseStringList(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.map((item) => String(item ?? '').trim()).filter(Boolean) : [];
-}
-
-// Parse tor-retry-on-codes from YAML (array of numbers) to comma-separated string
-function parseTorRetryOnCodes(raw: unknown): string {
-  if (Array.isArray(raw)) {
-    return raw.map((item) => String(item ?? '')).join(', ');
-  }
-  if (typeof raw === 'string') {
-    return raw;
-  }
-  return '429, 403, 500, 502, 503';
-}
-
-// Serialize comma-separated string to array of numbers for YAML
-function serializeTorRetryOnCodes(text: string): number[] {
-  return text
-    .split(/[,;\s]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map(Number)
-    .filter((n) => !Number.isNaN(n) && n >= 100 && n <= 599);
 }
 
 const PLUGIN_STORE_AUTH_TYPES: PluginStoreAuthType[] = [
@@ -900,7 +891,6 @@ function getNextDirtyFields(
       'claudeHeaderStabilizeDeviceProfile',
       'codexHeaderUserAgent',
       'codexHeaderBetaFeatures',
-      'codexIdentityConfuse',
       'host',
       'port',
       'tlsEnable',
@@ -918,9 +908,9 @@ function getNextDirtyFields(
       'logsMaxTotalSizeMb',
       'proxyUrl',
       'proxyMode',
+      'torProxyAddr',
       'torControlAddr',
       'torControlPassword',
-      'torProxyAddr',
       'torRetryAttempts',
       'torRetryOnCodesText',
       'forceModelPrefix',
@@ -1088,7 +1078,6 @@ export function useVisualConfig() {
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
       const plugins = asRecord(parsed.plugins);
-      const codex = asRecord(parsed.codex);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -1132,11 +1121,11 @@ export function useVisualConfig() {
 
         proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
         proxyMode: typeof parsed['proxy-mode'] === 'string' ? parsed['proxy-mode'] : 'proxy',
+        torProxyAddr: typeof parsed['tor-proxy-addr'] === 'string' ? parsed['tor-proxy-addr'] : '127.0.0.1:9050',
         torControlAddr: typeof parsed['tor-control-addr'] === 'string' ? parsed['tor-control-addr'] : '127.0.0.1:9051',
         torControlPassword: typeof parsed['tor-control-password'] === 'string' ? parsed['tor-control-password'] : '',
-        torProxyAddr: typeof parsed['tor-proxy-addr'] === 'string' ? parsed['tor-proxy-addr'] : '127.0.0.1:9050',
         torRetryAttempts: String(parsed['tor-retry-attempts'] ?? '3'),
-        torRetryOnCodesText: parseTorRetryOnCodes(parsed['tor-retry-on-codes']),
+        torRetryOnCodesText: Array.isArray(parsed['tor-retry-on-codes']) ? parsed['tor-retry-on-codes'].join(', ') : '429, 403, 500, 502, 503',
         forceModelPrefix: Boolean(parsed['force-model-prefix']),
         passthroughHeaders: Boolean(parsed['passthrough-headers']),
         requestRetry: String(parsed['request-retry'] ?? ''),
@@ -1183,13 +1172,12 @@ export function useVisualConfig() {
           typeof codexHeaderDefaults?.['beta-features'] === 'string'
             ? codexHeaderDefaults['beta-features']
             : '',
-        codexIdentityConfuse: Boolean(codex?.['identity-confuse']),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
         quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
 
-        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingStrategy: parseRoutingStrategy(routing?.strategy),
         routingSessionAffinity: Boolean(
           routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
         ),
@@ -1354,18 +1342,23 @@ export function useVisualConfig() {
 
         if (dirtyFields.has('proxyUrl')) setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
         if (dirtyFields.has('proxyMode')) setStringInDoc(doc, ['proxy-mode'], values.proxyMode);
+        if (dirtyFields.has('torProxyAddr')) setStringInDoc(doc, ['tor-proxy-addr'], values.torProxyAddr);
         if (dirtyFields.has('torControlAddr')) setStringInDoc(doc, ['tor-control-addr'], values.torControlAddr);
         if (dirtyFields.has('torControlPassword')) setStringInDoc(doc, ['tor-control-password'], values.torControlPassword);
-        if (dirtyFields.has('torProxyAddr')) setStringInDoc(doc, ['tor-proxy-addr'], values.torProxyAddr);
         if (dirtyFields.has('torRetryAttempts')) {
-          setIntFromStringInDoc(doc, ['tor-retry-attempts'], values.torRetryAttempts);
+          const num = parseInt(values.torRetryAttempts, 10);
+          if (!isNaN(num)) setIntFromStringInDoc(doc, ['tor-retry-attempts'], values.torRetryAttempts);
         }
         if (dirtyFields.has('torRetryOnCodesText')) {
-          const codes = serializeTorRetryOnCodes(values.torRetryOnCodesText);
+          const codes = values.torRetryOnCodesText.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
           if (codes.length > 0) {
-            doc.setIn(['tor-retry-on-codes'], codes);
-          } else if (docHas(doc, ['tor-retry-on-codes'])) {
-            doc.deleteIn(['tor-retry-on-codes']);
+            const node = doc.get(['tor-retry-on-codes']);
+            if (node && isMap(node)) {
+              // Replace existing array
+              doc.setIn(['tor-retry-on-codes'], codes);
+            } else {
+              doc.setIn(['tor-retry-on-codes'], codes);
+            }
           }
         }
         if (dirtyFields.has('forceModelPrefix')) {
@@ -1488,12 +1481,6 @@ export function useVisualConfig() {
             );
           }
           deleteIfMapEmpty(doc, ['codex-header-defaults']);
-        }
-
-        if (dirtyFields.has('codexIdentityConfuse')) {
-          ensureMapInDoc(doc, ['codex']);
-          setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
-          deleteIfMapEmpty(doc, ['codex']);
         }
 
         const quotaDirty =
@@ -1637,6 +1624,8 @@ export function useVisualConfig() {
   return {
     visualValues,
     visualDirty,
+    /** 脏字段的叶值键集合（streaming 为点号叶），供 tab 脏点 / 头部计数消费。 */
+    visualDirtyFields: dirtyFields as ReadonlySet<string>,
     visualParseError,
     visualValidationErrors,
     visualHasPayloadValidationErrors,

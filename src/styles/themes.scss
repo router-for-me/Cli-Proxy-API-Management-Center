@@ -79,6 +79,17 @@
   --glass-bg: color-mix(in srgb, var(--bg-primary) 82%, transparent);
   --glass-bg-secondary: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   --glass-border: color-mix(in srgb, var(--border-color) 60%, transparent);
+
+  // 可视化配色：与语义色同源；深色模式下重新取步阶（见 [data-theme='dark']）。
+  // 规则：翡翠绿只表达「活的流量」。
+  --viz-success: #10b981;
+  --viz-failure: #c65746;
+
+  // 动效词汇表：内置 ease 太弱，交互反馈统一用强减速曲线。
+  // 按压 160ms / 悬停 200ms，UI 动效不超过 300ms。
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 160ms;
+  --dur-hover: 200ms;
 }
 
 // 纯白主题
@@ -222,6 +233,11 @@
   --accent-bg: var(--bg-tertiary);
 
   --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
+
+  // 深色卡面上 #10b981 亮度超出 OKLCH 0.48–0.67 区间，且与失败色的色盲分离度不足，
+  // 因此深色单独降一档。三套主题均已通过对比度/色盲/亮度校验。
+  --viz-success: #0fae78;
+  --viz-failure: #cf4b3a;
 }
 
 @media (max-width: 768px),

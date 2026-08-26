@@ -973,6 +973,69 @@
   background: var(--bg-secondary);
 }
 
+.thinkingFieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.thinkingExistingHint {
+  margin: 0;
+  color: var(--warning-color);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.thinkingLevelGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.thinkingLevelOption {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  box-sizing: border-box;
+}
+
+.thinkingLevelLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+
+  code {
+    color: var(--muted-foreground);
+    font-size: 10px;
+    font-weight: 400;
+  }
+}
+
+.thinkingLevelOptionSelected {
+  border-color: color-mix(in srgb, var(--primary-color) 50%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-primary));
+
+  .thinkingLevelLabel {
+    color: var(--text-primary);
+  }
+}
+
 .entrySummary {
   display: flex;
   min-width: 0;

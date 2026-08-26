@@ -7,20 +7,10 @@ export interface CodexResetCredit {
 
 export interface CodexResetCreditsSummary {
   availableCount: number | null;
+  applicableAvailableCount: number | null;
   credits: CodexResetCredit[];
   invalidPayload: boolean;
 }
-
-const SHANGHAI_TIME_FORMATTER = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Shanghai',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -75,22 +65,41 @@ export const normalizeCodexResetCreditsPayload = (payload: unknown): CodexResetC
   if (typeof payload === 'string') {
     const trimmed = payload.trim();
     if (!trimmed) {
-      return { availableCount: null, credits: [], invalidPayload: true };
+      return {
+        availableCount: null,
+        applicableAvailableCount: null,
+        credits: [],
+        invalidPayload: true,
+      };
     }
     try {
       parsedPayload = JSON.parse(trimmed);
     } catch {
-      return { availableCount: null, credits: [], invalidPayload: true };
+      return {
+        availableCount: null,
+        applicableAvailableCount: null,
+        credits: [],
+        invalidPayload: true,
+      };
     }
   }
 
   const record = asRecord(parsedPayload);
   if (!record) {
-    return { availableCount: null, credits: [], invalidPayload: true };
+    return {
+      availableCount: null,
+      applicableAvailableCount: null,
+      credits: [],
+      invalidPayload: true,
+    };
   }
 
   const hasExpectedShape =
-    'credits' in record || 'available_count' in record || 'availableCount' in record;
+    'credits' in record ||
+    'available_count' in record ||
+    'availableCount' in record ||
+    'applicable_available_count' in record ||
+    'applicableAvailableCount' in record;
   const credits = Array.isArray(record.credits)
     ? record.credits
         .map((item) => normalizeCredit(item))
@@ -99,13 +108,10 @@ export const normalizeCodexResetCreditsPayload = (payload: unknown): CodexResetC
 
   return {
     availableCount: normalizeNumberValue(record.available_count ?? record.availableCount),
+    applicableAvailableCount: normalizeNumberValue(
+      record.applicable_available_count ?? record.applicableAvailableCount
+    ),
     credits,
     invalidPayload: !hasExpectedShape,
   };
-};
-
-export const formatShanghaiDateTime = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return SHANGHAI_TIME_FORMATTER.format(date).replace(',', '');
 };

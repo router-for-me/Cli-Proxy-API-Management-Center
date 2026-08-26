@@ -328,13 +328,17 @@
 }
 
 .cardHeader {
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
   align-items: flex-start;
-  gap: $spacing-sm;
+  column-gap: $spacing-sm;
+  row-gap: 6px;
 }
 
 .logoBox {
   display: inline-flex;
+  grid-column: 1;
+  grid-row: 1;
   width: 40px;
   height: 40px;
   align-items: center;
@@ -355,7 +359,8 @@
 
 .cardTitleBlock {
   display: flex;
-  flex: 1;
+  grid-column: 2;
+  grid-row: 1;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
@@ -367,7 +372,8 @@
   font-size: 15px;
   font-weight: 650;
   line-height: 1.3;
-  @include text-ellipsis;
+  overflow-wrap: anywhere;
+  @include text-ellipsis-multiline(2);
 }
 
 .cardId {
@@ -379,10 +385,16 @@
 
 .cardBadges {
   display: flex;
+  grid-column: 2;
+  grid-row: 2;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 5px;
-  flex-shrink: 0;
+  min-width: 0;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .badge,
