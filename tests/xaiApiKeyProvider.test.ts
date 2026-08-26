@@ -97,13 +97,7 @@ describe('xAI API key provider', () => {
       websockets: true,
       proxyUrl: 'direct',
       headers: { 'X-Custom': 'value' },
-      models: [
-        {
-          name: 'grok-4.5',
-          alias: 'grok-latest',
-          thinking: { levels: ['low', 'high', 'xhigh'] },
-        },
-      ],
+      models: [{ name: 'grok-4.5', alias: 'grok-latest' }],
       excludedModels: ['grok-3-*'],
       disableCooling: true,
     });
@@ -128,13 +122,7 @@ describe('xAI API key provider', () => {
             websockets: true,
             'proxy-url': 'direct',
             headers: { 'X-Custom': 'value' },
-            models: [
-              {
-                name: 'grok-4.5',
-                alias: 'grok-latest',
-                thinking: { levels: ['low', 'high', 'xhigh'] },
-              },
-            ],
+            models: [{ name: 'grok-4.5', alias: 'grok-latest' }],
             'excluded-models': ['grok-3-*'],
             'disable-cooling': true,
           },

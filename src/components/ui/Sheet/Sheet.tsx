@@ -62,7 +62,6 @@ export function Sheet({
   const [isClosing, setIsClosing] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
-  const bodyRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
@@ -147,9 +146,8 @@ export function Sheet({
     previouslyFocusedRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const t = window.setTimeout(() => {
-      if (bodyRef.current) bodyRef.current.scrollTop = 0;
       const first = getFocusableElements()[0];
-      (first ?? closeBtnRef.current ?? sheetRef.current)?.focus({ preventScroll: true });
+      (first ?? closeBtnRef.current ?? sheetRef.current)?.focus();
     }, 0);
     return () => window.clearTimeout(t);
   }, [getFocusableElements, open]);
@@ -248,9 +246,7 @@ export function Sheet({
             ) : null}
           </div>
         )}
-        <div ref={bodyRef} className={styles.body}>
-          {children}
-        </div>
+        <div className={styles.body}>{children}</div>
         {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
     </div>

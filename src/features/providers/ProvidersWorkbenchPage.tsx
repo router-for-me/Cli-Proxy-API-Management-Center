@@ -8,7 +8,6 @@ import { useProviderRecentRequests } from '@/components/providers/hooks/useProvi
 import {
   getOpenAIProviderRecentWindowStats,
   getProviderRecentWindowStats,
-  getProviderUsageKey,
   type ProviderRecentUsageMap,
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
@@ -89,9 +88,10 @@ const getResourceRecentSuccess = (
     return getOpenAIProviderRecentWindowStats(resource.raw as OpenAIProviderConfig, usageByProvider)
       .success;
   }
+  const usageProvider = resource.brand === 'claudeApi' ? 'claude' : resource.brand;
   return getProviderRecentWindowStats(
     usageByProvider,
-    getProviderUsageKey(resource.brand),
+    usageProvider,
     resource.apiKey ?? undefined,
     resource.baseUrl ?? undefined
   ).success;

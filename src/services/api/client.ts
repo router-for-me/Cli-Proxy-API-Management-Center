@@ -10,11 +10,14 @@ import {
   CPA_BUILD_DATE_HEADER_KEYS,
   CPA_SUPPORT_PLUGIN_HEADER_KEYS,
   CPA_VERSION_HEADER_KEYS,
+  HOME_BUILD_DATE_HEADER_KEYS,
+  HOME_VERSION_HEADER_KEYS,
   REQUEST_TIMEOUT_MS,
   VERSION_HEADER_KEYS,
 } from '@/utils/constants';
 import { computeApiUrl } from '@/utils/connection';
-import { parseApiErrorResponse } from './apiError';
+import { isRecord } from '@/utils/helpers';
+import type { ServerRuntimeKind } from '@/types';
 
 class ApiClient {
   private instance: AxiosInstance;
@@ -121,17 +124,22 @@ class ApiClient {
     this.instance.interceptors.response.use(
       (response) => {
         const headers = response.headers as Record<string, string | undefined>;
+        const homeVersion = this.readHeader(headers, HOME_VERSION_HEADER_KEYS);
+        const homeBuildDate = this.readHeader(headers, HOME_BUILD_DATE_HEADER_KEYS);
         const cpaVersion = this.readHeader(headers, CPA_VERSION_HEADER_KEYS);
         const cpaBuildDate = this.readHeader(headers, CPA_BUILD_DATE_HEADER_KEYS);
-        const version = cpaVersion || this.readHeader(headers, VERSION_HEADER_KEYS);
-        const buildDate = cpaBuildDate || this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
+        const version = homeVersion || cpaVersion || this.readHeader(headers, VERSION_HEADER_KEYS);
+        const buildDate =
+          homeBuildDate || cpaBuildDate || this.readHeader(headers, BUILD_DATE_HEADER_KEYS);
         const supportsPlugin = this.readBooleanHeader(headers, CPA_SUPPORT_PLUGIN_HEADER_KEYS);
+        const runtimeKind: ServerRuntimeKind | null =
+          homeVersion || homeBuildDate ? 'home' : cpaVersion || cpaBuildDate ? 'cpa' : null;
 
         // 触发版本更新事件（后续通过 store 处理）
-        if (version || buildDate) {
+        if (version || buildDate || runtimeKind) {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {
-              detail: { version: version || null, buildDate: buildDate || null },
+              detail: { version: version || null, buildDate: buildDate || null, runtimeKind },
             })
           );
         }
@@ -155,12 +163,20 @@ class ApiClient {
   private handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
       const responseData: unknown = error.response?.data;
-      const parsedError = parseApiErrorResponse(responseData, error.message);
-      const apiError = new Error(parsedError.message) as ApiError;
+      const responseRecord = isRecord(responseData) ? responseData : null;
+      const errorValue = responseRecord?.error;
+      const message =
+        typeof errorValue === 'string'
+          ? errorValue
+          : isRecord(errorValue) && typeof errorValue.message === 'string'
+            ? errorValue.message
+            : typeof responseRecord?.message === 'string'
+              ? responseRecord.message
+              : error.message || 'Request failed';
+      const apiError = new Error(message) as ApiError;
       apiError.name = 'ApiError';
       apiError.status = error.response?.status;
       apiError.code = error.code;
-      apiError.apiCode = parsedError.apiCode;
       apiError.details = responseData;
       apiError.data = responseData;
 

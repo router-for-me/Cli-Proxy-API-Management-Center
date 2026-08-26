@@ -10,18 +10,10 @@ import {
 } from '@/components/ui/icons';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
-import {
-  DISABLE_ALL_RULE,
-  ExcludedModelsPicker,
-  formatExcludedRulesText,
-  parseExcludedRulesText,
-  type ExcludedModelsCatalogState,
-} from '@/components/excludedModels';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
-import { readThinkingLevels } from '../../thinkingLevels';
 import type {
   ApiKeyEntryInput,
   ModelEntryInput,
@@ -37,10 +29,6 @@ import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { CLAUDE_API_BASE_URL } from '../../claudeApi';
-import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
-
-/** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
-const DISABLE_ALL_RULES = [DISABLE_ALL_RULE];
 
 interface BaseProviderFormProps {
   brand: ProviderBrand;
@@ -57,7 +45,6 @@ const emptyModel = (): ModelEntryInput => ({ name: '', alias: '' });
 const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   apiKey: '',
   proxyUrl: '',
-  weight: undefined,
 });
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
@@ -88,7 +75,6 @@ function buildInitialForm(
       disabled: false,
       disableCooling: false,
       priority: undefined,
-      weight: undefined,
       models: [emptyModel()],
       headers: [emptyHeader()],
       excludedModelsText: '',
@@ -102,8 +88,7 @@ function buildInitialForm(
         brand === 'codex' ||
         brand === 'xai' ||
         isClaudeLikeBrand(brand) ||
-        brand === 'gemini' ||
-        brand === 'interactions'
+        brand === 'gemini'
           ? ''
           : undefined,
       apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
@@ -130,7 +115,6 @@ function buildInitialForm(
             testModel: m.testModel,
             image: m.image === true,
             thinkingJson: formatJsonObject(m.thinking),
-            thinkingLevels: readThinkingLevels(m.thinking),
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -143,7 +127,6 @@ function buildInitialForm(
             apiKey: '',
             existingApiKey: entry.apiKey,
             proxyUrl: entry.proxyUrl ?? '',
-            weight: entry.weight,
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
@@ -166,15 +149,12 @@ function buildInitialForm(
     disabled,
     disableCooling: cfg.disableCooling === true,
     priority: cfg.priority,
-    weight: cfg.weight,
     models: cfg.models?.length
       ? cfg.models.map((m) => ({
           name: m.name,
           alias: m.alias ?? '',
           priority: m.priority,
           testModel: m.testModel,
-          thinkingJson: formatJsonObject(m.thinking),
-          thinkingLevels: readThinkingLevels(m.thinking),
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -197,11 +177,7 @@ function buildInitialForm(
       ? ((cfg as ProviderKeyConfig).fingerprintProfile ?? '')
       : undefined,
     testModel:
-      brand === 'codex' ||
-      brand === 'xai' ||
-      isClaudeLikeBrand(brand) ||
-      brand === 'gemini' ||
-      brand === 'interactions'
+      brand === 'codex' || brand === 'xai' || isClaudeLikeBrand(brand) || brand === 'gemini'
         ? ''
         : undefined,
   };
@@ -399,18 +375,6 @@ export function BaseProviderForm({
     if (descriptor.baseUrlRequired && !form.baseUrl.trim()) {
       return t('providersPage.form.validation.baseUrlRequired');
     }
-    const weights = [
-      ...(brand === 'openaiCompatibility'
-        ? (form.apiKeyEntries ?? []).map((entry) => entry.weight)
-        : []),
-      ...(brand !== 'openaiCompatibility' ? [form.weight] : []),
-    ];
-    if (weights.some((weight) => weight !== undefined && !Number.isSafeInteger(weight))) {
-      return t('providersPage.form.validation.weightInteger');
-    }
-    if (weights.some((weight) => weight !== undefined && weight > MAX_CREDENTIAL_WEIGHT)) {
-      return t('providersPage.form.validation.weightMax', { max: MAX_CREDENTIAL_WEIGHT });
-    }
     return null;
   };
 
@@ -444,52 +408,18 @@ export function BaseProviderForm({
       form.apiKeyEntries && form.apiKeyEntries.length ? form.apiKeyEntries : [emptyApiKeyEntry()],
     [form.apiKeyEntries]
   );
-
-  const excludedRules = useMemo(
-    () => parseExcludedRulesText(form.excludedModelsText),
-    [form.excludedModelsText]
-  );
-  /**
-   * 候选目录 = discovery 发现的模型 ∪ 表单里已配置的模型名。
-   *
-   * 两者都可能为空——`vertex` 支持排除模型却不在 MODEL_DISCOVERY_BRANDS 里，永远没有
-   * discovery；其余 brand 在用户手动跑一次发现之前也没有。因此**无目录是常态**，
-   * picker 必须能在没有目录时退化成纯规则编辑器。
-   */
-  const excludedCandidates = useMemo(() => {
-    const byKey = new Map<string, { id: string; displayName?: string }>();
-    discovery.models.forEach((model) => {
-      const id = model.name?.trim();
-      if (id) byKey.set(id.toLowerCase(), { id, displayName: model.alias || undefined });
-    });
-    form.models.forEach((model) => {
-      const id = model.name?.trim();
-      if (id && !byKey.has(id.toLowerCase())) byKey.set(id.toLowerCase(), { id });
-    });
-    return [...byKey.values()].sort((left, right) =>
-      left.id.localeCompare(right.id, undefined, { sensitivity: 'base' })
-    );
-  }, [discovery.models, form.models]);
-  const excludedCatalogState: ExcludedModelsCatalogState = discovery.loading
-    ? 'loading'
-    : discovery.error
-      ? 'error'
-      : excludedCandidates.length === 0
-        ? 'unavailable'
-        : 'ready';
   const actualApiKeyEntries = form.apiKeyEntries ?? [];
   const supportsDisableCooling =
     brand === 'gemini' ||
-    brand === 'interactions' ||
     brand === 'codex' ||
     brand === 'xai' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
-  const supportsModelImage = brand === 'openaiCompatibility';
+  const supportsOpenAIModelOptions = brand === 'openaiCompatibility';
   const singleConnectivity =
     brand === 'codex' || brand === 'xai'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
-      : brand === 'gemini' || brand === 'interactions'
+      : brand === 'gemini'
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
         : isClaudeLikeBrand(brand)
           ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
@@ -648,28 +578,6 @@ export function BaseProviderForm({
           </div>
         ) : null}
 
-        {brand !== 'openaiCompatibility' ? (
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor={`${fid}-weight`}>
-              {t('providersPage.form.weight')}
-            </label>
-            <input
-              id={`${fid}-weight`}
-              type="number"
-              step="1"
-              max={MAX_CREDENTIAL_WEIGHT}
-              className={styles.input}
-              value={form.weight ?? ''}
-              placeholder="1"
-              onChange={(e) =>
-                updateField('weight', e.target.value === '' ? undefined : Number(e.target.value))
-              }
-              disabled={mutating}
-            />
-            <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
-          </div>
-        ) : null}
-
         {descriptor.supportsTestModel ? (
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
@@ -677,8 +585,7 @@ export function BaseProviderForm({
               {brand === 'codex' ||
               brand === 'xai' ||
               isClaudeLikeBrand(brand) ||
-              brand === 'gemini' ||
-              brand === 'interactions' ? (
+              brand === 'gemini' ? (
                 <span className={styles.labelHint}>
                   {' '}
                   · {t('providersPage.form.testModelClaudeHint')}
@@ -906,8 +813,7 @@ export function BaseProviderForm({
             ) : null}
             <ModelEntriesEditor
               models={modelsList}
-              supportsImage={supportsModelImage}
-              supportsThinking
+              extendedOptions={supportsOpenAIModelOptions}
               mutating={mutating}
               removeDisabled={modelsList.length <= 1}
               onUpdate={updateModelEntry}
@@ -921,17 +827,14 @@ export function BaseProviderForm({
       {descriptor.supportsExcludedModels ? (
         <Collapsible label={t('providersPage.form.excludedSection')}>
           <div className={styles.field}>
-            <ExcludedModelsPicker
-              value={excludedRules}
-              onChange={(next) => updateField('excludedModelsText', formatExcludedRulesText(next))}
-              candidates={excludedCandidates}
-              catalogState={excludedCatalogState}
-              onRetryCatalog={discovery.available ? () => void discovery.fetch() : undefined}
+            <span className={styles.labelHint}>{t('providersPage.form.excludedHint')}</span>
+            <textarea
+              className={styles.textarea}
+              rows={4}
+              value={form.excludedModelsText}
+              onChange={(e) => updateField('excludedModelsText', e.target.value)}
               disabled={mutating}
-              // `'*'` = 该 provider 已停用，唯一所有者是下面的 Disabled 开关。
-              // 传进来后 picker 双向过滤它，用户手打 `*` 也会被拦下并解释原因。
-              reservedRules={DISABLE_ALL_RULES}
-              reservedRuleMessage={t('providersPage.form.excludedDisabledNote')}
+              placeholder="model-1&#10;model-2"
             />
           </div>
         </Collapsible>

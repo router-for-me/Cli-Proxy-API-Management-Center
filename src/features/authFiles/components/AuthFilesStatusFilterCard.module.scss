@@ -1,0 +1,296 @@
+.squircleClip {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.cardShadow {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.12));
+  transition: filter 0.2s ease;
+}
+
+.card {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-primary) 88%, transparent),
+      color-mix(in srgb, var(--bg-secondary) 78%, transparent)
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--floating-surface) 44%, transparent);
+  padding: 12px 14px;
+  user-select: none;
+  font-family: inherit;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  perspective: 280px;
+  perspective-origin: center 120%;
+}
+
+.labelText {
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.statusText {
+  display: inline-block;
+  color: var(--text-secondary);
+  transition:
+    color 0.3s,
+    text-shadow 0.3s;
+  will-change: transform, opacity, filter;
+  vertical-align: middle;
+  transform-origin: center bottom;
+  transform: rotateX(0deg) translateY(0);
+}
+
+.statusTextGlowing {
+  color: color-mix(in srgb, var(--warning-color) 82%, var(--text-primary));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--warning-color) 42%, transparent);
+  font-weight: 700;
+}
+
+@keyframes flipUpFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) rotateX(-80deg);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+    filter: blur(0);
+  }
+}
+
+.statusTextAnimateUp {
+  animation: flipUpFromBottom 0.42s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusTextAnimateUp {
+    animation: none;
+  }
+}
+
+.scaleLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  letter-spacing: 0;
+}
+
+/* ── track ─────────────────────────────────── */
+.trackWrapper {
+  --thumb-size: 22px;
+  --thumb-half: calc(var(--thumb-size) / 2);
+  --track-inset: var(--thumb-half);
+
+  position: relative;
+  height: 26px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, var(--bg-primary));
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.12);
+  isolation: isolate;
+}
+
+.trackWrapper:focus-within {
+  border-color: color-mix(in srgb, var(--primary-color) 72%, var(--border-color));
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.12),
+    0 0 0 2px color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.trackWrapperActive {
+  border-color: color-mix(in srgb, var(--warning-color) 38%, var(--border-color));
+}
+
+.trackWrapperActive:focus-within {
+  border-color: color-mix(in srgb, var(--warning-color) 46%, var(--border-color));
+  box-shadow:
+    inset 0 1px 2px rgb(0 0 0 / 0.12),
+    0 0 0 2px color-mix(in srgb, var(--warning-color) 14%, transparent);
+}
+
+.trackBg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 9%, transparent), transparent 62%),
+    color-mix(in srgb, var(--bg-secondary) 86%, var(--bg-primary));
+  z-index: 0;
+}
+
+.fireCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  z-index: 2;
+  transition: opacity 0.3s;
+}
+
+.trackWrapperActive .fireCanvas {
+  opacity: 1;
+  z-index: 4;
+}
+
+.dotsLayer {
+  position: absolute;
+  inset: 0 var(--track-inset);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-quaternary) 72%, transparent);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 0.6s,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+  z-index: 6;
+}
+
+.trackWrapperActive .dot {
+  background: color-mix(in srgb, var(--warning-color) 52%, var(--text-quaternary));
+  opacity: 0.35;
+}
+
+.trackWrapperFull .dot {
+  opacity: 0;
+}
+
+/* ── range input ───────────────────────────── */
+.slider {
+  position: absolute;
+  inset: 0 var(--track-inset);
+  width: auto;
+  height: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  z-index: 5;
+  outline: none;
+  margin: 0;
+  padding: 0;
+}
+
+.slider:disabled {
+  cursor: not-allowed;
+}
+
+.slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: grab;
+}
+
+.slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.slider::-moz-range-thumb {
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: grab;
+}
+
+.slider::-moz-range-thumb:active {
+  cursor: grabbing;
+}
+
+.slider::-moz-range-track {
+  background: transparent;
+  border: none;
+  height: 100%;
+}
+
+.thumbLayer {
+  position: absolute;
+  inset: 0 var(--track-inset);
+  pointer-events: none;
+  z-index: 7;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 9px;
+  background: linear-gradient(
+    170deg,
+    var(--primary-contrast, #fff) 0%,
+    color-mix(in srgb, var(--primary-contrast, #fff) 82%, var(--bg-tertiary)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--border-color) 48%, transparent);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.18),
+    0 4px 10px rgb(0 0 0 / 0.14),
+    inset 0 0.5px 0 rgb(255 255 255 / 0.82);
+  transform: translate(-50%, -50%);
+  transition:
+    left 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 0.4s ease,
+    transform 0.15s ease;
+}
+
+.trackWrapperDragging .thumb {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.22),
+    0 2px 6px rgb(0 0 0 / 0.18),
+    0 0 0 3px color-mix(in srgb, var(--primary-color) 14%, transparent),
+    inset 0 0.5px 0 rgb(255 255 255 / 0.72);
+  transform: translate(-50%, -50%) scale(0.95);
+}

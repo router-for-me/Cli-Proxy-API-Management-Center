@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { AuthFileModelItem } from '@/features/authFiles/constants';
 import { isModelExcluded } from '@/features/authFiles/constants';
-import styles from './AuthFileModelsModal.module.scss';
+import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFileModelsModalProps = {
   open: boolean;
@@ -34,7 +34,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
       }
     >
       {loading ? (
-        <div className="hint">
+        <div className={styles.hint}>
           {t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}
         </div>
       ) : error === 'unsupported' ? (
@@ -52,13 +52,13 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
           })}
         />
       ) : (
-        <div className={styles.list}>
+        <div className={styles.modelsList}>
           {models.map((model) => {
             const excludedModel = isModelExcluded(model.id, fileType, excluded);
             return (
               <div
                 key={model.id}
-                className={`${styles.item} ${excludedModel ? styles.itemExcluded : ''}`}
+                className={`${styles.modelItem} ${excludedModel ? styles.modelItemExcluded : ''}`}
                 onClick={() => {
                   onCopyText(model.id);
                 }}
@@ -76,7 +76,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
                 )}
                 {model.type && <span className={styles.modelType}>{model.type}</span>}
                 {excludedModel && (
-                  <span className={styles.excludedBadge}>
+                  <span className={styles.modelExcludedBadge}>
                     {t('auth_files.models_excluded_badge', { defaultValue: '已禁用' })}
                   </span>
                 )}

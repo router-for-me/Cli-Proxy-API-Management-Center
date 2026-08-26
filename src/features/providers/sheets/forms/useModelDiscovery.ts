@@ -7,7 +7,6 @@ import type { ApiKeyEntryInput, ProviderBrand } from '../../types';
 
 export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'gemini',
-  'interactions',
   'codex',
   'xai',
   'claude',
@@ -55,7 +54,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
       const baseHeaders = buildHeaderObject(formHeaders);
       const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
       let next: ModelInfo[] = [];
-      if (brand === 'gemini' || brand === 'interactions') {
+      if (brand === 'gemini') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchGeminiModelsViaApiCall(
           baseUrl,

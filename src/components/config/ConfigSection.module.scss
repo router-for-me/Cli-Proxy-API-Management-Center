@@ -1,0 +1,113 @@
+@use '../../styles/mixins' as *;
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 22px);
+  height: clamp(520px, calc(100dvh - var(--header-height, 64px) - 250px), 780px);
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: auto;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  scroll-margin-top: 104px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  scrollbar-width: thin;
+
+  @include mobile {
+    gap: 14px;
+    height: clamp(420px, calc(100dvh - var(--header-height, 64px) - 260px), 680px);
+    padding: 16px;
+    scroll-margin-top: 92px;
+  }
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding-bottom: 12px;
+    background: transparent;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.indexBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.iconBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  flex: 0 0 auto;
+}
+
+.headingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 680;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.description {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+
+  @include mobile {
+    max-width: none;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
