@@ -38,6 +38,8 @@ const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
 const CLAUDE_KEY_FIELDS = [
   ...PROVIDER_COMMON_KEY_FIELDS,
   'cloak',
+  'fingerprint-profile',
+  // Keep stripping the deprecated field when a Claude entry is saved.
   'experimental-cch-signing',
 ] as const;
 const VERTEX_KEY_FIELDS = [
@@ -352,8 +354,8 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
       payload.cloak = cloakPayload;
     }
   }
-  if (config.experimentalCchSigning) {
-    payload['experimental-cch-signing'] = true;
+  if (config.fingerprintProfile?.trim()) {
+    payload['fingerprint-profile'] = config.fingerprintProfile.trim();
   }
   return payload;
 };

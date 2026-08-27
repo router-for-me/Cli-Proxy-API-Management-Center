@@ -1490,6 +1490,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "cliProfileTag": "CLI 指纹",
       "empty": "尚未添加配置,点击右上角新建。",
       "filterPlaceholder": "搜索密钥、地址、前缀…",
       "description": "在 {{route}} 下管理资源"
@@ -1648,8 +1649,10 @@
       },
       "cloakCacheUserId": "缓存 user_id",
       "cloakCacheUserIdHint": "按 API key 复用 Claude cloak 生成的 user_id",
-      "experimentalCchSigning": "实验性 CCH 签名",
-      "experimentalCchSigningHint": "对 cloaked Claude /v1/messages 最终请求体启用 CCH 签名",
+      "fingerprintProfile": "请求指纹",
+      "fingerprintProfileDefault": "默认（由调用方控制）",
+      "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
+      "fingerprintProfileHint": "默认保留调用方传入的提示词和请求头；也可选择使用 Claude Code CLI 请求指纹。",
       "validation": {
         "nameRequired": "名称必填",
         "apiKeyRequired": "至少填写一个 API 密钥",

@@ -1516,6 +1516,7 @@
       },
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
+      "cliProfileTag": "CLI 指紋",
       "empty": "尚未新增設定,點擊右上角新增。",
       "filterPlaceholder": "搜尋金鑰、位址、前綴…",
       "description": "在 {{route}} 下管理資源"
@@ -1674,8 +1675,10 @@
       },
       "cloakCacheUserId": "快取 user_id",
       "cloakCacheUserIdHint": "按 API key 複用 Claude cloak 產生的 user_id",
-      "experimentalCchSigning": "實驗性 CCH 簽名",
-      "experimentalCchSigningHint": "對 cloaked Claude /v1/messages 最終請求體啟用 CCH 簽名",
+      "fingerprintProfile": "請求指紋",
+      "fingerprintProfileDefault": "預設（由呼叫端控制）",
+      "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
+      "fingerprintProfileHint": "預設保留呼叫端傳入的提示詞與請求標頭；也可選擇使用 Claude Code CLI 請求指紋。",
       "validation": {
         "nameRequired": "名稱必填",
         "apiKeyRequired": "至少填寫一個 API 金鑰",
