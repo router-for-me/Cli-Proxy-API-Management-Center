@@ -10,7 +10,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi } from '@/services/api';
+import { authFilesApi, providersApi } from '@/services/api';
+import { mergeKimiQuotaFiles } from '@/features/quota/providers/kimi/data';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
@@ -82,7 +83,13 @@ export function QuotaPage() {
     setError('');
     try {
       const data = await authFilesApi.list();
-      setFiles(data?.files || []);
+      let files = data?.files || [];
+      try {
+        files = mergeKimiQuotaFiles(files, await providersApi.getKimiKeys());
+      } catch {
+        files = data?.files || [];
+      }
+      setFiles(files);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);

@@ -118,6 +118,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         case 'xai-api-key':
           nextConfig.xaiApiKeys = value as Config['xaiApiKeys'];
           break;
+        case 'kimi-api-key':
+          nextConfig.kimiApiKeys = value as Config['kimiApiKeys'];
+          break;
         case 'claude-api-key':
           nextConfig.claudeApiKeys = value as Config['claudeApiKeys'];
           break;

@@ -1611,7 +1611,9 @@
         "headers": "請求標頭數",
         "authIndex": "Auth Index",
         "excludedModels": "排除模型數",
-        "apiKeyEntries": "金鑰條目數"
+        "apiKeyEntries": "金鑰條目數",
+        "kimiService": "來源",
+        "kimiRegion": "區域"
       }
     },
     "form": {
@@ -1619,6 +1621,11 @@
       "editEyebrow": "編輯",
       "name": "名稱",
       "apiKey": "API 金鑰",
+      "kimiService": "來源",
+      "kimiServiceOpenPlatform": "kimi開放平台",
+      "kimiServiceCodingPlan": "kimi for coding",
+      "kimiRegion": "區域",
+      "kimiCurrentUrl": "目前地址",
       "apiKeyCreatePlaceholder": "輸入 API 金鑰",
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服務位址",

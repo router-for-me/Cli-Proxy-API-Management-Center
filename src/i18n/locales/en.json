@@ -1585,7 +1585,9 @@
         "headers": "Headers",
         "authIndex": "Auth Index",
         "excludedModels": "Excluded models",
-        "apiKeyEntries": "API key entries"
+        "apiKeyEntries": "API key entries",
+        "kimiService": "Source",
+        "kimiRegion": "Region"
       }
     },
     "form": {
@@ -1593,6 +1595,11 @@
       "editEyebrow": "Edit",
       "name": "Name",
       "apiKey": "API key",
+      "kimiService": "Source",
+      "kimiServiceOpenPlatform": "kimi open platform",
+      "kimiServiceCodingPlan": "kimi for coding",
+      "kimiRegion": "Region",
+      "kimiCurrentUrl": "Current URL",
       "apiKeyCreatePlaceholder": "Enter API key",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
       "baseUrl": "Base URL",

@@ -18,7 +18,12 @@ import {
   type ExcludedModelsCatalogState,
 } from '@/components/excludedModels';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
-import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type {
+  GeminiKeyConfig,
+  KimiKeyConfig,
+  OpenAIProviderConfig,
+  ProviderKeyConfig,
+} from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
 import { readThinkingLevels } from '../../thinkingLevels';
@@ -38,6 +43,14 @@ import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { CLAUDE_API_BASE_URL } from '../../claudeApi';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import {
+  KIMI_REGION_DOMESTIC,
+  KIMI_SERVICE_CODING_PLAN,
+  KIMI_SERVICE_OPEN_PLATFORM,
+  kimiDiscoveredModelEntries,
+  kimiDisplayBaseUrl,
+  kimiOpenAIBaseUrl,
+} from '../../kimi';
 
 /** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
 const DISABLE_ALL_RULES = [DISABLE_ALL_RULE];
@@ -101,12 +114,15 @@ function buildInitialForm(
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
         brand === 'xai' ||
+        brand === 'kimi' ||
         isClaudeLikeBrand(brand) ||
         brand === 'gemini' ||
         brand === 'interactions'
           ? ''
           : undefined,
       apiKeyEntries: brand === 'openaiCompatibility' ? [emptyApiKeyEntry()] : undefined,
+      kimiService: brand === 'kimi' ? KIMI_SERVICE_OPEN_PLATFORM : undefined,
+      kimiRegion: brand === 'kimi' ? KIMI_REGION_DOMESTIC : undefined,
     };
   }
 
@@ -147,6 +163,39 @@ function buildInitialForm(
             authIndex: entry.authIndex,
           }))
         : [emptyApiKeyEntry()],
+    };
+  }
+
+  if (brand === 'kimi') {
+    const cfg = raw as KimiKeyConfig;
+    const disabled = hasDisableAllModelsRule(cfg.excludedModels);
+    const excludedList = stripDisableAllRule(cfg.excludedModels);
+    return {
+      apiKey: '',
+      name: cfg.name ?? '',
+      baseUrl: '',
+      proxyUrl: cfg.proxyUrl ?? '',
+      prefix: cfg.prefix ?? '',
+      disabled,
+      disableCooling: cfg.disableCooling === true,
+      priority: cfg.priority,
+      weight: cfg.weight,
+      models: cfg.models?.length
+        ? cfg.models.map((m) => ({
+            name: m.name,
+            alias: m.alias ?? '',
+            priority: m.priority,
+            thinkingJson: formatJsonObject(m.thinking),
+            thinkingLevels: readThinkingLevels(m.thinking),
+          }))
+        : [emptyModel()],
+      headers: cfg.headers
+        ? Object.entries(cfg.headers).map(([k, v]) => ({ key: k, value: String(v) }))
+        : [emptyHeader()],
+      excludedModelsText: excludedList.join('\n'),
+      testModel: '',
+      kimiService: cfg.service || KIMI_SERVICE_OPEN_PLATFORM,
+      kimiRegion: cfg.region ?? KIMI_REGION_DOMESTIC,
     };
   }
 
@@ -260,10 +309,13 @@ export function BaseProviderForm({
     [t]
   );
 
+  const kimiRequestBaseUrl =
+    brand === 'kimi' ? kimiOpenAIBaseUrl(form.kimiService, form.kimiRegion) : form.baseUrl;
+
   const connectivity = useConnectivityTest(
     {
       brand,
-      baseUrl: form.baseUrl,
+      baseUrl: kimiRequestBaseUrl,
       testModel: form.testModel,
       models: form.models,
       formHeaders: form.headers,
@@ -277,7 +329,7 @@ export function BaseProviderForm({
 
   const discovery = useModelDiscovery({
     brand,
-    baseUrl: form.baseUrl,
+    baseUrl: kimiRequestBaseUrl,
     formHeaders: form.headers,
     apiKeyEntries: form.apiKeyEntries,
     apiKey: form.apiKey,
@@ -285,6 +337,12 @@ export function BaseProviderForm({
     authIndex: fallbackAuthIndex,
   });
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
+
+  useEffect(() => {
+    if (brand !== 'kimi') return;
+    discovery.reset();
+    setDiscoveryOpen(false);
+  }, [brand, form.kimiRegion, form.kimiService]); // eslint-disable-line react-hooks/exhaustive-deps -- host changes with source/region only
 
   const existingModelNames = useMemo(() => {
     const set = new Set<string>();
@@ -351,15 +409,23 @@ export function BaseProviderForm({
       if (placeholderIdx !== -1) {
         next.splice(placeholderIdx, 1);
       }
-      incoming.forEach((info) => {
-        const trimmed = info.name.trim();
-        if (!trimmed || seen.has(trimmed)) return;
-        seen.add(trimmed);
-        next.push({
-          name: trimmed,
-          alias: (info.alias ?? '').trim(),
+      if (brand === 'kimi') {
+        kimiDiscoveredModelEntries(incoming).forEach((entry) => {
+          if (seen.has(entry.name)) return;
+          seen.add(entry.name);
+          next.push(entry);
         });
-      });
+      } else {
+        incoming.forEach((info) => {
+          const trimmed = info.name.trim();
+          if (!trimmed || seen.has(trimmed)) return;
+          seen.add(trimmed);
+          next.push({
+            name: trimmed,
+            alias: (info.alias ?? '').trim(),
+          });
+        });
+      }
       return { ...prev, models: next };
     });
   };
@@ -390,7 +456,7 @@ export function BaseProviderForm({
   };
 
   const validate = (): string | null => {
-    if (descriptor.supportsName && !form.name.trim()) {
+    if (descriptor.supportsName && brand !== 'kimi' && !form.name.trim()) {
       return t('providersPage.form.validation.nameRequired');
     }
     if (descriptor.supportsApiKey && mode === 'create' && !form.apiKey.trim()) {
@@ -423,7 +489,16 @@ export function BaseProviderForm({
     }
     try {
       setError(null);
-      await onSubmit(form);
+      let payload = form;
+      if (brand === 'kimi' && !form.models.some((model) => (model.name ?? '').trim())) {
+        const fetched = await discovery.fetch();
+        const models = kimiDiscoveredModelEntries(fetched);
+        if (models.length) {
+          payload = { ...form, models };
+          setForm(payload);
+        }
+      }
+      await onSubmit(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -483,6 +558,7 @@ export function BaseProviderForm({
     brand === 'interactions' ||
     brand === 'codex' ||
     brand === 'xai' ||
+    brand === 'kimi' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
   const supportsModelImage = brand === 'openaiCompatibility';
@@ -493,7 +569,9 @@ export function BaseProviderForm({
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
         : isClaudeLikeBrand(brand)
           ? { status: connectivity.claudeStatus, run: connectivity.runClaude }
-          : null;
+          : brand === 'kimi'
+            ? { status: connectivity.chatStatus, run: connectivity.runChat }
+            : null;
 
   const updateModelEntry = (idx: number, patch: Partial<ModelEntryInput>) => {
     updateField(
@@ -525,6 +603,77 @@ export function BaseProviderForm({
               onChange={(e) => updateField('name', e.target.value)}
               disabled={mutating}
             />
+          </div>
+        ) : null}
+
+        {brand === 'kimi' ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-kimiService`}>
+              {t('providersPage.form.kimiService')}
+            </label>
+            <Select
+              id={`${fid}-kimiService`}
+              value={form.kimiService ?? KIMI_SERVICE_OPEN_PLATFORM}
+              onChange={(value) =>
+                updateField(
+                  'kimiService',
+                  value === KIMI_SERVICE_CODING_PLAN
+                    ? KIMI_SERVICE_CODING_PLAN
+                    : KIMI_SERVICE_OPEN_PLATFORM
+                )
+              }
+              disabled={mutating}
+              options={[
+                {
+                  value: KIMI_SERVICE_OPEN_PLATFORM,
+                  label: t('providersPage.form.kimiServiceOpenPlatform'),
+                },
+                {
+                  value: KIMI_SERVICE_CODING_PLAN,
+                  label: t('providersPage.form.kimiServiceCodingPlan'),
+                },
+              ]}
+            />
+          </div>
+        ) : null}
+
+        {brand === 'kimi' && form.kimiService !== KIMI_SERVICE_CODING_PLAN ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-kimiRegion`}>
+              {t('providersPage.form.kimiRegion')}
+            </label>
+            <Select
+              id={`${fid}-kimiRegion`}
+              value={form.kimiRegion ?? KIMI_REGION_DOMESTIC}
+              onChange={(value) =>
+                updateField(
+                  'kimiRegion',
+                  value === 'international' ? 'international' : KIMI_REGION_DOMESTIC
+                )
+              }
+              disabled={mutating}
+              options={[
+                {
+                  value: 'domestic',
+                  label: t('providersPage.sponsor.urlOptions.domestic'),
+                },
+                {
+                  value: 'international',
+                  label: t('providersPage.sponsor.urlOptions.overseas'),
+                },
+              ]}
+            />
+          </div>
+        ) : null}
+
+        {brand === 'kimi' ? (
+          <div className={styles.sponsorProtocolCard}>
+            <span className={styles.sponsorProtocolName}>
+              {t('providersPage.form.kimiCurrentUrl')}
+            </span>
+            <span className={styles.sponsorProtocolUrl}>
+              {kimiDisplayBaseUrl(form.kimiService, form.kimiRegion)}
+            </span>
           </div>
         ) : null}
 
@@ -676,6 +825,7 @@ export function BaseProviderForm({
               {t('providersPage.form.testModel')}
               {brand === 'codex' ||
               brand === 'xai' ||
+              brand === 'kimi' ||
               isClaudeLikeBrand(brand) ||
               brand === 'gemini' ||
               brand === 'interactions' ? (

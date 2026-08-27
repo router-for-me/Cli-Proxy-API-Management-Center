@@ -111,10 +111,12 @@ describe('provider key counts', () => {
       geminiApiKeys: [{ apiKey: 'gemini-key' }],
       interactionsApiKeys: [{ apiKey: 'interactions-1' }, { apiKey: 'interactions-2' }],
       codexApiKeys: [{ apiKey: 'codex-key' }],
+      kimiApiKeys: [{ apiKey: 'sk-kimi', service: 'coding-plan' }],
     });
 
     expect(counts.interactions).toBe(2);
-    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+    expect(counts.kimi).toBe(1);
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(5);
   });
 });
 

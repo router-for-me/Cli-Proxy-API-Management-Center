@@ -1585,7 +1585,9 @@
         "headers": "请求头数",
         "authIndex": "Auth Index",
         "excludedModels": "排除模型数",
-        "apiKeyEntries": "密钥条目数"
+        "apiKeyEntries": "密钥条目数",
+        "kimiService": "来源",
+        "kimiRegion": "区域"
       }
     },
     "form": {
@@ -1593,6 +1595,11 @@
       "editEyebrow": "编辑",
       "name": "名称",
       "apiKey": "API 密钥",
+      "kimiService": "来源",
+      "kimiServiceOpenPlatform": "kimi开放平台",
+      "kimiServiceCodingPlan": "kimi for coding",
+      "kimiRegion": "区域",
+      "kimiCurrentUrl": "当前地址",
       "apiKeyCreatePlaceholder": "输入 API 密钥",
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服务地址",

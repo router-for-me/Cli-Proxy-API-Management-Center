@@ -1,24 +1,23 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { buildOpenAIChatCompletionsEndpoint } from '../src/components/providers/utils';
 import {
-  KIMI_ANTHROPIC_BASE_URL,
   KIMI_CHINESE_AFFILIATE_URL,
-  KIMI_DOMESTIC_ANTHROPIC_BASE_URL,
+  KIMI_CODING_PLAN_BASE_URL,
   KIMI_DOMESTIC_BASE_URL,
-  KIMI_DOMESTIC_OPENAI_BASE_URL,
   KIMI_INTERNATIONAL_AFFILIATE_URL,
-  KIMI_LEGACY_OPENAI_BASE_URL,
-  KIMI_OPENAI_BASE_URL,
-  buildKimiRaw,
+  KIMI_INTERNATIONAL_BASE_URL,
+  KIMI_REGION_DOMESTIC,
+  KIMI_REGION_INTERNATIONAL,
+  KIMI_SERVICE_CODING_PLAN,
+  KIMI_SERVICE_OPEN_PLATFORM,
   getKimiAffiliateUrl,
-  getKimiProtocolUrls,
-  isKimiClaudeProvider,
-  isKimiOpenAIProvider,
-  resolveKimiBaseUrl,
+  isKimiCodingPlanKey,
+  kimiDiscoveredModelEntries,
+  kimiDisplayBaseUrl,
+  kimiOpenAIBaseUrl,
 } from '../src/features/providers/kimi';
 import { PROVIDER_LOGOS } from '../src/features/providers/brandLogos';
 import { PROVIDER_BRAND_ORDER } from '../src/features/providers/descriptors';
-import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
+import { isMultiProtocolSponsorBrand } from '../src/features/providers/sponsorDefinitions';
 import { apiCallApi } from '../src/services/api/apiCall';
 import { modelsApi } from '../src/services/api/models';
 
@@ -29,47 +28,35 @@ afterEach(() => {
 });
 
 describe('Kimi provider', () => {
-  test('defaults to the domestic OpenAI-compatible and Claude protocol endpoints', () => {
-    expect(getKimiProtocolUrls(undefined)).toEqual({
-      openai: 'https://api.moonshot.cn/v1',
-      anthropic: 'https://api.moonshot.cn/anthropic',
-      codex: '',
-      gemini: '',
-    });
-    expect(getKimiProtocolUrls(KIMI_OPENAI_BASE_URL)).toEqual({
-      openai: 'https://api.moonshot.ai/v1',
-      anthropic: 'https://api.moonshot.ai/anthropic',
-      codex: '',
-      gemini: '',
-    });
-    expect(buildOpenAIChatCompletionsEndpoint(KIMI_OPENAI_BASE_URL)).toBe(
-      'https://api.moonshot.ai/v1/chat/completions'
+  test('derives a single host from service and region', () => {
+    expect(kimiDisplayBaseUrl(KIMI_SERVICE_CODING_PLAN)).toBe(KIMI_CODING_PLAN_BASE_URL);
+    expect(kimiDisplayBaseUrl(KIMI_SERVICE_OPEN_PLATFORM, KIMI_REGION_DOMESTIC)).toBe(
+      KIMI_DOMESTIC_BASE_URL
     );
-    expect(getSponsorProviderDefinition('kimi').protocols).toEqual(['openai', 'claude']);
+    expect(kimiDisplayBaseUrl(KIMI_SERVICE_OPEN_PLATFORM, KIMI_REGION_INTERNATIONAL)).toBe(
+      KIMI_INTERNATIONAL_BASE_URL
+    );
+    expect(kimiOpenAIBaseUrl(KIMI_SERVICE_CODING_PLAN)).toBe(`${KIMI_CODING_PLAN_BASE_URL}/v1`);
+    expect(kimiOpenAIBaseUrl(KIMI_SERVICE_OPEN_PLATFORM, KIMI_REGION_DOMESTIC)).toBe(
+      `${KIMI_DOMESTIC_BASE_URL}/v1`
+    );
+    expect(kimiOpenAIBaseUrl(KIMI_SERVICE_OPEN_PLATFORM, KIMI_REGION_INTERNATIONAL)).toBe(
+      `${KIMI_INTERNATIONAL_BASE_URL}/v1`
+    );
   });
 
-  test('offers overseas and domestic URLs and maps the domestic protocol endpoints', () => {
+  test('maps discovered models to request names without aliases', () => {
     expect(
-      getSponsorProviderDefinition('kimi').baseUrlOptions.map(({ id, baseUrl }) => ({
-        id,
-        baseUrl,
-      }))
+      kimiDiscoveredModelEntries([
+        { name: ' k3 ' },
+        { name: 'k3' },
+        { name: 'kimi-for-coding', alias: 'ignored' },
+        { name: '' },
+      ])
     ).toEqual([
-      { id: 'domestic', baseUrl: KIMI_DOMESTIC_OPENAI_BASE_URL },
-      { id: 'overseas', baseUrl: KIMI_OPENAI_BASE_URL },
+      { name: 'k3', alias: '' },
+      { name: 'kimi-for-coding', alias: '' },
     ]);
-    expect(resolveKimiBaseUrl(undefined)).toBe(KIMI_DOMESTIC_OPENAI_BASE_URL);
-    expect(resolveKimiBaseUrl(KIMI_DOMESTIC_BASE_URL)).toBe(KIMI_DOMESTIC_OPENAI_BASE_URL);
-    expect(resolveKimiBaseUrl(KIMI_LEGACY_OPENAI_BASE_URL)).toBe(KIMI_OPENAI_BASE_URL);
-    expect(resolveKimiBaseUrl(KIMI_DOMESTIC_ANTHROPIC_BASE_URL)).toBe(
-      KIMI_DOMESTIC_OPENAI_BASE_URL
-    );
-    expect(getKimiProtocolUrls(KIMI_DOMESTIC_OPENAI_BASE_URL)).toEqual({
-      openai: 'https://api.moonshot.cn/v1',
-      anthropic: 'https://api.moonshot.cn/anthropic',
-      codex: '',
-      gemini: '',
-    });
   });
 
   test('discovers models through the versioned OpenAI endpoint', async () => {
@@ -79,7 +66,10 @@ describe('Kimi provider', () => {
       return { statusCode: 200, header: {}, bodyText: '', body: { data: [] } };
     }) as typeof apiCallApi.request;
 
-    await modelsApi.fetchModelsViaApiCall(KIMI_OPENAI_BASE_URL, 'test-key');
+    await modelsApi.fetchModelsViaApiCall(
+      kimiOpenAIBaseUrl(KIMI_SERVICE_OPEN_PLATFORM, KIMI_REGION_INTERNATIONAL),
+      'test-key'
+    );
 
     expect(requestedUrl).toBe('https://api.moonshot.ai/v1/models');
   });
@@ -95,58 +85,18 @@ describe('Kimi provider', () => {
     expect(PROVIDER_LOGOS.kimi.themeSurface).toBeTrue();
   });
 
-  test('is the first provider in the catalog', () => {
+  test('is a native catalog brand, not a multi-protocol sponsor', () => {
     expect(PROVIDER_BRAND_ORDER[0]).toBe('kimi');
-  });
-
-  test('recognizes Kimi configs only by supported protocol endpoint', () => {
+    expect(isMultiProtocolSponsorBrand('kimi')).toBe(false);
+    expect(isKimiCodingPlanKey({ apiKey: 'sk-code', service: KIMI_SERVICE_CODING_PLAN })).toBe(
+      true
+    );
     expect(
-      isKimiOpenAIProvider({
-        name: 'Kimi',
-        baseUrl: 'https://custom.example.com',
+      isKimiCodingPlanKey({
+        apiKey: 'sk-open',
+        service: KIMI_SERVICE_OPEN_PLATFORM,
+        region: KIMI_REGION_DOMESTIC,
       })
-    ).toBeFalse();
-    expect(
-      isKimiOpenAIProvider({
-        name: 'moonshot',
-        baseUrl: `${KIMI_OPENAI_BASE_URL}/`,
-      })
-    ).toBeTrue();
-    expect(
-      isKimiOpenAIProvider({
-        name: 'legacy-moonshot',
-        baseUrl: KIMI_LEGACY_OPENAI_BASE_URL,
-      })
-    ).toBeTrue();
-    expect(
-      isKimiOpenAIProvider({
-        name: 'domestic-moonshot',
-        baseUrl: KIMI_DOMESTIC_OPENAI_BASE_URL,
-      })
-    ).toBeTrue();
-    expect(
-      isKimiClaudeProvider({ apiKey: 'sk-test', baseUrl: KIMI_ANTHROPIC_BASE_URL })
-    ).toBeTrue();
-    expect(
-      isKimiClaudeProvider({ apiKey: 'sk-test', baseUrl: KIMI_DOMESTIC_ANTHROPIC_BASE_URL })
-    ).toBeTrue();
-  });
-
-  test('aggregates only the Kimi OpenAI-compatible and Claude configs', () => {
-    const raw = buildKimiRaw({
-      openaiCompatibility: [
-        { name: 'kimi', baseUrl: KIMI_OPENAI_BASE_URL },
-        { name: 'other', baseUrl: 'https://example.com' },
-      ],
-      claudeApiKeys: [
-        { apiKey: 'kimi-key', baseUrl: KIMI_ANTHROPIC_BASE_URL },
-        { apiKey: 'other-key', baseUrl: 'https://api.anthropic.com' },
-      ],
-    });
-
-    expect(raw.openai.map((item) => item.index)).toEqual([0]);
-    expect(raw.claude.map((item) => item.index)).toEqual([0]);
-    expect(raw.codex).toEqual([]);
-    expect(raw.gemini).toEqual([]);
+    ).toBe(false);
   });
 });

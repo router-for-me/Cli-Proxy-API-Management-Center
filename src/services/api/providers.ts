@@ -4,9 +4,14 @@
 
 import { apiClient } from './client';
 import { isRecord } from '@/utils/helpers';
-import { normalizeOpenAIProvider, normalizeProviderKeyConfig } from './transformers';
+import {
+  normalizeKimiKeyConfig,
+  normalizeOpenAIProvider,
+  normalizeProviderKeyConfig,
+} from './transformers';
 import type {
   GeminiKeyConfig,
+  KimiKeyConfig,
   OpenAIProviderConfig,
   ProviderKeyConfig,
   ApiKeyEntry,
@@ -35,6 +40,20 @@ const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const INTERACTIONS_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
 const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
+const KIMI_KEY_FIELDS = [
+  'api-key',
+  'service',
+  'region',
+  'name',
+  'priority',
+  'weight',
+  'prefix',
+  'proxy-url',
+  'models',
+  'headers',
+  'excluded-models',
+  'disable-cooling',
+] as const;
 const CLAUDE_KEY_FIELDS = [
   ...PROVIDER_COMMON_KEY_FIELDS,
   'cloak',
@@ -221,6 +240,20 @@ const matchesProviderKey = (record: Record<string, unknown>, apiKey: string, bas
   getStringField(record, ['api-key']) === apiKey.trim() &&
   getStringField(record, ['base-url']) === (baseUrl ?? '').trim();
 
+const matchesKimiKey = (
+  record: Record<string, unknown>,
+  apiKey: string,
+  service: string,
+  region?: string,
+  prefix?: string,
+  proxyUrl?: string
+) =>
+  getStringField(record, ['api-key']) === apiKey.trim() &&
+  getStringField(record, ['service']).toLowerCase() === service.trim().toLowerCase() &&
+  getStringField(record, ['region']).toLowerCase() === (region ?? '').trim().toLowerCase() &&
+  getStringField(record, ['prefix']) === (prefix ?? '').trim() &&
+  getStringField(record, ['proxy-url']) === (proxyUrl ?? '').trim();
+
 const matchesOpenAIProvider = (record: Record<string, unknown>, name: string) =>
   openAIProviderIdentity(record) === name.trim();
 
@@ -284,6 +317,26 @@ const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
   const params = new URLSearchParams();
   params.set('api-key', apiKey.trim());
   params.set('base-url', (baseUrl ?? '').trim());
+  return `?${params.toString()}`;
+};
+
+const buildKimiDeleteQuery = (
+  apiKey: string,
+  service: string,
+  region?: string,
+  index?: number,
+  prefix?: string,
+  proxyUrl?: string
+) => {
+  const params = new URLSearchParams();
+  params.set('api-key', apiKey.trim());
+  if (service.trim()) params.set('service', service.trim());
+  if (region?.trim()) params.set('region', region.trim());
+  params.set('prefix', (prefix ?? '').trim());
+  params.set('proxy-url', (proxyUrl ?? '').trim());
+  if (typeof index === 'number' && Number.isFinite(index) && index >= 0) {
+    params.set('index', String(index));
+  }
   return `?${params.toString()}`;
 };
 
@@ -385,6 +438,29 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
   if (headers) payload.headers = headers;
   const models = serializeVertexModelAliases(config.models);
   if (models && models.length) payload.models = models;
+  if (config.excludedModels && config.excludedModels.length) {
+    payload['excluded-models'] = config.excludedModels;
+  }
+  return payload;
+};
+
+const serializeKimiKey = (config: KimiKeyConfig) => {
+  const payload: Record<string, unknown> = {
+    'api-key': config.apiKey,
+    service: config.service,
+  };
+  if (config.service === 'open-platform' && config.region) {
+    payload.region = config.region;
+  }
+  if (config.name?.trim()) payload.name = config.name.trim();
+  if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
+  if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
+  if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
+  if (config.disableCooling) payload['disable-cooling'] = true;
+  const headers = serializeHeaders(config.headers);
+  if (headers) payload.headers = headers;
+  payload.models = serializeModelAliases(config.models) ?? [];
   if (config.excludedModels && config.excludedModels.length) {
     payload['excluded-models'] = config.excludedModels;
   }
@@ -509,6 +585,51 @@ export const providersApi = {
 
   deleteXAIConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/xai-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  async getKimiKeys(): Promise<KimiKeyConfig[]> {
+    const data = await apiClient.get('/kimi-api-key');
+    const list = extractArrayPayload(data, 'kimi-api-key');
+    return list.map((item) => normalizeKimiKeyConfig(item)).filter(Boolean) as KimiKeyConfig[];
+  },
+
+  createKimiConfig: (config: KimiKeyConfig) =>
+    mutateLatestProviderList('kimi-api-key', (latestItems) =>
+      appendLatestProviderRecord(latestItems, serializeKimiKey(config), (raw, payload) =>
+        mergeProviderKeyPayload(raw, payload, KIMI_KEY_FIELDS)
+      )
+    ),
+
+  updateKimiConfig: (
+    apiKey: string,
+    service: string,
+    region: string | undefined,
+    config: KimiKeyConfig,
+    index?: number,
+    prefix?: string,
+    proxyUrl?: string
+  ) =>
+    mutateLatestProviderList('kimi-api-key', (latestItems) =>
+      replaceLatestProviderRecord(
+        latestItems,
+        (record, recordIndex) =>
+          (typeof index === 'number' ? recordIndex === index : true) &&
+          matchesKimiKey(record, apiKey, service, region, prefix, proxyUrl),
+        serializeKimiKey(config),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, KIMI_KEY_FIELDS)
+      )
+    ),
+
+  deleteKimiConfig: (
+    apiKey: string,
+    service: string,
+    region?: string,
+    index?: number,
+    prefix?: string,
+    proxyUrl?: string
+  ) =>
+    apiClient.delete(
+      `/kimi-api-key${buildKimiDeleteQuery(apiKey, service, region, index, prefix, proxyUrl)}`
+    ),
 
   createClaudeConfig: (config: ProviderKeyConfig) =>
     mutateLatestProviderList('claude-api-key', (latestItems) =>

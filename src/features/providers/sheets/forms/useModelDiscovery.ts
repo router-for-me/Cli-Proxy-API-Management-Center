@@ -10,6 +10,7 @@ export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'interactions',
   'codex',
   'xai',
+  'kimi',
   'claude',
   'claudeApi',
   'openaiCompatibility',
@@ -34,7 +35,7 @@ export interface UseModelDiscoveryResult {
   error: string | null;
   models: ModelInfo[];
   hasFetched: boolean;
-  fetch: () => Promise<void>;
+  fetch: () => Promise<ModelInfo[]>;
   reset: () => void;
 }
 
@@ -47,8 +48,8 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const fetch = useCallback(async () => {
-    if (!available) return;
+  const fetch = useCallback(async (): Promise<ModelInfo[]> => {
+    if (!available) return [];
     setLoading(true);
     setError(null);
     try {
@@ -63,7 +64,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
           baseHeaders,
           resolvedAuthIndex
         );
-      } else if (brand === 'codex' || brand === 'xai') {
+      } else if (brand === 'codex' || brand === 'xai' || brand === 'kimi') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchV1ModelsViaApiCall(
           baseUrl,
@@ -107,10 +108,12 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
       }
       setModels(next ?? []);
       setHasFetched(true);
+      return next ?? [];
     } catch (err) {
       setModels([]);
       setError(getErrorMessage(err) || 'Failed to fetch models');
       setHasFetched(true);
+      return [];
     } finally {
       setLoading(false);
     }

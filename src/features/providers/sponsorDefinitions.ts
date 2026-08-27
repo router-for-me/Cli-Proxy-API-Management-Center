@@ -53,14 +53,6 @@ import {
   getInfistarProtocolUrls,
   resolveInfistarBaseUrl,
 } from './infistar';
-import {
-  KIMI_BASE_URL_OPTIONS,
-  KIMI_DISPLAY_NAME,
-  KIMI_PROTOCOL_LABELS,
-  KIMI_PROVIDER_NAME,
-  getKimiProtocolUrls,
-  resolveKimiBaseUrl,
-} from './kimi';
 import type {
   ProviderBrand,
   SponsorProtocol,
@@ -180,18 +172,6 @@ const SPONSOR_DEFINITIONS: Record<SponsorProviderBrand, SponsorProviderDefinitio
     resolveBaseUrl: resolveInfistarBaseUrl,
     getProtocolUrls: getInfistarProtocolUrls,
   },
-  kimi: {
-    brand: 'kimi',
-    displayName: KIMI_DISPLAY_NAME,
-    providerName: KIMI_PROVIDER_NAME,
-    protocols: ['openai', 'claude'],
-    protocolLabels: KIMI_PROTOCOL_LABELS,
-    defaultProtocol: 'openai',
-    baseUrlOptions: KIMI_BASE_URL_OPTIONS,
-    supportsUsageCheck: false,
-    resolveBaseUrl: resolveKimiBaseUrl,
-    getProtocolUrls: getKimiProtocolUrls,
-  },
 };
 
 export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is SponsorProviderBrand =>
@@ -200,8 +180,7 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'fennoAI' ||
   brand === 'qiniuCloud' ||
   brand === 'lmuAI' ||
-  brand === 'infistar' ||
-  brand === 'kimi';
+  brand === 'infistar';
 
 /**
  * 临时隐藏的赞助商品牌：入口从提供商列表隐藏，其配置改由对应协议分组
