@@ -31,6 +31,8 @@ export function SectionNetwork({
   const routingStrategyHintId = `${routingStrategyLabelId}-hint`;
   const disableImageGenerationLabelId = useId();
   const disableImageGenerationHintId = `${disableImageGenerationLabelId}-hint`;
+  const proxyModeLabelId = useId();
+  const isTorMode = values.proxyMode === 'tor';
 
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
@@ -69,7 +71,89 @@ export function SectionNetwork({
     >
       <FieldStack>
         <FieldGrid>
-          <ProxyUrlField values={values} disabled={disabled} onChange={onChange} />
+          <FieldAnchor fieldId="proxyMode">
+            <FieldShell
+              label={t('config_management.visual.sections.network.proxy_mode')}
+              labelId={proxyModeLabelId}
+              hint={t('config_management.visual.sections.network.proxy_mode_hint')}
+            >
+              <Select
+                value={values.proxyMode}
+                options={[
+                  { value: 'proxy', label: t('config_management.visual.sections.network.proxy_mode_proxy') },
+                  { value: 'tor', label: t('config_management.visual.sections.network.proxy_mode_tor') },
+                ]}
+                id={`${proxyModeLabelId}-select`}
+                disabled={disabled}
+                ariaLabelledBy={proxyModeLabelId}
+                onChange={(nextValue) => {
+                  const proxyMode = nextValue as string;
+                  const patch: Partial<VisualConfigValues> = { proxyMode };
+                  if (proxyMode === 'tor') {
+                    if (!values.torProxyAddr) patch.torProxyAddr = '127.0.0.1:9050';
+                    if (!values.torControlAddr) patch.torControlAddr = '127.0.0.1:9051';
+                  }
+                  onChange(patch);
+                }}
+              />
+            </FieldShell>
+          </FieldAnchor>
+          {isTorMode ? (
+            <>
+              <FieldAnchor fieldId="torProxyAddr">
+                <Input
+                  label={t('config_management.visual.sections.network.tor_proxy_addr')}
+                  placeholder="127.0.0.1:9050"
+                  value={values.torProxyAddr}
+                  onChange={(e) => onChange({ torProxyAddr: e.target.value })}
+                  disabled={disabled}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="torControlAddr">
+                <Input
+                  label={t('config_management.visual.sections.network.tor_control_addr')}
+                  placeholder="127.0.0.1:9051"
+                  value={values.torControlAddr}
+                  onChange={(e) => onChange({ torControlAddr: e.target.value })}
+                  disabled={disabled}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="torControlPassword">
+                <Input
+                  label={t('config_management.visual.sections.network.tor_control_password')}
+                  placeholder={t('config_management.visual.sections.network.tor_control_password_placeholder')}
+                  type="password"
+                  value={values.torControlPassword}
+                  onChange={(e) => onChange({ torControlPassword: e.target.value })}
+                  disabled={disabled}
+                  hint={t('config_management.visual.sections.network.tor_control_password_hint')}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="torRetryAttempts">
+                <Input
+                  label={t('config_management.visual.sections.network.tor_retry_attempts')}
+                  type="number"
+                  placeholder="3"
+                  value={values.torRetryAttempts}
+                  onChange={(e) => onChange({ torRetryAttempts: e.target.value })}
+                  disabled={disabled}
+                  hint={t('config_management.visual.sections.network.tor_retry_attempts_hint')}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="torRetryOnCodesText">
+                <Input
+                  label={t('config_management.visual.sections.network.tor_retry_on_codes')}
+                  placeholder="429, 403, 500, 502, 503"
+                  value={values.torRetryOnCodesText}
+                  onChange={(e) => onChange({ torRetryOnCodesText: e.target.value })}
+                  disabled={disabled}
+                  hint={t('config_management.visual.sections.network.tor_retry_on_codes_hint')}
+                />
+              </FieldAnchor>
+            </>
+          ) : (
+            <ProxyUrlField values={values} disabled={disabled} onChange={onChange} />
+          )}
           <FieldAnchor fieldId="requestRetry">
             <Input
               label={t('config_management.visual.sections.network.request_retry')}
