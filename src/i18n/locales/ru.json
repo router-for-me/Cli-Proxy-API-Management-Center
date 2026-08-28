@@ -1405,7 +1405,8 @@
     "expand": "Развернуть",
     "collapse": "Свернуть",
     "subtitle": "Консоль управления CLI Proxy API",
-    "auth_files_count": "Файлов аутентификации: {{count}}"
+    "auth_files_count": "Файлов аутентификации: {{count}}",
+    "ai_providers_count": "AI провайдеров: {{count}}"
   },
   "footer": {
     "api_version": "Версия CLI Proxy API",
@@ -1441,6 +1442,7 @@
       "gemini": "Gemini",
       "interactions": "Interactions API",
       "codex": "Codex",
+      "commandCode": "Command Code (Go)",
       "xai": "xAI",
       "claude": "Claude",
       "claudeApi": "Claudeapi.com",

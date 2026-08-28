@@ -364,6 +364,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
+  const commandCodeList = raw['commandcode-api-key'];
+  if (Array.isArray(commandCodeList)) {
+    config.commandCodeApiKeys = commandCodeList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
   const xaiList = raw['xai-api-key'];
   if (Array.isArray(xaiList)) {
     config.xaiApiKeys = xaiList

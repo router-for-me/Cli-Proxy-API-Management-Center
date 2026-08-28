@@ -1427,7 +1427,8 @@
     "expand": "展开",
     "collapse": "收起",
     "subtitle": "CLI Proxy API 管理控制台",
-    "auth_files_count": "认证文件：{{count}} 个"
+    "auth_files_count": "认证文件：{{count}} 个",
+    "ai_providers_count": "AI 提供商：{{count}} 个"
   },
   "footer": {
     "api_version": "CLI Proxy API 版本",
@@ -1463,6 +1464,7 @@
       "gemini": "Gemini",
       "interactions": "Interactions API",
       "codex": "Codex",
+      "commandCode": "Command Code (Go)",
       "xai": "xAI",
       "claude": "Claude",
       "claudeApi": "Claudeapi.com",

@@ -13,6 +13,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   'openai-compatibility': 'OpenAI Compatible',
   qwen: 'Qwen',
   kimi: 'Kimi',
+  commandcode: 'Command Code (Go)',
   iflow: 'iFlow',
   antigravity: 'Antigravity',
 };

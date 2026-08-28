@@ -1,5 +1,6 @@
 import claudeLogo from '@/assets/icons/claude.svg';
 import codexLogo from '@/assets/icons/codex.svg';
+import commandCodeLogo from '@/assets/icons/commandcode.svg';
 import geminiLogo from '@/assets/icons/gemini.svg';
 import openaiLightLogo from '@/assets/icons/openai-light.svg';
 import openaiDarkLogo from '@/assets/icons/openai-dark.svg';
@@ -31,6 +32,7 @@ export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
   claude: { src: claudeLogo },
   claudeApi: { src: claudeApiLogo },
   codex: { src: codexLogo },
+  commandCode: { src: commandCodeLogo },
   xai: { src: xaiLightLogo, darkSrc: xaiDarkLogo, transparent: true },
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLightLogo, darkSrc: openaiDarkLogo, transparent: true },

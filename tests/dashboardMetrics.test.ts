@@ -106,15 +106,17 @@ describe('splitWindowMinutes', () => {
 });
 
 describe('provider key counts', () => {
-  test('includes native Interactions API keys in the dashboard total inputs', () => {
+  test('includes native Interactions API and Command Code keys in the dashboard total inputs', () => {
     const counts = getProviderKeyCounts({
       geminiApiKeys: [{ apiKey: 'gemini-key' }],
       interactionsApiKeys: [{ apiKey: 'interactions-1' }, { apiKey: 'interactions-2' }],
       codexApiKeys: [{ apiKey: 'codex-key' }],
+      commandCodeApiKeys: [{ apiKey: 'cmdc-key' }],
     });
 
     expect(counts.interactions).toBe(2);
-    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+    expect(counts.commandCode).toBe(1);
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(5);
   });
 });
 
@@ -123,6 +125,7 @@ describe('providerLabel', () => {
     expect(providerLabel('xai', 'Unattributed')).toBe('xAI');
     expect(providerLabel('aistudio', 'Unattributed')).toBe('AI Studio');
     expect(providerLabel('gemini-interactions', 'Unattributed')).toBe('Interactions API');
+    expect(providerLabel('commandcode', 'Unattributed')).toBe('Command Code (Go)');
   });
 
   test('falls back to a capitalised id, and localises unknown', () => {

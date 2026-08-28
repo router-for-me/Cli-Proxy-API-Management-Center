@@ -136,6 +136,7 @@ export const buildGeminiGenerateContentEndpoint = (baseUrl: string, model: strin
 export const getProviderUsageKey = (provider: string): string => {
   if (provider === 'claudeApi') return 'claude';
   if (provider === 'interactions') return 'gemini-interactions';
+  if (provider === 'commandCode') return 'commandcode';
   return provider;
 };
 

@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -46,6 +47,7 @@ import {
   type PluginResourceEntry,
 } from '@/features/plugins/pluginResources';
 import { APIKEY_FUN_DISPLAY_NAME, hasApiKeyFunConfig } from '@/features/providers/sponsor';
+import { getProviderKeyCounts } from '@/features/dashboard/hooks/useDashboardOverview';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
@@ -582,6 +584,12 @@ export function MainLayout() {
     : [];
 
   const isApiKeyFunConfigured = hasApiKeyFunConfig(config);
+  const aiProvidersCount = useMemo(() => {
+    if (!config) return 0;
+    const counts = getProviderKeyCounts(config);
+    return Object.values(counts).reduce((sum, count) => sum + count, 0);
+  }, [config]);
+
   const quickStartNavItem: SidebarNavLinkItem = {
     path: '/quick-start',
     label: isApiKeyFunConfigured ? APIKEY_FUN_DISPLAY_NAME : undefined,
@@ -612,6 +620,11 @@ export function MainLayout() {
           path: '/ai-providers',
           labelKey: 'nav.ai_providers',
           metaKey: 'nav_meta.ai_providers',
+          badge: aiProvidersCount > 0 ? aiProvidersCount : undefined,
+          badgeLabel:
+            aiProvidersCount > 0
+              ? t('sidebar.ai_providers_count', { count: aiProvidersCount })
+              : undefined,
           icon: sidebarIcons.aiProviders,
         },
         {
