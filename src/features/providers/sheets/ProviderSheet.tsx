@@ -258,7 +258,9 @@ export function ProviderSheet({
                           ? '/ai-providers/infistar'
                           : state.brand === 'kimi'
                             ? '/ai-providers/kimi'
-                            : `/ai-providers/${state.brand}`,
+                            : state.brand === 'orcarouter'
+                              ? '/ai-providers/orcarouter'
+                              : `/ai-providers/${state.brand}`,
       })}
       footer={footer}
       closeDisabled={submitting}

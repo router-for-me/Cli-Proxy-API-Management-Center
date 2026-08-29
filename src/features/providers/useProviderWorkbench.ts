@@ -22,6 +22,7 @@ import {
   lmuAIToResource,
   infistarToResource,
   kimiToResource,
+  orcaRouterToResource,
   vertexToResource,
   xaiToResource,
 } from './adapters';
@@ -74,6 +75,11 @@ import {
   isInfistarOpenAIProvider,
 } from './infistar';
 import { buildKimiRaw, isKimiClaudeProvider, isKimiOpenAIProvider } from './kimi';
+import {
+  buildOrcaRouterRaw,
+  isOrcaRouterClaudeProvider,
+  isOrcaRouterOpenAIProvider,
+} from './orcaRouter';
 import {
   getSponsorProviderDefinition,
   isTemporarilyHiddenSponsorBrand,
@@ -508,6 +514,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 !isLmuAIClaudeProvider(item) &&
                 !isInfistarClaudeProvider(item) &&
                 !isKimiClaudeProvider(item) &&
+                !isOrcaRouterClaudeProvider(item) &&
                 !isClaudeApiProvider(item)
               ) {
                 out.push(claudeToResource(item, index));
@@ -540,7 +547,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 (qiniuCloudHidden || !isQiniuCloudOpenAIProvider(item)) &&
                 !isLmuAIOpenAIProvider(item) &&
                 !isInfistarOpenAIProvider(item) &&
-                !isKimiOpenAIProvider(item)
+                !isKimiOpenAIProvider(item) &&
+                !isOrcaRouterOpenAIProvider(item)
               ) {
                 out.push(openaiToResource(item, index));
               }
@@ -584,6 +592,11 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           resources = sponsorResource ? [sponsorResource] : [];
           break;
         }
+        case 'orcarouter': {
+          const sponsorResource = orcaRouterToResource(buildOrcaRouterRaw(config));
+          resources = sponsorResource ? [sponsorResource] : [];
+          break;
+        }
       }
       return {
         id: brand,
@@ -614,7 +627,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                   ? buildLmuAIRaw(config)
                   : brand === 'infistar'
                     ? buildInfistarRaw(config)
-                    : buildKimiRaw(config);
+                    : brand === 'kimi'
+                      ? buildKimiRaw(config)
+                      : buildOrcaRouterRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -750,7 +765,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
           brand === 'infistar' ||
-          brand === 'kimi'
+          brand === 'kimi' ||
+          brand === 'orcarouter'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
@@ -829,7 +845,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
           brand === 'infistar' ||
-          brand === 'kimi'
+          brand === 'kimi' ||
+          brand === 'orcarouter'
         ) {
           await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
         }
@@ -887,7 +904,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'qiniuCloud' ||
           sel.brand === 'lmuAI' ||
           sel.brand === 'infistar' ||
-          sel.brand === 'kimi'
+          sel.brand === 'kimi' ||
+          sel.brand === 'orcarouter'
         ) {
           await runSponsorMutationWithRecovery(async () => {
             const raw = resource.raw as SponsorProviderRaw;
@@ -970,7 +988,8 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'qiniuCloud' ||
           brand === 'lmuAI' ||
           brand === 'infistar' ||
-          brand === 'kimi'
+          brand === 'kimi' ||
+          brand === 'orcarouter'
         ) {
           await runSponsorMutationWithRecovery(
             () => toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled),

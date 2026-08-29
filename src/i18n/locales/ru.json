@@ -1452,7 +1452,8 @@
       "qiniuCloud": "Qiniu Cloud",
       "lmuAI": "LMU AI (Lingmou AI)",
       "infistar": "Infistar",
-      "kimi": "Kimi"
+      "kimi": "Kimi",
+      "orcarouter": "OrcaRouter"
     },
     "table": {
       "key": "Ключ",

@@ -20,10 +20,11 @@ export type ProviderBrand =
   | 'qiniuCloud'
   | 'lmuAI'
   | 'infistar'
-  | 'kimi';
+  | 'kimi'
+  | 'orcarouter';
 
 export type SponsorProviderBrand =
-  'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'lmuAI' | 'infistar' | 'kimi';
+  'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'lmuAI' | 'infistar' | 'kimi' | 'orcarouter';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -84,6 +85,13 @@ export type ProviderResourceSelector =
     }
   | {
       brand: 'kimi';
+      openaiIndices: number[];
+      claudeIndices: number[];
+      codexIndices: number[];
+      geminiIndices: number[];
+    }
+  | {
+      brand: 'orcarouter';
       openaiIndices: number[];
       claudeIndices: number[];
       codexIndices: number[];

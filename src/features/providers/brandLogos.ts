@@ -15,6 +15,8 @@ import xaiLightLogo from '@/assets/icons/grok.svg';
 import xaiDarkLogo from '@/assets/icons/grok-dark.svg';
 import kimiLightLogo from '@/assets/icons/kimi-light.svg';
 import kimiDarkLogo from '@/assets/icons/kimi-dark.svg';
+import orcaRouterDarkLogo from '@/assets/icons/orcaRouter-dark.svg';
+import orcaRouterLightLogo from '@/assets/icons/orcaRouter-light.svg';
 import type { ProviderBrand } from './types';
 
 export interface ProviderBrandLogo {
@@ -43,6 +45,12 @@ export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
   kimi: {
     src: kimiDarkLogo,
     darkSrc: kimiLightLogo,
+    transparent: true,
+    themeSurface: true,
+  },
+  orcarouter: {
+    src: orcaRouterDarkLogo,
+    darkSrc: orcaRouterLightLogo,
     transparent: true,
     themeSurface: true,
   },

@@ -44,6 +44,12 @@ import {
   getKimiProtocolUrls,
   resolveKimiBaseUrl,
 } from './kimi';
+import {
+  ORCA_ROUTER_DISPLAY_NAME,
+  ORCA_ROUTER_PROTOCOL_LABELS,
+  getOrcaRouterProtocolUrls,
+  resolveOrcaRouterBaseUrl,
+} from './orcaRouter';
 import type {
   ProviderBrand,
   ProviderResource,
@@ -394,5 +400,14 @@ export function kimiToResource(raw: SponsorProviderRaw): ProviderResource | null
     protocolLabels: KIMI_PROTOCOL_LABELS,
     resolveBaseUrl: resolveKimiBaseUrl,
     getProtocolUrls: getKimiProtocolUrls,
+  });
+}
+
+export function orcaRouterToResource(raw: SponsorProviderRaw): ProviderResource | null {
+  return sponsorRawToResource('orcarouter', raw, {
+    displayName: ORCA_ROUTER_DISPLAY_NAME,
+    protocolLabels: ORCA_ROUTER_PROTOCOL_LABELS,
+    resolveBaseUrl: resolveOrcaRouterBaseUrl,
+    getProtocolUrls: getOrcaRouterProtocolUrls,
   });
 }

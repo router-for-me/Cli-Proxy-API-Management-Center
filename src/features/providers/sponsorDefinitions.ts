@@ -61,6 +61,14 @@ import {
   getKimiProtocolUrls,
   resolveKimiBaseUrl,
 } from './kimi';
+import {
+  ORCA_ROUTER_BASE_URL_OPTIONS,
+  ORCA_ROUTER_DISPLAY_NAME,
+  ORCA_ROUTER_PROTOCOL_LABELS,
+  ORCA_ROUTER_PROVIDER_NAME,
+  getOrcaRouterProtocolUrls,
+  resolveOrcaRouterBaseUrl,
+} from './orcaRouter';
 import type {
   ProviderBrand,
   SponsorProtocol,
@@ -192,6 +200,18 @@ const SPONSOR_DEFINITIONS: Record<SponsorProviderBrand, SponsorProviderDefinitio
     resolveBaseUrl: resolveKimiBaseUrl,
     getProtocolUrls: getKimiProtocolUrls,
   },
+  orcarouter: {
+    brand: 'orcarouter',
+    displayName: ORCA_ROUTER_DISPLAY_NAME,
+    providerName: ORCA_ROUTER_PROVIDER_NAME,
+    protocols: ['openai', 'claude'],
+    protocolLabels: ORCA_ROUTER_PROTOCOL_LABELS,
+    defaultProtocol: 'openai',
+    baseUrlOptions: ORCA_ROUTER_BASE_URL_OPTIONS,
+    supportsUsageCheck: false,
+    resolveBaseUrl: resolveOrcaRouterBaseUrl,
+    getProtocolUrls: getOrcaRouterProtocolUrls,
+  },
 };
 
 export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is SponsorProviderBrand =>
@@ -201,7 +221,8 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'qiniuCloud' ||
   brand === 'lmuAI' ||
   brand === 'infistar' ||
-  brand === 'kimi';
+  brand === 'kimi' ||
+  brand === 'orcarouter';
 
 /**
  * 临时隐藏的赞助商品牌：入口从提供商列表隐藏，其配置改由对应协议分组
