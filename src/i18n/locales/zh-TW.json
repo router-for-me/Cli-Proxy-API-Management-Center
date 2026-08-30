@@ -550,6 +550,26 @@
     "result_location": "區域",
     "result_file": "儲存檔案"
   },
+  "opencode_login": {
+    "title": "OpenCode Go 登入",
+    "description": "OpenCode 沒有 OAuth 流程。登入後複製 API 金鑰並貼到這裡——每個帳號一份憑證，多個帳號可並存。取得金鑰：",
+    "label_label": "帳號標籤",
+    "label_hint": "決定憑證檔名與卡片標題。每個帳號用一個標籤，例如 personal / work。",
+    "label_placeholder": "personal",
+    "key_label": "API 金鑰",
+    "key_hint": "OpenCode Go 的金鑰。儲存前會先透過用量介面驗證。",
+    "key_placeholder": "sk-...",
+    "import_button": "匯入 OpenCode 憑證",
+    "fields_required": "請先填寫帳號標籤與 API 金鑰",
+    "name_taken": "{{file}} 已存在。請換一個帳號標籤，以免覆蓋現有憑證。",
+    "key_rejected": "OpenCode 拒絕了該 API 金鑰。",
+    "no_subscription": "金鑰有效，但該帳號沒有 Go 訂閱。",
+    "validate_failed": "無法驗證該 API 金鑰。",
+    "success": "憑證已儲存為 {{file}}",
+    "result_title": "憑證已儲存",
+    "result_file": "驗證檔案",
+    "add_another_hint": "填入新的標籤與金鑰即可新增另一個帳號。"
+  },
   "oauth_excluded": {
     "title": "OAuth 模型停用",
     "description": "按供應商分列展示，點擊卡片編輯或刪除；支援 * 萬用字元，範圍跟隨上方的設定檔篩選標籤。",

@@ -6,11 +6,24 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { IconPlug } from '@/components/ui/icons';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
-import { oauthApi, pluginsApi, type BuiltInOAuthProvider } from '@/services/api';
+import {
+  apiCallApi,
+  authFilesApi,
+  getApiCallErrorMessage,
+  oauthApi,
+  pluginsApi,
+  type BuiltInOAuthProvider,
+} from '@/services/api';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
+import {
+  buildOpencodeCredentialFile,
+  opencodeKeyErrorKey,
+  OPENCODE_CONSOLE_URL,
+} from '@/features/authFiles/opencodeLogin';
+import { OPENCODE_USAGE_URL } from '@/utils/quota';
 import { getPluginTitle, resolvePluginAssetURL } from '@/features/plugins/pluginResources';
 import type { PluginListEntry } from '@/types';
 import styles from './OAuthPage.module.scss';
@@ -49,6 +62,14 @@ interface VertexImportState {
   loading: boolean;
   error?: string;
   result?: VertexImportResult;
+}
+
+interface OpencodeImportState {
+  label: string;
+  apiKey: string;
+  loading: boolean;
+  error?: string;
+  savedFile?: string;
 }
 
 interface BuiltInOAuthProviderCard {
@@ -250,6 +271,11 @@ export function OAuthPage() {
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
+    loading: false,
+  });
+  const [opencodeState, setOpencodeState] = useState<OpencodeImportState>({
+    label: '',
+    apiKey: '',
     loading: false,
   });
   const pollingTimers = useRef<Partial<Record<string, number>>>({});
@@ -509,6 +535,72 @@ export function OAuthPage() {
     }
   };
 
+  /**
+   * Validate an OpenCode Go key, then store it as its own auth file.
+   *
+   * The key is checked before it is written: an unusable credential that sits
+   * in the auth dir looks identical to a working one until something routes to
+   * it. The check goes through the management `api-call` proxy without an
+   * auth_index — the key is not stored yet, and the browser cannot reach
+   * opencode.ai directly.
+   */
+  const handleOpencodeImport = async () => {
+    const credential = buildOpencodeCredentialFile(opencodeState.label, opencodeState.apiKey);
+    if (!credential) {
+      const message = t('opencode_login.fields_required');
+      setOpencodeState((prev) => ({ ...prev, error: message, savedFile: undefined }));
+      showNotification(message, 'warning');
+      return;
+    }
+
+    setOpencodeState((prev) => ({ ...prev, loading: true, error: undefined, savedFile: undefined }));
+
+    const fail = (message: string) => {
+      setOpencodeState((prev) => ({ ...prev, loading: false, error: message }));
+      showNotification(message, 'error');
+    };
+
+    try {
+      // Adding a second account is exactly when a label collides, and the
+      // upload would overwrite a working credential without saying so.
+      const existing = await authFilesApi.list();
+      if (existing.files?.some((file) => file.name === credential.name)) {
+        fail(t('opencode_login.name_taken', { file: credential.name }));
+        return;
+      }
+
+      const probe = await apiCallApi.request({
+        method: 'GET',
+        url: OPENCODE_USAGE_URL,
+        header: { Authorization: `Bearer ${opencodeState.apiKey.trim()}` },
+      });
+      if (probe.statusCode < 200 || probe.statusCode >= 300) {
+        fail(
+          `${t(opencodeKeyErrorKey(probe.statusCode))} (${getApiCallErrorMessage(probe)})`.trim()
+        );
+        return;
+      }
+
+      const file = new File([credential.content], credential.name, { type: 'application/json' });
+      const upload = await authFilesApi.uploadFiles([file]);
+      if (upload.failed.length > 0) {
+        fail(t('notification.upload_failed'));
+        return;
+      }
+
+      setOpencodeState({
+        label: '',
+        apiKey: '',
+        loading: false,
+        savedFile: credential.name,
+      });
+      notifyAuthFilesChanged();
+      showNotification(t('opencode_login.success', { file: credential.name }), 'success');
+    } catch (err: unknown) {
+      fail(getErrorMessage(err) || t('notification.upload_failed'));
+    }
+  };
+
   const handleVertexFilePick = () => {
     vertexFileInputRef.current?.click();
   };
@@ -728,7 +820,7 @@ export function OAuthPage() {
           </div>
         </section>
 
-        {/* Vertex JSON 登录 */}
+        {/* Vertex JSON 登录 + OpenCode key import */}
         <section className={styles.providerSection}>
           <h2 className={styles.sectionTitle}>{t('auth_login.other_login_methods')}</h2>
           <Card
@@ -816,6 +908,72 @@ export function OAuthPage() {
                         <span className={styles.keyValueValue}>{vertexState.result.authFile}</span>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card
+            title={<span className={styles.cardTitle}>{t('opencode_login.title')}</span>}
+            extra={
+              <Button onClick={handleOpencodeImport} loading={opencodeState.loading}>
+                {t('opencode_login.import_button')}
+              </Button>
+            }
+          >
+            <div className={styles.cardContent}>
+              <div className={styles.cardHint}>
+                {t('opencode_login.description')}{' '}
+                <a href={OPENCODE_CONSOLE_URL} target="_blank" rel="noreferrer">
+                  {OPENCODE_CONSOLE_URL}
+                </a>
+              </div>
+              <Input
+                label={t('opencode_login.label_label')}
+                hint={t('opencode_login.label_hint')}
+                name="opencode-account-label"
+                autoComplete="off"
+                value={opencodeState.label}
+                onChange={(e) =>
+                  setOpencodeState((prev) => ({
+                    ...prev,
+                    label: e.target.value,
+                    error: undefined,
+                  }))
+                }
+                placeholder={t('opencode_login.label_placeholder')}
+              />
+              <Input
+                type="password"
+                label={t('opencode_login.key_label')}
+                hint={t('opencode_login.key_hint')}
+                name="opencode-api-key"
+                autoComplete="new-password"
+                value={opencodeState.apiKey}
+                onChange={(e) =>
+                  setOpencodeState((prev) => ({
+                    ...prev,
+                    apiKey: e.target.value,
+                    error: undefined,
+                  }))
+                }
+                placeholder={t('opencode_login.key_placeholder')}
+              />
+              {opencodeState.error && (
+                <div className="status-badge error">{opencodeState.error}</div>
+              )}
+              {opencodeState.savedFile && (
+                <div className={styles.connectionBox}>
+                  <div className={styles.connectionLabel}>{t('opencode_login.result_title')}</div>
+                  <div className={styles.keyValueList}>
+                    <div className={styles.keyValueItem}>
+                      <span className={styles.keyValueKey}>{t('opencode_login.result_file')}</span>
+                      <span className={styles.keyValueValue}>{opencodeState.savedFile}</span>
+                    </div>
+                  </div>
+                  <div className={styles.cardHintSecondary}>
+                    {t('opencode_login.add_another_hint')}
                   </div>
                 </div>
               )}

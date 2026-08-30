@@ -550,6 +550,26 @@
     "result_location": "Region",
     "result_file": "Persisted file"
   },
+  "opencode_login": {
+    "title": "OpenCode Go Login",
+    "description": "OpenCode has no OAuth flow. Sign in, copy an API key, and paste it here — one credential per account, so several accounts can run side by side. Get a key at",
+    "label_label": "Account label",
+    "label_hint": "Names the credential file and the card. Use one label per account, e.g. personal / work.",
+    "label_placeholder": "personal",
+    "key_label": "API key",
+    "key_hint": "The OpenCode Go key. It is validated against the usage API before being saved.",
+    "key_placeholder": "sk-...",
+    "import_button": "Import OpenCode Credential",
+    "fields_required": "Enter an account label and an API key first",
+    "name_taken": "{{file}} already exists. Pick another account label so the existing credential is not overwritten.",
+    "key_rejected": "OpenCode rejected this API key.",
+    "no_subscription": "This key is valid but the account has no Go subscription.",
+    "validate_failed": "Could not validate the API key.",
+    "success": "Credential saved as {{file}}",
+    "result_title": "Credential saved",
+    "result_file": "Auth file",
+    "add_another_hint": "Add another account by entering a new label and key."
+  },
   "oauth_excluded": {
     "title": "OAuth Model Disablement",
     "description": "Per-provider model disablement is shown as cards; click a card to edit or delete. Wildcards * are supported and the scope follows the auth file filter.",

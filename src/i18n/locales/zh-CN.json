@@ -550,6 +550,26 @@
     "result_location": "区域",
     "result_file": "存储文件"
   },
+  "opencode_login": {
+    "title": "OpenCode Go 登录",
+    "description": "OpenCode 没有 OAuth 流程。登录后复制 API 密钥并粘贴到这里——每个账号一份凭证，多个账号可并存。获取密钥：",
+    "label_label": "账号标签",
+    "label_hint": "决定凭证文件名与卡片标题。每个账号用一个标签，例如 personal / work。",
+    "label_placeholder": "personal",
+    "key_label": "API 密钥",
+    "key_hint": "OpenCode Go 的密钥。保存前会先通过用量接口校验。",
+    "key_placeholder": "sk-...",
+    "import_button": "导入 OpenCode 凭证",
+    "fields_required": "请先填写账号标签和 API 密钥",
+    "name_taken": "{{file}} 已存在。请换一个账号标签，以免覆盖现有凭证。",
+    "key_rejected": "OpenCode 拒绝了该 API 密钥。",
+    "no_subscription": "密钥有效，但该账号没有 Go 订阅。",
+    "validate_failed": "无法校验该 API 密钥。",
+    "success": "凭证已保存为 {{file}}",
+    "result_title": "凭证已保存",
+    "result_file": "认证文件",
+    "add_another_hint": "填入新的标签和密钥即可添加另一个账号。"
+  },
   "oauth_excluded": {
     "title": "OAuth 模型禁用",
     "description": "按提供商分列展示，点击卡片编辑或删除；支持 * 通配符，范围跟随上方的配置文件过滤标签。",
