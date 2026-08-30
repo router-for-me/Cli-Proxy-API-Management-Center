@@ -289,6 +289,7 @@
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
     "filter_kimi": "Kimi",
+    "filter_opencode": "OpenCode",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
@@ -475,6 +476,22 @@
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
+  },
+  "opencode_quota": {
+    "title": "Квота OpenCode",
+    "empty_title": "Нет учётных данных OpenCode",
+    "empty_desc": "Загрузите учётные данные OpenCode Go, чтобы увидеть оставшуюся квоту.",
+    "idle": "Не загружено. Нажмите \"Обновить квоту\".",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле авторизации отсутствует auth_index",
+    "empty_data": "Данные по квоте отсутствуют",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "five_hour_limit": "5-часовой лимит",
+    "weekly_limit": "Недельный лимит",
+    "monthly_limit": "Месячный лимит",
+    "rate_limited": "Лимит исчерпан"
   },
   "xai_quota": {
     "title": "Квота Grok",

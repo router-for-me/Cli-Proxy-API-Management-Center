@@ -19,6 +19,8 @@ import { CODEX_CONFIG } from './codex/data';
 import { CodexQuotaBody } from './codex/CodexQuotaBody';
 import { KIMI_CONFIG } from './kimi/data';
 import { KimiQuotaBody } from './kimi/KimiQuotaBody';
+import { OPENCODE_CONFIG } from './opencode/data';
+import { OpencodeQuotaBody } from './opencode/OpencodeQuotaBody';
 import { XAI_CONFIG } from './xai/data';
 import { XaiQuotaBody } from './xai/XaiQuotaBody';
 
@@ -52,6 +54,7 @@ export const QUOTA_ADAPTERS: Record<QuotaProviderType, QuotaAdapter> = {
   claude: { ...CLAUDE_CONFIG, Body: ClaudeQuotaBody } as unknown as QuotaAdapter,
   codex: { ...CODEX_CONFIG, Body: CodexQuotaBody } as unknown as QuotaAdapter,
   kimi: { ...KIMI_CONFIG, Body: KimiQuotaBody } as unknown as QuotaAdapter,
+  opencode: { ...OPENCODE_CONFIG, Body: OpencodeQuotaBody } as unknown as QuotaAdapter,
   xai: { ...XAI_CONFIG, Body: XaiQuotaBody } as unknown as QuotaAdapter,
 };
 

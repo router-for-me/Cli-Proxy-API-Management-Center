@@ -290,6 +290,7 @@
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
     "filter_kimi": "Kimi",
+    "filter_opencode": "OpenCode",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
@@ -488,6 +489,22 @@
     "limit_window": "{{duration}} 限額",
     "limit_index": "限額 #{{index}}",
     "reset_hint": "{{hint}} 後重置"
+  },
+  "opencode_quota": {
+    "title": "OpenCode 配額",
+    "empty_title": "暫無 OpenCode 驗證",
+    "empty_desc": "上傳 OpenCode Go 驗證檔案後即可查看配額。",
+    "idle": "點擊此處重新整理配額",
+    "loading": "正在載入配額...",
+    "load_failed": "配額取得失敗：{{message}}",
+    "missing_auth_index": "驗證檔案缺少 auth_index",
+    "empty_data": "暫無配額資料",
+    "refresh_button": "重新整理配額",
+    "fetch_all": "取得全部",
+    "five_hour_limit": "5 小時限額",
+    "weekly_limit": "週限額",
+    "monthly_limit": "月限額",
+    "rate_limited": "已限流"
   },
   "xai_quota": {
     "title": "Grok 配額",

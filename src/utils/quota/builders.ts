@@ -11,6 +11,8 @@ import type {
   KimiLimitItem,
   KimiLimitWindow,
   KimiQuotaRow,
+  OpencodeUsagePayload,
+  OpencodeQuotaRow,
   XaiBillingConfig,
   XaiBillingPeriod,
   XaiBillingPeriodType,
@@ -369,6 +371,52 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
   }
 
   return rows;
+}
+
+/**
+ * The three windows the Go plan meters, in the order the card lists them.
+ *
+ * `periodHours` is deliberately null for the monthly window: it anchors on the
+ * subscription anniversary rather than a fixed span, so drawing it as a
+ * fixed-length period on the timeline would misplace its start.
+ */
+const OPENCODE_WINDOWS = [
+  { key: 'rolling', labelKey: 'opencode_quota.five_hour_limit', periodHours: 5 },
+  { key: 'weekly', labelKey: 'opencode_quota.weekly_limit', periodHours: 24 * 7 },
+  { key: 'monthly', labelKey: 'opencode_quota.monthly_limit', periodHours: null },
+] as const;
+
+/**
+ * Rows for one OpenCode Go credential.
+ *
+ * The upstream route reports percent USED per window, so the meter value is
+ * derived rather than read. Windows that fail to decode are skipped instead of
+ * failing the whole card: the route is first-party but undocumented, and one
+ * malformed window should not hide the two that parsed.
+ */
+export function buildOpencodeQuotaRows(payload: OpencodeUsagePayload): OpencodeQuotaRow[] {
+  const usage = payload.usage;
+  if (!usage || typeof usage !== 'object') return [];
+
+  return OPENCODE_WINDOWS.map((descriptor): OpencodeQuotaRow | null => {
+    const window = usage[descriptor.key];
+    if (!window || typeof window !== 'object') return null;
+
+    const used = normalizeNumberValue(window.percent);
+    if (used === null || used < 0 || used > 100) return null;
+
+    const status = normalizeStringValue(window.status)?.toLowerCase() ?? null;
+    const rateLimited = status === 'rate-limited';
+
+    return {
+      id: descriptor.key,
+      labelKey: descriptor.labelKey,
+      remainingPercent: rateLimited ? 0 : Math.max(0, Math.min(100, Math.round(100 - used))),
+      rateLimited,
+      resetAtMs: resolveResetMs([window.resetsAt]),
+      periodHours: descriptor.periodHours,
+    };
+  }).filter((row): row is OpencodeQuotaRow => row !== null);
 }
 
 function normalizeXaiCentValue(value: XaiBillingConfig['monthlyLimit']): number | null {

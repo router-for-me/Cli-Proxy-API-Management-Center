@@ -27,6 +27,10 @@ export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
 }
 
+export function isOpencodeFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'opencode';
+}
+
 export function isXaiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'xai';
 }

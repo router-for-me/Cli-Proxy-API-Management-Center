@@ -310,6 +310,45 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
+// OpenCode Go API payload types
+export interface OpencodeUsageWindowPayload {
+  /** `"ok"` while the window still has room, `"rate-limited"` once it is spent. */
+  status?: string;
+  /** Percent USED in this window; the server floors and clamps it to 0-100. */
+  percent?: number | string;
+  resetsAt?: string;
+}
+
+export interface OpencodeUsagePayload {
+  usage?: {
+    rolling?: OpencodeUsageWindowPayload | null;
+    weekly?: OpencodeUsageWindowPayload | null;
+    monthly?: OpencodeUsageWindowPayload | null;
+  } | null;
+}
+
+export interface OpencodeQuotaRow {
+  id: string;
+  labelKey: string;
+  /** Translated `labelKey`, filled by the data layer for the React-free timeline. */
+  label?: string;
+  /** Percent still available, derived as `100 - percent`. */
+  remainingPercent: number;
+  /** The window reported itself as spent; the meter reads 0 either way. */
+  rateLimited: boolean;
+  /** Reset instant in epoch ms; null when the payload carried no usable date. */
+  resetAtMs: number | null;
+  /** Window length in hours; null for the monthly window, which has no fixed span. */
+  periodHours: number | null;
+}
+
+export interface OpencodeQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: OpencodeQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}
+
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;

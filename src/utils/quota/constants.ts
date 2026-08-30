@@ -30,6 +30,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
   },
+  opencode: {
+    light: { bg: '#e8e6e4', text: '#3b3838' },
+    dark: { bg: '#2c2929', text: '#cfcecd' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
@@ -138,6 +142,13 @@ export const CODEX_REQUEST_HEADERS = {
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 
 export const KIMI_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+};
+
+// OpenCode Go API configuration
+export const OPENCODE_USAGE_URL = 'https://opencode.ai/zen/go/v1/usage';
+
+export const OPENCODE_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
 };
 

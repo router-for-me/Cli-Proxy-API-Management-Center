@@ -290,6 +290,7 @@
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
     "filter_kimi": "Kimi",
+    "filter_opencode": "OpenCode",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
@@ -488,6 +489,22 @@
     "limit_window": "{{duration}} limit",
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
+  },
+  "opencode_quota": {
+    "title": "OpenCode Quota",
+    "empty_title": "No OpenCode Auth Files",
+    "empty_desc": "Upload an OpenCode Go credential to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "five_hour_limit": "5-hour limit",
+    "weekly_limit": "Weekly limit",
+    "monthly_limit": "Monthly limit",
+    "rate_limited": "Rate limited"
   },
   "xai_quota": {
     "title": "Grok Quota",

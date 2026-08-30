@@ -291,6 +291,13 @@ interface KimiRowLike {
   periodHours?: number | null;
 }
 
+interface OpencodeRowLike {
+  label?: string;
+  remainingPercent: number;
+  resetAtMs?: number | null;
+  periodHours?: number | null;
+}
+
 interface XaiBillingLike {
   periodType?: string;
   usagePercent?: number | null;
@@ -485,6 +492,27 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       limits: rows
         .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
+    };
+  }
+
+  if (provider === 'opencode') {
+    const rows = ((quota as { rows?: OpencodeRowLike[] }).rows ?? []).filter(
+      (row) => typeof row.resetAtMs === 'number'
+    );
+    const chosen = pickLaneWindow(rows, maxPeriodHours);
+    if (!chosen) return empty;
+
+    // Rows already carry remaining percent; the used->remaining flip happened
+    // in the builder, where the raw payload was still available.
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs ?? null,
+      periodHours: chosen.periodHours ?? null,
+      remaining: clampPercent(chosen.remainingPercent),
+      limits: rows.map((row) => ({
+        label: row.label ?? '',
+        remaining: clampPercent(row.remainingPercent),
+      })),
     };
   }
 
