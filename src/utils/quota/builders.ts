@@ -6,6 +6,8 @@ import type {
   AntigravityQuotaBucket,
   AntigravityQuotaGroup,
   AntigravityQuotaSummaryPayload,
+  CodeBuddyAccount,
+  CodeBuddyQuotaRow,
   KimiUsagePayload,
   KimiUsageDetail,
   KimiLimitItem,
@@ -569,4 +571,125 @@ export function mergeXaiBillingSummaries(
     billingPeriodEnd: primary.billingPeriodEnd ?? fallback.billingPeriodEnd,
     usedPercent: primary.usedPercent ?? fallback.usedPercent,
   };
+}
+
+/* ------------------------------------------------------------------ CodeBuddy CN */
+
+/** Seconds→epoch-ms helper shared with the CodeBuddy billing-meter parser. */
+function codeBuddyResetMs(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return value < 1e12 ? value * 1000 : value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (/^\d+$/.test(trimmed)) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return n < 1e12 ? n * 1000 : n;
+    }
+    const ms = new Date(trimmed).getTime();
+    return Number.isFinite(ms) && ms > 0 ? ms : null;
+  }
+  return null;
+}
+
+function codeBuddyNum(precise: unknown, plain: unknown): number {
+  const n = Number(precise ?? plain);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Refill cadence derived from the cycle window length. */
+function codeBuddyCadence(acc: CodeBuddyAccount): 'Monthly' | 'Weekly' | 'Daily' {
+  const start = codeBuddyResetMs(acc.CycleStartTime);
+  const end = codeBuddyResetMs(acc.CycleEndTime);
+  if (start && end) {
+    const days = (end - start) / 86400000;
+    if (days <= 1.5) return 'Daily';
+    if (days <= 10) return 'Weekly';
+  }
+  return 'Monthly';
+}
+
+function codeBuddyPeriodHours(acc: CodeBuddyAccount): number | null {
+  const start = codeBuddyResetMs(acc.CycleStartTime);
+  const end = codeBuddyResetMs(acc.CycleEndTime);
+  if (start && end) {
+    const hours = (end - start) / 3600000;
+    if (hours > 0) return Math.round(hours);
+  }
+  switch (codeBuddyCadence(acc)) {
+    case 'Daily':
+      return 24;
+    case 'Weekly':
+      return 24 * 7;
+    default:
+      return 24 * 30;
+  }
+}
+
+/** Refill packs roll over long before the resource expires; >2d gap = refill. */
+const CODEBUDDY_REFILL_GAP_MS = 2 * 24 * 60 * 60 * 1000;
+
+function codeBuddyIsRefill(acc: CodeBuddyAccount): boolean {
+  const cycleEnd = codeBuddyResetMs(acc.CycleEndTime);
+  const deductionEnd = codeBuddyResetMs(acc.DeductionEndTime);
+  return (
+    cycleEnd !== null &&
+    deductionEnd !== null &&
+    deductionEnd - cycleEnd > CODEBUDDY_REFILL_GAP_MS
+  );
+}
+
+/**
+ * Flatten a CodeBuddy billing-meter payload into per-package quota rows.
+ * Refill packs (基础体验包) use the *Cycle* fields; bonus packs (活动赠送包)
+ * are one-shot and use the plain Capacity fields. Refill packs are labelled by
+ * cadence (Monthly/Weekly/Daily, suffixed on repeats); bonus packs get
+ * "Bonus Pack N", soonest-expiring first.
+ */
+export function buildCodeBuddyQuotaRows(
+  accounts: CodeBuddyAccount[]
+): CodeBuddyQuotaRow[] {
+  const byExpiry = (a: CodeBuddyAccount, b: CodeBuddyAccount) =>
+    (codeBuddyResetMs(a.CycleEndTime) ?? Number.POSITIVE_INFINITY) -
+    (codeBuddyResetMs(b.CycleEndTime) ?? Number.POSITIVE_INFINITY);
+
+  const refills = accounts.filter(codeBuddyIsRefill).sort(byExpiry);
+  const bonuses = accounts.filter((a) => !codeBuddyIsRefill(a)).sort(byExpiry);
+
+  const rows: CodeBuddyQuotaRow[] = [];
+  const seenRefill: Record<string, number> = {};
+
+  refills.forEach((acc) => {
+    const base = codeBuddyCadence(acc);
+    seenRefill[base] = (seenRefill[base] || 0) + 1;
+    const label = seenRefill[base] > 1 ? `${base} ${seenRefill[base]}` : base;
+    rows.push({
+      id: `refill-${label.toLowerCase().replace(/\s+/g, '-')}`,
+      label,
+      used: codeBuddyNum(acc.CycleCapacityUsedPrecise, acc.CycleCapacityUsed),
+      total: codeBuddyNum(acc.CycleCapacitySizePrecise, acc.CycleCapacitySize),
+      unlimited: false,
+      resetAtMs: codeBuddyResetMs(acc.CycleEndTime),
+      periodHours: codeBuddyPeriodHours(acc),
+    });
+  });
+
+  bonuses.forEach((acc, i) => {
+    rows.push({
+      id: `bonus-${i + 1}`,
+      labelKey: 'codebuddy_quota.bonus_pack',
+      labelParams: { index: i + 1 },
+      used: codeBuddyNum(acc.CapacityUsedPrecise, acc.CapacityUsed),
+      total: codeBuddyNum(acc.CapacitySizePrecise, acc.CapacitySize),
+      unlimited: false,
+      resetAtMs: codeBuddyResetMs(acc.CycleEndTime),
+      periodHours: null,
+    });
+  });
+
+  return rows;
 }

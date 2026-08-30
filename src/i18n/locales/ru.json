@@ -292,6 +292,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_codebuddy-cn": "CodeBuddy CN",
     "filter_antigravity": "Antigravity",
     "filter_xai": "xAI",
     "filter_iflow": "iFlow",
@@ -459,6 +460,21 @@
     "plan_free": "Free",
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
+  },
+  "codebuddy_quota": {
+    "title": "Квота CodeBuddy CN",
+    "empty_title": "Нет учётных данных CodeBuddy CN",
+    "empty_desc": "Загрузите файл аутентификации CodeBuddy CN, чтобы просмотреть квоту.",
+    "idle": "Нажмите, чтобы загрузить квоту",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле аутентификации отсутствует auth_index",
+    "empty_data": "Нет данных о квоте",
+    "invalid_credential": "Учётные данные CodeBuddy CN недействительны или истекли",
+    "quota_error": "Ошибка запроса квоты CodeBuddy CN",
+    "no_package": "Подключено. Пакет кредитов не найден.",
+    "plan_label": "Тариф",
+    "bonus_pack": "Бонусный пакет {{index}}"
   },
   "kimi_quota": {
     "title": "Квота Kimi",

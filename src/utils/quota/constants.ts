@@ -141,6 +141,22 @@ export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
 };
 
+// CodeBuddy CN API configuration
+export const CODEBUDDY_USAGE_URL =
+  'https://copilot.tencent.com/v2/billing/meter/get-user-resource';
+
+export const CODEBUDDY_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'Content-Type': 'application/json',
+  Accept: 'application/json',
+  'User-Agent': 'CLI/2.108.1 CodeBuddy/2.108.1',
+  'X-Product': 'SaaS',
+  'X-IDE-Type': 'CLI',
+  'X-IDE-Name': 'CLI',
+  'x-requested-with': 'XMLHttpRequest',
+  'x-codebuddy-request': '1',
+};
+
 // xAI/Grok API configuration
 export const XAI_BILLING_WEEKLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing?format=credits';
 export const XAI_BILLING_MONTHLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing';

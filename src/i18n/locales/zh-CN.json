@@ -293,6 +293,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_codebuddy-cn": "CodeBuddy CN",
     "filter_antigravity": "Antigravity",
     "filter_xai": "xAI",
     "filter_iflow": "iFlow",
@@ -472,6 +473,21 @@
     "plan_free": "Free",
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
+  },
+  "codebuddy_quota": {
+    "title": "CodeBuddy CN 额度",
+    "empty_title": "暂无 CodeBuddy CN 认证",
+    "empty_desc": "上传 CodeBuddy CN 认证文件后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无额度数据",
+    "invalid_credential": "CodeBuddy CN 凭证无效或已过期",
+    "quota_error": "CodeBuddy CN 额度查询错误",
+    "no_package": "已连接，但未找到额度包。",
+    "plan_label": "套餐",
+    "bonus_pack": "活动赠送包 {{index}}"
   },
   "kimi_quota": {
     "title": "Kimi 额度",

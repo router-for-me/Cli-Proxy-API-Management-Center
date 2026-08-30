@@ -397,3 +397,54 @@ export interface XaiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+// CodeBuddy CN API payload types (billing-meter endpoint).
+export interface CodeBuddyAccount {
+  PackageName?: string;
+  SubProductName?: string;
+  CycleStartTime?: string | number;
+  CycleEndTime?: string | number;
+  DeductionEndTime?: string | number;
+  CycleCapacitySize?: number | string;
+  CycleCapacitySizePrecise?: string | number;
+  CycleCapacityUsed?: number | string;
+  CycleCapacityUsedPrecise?: string | number;
+  CapacitySize?: number | string;
+  CapacitySizePrecise?: string | number;
+  CapacityUsed?: number | string;
+  CapacityUsedPrecise?: string | number;
+}
+
+export interface CodeBuddyUsagePayload {
+  code?: number;
+  msg?: string;
+  data?: {
+    Response?: {
+      Data?: {
+        Accounts?: CodeBuddyAccount[];
+      };
+    };
+  };
+}
+
+export interface CodeBuddyQuotaRow {
+  id: string;
+  label?: string;
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
+  used: number;
+  total: number;
+  unlimited: boolean;
+  /** Reset instant in epoch ms; null when the payload carried no timestamp. */
+  resetAtMs?: number | null;
+  /** Window length in hours, derived from the pack cadence. */
+  periodHours?: number | null;
+}
+
+export interface CodeBuddyQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  plan?: string | null;
+  rows: CodeBuddyQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}

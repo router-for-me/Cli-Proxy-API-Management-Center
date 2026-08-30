@@ -4,6 +4,7 @@
 
 import type {
   ClaudeUsagePayload,
+  CodeBuddyUsagePayload,
   CodexUsagePayload,
   KimiUsagePayload,
   XaiBillingPayload,
@@ -199,6 +200,23 @@ export function parseXaiBillingPayload(payload: unknown): XaiBillingPayload | nu
   }
   if (typeof payload === 'object') {
     return payload as XaiBillingPayload;
+  }
+  return null;
+}
+
+export function parseCodeBuddyUsagePayload(payload: unknown): CodeBuddyUsagePayload | null {
+  if (payload === undefined || payload === null) return null;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed) as CodeBuddyUsagePayload;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof payload === 'object') {
+    return payload as CodeBuddyUsagePayload;
   }
   return null;
 }
