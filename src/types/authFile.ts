@@ -32,6 +32,13 @@ export interface AuthFileItem {
   email?: string;
   /** GCP / Vertex 项目 ID，账号邮箱缺失时作为身份回落。 */
   projectId?: string;
+  /**
+   * Routing prefix for this credential (`prefix/<model>`).
+   *
+   * Only present on servers new enough to send it; older ones omit the field
+   * and every prefix-aware surface simply renders nothing.
+   */
+  prefix?: string;
   size?: number;
   authIndex?: string | number | null;
   runtimeOnly?: boolean | string;

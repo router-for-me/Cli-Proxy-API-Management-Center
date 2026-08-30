@@ -100,6 +100,14 @@ export function QuotaCard(props: QuotaCardProps) {
         <span className={styles.fileName} title={file.name}>
           {file.name}
         </span>
+        {file.prefix && (
+          <span
+            className={styles.prefixChip}
+            title={t('quota_management.prefix_hint', { prefix: file.prefix })}
+          >
+            {`${file.prefix}/`}
+          </span>
+        )}
       </header>
 
       <div className={styles.body}>

@@ -5,7 +5,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ClaudeQuotaState } from '@/types';
-import { buildResetDisplay } from '@/utils/quota';
+import { buildResetDisplay, resolveClaudePlanTier } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
@@ -22,13 +22,21 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
   const windows = quota.windows ?? [];
   const extraUsage = quota.extraUsage ?? null;
   const planType = quota.planType ?? null;
+  // Max earns the same badge treatment Codex gives Pro/Pro Lite.
+  const planTier = resolveClaudePlanTier(planType);
+  const planValueClass =
+    planTier === 'elite'
+      ? classes.elitePlanValue
+      : planTier === 'premium'
+        ? classes.premiumPlanValue
+        : classes.codexPlanValue;
 
   return (
     <>
       {planType && (
         <div className={classes.codexPlan}>
           <span className={classes.codexPlanLabel}>{t('claude_quota.plan_label')}</span>
-          <span className={classes.codexPlanValue}>{t(`claude_quota.${planType}`)}</span>
+          <span className={planValueClass}>{t(`claude_quota.${planType}`)}</span>
         </div>
       )}
       {extraUsage && extraUsage.is_enabled && (

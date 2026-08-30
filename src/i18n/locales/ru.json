@@ -1183,7 +1183,8 @@
     "weekday_wed": "Ср",
     "weekday_thu": "Чт",
     "weekday_fri": "Пт",
-    "weekday_sat": "Сб"
+    "weekday_sat": "Сб",
+    "prefix_hint": "Обращайтесь к этому credential как {{prefix}}/<model>"
   },
   "plugin_management": {
     "title": "Управление плагинами",

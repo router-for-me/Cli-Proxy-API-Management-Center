@@ -249,6 +249,7 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
   // account / account_type 故意不归一化：api-key 类凭证的 account 就是 API key 本身
   // （sdk/cliproxy/auth/types.go AccountInfo），不能进入展示与搜索路径。
   const projectId = readTextField(entry, 'project_id');
+  const prefix = readTextField(entry, 'prefix');
   const modified = readDateField(entry);
   const priority = readIntegerField(entry['priority']);
   const weight = readIntegerField(entry['weight']);
@@ -267,6 +268,7 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
     ...(note ? { note } : {}),
     ...(email ? { email } : {}),
     ...(projectId ? { projectId } : {}),
+    ...(prefix ? { prefix } : {}),
   };
 };
 

@@ -3,6 +3,7 @@ import {
   ELITE_CODEX_PLAN_TYPE,
   PREMIUM_CODEX_PLAN_TYPES,
   resolvePlanTier,
+  resolveClaudePlanTier,
 } from '@/utils/quota';
 
 describe('resolvePlanTier', () => {
@@ -37,5 +38,32 @@ describe('resolvePlanTier', () => {
     expect(resolvePlanTier(undefined)).toBe('plain');
     expect(resolvePlanTier('')).toBe('plain');
     expect(resolvePlanTier('   ')).toBe('plain');
+  });
+});
+
+describe('resolveClaudePlanTier', () => {
+  test('gives Max the gold badge, not the platinum one', () => {
+    // Platinum marks a single top tier; the profile endpoint exposes only a
+    // has_claude_max boolean, so plan_max cannot be told apart from Max 5x.
+    expect(resolveClaudePlanTier('plan_max')).toBe('premium');
+    expect(resolveClaudePlanTier('plan_max5')).toBe('premium');
+  });
+
+  test('reserves platinum for Max 20x', () => {
+    expect(resolveClaudePlanTier('plan_max20')).toBe('elite');
+  });
+
+  test('leaves the lower tiers unbadged', () => {
+    expect(resolveClaudePlanTier('plan_pro')).toBe('plain');
+    expect(resolveClaudePlanTier('plan_team')).toBe('plain');
+    expect(resolveClaudePlanTier('plan_free')).toBe('plain');
+    expect(resolveClaudePlanTier('plan_unknown')).toBe('plain');
+  });
+
+  test('tolerates casing, padding and absence', () => {
+    expect(resolveClaudePlanTier('  PLAN_MAX  ')).toBe('premium');
+    expect(resolveClaudePlanTier(null)).toBe('plain');
+    expect(resolveClaudePlanTier(undefined)).toBe('plain');
+    expect(resolveClaudePlanTier('')).toBe('plain');
   });
 });

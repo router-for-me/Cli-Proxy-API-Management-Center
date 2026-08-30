@@ -19,6 +19,27 @@ export const ELITE_CODEX_PLAN_TYPE = 'pro';
  * 顺序敏感：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，elite 判断必须在最前，
  * 否则 Pro 20x 会静默退回金卡。契约由 tests/quotaPlanTier.test.ts 守护。
  */
+/**
+ * Claude plan keys that earn a badge.
+ *
+ * The profile endpoint only exposes a `has_claude_max` boolean, so `plan_max`
+ * is what a Max subscription actually resolves to today; `plan_max5` and
+ * `plan_max20` are carried because the i18n table already distinguishes them.
+ * Max sits at gold rather than platinum: platinum marks the single top tier,
+ * and a bare `plan_max` cannot be told apart from Max 5x.
+ */
+export const PREMIUM_CLAUDE_PLAN_TYPES = new Set(['plan_max', 'plan_max5']);
+
+export const ELITE_CLAUDE_PLAN_TYPE = 'plan_max20';
+
+export function resolveClaudePlanTier(planType: string | null | undefined): CodexPlanTier {
+  const normalized = normalizePlanType(planType);
+  if (!normalized) return 'plain';
+  if (normalized === ELITE_CLAUDE_PLAN_TYPE) return 'elite';
+  if (PREMIUM_CLAUDE_PLAN_TYPES.has(normalized)) return 'premium';
+  return 'plain';
+}
+
 export function resolvePlanTier(planType: string | null | undefined): CodexPlanTier {
   const normalized = normalizePlanType(planType);
   if (!normalized) return 'plain';
