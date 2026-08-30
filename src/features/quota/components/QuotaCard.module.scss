@@ -85,6 +85,21 @@
   @include text-ellipsis;
 }
 
+/* Routing prefix, e.g. `personal/`. Trails the file name and never squeezes
+   it: the name is the identity, the prefix is how you address it. */
+.prefixChip {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family: $font-mono;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-tertiary) 70%, transparent);
+  border: 1px solid var(--border-subtle, transparent);
+}
+
 /* ---------- body 容器 ---------- */
 
 .body {

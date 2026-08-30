@@ -1233,7 +1233,8 @@
     "weekday_wed": "Wed",
     "weekday_thu": "Thu",
     "weekday_fri": "Fri",
-    "weekday_sat": "Sat"
+    "weekday_sat": "Sat",
+    "prefix_hint": "Address this credential as {{prefix}}/<model>"
   },
   "plugin_management": {
     "title": "Plugin Management",
