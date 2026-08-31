@@ -1482,7 +1482,7 @@
     },
     "categories": {
       "title": "提供商",
-      "quickFill": "快速填入",
+      "quickFill": "快速接入",
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
