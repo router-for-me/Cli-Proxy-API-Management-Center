@@ -310,6 +310,22 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
+// CodeBuddy CN billing API payload types
+export interface CodeBuddyCnQuotaRow {
+  id: string;
+  label: string;
+  unit: string;
+  used: number;
+  limit: number;
+}
+
+export interface CodeBuddyCnQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: CodeBuddyCnQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}
+
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;

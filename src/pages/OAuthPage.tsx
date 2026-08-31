@@ -22,6 +22,7 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
+import iconCodeBuddy from '@/assets/icons/codebuddy.svg';
 
 interface ProviderState {
   url?: string;
@@ -78,6 +79,12 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'kimi',
     titleKey: 'auth_login.kimi_oauth_title',
     icon: { light: iconKimiDark, dark: iconKimiLight },
+  },
+  {
+    kind: 'builtin',
+    id: 'codebuddy-cn',
+    titleKey: 'auth_login.codebuddy_cn_oauth_title',
+    icon: iconCodeBuddy,
   },
   {
     kind: 'builtin',

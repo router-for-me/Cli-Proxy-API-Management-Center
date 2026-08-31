@@ -105,6 +105,7 @@ export function QuotaPage() {
   const codexQuota = useQuotaStore((state) => state.codexQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
+  const codebuddyCnQuota = useQuotaStore((state) => state.codebuddyCnQuota);
 
   const quotaByType = useMemo<Record<QuotaProviderType, Record<string, QuotaCardState>>>(
     () =>
@@ -114,8 +115,9 @@ export function QuotaPage() {
         codex: codexQuota,
         kimi: kimiQuota,
         xai: xaiQuota,
+        'codebuddy-cn': codebuddyCnQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
-    [antigravityQuota, claudeQuota, codexQuota, kimiQuota, xaiQuota]
+    [antigravityQuota, claudeQuota, codexQuota, kimiQuota, xaiQuota, codebuddyCnQuota]
   );
 
   const getQuota = useCallback(

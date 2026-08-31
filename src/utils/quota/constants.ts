@@ -141,6 +141,17 @@ export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
 };
 
+// CodeBuddy CN billing API configuration (billing lives on www.workbuddy.cn, separate origin)
+export const CODEBUDDY_CN_BILLING_URL = 'https://www.workbuddy.cn/billing/meter/get-user-resource';
+
+export const CODEBUDDY_CN_REQUEST_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'x-user-id': '$UID$',
+  'Content-Type': 'application/json',
+  Origin: 'https://www.workbuddy.cn',
+  Referer: 'https://www.workbuddy.cn/app',
+};
+
 // xAI/Grok API configuration
 export const XAI_BILLING_WEEKLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing?format=credits';
 export const XAI_BILLING_MONTHLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing';
