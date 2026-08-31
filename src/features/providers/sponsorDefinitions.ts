@@ -208,7 +208,9 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
  * （codex/claude/gemini/openaiCompatibility）直接显示与管理。
  * 以后恢复时，把对应 brand 从集合中删除即可。
  */
-export const TEMPORARILY_HIDDEN_SPONSOR_BRANDS: ReadonlySet<SponsorProviderBrand> = new Set([]);
+export const TEMPORARILY_HIDDEN_SPONSOR_BRANDS: ReadonlySet<SponsorProviderBrand> = new Set([
+  'lmuAI',
+]);
 
 export const isTemporarilyHiddenSponsorBrand = (brand: ProviderBrand): boolean =>
   TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has(brand as SponsorProviderBrand);
