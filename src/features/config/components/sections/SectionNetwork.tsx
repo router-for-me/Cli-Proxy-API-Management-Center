@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -14,6 +14,7 @@ import {
   ToggleRow,
 } from '../fields/FieldPrimitives';
 import { ProxyUrlField, SponsorHintSpacer } from '../fields/sharedFields';
+import { apiClient } from '@/services/api';
 import { getValidationMessage } from '../blocks/shared';
 
 const Icon = CONFIG_TAB_ICONS.network;
@@ -33,6 +34,37 @@ export function SectionNetwork({
   const disableImageGenerationHintId = `${disableImageGenerationLabelId}-hint`;
   const proxyModeLabelId = useId();
   const isTorMode = values.proxyMode === 'tor';
+
+  const [testing, setTesting] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [ipResult, setIpResult] = useState<{ success?: boolean; ip?: string; country?: string; error?: string } | null>(null);
+  const [rotateResult, setRotateResult] = useState<{ success?: boolean; message?: string; old_ip?: string; new_ip?: string; error?: string } | null>(null);
+
+  const handleTestIp = useCallback(async () => {
+    setTesting(true);
+    setIpResult(null);
+    try {
+      const data = await apiClient.post<{ success?: boolean; ip?: string; country?: string; error?: string }>('/test-proxy');
+      setIpResult(data);
+    } catch (err: unknown) {
+      setIpResult({ success: false, error: err instanceof Error ? err.message : 'Request failed' });
+    } finally {
+      setTesting(false);
+    }
+  }, []);
+
+  const handleRotateIp = useCallback(async () => {
+    setRotating(true);
+    setRotateResult(null);
+    try {
+      const data = await apiClient.post<{ success?: boolean; message?: string; old_ip?: string; new_ip?: string; error?: string }>('/tor-rotate');
+      setRotateResult(data);
+    } catch (err: unknown) {
+      setRotateResult({ success: false, error: err instanceof Error ? err.message : 'Request failed' });
+    } finally {
+      setRotating(false);
+    }
+  }, []);
 
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
@@ -150,6 +182,55 @@ export function SectionNetwork({
                   hint={t('config_management.visual.sections.network.tor_retry_on_codes_hint')}
                 />
               </FieldAnchor>
+              {/* Tor IP Actions */}
+              <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleTestIp}
+                  disabled={disabled || testing}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color, #333)',
+                    background: 'var(--surface-secondary, #1a1a2e)',
+                    color: 'var(--text-primary, #e0e0e0)',
+                    cursor: testing ? 'wait' : 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                  }}
+                >
+                  {testing ? 'Checking...' : 'Check Current IP'}
+                </button>
+                {ipResult && (
+                  <span style={{ fontSize: '12px', color: ipResult.success ? '#4caf50' : '#f44336' }}>
+                    {ipResult.success ? `IP: ${ipResult.ip}${ipResult.country ? ` (${ipResult.country})` : ''}` : `Error: ${ipResult.error}`}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleRotateIp}
+                  disabled={disabled || rotating}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color, #333)',
+                    background: 'var(--surface-secondary, #1a1a2e)',
+                    color: 'var(--text-primary, #e0e0e0)',
+                    cursor: rotating ? 'wait' : 'pointer',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                  }}
+                >
+                  {rotating ? 'Rotating...' : 'Rotate IP'}
+                </button>
+                {rotateResult && (
+                  <span style={{ fontSize: '12px', color: rotateResult.success ? '#4caf50' : '#f44336' }}>
+                    {rotateResult.success
+                      ? `${rotateResult.message}${rotateResult.old_ip && rotateResult.new_ip ? ` (${rotateResult.old_ip} → ${rotateResult.new_ip})` : ''}`
+                      : `Error: ${rotateResult.error}`}
+                  </span>
+                )}
+              </div>
             </>
           ) : (
             <ProxyUrlField values={values} disabled={disabled} onChange={onChange} />
