@@ -69,6 +69,18 @@
   }
 }
 
+.itemKimi {
+  &.active {
+    border-color: color-mix(in srgb, #1783ff 30%, transparent);
+    background: color-mix(in srgb, #1783ff 10%, var(--bg-primary));
+    color: color-mix(in srgb, #1783ff 82%, var(--text-primary));
+
+    .itemSubtitle {
+      color: color-mix(in srgb, #1783ff 82%, var(--text-primary));
+    }
+  }
+}
+
 .itemLeft {
   display: flex;
   align-items: center;

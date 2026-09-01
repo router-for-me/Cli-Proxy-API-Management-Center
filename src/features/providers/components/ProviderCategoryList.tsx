@@ -38,7 +38,13 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
         const total = group.resources.length;
         const activeCount = group.resources.filter((r) => !r.disabled).length;
         const logo = PROVIDER_LOGOS[group.id];
-        const itemClass = `${styles.item} ${active ? styles.active : ''}`;
+        const itemClass = [
+          styles.item,
+          active ? styles.active : '',
+          group.id === 'kimi' ? styles.itemKimi : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
         const logoClassName = [
           styles.logo,
           logo?.transparent ? styles.logoTransparent : '',
