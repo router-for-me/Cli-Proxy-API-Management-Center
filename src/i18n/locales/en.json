@@ -1579,6 +1579,7 @@
       "metadataTitle": "Metadata",
       "fields": {
         "identifier": "Identifier",
+        "displayName": "Display name",
         "baseUrl": "Base URL",
         "proxyUrl": "Proxy URL",
         "prefix": "Prefix",
@@ -1593,6 +1594,8 @@
       "createEyebrow": "New",
       "editEyebrow": "Edit",
       "name": "Name",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "e.g. Sub2API primary",
       "apiKey": "API key",
       "apiKeyCreatePlaceholder": "Enter API key",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",

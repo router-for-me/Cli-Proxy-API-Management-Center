@@ -1579,6 +1579,7 @@
       "metadataTitle": "元数据",
       "fields": {
         "identifier": "标识",
+        "displayName": "备注名",
         "baseUrl": "服务地址",
         "proxyUrl": "代理 URL",
         "prefix": "前缀",
@@ -1593,6 +1594,8 @@
       "createEyebrow": "新建",
       "editEyebrow": "编辑",
       "name": "名称",
+      "displayName": "备注名",
+      "displayNamePlaceholder": "例如：Sub2API 主账号",
       "apiKey": "API 密钥",
       "apiKeyCreatePlaceholder": "输入 API 密钥",
       "apiKeyEditPlaceholder": "留空表示不修改",

@@ -105,6 +105,8 @@ export interface ProviderResource {
   originalIndex: number;
   /** 表格 key 列显示名(OpenAI=name,其余=null) */
   name: string | null;
+  /** 静态 Provider 的人工备注名; OpenAI Compatibility 继续使用 name */
+  displayName: string | null;
   /** 备用展示文字(API 密钥脱敏或 fallback) */
   identifier: string;
   /** apiKey 脱敏预览,展示用 */
@@ -203,6 +205,8 @@ export interface ProviderEntryFormInput {
   apiKey: string;
   /** OpenAI 必填,其余 brand 不展示 */
   name: string;
+  /** 静态 Provider 的人工备注名; OpenAI Compatibility 不使用 */
+  displayName?: string;
   baseUrl: string;
   proxyUrl: string;
   prefix: string;

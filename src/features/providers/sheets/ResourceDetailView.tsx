@@ -102,7 +102,8 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
   }
 
   const primary: Array<[string, string]> = [
-    ['identifier', resource.identifier],
+    ...(resource.displayName ? [['displayName', resource.displayName] as [string, string]] : []),
+    ['identifier', resource.apiKeyPreview ?? resource.identifier],
     ['baseUrl', resource.baseUrl ?? t('providersPage.status.notSet')],
     ['proxyUrl', resource.proxyUrl ?? t('providersPage.status.notSet')],
     ['prefix', resource.prefix ?? t('providersPage.status.none')],
@@ -123,7 +124,9 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
   return (
     <div>
       <div className={styles.detailHeader}>
-        <div className={styles.sectionTitle}>{resource.name ?? resource.identifier}</div>
+        <div className={styles.sectionTitle}>
+          {resource.displayName ?? resource.name ?? resource.identifier}
+        </div>
       </div>
 
       <dl className={styles.dl}>

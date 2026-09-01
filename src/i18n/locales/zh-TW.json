@@ -1605,6 +1605,7 @@
       "metadataTitle": "元資料",
       "fields": {
         "identifier": "識別碼",
+        "displayName": "備註名稱",
         "baseUrl": "服務位址",
         "proxyUrl": "代理 URL",
         "prefix": "前綴",
@@ -1619,6 +1620,8 @@
       "createEyebrow": "新增",
       "editEyebrow": "編輯",
       "name": "名稱",
+      "displayName": "備註名稱",
+      "displayNamePlaceholder": "例如：Sub2API 主帳號",
       "apiKey": "API 金鑰",
       "apiKeyCreatePlaceholder": "輸入 API 金鑰",
       "apiKeyEditPlaceholder": "留空表示不修改",

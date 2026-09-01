@@ -133,10 +133,7 @@ export function ProviderResourceTable({
       if ((r.brand === 'claude' || r.brand === 'claudeApi') && r.flags.cloakEnabled) {
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
-      if (
-        (r.brand === 'claude' || r.brand === 'claudeApi') &&
-        r.flags.claudeCodeCliProfile
-      ) {
+      if ((r.brand === 'claude' || r.brand === 'claudeApi') && r.flags.claudeCodeCliProfile) {
         items.push(renderFlagTag('cli-profile', t('providersPage.table.cliProfileTag')));
       }
     }
@@ -182,7 +179,10 @@ export function ProviderResourceTable({
     }
     return (
       <div className={styles.primaryCell}>
-        <span className={styles.primaryName}>{r.apiKeyPreview ?? '—'}</span>
+        <span className={styles.primaryName}>{r.displayName ?? r.apiKeyPreview ?? '—'}</span>
+        {r.displayName && r.apiKeyPreview ? (
+          <span className={styles.primarySub}>{r.apiKeyPreview}</span>
+        ) : null}
         {r.authIndex ? <span className={styles.primarySub}>auth: {r.authIndex}</span> : null}
       </div>
     );

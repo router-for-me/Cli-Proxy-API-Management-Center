@@ -62,6 +62,7 @@ const matchesFilter = (r: ProviderResource, normalized: string): boolean => {
   if (!normalized) return true;
   const haystack = [
     r.identifier,
+    r.displayName,
     r.name,
     r.authIndex,
     r.apiKeyPreview,
@@ -76,7 +77,13 @@ const matchesFilter = (r: ProviderResource, normalized: string): boolean => {
 };
 
 const getResourceSortName = (resource: ProviderResource): string =>
-  (resource.name ?? resource.identifier ?? resource.apiKeyPreview ?? '').toLowerCase();
+  (
+    resource.displayName ??
+    resource.name ??
+    resource.identifier ??
+    resource.apiKeyPreview ??
+    ''
+  ).toLowerCase();
 
 const getResourceRecentSuccess = (
   resource: ProviderResource,
@@ -271,8 +278,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     [groups]
   );
   const quickStartResource = useMemo(
-    () =>
-      fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null,
+    () => (fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null),
     [activeGroup, fixedBrand]
   );
 

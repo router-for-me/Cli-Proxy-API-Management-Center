@@ -186,6 +186,7 @@ const buildProviderKeyConfig = (
   const apiKeyChanged = input.apiKey.trim().length > 0;
   const next: ProviderKeyConfig = {
     apiKey: apiKeyChanged ? input.apiKey.trim() : (existing?.apiKey ?? ''),
+    displayName: input.displayName?.trim() || undefined,
     priority: input.priority,
     weight: input.weight,
     prefix: input.prefix.trim() || undefined,

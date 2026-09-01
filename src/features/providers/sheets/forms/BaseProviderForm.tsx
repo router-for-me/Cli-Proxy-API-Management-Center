@@ -81,6 +81,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
+      displayName: '',
       baseUrl:
         brand === 'claudeApi' ? CLAUDE_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
       proxyUrl: '',
@@ -116,6 +117,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: cfg.name ?? '',
+      displayName: '',
       baseUrl: cfg.baseUrl ?? '',
       proxyUrl: '',
       prefix: cfg.prefix ?? '',
@@ -160,6 +162,7 @@ function buildInitialForm(
     // empty field is preserved on save via buildProviderKeyConfig's existing fallback.
     apiKey: '',
     name: '',
+    displayName: cfg.displayName ?? '',
     baseUrl: cfg.baseUrl ?? '',
     proxyUrl: cfg.proxyUrl ?? '',
     prefix: cfg.prefix ?? '',
@@ -523,6 +526,22 @@ export function BaseProviderForm({
               className={styles.input}
               value={form.name}
               onChange={(e) => updateField('name', e.target.value)}
+              disabled={mutating}
+            />
+          </div>
+        ) : null}
+
+        {brand !== 'openaiCompatibility' ? (
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`${fid}-displayName`}>
+              {t('providersPage.form.displayName')}
+            </label>
+            <input
+              id={`${fid}-displayName`}
+              className={styles.input}
+              value={form.displayName ?? ''}
+              onChange={(e) => updateField('displayName', e.target.value)}
+              placeholder={t('providersPage.form.displayNamePlaceholder')}
               disabled={mutating}
             />
           </div>

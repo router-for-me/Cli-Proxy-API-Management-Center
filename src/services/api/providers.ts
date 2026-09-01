@@ -20,6 +20,7 @@ const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
 
 const PROVIDER_COMMON_KEY_FIELDS = [
   'api-key',
+  'display-name',
   'priority',
   'weight',
   'prefix',
@@ -44,6 +45,7 @@ const CLAUDE_KEY_FIELDS = [
 ] as const;
 const VERTEX_KEY_FIELDS = [
   'api-key',
+  'display-name',
   'priority',
   'weight',
   'prefix',
@@ -324,6 +326,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.displayName?.trim()) payload['display-name'] = config.displayName.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
@@ -378,6 +381,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.displayName?.trim()) payload['display-name'] = config.displayName.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
@@ -395,6 +399,7 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
+  if (config.displayName?.trim()) payload['display-name'] = config.displayName.trim();
   if (config.priority !== undefined) payload.priority = config.priority;
   if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();

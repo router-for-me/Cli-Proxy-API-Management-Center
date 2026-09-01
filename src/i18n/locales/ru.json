@@ -1557,6 +1557,7 @@
       "metadataTitle": "Метаданные",
       "fields": {
         "identifier": "Идентификатор",
+        "displayName": "Отображаемое имя",
         "baseUrl": "Base URL",
         "proxyUrl": "Proxy URL",
         "prefix": "Префикс",
@@ -1686,6 +1687,8 @@
       "sortBy": "Сортировка",
       "sort": {
         "name": "Имя",
+        "displayName": "Отображаемое имя",
+        "displayNamePlaceholder": "например: основной Sub2API",
         "priority": "Приоритет",
         "recentSuccess": "Недавние успехи",
         "directionAsc": "По возрастанию",
