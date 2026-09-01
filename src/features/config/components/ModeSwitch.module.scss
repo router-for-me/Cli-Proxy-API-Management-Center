@@ -9,7 +9,7 @@
   padding: 2px;
   border-radius: $radius-full;
   border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   flex-shrink: 0;
 }
 
@@ -17,7 +17,7 @@
   border: 0;
   background: none;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: $radius-full;
   font-size: 12px;
   font-weight: 550;
@@ -27,6 +27,7 @@
   transition:
     color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
     background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    box-shadow var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
     transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out);
 
   &:disabled {
@@ -45,7 +46,7 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .segment:hover:not(:disabled) {
+  .segment:hover:not(:disabled):not(.segmentActive) {
     color: var(--text-primary);
   }
 }
@@ -53,8 +54,10 @@
 .segmentActive {
   color: var(--text-primary);
   font-weight: 650;
-  background: var(--bg-primary);
-  box-shadow: var(--shadow);
+  background: var(--floating-surface, var(--bg-primary));
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08);
 
   /* 整体禁用（保存/加载中）时激活段仍保持完整对比度 —— 当前模式本身是有效信息 */
   &:disabled {
