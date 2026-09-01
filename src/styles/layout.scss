@@ -730,7 +730,7 @@
 
 .nav-tooltip {
   position: fixed;
-  left: calc(var(--sidebar-collapsed-width) + 12px);
+  left: calc(var(--sidebar-active-width) + 20px);
   z-index: $z-dropdown + 2;
   transform: translateY(-50%);
   display: flex;
@@ -738,7 +738,7 @@
   gap: 3px;
   box-sizing: border-box;
   width: max-content;
-  max-width: min(320px, calc(100vw - var(--sidebar-collapsed-width) - 24px));
+  max-width: min(320px, calc(100vw - var(--sidebar-active-width) - 32px));
   max-height: calc(100vh - 16px);
   padding: 9px 12px;
   overflow: hidden;
@@ -748,6 +748,7 @@
   box-shadow: 0 14px 36px rgb(0 0 0 / 0.32);
   pointer-events: none;
   animation: nav-tooltip-in $transition-fast ease-out;
+  transition: left $transition-normal;
 
   .nav-tooltip-label {
     max-width: 100%;
