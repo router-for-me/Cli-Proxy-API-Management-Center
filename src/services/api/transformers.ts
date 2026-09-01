@@ -2,6 +2,9 @@ import type {
   ApiKeyEntry,
   CloakConfig,
   GeminiKeyConfig,
+  KimiKeyConfig,
+  KimiRegion,
+  KimiService,
   ModelAlias,
   OpenAIProviderConfig,
   ProviderKeyConfig,
@@ -189,6 +192,68 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   return config;
 };
 
+const normalizeKimiService = (value: unknown): KimiService | null => {
+  const service = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (service === 'open-platform' || service === 'coding-plan') {
+    return service;
+  }
+  return null;
+};
+
+const normalizeKimiRegion = (value: unknown): KimiRegion | undefined => {
+  const region = String(value ?? '')
+    .trim()
+    .toLowerCase();
+  if (region === 'domestic' || region === 'international') {
+    return region;
+  }
+  return undefined;
+};
+
+const normalizeKimiKeyConfig = (item: unknown): KimiKeyConfig | null => {
+  if (item === undefined || item === null) return null;
+  const record = isRecord(item) ? item : null;
+  const apiKey = record?.['api-key'] ?? (typeof item === 'string' ? item : '');
+  const trimmed = String(apiKey || '').trim();
+  const service = normalizeKimiService(record?.service);
+  if (!trimmed || !service) return null;
+
+  const config: KimiKeyConfig = { apiKey: trimmed, service };
+  if (service === 'open-platform') {
+    const region = normalizeKimiRegion(record?.region);
+    if (!region) return null;
+    config.region = region;
+  }
+  const name = typeof record?.name === 'string' ? record.name.trim() : '';
+  if (name) config.name = name;
+  const weight = readCredentialWeight(record?.weight);
+  if (weight !== undefined) config.weight = weight;
+  const prefix = normalizePrefix(record?.prefix);
+  if (prefix) config.prefix = prefix;
+  const proxyUrl = record?.['proxy-url'];
+  if (proxyUrl) config.proxyUrl = String(proxyUrl);
+  const headers = normalizeHeaders(record?.headers);
+  if (headers) config.headers = headers;
+  const priority = record?.priority;
+  if (priority !== undefined && priority !== null && String(priority).trim() !== '') {
+    const parsed = Number(priority);
+    if (Number.isFinite(parsed)) {
+      config.priority = parsed;
+    }
+  }
+  const disableCooling = normalizeBoolean(record?.['disable-cooling']);
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
+  const models = normalizeModelAliases(record?.models);
+  if (models.length) config.models = models;
+  const excludedModels = normalizeExcludedModels(record?.['excluded-models']);
+  if (excludedModels.length) config.excludedModels = excludedModels;
+  const authIndex = normalizeAuthIndex(record?.['auth-index']);
+  if (authIndex) config.authIndex = authIndex;
+  return config;
+};
+
 const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (item === undefined || item === null) return null;
   const record = isRecord(item) ? item : null;
@@ -371,6 +436,13 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as ProviderKeyConfig[];
   }
 
+  const kimiList = raw['kimi-api-key'];
+  if (Array.isArray(kimiList)) {
+    config.kimiApiKeys = kimiList
+      .map((item) => normalizeKimiKeyConfig(item))
+      .filter(Boolean) as KimiKeyConfig[];
+  }
+
   const claudeList = raw['claude-api-key'];
   if (Array.isArray(claudeList)) {
     config.claudeApiKeys = claudeList
@@ -406,6 +478,7 @@ export {
   normalizeModelAliases,
   normalizeOpenAIProvider,
   normalizeProviderKeyConfig,
+  normalizeKimiKeyConfig,
   normalizeHeaders,
   normalizeExcludedModels,
 };

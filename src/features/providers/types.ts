@@ -2,7 +2,13 @@
  * AI 提供商 Workbench 视图模型(归一化各 brand 的异构 config)
  */
 
-import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type {
+  GeminiKeyConfig,
+  KimiRegion,
+  KimiService,
+  OpenAIProviderConfig,
+  ProviderKeyConfig,
+} from '@/types';
 import type { ThinkingLevel } from './thinkingLevels';
 
 export type ProviderBrand =
@@ -23,7 +29,7 @@ export type ProviderBrand =
   | 'kimi';
 
 export type SponsorProviderBrand =
-  'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'lmuAI' | 'infistar' | 'kimi';
+  'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'lmuAI' | 'infistar';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -82,13 +88,7 @@ export type ProviderResourceSelector =
       codexIndices: number[];
       geminiIndices: number[];
     }
-  | {
-      brand: 'kimi';
-      openaiIndices: number[];
-      claudeIndices: number[];
-      codexIndices: number[];
-      geminiIndices: number[];
-    };
+  | { brand: 'kimi'; apiKey: string; service: KimiService; region?: KimiRegion; index: number };
 
 export interface ProviderResourceFlags {
   cloakEnabled?: boolean;
@@ -226,4 +226,6 @@ export interface ProviderEntryFormInput {
   apiKeyEntries?: ApiKeyEntryInput[];
   /** APIKEY.FUN stores one grouped key per platform protocol. */
   sponsorKeyEntries?: SponsorKeyEntryInput[];
+  kimiService?: KimiService;
+  kimiRegion?: KimiRegion;
 }

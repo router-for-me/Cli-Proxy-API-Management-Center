@@ -1,4 +1,9 @@
-import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
+import type {
+  GeminiKeyConfig,
+  KimiKeyConfig,
+  OpenAIProviderConfig,
+  ProviderKeyConfig,
+} from '@/types';
 import { hasDisableAllModelsRule, stripDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import {
@@ -38,12 +43,7 @@ import {
   getInfistarProtocolUrls,
   resolveInfistarBaseUrl,
 } from './infistar';
-import {
-  KIMI_DISPLAY_NAME,
-  KIMI_PROTOCOL_LABELS,
-  getKimiProtocolUrls,
-  resolveKimiBaseUrl,
-} from './kimi';
+import { kimiDisplayBaseUrl } from './kimi';
 import type {
   ProviderBrand,
   ProviderResource,
@@ -388,11 +388,37 @@ export function infistarToResource(raw: SponsorProviderRaw): ProviderResource | 
   });
 }
 
-export function kimiToResource(raw: SponsorProviderRaw): ProviderResource | null {
-  return sponsorRawToResource('kimi', raw, {
-    displayName: KIMI_DISPLAY_NAME,
-    protocolLabels: KIMI_PROTOCOL_LABELS,
-    resolveBaseUrl: resolveKimiBaseUrl,
-    getProtocolUrls: getKimiProtocolUrls,
-  });
+export function kimiToResource(config: KimiKeyConfig, index: number): ProviderResource {
+  const apiKey = config.apiKey ?? '';
+  const disabled = hasDisableAllModelsRule(config.excludedModels);
+  const models = collectModelNames(config.models);
+  return {
+    id: buildId('kimi', index, truncateForId(apiKey)),
+    brand: 'kimi',
+    originalIndex: index,
+    name: config.name?.trim() || null,
+    identifier: maskApiKey(apiKey) || `#${index + 1}`,
+    apiKeyPreview: apiKey ? maskApiKey(apiKey) : null,
+    apiKey: apiKey || null,
+    authIndex: config.authIndex ?? null,
+    baseUrl: kimiDisplayBaseUrl(config.service, config.region),
+    proxyUrl: config.proxyUrl ?? null,
+    prefix: config.prefix ?? null,
+    modelCount: models.length,
+    models,
+    priority: normalizePriority(config.priority),
+    headerCount: countHeaders(config.headers),
+    excludedModelCount: stripDisableAllModelsRule(config.excludedModels).length,
+    apiKeyEntryCount: 0,
+    disabled,
+    flags: {},
+    selector: {
+      brand: 'kimi',
+      apiKey,
+      service: config.service,
+      region: config.region,
+      index,
+    },
+    raw: config,
+  };
 }

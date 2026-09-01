@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { IconCheck, IconX } from '@/components/ui/icons';
 import { getProviderTotalStats, type ProviderRecentUsageMap } from '@/components/providers/utils';
-import type { OpenAIProviderConfig } from '@/types';
+import type { KimiKeyConfig, OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
 import {
   getSponsorProviderDefinition,
@@ -101,8 +101,33 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
     );
   }
 
+  const kimiConfig = resource.brand === 'kimi' ? (resource.raw as KimiKeyConfig) : null;
   const primary: Array<[string, string]> = [
     ['identifier', resource.identifier],
+    ...(kimiConfig
+      ? ([
+          [
+            'kimiService',
+            t(
+              kimiConfig.service === 'coding-plan'
+                ? 'providersPage.form.kimiServiceCodingPlan'
+                : 'providersPage.form.kimiServiceOpenPlatform'
+            ),
+          ],
+          ...(kimiConfig.service === 'open-platform'
+            ? ([
+                [
+                  'kimiRegion',
+                  t(
+                    kimiConfig.region === 'international'
+                      ? 'providersPage.sponsor.urlOptions.overseas'
+                      : 'providersPage.sponsor.urlOptions.domestic'
+                  ),
+                ],
+              ] as Array<[string, string]>)
+            : []),
+        ] as Array<[string, string]>)
+      : []),
     ['baseUrl', resource.baseUrl ?? t('providersPage.status.notSet')],
     ['proxyUrl', resource.proxyUrl ?? t('providersPage.status.notSet')],
     ['prefix', resource.prefix ?? t('providersPage.status.none')],

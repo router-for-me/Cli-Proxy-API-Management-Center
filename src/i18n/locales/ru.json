@@ -1564,7 +1564,9 @@
         "headers": "Заголовков",
         "authIndex": "Auth Index",
         "excludedModels": "Исключённых моделей",
-        "apiKeyEntries": "API-ключей"
+        "apiKeyEntries": "API-ключей",
+        "kimiService": "Источник",
+        "kimiRegion": "Регион"
       }
     },
     "form": {
@@ -1572,6 +1574,11 @@
       "editEyebrow": "Изменить",
       "name": "Название",
       "apiKey": "API-ключ",
+      "kimiService": "Источник",
+      "kimiServiceOpenPlatform": "kimi open platform",
+      "kimiServiceCodingPlan": "kimi for coding",
+      "kimiRegion": "Регион",
+      "kimiCurrentUrl": "Текущий URL",
       "apiKeyCreatePlaceholder": "Введите API-ключ",
       "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",
       "baseUrl": "Base URL",

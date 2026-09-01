@@ -86,6 +86,8 @@ export interface UseConnectivityTestResult {
   runCodex: () => Promise<void>;
   runGemini: () => Promise<void>;
   runClaude: () => Promise<void>;
+  chatStatus: ConnectivityStatus;
+  runChat: () => Promise<void>;
 }
 
 export function useConnectivityTest(
@@ -112,6 +114,7 @@ export function useConnectivityTest(
   const [codexStatus, setCodexStatus] = useState<ConnectivityStatus>(IDLE);
   const [geminiStatus, setGeminiStatus] = useState<ConnectivityStatus>(IDLE);
   const [claudeStatus, setClaudeStatus] = useState<ConnectivityStatus>(IDLE);
+  const [chatStatus, setChatStatus] = useState<ConnectivityStatus>(IDLE);
   const [inFlight, setInFlight] = useState(0);
 
   const entrySignatures = useMemo(
@@ -170,6 +173,7 @@ export function useConnectivityTest(
     setCodexStatus(IDLE);
     setGeminiStatus(IDLE);
     setClaudeStatus(IDLE);
+    setChatStatus(IDLE);
   }, [signature]);
 
   const updateOpenaiStatus = useCallback((idx: number, value: ConnectivityStatus) => {
@@ -511,16 +515,95 @@ export function useConnectivityTest(
     }
   }, [apiKey, authIndex, baseUrl, brand, fallbackApiKey, formHeaders, messages, models, testModel]);
 
+  const runChat = useCallback(async (): Promise<void> => {
+    if (brand !== 'kimi') return;
+
+    const trimmedBase = baseUrl.trim();
+    if (!trimmedBase) {
+      setChatStatus({ state: 'error', message: messages.baseUrlRequired });
+      return;
+    }
+
+    const endpoint = buildOpenAIChatCompletionsEndpoint(trimmedBase);
+    if (!endpoint) {
+      setChatStatus({ state: 'error', message: messages.endpointInvalid });
+      return;
+    }
+
+    const model = pickModel(testModel, models);
+    if (!model) {
+      setChatStatus({ state: 'error', message: messages.modelRequired });
+      return;
+    }
+
+    const customHeaders = buildHeaderObject(formHeaders);
+    const explicitKey = (apiKey ?? '').trim();
+    const persistedKey = (fallbackApiKey ?? '').trim();
+    const hasAuthorization = hasHeader(customHeaders, 'authorization');
+    const resolvedKey = explicitKey || persistedKey;
+    const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
+
+    if (!resolvedKey && !hasAuthorization && !resolvedAuthIndex) {
+      setChatStatus({ state: 'error', message: messages.apiKeyRequired });
+      return;
+    }
+
+    const headerObj: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...customHeaders,
+    };
+    if (!hasHeader(headerObj, 'authorization')) {
+      if (resolvedKey) {
+        headerObj.Authorization = `Bearer ${resolvedKey}`;
+      } else if (resolvedAuthIndex) {
+        headerObj.Authorization = 'Bearer $TOKEN$';
+      }
+    }
+
+    setChatStatus({ state: 'loading', message: '' });
+    setInFlight((n) => n + 1);
+    try {
+      const result = await apiCallApi.request(
+        {
+          authIndex: resolvedAuthIndex,
+          method: 'POST',
+          url: endpoint,
+          header: headerObj,
+          data: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: 'Hi' }],
+            stream: false,
+            max_tokens: 5,
+          }),
+        },
+        { timeout: DEFAULT_TIMEOUT_MS }
+      );
+      if (result.statusCode < 200 || result.statusCode >= 300) {
+        throw new Error(getApiCallErrorMessage(result));
+      }
+      setChatStatus({ state: 'success', message: '' });
+    } catch (err) {
+      setChatStatus({
+        state: 'error',
+        message: requestFailureMessage(err, messages),
+      });
+    } finally {
+      setInFlight((n) => n - 1);
+    }
+  }, [apiKey, authIndex, baseUrl, brand, fallbackApiKey, formHeaders, messages, models, testModel]);
+
   return {
     openaiStatuses,
     codexStatus,
     geminiStatus,
     claudeStatus,
+    chatStatus,
     isTestingAny: inFlight > 0,
     runOpenAIKey,
     runOpenAIAllKeys,
     runCodex,
     runGemini,
     runClaude,
+    runChat,
   };
 }

@@ -105,6 +105,7 @@ export const getProviderKeyCounts = (config: Config) => ({
   claude: config.claudeApiKeys?.length ?? 0,
   vertex: config.vertexApiKeys?.length ?? 0,
   openai: config.openaiCompatibility?.length ?? 0,
+  kimi: config.kimiApiKeys?.length ?? 0,
 });
 
 /**

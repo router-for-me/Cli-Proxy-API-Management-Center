@@ -171,8 +171,11 @@ export function ProviderResourceTable({
         </div>
       );
     }
-    if (r.brand === 'openaiCompatibility') {
-      const extra = r.apiKeyEntryCount > 1 ? ` · +${r.apiKeyEntryCount - 1}` : '';
+    if (r.brand === 'openaiCompatibility' || (r.brand === 'kimi' && r.name)) {
+      const extra =
+        r.brand === 'openaiCompatibility' && r.apiKeyEntryCount > 1
+          ? ` · +${r.apiKeyEntryCount - 1}`
+          : '';
       return (
         <div className={styles.primaryCell}>
           <span className={styles.primaryName}>{r.name ?? r.identifier}</span>

@@ -57,6 +57,25 @@ export interface ProviderKeyConfig {
   authIndex?: string;
 }
 
+export type KimiService = 'open-platform' | 'coding-plan';
+export type KimiRegion = 'domestic' | 'international';
+
+export interface KimiKeyConfig {
+  apiKey: string;
+  service: KimiService;
+  region?: KimiRegion;
+  name?: string;
+  priority?: number;
+  weight?: number;
+  prefix?: string;
+  proxyUrl?: string;
+  models?: ModelAlias[];
+  headers?: Record<string, string>;
+  excludedModels?: string[];
+  disableCooling?: boolean;
+  authIndex?: string;
+}
+
 export interface OpenAIProviderConfig {
   name: string;
   prefix?: string;
