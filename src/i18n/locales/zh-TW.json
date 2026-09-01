@@ -1621,7 +1621,7 @@
       "editEyebrow": "編輯",
       "name": "名稱",
       "displayName": "備註名稱",
-      "displayNamePlaceholder": "例如：Sub2API 主帳號",
+      "displayNamePlaceholder": "例如：工作帳號",
       "apiKey": "API 金鑰",
       "apiKeyCreatePlaceholder": "輸入 API 金鑰",
       "apiKeyEditPlaceholder": "留空表示不修改",

@@ -1688,7 +1688,7 @@
       "sort": {
         "name": "Имя",
         "displayName": "Отображаемое имя",
-        "displayNamePlaceholder": "например: основной Sub2API",
+        "displayNamePlaceholder": "например: рабочий аккаунт",
         "priority": "Приоритет",
         "recentSuccess": "Недавние успехи",
         "directionAsc": "По возрастанию",

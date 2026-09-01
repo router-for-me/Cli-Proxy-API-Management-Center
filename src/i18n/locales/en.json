@@ -1595,7 +1595,7 @@
       "editEyebrow": "Edit",
       "name": "Name",
       "displayName": "Display name",
-      "displayNamePlaceholder": "e.g. Sub2API primary",
+      "displayNamePlaceholder": "e.g. Work account",
       "apiKey": "API key",
       "apiKeyCreatePlaceholder": "Enter API key",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",

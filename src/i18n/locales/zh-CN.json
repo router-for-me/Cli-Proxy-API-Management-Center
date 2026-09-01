@@ -1595,7 +1595,7 @@
       "editEyebrow": "编辑",
       "name": "名称",
       "displayName": "备注名",
-      "displayNamePlaceholder": "例如：Sub2API 主账号",
+      "displayNamePlaceholder": "例如：工作账号",
       "apiKey": "API 密钥",
       "apiKeyCreatePlaceholder": "输入 API 密钥",
       "apiKeyEditPlaceholder": "留空表示不修改",
