@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -49,6 +50,7 @@ import { APIKEY_FUN_DISPLAY_NAME, hasApiKeyFunConfig } from '@/features/provider
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
+import { getSidebarShortcutLabel, isSidebarToggleShortcut } from '@/utils/sidebarShortcut';
 import type { Theme } from '@/types';
 
 const sidebarIcons: Record<string, ReactNode> = {
@@ -811,6 +813,31 @@ export function MainLayout() {
     [hideRailTooltip, showRailTooltip]
   );
 
+  const isMac = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    const platform =
+      (navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+      navigator.platform ||
+      navigator.userAgent ||
+      '';
+    return /(Mac|iPhone|iPod|iPad)/i.test(platform);
+  }, []);
+
+  const shortcutText = getSidebarShortcutLabel(isMac);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isSidebarToggleShortcut(event)) {
+        event.preventDefault();
+        hideRailTooltip();
+        setSidebarCollapsed((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hideRailTooltip]);
+
   const renderNavBadge = (badge?: number, badgeLabel?: string) =>
     typeof badge === 'number' ? (
       <>
@@ -941,6 +968,8 @@ export function MainLayout() {
     ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
     : t('sidebar.toggle_expand', { defaultValue: 'Open navigation' });
 
+  const sidebarToggleLabel = sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse');
+
   return (
     <div
       className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''} ${
@@ -957,8 +986,18 @@ export function MainLayout() {
             hideRailTooltip();
             setSidebarCollapsed((prev) => !prev);
           }}
-          title={sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
-          aria-label={sidebarCollapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          onMouseEnter={(event) =>
+            handleRailTooltipMouseEnter(event, 'sidebar-toggle', sidebarToggleLabel, shortcutText)
+          }
+          onMouseLeave={handleRailTooltipMouseLeave}
+          onFocus={(event) =>
+            handleRailTooltipFocus(event, 'sidebar-toggle', sidebarToggleLabel, shortcutText)
+          }
+          onBlur={(event) =>
+            handleRailTooltipBlur(event, 'sidebar-toggle', sidebarToggleLabel, shortcutText)
+          }
+          aria-label={`${sidebarToggleLabel} (${shortcutText})`}
+          aria-describedby={railTooltip?.targetID === 'sidebar-toggle' ? NAV_TOOLTIP_ID : undefined}
         >
           {sidebarCollapsed ? headerIcons.chevronRight : headerIcons.chevronLeft}
         </button>
@@ -1137,7 +1176,7 @@ export function MainLayout() {
           </div>
         </aside>
 
-        {!showSidebarLabels && railTooltip && (
+        {railTooltip && (
           <div
             ref={railTooltipRef}
             id={NAV_TOOLTIP_ID}
