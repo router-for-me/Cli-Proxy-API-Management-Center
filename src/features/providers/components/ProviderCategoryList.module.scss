@@ -167,3 +167,9 @@
   border-color: var(--amber-30);
   color: var(--amber-text);
 }
+
+.badgeKimi {
+  background: color-mix(in srgb, #1783ff 14%, var(--bg-primary));
+  border-color: color-mix(in srgb, #1783ff 48%, var(--border-color));
+  color: color-mix(in srgb, #1783ff 82%, var(--text-primary));
+}

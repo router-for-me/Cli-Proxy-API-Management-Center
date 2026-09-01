@@ -142,15 +142,26 @@ export function ProviderResourcePanel({
                 <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
               </a>
             ) : showClaudeApiSponsorLink || registrationUrl ? (
-              <a
-                className={`${styles.sponsorLink} ${styles.sponsorLinkEmphasis}`}
-                href={registrationUrl ?? CLAUDE_API_AFFILIATE_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className={styles.sponsorLinkText}>{registrationLabel}</span>
-                <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
-              </a>
+              <>
+                <a
+                  className={[
+                    styles.sponsorLink,
+                    styles.sponsorLinkEmphasis,
+                    group.id === 'kimi' ? styles.sponsorLinkKimi : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  href={registrationUrl ?? CLAUDE_API_AFFILIATE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span className={styles.sponsorLinkText}>{registrationLabel}</span>
+                  <IconExternalLink className={styles.sponsorLinkIcon} size={14} />
+                </a>
+                {group.id === 'kimi' ? (
+                  <p className={styles.kimiPromo}>{t('providersPage.sponsor.kimiPromo')}</p>
+                ) : null}
+              </>
             ) : null}
           </div>
           <div className={styles.searchWrap}>

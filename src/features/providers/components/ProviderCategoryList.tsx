@@ -91,7 +91,14 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
                 </span>
               </span>
             </span>
-            <span className={`${styles.badge} ${total === 0 ? styles.badgeAmber : ''}`}>
+            <span
+              className={[
+                styles.badge,
+                total === 0 ? (group.id === 'kimi' ? styles.badgeKimi : styles.badgeAmber) : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
               {total}
             </span>
           </button>
