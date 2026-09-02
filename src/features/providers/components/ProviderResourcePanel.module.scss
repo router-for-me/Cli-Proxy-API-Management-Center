@@ -187,6 +187,32 @@
   }
 }
 
+.sponsorLinkKimi {
+  color: color-mix(in srgb, #1783ff 82%, var(--text-primary));
+  border-color: color-mix(in srgb, #1783ff 48%, var(--border-color));
+  background: color-mix(in srgb, #1783ff 14%, var(--bg-primary));
+  box-shadow: 0 1px 0 color-mix(in srgb, #1783ff 18%, transparent);
+
+  &:hover {
+    border-color: color-mix(in srgb, #1783ff 72%, var(--border-color));
+    background: color-mix(in srgb, #1783ff 20%, var(--bg-primary));
+    box-shadow: 0 4px 12px color-mix(in srgb, #1783ff 18%, transparent);
+  }
+
+  &:focus-visible {
+    outline-color: #1783ff;
+  }
+}
+
+.kimiPromo {
+  margin: 8px 0 0;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
 .sponsorLinkText {
   min-width: 0;
   overflow-wrap: anywhere;

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { buildOpenAIChatCompletionsEndpoint } from '../src/components/providers/utils';
+import {
+  buildCodexResponsesEndpoint,
+  buildOpenAIChatCompletionsEndpoint,
+} from '../src/components/providers/utils';
 import {
   KIMI_ANTHROPIC_BASE_URL,
   KIMI_CHINESE_AFFILIATE_URL,
@@ -13,6 +16,7 @@ import {
   getKimiAffiliateUrl,
   getKimiProtocolUrls,
   isKimiClaudeProvider,
+  isKimiCodexProvider,
   isKimiOpenAIProvider,
   resolveKimiBaseUrl,
 } from '../src/features/providers/kimi';
@@ -29,23 +33,30 @@ afterEach(() => {
 });
 
 describe('Kimi provider', () => {
-  test('defaults to the domestic OpenAI-compatible and Claude protocol endpoints', () => {
+  test('defaults to the domestic OpenAI-compatible, Claude, and Responses endpoints', () => {
     expect(getKimiProtocolUrls(undefined)).toEqual({
       openai: 'https://api.moonshot.cn/v1',
       anthropic: 'https://api.moonshot.cn/anthropic',
-      codex: '',
+      codex: 'https://api.moonshot.cn/v1',
       gemini: '',
     });
     expect(getKimiProtocolUrls(KIMI_OPENAI_BASE_URL)).toEqual({
       openai: 'https://api.moonshot.ai/v1',
       anthropic: 'https://api.moonshot.ai/anthropic',
-      codex: '',
+      codex: 'https://api.moonshot.ai/v1',
       gemini: '',
     });
     expect(buildOpenAIChatCompletionsEndpoint(KIMI_OPENAI_BASE_URL)).toBe(
       'https://api.moonshot.ai/v1/chat/completions'
     );
-    expect(getSponsorProviderDefinition('kimi').protocols).toEqual(['openai', 'claude']);
+    expect(buildCodexResponsesEndpoint(KIMI_OPENAI_BASE_URL)).toBe(
+      'https://api.moonshot.ai/v1/responses'
+    );
+    expect(getSponsorProviderDefinition('kimi').protocols).toEqual([
+      'openai',
+      'claude',
+      'codex',
+    ]);
   });
 
   test('offers overseas and domestic URLs and maps the domestic protocol endpoints', () => {
@@ -67,7 +78,7 @@ describe('Kimi provider', () => {
     expect(getKimiProtocolUrls(KIMI_DOMESTIC_OPENAI_BASE_URL)).toEqual({
       openai: 'https://api.moonshot.cn/v1',
       anthropic: 'https://api.moonshot.cn/anthropic',
-      codex: '',
+      codex: 'https://api.moonshot.cn/v1',
       gemini: '',
     });
   });
@@ -130,9 +141,13 @@ describe('Kimi provider', () => {
     expect(
       isKimiClaudeProvider({ apiKey: 'sk-test', baseUrl: KIMI_DOMESTIC_ANTHROPIC_BASE_URL })
     ).toBeTrue();
+    expect(isKimiCodexProvider({ apiKey: 'sk-test', baseUrl: KIMI_OPENAI_BASE_URL })).toBeTrue();
+    expect(
+      isKimiCodexProvider({ apiKey: 'sk-test', baseUrl: KIMI_DOMESTIC_OPENAI_BASE_URL })
+    ).toBeTrue();
   });
 
-  test('aggregates only the Kimi OpenAI-compatible and Claude configs', () => {
+  test('aggregates only the Kimi OpenAI-compatible, Claude, and Responses configs', () => {
     const raw = buildKimiRaw({
       openaiCompatibility: [
         { name: 'kimi', baseUrl: KIMI_OPENAI_BASE_URL },
@@ -142,11 +157,15 @@ describe('Kimi provider', () => {
         { apiKey: 'kimi-key', baseUrl: KIMI_ANTHROPIC_BASE_URL },
         { apiKey: 'other-key', baseUrl: 'https://api.anthropic.com' },
       ],
+      codexApiKeys: [
+        { apiKey: 'kimi-response-key', baseUrl: KIMI_OPENAI_BASE_URL },
+        { apiKey: 'other-response-key', baseUrl: 'https://example.com/v1' },
+      ],
     });
 
     expect(raw.openai.map((item) => item.index)).toEqual([0]);
     expect(raw.claude.map((item) => item.index)).toEqual([0]);
-    expect(raw.codex).toEqual([]);
+    expect(raw.codex.map((item) => item.index)).toEqual([0]);
     expect(raw.gemini).toEqual([]);
   });
 });
