@@ -927,7 +927,8 @@
           "title": "進階與實驗",
           "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
           "plugins_title": "外掛",
-          "signature_title": "Antigravity 簽章"
+          "antigravity_title": "Antigravity",
+          "signature_title": "簽章驗證"
         },
         "server": {
           "host": "主機位址",
@@ -1002,6 +1003,11 @@
           "usage_statistics_enabled_desc": "啟用記憶體中的請求用量聚合",
           "redis_usage_retention": "Redis 用量佇列保留秒數",
           "redis_usage_retention_hint": "RESP 介面 LPOP/RPOP 用量佇列的記憶體保留時間，最大 3600 秒",
+          "antigravity_sensitive_words": "敏感詞混淆",
+          "antigravity_sensitive_words_desc": "在 Antigravity 系統提示詞的匹配項中插入零寬字元，降低上游精確關鍵詞匹配",
+          "antigravity_sensitive_words_label": "敏感詞（antigravity.sensitive-words）",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "每項填寫一個詞或短語；匹配不分大小寫，儲存時移除空項，少於 2 個字元的項目會被後端忽略",
           "antigravity_signature_cache": "啟用 Antigravity 簽名快取",
           "antigravity_signature_cache_desc": "優先使用並校驗快取的 thinking block 簽名",
           "antigravity_signature_strict": "嚴格校驗旁路簽名",

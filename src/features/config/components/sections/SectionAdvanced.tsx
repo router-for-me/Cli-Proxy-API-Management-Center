@@ -34,6 +34,10 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
     (pluginStoreAuth: PluginStoreAuthRule[]) => onChange({ pluginStoreAuth }),
     [onChange]
   );
+  const handleAntigravitySensitiveWordsChange = useCallback(
+    (antigravitySensitiveWords: string[]) => onChange({ antigravitySensitiveWords }),
+    [onChange]
+  );
 
   return (
     <SectionCard
@@ -106,37 +110,73 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
         </Collapsible>
 
         <Collapsible
-          label={t('config_management.visual.sections.advanced.signature_title')}
+          label={t('config_management.visual.sections.advanced.antigravity_title')}
           defaultOpen={false}
         >
-          <FieldGrid>
-            <FieldAnchor fieldId="antigravitySignatureCacheEnabled">
-              <ToggleRow
-                title={t('config_management.visual.sections.system.antigravity_signature_cache')}
+          <FieldStack>
+            <FieldAnchor fieldId="antigravitySensitiveWords">
+              <FieldGroup
+                title={t('config_management.visual.sections.system.antigravity_sensitive_words')}
                 description={t(
-                  'config_management.visual.sections.system.antigravity_signature_cache_desc'
+                  'config_management.visual.sections.system.antigravity_sensitive_words_desc'
                 )}
-                checked={values.antigravitySignatureCacheEnabled}
-                disabled={disabled}
-                onChange={(antigravitySignatureCacheEnabled) =>
-                  onChange({ antigravitySignatureCacheEnabled })
-                }
-              />
+              >
+                <FieldShell
+                  label={t(
+                    'config_management.visual.sections.system.antigravity_sensitive_words_label'
+                  )}
+                  hint={t(
+                    'config_management.visual.sections.system.antigravity_sensitive_words_hint'
+                  )}
+                >
+                  <StringListEditor
+                    value={values.antigravitySensitiveWords}
+                    disabled={disabled}
+                    placeholder={t(
+                      'config_management.visual.sections.system.antigravity_sensitive_words_placeholder'
+                    )}
+                    inputAriaLabel={t(
+                      'config_management.visual.sections.system.antigravity_sensitive_words_label'
+                    )}
+                    onChange={handleAntigravitySensitiveWordsChange}
+                  />
+                </FieldShell>
+              </FieldGroup>
             </FieldAnchor>
-            <FieldAnchor fieldId="antigravitySignatureBypassStrict">
-              <ToggleRow
-                title={t('config_management.visual.sections.system.antigravity_signature_strict')}
-                description={t(
-                  'config_management.visual.sections.system.antigravity_signature_strict_desc'
-                )}
-                checked={values.antigravitySignatureBypassStrict}
-                disabled={disabled}
-                onChange={(antigravitySignatureBypassStrict) =>
-                  onChange({ antigravitySignatureBypassStrict })
-                }
-              />
-            </FieldAnchor>
-          </FieldGrid>
+
+            <Divider />
+            <FieldGroupHeading
+              title={t('config_management.visual.sections.advanced.signature_title')}
+            />
+            <FieldGrid>
+              <FieldAnchor fieldId="antigravitySignatureCacheEnabled">
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.antigravity_signature_cache')}
+                  description={t(
+                    'config_management.visual.sections.system.antigravity_signature_cache_desc'
+                  )}
+                  checked={values.antigravitySignatureCacheEnabled}
+                  disabled={disabled}
+                  onChange={(antigravitySignatureCacheEnabled) =>
+                    onChange({ antigravitySignatureCacheEnabled })
+                  }
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="antigravitySignatureBypassStrict">
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.antigravity_signature_strict')}
+                  description={t(
+                    'config_management.visual.sections.system.antigravity_signature_strict_desc'
+                  )}
+                  checked={values.antigravitySignatureBypassStrict}
+                  disabled={disabled}
+                  onChange={(antigravitySignatureBypassStrict) =>
+                    onChange({ antigravitySignatureBypassStrict })
+                  }
+                />
+              </FieldAnchor>
+            </FieldGrid>
+          </FieldStack>
         </Collapsible>
 
         <Collapsible
