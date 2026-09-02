@@ -901,7 +901,8 @@
           "title": "Advanced & Experimental",
           "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
           "plugins_title": "Plugins",
-          "signature_title": "Antigravity Signature"
+          "antigravity_title": "Antigravity",
+          "signature_title": "Signature Validation"
         },
         "server": {
           "host": "Host Address",
@@ -976,6 +977,11 @@
           "usage_statistics_enabled_desc": "Aggregate request usage statistics in memory",
           "redis_usage_retention": "Redis Usage Queue Retention (seconds)",
           "redis_usage_retention_hint": "In-memory retention for RESP LPOP/RPOP usage output, max 3600 seconds",
+          "antigravity_sensitive_words": "Sensitive Word Obfuscation",
+          "antigravity_sensitive_words_desc": "Insert zero-width characters into matching words in Antigravity system instructions to reduce exact keyword matching upstream",
+          "antigravity_sensitive_words_label": "Sensitive words (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
           "antigravity_signature_cache": "Enable Antigravity Signature Cache",
           "antigravity_signature_cache_desc": "Prefer and validate cached thinking-block signatures",
           "antigravity_signature_strict": "Strict Bypass Signature Validation",

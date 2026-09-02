@@ -901,7 +901,8 @@
           "title": "高级与实验",
           "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
           "plugins_title": "插件",
-          "signature_title": "Antigravity 签名"
+          "antigravity_title": "Antigravity",
+          "signature_title": "签名校验"
         },
         "server": {
           "host": "主机地址",
@@ -976,6 +977,11 @@
           "usage_statistics_enabled_desc": "启用内存中的请求用量聚合",
           "redis_usage_retention": "Redis 用量队列保留秒数",
           "redis_usage_retention_hint": "RESP 接口 LPOP/RPOP 用量队列的内存保留时间，最大 3600 秒",
+          "antigravity_sensitive_words": "敏感词混淆",
+          "antigravity_sensitive_words_desc": "在 Antigravity 系统提示词匹配项中插入零宽字符，降低上游精确关键词匹配",
+          "antigravity_sensitive_words_label": "敏感词（antigravity.sensitive-words）",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "每项填写一个词或短语；匹配不区分大小写，保存时移除空项，少于 2 个字符的项会被后端忽略",
           "antigravity_signature_cache": "启用 Antigravity 签名缓存",
           "antigravity_signature_cache_desc": "优先使用并校验缓存的 thinking block 签名",
           "antigravity_signature_strict": "严格校验旁路签名",

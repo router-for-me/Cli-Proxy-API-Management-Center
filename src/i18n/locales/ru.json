@@ -888,7 +888,8 @@
           "title": "Дополнительно и эксперименты",
           "description": "Подмена заголовков, кэш подписей, источники плагинов и другие редко изменяемые настройки",
           "plugins_title": "Плагины",
-          "signature_title": "Подпись Antigravity"
+          "antigravity_title": "Antigravity",
+          "signature_title": "Проверка подписей"
         },
         "server": {
           "host": "Адрес хоста",
@@ -963,6 +964,11 @@
           "usage_statistics_enabled_desc": "Агрегировать статистику использования запросов в памяти",
           "redis_usage_retention": "Хранение очереди Redis usage (сек)",
           "redis_usage_retention_hint": "Время хранения вывода RESP LPOP/RPOP в памяти, максимум 3600 секунд",
+          "antigravity_sensitive_words": "Обфускация стоп-слов",
+          "antigravity_sensitive_words_desc": "Вставляет символы нулевой ширины в совпадающие слова системных инструкций Antigravity, затрудняя точное распознавание ключевых слов на стороне сервиса",
+          "antigravity_sensitive_words_label": "Стоп-слова (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "Одно слово или фраза в строке. Регистр не учитывается; пустые значения удаляются, а значения короче 2 символов игнорируются backend",
           "antigravity_signature_cache": "Включить кэш подписей Antigravity",
           "antigravity_signature_cache_desc": "Предпочитать и проверять кэшированные подписи thinking-блоков",
           "antigravity_signature_strict": "Строгая проверка bypass-подписи",
