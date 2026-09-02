@@ -1500,7 +1500,7 @@
       "detailHint": "{{provider}} 会按协议分别写入对应的 API Key 配置,这里只做聚合管理。",
       "registerLink": "点此注册",
       "registerNow": "立即注册",
-      "kimiPromo": "新用户首次成功充值，赠送充值金额 10% 的 API 额度，最高赠送 ¥1000",
+      "kimiPromo": "新用户首次成功充值，赠送充值金额 10% 的 API 额度，最高赠送 ¥1000，优惠截至 9 月 30 日",
       "dashboardLink": "控制面板",
       "emptyRegisterHint": "尚未添加配置",
       "apiKeyHint": "此 Key 只会写入当前选择的分组/协议配置。",
