@@ -310,6 +310,55 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
+// GLM Coding Plan API payload types
+export interface GlmQuotaLimit {
+  type?: string;
+  name?: string;
+  unit?: number | string;
+  number?: number | string;
+  usage?: number | string;
+  currentValue?: number | string;
+  percentage?: number | string;
+  nextResetTime?: number | string;
+  remaining?: number | string;
+}
+
+export interface GlmQuotaPayload {
+  code?: number | string;
+  success?: boolean;
+  msg?: string;
+  message?: string;
+  data?:
+    | {
+        limits?: GlmQuotaLimit[];
+        planName?: string;
+        plan?: string;
+      }
+    | GlmQuotaLimit[];
+}
+
+export interface GlmQuotaRow {
+  id: string;
+  label?: string;
+  labelKey?: string;
+  labelParams?: Record<string, string | number>;
+  used: number;
+  limit: number;
+  resetAtMs?: number | null;
+  periodHours?: number | null;
+}
+
+export interface GlmQuotaData {
+  rows: GlmQuotaRow[];
+  planName?: string | null;
+}
+
+export interface GlmQuotaState extends GlmQuotaData {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  error?: string;
+  errorStatus?: number;
+}
+
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;

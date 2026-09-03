@@ -4,13 +4,15 @@ import {
   buildTabCounts,
   classifyQuotaFiles,
   filterEntriesByTab,
+  isGlmOpenAICompatibleProvider,
   isQuotaRefreshDisabled,
+  mergeGlmConfigQuotaFiles,
   paginate,
   resolveQuotaProviderType,
   sortQuotaEntries,
   type QuotaFileEntry,
 } from '@/features/quota/logic';
-import type { AuthFileItem } from '@/types';
+import type { AuthFileItem, OpenAIProviderConfig } from '@/types';
 
 const file = (name: string, provider: string, extra: Partial<AuthFileItem> = {}): AuthFileItem =>
   ({ name, provider, ...extra }) as AuthFileItem;
@@ -18,6 +20,7 @@ const file = (name: string, provider: string, extra: Partial<AuthFileItem> = {})
 const FILES: AuthFileItem[] = [
   file('codex-a.json', 'codex'),
   file('claude-a.json', 'claude'),
+  file('glm-a.json', 'openai-compatible-glm'),
   file('kimi-a.json', 'kimi'),
   file('codex-b.json', 'codex'),
   file('grok-a.json', 'grok'), // 别名归一到 xai
@@ -25,10 +28,85 @@ const FILES: AuthFileItem[] = [
   file('claude-off.json', 'claude', { disabled: true }), // 停用
 ];
 
+const glmProvider = (overrides: Partial<OpenAIProviderConfig> = {}): OpenAIProviderConfig => ({
+  name: 'GLM',
+  baseUrl: 'https://api.z.ai/api/coding/paas/v4',
+  apiKeyEntries: [{ apiKey: 'must-not-leak', authIndex: 'glm-auth-1' }],
+  ...overrides,
+});
+
+describe('mergeGlmConfigQuotaFiles', () => {
+  test('recognizes GLM by provider name or official API host', () => {
+    expect(isGlmOpenAICompatibleProvider(glmProvider())).toBe(true);
+    expect(
+      isGlmOpenAICompatibleProvider(
+        glmProvider({ name: 'custom', baseUrl: 'https://open.bigmodel.cn/api/paas/v4' })
+      )
+    ).toBe(true);
+    expect(
+      isGlmOpenAICompatibleProvider(
+        glmProvider({ name: 'OpenRouter', baseUrl: 'https://openrouter.ai/api/v1' })
+      )
+    ).toBe(false);
+  });
+
+  test('adds one quota item for a GLM config credential without exposing its API key', () => {
+    const merged = mergeGlmConfigQuotaFiles([], [glmProvider()]);
+    expect(merged).toEqual([
+      {
+        name: 'GLM #1',
+        provider: 'openai-compatible-glm',
+        type: 'openai-compatible-glm',
+        authIndex: 'glm-auth-1',
+        runtimeOnly: true,
+        disabled: undefined,
+      },
+    ]);
+    expect(JSON.stringify(merged)).not.toContain('must-not-leak');
+  });
+
+  test('uses each API-key entry auth index and skips entries missing one', () => {
+    const merged = mergeGlmConfigQuotaFiles(
+      [],
+      [
+        glmProvider({
+          apiKeyEntries: [
+            { apiKey: 'secret-1', authIndex: 'glm-auth-1' },
+            { apiKey: 'secret-2', authIndex: 'glm-auth-2' },
+            { apiKey: 'secret-3' },
+          ],
+        }),
+      ]
+    );
+    expect(merged.map((item) => item.authIndex)).toEqual(['glm-auth-1', 'glm-auth-2']);
+    expect(merged.map((item) => item.name)).toEqual(['GLM #1', 'GLM #2']);
+  });
+
+  test('keeps disabled providers out of classified quota entries', () => {
+    const merged = mergeGlmConfigQuotaFiles([], [glmProvider({ disabled: true })]);
+    expect(merged).toHaveLength(1);
+    expect(classifyQuotaFiles(merged)).toEqual([]);
+  });
+
+  test('deduplicates config credentials already returned by auth-files', () => {
+    const existing = file('glm.json', 'openai-compatible-glm', { authIndex: 'glm-auth-1' });
+    expect(mergeGlmConfigQuotaFiles([existing], [glmProvider()])).toEqual([existing]);
+  });
+
+  test('uses the provider auth index when no API-key entries are present', () => {
+    const merged = mergeGlmConfigQuotaFiles(
+      [],
+      [glmProvider({ apiKeyEntries: [], authIndex: 'glm-provider-auth' })]
+    );
+    expect(merged.map((item) => item.authIndex)).toEqual(['glm-provider-auth']);
+  });
+});
+
 describe('resolveQuotaProviderType', () => {
   test('maps provider aliases and rejects unsupported or disabled files', () => {
     expect(resolveQuotaProviderType(file('a', 'grok'))).toBe('xai');
     expect(resolveQuotaProviderType(file('a', 'antigravity'))).toBe('antigravity');
+    expect(resolveQuotaProviderType(file('a', 'openai-compatible-glm'))).toBe('glm');
     expect(resolveQuotaProviderType(file('a', 'gemini'))).toBeNull();
     expect(resolveQuotaProviderType(file('a', 'claude', { disabled: true }))).toBeNull();
   });
@@ -39,22 +117,30 @@ describe('classifyQuotaFiles', () => {
     const entries = classifyQuotaFiles(FILES);
     expect(entries.map((entry) => entry.file.name)).not.toContain('gemini-a.json');
     expect(entries.map((entry) => entry.file.name)).not.toContain('claude-off.json');
-    expect(entries).toHaveLength(5);
+    expect(entries).toHaveLength(6);
   });
 
   test('orders entries by provider tab order', () => {
     const entries = classifyQuotaFiles(FILES);
-    expect(entries.map((entry) => entry.type)).toEqual(['claude', 'codex', 'codex', 'xai', 'kimi']);
+    expect(entries.map((entry) => entry.type)).toEqual([
+      'claude',
+      'codex',
+      'codex',
+      'glm',
+      'xai',
+      'kimi',
+    ]);
   });
 });
 
 describe('buildTabCounts', () => {
   test('counts per provider plus an all total, zero-filling empty tabs', () => {
     expect(buildTabCounts(classifyQuotaFiles(FILES))).toEqual({
-      all: 5,
+      all: 6,
       claude: 1,
       antigravity: 0,
       codex: 2,
+      glm: 1,
       xai: 1,
       kimi: 1,
     });
@@ -65,7 +151,7 @@ describe('filterEntriesByTab', () => {
   const entries = classifyQuotaFiles(FILES);
 
   test("passes everything through on the 'all' tab", () => {
-    expect(filterEntriesByTab(entries, 'all')).toHaveLength(5);
+    expect(filterEntriesByTab(entries, 'all')).toHaveLength(6);
   });
 
   test('filters to a single provider', () => {
@@ -143,6 +229,7 @@ describe('sortQuotaEntries', () => {
       'kimi-a.json',
       'codex-a.json',
       'codex-b.json',
+      'glm-a.json',
     ]);
   });
 
@@ -159,6 +246,7 @@ describe('sortQuotaEntries', () => {
       // unresolved tail, in the order classifyQuotaFiles produced
       'claude-a.json',
       'codex-a.json',
+      'glm-a.json',
       'grok-a.json',
     ]);
   });

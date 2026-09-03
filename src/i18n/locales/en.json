@@ -289,6 +289,7 @@
     "filter_all": "All",
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
+    "filter_glm": "GLM",
     "filter_kimi": "Kimi",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
@@ -488,6 +489,23 @@
     "limit_window": "{{duration}} limit",
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
+  },
+  "glm_quota": {
+    "title": "GLM Coding Plan Quota",
+    "empty_title": "No GLM Coding Plan Credentials",
+    "empty_desc": "Add GLM as an OpenAI-compatible Coding Plan provider to view quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "load_failed_unknown": "GLM rejected the quota request",
+    "missing_auth_index": "Credential missing auth_index",
+    "invalid_data": "Invalid GLM quota response",
+    "empty_data": "No Coding Plan quota windows available",
+    "plan_label": "Plan",
+    "five_hour_limit": "5-hour limit",
+    "weekly_limit": "Weekly limit",
+    "limit_window": "{{duration}} limit",
+    "limit_index": "Limit #{{index}}"
   },
   "xai_quota": {
     "title": "Grok Quota",

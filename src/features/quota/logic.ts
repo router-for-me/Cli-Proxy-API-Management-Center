@@ -3,10 +3,11 @@
  * React-free —— 由 tests/quotaPageLogic.test.ts 直接消费。
  */
 
-import type { AuthFileItem } from '@/types';
+import type { AuthFileItem, OpenAIProviderConfig } from '@/types';
 import { ANTIGRAVITY_CONFIG } from './providers/antigravity/data';
 import { CLAUDE_CONFIG } from './providers/claude/data';
 import { CODEX_CONFIG } from './providers/codex/data';
+import { GLM_CONFIG } from './providers/glm/data';
 import { KIMI_CONFIG } from './providers/kimi/data';
 import { XAI_CONFIG } from './providers/xai/data';
 import type { QuotaProviderType } from './providers/types';
@@ -16,6 +17,7 @@ const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolea
   antigravity: ANTIGRAVITY_CONFIG.filterFn,
   claude: CLAUDE_CONFIG.filterFn,
   codex: CODEX_CONFIG.filterFn,
+  glm: GLM_CONFIG.filterFn,
   kimi: KIMI_CONFIG.filterFn,
   xai: XAI_CONFIG.filterFn,
 };
@@ -23,6 +25,77 @@ const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolea
 export interface QuotaFileEntry {
   file: AuthFileItem;
   type: QuotaProviderType;
+}
+
+const normalizeProviderIdentity = (value: string | undefined): string =>
+  String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-');
+
+const normalizeQuotaAuthIndex = (value: unknown): string => String(value ?? '').trim();
+
+export function isGlmOpenAICompatibleProvider(provider: OpenAIProviderConfig): boolean {
+  const name = normalizeProviderIdentity(provider.name);
+  if (['glm', 'zai', 'z-ai', 'zhipu', 'bigmodel'].includes(name)) return true;
+
+  try {
+    const hostname = new URL(provider.baseUrl).hostname.toLowerCase();
+    return hostname === 'api.z.ai' || hostname === 'open.bigmodel.cn';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Config-based OpenAI-compatible credentials do not necessarily appear in
+ * `/auth-files`. Build quota-only items from `/config` without retaining API keys.
+ */
+export function mergeGlmConfigQuotaFiles(
+  authFiles: AuthFileItem[],
+  providers: OpenAIProviderConfig[] = []
+): AuthFileItem[] {
+  const merged = [...authFiles];
+  const seenAuthIndexes = new Set(
+    authFiles
+      .map((file) => normalizeQuotaAuthIndex(file.authIndex ?? file['auth_index']))
+      .filter(Boolean)
+  );
+  const usedNames = new Set(authFiles.map((file) => file.name));
+
+  providers.forEach((provider, providerIndex) => {
+    if (!isGlmOpenAICompatibleProvider(provider)) return;
+
+    const credentials =
+      provider.apiKeyEntries.length > 0
+        ? provider.apiKeyEntries.map((entry) => entry.authIndex)
+        : [provider.authIndex];
+
+    credentials.forEach((rawAuthIndex, keyIndex) => {
+      const authIndex = normalizeQuotaAuthIndex(rawAuthIndex);
+      if (!authIndex || seenAuthIndexes.has(authIndex)) return;
+
+      const providerName = provider.name.trim() || 'GLM';
+      const baseName = `${providerName} #${keyIndex + 1}`;
+      let name = baseName;
+      if (usedNames.has(name)) {
+        name = `${baseName} (${(provider.sourceIndex ?? providerIndex) + 1})`;
+      }
+
+      usedNames.add(name);
+      seenAuthIndexes.add(authIndex);
+      merged.push({
+        name,
+        provider: 'openai-compatible-glm',
+        type: 'openai-compatible-glm',
+        authIndex,
+        runtimeOnly: true,
+        disabled: provider.disabled,
+      });
+    });
+  });
+
+  return merged;
 }
 
 export const resolveQuotaProviderType = (file: AuthFileItem): QuotaProviderType | null =>
