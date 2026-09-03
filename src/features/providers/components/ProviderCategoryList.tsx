@@ -10,10 +10,8 @@ interface ProviderCategoryListProps {
 }
 
 const QUICK_FILL_BRAND_ORDER: readonly ProviderBrand[] = [
-  'code0',
   'fennoAI',
   'qiniuCloud',
-  'claudeApi',
   'lmuAI',
   'infistar',
 ];
