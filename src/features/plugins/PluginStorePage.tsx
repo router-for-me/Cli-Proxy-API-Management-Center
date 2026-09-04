@@ -18,7 +18,13 @@ import {
   IconShield,
 } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { pluginStoreApi } from '@/services/api';
+import {
+  isPluginProxyUnsupportedError,
+  pluginProxyApi,
+  PluginProxyStatusConst,
+  pluginStoreApi,
+  type PluginProxyStatus,
+} from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginStoreEntry, PluginStoreResponse } from '@/types';
@@ -488,6 +494,27 @@ export function PluginStorePage() {
   const [installOptionsIsUpdate, setInstallOptionsIsUpdate] = useState(false);
   const [installVersion, setInstallVersion] = useState('');
 
+  // committedStatus: the status persisted on the backend (0 means unconfigured).
+  const [committedStatus, setCommittedStatus] = useState<PluginProxyStatus>(0);
+  // displayedStatus: the option currently shown by the Select. Derived from
+  // committedStatus + global proxy availability when committedStatus is 0.
+  const [displayedStatus, setDisplayedStatus] = useState<PluginProxyStatus>(-1);
+  // scenario: 'legacy' (old backend, read-only) | 'firstUse' (unconfigured) | 'configured'.
+  const [proxyScenario, setProxyScenario] = useState<'legacy' | 'firstUse' | 'configured'>(
+    'firstUse'
+  );
+  const [proxyCustomUrl, setProxyCustomUrl] = useState('');
+  const [acceleratorUrl, setAcceleratorUrl] = useState('');
+  const [systemProxyUrl, setSystemProxyUrl] = useState('');
+  const [proxyLoading, setProxyLoading] = useState(false);
+  const [proxySaving, setProxySaving] = useState(false);
+  const [proxyFeedback, setProxyFeedback] = useState<{ kind: 'ok' | 'error'; message: string } | null>(
+    null
+  );
+  const [proxyUnsupported, setProxyUnsupported] = useState(false);
+  const proxyCustomUrlRef = useRef('');
+  const acceleratorUrlRef = useRef('');
+
   const connected = connectionStatus === 'connected';
 
   const loadStore = useCallback(async () => {
@@ -530,6 +557,341 @@ export function PluginStorePage() {
   useEffect(() => {
     void loadStore();
   }, [loadStore]);
+
+  const loadPluginProxy = useCallback(async () => {
+    if (!connected) return;
+    setProxyLoading(true);
+    const systemUrlPromise = pluginProxyApi.getSystemProxyUrl();
+    try {
+      const [systemUrl, response] = await Promise.all([systemUrlPromise, pluginProxyApi.get()]);
+      setProxyUnsupported(false);
+      const globalUrl = response.proxyUrl || systemUrl;
+      setSystemProxyUrl(globalUrl);
+
+      const config = response.pluginProxy;
+      // Infer scenario: empty config or status===0 means unconfigured.
+      if (!config || config.status === 0) {
+        setProxyScenario('firstUse');
+        setCommittedStatus(0);
+        // Derived display: with global proxy -> System (2), without -> Direct (-1).
+        setDisplayedStatus(globalUrl.trim() ? 2 : -1);
+      } else {
+        setProxyScenario('configured');
+        setCommittedStatus(config.status);
+        setDisplayedStatus(config.status);
+      }
+      setProxyCustomUrl(config?.url ?? '');
+      proxyCustomUrlRef.current = config?.url ?? '';
+      setAcceleratorUrl(config?.accelerator ?? 'https://gh-proxy.com');
+      acceleratorUrlRef.current = config?.accelerator ?? 'https://gh-proxy.com';
+      setProxyFeedback(null);
+    } catch (err: unknown) {
+      const systemUrl = await systemUrlPromise;
+      setSystemProxyUrl(systemUrl);
+      if (isPluginProxyUnsupportedError(err)) {
+        // Scenario 1: legacy backend.
+        setProxyUnsupported(true);
+        setCommittedStatus(0);
+        setDisplayedStatus(systemUrl.trim() ? 2 : -1);
+        setProxyScenario('legacy');
+        setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+        return;
+      }
+      setProxyFeedback({
+        kind: 'error',
+        message: getErrorMessage(err, t('plugin_store.proxy_load_failed')),
+      });
+    } finally {
+      setProxyLoading(false);
+    }
+  }, [connected, t]);
+
+  useEffect(() => {
+    void loadPluginProxy();
+  }, [loadPluginProxy]);
+
+  const proxyStatusOptions = useMemo(
+    () => [
+      {
+        value: '-1',
+        label: t('plugin_store.proxy_mode_direct'),
+        title: t('plugin_store.proxy_mode_direct_tip'),
+      },
+      {
+        value: '2',
+        label: t('plugin_store.proxy_mode_system'),
+        title: t('plugin_store.proxy_mode_system_tip'),
+      },
+      {
+        value: '1',
+        label: t('plugin_store.proxy_mode_custom'),
+        title: t('plugin_store.proxy_mode_custom_tip'),
+      },
+      {
+        value: '3',
+        label: t('plugin_store.proxy_mode_accelerator'),
+        title: t('plugin_store.proxy_mode_accelerator_tip'),
+      },
+    ],
+    [t]
+  );
+
+  const savePluginProxy = useCallback(
+    async (status: PluginProxyStatus, url?: string, accelerator?: string) => {
+      if (proxyUnsupported) return;
+      setProxySaving(true);
+      setProxyFeedback(null);
+      try {
+        // Only send url/accelerator for the modes that use them.
+        const requestUrl =
+          status === 1 ? (url ?? proxyCustomUrlRef.current) : '';
+        const requestAccelerator =
+          status === 3 ? (accelerator ?? acceleratorUrlRef.current) : '';
+
+        await pluginProxyApi.update({
+          status,
+          url: requestUrl,
+          accelerator: requestAccelerator,
+        });
+
+        const systemUrlPromise = pluginProxyApi.getSystemProxyUrl();
+        try {
+          const [refreshed, systemUrl] = await Promise.all([pluginProxyApi.get(), systemUrlPromise]);
+          const nextAccelerator = refreshed.pluginProxy.accelerator || 'https://gh-proxy.com';
+          setCommittedStatus(refreshed.pluginProxy.status);
+          setDisplayedStatus(refreshed.pluginProxy.status);
+          setProxyScenario('configured');
+          setProxyCustomUrl(refreshed.pluginProxy.url);
+          proxyCustomUrlRef.current = refreshed.pluginProxy.url;
+          setAcceleratorUrl(nextAccelerator);
+          acceleratorUrlRef.current = nextAccelerator;
+          setSystemProxyUrl(refreshed.proxyUrl || systemUrl);
+        } catch (err: unknown) {
+          if (isPluginProxyUnsupportedError(err)) throw err;
+          // The update succeeded, so keep the submitted state even if the refresh fails.
+          setCommittedStatus(status);
+          setDisplayedStatus(status);
+          setProxyScenario('configured');
+          if (status === PluginProxyStatusConst.Custom) {
+            setProxyCustomUrl(requestUrl);
+            proxyCustomUrlRef.current = requestUrl;
+          }
+          if (status === PluginProxyStatusConst.Accelerator) {
+            setAcceleratorUrl(requestAccelerator);
+            acceleratorUrlRef.current = requestAccelerator;
+          }
+          setSystemProxyUrl(await systemUrlPromise);
+        }
+
+        setProxyFeedback({ kind: 'ok', message: t('plugin_store.proxy_save_success') });
+        showNotification(t('plugin_store.proxy_save_success'), 'success');
+      } catch (err: unknown) {
+        if (isPluginProxyUnsupportedError(err)) {
+          setProxyUnsupported(true);
+          setCommittedStatus(0);
+          setDisplayedStatus(-1);
+          setProxyScenario('legacy');
+          setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+          return;
+        }
+        const message = getErrorMessage(err, t('plugin_store.proxy_save_failed'));
+        setProxyFeedback({ kind: 'error', message });
+        showNotification(message, 'error');
+        throw err;
+      } finally {
+        setProxySaving(false);
+      }
+    },
+    [proxyUnsupported, showNotification, t]
+  );
+
+  const handleProxyStatusChange = useCallback(
+    async (value: string) => {
+      // Parse the raw string value to a PluginProxyStatus.
+      const parseStatusValue = (v: string): PluginProxyStatus => {
+        const n = Number.parseInt(v, 10);
+        if (n === -1 || n === 1 || n === 2 || n === 3) return n as PluginProxyStatus;
+        return 0;
+      };
+      const newStatus = parseStatusValue(value);
+
+      // Scenario 1: legacy backend — read-only, notify and block.
+      if (proxyScenario === 'legacy') {
+        showNotification(t('plugin_store.proxy_upgrade_hint'), 'warning');
+        return;
+      }
+
+      if (proxySaving || proxyUnsupported) return;
+
+      // Update the displayed selection immediately.
+      setDisplayedStatus(newStatus);
+
+      // No-op when the user selects the already-committed status.
+      // (For scenario 2, committedStatus is 0 which never matches -1/1/2/3, so this
+      // only applies in scenario 3 where committedStatus is a concrete value.)
+      if (newStatus === committedStatus) return;
+
+      // Direct (-1): save immediately, no URL needed.
+      if (newStatus === -1) {
+        try {
+          await savePluginProxy(-1);
+        } catch {
+          // savePluginProxy already surfaces the error.
+        }
+        return;
+      }
+
+      // Custom (1): keep current URL, validate before saving.
+      if (newStatus === 1) {
+        const retained = proxyCustomUrlRef.current.trim();
+        if (!retained) {
+          // Switch to Custom input mode without saving — user must fill URL first.
+          setProxyFeedback({
+            kind: 'error',
+            message: t('plugin_store.proxy_url_invalid'),
+          });
+          return;
+        }
+        try {
+          const validRetained = retained;
+          const result = await pluginProxyApi.validate(validRetained, 1);
+          if (!result.valid) {
+            setProxyFeedback({
+              kind: 'error',
+              message: result.error || t('plugin_store.proxy_url_invalid'),
+            });
+            return;
+          }
+          await savePluginProxy(1, validRetained);
+        } catch (err: unknown) {
+          if (isPluginProxyUnsupportedError(err)) {
+            setProxyUnsupported(true);
+            setCommittedStatus(0);
+            setDisplayedStatus(-1);
+            setProxyScenario('legacy');
+            setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+          }
+        }
+        return;
+      }
+
+      // Accelerator (3): ensure a default prefix, validate, then save.
+      if (newStatus === 3) {
+        let retained = acceleratorUrlRef.current.trim();
+        if (!retained) {
+          retained = 'https://gh-proxy.com';
+          setAcceleratorUrl(retained);
+          acceleratorUrlRef.current = retained;
+        }
+        try {
+          const validRetained = retained;
+          const result = await pluginProxyApi.validate(validRetained, 3);
+          if (!result.valid) {
+            setProxyFeedback({
+              kind: 'error',
+              message: result.error || t('plugin_store.proxy_accelerator_url_invalid'),
+            });
+            return;
+          }
+          await savePluginProxy(3,undefined, validRetained);
+        } catch (err: unknown) {
+          if (isPluginProxyUnsupportedError(err)) {
+            setProxyUnsupported(true);
+            setCommittedStatus(0);
+            setDisplayedStatus(-1);
+            setProxyScenario('legacy');
+            setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+          }
+        }
+        return;
+      }
+
+      // System (2): refresh system proxy display, then save.
+      try {
+        if (newStatus === 2) {
+          const systemUrl = await pluginProxyApi.getSystemProxyUrl();
+          setSystemProxyUrl(systemUrl);
+        }
+        await savePluginProxy(newStatus, undefined, undefined);
+      } catch (err: unknown) {
+        if (isPluginProxyUnsupportedError(err)) {
+          setProxyUnsupported(true);
+          setCommittedStatus(0);
+          setDisplayedStatus(-1);
+          setProxyScenario('legacy');
+          setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+        }
+      }
+    },
+    [
+      committedStatus,
+      proxyScenario,
+      proxySaving,
+      proxyUnsupported,
+      savePluginProxy,
+      showNotification,
+      t,
+    ]
+  );
+
+  const handleProxyCustomBlur = useCallback(async () => {
+    if ((displayedStatus !== 1 && displayedStatus !== 3) || proxySaving || proxyUnsupported) return;
+    const url = (displayedStatus === 3 ? acceleratorUrl : proxyCustomUrl).trim();
+    if (!url) {
+      setProxyFeedback({
+        kind: 'error',
+        message: t(
+          displayedStatus === 3
+            ? 'plugin_store.proxy_accelerator_url_invalid'
+            : 'plugin_store.proxy_url_invalid'
+        ),
+      });
+      return;
+    }
+    setProxyFeedback(null);
+    try {
+      const result = await pluginProxyApi.validate(url, displayedStatus);
+      if (!result.valid) {
+        setProxyFeedback({
+          kind: 'error',
+          message:
+            result.error ||
+            t(
+              displayedStatus === 3
+                ? 'plugin_store.proxy_accelerator_url_invalid'
+                : 'plugin_store.proxy_url_invalid'
+            ),
+        });
+        return;
+      }
+      if (displayedStatus === 3) {
+        await savePluginProxy(3, undefined, url);
+      } else {
+        await savePluginProxy(1, url, undefined);
+      }
+    } catch (err: unknown) {
+      if (isPluginProxyUnsupportedError(err)) {
+        setProxyUnsupported(true);
+        setCommittedStatus(0);
+        setDisplayedStatus(-1);
+        setProxyScenario('legacy');
+        setProxyFeedback({ kind: 'error', message: t('plugin_store.proxy_unsupported') });
+        return;
+      }
+      setProxyFeedback({
+        kind: 'error',
+        message: getErrorMessage(err, t('plugin_store.proxy_save_failed')),
+      });
+    }
+  }, [
+    acceleratorUrl,
+    proxyCustomUrl,
+    displayedStatus,
+    proxySaving,
+    proxyUnsupported,
+    savePluginProxy,
+    t,
+  ]);
 
   const stats = useMemo(() => {
     const plugins = data?.plugins ?? [];
@@ -1098,7 +1460,99 @@ export function PluginStorePage() {
           <IconRefreshCw size={16} />
           {t('plugin_store.refresh')}
         </Button>
+        <div className={styles.proxyControls}>
+          <div className={styles.proxyModeSelect}>
+            <Select
+              value={String(displayedStatus)}
+              options={proxyStatusOptions}
+              onChange={handleProxyStatusChange}
+              disabled={!connected || proxyLoading || proxySaving || proxyScenario === 'legacy'}
+              ariaLabel={t('plugin_store.proxy_label')}
+              fullWidth
+            />
+          </div>
+          {displayedStatus === 2 || displayedStatus === 1 || displayedStatus === 3 ? (
+            <div className={styles.proxyUrlField}>
+              {displayedStatus === 2 ? (
+                <Input
+                  value={systemProxyUrl}
+                  placeholder={t('plugin_store.proxy_url_system_empty')}
+                  readOnly
+                  title={systemProxyUrl || t('plugin_store.proxy_url_system_empty')}
+                  aria-label={t('plugin_store.proxy_mode_system')}
+                />
+              ) : (
+                <Input
+                  value={
+                    proxyScenario === 'legacy'
+                      ? ''
+                      : displayedStatus === 3
+                        ? acceleratorUrl
+                        : proxyCustomUrl
+                  }
+                  onChange={(event) => {
+                    if (proxyScenario === 'legacy') return;
+                    if (displayedStatus === 3) {
+                      setAcceleratorUrl(event.target.value);
+                      acceleratorUrlRef.current = event.target.value;
+                    } else {
+                      setProxyCustomUrl(event.target.value);
+                      proxyCustomUrlRef.current = event.target.value;
+                    }
+                    setProxyFeedback(null);
+                  }}
+                  onBlur={() => {
+                    void handleProxyCustomBlur();
+                  }}
+                  placeholder={
+                    proxyScenario === 'legacy'
+                      ? t('plugin_store.proxy_unsupported_input')
+                      : t(
+                          displayedStatus === 3
+                            ? 'plugin_store.proxy_accelerator_url_placeholder'
+                            : 'plugin_store.proxy_url_placeholder'
+                        )
+                  }
+                  disabled={!connected || proxyLoading || proxySaving || proxyScenario === 'legacy'}
+                  readOnly={proxyScenario === 'legacy'}
+                  title={
+                    proxyScenario === 'legacy'
+                      ? t('plugin_store.proxy_unsupported_input')
+                      : (displayedStatus === 3 ? acceleratorUrl : proxyCustomUrl) ||
+                        t(
+                          displayedStatus === 3
+                            ? 'plugin_store.proxy_accelerator_url_placeholder'
+                            : 'plugin_store.proxy_url_placeholder'
+                        )
+                  }
+                  aria-label={t(
+                    displayedStatus === 3
+                      ? 'plugin_store.proxy_mode_accelerator'
+                      : 'plugin_store.proxy_mode_custom'
+                  )}
+                  error={
+                    proxyScenario !== 'legacy' &&
+                    proxyFeedback?.kind === 'error' &&
+                    (displayedStatus === 1 || displayedStatus === 3)
+                      ? proxyFeedback.message
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {proxyFeedback &&
+      !(proxyFeedback.kind === 'error' && (displayedStatus === 1 || displayedStatus === 3)) ? (
+        <p
+          className={`${styles.proxyStatus} ${
+            proxyFeedback.kind === 'ok' ? styles.proxyStatusOk : styles.proxyStatusError
+          }`}
+        >
+          {proxyFeedback.message}
+        </p>
+      ) : null}
 
       {/* ── Status Filter Chips ── */}
       <div className={styles.filterChips} role="group" aria-label={t('plugin_store.filter_label')}>

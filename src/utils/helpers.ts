@@ -17,6 +17,17 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /**
+ * 将未知值安全地转换为字符串
+ */
+export const asString = (value: unknown): string =>
+  value === undefined || value === null ? '' : String(value);
+
+/**
+ * 仅将严格布尔值 true 归一化为 true
+ */
+export const asBoolean = (value: unknown): boolean => value === true;
+
+/**
  * 从 unknown 错误中提取可读消息
  */
 export const getErrorMessage = (error: unknown, fallback = ''): string => {
