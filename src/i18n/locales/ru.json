@@ -288,6 +288,7 @@
     "filter_all": "Все",
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
+    "filter_glm": "GLM",
     "filter_kimi": "Kimi",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
@@ -475,6 +476,23 @@
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
+  },
+  "glm_quota": {
+    "title": "Лимиты GLM Coding Plan",
+    "empty_title": "Нет учетных данных GLM Coding Plan",
+    "empty_desc": "Добавьте GLM Coding Plan как OpenAI-совместимого провайдера для просмотра лимитов.",
+    "idle": "Нажмите, чтобы обновить лимиты",
+    "loading": "Загрузка лимитов...",
+    "load_failed": "Не удалось загрузить лимиты: {{message}}",
+    "load_failed_unknown": "GLM отклонил запрос лимитов",
+    "missing_auth_index": "В учетных данных отсутствует auth_index",
+    "invalid_data": "Недопустимый ответ лимитов GLM",
+    "empty_data": "Нет доступных окон лимитов Coding Plan",
+    "plan_label": "План",
+    "five_hour_limit": "Лимит на 5 часов",
+    "weekly_limit": "Недельный лимит",
+    "limit_window": "Лимит на {{duration}}",
+    "limit_index": "Лимит №{{index}}"
   },
   "xai_quota": {
     "title": "Квота Grok",

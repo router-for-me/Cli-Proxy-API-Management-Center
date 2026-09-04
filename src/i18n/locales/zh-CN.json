@@ -289,6 +289,7 @@
     "filter_all": "全部",
     "filter_qwen": "Qwen",
     "filter_gemini": "Gemini",
+    "filter_glm": "GLM",
     "filter_kimi": "Kimi",
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
@@ -488,6 +489,23 @@
     "limit_window": "{{duration}} 限额",
     "limit_index": "限额 #{{index}}",
     "reset_hint": "{{hint}} 后重置"
+  },
+  "glm_quota": {
+    "title": "GLM Coding Plan 额度",
+    "empty_title": "暂无 GLM Coding Plan 凭证",
+    "empty_desc": "将 GLM Coding Plan 添加为 OpenAI 兼容提供商后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度...",
+    "load_failed": "额度获取失败：{{message}}",
+    "load_failed_unknown": "GLM 拒绝了额度查询请求",
+    "missing_auth_index": "凭证缺少 auth_index",
+    "invalid_data": "GLM 额度响应格式无效",
+    "empty_data": "暂无 Coding Plan 额度窗口",
+    "plan_label": "套餐",
+    "five_hour_limit": "5 小时限额",
+    "weekly_limit": "周限额",
+    "limit_window": "{{duration}} 限额",
+    "limit_index": "限额 #{{index}}"
   },
   "xai_quota": {
     "title": "Grok 额度",

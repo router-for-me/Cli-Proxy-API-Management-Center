@@ -466,14 +466,14 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
-  if (provider === 'kimi') {
+  if (provider === 'kimi' || provider === 'glm') {
     const rows = ((quota as { rows?: KimiRowLike[] }).rows ?? []).filter(
       (row) => typeof row.resetAtMs === 'number'
     );
     const chosen = pickLaneWindow(rows, maxPeriodHours);
     if (!chosen) return empty;
 
-    // Kimi reports raw counts; remaining is derived.
+    // Kimi and GLM report raw counts; remaining is derived.
     const remainingOf = (row: KimiRowLike) =>
       row.limit > 0 ? clampPercent(Math.round(((row.limit - row.used) / row.limit) * 100)) : null;
 

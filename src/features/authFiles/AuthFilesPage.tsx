@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { copyToClipboard } from '@/utils/clipboard';
+import { resolveAuthProvider } from '@/utils/quota';
 import {
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
@@ -178,10 +179,11 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
+  const normalizedQuotaFilter = resolveAuthProvider({ name: '', provider: normalizedFilter });
   const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
-    normalizedFilter as QuotaProviderType
+    normalizedQuotaFilter as QuotaProviderType
   )
-    ? (normalizedFilter as QuotaProviderType)
+    ? (normalizedQuotaFilter as QuotaProviderType)
     : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
   const problemOnly = statusFilterMode === 'problem';

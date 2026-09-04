@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi } from '@/services/api';
+import { authFilesApi, providersApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Select';
@@ -36,6 +36,7 @@ import {
   buildTabCounts,
   classifyQuotaFiles,
   filterEntriesByTab,
+  mergeGlmConfigQuotaFiles,
   paginate,
   sortQuotaEntries,
   type QuotaFileEntry,
@@ -81,8 +82,23 @@ export function QuotaPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await authFilesApi.list();
-      setFiles(data?.files || []);
+      const [authFilesResult, providersResult] = await Promise.allSettled([
+        authFilesApi.list(),
+        providersApi.getOpenAIProviders(),
+      ]);
+      if (authFilesResult.status === 'rejected') throw authFilesResult.reason;
+
+      const authFiles = authFilesResult.value?.files || [];
+      if (providersResult.status === 'fulfilled') {
+        setFiles(mergeGlmConfigQuotaFiles(authFiles, providersResult.value));
+      } else {
+        setFiles(authFiles);
+        const message =
+          providersResult.reason instanceof Error
+            ? providersResult.reason.message
+            : t('notification.refresh_failed');
+        setError(message);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(message);
@@ -103,6 +119,7 @@ export function QuotaPage() {
   const antigravityQuota = useQuotaStore((state) => state.antigravityQuota);
   const claudeQuota = useQuotaStore((state) => state.claudeQuota);
   const codexQuota = useQuotaStore((state) => state.codexQuota);
+  const glmQuota = useQuotaStore((state) => state.glmQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
@@ -112,10 +129,11 @@ export function QuotaPage() {
         antigravity: antigravityQuota,
         claude: claudeQuota,
         codex: codexQuota,
+        glm: glmQuota,
         kimi: kimiQuota,
         xai: xaiQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
-    [antigravityQuota, claudeQuota, codexQuota, kimiQuota, xaiQuota]
+    [antigravityQuota, claudeQuota, codexQuota, glmQuota, kimiQuota, xaiQuota]
   );
 
   const getQuota = useCallback(

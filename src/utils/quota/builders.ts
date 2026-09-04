@@ -6,6 +6,9 @@ import type {
   AntigravityQuotaBucket,
   AntigravityQuotaGroup,
   AntigravityQuotaSummaryPayload,
+  GlmQuotaLimit,
+  GlmQuotaPayload,
+  GlmQuotaRow,
   KimiUsagePayload,
   KimiUsageDetail,
   KimiLimitItem,
@@ -369,6 +372,83 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
   }
 
   return rows;
+}
+
+function glmPeriodHours(unit: unknown, count: unknown): number | null {
+  const normalizedUnit = toInt(unit);
+  const normalizedCount = normalizeNumberValue(count);
+  if (normalizedUnit === null || normalizedCount === null || normalizedCount <= 0) return null;
+  if (normalizedUnit === 3) return normalizedCount;
+  if (normalizedUnit === 1) return normalizedCount * 24;
+  if (normalizedUnit === 6) return normalizedCount * 24 * 7;
+  if (normalizedUnit === 5) return normalizedCount / 60;
+  return null;
+}
+
+function glmResetAtMs(value: unknown): number | null {
+  const numeric = normalizeNumberValue(value);
+  if (numeric !== null && numeric > 0) {
+    return numeric < 1e11 ? numeric * 1000 : numeric;
+  }
+  return resolveResetMs([normalizeStringValue(value)]);
+}
+
+function glmLimitLabel(
+  periodHours: number | null,
+  index: number
+): { labelKey: string; labelParams?: Record<string, string | number> } {
+  if (periodHours === 5) return { labelKey: 'glm_quota.five_hour_limit' };
+  if (periodHours === 24 * 7) return { labelKey: 'glm_quota.weekly_limit' };
+  if (periodHours !== null) {
+    const duration = periodHours < 1 ? `${Math.round(periodHours * 60)}m` : `${periodHours}h`;
+    return { labelKey: 'glm_quota.limit_window', labelParams: { duration } };
+  }
+  return { labelKey: 'glm_quota.limit_index', labelParams: { index: index + 1 } };
+}
+
+function buildGlmQuotaRow(item: GlmQuotaLimit, index: number): GlmQuotaRow | null {
+  const type = normalizeStringValue(item.type ?? item.name)?.toUpperCase();
+  if (type && type !== 'TOKENS_LIMIT' && type !== 'CREDIT_LIMIT') return null;
+
+  const total = normalizeNumberValue(item.usage);
+  let used = normalizeNumberValue(item.currentValue);
+  if (used === null && total !== null) {
+    const remaining = normalizeNumberValue(item.remaining);
+    if (remaining !== null) used = total - remaining;
+  }
+
+  let limit = total;
+  if (used === null || limit === null || limit <= 0) {
+    const percentage = normalizeNumberValue(item.percentage);
+    if (percentage === null) return null;
+    used = Math.min(100, Math.max(0, percentage));
+    limit = 100;
+  }
+
+  const periodHours = glmPeriodHours(item.unit, item.number);
+  return {
+    id: `limit-${index}`,
+    ...glmLimitLabel(periodHours, index),
+    used: Math.max(0, used),
+    limit: Math.max(0, limit),
+    resetAtMs: glmResetAtMs(item.nextResetTime),
+    periodHours,
+  };
+}
+
+export function buildGlmQuotaData(payload: GlmQuotaPayload) {
+  const data = payload.data;
+  const holder = Array.isArray(data) ? null : data;
+  const limits = Array.isArray(data) ? data : holder?.limits;
+  const rows = (Array.isArray(limits) ? limits : [])
+    .map(buildGlmQuotaRow)
+    .filter((row): row is GlmQuotaRow => row !== null)
+    .sort((left, right) => (left.periodHours ?? Infinity) - (right.periodHours ?? Infinity));
+
+  return {
+    rows,
+    planName: normalizeStringValue(holder?.planName ?? holder?.plan),
+  };
 }
 
 function normalizeXaiCentValue(value: XaiBillingConfig['monthlyLimit']): number | null {
