@@ -1,0 +1,233 @@
+.section,
+.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.section {
+  padding: 12px 0 2px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+}
+
+.compact {
+  gap: 5px;
+}
+
+.header,
+.heading,
+.windowHead,
+.windowMeta,
+.compactMeta,
+.metadata,
+.refresh {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.heading {
+  min-width: 0;
+  gap: 7px;
+}
+
+.title,
+.plan,
+.windowHead,
+.windowMeta,
+.compactMeta,
+.metadata,
+.error,
+.empty,
+.unavailable {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.plan {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statusHealthy,
+.statusLow,
+.statusExhausted,
+.statusError,
+.statusUnknown {
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--text-tertiary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--text-tertiary) 24%, transparent);
+}
+
+.statusHealthy {
+  color: var(--success-color);
+  background: color-mix(in srgb, var(--success-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--success-color) 25%, transparent);
+}
+
+.statusLow {
+  color: var(--warning-color);
+  background: color-mix(in srgb, var(--warning-color) 11%, transparent);
+  border-color: color-mix(in srgb, var(--warning-color) 27%, transparent);
+}
+
+.statusExhausted,
+.statusError {
+  color: var(--danger-color);
+  background: color-mix(in srgb, var(--danger-color) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger-color) 25%, transparent);
+}
+
+.windows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.window {
+  min-width: 0;
+}
+
+.windowHead {
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+}
+
+.windowHead span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windowHead strong {
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.track {
+  width: 100%;
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-quaternary) 20%, transparent);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--text-tertiary);
+}
+
+.fill.statusHealthy { background: var(--success-color); }
+.fill.statusLow { background: var(--warning-color); }
+.fill.statusExhausted,
+.fill.statusError { background: var(--danger-color); }
+
+.windowMeta,
+.compactMeta {
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-tertiary);
+  font-size: 9.5px;
+}
+
+.windowMeta span,
+.compactMeta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 12px;
+  margin: 0;
+  font-size: 10px;
+}
+
+.metadata div {
+  min-width: 0;
+}
+
+.metadata dt {
+  color: var(--text-quaternary);
+  font-size: 9px;
+}
+
+.metadata dd {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error,
+.empty,
+.unavailable {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.error { color: var(--danger-color); }
+
+.refresh {
+  align-self: flex-start;
+  gap: 6px;
+}
+
+.loading,
+.compactLoading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.compactLoading { min-height: 28px; }

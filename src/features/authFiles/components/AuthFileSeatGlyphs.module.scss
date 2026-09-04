@@ -1,0 +1,97 @@
+.glyphs {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.glyph {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 21px;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  cursor: help;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.glyph:hover,
+.glyph:focus-visible {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.glyph::after,
+.overflow::after {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  width: max-content;
+  max-width: min(320px, 70vw);
+  padding: 6px 8px;
+  border: 1px solid var(--border-hover);
+  border-radius: 5px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.16);
+  content: attr(data-tooltip);
+  font: 10px/1.35 var(--font-mono, ui-monospace, monospace);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 3px);
+  transition: opacity 80ms ease, transform 80ms ease;
+  white-space: normal;
+}
+
+.glyph:hover::after,
+.glyph:focus-visible::after,
+.overflow:hover::after,
+.overflow:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.available {
+  color: var(--success-color);
+}
+
+.inUse {
+  color: var(--warning-color);
+}
+
+.frozen {
+  color: var(--text-tertiary);
+}
+
+.overflow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 21px;
+  padding: 0 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  font: 10px var(--font-mono, ui-monospace, monospace);
+  cursor: help;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph {
+    transition: none;
+  }
+
+  .glyph::after,
+  .overflow::after {
+    transition: none;
+  }
+}

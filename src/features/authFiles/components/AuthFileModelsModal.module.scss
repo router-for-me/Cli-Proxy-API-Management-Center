@@ -2,6 +2,12 @@
 
 /* 「支持的模型」弹窗：可点击复制的 mono 模型清单 */
 
+.hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .list {
   display: flex;
   flex-direction: column;

@@ -29,8 +29,13 @@
 }
 
 .cardCompact {
-  gap: 10px;
-  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(165px, 0.95fr) minmax(230px, 1.25fr) auto;
+  grid-template-rows: repeat(3, auto);
+  align-items: center;
+  min-height: 112px;
+  gap: 6px 18px;
+  padding: 12px 14px;
 }
 
 .cardSelected {
@@ -69,6 +74,89 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+}
+
+.sessionUsageWrap,
+.quotaWrap {
+  display: contents;
+}
+
+.cardCompact .head {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+
+.cardCompact .fileName {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: start;
+  margin-top: 0;
+}
+
+.cardCompact .note {
+  grid-column: 1;
+  grid-row: 4;
+  align-self: start;
+  margin-bottom: 0;
+  padding-left: 44px;
+}
+
+.cardCompact .warning {
+  grid-column: 1 / 4;
+  grid-row: 5;
+}
+
+.cardCompact .health {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.cardCompact .metaRow {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: start;
+}
+
+.cardCompact .sessionUsageWrap {
+  display: block;
+  grid-column: 3;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.cardCompact .quotaWrap {
+  display: block;
+  grid-column: 3;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.cardCompact .actions {
+  grid-column: 4;
+  grid-row: 1 / span 4;
+  align-self: stretch;
+  min-width: 112px;
+  margin-top: 0;
+  padding: 0 0 0 12px;
+  border-top: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.cardCompact .actionsMain {
+  justify-content: flex-end;
+}
+
+.cardCompact .toggleWrap {
+  justify-content: space-between;
+  padding-top: 7px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .selection {
@@ -474,6 +562,11 @@
   min-width: 0;
 }
 
+/* 账号动作顺序：启用开关、刷新、详情设置、删除。 */
+.actions > .toggleWrap {
+  order: -1;
+}
+
 .utilityActions {
   display: flex;
   align-items: center;
@@ -569,6 +662,56 @@
   .toggleWrap {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 900px) and (min-width: 601px) {
+  .cardCompact {
+    grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.9fr) auto;
+  }
+
+  .cardCompact .sessionUsageWrap,
+  .cardCompact .quotaWrap {
+    grid-column: 2;
+  }
+
+  .cardCompact .actions {
+    grid-column: 3;
+  }
+}
+
+@media (max-width: 600px) {
+  .cardCompact {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    min-height: 0;
+  }
+
+  .cardCompact .head,
+  .cardCompact .fileName,
+  .cardCompact .note,
+  .cardCompact .warning,
+  .cardCompact .health,
+  .cardCompact .metaRow,
+  .cardCompact .sessionUsageWrap,
+  .cardCompact .quotaWrap,
+  .cardCompact .actions {
+    grid-column: auto;
+    grid-row: auto;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .cardCompact .note {
+    padding-left: 0;
+  }
+
+  .cardCompact .actions {
+    min-width: 0;
+    padding-top: 9px;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
   }
 }
 

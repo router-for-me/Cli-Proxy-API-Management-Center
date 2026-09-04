@@ -46,7 +46,7 @@
 }
 
 .gridCompact {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* provider tab 激活（配额模式）时卡片承载配额区，需要更宽的列。
@@ -54,6 +54,50 @@
    同specificity 靠源序决胜，删掉这条会让「紧凑 + 配额」从 340 掉回 260。 */
 .gridQuota {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+
+/* CPAMP-style dense account list. The viewport scrolls horizontally on narrow
+   screens while each account remains a stable, scannable row. */
+.list {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.listHeader {
+  display: grid;
+  min-width: 1130px;
+  grid-template-columns:
+    minmax(240px, 1.45fr)
+    minmax(145px, 0.9fr)
+    minmax(170px, 1fr)
+    minmax(220px, 1.2fr)
+    minmax(108px, 0.6fr)
+    minmax(255px, auto);
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.listHeader span {
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.listHeader span + span {
+  border-left: 1px solid color-mix(in srgb, var(--border-color) 58%, transparent);
+}
+
+.listQuota {
+  min-width: 0;
 }
 
 .emptyActions {
@@ -98,5 +142,9 @@
 @include mobile {
   .page {
     gap: 16px;
+  }
+
+  .list {
+    margin-inline: -2px;
   }
 }

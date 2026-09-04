@@ -11,3 +11,5 @@ export * from './authFile';
 export * from './oauth';
 export * from './quota';
 export * from './plugin';
+export * from './sessionUsage';
+export * from './managementQuota';

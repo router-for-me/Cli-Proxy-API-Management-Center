@@ -4,16 +4,10 @@ import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import {
-  IconDownload,
-  IconInfo,
-  IconModelCluster,
-  IconRefreshCw,
-  IconSettings,
-  IconTrash2,
-} from '@/components/ui/icons';
+import { IconInfo, IconRefreshCw, IconSettings, IconTrash2 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
-import type { AuthFileItem } from '@/types';
+import type { AuthFileItem, CredentialSessionUsage } from '@/types';
+import type { ManagementQuotaCredentialSnapshot } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import { formatFileSize } from '@/utils/format';
@@ -36,6 +30,8 @@ import {
 import { deriveAuthFileIdentity } from '@/features/authFiles/identity';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
+import { AuthFileSessionUsage } from '@/features/authFiles/components/AuthFileSessionUsage';
+import { AuthFileManagementQuota } from '@/features/authFiles/components/AuthFileManagementQuota';
 import styles from './AuthFileCard.module.scss';
 
 export type AuthFileCardProps = {
@@ -49,15 +45,16 @@ export type AuthFileCardProps = {
   manualRefreshing: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
+  sessionUsage?: CredentialSessionUsage;
+  quotaSnapshot?: ManagementQuotaCredentialSnapshot;
+  onSessionPolicySaved?: () => void;
   /** 首屏一次性级联入场的延迟；null/undefined 表示不做入场动画。 */
   entranceDelayMs?: number | null;
-  onShowModels: (file: AuthFileItem) => void;
-  onDownload: (name: string) => void;
   onManualRefresh: (file: AuthFileItem) => void;
-  onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
+  onOpenSessionDetails: (file: AuthFileItem) => void;
 };
 
 const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
@@ -79,20 +76,20 @@ export function AuthFileCard(props: AuthFileCardProps) {
     manualRefreshing,
     quotaFilterType,
     statusBarCache,
+    sessionUsage,
+    quotaSnapshot,
+    onSessionPolicySaved,
     entranceDelayMs,
-    onShowModels,
-    onDownload,
     onManualRefresh,
-    onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
     onToggleSelect,
+    onOpenSessionDetails,
   } = props;
 
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
   const providerKey = normalizeProviderKey(String(file.type ?? file.provider ?? 'unknown'));
-  const isAistudio = providerKey === 'aistudio';
-  const showModelsButton = !isRuntimeOnly || isAistudio;
+  const supportsSessionUsage = providerKey === 'claude' || providerKey === 'codex';
   const showManualRefreshButton = !isRuntimeOnly && supportsAuthFileManualRefresh(providerKey);
   const isManualRefreshing = manualRefreshing[file.name] === true;
   const typeColor = getTypeColor(providerKey, resolvedTheme);
@@ -255,6 +252,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <ProviderStatusBar statusData={statusData} styles={styles} />
       </div>
 
+      {!showQuotaLayout && quotaSnapshot && (
+        <AuthFileManagementQuota snapshot={quotaSnapshot} compact />
+      )}
+
       <div className={styles.metaRow}>
         <span title={t('auth_files.file_size')}>{file.size ? formatFileSize(file.size) : '-'}</span>
         <span className={styles.metaDivider} aria-hidden="true">
@@ -285,24 +286,33 @@ export function AuthFileCard(props: AuthFileCardProps) {
         )}
       </div>
 
+      {supportsSessionUsage && sessionUsage && (
+        <div className={styles.sessionUsageWrap}>
+          <AuthFileSessionUsage
+            usage={sessionUsage}
+            compact={compact}
+            disabled={disableControls}
+            onPolicySaved={onSessionPolicySaved}
+          />
+        </div>
+      )}
+
       {showQuotaLayout && quotaType && (
-        <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />
+        <div className={styles.quotaWrap}>
+          {quotaSnapshot ? (
+            <AuthFileManagementQuota snapshot={quotaSnapshot} />
+          ) : (
+            <AuthFileQuotaSection
+              file={file}
+              quotaType={quotaType}
+              disableControls={disableControls}
+            />
+          )}
+        </div>
       )}
 
       <footer className={styles.actions}>
         <div className={styles.actionsMain}>
-          {showModelsButton && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onShowModels(file)}
-              title={t('auth_files.models_button')}
-              disabled={disableControls}
-            >
-              <IconModelCluster size={14} />
-              {t('auth_files.models_button')}
-            </Button>
-          )}
           {!isRuntimeOnly && (
             <div className={styles.utilityActions}>
               {showManualRefreshButton && (
@@ -325,19 +335,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => onDownload(file.name)}
+                onClick={() => onOpenSessionDetails(file)}
                 className={styles.iconButton}
-                title={t('auth_files.download_button')}
-                disabled={disableControls}
-              >
-                <IconDownload size={15} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onOpenPrefixProxyEditor(file)}
-                className={styles.iconButton}
-                title={t('auth_files.prefix_proxy_button')}
+                title={t('auth_files.account_details')}
                 disabled={disableControls || isManualRefreshing}
               >
                 <IconSettings size={15} />
