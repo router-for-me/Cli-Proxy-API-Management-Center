@@ -9,11 +9,13 @@ import {
 } from '@/utils/providerKeys';
 
 export type BuiltInOAuthProvider =
-  'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'codebuddy-cn' | 'xai';
+  'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'codebuddy-cn' | 'xai' | 'trae';
 
 export interface OAuthStartResponse {
   url: string;
   state?: string;
+  machine?: string;
+  device?: string;
 }
 
 export interface OAuthCallbackResponse {
@@ -54,4 +56,22 @@ export const oauthApi = {
       redirect_url: redirectUrl,
     });
   },
+
+  /**
+   * TRAE has no device-code endpoint and forces a 127.0.0.1 loopback callback,
+   * so its callback is submitted through a dedicated endpoint that parses the
+   * full browser URL (refreshToken / userInfo / userJwt) server-side.
+   */
+  submitTraeCallback: (
+    state: string,
+    redirectUrl: string,
+    machineId?: string,
+    deviceId?: string
+  ) =>
+    apiClient.post<{ status: 'ok'; uid?: string; path?: string }>('/trae-auth-callback', {
+      state,
+      redirect_url: redirectUrl,
+      machine_id: machineId,
+      device_id: deviceId,
+    }),
 };

@@ -21,6 +21,7 @@ import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconCodeBuddy from '@/assets/icons/codebuddy.svg';
+import iconTrae from '@/assets/icons/trae.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
@@ -35,6 +36,8 @@ interface ProviderState {
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
+  machineId?: string;
+  deviceId?: string;
 }
 
 interface VertexImportResult {
@@ -111,10 +114,16 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     titleKey: 'auth_login.xai_oauth_title',
     icon: { light: iconGrok, dark: iconGrokDark },
   },
+  {
+    kind: 'builtin',
+    id: 'trae',
+    titleKey: 'auth_login.trae_oauth_title',
+    icon: iconTrae,
+  },
 ];
 
 const BUILTIN_PROVIDER_IDS = new Set<string>(PROVIDERS.map((provider) => provider.id));
-const CALLBACK_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai']);
+const CALLBACK_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai', 'trae']);
 const XAI_CALLBACK_URL = 'http://127.0.0.1:56121/callback';
 const SUCCESS_RESET_DELAY_MS = 5000;
 const getProviderI18nPrefix = (provider: string) => provider.replace('-', '_');
@@ -442,6 +451,8 @@ export function OAuthPage() {
         state: res.state,
         status: 'waiting',
         polling: true,
+        machineId: res.machine,
+        deviceId: res.device,
       });
       startPolling(provider, res.state);
     } catch (err: unknown) {
@@ -492,6 +503,17 @@ export function OAuthPage() {
       callbackError: undefined,
     });
     try {
+      if (provider === 'trae') {
+        await oauthApi.submitTraeCallback(
+          states[provider]?.state || '',
+          redirectUrl,
+          states[provider]?.machineId,
+          states[provider]?.deviceId
+        );
+        completeProviderAuth(provider);
+        showNotification(getProviderTextByID(provider, 'oauth_status_success'), 'success');
+        return;
+      }
       await oauthApi.submitCallback(provider, redirectUrl);
       updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
       showNotification(t('auth_login.oauth_callback_success'), 'success');
