@@ -441,6 +441,8 @@
     "primary_window": "Лимит на 5 часов",
     "secondary_window": "Недельный лимит",
     "team_secondary_window": "Месячный лимит",
+    "spend_control_window": "Месячные кредиты",
+    "spend_control_amount": "{{used}} / {{total}} кредитов",
     "code_review_primary_window": "Лимит code review на 5 часов",
     "code_review_secondary_window": "Недельный лимит code review",
     "code_review_team_secondary_window": "Месячный лимит code review",
