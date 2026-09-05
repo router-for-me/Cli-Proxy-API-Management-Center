@@ -38,7 +38,7 @@ import {
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
 
-const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 8000;
+const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 120000;
 
 type CodexResetCreditsData = {
   availableCount: number | null;

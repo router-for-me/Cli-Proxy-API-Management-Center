@@ -6,7 +6,7 @@ This is a React 19 + TypeScript Vite frontend for the CLI Proxy API Management A
 
 ## Build, Test, and Development Commands
 
-- `bun install --frozen-lockfile`: install dependencies from `bun.lock`.
+- `bun install --frozen-lockfile`: install dependencies from `bun.lock` only when missing or out of sync.
 - `bun run dev`: start the Vite dev server at `http://localhost:5173`.
 - `bun run build`: run TypeScript compilation and build `dist/`.
 - `bun run preview`: serve the built output locally.
@@ -22,7 +22,7 @@ Use 2-space indentation, semicolons, single quotes, ES5 trailing commas, and 100
 
 ## Testing Guidelines
 
-Tests use Bun's built-in test runner and are colocated under `tests/` as `*.test.ts`. Run `bun run test` for focused test work and `bun run verify` before handoff. Use `bun run type-check` as a fast standalone TypeScript check. For UI changes, verify the affected route in the browser and include screenshots or notes.
+Tests use Bun's built-in test runner and are colocated under `tests/` as `*.test.ts`. Run the smallest existing test file or check covering the changed boundary. Use `bun run type-check` when TypeScript behavior changes; documentation-only edits do not need application tests or a build. Run full `bun run verify` for shared infrastructure, release, or an applicable CI/PR gate, not every local handoff. Add or modify tests only when authorized by the user, and report coverage gaps. For UI changes, verify the affected route in the browser and include screenshots or notes. Do not rerun passing checks without changed code or an unresolved concern.
 
 ## Commit & Pull Request Guidelines
 
