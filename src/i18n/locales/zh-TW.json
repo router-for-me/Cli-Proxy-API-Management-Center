@@ -448,6 +448,8 @@
     "primary_window": "5 小時限額",
     "secondary_window": "週限額",
     "team_secondary_window": "月度限額",
+    "spend_control_window": "月度額度",
+    "spend_control_amount": "{{used}} / {{total}} 額度",
     "code_review_primary_window": "程式碼審查 5 小時限額",
     "code_review_secondary_window": "程式碼審查週限額",
     "code_review_team_secondary_window": "程式碼審查月度限額",

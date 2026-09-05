@@ -43,6 +43,39 @@ export interface CodexUsageWindow {
   resetAt?: number | string;
 }
 
+/**
+ * One spend-control budget, in credits.
+ *
+ * Business and enterprise plans meter by a credit budget rather than by
+ * rolling percentage windows — such an account reports `rate_limit: null` and
+ * carries its real allowance here. Amounts arrive as decimal strings
+ * ("3138.653407096863"), percentages as numbers.
+ *
+ * Distinct from both sibling concepts on the same payload:
+ * `CodexRateLimitResetCredits` counts manual "reset my rate limit"
+ * consumables, and the root `credits` object is the pay-as-you-go balance.
+ */
+export interface CodexSpendControlLimit {
+  source?: string;
+  limit?: number | string;
+  used?: number | string;
+  remaining?: number | string;
+  used_percent?: number | string;
+  usedPercent?: number | string;
+  remaining_percent?: number | string;
+  remainingPercent?: number | string;
+  reset_after_seconds?: number | string;
+  resetAfterSeconds?: number | string;
+  reset_at?: number | string;
+  resetAt?: number | string;
+}
+
+export interface CodexSpendControl {
+  reached?: boolean;
+  individual_limit?: CodexSpendControlLimit | null;
+  individualLimit?: CodexSpendControlLimit | null;
+}
+
 export interface CodexRateLimitInfo {
   allowed?: boolean;
   limit_reached?: boolean;
@@ -87,6 +120,8 @@ export interface CodexUsagePayload {
   additionalRateLimits?: CodexAdditionalRateLimit[] | null;
   rate_limit_reset_credits?: CodexRateLimitResetCredits | null;
   rateLimitResetCredits?: CodexRateLimitResetCredits | null;
+  spend_control?: CodexSpendControl | null;
+  spendControl?: CodexSpendControl | null;
 }
 
 // Claude API payload types
@@ -230,6 +265,14 @@ export interface CodexQuotaWindow {
   resetAtMs?: number | null;
   /** Window length in hours, from the payload's limit_window_seconds. */
   periodHours?: number | null;
+  /**
+   * Absolute consumption, for credit-metered rows only. A percentage alone
+   * answers "how much is left" but not "how much is left of what", and the
+   * pool size is the number a business admin actually budgets against, so the
+   * credit row carries both and renders them side by side.
+   */
+  usedAmount?: number | null;
+  totalAmount?: number | null;
 }
 
 export interface CodexQuotaState {
