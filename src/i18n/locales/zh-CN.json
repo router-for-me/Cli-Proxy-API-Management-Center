@@ -534,6 +534,8 @@
     "result_file": "存储文件"
   },
   "oauth_excluded": {
+    "editor_description": "为提供商设置不对外展示的模型，支持精确选择和通配符规则。",
+    "models_hint": "展开列表选择模型，或在下方输入通配符规则。",
     "title": "OAuth 模型禁用",
     "description": "按提供商分列展示，点击卡片编辑或删除；支持 * 通配符，范围跟随上方的配置文件过滤标签。",
     "add": "新增禁用",
@@ -591,6 +593,11 @@
     "rules_reserved": "“*” 会停用整个 provider，请改用「已停用」开关"
   },
   "oauth_model_alias": {
+    "editor_description": "为提供商的模型设置调用别名，统一客户端使用的模型名称。",
+    "edit_title": "编辑 {{provider}} 的模型别名",
+    "mapping_hint": "选择原模型，并填写客户端使用的别名。",
+    "mapping_row": "别名映射 {{number}}",
+    "remove_mapping": "删除第 {{number}} 条别名映射",
     "title": "OAuth 模型别名",
     "add": "新增别名",
     "add_title": "新增提供商模型别名",

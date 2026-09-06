@@ -534,6 +534,8 @@
     "result_file": "Persisted file"
   },
   "oauth_excluded": {
+    "editor_description": "Choose which models a provider exposes using individual selections or wildcard rules.",
+    "models_hint": "Expand the list to select models, or enter wildcard rules below.",
     "title": "OAuth Model Disablement",
     "description": "Per-provider model disablement is shown as cards; click a card to edit or delete. Wildcards * are supported and the scope follows the auth file filter.",
     "add": "Add Disablement",
@@ -591,6 +593,11 @@
     "rules_reserved": "“*” disables the whole provider — use the Disabled switch instead"
   },
   "oauth_model_alias": {
+    "editor_description": "Give provider models consistent names for use in your clients.",
+    "edit_title": "Edit model aliases for {{provider}}",
+    "mapping_hint": "Choose a source model, then enter the alias your clients will use.",
+    "mapping_row": "Alias mapping {{number}}",
+    "remove_mapping": "Delete alias mapping {{number}}",
     "title": "OAuth Model Aliases",
     "add": "Add Alias",
     "add_title": "Add provider model aliases",
