@@ -231,6 +231,13 @@ class ApiClient {
   }
 
   /**
+   * Send a request while preserving status and response headers.
+   */
+  async requestRaw<T = unknown>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.instance.request<T>(config);
+  }
+
+  /**
    * 发送 FormData
    */
   async postForm<T = unknown>(
