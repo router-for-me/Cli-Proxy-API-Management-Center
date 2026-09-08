@@ -9,12 +9,7 @@ interface ProviderCategoryListProps {
   onSelect: (brand: ProviderBrand) => void;
 }
 
-const QUICK_FILL_BRAND_ORDER: readonly ProviderBrand[] = [
-  'fennoAI',
-  'qiniuCloud',
-  'lmuAI',
-  'infistar',
-];
+const QUICK_FILL_BRAND_ORDER: readonly ProviderBrand[] = ['fennoAI', 'qiniuCloud', 'lmuAI'];
 
 const QUICK_FILL_BRANDS: ReadonlySet<ProviderBrand> = new Set(QUICK_FILL_BRAND_ORDER);
 

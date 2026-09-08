@@ -13,7 +13,10 @@ import {
   getInfistarProtocolUrls,
   resolveInfistarBaseUrl,
 } from '../src/features/providers/infistar';
-import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
+import {
+  TEMPORARILY_HIDDEN_SPONSOR_BRANDS,
+  getSponsorProviderDefinition,
+} from '../src/features/providers/sponsorDefinitions';
 
 const allProtocolConfig = {
   openaiCompatibility: [
@@ -94,8 +97,9 @@ describe('Infistar sponsor provider', () => {
     expect(raw.openai).toEqual([]);
   });
 
-  test('is appended to the provider catalog with the supplied logo', () => {
+  test('keeps its implementation but hides the quick-fill provider entry', () => {
     expect(PROVIDER_BRAND_ORDER.at(-1)).toBe('infistar');
+    expect(TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('infistar')).toBeTrue();
     expect(PROVIDER_LOGOS.infistar.src).toContain('infistar.png');
     expect(PROVIDER_LOGOS.infistar.transparent).toBeTrue();
   });

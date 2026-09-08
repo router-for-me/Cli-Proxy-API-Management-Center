@@ -462,6 +462,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     const claudeApiQuickAccessRemoved = REMOVED_QUICK_ACCESS_BRANDS.has('claudeApi');
     const fennoAIHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('fennoAI');
     const qiniuCloudHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('qiniuCloud');
+    const infistarHidden = TEMPORARILY_HIDDEN_SPONSOR_BRANDS.has('infistar');
     const groups: ProviderGroup[] = PROVIDER_BRAND_ORDER.map((brand) => {
       let resources: ProviderResource[] = [];
       switch (brand) {
@@ -472,7 +473,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 (code0QuickAccessRemoved || !isCode0GeminiProvider(item)) &&
                 (qiniuCloudHidden || !isQiniuCloudGeminiProvider(item)) &&
                 !isLmuAIGeminiProvider(item) &&
-                !isInfistarGeminiProvider(item)
+                (infistarHidden || !isInfistarGeminiProvider(item))
               ) {
                 out.push(geminiToResource(item, index));
               }
@@ -494,7 +495,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               (fennoAIHidden || !isFennoAICodexProvider(item)) &&
               (qiniuCloudHidden || !isQiniuCloudCodexProvider(item)) &&
               !isLmuAICodexProvider(item) &&
-              !isInfistarCodexProvider(item) &&
+              (infistarHidden || !isInfistarCodexProvider(item)) &&
               !isKimiCodexProvider(item)
             ) {
               out.push(codexToResource(item, index));
@@ -514,7 +515,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 (fennoAIHidden || !isFennoAIClaudeProvider(item)) &&
                 (qiniuCloudHidden || !isQiniuCloudClaudeProvider(item)) &&
                 !isLmuAIClaudeProvider(item) &&
-                !isInfistarClaudeProvider(item) &&
+                (infistarHidden || !isInfistarClaudeProvider(item)) &&
                 !isKimiClaudeProvider(item) &&
                 (claudeApiQuickAccessRemoved || !isClaudeApiProvider(item))
               ) {
@@ -547,7 +548,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
                 (code0QuickAccessRemoved || !isCode0OpenAIProvider(item)) &&
                 (qiniuCloudHidden || !isQiniuCloudOpenAIProvider(item)) &&
                 !isLmuAIOpenAIProvider(item) &&
-                !isInfistarOpenAIProvider(item) &&
+                (infistarHidden || !isInfistarOpenAIProvider(item)) &&
                 !isKimiOpenAIProvider(item)
               ) {
                 out.push(openaiToResource(item, index));

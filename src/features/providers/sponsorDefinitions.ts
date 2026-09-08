@@ -210,6 +210,7 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
  */
 export const TEMPORARILY_HIDDEN_SPONSOR_BRANDS: ReadonlySet<SponsorProviderBrand> = new Set([
   'lmuAI',
+  'infistar',
 ]);
 
 export const isTemporarilyHiddenSponsorBrand = (brand: ProviderBrand): boolean =>
