@@ -1,8 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
 import { CODEX_CONFIG, buildCodexQuotaWindows } from '@/features/quota/providers/codex/data';
+import { apiCallApi, authFilesApi } from '@/services/api';
 import type { CodexQuotaState, CodexUsagePayload } from '@/types';
-import { normalizeCodexResetCreditsPayload, parseCodexUsagePayload } from '@/utils/quota';
+import {
+  CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
+  CODEX_RATE_LIMIT_RESET_CREDITS_URL,
+  CODEX_USAGE_URL,
+  normalizeCodexResetCreditsPayload,
+  parseCodexUsagePayload,
+} from '@/utils/quota';
 
 const t = ((key: string) => key) as TFunction;
 
@@ -85,5 +92,72 @@ describe('Codex current usage payload', () => {
     };
 
     expect(CODEX_CONFIG.canResetQuota?.(quota)).toBeTrue();
+  });
+});
+
+/** Stubs the two APIs a reset touches and records every call in order. */
+const stubCodexResetApis = (resetQuota: (authIndex: string) => Promise<unknown>) => {
+  const originalRequest = apiCallApi.request;
+  const originalResetQuota = authFilesApi.resetQuota;
+  const calls: string[] = [];
+  apiCallApi.request = async ({ url }) => {
+    calls.push(url);
+    const body = url === CODEX_USAGE_URL ? CURRENT_CODEX_USAGE_PAYLOAD : null;
+    return { statusCode: 200, header: {}, bodyText: '', body };
+  };
+  authFilesApi.resetQuota = async (authIndex) => {
+    calls.push(`reset-quota:${authIndex}`);
+    return resetQuota(authIndex);
+  };
+  return {
+    calls,
+    restore: () => {
+      apiCallApi.request = originalRequest;
+      authFilesApi.resetQuota = originalResetQuota;
+    },
+  };
+};
+
+describe('Codex quota reset', () => {
+  test('clears the gateway cooldown after the credit is redeemed and before usage is re-read', async () => {
+    const { calls, restore } = stubCodexResetApis(async () => ({}));
+
+    try {
+      await CODEX_CONFIG.resetQuota?.({ name: 'codex.json', authIndex: 7 }, t);
+    } finally {
+      restore();
+    }
+
+    expect(calls).toEqual([
+      CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
+      'reset-quota:7',
+      CODEX_USAGE_URL,
+      CODEX_RATE_LIMIT_RESET_CREDITS_URL,
+    ]);
+  });
+
+  test('a retry after a failed gateway clear resumes the clear without redeeming again', async () => {
+    let gatewayDown = true;
+    const { calls, restore } = stubCodexResetApis(async () => {
+      if (gatewayDown) throw new Error('502 gateway unavailable');
+      return {};
+    });
+    const file = { name: 'codex-retry.json', authIndex: 8 };
+
+    try {
+      await expect(CODEX_CONFIG.resetQuota?.(file, t)).rejects.toThrow('502');
+      gatewayDown = false;
+      await CODEX_CONFIG.resetQuota?.(file, t);
+    } finally {
+      restore();
+    }
+
+    expect(calls).toEqual([
+      CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
+      'reset-quota:8',
+      'reset-quota:8',
+      CODEX_USAGE_URL,
+      CODEX_RATE_LIMIT_RESET_CREDITS_URL,
+    ]);
   });
 });

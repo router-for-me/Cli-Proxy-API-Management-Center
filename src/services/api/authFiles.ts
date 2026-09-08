@@ -425,6 +425,8 @@ export const authFilesApi = {
       expired: buildManualRefreshExpiredAt(),
     }),
 
+  resetQuota: (authIndex: string) => apiClient.post('/reset-quota', { auth_index: authIndex }),
+
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);
     if (requestedNames.length === 0) {
