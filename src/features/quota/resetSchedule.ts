@@ -62,6 +62,15 @@ interface ResetCreditLike {
 /** Row id used by the xAI weekly limit, which has no id of its own. */
 export const XAI_WEEKLY_ROW_ID = 'xai:weekly';
 
+/**
+ * Row id of the Codex spend-control budget.
+ *
+ * Shared so this module and quotaTimelineModel can exclude it by identity: a
+ * credit budget refilling is a spend cap turning over, which both keep out of
+ * recovery ranking for the reason given on collectQuotaRowInstants below.
+ */
+export const CODEX_SPEND_CONTROL_ROW_ID = 'spend-control';
+
 const isUsableMs = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
@@ -78,10 +87,10 @@ const collectRows = (rows: readonly WindowLike[], fallbackPrefix: string): Quota
  * Every recovery instant on one credential, tagged with the row it belongs to.
  *
  * Only genuine capacity-return events are collected. The Codex subscription
- * renewal date and xAI's monthly billing rollover are excluded: a spend cap
- * turning over is not a rate limit lifting, and ranking cards by it would
- * answer a different question than the one being asked. Both still render
- * their own countdown.
+ * renewal date, the Codex spend-control budget and xAI's monthly billing
+ * rollover are excluded: a spend cap turning over is not a rate limit lifting, and
+ * ranking cards by it would answer a different question than the one being
+ * asked. All three still render their own countdown.
  */
 export function collectQuotaRowInstants(
   provider: QuotaProviderType,
@@ -91,7 +100,13 @@ export function collectQuotaRowInstants(
   if (!state || state.status !== 'success') return [];
 
   if (provider === 'claude' || provider === 'codex') {
-    const windows = collectRows((quota as { windows?: WindowLike[] }).windows ?? [], 'window');
+    const allWindows = (quota as { windows?: WindowLike[] }).windows ?? [];
+    const windows = collectRows(
+      provider === 'codex'
+        ? allWindows.filter((window) => window.id !== CODEX_SPEND_CONTROL_ROW_ID)
+        : allWindows,
+      'window'
+    );
     if (provider !== 'codex') return windows;
 
     const credits = (

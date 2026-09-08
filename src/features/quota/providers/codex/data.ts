@@ -8,6 +8,7 @@ import type {
   AuthFileItem,
   CodexRateLimitInfo,
   CodexRateLimitResetCredit,
+  CodexSpendControlLimit,
   CodexQuotaState,
   CodexUsageWindow,
   CodexQuotaWindow,
@@ -31,11 +32,13 @@ import {
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
   formatCodexResetLabel,
+  formatInstantShort,
   createStatusError,
   isCodexFile,
   isDisabledAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
+import { CODEX_SPEND_CONTROL_ROW_ID } from '../../resetSchedule';
 import type { QuotaProviderData } from '../types';
 
 const CODEX_RESET_CREDITS_REQUEST_TIMEOUT_MS = 8000;
@@ -88,6 +91,50 @@ export const buildCodexQuotaWindows = (
     payload.code_review_rate_limit ?? payload.codeReviewRateLimit ?? undefined;
   const additionalRateLimits = payload.additional_rate_limits ?? payload.additionalRateLimits ?? [];
   const windows: CodexQuotaWindow[] = [];
+
+  const spendControl = payload.spend_control ?? payload.spendControl ?? null;
+  const spendLimit = spendControl?.individual_limit ?? spendControl?.individualLimit ?? null;
+
+  const addSpendControlWindow = (limitInfo: CodexSpendControlLimit) => {
+    const total = normalizeNumberValue(limitInfo.limit);
+    const remainingAmount = normalizeNumberValue(limitInfo.remaining);
+    const usedAmount = normalizeNumberValue(limitInfo.used);
+    const usedPercentRaw = normalizeNumberValue(limitInfo.used_percent ?? limitInfo.usedPercent);
+    const remainingPercent = normalizeNumberValue(
+      limitInfo.remaining_percent ?? limitInfo.remainingPercent
+    );
+
+    // used/remaining/limit are sent as decimal strings and any one of them can
+    // be absent, so each is derived from the other two rather than dropping
+    // the row. The percentages come as numbers and are preferred when present.
+    const used =
+      usedAmount ?? (total !== null && remainingAmount !== null ? total - remainingAmount : null);
+    const usedPercent =
+      usedPercentRaw ??
+      (remainingPercent !== null
+        ? 100 - remainingPercent
+        : total !== null && total > 0 && used !== null
+          ? (used / total) * 100
+          : null);
+    if (usedPercent === null && used === null && total === null) return;
+
+    const resetAtMs =
+      resolveResetMs([limitInfo.reset_at, limitInfo.resetAt]) ??
+      parseOffsetSecondsToMs(
+        limitInfo.reset_after_seconds ?? limitInfo.resetAfterSeconds,
+        Date.now()
+      );
+    windows.push({
+      id: CODEX_SPEND_CONTROL_ROW_ID,
+      label: t('codex_quota.spend_control_window'),
+      labelKey: 'codex_quota.spend_control_window',
+      usedPercent,
+      resetLabel: resetAtMs === null ? '-' : formatInstantShort(resetAtMs),
+      resetAtMs,
+      usedAmount: used,
+      totalAmount: total,
+    });
+  };
 
   const addWindow = (
     id: string,
@@ -278,6 +325,12 @@ export const buildCodexQuotaWindows = (
         additionalAllowed
       );
     });
+  }
+
+  // Last, like the xAI monthly figure: the rolling windows are what governs
+  // the next request, the budget is what governs the month.
+  if (spendLimit) {
+    addSpendControlWindow(spendLimit);
   }
 
   return windows;
