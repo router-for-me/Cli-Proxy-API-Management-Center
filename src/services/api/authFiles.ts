@@ -13,6 +13,16 @@ import {
 } from '@/utils/recentRequests';
 import { parseTimestampMs } from '@/utils/timestamp';
 
+export type AuthFileModelTestResult = {
+  success: boolean;
+  model: string;
+  kind: 'text' | 'image';
+  latencyMs: number;
+  imageCount?: number;
+  message?: string;
+  error?: { code: string; statusCode?: number; message: string };
+};
+
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 type AuthFileEntry = AuthFilesResponse['files'][number];
@@ -523,16 +533,61 @@ export const authFilesApi = {
     }
   },
 
-  // 获取认证凭证支持的模型
-  async getModelsForAuthFile(
-    name: string
-  ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
+  async testModelForAuthFile(
+    authIndex: string,
+    model: string,
+    signal?: AbortSignal
+  ): Promise<AuthFileModelTestResult> {
+    const data = await apiClient.post<{
+      success: boolean;
+      model: string;
+      kind: 'text' | 'image';
+      latency_ms: number;
+      image_count?: number;
+      message?: string;
+      error?: { code: string; status_code?: number; message: string };
+    }>('/auth-files/test-model', { auth_index: authIndex, model }, { signal, timeout: 0 });
+    return {
+      success: data.success,
+      model: data.model,
+      kind: data.kind,
+      latencyMs: data.latency_ms,
+      imageCount: data.image_count,
+      message: data.message,
+      error: data.error
+        ? {
+            code: data.error.code,
+            statusCode: data.error.status_code,
+            message: data.error.message,
+          }
+        : undefined,
+    };
+  },
+
+  // Fetch the credential's registered models and optional test capabilities.
+  async getModelsForAuthFile(name: string): Promise<
+    {
+      id: string;
+      display_name?: string;
+      type?: string;
+      owned_by?: string;
+      testKind?: 'text' | 'image' | 'unsupported';
+    }[]
+  > {
     const data = await apiClient.get<Record<string, unknown>>(
       `/auth-files/models?name=${encodeURIComponent(name)}`
     );
     const models = data.models ?? data['models'];
     return Array.isArray(models)
-      ? (models as { id: string; display_name?: string; type?: string; owned_by?: string }[])
+      ? (
+          models as {
+            id: string;
+            display_name?: string;
+            type?: string;
+            owned_by?: string;
+            test_kind?: 'text' | 'image' | 'unsupported';
+          }[]
+        ).map(({ test_kind, ...model }) => ({ ...model, testKind: test_kind }))
       : [];
   },
 

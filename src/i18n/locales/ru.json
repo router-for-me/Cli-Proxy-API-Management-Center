@@ -215,6 +215,18 @@
     "routing_strategy_fill_first": "fill-first (приоритет)"
   },
   "auth_files": {
+    "model_test": "Тест",
+    "model_test_button": "Проверить модель {{model}}",
+    "model_testing": "Проверка…",
+    "model_test_success": "Успешно",
+    "model_test_failed": "Ошибка проверки",
+    "model_test_latency": "{{ms}} мс",
+    "model_test_images": "Создано изображений: {{count}}",
+    "model_test_hint": "Каждая проверка отправляет реальный запрос генерации с выбранными учётными данными и расходует квоту.",
+    "model_test_upgrade": "Обновите CLI Proxy API для проверки моделей.",
+    "model_test_unsupported": "Проверка этого типа моделей не поддерживается.",
+    "model_test_disabled": "Включите доступные учётные данные для проверки моделей.",
+
     "title": "Управление файлами авторизации",
     "meta_total": "{{count}} учётных данных",
     "meta_active": "{{count}} активно",

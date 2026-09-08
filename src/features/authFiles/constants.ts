@@ -17,6 +17,7 @@ import { TYPE_COLORS } from '@/utils/quota';
 
 export type { ResolvedTheme, ThemeColors, TypeColorSet } from '@/types';
 export type AuthFileModelItem = {
+  testKind?: 'text' | 'image' | 'unsupported';
   id: string;
   display_name?: string;
   type?: string;

@@ -216,6 +216,18 @@
     "routing_strategy_fill_first": "fill-first (prioritize)"
   },
   "auth_files": {
+    "model_test": "Test",
+    "model_test_button": "Test model {{model}}",
+    "model_testing": "Testing…",
+    "model_test_success": "Succeeded",
+    "model_test_failed": "Test failed",
+    "model_test_latency": "{{ms}} ms",
+    "model_test_images": "{{count}} image generated",
+    "model_test_hint": "Each test sends a real generation request using this credential and consumes quota.",
+    "model_test_upgrade": "Update CLI Proxy API to use model tests.",
+    "model_test_unsupported": "Testing this model type is not supported.",
+    "model_test_disabled": "Enable an available credential to test its models.",
+
     "title": "Auth Files Management",
     "meta_total": "{{count}} credentials",
     "meta_active": "{{count}} active",
