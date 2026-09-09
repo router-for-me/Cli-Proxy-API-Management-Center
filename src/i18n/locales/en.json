@@ -365,7 +365,8 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "filter_github-copilot": "GitHub Copilot"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -759,7 +760,21 @@
     "iflow_oauth_status_error": "Authentication failed:",
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "github_copilot_oauth_title": "GitHub Copilot OAuth",
+    "github_copilot_oauth_button": "Log in with GitHub Copilot",
+    "github_copilot_oauth_hint": "Quickly log in to GitHub Copilot through device authorization. Authentication files are obtained and saved automatically.",
+    "github_copilot_oauth_url_label": "Authorization URL:",
+    "github_copilot_open_link": "Open Link",
+    "github_copilot_copy_link": "Copy Link",
+    "github_copilot_oauth_status_waiting": "Waiting for authentication...",
+    "github_copilot_oauth_status_success": "Authentication successful!",
+    "github_copilot_oauth_status_error": "Authentication failed:",
+    "github_copilot_oauth_start_error": "Failed to start GitHub Copilot OAuth:",
+    "github_copilot_oauth_polling_error": "Failed to check authentication status:",
+    "device_code_label": "Device code",
+    "copy_device_code": "Copy code",
+    "device_code_copied": "Device code copied"
   },
   "stats": {
     "success": "Success",
@@ -1738,5 +1753,26 @@
     "modelCatalog": {
       "notLoaded": "Not loaded"
     }
+  },
+  "github_copilot_quota": {
+    "title": "GitHub Copilot quota",
+    "empty_title": "No GitHub Copilot accounts",
+    "empty_desc": "Sign in with GitHub Copilot to view your allowance.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Account index is missing. Refresh authentication files.",
+    "empty_data": "GitHub did not return quota details for this account.",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "plan": "Plan",
+    "chat": "Chat",
+    "completions": "Code completions",
+    "premium_interactions": "Premium interactions",
+    "unlimited": "Unlimited",
+    "remaining": "{{percent}}% remaining",
+    "used": "{{used}} of {{total}} used",
+    "overage_enabled": "Paid overage enabled",
+    "overage_disabled": "Paid overage disabled"
   }
 }

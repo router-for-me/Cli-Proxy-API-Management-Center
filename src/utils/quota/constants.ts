@@ -4,7 +4,7 @@
 
 import type { TypeColorSet } from '@/types';
 
-// Theme colors for type badges — 与 authFiles/constants.ts 保持同步
+// Theme colors for type badges, also re-exported by authFiles/constants.ts.
 export const TYPE_COLORS: Record<string, TypeColorSet> = {
   qwen: {
     light: { bg: '#ede5fd', text: '#5530c7' },
@@ -25,6 +25,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
   codex: {
     light: { bg: '#eae7ff', text: '#3538d4' },
     dark: { bg: '#262395', text: '#b5b0ff' },
+  },
+  'github-copilot': {
+    light: { bg: '#f0f2f5', text: '#2f343c' },
+    dark: { bg: '#373c42', text: '#cfd3db' },
   },
   kimi: {
     light: { bg: '#dce8ff', text: '#0560cf' },

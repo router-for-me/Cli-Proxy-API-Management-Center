@@ -1,9 +1,4 @@
-/**
- * 额度提供商适配器 = 数据层（data.ts，React-free）+ 渲染体（*QuotaBody.tsx）。
- *
- * 页面侧以擦除泛型的 QuotaAdapter 视图统一消费（与 AuthFileQuotaSection 的
- * 窄接口 cast 同一模式）；具体状态类型由各 data.ts 的强类型导出承载。
- */
+/** Quota adapters combine data modules with rendering components. Pages use the common QuotaAdapter contract; each data module retains its specific state types. */
 
 import type { ComponentType } from 'react';
 import type { TFunction } from 'i18next';
@@ -17,12 +12,14 @@ import { CLAUDE_CONFIG } from './claude/data';
 import { ClaudeQuotaBody } from './claude/ClaudeQuotaBody';
 import { CODEX_CONFIG } from './codex/data';
 import { CodexQuotaBody } from './codex/CodexQuotaBody';
+import { COPILOT_CONFIG } from './copilot/data';
+import { CopilotQuotaBody } from './copilot/CopilotQuotaBody';
 import { KIMI_CONFIG } from './kimi/data';
 import { KimiQuotaBody } from './kimi/KimiQuotaBody';
 import { XAI_CONFIG } from './xai/data';
 import { XaiQuotaBody } from './xai/XaiQuotaBody';
 
-/** 所有 provider 额度状态的公共骨架（各 *QuotaState 的结构子集）。 */
+/** Common subset of all provider quota states. */
 export interface QuotaCardState {
   status: 'idle' | 'loading' | 'success' | 'error';
   error?: string;
@@ -51,6 +48,7 @@ export const QUOTA_ADAPTERS: Record<QuotaProviderType, QuotaAdapter> = {
   } as unknown as QuotaAdapter,
   claude: { ...CLAUDE_CONFIG, Body: ClaudeQuotaBody } as unknown as QuotaAdapter,
   codex: { ...CODEX_CONFIG, Body: CodexQuotaBody } as unknown as QuotaAdapter,
+  'github-copilot': { ...COPILOT_CONFIG, Body: CopilotQuotaBody } as unknown as QuotaAdapter,
   kimi: { ...KIMI_CONFIG, Body: KimiQuotaBody } as unknown as QuotaAdapter,
   xai: { ...XAI_CONFIG, Body: XaiQuotaBody } as unknown as QuotaAdapter,
 };
@@ -59,10 +57,10 @@ export type QuotaMapUpdater = (
   updater: (prev: Record<string, QuotaCardState>) => Record<string, QuotaCardState>
 ) => void;
 
-/** 取 adapter 对应的 store setter（getState 直读，不建立订阅）。 */
+/** Read the adapter store setter without subscribing. */
 export const getQuotaSetter = (adapter: QuotaAdapter): QuotaMapUpdater =>
   useQuotaStore.getState()[adapter.storeSetter] as unknown as QuotaMapUpdater;
 
-/** 取 adapter 对应的额度缓存快照（getState 直读，不建立订阅）。 */
+/** Read the adapter quota cache without subscribing. */
 export const getQuotaMap = (adapter: QuotaAdapter): Record<string, QuotaCardState> =>
   adapter.storeSelector(useQuotaStore.getState() as unknown as QuotaStore);

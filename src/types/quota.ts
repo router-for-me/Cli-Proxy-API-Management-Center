@@ -397,3 +397,23 @@ export interface XaiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface CopilotQuotaRow {
+  id: string;
+  entitlement: number | null;
+  remaining: number | null;
+  used: number | null;
+  percent: number | null;
+  unlimited: boolean;
+  overage: number | null;
+  overageAllowed: boolean | null;
+  resetAtMs: number | null;
+}
+
+export interface CopilotQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  error?: string;
+  errorStatus?: number;
+  rows: CopilotQuotaRow[];
+  plan?: string;
+}

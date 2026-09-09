@@ -365,7 +365,8 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "filter_github-copilot": "GitHub Copilot"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -785,7 +786,21 @@
     "iflow_cookie_result_expired": "到期時間",
     "iflow_cookie_result_path": "儲存路徑",
     "iflow_cookie_result_type": "類型",
-    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取"
+    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
+    "github_copilot_oauth_title": "GitHub Copilot OAuth",
+    "github_copilot_oauth_button": "使用 GitHub Copilot 登入",
+    "github_copilot_oauth_hint": "透過裝置授權快速登入 GitHub Copilot，完成後將自動取得並儲存驗證檔案。",
+    "github_copilot_oauth_url_label": "授權連結:",
+    "github_copilot_open_link": "開啟連結",
+    "github_copilot_copy_link": "複製連結",
+    "github_copilot_oauth_status_waiting": "等待驗證中...",
+    "github_copilot_oauth_status_success": "驗證成功！",
+    "github_copilot_oauth_status_error": "驗證失敗:",
+    "github_copilot_oauth_start_error": "啟動 GitHub Copilot OAuth 失敗:",
+    "github_copilot_oauth_polling_error": "檢查驗證狀態失敗:",
+    "device_code_label": "裝置代碼",
+    "copy_device_code": "複製代碼",
+    "device_code_copied": "裝置代碼已複製"
   },
   "stats": {
     "success": "成功",
@@ -1764,5 +1779,26 @@
     "modelCatalog": {
       "notLoaded": "未載入"
     }
+  },
+  "github_copilot_quota": {
+    "title": "GitHub Copilot 配額",
+    "empty_title": "尚無 GitHub Copilot 帳號",
+    "empty_desc": "登入 GitHub Copilot 以查看配額。",
+    "idle": "點擊此處重新整理配額",
+    "loading": "正在載入配額...",
+    "load_failed": "配額取得失敗：{{message}}",
+    "missing_auth_index": "缺少帳號索引，請重新整理驗證檔案。",
+    "empty_data": "GitHub 未傳回此帳號的配額資訊。",
+    "refresh_button": "重新整理配額",
+    "fetch_all": "取得全部",
+    "plan": "方案",
+    "chat": "聊天",
+    "completions": "程式碼補全",
+    "premium_interactions": "進階互動",
+    "unlimited": "無限制",
+    "remaining": "剩餘 {{percent}}%",
+    "used": "已使用 {{used}} / {{total}}",
+    "overage_enabled": "已啟用付費超額用量",
+    "overage_disabled": "已停用付費超額用量"
   }
 }

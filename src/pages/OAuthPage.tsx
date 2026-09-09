@@ -15,6 +15,8 @@ import { getPluginTitle, resolvePluginAssetURL } from '@/features/plugins/plugin
 import { getKimiAffiliateUrl } from '@/features/providers/kimi';
 import type { PluginListEntry } from '@/types';
 import styles from './OAuthPage.module.scss';
+import iconCopilot from '@/assets/icons/github-copilot.svg';
+import iconCopilotLight from '@/assets/icons/github-copilot-light.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
@@ -31,6 +33,8 @@ interface ProviderState {
   error?: string;
   polling?: boolean;
   callbackUrl?: string;
+  userCode?: string;
+  deviceFlow?: boolean;
   callbackSubmitting?: boolean;
   callbackStatus?: 'success' | 'error';
   callbackError?: string;
@@ -74,6 +78,12 @@ function getErrorStatus(error: unknown): number | undefined {
 }
 
 const PROVIDERS: BuiltInOAuthProviderCard[] = [
+  {
+    kind: 'builtin',
+    id: 'github-copilot',
+    titleKey: 'auth_login.github_copilot_oauth_title',
+    icon: { light: iconCopilot, dark: iconCopilotLight },
+  },
   {
     kind: 'builtin',
     id: 'kimi',
@@ -408,6 +418,8 @@ export function OAuthPage() {
     clearProviderTimers(provider);
     updateProviderState(provider, {
       url: undefined,
+      userCode: undefined,
+      deviceFlow: false,
       state: undefined,
       status: 'waiting',
       polling: true,
@@ -433,6 +445,8 @@ export function OAuthPage() {
       updateProviderState(provider, {
         url: res.url,
         state: res.state,
+        userCode: res.userCode,
+        deviceFlow: res.flow === 'device',
         status: 'waiting',
         polling: true,
       });
@@ -572,7 +586,9 @@ export function OAuthPage() {
     const state = states[provider.id] || {};
     const showKimiSignUp = featured && provider.kind === 'builtin' && provider.id === 'kimi';
     const canSubmitCallback =
-      (provider.kind === 'plugin' || CALLBACK_SUPPORTED.has(provider.id)) && Boolean(state.url);
+      !state.deviceFlow &&
+      (provider.kind === 'plugin' || CALLBACK_SUPPORTED.has(provider.id)) &&
+      Boolean(state.url);
     const loginButtonLabel =
       state.status === 'success'
         ? t('auth_login.login_another_account')
@@ -630,6 +646,27 @@ export function OAuthPage() {
                 {getProviderText(provider, 'oauth_url_label')}
               </div>
               <div className={styles.authUrlValue}>{state.url}</div>
+              {state.userCode ? (
+                <div>
+                  <div className={styles.authUrlLabel}>{t('auth_login.device_code_label')}</div>
+                  <div className={styles.authUrlActions}>
+                    <code className={styles.authUrlValue}>{state.userCode}</code>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={async () => {
+                        const copied = await copyToClipboard(state.userCode!);
+                        showNotification(
+                          t(copied ? 'auth_login.device_code_copied' : 'notification.copy_failed'),
+                          copied ? 'success' : 'error'
+                        );
+                      }}
+                    >
+                      {t('auth_login.copy_device_code')}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
               <div className={styles.authUrlActions}>
                 <Button variant="secondary" size="sm" onClick={() => copyLink(state.url!)}>
                   {getProviderText(provider, 'copy_link')}
@@ -734,7 +771,7 @@ export function OAuthPage() {
           </div>
         </section>
 
-        {/* Vertex JSON 登录 */}
+        {/** Vertex JSON login */}
         <section className={styles.providerSection}>
           <h2 className={styles.sectionTitle}>{t('auth_login.other_login_methods')}</h2>
           <Card

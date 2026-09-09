@@ -364,7 +364,8 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "filter_github-copilot": "GitHub Copilot"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -758,7 +759,21 @@
     "iflow_oauth_status_error": "Ошибка аутентификации:",
     "iflow_oauth_start_error": "Не удалось запустить iFlow OAuth:",
     "iflow_oauth_polling_error": "Не удалось проверить статус аутентификации:",
-    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost."
+    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost.",
+    "github_copilot_oauth_title": "GitHub Copilot OAuth",
+    "github_copilot_oauth_button": "Войти через GitHub Copilot",
+    "github_copilot_oauth_hint": "Быстро войдите в GitHub Copilot через авторизацию устройства. Файлы авторизации будут получены и сохранены автоматически.",
+    "github_copilot_oauth_url_label": "URL авторизации:",
+    "github_copilot_open_link": "Открыть ссылку",
+    "github_copilot_copy_link": "Скопировать ссылку",
+    "github_copilot_oauth_status_waiting": "Ожидание аутентификации...",
+    "github_copilot_oauth_status_success": "Аутентификация успешна!",
+    "github_copilot_oauth_status_error": "Ошибка аутентификации:",
+    "github_copilot_oauth_start_error": "Не удалось запустить GitHub Copilot OAuth:",
+    "github_copilot_oauth_polling_error": "Не удалось проверить статус аутентификации:",
+    "device_code_label": "Код устройства",
+    "copy_device_code": "Копировать код",
+    "device_code_copied": "Код устройства скопирован"
   },
   "stats": {
     "success": "Успех",
@@ -1728,5 +1743,26 @@
     "modelCatalog": {
       "notLoaded": "Не загружено"
     }
+  },
+  "github_copilot_quota": {
+    "title": "Квота GitHub Copilot",
+    "empty_title": "Нет аккаунтов GitHub Copilot",
+    "empty_desc": "Войдите через GitHub Copilot, чтобы просмотреть лимиты.",
+    "idle": "Не загружено. Нажмите \"Обновить квоту\".",
+    "loading": "Загрузка квоты...",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "Отсутствует индекс аккаунта. Обновите файлы авторизации.",
+    "empty_data": "GitHub не вернул сведения о квоте этого аккаунта.",
+    "refresh_button": "Обновить квоту",
+    "fetch_all": "Получить все",
+    "plan": "Тариф",
+    "chat": "Чат",
+    "completions": "Дополнение кода",
+    "premium_interactions": "Премиальные запросы",
+    "unlimited": "Без ограничений",
+    "remaining": "Осталось {{percent}}%",
+    "used": "Использовано {{used}} из {{total}}",
+    "overage_enabled": "Платное превышение включено",
+    "overage_disabled": "Платное превышение отключено"
   }
 }

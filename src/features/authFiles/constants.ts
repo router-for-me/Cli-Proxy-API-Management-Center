@@ -1,6 +1,8 @@
 import type { TFunction } from 'i18next';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconClaude from '@/assets/icons/claude.svg';
+import iconCopilot from '@/assets/icons/github-copilot.svg';
+import iconCopilotLight from '@/assets/icons/github-copilot-light.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconGrok from '@/assets/icons/grok.svg';
@@ -24,7 +26,8 @@ export type AuthFileModelItem = {
 };
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
-export type QuotaProviderType = 'antigravity' | 'claude' | 'codex' | 'kimi' | 'xai';
+export type QuotaProviderType =
+  'antigravity' | 'claude' | 'codex' | 'kimi' | 'github-copilot' | 'xai';
 export type OAuthConfigLoadError = 'loading' | 'unsupported' | 'load' | null;
 
 export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
@@ -32,6 +35,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'claude',
   'codex',
   'kimi',
+  'github-copilot',
   'xai',
 ]);
 
@@ -43,6 +47,7 @@ export const OAUTH_PROVIDER_PRESETS = [
   'claude',
   'codex',
   'kimi',
+  'github-copilot',
 ];
 
 const OAUTH_PROVIDER_EXCLUDES = new Set(['all', 'unknown', 'empty']);
@@ -60,10 +65,11 @@ export const AUTH_FILE_MANUAL_REFRESH_PROVIDERS = new Set([
   'claude',
   'codex',
   'kimi',
+  'github-copilot',
   'xai',
 ]);
 
-// 标签类型颜色配置：权威版本在 @/utils/quota/constants.ts，此处仅转发
+// Re-export the authoritative badge colors from utils/quota/constants.ts.
 export { TYPE_COLORS } from '@/utils/quota';
 
 export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
@@ -71,6 +77,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   aistudio: iconGemini,
   claude: iconClaude,
   codex: iconCodex,
+  'github-copilot': { light: iconCopilot, dark: iconCopilotLight },
   gemini: iconGemini,
   xai: { light: iconGrok, dark: iconGrokDark },
   iflow: iconIflow,
@@ -111,7 +118,7 @@ export const getAuthFileStatusMessage = (file: AuthFileItem): string => {
   return String(raw).trim();
 };
 
-/** 这些 status_message 视为健康，不触发告警态。 */
+/** These status messages indicate healthy credentials. */
 export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
   'ok',
   'healthy',
@@ -120,16 +127,13 @@ export const HEALTHY_AUTH_FILE_STATUS_MESSAGES = new Set([
   'available',
 ]);
 
-/** 是否存在非健康的 status_message（卡片告警态 / 谱条琥珀色共用判定）。 */
+/** Check for unhealthy status messages, shared by card alerts and amber indicators. */
 export const hasAuthFileStatusWarning = (file: AuthFileItem): boolean => {
   const message = getAuthFileStatusMessage(file);
   return Boolean(message) && !HEALTHY_AUTH_FILE_STATUS_MESSAGES.has(message.toLowerCase());
 };
 
-/**
- * 是否为需要用户处理的问题凭证。
- * 主动停用是独立状态，不应进入“问题”筛选或“删除问题凭证”的批量操作。
- */
+/** Identify credentials needing attention. Explicitly disabled credentials are excluded from problem filters and bulk deletion. */
 export const isProblemAuthFile = (file: AuthFileItem): boolean => {
   const status = typeof file.status === 'string' ? file.status.trim().toLowerCase() : '';
   if (file.disabled === true || status === 'disabled') return false;
@@ -160,8 +164,8 @@ export const getAuthFileIcon = (type: string, resolvedTheme: ResolvedTheme): str
       : iconEntry.light;
 };
 
-// 与 AI 提供商界面（PROVIDER_LOGOS 的 themeSurface）保持一致：
-// 这些提供商的图标底座颜色随主题切换（浅色主题黑底，深色主题白底）
+// Match the AI provider icon backgrounds in PROVIDER_LOGOS.themeSurface.
+// These providers use black icon backgrounds in light mode and white in dark mode.
 export const THEME_SURFACE_ICON_PROVIDERS = new Set(['kimi']);
 
 export const isThemeSurfaceIconProvider = (type: string): boolean =>
@@ -245,7 +249,7 @@ export const formatModified = (item: AuthFileItem): string => {
   return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
 
-// 检查模型是否被 OAuth 排除
+// Check whether an OAuth model is excluded.
 export const isModelExcluded = (
   modelId: string,
   providerType: string,
@@ -255,7 +259,7 @@ export const isModelExcluded = (
   const excludedModels = excluded[providerKey] || excluded[providerType] || [];
   return excludedModels.some((pattern) => {
     if (pattern.includes('*')) {
-      // 支持通配符匹配：先转义正则特殊字符，再将 * 视为通配符
+      // Escape regular expression characters before treating * as a wildcard.
       const regexSafePattern = pattern
         .split('*')
         .map((segment) => segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
