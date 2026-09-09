@@ -151,6 +151,36 @@
   }
 }
 
+.prefixFieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.prefixOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.prefixOption {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+
+  input {
+    flex-shrink: 0;
+  }
+}
+
 /* 强度参考条：四段承载档位，颜色承载严重度。
    段的填充走 scaleX（只碰 transform），键入时逐字重算也不掉帧。 */
 

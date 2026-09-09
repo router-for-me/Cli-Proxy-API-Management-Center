@@ -1080,6 +1080,13 @@
         }
       },
       "api_keys": {
+        "allowed_prefixes": "Allowed prefixes",
+        "all_prefixes": "All prefixes and unprefixed models",
+        "selected_prefixes": "Selected prefixes: {{count}}",
+        "search_prefixes": "Search prefixes",
+        "prefix_load_error": "Unable to load prefixes. Close and reopen to retry.",
+        "no_prefixes": "No upstream prefixes configured",
+        "error_duplicate": "This API key already exists",
         "label": "API Keys List (api-keys)",
         "add": "Add API Key",
         "generate": "Generate",

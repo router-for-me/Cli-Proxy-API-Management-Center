@@ -1106,6 +1106,13 @@
         }
       },
       "api_keys": {
+        "allowed_prefixes": "允許使用的前綴",
+        "all_prefixes": "全部前綴及無前綴模型",
+        "selected_prefixes": "已選擇 {{count}} 個前綴",
+        "search_prefixes": "搜尋前綴",
+        "prefix_load_error": "前綴載入失敗，請關閉後重新開啟。",
+        "no_prefixes": "尚未設定上游前綴",
+        "error_duplicate": "此 API 金鑰已存在",
         "label": "API 金鑰清單（api-keys）",
         "add": "新增 API 金鑰",
         "generate": "產生",

@@ -71,6 +71,20 @@ function resolveApiKeysText(parsed: Record<string, unknown>): string {
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
+
+function parseApiKeyPrefixes(raw: unknown): Record<string, string[]> {
+  if (raw === undefined || raw === null) return {};
+  const record = asRecord(raw);
+  if (!record) throw new Error('api-key-prefixes must be a mapping');
+  return Object.fromEntries(
+    Object.entries(record).map(([key, prefixes]) => {
+      if (!Array.isArray(prefixes) || prefixes.some((prefix) => typeof prefix !== 'string')) {
+        throw new Error('api-key-prefixes values must be string arrays');
+      }
+      return [key, [...new Set(prefixes as string[])]];
+    })
+  );
+}
 type YamlPath = string[];
 
 function docHas(doc: YamlDocument, path: YamlPath): boolean {
@@ -921,6 +935,19 @@ function getNextDirtyFields(
     ] as Array<keyof VisualConfigValues>
   ).forEach(updateScalarDirty);
 
+  if (Object.prototype.hasOwnProperty.call(patch, 'apiKeyPrefixes')) {
+    const canonical = (value: Record<string, string[]>) =>
+      JSON.stringify(
+        Object.entries(value)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, prefixes]) => [key, [...prefixes].sort()])
+      );
+    updateDirty(
+      'apiKeyPrefixes',
+      canonical(nextValues.apiKeyPrefixes) === canonical(baselineValues.apiKeyPrefixes)
+    );
+  }
+
   if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreSources')) {
     updateDirty(
       'pluginStoreSources',
@@ -1109,6 +1136,7 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
+        apiKeyPrefixes: parseApiKeyPrefixes(parsed['api-key-prefixes']),
         pluginsEnabled: Boolean(plugins?.enabled),
         pluginStoreSources: parseStringList(plugins?.['store-sources']),
         pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
@@ -1290,6 +1318,25 @@ export function useVisualConfig() {
             doc.deleteIn(['api-keys']);
           }
           deleteLegacyApiKeysProvider(doc);
+        }
+
+        if (dirtyFields.has('apiKeyPrefixes') || dirtyFields.has('apiKeysText')) {
+          const keys = new Set(
+            values.apiKeysText
+              .split('\n')
+              .map((key) => key.trim())
+              .filter(Boolean)
+          );
+          const prefixes = Object.fromEntries(
+            Object.entries(values.apiKeyPrefixes).filter(
+              ([key, allowed]) => keys.has(key) && allowed.length > 0
+            )
+          );
+          if (Object.keys(prefixes).length > 0) {
+            doc.setIn(['api-key-prefixes'], prefixes);
+          } else {
+            doc.deleteIn(['api-key-prefixes']);
+          }
         }
 
         const pluginsDirty =

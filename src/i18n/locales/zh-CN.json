@@ -1080,6 +1080,13 @@
         }
       },
       "api_keys": {
+        "allowed_prefixes": "允许使用的前缀",
+        "all_prefixes": "全部前缀及无前缀模型",
+        "selected_prefixes": "已选择 {{count}} 个前缀",
+        "search_prefixes": "搜索前缀",
+        "prefix_load_error": "前缀加载失败，请关闭后重新打开。",
+        "no_prefixes": "尚未配置上游前缀",
+        "error_duplicate": "此 API 密钥已存在",
         "label": "API 密钥列表 (api-keys)",
         "add": "添加 API 密钥",
         "generate": "生成",

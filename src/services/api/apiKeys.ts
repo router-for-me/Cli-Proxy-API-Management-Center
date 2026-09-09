@@ -5,6 +5,16 @@
 import { apiClient } from './client';
 
 export const apiKeysApi = {
+  async prefixOptions(): Promise<string[]> {
+    const data = await apiClient.get<{ prefixes: unknown }>('/api-key-prefix-options');
+    if (
+      !Array.isArray(data.prefixes) ||
+      data.prefixes.some((prefix) => typeof prefix !== 'string')
+    ) {
+      throw new Error('Invalid prefix options response');
+    }
+    return data.prefixes as string[];
+  },
   async list(): Promise<string[]> {
     const data = await apiClient.get<Record<string, unknown>>('/api-keys');
     const keys = data['api-keys'] ?? data.apiKeys;
