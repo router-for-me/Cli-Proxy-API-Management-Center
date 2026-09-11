@@ -37,10 +37,12 @@ import {
   useConfigStore,
   useLanguageStore,
   useNotificationStore,
+  usePluginProviderBrandingStore,
   useThemeStore,
 } from '@/stores';
 import { AUTH_FILES_CHANGED_EVENT } from '@/features/authFiles/authFilesEvents';
 import {
+  collectPluginProviderBranding,
   collectPluginResourceEntries,
   PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
@@ -315,6 +317,7 @@ export function MainLayout() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
   const supportsPlugin = useAuthStore((state) => state.supportsPlugin);
+  const setPluginProviderBranding = usePluginProviderBrandingStore((state) => state.setBranding);
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
@@ -487,16 +490,19 @@ export function MainLayout() {
   const loadPluginResources = useCallback(async () => {
     if (connectionStatus !== 'connected' || !supportsPlugin) {
       setPluginResources([]);
+      setPluginProviderBranding({});
       return;
     }
 
     try {
       const plugins = await pluginsApi.list();
       setPluginResources(collectPluginResourceEntries(plugins.plugins));
+      setPluginProviderBranding(collectPluginProviderBranding(plugins.plugins, apiBase));
     } catch {
       setPluginResources([]);
+      setPluginProviderBranding({});
     }
-  }, [connectionStatus, supportsPlugin]);
+  }, [apiBase, connectionStatus, setPluginProviderBranding, supportsPlugin]);
 
   const loadAuthFilesCount = useCallback(async () => {
     const requestID = ++authFilesCountRequestRef.current;

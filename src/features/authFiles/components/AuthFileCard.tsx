@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -13,6 +14,7 @@ import {
   IconTrash2,
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
+import type { PluginProviderBrandingMap } from '@/stores/usePluginProviderBrandingStore';
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
@@ -43,6 +45,8 @@ export type AuthFileCardProps = {
   compact: boolean;
   selected: boolean;
   resolvedTheme: ResolvedTheme;
+  /** Label/logo fallback for provider keys owned by plugin OAuth providers. */
+  pluginBranding?: PluginProviderBrandingMap;
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
@@ -73,6 +77,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     compact,
     selected,
     resolvedTheme,
+    pluginBranding,
     disableControls,
     deleting,
     statusUpdating,
@@ -96,8 +101,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const showManualRefreshButton = !isRuntimeOnly && supportsAuthFileManualRefresh(providerKey);
   const isManualRefreshing = manualRefreshing[file.name] === true;
   const typeColor = getTypeColor(providerKey, resolvedTheme);
-  const typeLabel = getTypeLabel(t, providerKey);
-  const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
+  const typeLabel = getTypeLabel(t, providerKey, pluginBranding);
+  const providerIcon = getAuthFileIcon(providerKey, resolvedTheme, pluginBranding);
   // 与 AI 提供商界面一致：Kimi 图标底座随主题切换颜色
   const useThemeSurfaceIcon = isThemeSurfaceIconProvider(providerKey);
 
@@ -183,11 +188,13 @@ export function AuthFileCard(props: AuthFileCardProps) {
                 }
           }
         >
-          {providerIcon ? (
-            <img src={providerIcon} alt="" className={styles.avatarImage} />
-          ) : (
-            <span className={styles.avatarFallback}>{typeLabel.slice(0, 1).toUpperCase()}</span>
-          )}
+          <FallbackImage
+            src={providerIcon}
+            className={styles.avatarImage}
+            fallback={
+              <span className={styles.avatarFallback}>{typeLabel.slice(0, 1).toUpperCase()}</span>
+            }
+          />
         </div>
         <div className={styles.identity}>
           <div className={styles.badgeRow}>
