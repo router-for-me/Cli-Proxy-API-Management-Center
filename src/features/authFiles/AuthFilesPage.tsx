@@ -50,7 +50,12 @@ import {
   type AuthFilesStatusFilterMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import {
+  useAuthStore,
+  useNotificationStore,
+  usePluginProviderBrandingStore,
+  useThemeStore,
+} from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
@@ -78,6 +83,7 @@ export function AuthFilesPage() {
   const showNotification = useNotificationStore((state) => state.showNotification);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const pluginBranding = usePluginProviderBrandingStore((state) => state.branding);
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
   const navigate = useNavigate();
@@ -546,12 +552,12 @@ export function AuthFilesPage() {
       return normalizedFilter === 'all'
         ? t('auth_files.delete_problem_button')
         : t('auth_files.delete_problem_button_with_type', {
-            type: getTypeLabel(t, normalizedFilter),
+            type: getTypeLabel(t, normalizedFilter, pluginBranding),
           });
     }
     return normalizedFilter === 'all'
       ? t('auth_files.delete_all_button')
-      : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
+      : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter, pluginBranding)}`;
   })();
 
   const oauthSectionRef = useRevealOnScroll<HTMLDivElement>();
@@ -597,6 +603,7 @@ export function AuthFilesPage() {
           counts={typeCounts}
           active={normalizedFilter}
           resolvedTheme={resolvedTheme}
+          pluginBranding={pluginBranding}
           onChange={(type) => {
             setFilter(type);
             setPage(1);
@@ -687,6 +694,7 @@ export function AuthFilesPage() {
                 compact={compactMode}
                 selected={selectedFiles.has(file.name)}
                 resolvedTheme={resolvedTheme}
+                pluginBranding={pluginBranding}
                 disableControls={disableControls}
                 deleting={deleting}
                 statusUpdating={statusUpdating}
