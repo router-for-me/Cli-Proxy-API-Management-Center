@@ -26,7 +26,6 @@ const EMPTY_TRAFFIC: TrafficWindow = {
   successRate: null,
   peakTotal: 0,
   peakIndex: -1,
-  activeBuckets: 0,
   windowMinutes: 0,
 };
 
@@ -53,15 +52,11 @@ const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindo
   let totalFailure = 0;
   let peakTotal = 0;
   let peakIndex = -1;
-  let activeBuckets = 0;
 
   buckets.forEach((bucket, index) => {
     const bucketTotal = bucket.success + bucket.failed;
     totalSuccess += bucket.success;
     totalFailure += bucket.failed;
-    if (bucketTotal > 0) {
-      activeBuckets += 1;
-    }
     if (bucketTotal > peakTotal) {
       peakTotal = bucketTotal;
       peakIndex = index;
@@ -78,7 +73,6 @@ const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindo
     successRate: total > 0 ? (totalSuccess / total) * 100 : null,
     peakTotal,
     peakIndex,
-    activeBuckets,
     windowMinutes: buckets.length * TRAFFIC_BUCKET_MINUTES,
   };
 };
@@ -133,18 +127,14 @@ export function useDashboardOverview() {
   });
 
   const [authFiles, setAuthFiles] = useState<AuthFileItem[] | null>(null);
-  const [authFilesLoading, setAuthFilesLoading] = useState(false);
 
   const loadAuthFiles = useCallback(async () => {
     if (!connected) return;
-    setAuthFilesLoading(true);
     try {
       const response = await authFilesApi.list();
       setAuthFiles(response.files);
     } catch {
       setAuthFiles(null);
-    } finally {
-      setAuthFilesLoading(false);
     }
   }, [connected]);
 
@@ -300,9 +290,6 @@ export function useDashboardOverview() {
     traffic,
     providers,
     credentials,
-    /** 首屏骨架的判定：配置与凭证都还没回来 */
-    initialLoading: connected && !config && authFiles === null,
-    authFilesLoading,
     refresh,
   };
 }
