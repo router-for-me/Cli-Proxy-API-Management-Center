@@ -25,7 +25,7 @@ import {
   resolveDirtyTabs,
   resolveStatus,
 } from './uiState';
-import { useConfigDocument } from './hooks/useConfigDocument';
+import { shouldReloadVisualDraft, useConfigDocument } from './hooks/useConfigDocument';
 import { useFieldJump } from './hooks/useFieldJump';
 import { useSourceSearch } from './hooks/useSourceSearch';
 import { ConfigHeader } from './components/ConfigHeader';
@@ -131,9 +131,9 @@ export function ConfigPage() {
     );
   }, [mode, showNotification, t, visualParseError]);
 
-  // 可视化 ↔ 源码切换的 dirty 交接（语义与旧 handleTabChange 逐行一致）：
-  // → 源码：仅当可视化有脏字段时把它们写进源码草稿（保留注释/未覆盖字段）；
-  // → 可视化：重新解析草稿，失败则报错并留在源码模式。
+  // 可视化 ↔ 源码切换的 dirty 交接：
+  // → 源码：物化可视化脏字段供查看，但不把同步动作记作用户源码编辑；
+  // → 可视化：真正的源码草稿需重新解析；纯模式往返保留字段级 dirty 和并发合并策略。
   const handleModeChange = useCallback(
     (nextMode: ConfigEditorMode) => {
       if (nextMode === mode) return;
@@ -142,11 +142,10 @@ export function ConfigPage() {
         if (visualDirty) {
           const nextContent = applyVisualChangesToYaml(doc.content);
           if (nextContent !== doc.content) {
-            doc.setContent(nextContent);
-            doc.setDirty(true);
+            doc.syncContentFromVisual(nextContent);
           }
         }
-      } else {
+      } else if (shouldReloadVisualDraft(doc.sourceDirty, visualParseError)) {
         const result = loadVisualValuesFromYaml(doc.content);
         if (!result.ok) {
           showNotification(
@@ -168,6 +167,7 @@ export function ConfigPage() {
       showNotification,
       t,
       visualDirty,
+      visualParseError,
     ]
   );
 
@@ -204,7 +204,7 @@ export function ConfigPage() {
     fieldCount: CONFIG_FIELD_COUNT,
     status,
     dirtyCount: visualDirtyFields.size,
-    sourceDirty: doc.dirty,
+    sourceDirty: doc.sourceDirty,
     errorCount: mode === 'visual' ? totalErrors : 0,
   });
 
