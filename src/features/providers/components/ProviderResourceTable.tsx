@@ -130,13 +130,10 @@ export function ProviderResourceTable({
       if ((r.brand === 'codex' || r.brand === 'xai') && r.flags.websockets) {
         items.push(renderFlagTag('ws', t('providersPage.table.websocketsTag')));
       }
-      if ((r.brand === 'claude' || r.brand === 'claudeApi') && r.flags.cloakEnabled) {
+      if (r.brand === 'claude' && r.flags.cloakEnabled) {
         items.push(renderFlagTag('cloak', t('providersPage.table.cloakTag')));
       }
-      if (
-        (r.brand === 'claude' || r.brand === 'claudeApi') &&
-        r.flags.claudeCodeCliProfile
-      ) {
+      if (r.brand === 'claude' && r.flags.claudeCodeCliProfile) {
         items.push(renderFlagTag('cli-profile', t('providersPage.table.cliProfileTag')));
       }
     }

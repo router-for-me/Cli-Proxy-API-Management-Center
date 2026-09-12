@@ -7,13 +7,6 @@ import {
   getApiKeyFunProtocolUrls,
   resolveApiKeyFunBaseUrl,
 } from './sponsor';
-import { CLAUDE_API_DISPLAY_NAME } from './claudeApi';
-import {
-  CODE0_DISPLAY_NAME,
-  CODE0_PROTOCOL_LABELS,
-  getCode0ProtocolUrls,
-  resolveCode0BaseUrl,
-} from './code0';
 import {
   FENNO_AI_DISPLAY_NAME,
   FENNO_AI_PROTOCOL_LABELS,
@@ -26,18 +19,6 @@ import {
   getQiniuCloudProtocolUrls,
   resolveQiniuCloudBaseUrl,
 } from './qiniuCloud';
-import {
-  LMU_AI_DISPLAY_NAME,
-  LMU_AI_PROTOCOL_LABELS,
-  getLmuAIProtocolUrls,
-  resolveLmuAIBaseUrl,
-} from './lmuAI';
-import {
-  INFISTAR_DISPLAY_NAME,
-  INFISTAR_PROTOCOL_LABELS,
-  getInfistarProtocolUrls,
-  resolveInfistarBaseUrl,
-} from './infistar';
 import {
   KIMI_DISPLAY_NAME,
   KIMI_PROTOCOL_LABELS,
@@ -78,7 +59,7 @@ const truncateForId = (value: string | undefined | null): string => {
 };
 
 function providerKeyToResource(
-  brand: 'gemini' | 'interactions' | 'codex' | 'xai' | 'claude' | 'claudeApi' | 'vertex',
+  brand: 'gemini' | 'interactions' | 'codex' | 'xai' | 'claude' | 'vertex',
   config: GeminiKeyConfig | ProviderKeyConfig,
   index: number
 ): ProviderResource {
@@ -88,7 +69,7 @@ function providerKeyToResource(
   if (brand === 'codex' || brand === 'xai') {
     flags.websockets = (config as ProviderKeyConfig).websockets === true;
   }
-  if (brand === 'claude' || brand === 'claudeApi') {
+  if (brand === 'claude') {
     const claudeConfig = config as ProviderKeyConfig;
     flags.cloakEnabled = Boolean(claudeConfig.cloak?.mode?.trim());
     flags.claudeCodeCliProfile = claudeConfig.fingerprintProfile === 'claude-code-cli';
@@ -144,14 +125,6 @@ export function xaiToResource(config: ProviderKeyConfig, index: number): Provide
 
 export function claudeToResource(config: ProviderKeyConfig, index: number): ProviderResource {
   return providerKeyToResource('claude', config, index);
-}
-
-export function claudeApiToResource(config: ProviderKeyConfig, index: number): ProviderResource {
-  const resource = providerKeyToResource('claudeApi', config, index);
-  return {
-    ...resource,
-    name: CLAUDE_API_DISPLAY_NAME,
-  };
 }
 
 export function vertexToResource(config: ProviderKeyConfig, index: number): ProviderResource {
@@ -343,15 +316,6 @@ export function apiKeyFunToResource(raw: SponsorProviderRaw): ProviderResource |
   });
 }
 
-export function code0ToResource(raw: SponsorProviderRaw): ProviderResource | null {
-  return sponsorRawToResource('code0', raw, {
-    displayName: CODE0_DISPLAY_NAME,
-    protocolLabels: CODE0_PROTOCOL_LABELS,
-    resolveBaseUrl: resolveCode0BaseUrl,
-    getProtocolUrls: getCode0ProtocolUrls,
-  });
-}
-
 export function fennoAIToResource(raw: SponsorProviderRaw): ProviderResource | null {
   return sponsorRawToResource('fennoAI', raw, {
     displayName: FENNO_AI_DISPLAY_NAME,
@@ -367,24 +331,6 @@ export function qiniuCloudToResource(raw: SponsorProviderRaw): ProviderResource 
     protocolLabels: QINIU_CLOUD_PROTOCOL_LABELS,
     resolveBaseUrl: resolveQiniuCloudBaseUrl,
     getProtocolUrls: getQiniuCloudProtocolUrls,
-  });
-}
-
-export function lmuAIToResource(raw: SponsorProviderRaw): ProviderResource | null {
-  return sponsorRawToResource('lmuAI', raw, {
-    displayName: LMU_AI_DISPLAY_NAME,
-    protocolLabels: LMU_AI_PROTOCOL_LABELS,
-    resolveBaseUrl: resolveLmuAIBaseUrl,
-    getProtocolUrls: getLmuAIProtocolUrls,
-  });
-}
-
-export function infistarToResource(raw: SponsorProviderRaw): ProviderResource | null {
-  return sponsorRawToResource('infistar', raw, {
-    displayName: INFISTAR_DISPLAY_NAME,
-    protocolLabels: INFISTAR_PROTOCOL_LABELS,
-    resolveBaseUrl: resolveInfistarBaseUrl,
-    getProtocolUrls: getInfistarProtocolUrls,
   });
 }
 

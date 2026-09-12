@@ -1504,15 +1504,11 @@
       "codex": "Codex",
       "xai": "xAI",
       "claude": "Claude",
-      "claudeApi": "Claudeapi.com",
       "vertex": "Vertex",
       "openaiCompatibility": "OpenAI 相容",
       "apikeyFun": "APIKEY.FUN",
-      "code0": "Code0",
       "fennoAI": "FennoAI",
       "qiniuCloud": "七牛雲",
-      "lmuAI": "LMU AI（靈眸AI）",
-      "infistar": "無限星河",
       "kimi": "Kimi"
     },
     "table": {

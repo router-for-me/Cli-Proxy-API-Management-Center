@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { claudeApiToResource, claudeToResource } from '../src/features/providers/adapters';
+import { claudeToResource } from '../src/features/providers/adapters';
 import { apiClient } from '../src/services/api/client';
 import { providersApi } from '../src/services/api/providers';
 import { normalizeConfigResponse } from '../src/services/api/transformers';
@@ -36,12 +36,7 @@ describe('Claude fingerprint profile', () => {
         fingerprintProfile: 'claude-code-cli',
       },
     ]);
-    expect(claudeToResource(config.claudeApiKeys![0], 0).flags.claudeCodeCliProfile).toBe(
-      true
-    );
-    expect(claudeApiToResource(config.claudeApiKeys![0], 0).flags.claudeCodeCliProfile).toBe(
-      true
-    );
+    expect(claudeToResource(config.claudeApiKeys![0], 0).flags.claudeCodeCliProfile).toBe(true);
   });
 
   test('serializes the opt-in profile when creating a Claude key', async () => {
