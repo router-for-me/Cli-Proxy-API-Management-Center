@@ -19,6 +19,8 @@ const makeEditor = (json: Record<string, unknown>, weight: string): PrefixProxyE
   prefix: '',
   proxyUrl: '',
   priority: '',
+  timezone: '',
+  timezoneTouched: false,
   weight,
   weightError: null,
   disableCooling: false,
@@ -60,6 +62,32 @@ describe('auth-file credential weight patch', () => {
     expect(() => buildAuthFileFieldsPatch(makeEditor({}, '1000001'), resolveError)).toThrow(
       'auth_files.weight_invalid_max'
     );
+  });
+});
+
+describe('auth-file timezone patch', () => {
+  test('writes a valid IANA timezone and restores inheritance when cleared', () => {
+    expect(
+      buildAuthFileFieldsPatch(
+        { ...makeEditor({}, ''), providerKey: 'claude', timezone: 'Asia/Shanghai', timezoneTouched: true },
+        resolveError
+      )
+    ).toEqual({ timezone: 'Asia/Shanghai' });
+    expect(
+      buildAuthFileFieldsPatch(
+        { ...makeEditor({ timezone: 'Asia/Shanghai' }, ''), providerKey: 'claude', timezone: '', timezoneTouched: true },
+        resolveError
+      )
+    ).toEqual({ timezone: '' });
+  });
+
+  test('rejects an invalid IANA timezone', () => {
+    expect(() =>
+      buildAuthFileFieldsPatch(
+        { ...makeEditor({}, ''), providerKey: 'claude', timezone: 'Mars/Nope', timezoneTouched: true },
+        resolveError
+      )
+    ).toThrow('auth_files.timezone_invalid');
   });
 });
 
