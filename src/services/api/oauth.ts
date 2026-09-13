@@ -8,7 +8,7 @@ import {
   normalizeManagementOAuthProviderKey,
 } from '@/utils/providerKeys';
 
-export type BuiltInOAuthProvider = 'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'xai';
+export type BuiltInOAuthProvider = 'codex' | 'anthropic' | 'antigravity' | 'kimi' | 'xai' | 'devin';
 
 export interface OAuthStartResponse {
   url: string;
@@ -19,7 +19,12 @@ export interface OAuthCallbackResponse {
   status: 'ok';
 }
 
-const WEBUI_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai']);
+export interface OAuthCancelResponse {
+  status: 'ok';
+  cancelled: boolean;
+}
+
+const WEBUI_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai', 'devin']);
 
 const normalizeProviderForManagementPath = (provider: string): string => {
   const key = normalizeManagementOAuthProviderKey(provider);
@@ -45,6 +50,9 @@ export const oauthApi = {
     apiClient.get<{ status: 'ok' | 'wait' | 'error'; error?: string }>(`/get-auth-status`, {
       params: { state },
     }),
+
+  cancelSession: (state: string) =>
+    apiClient.delete<OAuthCancelResponse>('/oauth-session', { params: { state } }),
 
   submitCallback: (provider: string, redirectUrl: string) => {
     const providerKey = normalizeProviderForManagementPath(provider);
