@@ -208,6 +208,33 @@ describe('createDevinQuotaFetcher', () => {
     await Promise.all(requests);
   });
 
+  test('does not let requests from an old session block a new connection', async () => {
+    const oldGates = Array.from({ length: 3 }, () => deferred<void>());
+    const started: string[] = [];
+    let oldIndex = 0;
+    const fetchQuota = createDevinQuotaFetcher({
+      refresh: ({ name }) => {
+        started.push(name);
+        return name.startsWith('old-') ? oldGates[oldIndex++]!.promise : Promise.resolve();
+      },
+      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
+      generation: (name) => ({ session: name.startsWith('old-') ? 1 : 2, file: 0 }),
+    });
+
+    const oldRequests = Array.from({ length: 3 }, (_, index) =>
+      fetchQuota(devinFile(`old-${index}.json`, String(index), 1))
+    );
+    const currentRequest = fetchQuota(devinFile('current.json', 'current', 1));
+
+    expect(started).toContain('current.json');
+    await expect(currentRequest).resolves.toMatchObject({
+      observedAtMs: Date.parse(observedAt(2)),
+    });
+
+    oldGates.forEach((gate) => gate.resolve(undefined));
+    await Promise.all(oldRequests);
+  });
+
   test('rejects a queued request whose file generation changed before it started', async () => {
     const blockers = Array.from({ length: 3 }, () => deferred<void>());
     const generations: Record<string, DevinRequestGeneration> = {};
@@ -294,7 +321,7 @@ describe('createDevinQuotaFetcher', () => {
     await expectCode(mismatchFetcher(devinFile('valid.json', '1', 1)), 'file_not_found');
   });
 
-  test('rejects empty and unconfirmed observations with distinct errors', async () => {
+  test('rejects empty and stale timed observations but accepts issue 429 signals without time', async () => {
     const responses: AuthFileItem[][] = [
       [
         {
@@ -323,7 +350,13 @@ describe('createDevinQuotaFetcher', () => {
 
     await expectCode(fetchQuota(devinFile('empty.json', '1', 1)), 'empty_data');
     await expectCode(fetchQuota(devinFile('old.json', '2', 1)), 'refresh_unconfirmed');
-    await expectCode(fetchQuota(devinFile('missing-time.json', '3', 1)), 'refresh_unconfirmed');
+    await expect(fetchQuota(devinFile('missing-time.json', '3', 1))).resolves.toMatchObject({
+      observedAtMs: null,
+      windows: [
+        { id: 'daily', remainingPercent: 50 },
+        { id: 'weekly', remainingPercent: null },
+      ],
+    });
   });
 
   test('propagates dependency failures and allows a failed target to retry', async () => {

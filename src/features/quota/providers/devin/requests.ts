@@ -33,14 +33,24 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
   const inFlight = new Map<string, Promise<DevinQuotaData>>();
   const lastObserved = new Map<string, { key: string; atMs: number }>();
   let observationSession: number | undefined;
-  const queue: Array<() => void> = [];
-  let active = 0;
+  const pools = new Map<number, { queue: Array<() => void>; active: number }>();
 
-  const runNext = () => {
-    while (active < 3 && queue.length > 0) {
-      active += 1;
-      queue.shift()!();
+  const getPool = (session: number) => {
+    const existing = pools.get(session);
+    if (existing) return existing;
+    const pool = { queue: [] as Array<() => void>, active: 0 };
+    pools.set(session, pool);
+    return pool;
+  };
+
+  const runNext = (session: number) => {
+    const pool = pools.get(session);
+    if (!pool) return;
+    while (pool.active < 3 && pool.queue.length > 0) {
+      pool.active += 1;
+      pool.queue.shift()!();
     }
+    if (pool.active === 0 && pool.queue.length === 0) pools.delete(session);
   };
 
   return (file: AuthFileItem): Promise<DevinQuotaData> => {
@@ -69,8 +79,9 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
       readDevinQuotaSnapshot(file).observedAtMs ?? 0,
       latest?.key === key ? latest.atMs : 0
     );
+    const pool = getPool(generation.session);
     const request = new Promise<DevinQuotaData>((resolve, reject) => {
-      queue.push(() => {
+      pool.queue.push(() => {
         const execute = async () => {
           assertCurrent();
           await deps.refresh(target);
@@ -88,17 +99,21 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
           if (!freshFile) throw new DevinQuotaError('file_not_found');
           const quota = readDevinQuotaSnapshot(freshFile);
           if (!hasDevinQuotaObservation(quota)) throw new DevinQuotaError('empty_data');
-          if (quota.observedAtMs === null || quota.observedAtMs <= previous) {
-            // The backend can return 200 without making an upstream request.
+          // issue #429 guarantees quota.signals, but its response contract does not
+          // guarantee quota.observed_at. Use freshness checks when both observations
+          // exist; otherwise the successful synchronous POST → GET is authoritative.
+          if (previous > 0 && quota.observedAtMs !== null && quota.observedAtMs <= previous) {
             throw new DevinQuotaError('refresh_unconfirmed');
           }
-          lastObserved.set(identityKey, { key, atMs: quota.observedAtMs });
+          if (quota.observedAtMs !== null) {
+            lastObserved.set(identityKey, { key, atMs: quota.observedAtMs });
+          }
           return quota;
         };
         const finish = () => {
           inFlight.delete(key);
-          active -= 1;
-          runNext();
+          pool.active -= 1;
+          runNext(generation.session);
         };
         void execute().then(
           (quota) => {
@@ -113,7 +128,7 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
       });
     });
     inFlight.set(key, request);
-    runNext();
+    runNext(generation.session);
     return request;
   };
 }
