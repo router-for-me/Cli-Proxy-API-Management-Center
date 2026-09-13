@@ -29,7 +29,7 @@ export function useQuotaActions(disableControls: boolean) {
       if (disableControls || file.disabled) return;
       if (resettingQuotaName === file.name) return;
       if (getQuotaState(adapter, file.name)?.status === 'loading') return;
-      const cacheGeneration = captureQuotaCacheGeneration();
+      const cacheGeneration = captureQuotaCacheGeneration(file.name);
       const setQuota = getQuotaSetter(adapter);
 
       setQuota((prev) => ({
@@ -78,7 +78,7 @@ export function useQuotaActions(disableControls: boolean) {
         confirmText: t('codex_quota.reset_confirm_button'),
         variant: 'primary',
         onConfirm: async () => {
-          const cacheGeneration = captureQuotaCacheGeneration();
+          const cacheGeneration = captureQuotaCacheGeneration(file.name);
           const setQuota = getQuotaSetter(adapter);
           setResettingQuotaName(file.name);
           try {

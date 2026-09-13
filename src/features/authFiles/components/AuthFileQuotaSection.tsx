@@ -60,7 +60,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (file.disabled) return;
     if (quota?.status === 'loading') return;
 
-    const cacheGeneration = captureQuotaCacheGeneration();
+    const cacheGeneration = captureQuotaCacheGeneration(file.name);
 
     updateQuotaState((prev) => ({
       ...prev,
@@ -108,7 +108,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       confirmText: t('codex_quota.reset_confirm_button'),
       variant: 'primary',
       onConfirm: async () => {
-        const cacheGeneration = captureQuotaCacheGeneration();
+        const cacheGeneration = captureQuotaCacheGeneration(file.name);
         setResettingQuota(true);
         try {
           const data = await resetQuota(file, t);

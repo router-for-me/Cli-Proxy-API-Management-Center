@@ -81,20 +81,24 @@ export function useQuotaBatchLoader() {
 
             if (requestId !== requestIdRef.current) return;
 
-            commitIfQuotaCacheCurrent(cacheGeneration, () => {
-              setQuota((prev) => {
-                const nextState = { ...prev };
-                results.forEach((result) => {
-                  nextState[result.name] =
-                    result.status === 'success'
-                      ? adapter.buildSuccessState(result.data)
-                      : adapter.buildErrorState(
-                          result.error || t('common.unknown_error'),
-                          result.errorStatus
-                        );
-                });
-                return nextState;
+            setQuota((prev) => {
+              const nextState = { ...prev };
+              results.forEach((result) => {
+                commitIfQuotaCacheCurrent(
+                  cacheGeneration,
+                  () => {
+                    nextState[result.name] =
+                      result.status === 'success'
+                        ? adapter.buildSuccessState(result.data)
+                        : adapter.buildErrorState(
+                            result.error || t('common.unknown_error'),
+                            result.errorStatus
+                          );
+                  },
+                  result.name
+                );
               });
+              return nextState;
             });
           })
         );
