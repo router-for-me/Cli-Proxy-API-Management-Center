@@ -114,6 +114,30 @@ describe('createDevinQuotaFetcher', () => {
     expect(JSON.stringify(result)).not.toContain(secret);
   });
 
+  test('requires a newer observation on repeated refreshes even with an old list entry', async () => {
+    let calls = 0;
+    let nextSecond = 2;
+    let session = 1;
+    const fetchQuota = createDevinQuotaFetcher({
+      refresh: async () => {
+        calls += 1;
+      },
+      list: async () => ({ files: [devinFile('account.json', '7', nextSecond)] }),
+      generation: () => ({ session, file: 0 }),
+    });
+    const original = devinFile('account.json', '7', 1);
+    await fetchQuota(original);
+    // Start again immediately after awaiting: completed work must no longer be deduplicated.
+    await expectCode(fetchQuota(original), 'refresh_unconfirmed');
+    expect(calls).toBe(2);
+    nextSecond = 3;
+    await fetchQuota(original);
+    session = 2;
+    nextSecond = 2;
+    await fetchQuota(original);
+    expect(calls).toBe(4);
+  });
+
   test('deduplicates the same target in the same generation', async () => {
     const refreshGate = deferred<void>();
     let refreshCalls = 0;

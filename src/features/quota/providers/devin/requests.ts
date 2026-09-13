@@ -31,6 +31,8 @@ interface DevinQuotaDependencies {
  */
 export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
   const inFlight = new Map<string, Promise<DevinQuotaData>>();
+  const lastObserved = new Map<string, { key: string; atMs: number }>();
+  let observationSession: number | undefined;
   const queue: Array<() => void> = [];
   let active = 0;
 
@@ -47,6 +49,10 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
     if (!name || !authIndex) return Promise.reject(new DevinQuotaError('missing_identity'));
     const target = { name, authIndex };
     const generation = deps.generation(name);
+    if (observationSession !== generation.session) {
+      lastObserved.clear();
+      observationSession = generation.session;
+    }
     const key = JSON.stringify([generation.session, generation.file, name, authIndex]);
     const existing = inFlight.get(key);
     if (existing) return existing;
@@ -57,7 +63,11 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
         throw new DevinQuotaError('stale_request');
       }
     };
-    const previous = readDevinQuotaSnapshot(file).observedAtMs;
+    const latest = lastObserved.get(name);
+    const previous = Math.max(
+      readDevinQuotaSnapshot(file).observedAtMs ?? 0,
+      latest?.key === key ? latest.atMs : 0
+    );
     const request = new Promise<DevinQuotaData>((resolve, reject) => {
       queue.push(() => {
         const execute = async () => {
@@ -77,22 +87,28 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
           if (!freshFile) throw new DevinQuotaError('file_not_found');
           const quota = readDevinQuotaSnapshot(freshFile);
           if (!hasDevinQuotaObservation(quota)) throw new DevinQuotaError('empty_data');
-          if (
-            quota.observedAtMs === null ||
-            (previous !== null && quota.observedAtMs <= previous)
-          ) {
+          if (quota.observedAtMs === null || quota.observedAtMs <= previous) {
             // The backend can return 200 without making an upstream request.
             throw new DevinQuotaError('refresh_unconfirmed');
           }
+          lastObserved.set(name, { key, atMs: quota.observedAtMs });
           return quota;
         };
-        void execute()
-          .then(resolve, reject)
-          .finally(() => {
-            inFlight.delete(key);
-            active -= 1;
-            runNext();
-          });
+        const finish = () => {
+          inFlight.delete(key);
+          active -= 1;
+          runNext();
+        };
+        void execute().then(
+          (quota) => {
+            finish();
+            resolve(quota);
+          },
+          (error: unknown) => {
+            finish();
+            reject(error);
+          }
+        );
       });
     });
     inFlight.set(key, request);
