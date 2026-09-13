@@ -15,6 +15,7 @@ import { getPluginTitle, resolvePluginAssetURL } from '@/features/plugins/plugin
 import { getKimiAffiliateUrl } from '@/features/providers/kimi';
 import type { PluginListEntry } from '@/types';
 import { createOAuthAttempts, type OAuthAttempt } from './oauthAttempts';
+import { validateDevinCallback } from './devinOAuth';
 import styles from './OAuthPage.module.scss';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
@@ -24,6 +25,8 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
+import iconDevin from '@/assets/icons/devin.svg';
+import iconDevinDark from '@/assets/icons/devin-dark.svg';
 
 interface ProviderState {
   url?: string;
@@ -105,10 +108,16 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     titleKey: 'auth_login.xai_oauth_title',
     icon: { light: iconGrok, dark: iconGrokDark },
   },
+  {
+    kind: 'builtin',
+    id: 'devin',
+    titleKey: 'auth_login.devin_oauth_title',
+    icon: { light: iconDevin, dark: iconDevinDark },
+  },
 ];
 
 const BUILTIN_PROVIDER_IDS = new Set<string>(PROVIDERS.map((provider) => provider.id));
-const CALLBACK_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai']);
+const CALLBACK_SUPPORTED = new Set<string>(['codex', 'anthropic', 'antigravity', 'xai', 'devin']);
 const XAI_CALLBACK_URL = 'http://127.0.0.1:56121/callback';
 const SUCCESS_RESET_DELAY_MS = 5000;
 const getProviderI18nPrefix = (provider: string) => provider.replace('-', '_');
@@ -448,6 +457,13 @@ export function OAuthPage() {
       );
       return;
     }
+    if (provider === 'devin') {
+      const callbackError = validateDevinCallback(callbackInput, states[provider]?.state);
+      if (callbackError) {
+        showNotification(t(`auth_login.devin_callback_${callbackError}`), 'warning');
+        return;
+      }
+    }
     const redirectUrl = resolveCallbackUrl(provider, callbackInput, states[provider]?.state);
     if (!redirectUrl) {
       showNotification(
@@ -636,7 +652,9 @@ export function OAuthPage() {
                 hint={t(
                   provider.id === 'xai'
                     ? 'auth_login.xai_callback_hint'
-                    : 'auth_login.oauth_callback_hint'
+                    : provider.id === 'devin'
+                      ? 'auth_login.devin_callback_hint'
+                      : 'auth_login.oauth_callback_hint'
                 )}
                 value={state.callbackUrl || ''}
                 onChange={(e) =>
@@ -649,7 +667,9 @@ export function OAuthPage() {
                 placeholder={t(
                   provider.id === 'xai'
                     ? 'auth_login.xai_callback_placeholder'
-                    : 'auth_login.oauth_callback_placeholder'
+                    : provider.id === 'devin'
+                      ? 'auth_login.devin_callback_placeholder'
+                      : 'auth_login.oauth_callback_placeholder'
                 )}
               />
               <div className={styles.callbackActions}>
