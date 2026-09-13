@@ -2,7 +2,7 @@
 
 /* ============================================================
  * 凭证卡片 — statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）
- * 身份优先；启停仅由头部开关表达，停用不降低内容对比度。
+ * 身份优先；启停仅由底部开关表达，停用不降低内容对比度。
  * ============================================================ */
 
 .card {
@@ -45,7 +45,7 @@
   }
 }
 
-/* ---------- 头部：选择 + 供应商药丸 / 账号 + 唯一启停控件 ---------- */
+/* ---------- 头部：选择 + 供应商药丸 / 账号 ---------- */
 
 .head {
   display: flex;
@@ -367,6 +367,7 @@
 .actions {
   margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -462,8 +463,9 @@
 }
 
 @include mobile {
-  .actions {
-    flex-wrap: wrap;
+  .toggleWrap {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .actionsMain {

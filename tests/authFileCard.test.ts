@@ -39,16 +39,18 @@ describe('auth file card presentation contract', () => {
     expect(account).not.toContain('text-ellipsis');
   });
 
-  test('uses one header toggle and credential-specific accessible names', () => {
+  test('uses one footer toggle and credential-specific accessible names', () => {
     const header = source.split('<header')[1].split('</header>')[0];
+    const footer = source.split('<footer')[1].split('</footer>')[0];
     expect(source.match(/<ToggleSwitch/g)).toHaveLength(1);
-    expect(header).toContain('<ToggleSwitch');
+    expect(header).not.toContain('<ToggleSwitch');
     expect(header).toContain("ariaLabel={t('auth_files.card_select', { name: file.name })}");
     expect(header).not.toContain('aria-label=');
-    expect(header).toContain("t('auth_files.card_toggle', { name: file.name })");
-    expect(header).toContain('checked={!file.disabled}');
-    expect(header).toContain('statusUpdating[file.name] === true || isManualRefreshing');
-    expect(header).toContain('isRuntimeOnly ?');
+    expect(footer).toContain('<ToggleSwitch');
+    expect(footer).toContain("t('auth_files.card_toggle', { name: file.name })");
+    expect(footer).toContain('checked={!file.disabled}');
+    expect(footer).toContain('statusUpdating[file.name] === true || isManualRefreshing');
+    expect(footer).toContain('!isRuntimeOnly &&');
   });
 
   test('keeps disabled contents readable without card lift or logo styling', () => {

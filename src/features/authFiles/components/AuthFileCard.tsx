@@ -153,18 +153,8 @@ export function AuthFileCard(props: AuthFileCardProps) {
             {identity.primary}
           </span>
         </h3>
-        {isRuntimeOnly ? (
+        {isRuntimeOnly && (
           <span className={styles.runtimeLabel}>{t('auth_files.type_virtual')}</span>
-        ) : (
-          <div className={styles.toggleWrap}>
-            <span className={styles.toggleLabel}>{t('auth_files.status_toggle_label')}</span>
-            <ToggleSwitch
-              ariaLabel={t('auth_files.card_toggle', { name: file.name })}
-              checked={!file.disabled}
-              disabled={disableControls || statusUpdating[file.name] === true || isManualRefreshing}
-              onChange={(value) => onToggleStatus(file, value)}
-            />
-          </div>
         )}
       </header>
 
@@ -310,6 +300,17 @@ export function AuthFileCard(props: AuthFileCardProps) {
             </div>
           )}
         </div>
+        {!isRuntimeOnly && (
+          <div className={styles.toggleWrap}>
+            <span className={styles.toggleLabel}>{t('auth_files.status_toggle_label')}</span>
+            <ToggleSwitch
+              ariaLabel={t('auth_files.card_toggle', { name: file.name })}
+              checked={!file.disabled}
+              disabled={disableControls || statusUpdating[file.name] === true || isManualRefreshing}
+              onChange={(value) => onToggleStatus(file, value)}
+            />
+          </div>
+        )}
       </footer>
     </article>
   );
