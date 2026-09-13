@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi, type AuthFileFieldsPatch } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
+import { isValidTimezone } from '@/utils/timezoneValidation';
 import {
   applyAuthFileWebsockets,
   applyAuthFileUsingApi,
@@ -29,12 +30,17 @@ type AuthFileHeadersErrorKey =
 type AuthFileContentErrorKey =
   'auth_files.prefix_proxy_invalid_json' | 'auth_files.prefix_proxy_html_challenge';
 type AuthFileWeightErrorKey = 'auth_files.weight_invalid_integer' | 'auth_files.weight_invalid_max';
-type AuthFileEditorErrorKey = AuthFileHeadersErrorKey | AuthFileWeightErrorKey;
+type AuthFileTimezoneErrorKey = 'auth_files.timezone_invalid';
+type AuthFileEditorErrorKey =
+  | AuthFileHeadersErrorKey
+  | AuthFileWeightErrorKey
+  | AuthFileTimezoneErrorKey;
 
 export type PrefixProxyEditorField =
   | 'prefix'
   | 'proxyUrl'
   | 'priority'
+  | 'timezone'
   | 'weight'
   | 'disableCooling'
   | 'websockets'
@@ -59,6 +65,8 @@ export type PrefixProxyEditorState = {
   prefix: string;
   proxyUrl: string;
   priority: string;
+  timezone: string;
+  timezoneTouched: boolean;
   weight: string;
   weightError: string | null;
   disableCooling: boolean;
@@ -134,6 +142,13 @@ const credentialWeightErrorKey = (error: CredentialWeightError): AuthFileWeightE
 
 const normalizeTextField = (value: unknown): string =>
   typeof value === 'string' ? value.trim() : '';
+
+export const getAuthFileTimezoneError = (
+  editor: PrefixProxyEditorState | null
+): AuthFileTimezoneErrorKey | undefined =>
+  editor?.providerKey === 'claude' && editor.timezoneTouched && !isValidTimezone(editor.timezone)
+    ? 'auth_files.timezone_invalid'
+    : undefined;
 
 const normalizeExcludedModels = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
@@ -288,6 +303,15 @@ export const buildAuthFileFieldsPatch = (
     patch.proxy_url = nextProxyURL;
   }
 
+  if (editor.providerKey === 'claude' && editor.timezoneTouched) {
+    const timezoneError = getAuthFileTimezoneError(editor);
+    if (timezoneError) throw new Error(resolveError(timezoneError));
+    const nextTimezone = editor.timezone.trim();
+    if (nextTimezone !== normalizeTextField(original.timezone)) {
+      patch.timezone = nextTimezone;
+    }
+  }
+
   const originalPriority = parsePriorityValue(original.priority);
   const priorityText = editor.priority.trim();
   const nextPriority = parsePriorityValue(priorityText);
@@ -399,6 +423,10 @@ const buildPrefixProxyUpdatedText = (
       delete next.proxy_url;
     }
   }
+  if (patch.timezone !== undefined) {
+    if (patch.timezone) next.timezone = patch.timezone;
+    else delete next.timezone;
+  }
 
   if (patch.priority !== undefined) {
     if (patch.priority === 0) {
@@ -462,7 +490,8 @@ export function useAuthFilesPrefixProxyEditor(
 
   const hasBlockingValidationError = Boolean(
     (prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError) ||
-    prefixProxyEditor?.weightError
+    prefixProxyEditor?.weightError ||
+    getAuthFileTimezoneError(prefixProxyEditor)
   );
   const prefixProxyUpdatedText =
     prefixProxyEditor && !hasBlockingValidationError
@@ -474,7 +503,11 @@ export function useAuthFilesPrefixProxyEditor(
       ? buildAuthFileFieldsPatch(prefixProxyEditor, (key) => t(key))
       : null;
 
-  const prefixProxyDirty = hasKeys(prefixProxyPatch);
+  const prefixProxyDirty = hasKeys(prefixProxyPatch) || Boolean(
+    prefixProxyEditor?.providerKey === 'claude' &&
+    prefixProxyEditor.timezoneTouched &&
+    prefixProxyEditor.timezone.trim() !== normalizeTextField(prefixProxyEditor.json?.timezone)
+  );
 
   const closePrefixProxyEditor = () => {
     setPrefixProxyEditor(null);
@@ -504,6 +537,8 @@ export function useAuthFilesPrefixProxyEditor(
       prefix: '',
       proxyUrl: '',
       priority: '',
+      timezone: '',
+      timezoneTouched: false,
       weight: '',
       weightError: null,
       disableCooling: false,
@@ -557,6 +592,7 @@ export function useAuthFilesPrefixProxyEditor(
       );
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
+      const timezone = typeof json.timezone === 'string' ? json.timezone : '';
       const priority = parsePriorityValue(json.priority);
       const weight = readCredentialWeight(json.weight);
       const disableCooling = readAuthFileDisableCooling(json);
@@ -588,6 +624,8 @@ export function useAuthFilesPrefixProxyEditor(
           prefix,
           proxyUrl,
           priority: priority !== undefined ? String(priority) : '',
+          timezone,
+          timezoneTouched: false,
           weight: weight !== undefined ? String(weight) : '',
           weightError: null,
           disableCooling,
@@ -625,6 +663,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
+      if (field === 'timezone') return { ...prev, timezone: String(value), timezoneTouched: true };
       if (field === 'weight') {
         const weight = String(value);
         const error = validateCredentialWeightText(weight);
@@ -670,6 +709,7 @@ export function useAuthFilesPrefixProxyEditor(
   };
 
   const handlePrefixProxySave = async () => {
+    if (disableControls || hasBlockingValidationError) return;
     if (!prefixProxyEditor?.json) return;
     if (!prefixProxyDirty) return;
 

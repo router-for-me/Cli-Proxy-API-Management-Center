@@ -336,6 +336,9 @@
     "prefix_label": "Prefix (prefix)",
     "proxy_url_label": "Proxy URL (proxy_url)",
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
+    "timezone_label": "Timezone (timezone)",
+    "timezone_hint": "Optional IANA timezone for Claude Code’s currentDate. Leave empty to inherit the global default, then the server timezone.",
+    "timezone_invalid": "Timezone must be a valid IANA timezone, for example Asia/Shanghai.",
     "priority_label": "Priority (priority)",
     "priority_placeholder": "e.g. 10 or -1",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
@@ -1005,6 +1008,8 @@
           "os": "OS",
           "arch": "Arch",
           "timeout": "Timeout",
+          "timezone": "Default timezone",
+          "timezone_hint": "IANA timezone for Claude Code’s currentDate when the credential has no override. Leave empty to use the server timezone.",
           "stabilize_device": "Stabilize Device Profile",
           "stabilize_device_desc": "Pin OS/Arch and stabilize the software fingerprint per credential/API key",
           "beta_features": "Beta Features"
@@ -1158,6 +1163,7 @@
         "integer": "Enter a whole number",
         "non_negative_integer": "Enter a non-negative whole number",
         "integer_range_1_3600": "Enter a whole number between 1 and 3600",
+        "timezone_invalid": "Enter a valid IANA timezone, for example Asia/Shanghai",
         "payload_invalid_number": "Enter a valid number",
         "payload_invalid_boolean": "Choose true or false",
         "payload_invalid_json": "Enter valid JSON"

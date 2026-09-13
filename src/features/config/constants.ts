@@ -80,7 +80,7 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
       'streaming.bootstrapRetries',
       'streaming.nonstreamKeepaliveInterval',
     ],
-    advanced: [],
+    advanced: ['claudeHeaderTimezone'],
     payload: [],
   };
 
@@ -147,6 +147,7 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   claudeHeaderOs: ['claudeHeaderOs'],
   claudeHeaderArch: ['claudeHeaderArch'],
   claudeHeaderTimeout: ['claudeHeaderTimeout'],
+  claudeHeaderTimezone: ['claudeHeaderTimezone'],
   claudeHeaderStabilizeDeviceProfile: ['claudeHeaderStabilizeDeviceProfile'],
   codexHeaderUserAgent: ['codexHeaderUserAgent'],
   codexHeaderBetaFeatures: ['codexHeaderBetaFeatures'],

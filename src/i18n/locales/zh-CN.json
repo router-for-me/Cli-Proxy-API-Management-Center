@@ -336,6 +336,9 @@
     "prefix_label": "前缀（prefix）",
     "proxy_url_label": "代理 URL（proxy_url）",
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
+    "timezone_label": "时区（timezone）",
+    "timezone_hint": "用于 Claude Code currentDate 的 IANA 时区。留空继承全局默认值；全局也留空时使用服务器时区。",
+    "timezone_invalid": "时区必须是有效的 IANA 时区，例如 Asia/Shanghai。",
     "priority_label": "优先级（priority）",
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
@@ -1005,6 +1008,8 @@
           "os": "OS",
           "arch": "Arch",
           "timeout": "Timeout",
+          "timezone": "默认时区",
+          "timezone_hint": "账号未单独配置时，用于 Claude Code currentDate 的 IANA 时区。留空使用服务器时区。",
           "stabilize_device": "稳定设备指纹",
           "stabilize_device_desc": "固定 OS/Arch，并按凭据/API Key 稳定软件指纹",
           "beta_features": "Beta Features"
@@ -1158,6 +1163,7 @@
         "integer": "请输入整数",
         "non_negative_integer": "请输入非负整数",
         "integer_range_1_3600": "请输入 1 到 3600 之间的整数",
+        "timezone_invalid": "请输入有效的 IANA 时区，例如 Asia/Shanghai",
         "payload_invalid_number": "请输入有效数字",
         "payload_invalid_boolean": "请选择 true 或 false",
         "payload_invalid_json": "请输入有效的 JSON"

@@ -16,6 +16,7 @@ import {
   supportsAuthFileWebsockets,
 } from '@/features/authFiles/constants';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import { getAuthFileTimezoneError } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { AuthFileExcludedModelsField } from './AuthFileExcludedModelsField';
 import styles from './AuthFileDetailsSheet.module.scss';
 
@@ -52,6 +53,7 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
   const { disableControls, editor, updatedText, dirty, onClose, onCopyText, onSave, onChange } =
     props;
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
+  const timezoneError = getAuthFileTimezoneError(editor);
 
   const confirmClose = useCallback((): boolean | Promise<boolean> => {
     if (!dirty || editor?.saving === true) return true;
@@ -139,7 +141,8 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               !dirty ||
               !editor?.json ||
               Boolean(editor?.headersTouched && editor.headersError) ||
-              Boolean(editor?.weightError)
+              Boolean(editor?.weightError) ||
+              Boolean(timezoneError)
             }
           >
             {t('common.save')}
@@ -188,6 +191,15 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('proxyUrl', e.target.value)}
                   />
+                  {editor.providerKey === 'claude' && <Input
+                    label={t('auth_files.timezone_label')}
+                    value={editor.timezone}
+                    placeholder="Asia/Shanghai"
+                    hint={t('auth_files.timezone_hint')}
+                    error={timezoneError ? t(timezoneError) : undefined}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('timezone', e.target.value)}
+                  />}
                   <Input
                     label={t('auth_files.priority_label')}
                     value={editor.priority}
