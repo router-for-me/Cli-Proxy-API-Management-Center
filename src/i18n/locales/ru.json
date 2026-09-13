@@ -944,6 +944,7 @@
           "description": "Подмена заголовков, кэш подписей, источники плагинов и другие редко изменяемые настройки",
           "plugins_title": "Плагины",
           "antigravity_title": "Antigravity",
+          "devin_title": "Devin",
           "signature_title": "Проверка подписей"
         },
         "server": {
@@ -1024,6 +1025,11 @@
           "antigravity_sensitive_words_label": "Стоп-слова (antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "Одно слово или фраза в строке. Регистр не учитывается; пустые значения удаляются, а значения короче 2 символов игнорируются backend",
+          "devin_sensitive_words": "Стоп-слова системного промпта Devin",
+          "devin_sensitive_words_desc": "Обрабатываются только системные промпты Devin: строка с настроенным словом удаляется целиком, затем оставшийся промпт обфусцируется. Обычные сообщения и аргументы инструментов не изменяются",
+          "devin_sensitive_words_label": "Стоп-слова (devin.sensitive-words)",
+          "devin_sensitive_words_placeholder": "чувствительная фраза",
+          "devin_sensitive_words_hint": "Одно слово или фраза в строке. Настраивайте осторожно: при совпадении вся строка системного промпта удаляется; пустые значения удаляются при сохранении",
           "antigravity_signature_cache": "Включить кэш подписей Antigravity",
           "antigravity_signature_cache_desc": "Предпочитать и проверять кэшированные подписи thinking-блоков",
           "antigravity_signature_strict": "Строгая проверка bypass-подписи",

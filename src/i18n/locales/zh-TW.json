@@ -965,6 +965,7 @@
           "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
           "plugins_title": "外掛",
           "antigravity_title": "Antigravity",
+          "devin_title": "Devin",
           "signature_title": "簽章驗證"
         },
         "server": {
@@ -1045,6 +1046,11 @@
           "antigravity_sensitive_words_label": "敏感詞（antigravity.sensitive-words）",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "每項填寫一個詞或短語；匹配不分大小寫，儲存時移除空項，少於 2 個字元的項目會被後端忽略",
+          "devin_sensitive_words": "Devin 系統提示詞敏感詞",
+          "devin_sensitive_words_desc": "僅處理 Devin 系統提示詞：含設定詞的整行會被刪除，剩餘系統提示詞再進行混淆；一般訊息和工具參數不會被修改",
+          "devin_sensitive_words_label": "敏感詞（devin.sensitive-words）",
+          "devin_sensitive_words_placeholder": "敏感短語",
+          "devin_sensitive_words_hint": "每項填寫一個詞或短語。請謹慎設定：命中內容會導致整行系統提示詞被刪除；儲存時移除空項",
           "antigravity_signature_cache": "啟用 Antigravity 簽名快取",
           "antigravity_signature_cache_desc": "優先使用並校驗快取的 thinking block 簽名",
           "antigravity_signature_strict": "嚴格校驗旁路簽名",

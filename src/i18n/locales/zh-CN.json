@@ -939,6 +939,7 @@
           "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
           "plugins_title": "插件",
           "antigravity_title": "Antigravity",
+          "devin_title": "Devin",
           "signature_title": "签名校验"
         },
         "server": {
@@ -1019,6 +1020,11 @@
           "antigravity_sensitive_words_label": "敏感词（antigravity.sensitive-words）",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "每项填写一个词或短语；匹配不区分大小写，保存时移除空项，少于 2 个字符的项会被后端忽略",
+          "devin_sensitive_words": "Devin 系统提示词敏感词",
+          "devin_sensitive_words_desc": "仅处理 Devin 系统提示词：含配置词的整行会被删除，剩余系统提示词再进行混淆；普通消息和工具参数不会被修改",
+          "devin_sensitive_words_label": "敏感词（devin.sensitive-words）",
+          "devin_sensitive_words_placeholder": "敏感短语",
+          "devin_sensitive_words_hint": "每项填写一个词或短语。请谨慎配置：命中内容会导致整行系统提示词被删除；保存时移除空项",
           "antigravity_signature_cache": "启用 Antigravity 签名缓存",
           "antigravity_signature_cache_desc": "优先使用并校验缓存的 thinking block 签名",
           "antigravity_signature_strict": "严格校验旁路签名",

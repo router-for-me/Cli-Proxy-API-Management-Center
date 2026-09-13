@@ -941,6 +941,7 @@
           "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
           "plugins_title": "Plugins",
           "antigravity_title": "Antigravity",
+          "devin_title": "Devin",
           "signature_title": "Signature Validation"
         },
         "server": {
@@ -1021,6 +1022,11 @@
           "antigravity_sensitive_words_label": "Sensitive words (antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
+          "devin_sensitive_words": "Devin System Prompt Sensitive Words",
+          "devin_sensitive_words_desc": "In Devin system prompts only, a line containing a configured word is removed in full; the remaining system prompt is then obfuscated. Regular messages and tool arguments are not changed",
+          "devin_sensitive_words_label": "Sensitive words (devin.sensitive-words)",
+          "devin_sensitive_words_placeholder": "sensitive phrase",
+          "devin_sensitive_words_hint": "One word or phrase per row. Configure carefully: matching content causes the entire system-prompt line to be deleted; empty entries are removed when saved",
           "antigravity_signature_cache": "Enable Antigravity Signature Cache",
           "antigravity_signature_cache_desc": "Prefer and validate cached thinking-block signatures",
           "antigravity_signature_strict": "Strict Bypass Signature Validation",

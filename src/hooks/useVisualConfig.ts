@@ -1136,6 +1136,12 @@ function getNextDirtyFields(
       )
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'devinSensitiveWords')) {
+    updateDirty(
+      'devinSensitiveWords',
+      areStringArraysEqual(nextValues.devinSensitiveWords, baselineValues.devinSensitiveWords)
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreAuth')) {
     updateDirty(
       'pluginStoreAuth',
@@ -1282,6 +1288,7 @@ export function useVisualConfig() {
       const streaming = asRecord(parsed.streaming);
       const plugins = asRecord(parsed.plugins);
       const antigravity = asRecord(parsed.antigravity);
+      const devin = asRecord(parsed.devin);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -1338,6 +1345,7 @@ export function useVisualConfig() {
         authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
         wsAuth: Boolean(parsed['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
         antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
+        devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
         antigravitySignatureCacheEnabled: Boolean(
           parsed['antigravity-signature-cache-enabled'] ?? true
         ),
@@ -1584,6 +1592,20 @@ export function useVisualConfig() {
             values.antigravitySensitiveWords
           );
           deleteIfMapEmpty(doc, ['antigravity']);
+        }
+        if (dirtyFields.has('devinSensitiveWords')) {
+          ensureMapInDoc(doc, ['devin']);
+          const devin = doc.getIn(['devin'], true);
+          if (isMap(devin)) {
+            syncStringSequence(
+              doc,
+              devin,
+              'sensitive-words',
+              baselineValues.devinSensitiveWords,
+              values.devinSensitiveWords
+            );
+          }
+          deleteIfMapEmpty(doc, ['devin']);
         }
         if (dirtyFields.has('antigravitySignatureCacheEnabled')) {
           if (

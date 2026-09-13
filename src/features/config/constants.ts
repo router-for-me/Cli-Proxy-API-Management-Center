@@ -86,7 +86,7 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
 
 /**
  * fieldId → useVisualConfig dirtyFields 的键（= VisualConfigValues 叶值键，streaming 用点号叶）。
- * 与搜索索引 58 条一一对应；三方对账由 tests/configFieldParity.test.ts 守护 ——
+ * 与搜索索引 59 条一一对应；三方对账由 tests/configFieldParity.test.ts 守护 ——
  * 增删字段时漏改任何一边（索引 / 本表 / 分区 JSX）都会红。
  */
 export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
@@ -139,6 +139,7 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   pluginStoreSources: ['pluginStoreSources'],
   pluginStoreAuth: ['pluginStoreAuth'],
   antigravitySensitiveWords: ['antigravitySensitiveWords'],
+  devinSensitiveWords: ['devinSensitiveWords'],
   antigravitySignatureCacheEnabled: ['antigravitySignatureCacheEnabled'],
   antigravitySignatureBypassStrict: ['antigravitySignatureBypassStrict'],
   claudeHeaderUserAgent: ['claudeHeaderUserAgent'],
