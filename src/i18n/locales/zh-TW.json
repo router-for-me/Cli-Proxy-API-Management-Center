@@ -711,6 +711,10 @@
     "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
   },
   "auth_login": {
+    "devin_oauth_cancel": "取消 Devin 登入",
+    "devin_oauth_cancelled": "已取消 Devin 登入。",
+    "devin_oauth_cancel_error": "取消 Devin 登入失敗：",
+    "devin_oauth_retry_hint": "伺服器可能仍在等待授權。請先取消本次登入，再重新開始。",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "開始 Devin 登入",
     "devin_oauth_hint": "透過瀏覽器 OAuth 登入 Devin / Cognition，自動儲存認證檔案。需要 CLI Proxy API v7.3.1 或更新版本，請在五分鐘內完成授權。",

@@ -143,6 +143,68 @@ describe('OAuth attempt lifecycle', () => {
     expect(next.isCurrent()).toBe(true);
   });
 
+  test('Devin cancellation invalidates an in-flight poll and callback before DELETE settles', async () => {
+    const { attempts, tasks, tick } = setup();
+    const response = deferred<string>();
+    const callback = deferred<void>();
+    let effects = 0;
+    const login = attempts.begin('devin');
+    login.poll(
+      () => response.promise,
+      () => {
+        effects++;
+        return true;
+      },
+      () => effects++,
+      3000
+    );
+    const submission = callback.promise.then(() => {
+      if (login.isCurrent()) effects++;
+    });
+    tick();
+    const cancellation = attempts.begin('devin');
+    response.resolve('ok');
+    callback.resolve();
+    await submission;
+    await flush();
+    expect(effects).toBe(0);
+    expect(tasks.size).toBe(0);
+    expect(cancellation.isCurrent()).toBe(true);
+
+    // A connection switch or a later login also makes an outstanding DELETE inert.
+    attempts.invalidateAll();
+    const next = attempts.begin('devin');
+    expect(cancellation.isCurrent()).toBe(false);
+    cancellation.invalidate();
+    expect(next.isCurrent()).toBe(true);
+  });
+
+  test('Devin terminal status stops polling without disturbing another provider', async () => {
+    for (const status of ['ok', 'error']) {
+      const { attempts, tasks, tick } = setup();
+      const other = attempts.begin('codex');
+      other.schedule(() => {}, 3000);
+      const devin = attempts.begin('devin');
+      const results: string[] = [];
+      devin.poll(
+        async () => status,
+        (result) => {
+          results.push(result);
+          devin.invalidate();
+          return false;
+        },
+        () => {},
+        3000
+      );
+      tick();
+      await flush();
+      expect(results).toEqual([status]);
+      expect(tasks.size).toBe(0);
+      expect(other.isCurrent()).toBe(true);
+      expect(devin.isCurrent()).toBe(false);
+    }
+  });
+
   test('terminal results and request errors do not schedule another poll', async () => {
     for (const fail of [false, true]) {
       const { attempts, tasks, tick } = setup();

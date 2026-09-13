@@ -713,6 +713,10 @@
     "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version."
   },
   "auth_login": {
+    "devin_oauth_cancel": "Cancel Devin Login",
+    "devin_oauth_cancelled": "Devin login cancelled.",
+    "devin_oauth_cancel_error": "Failed to cancel Devin login:",
+    "devin_oauth_retry_hint": "The server may still be waiting for authorization. Cancel this login before starting again.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Start Devin Login",
     "devin_oauth_hint": "Sign in to Devin / Cognition through browser OAuth to save an authentication file. Requires CLI Proxy API v7.3.1 or later; complete authorization within five minutes.",
