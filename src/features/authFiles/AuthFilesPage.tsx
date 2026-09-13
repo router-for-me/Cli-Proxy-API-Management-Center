@@ -16,6 +16,7 @@ import {
   isProblemAuthFile,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
+  type AuthFileQuotaFilter,
   type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
@@ -183,6 +184,8 @@ export function AuthFilesPage() {
   )
     ? (normalizedFilter as QuotaProviderType)
     : null;
+  const activeQuotaFilter: AuthFileQuotaFilter =
+    normalizedFilter === 'all' ? 'all' : quotaFilterType;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
   const problemOnly = statusFilterMode === 'problem';
   const disabledOnly = statusFilterMode === 'disabled';
@@ -562,7 +565,7 @@ export function AuthFilesPage() {
   const gridClasses = [
     styles.grid,
     compactMode ? styles.gridCompact : '',
-    quotaFilterType ? styles.gridQuota : '',
+    activeQuotaFilter ? styles.gridQuota : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -691,7 +694,7 @@ export function AuthFilesPage() {
                 deleting={deleting}
                 statusUpdating={statusUpdating}
                 manualRefreshing={manualRefreshing}
-                quotaFilterType={quotaFilterType}
+                quotaFilterType={activeQuotaFilter}
                 statusBarCache={statusBarCache}
                 entranceDelayMs={cardEntranceDelay(index)}
                 onShowModels={showModels}

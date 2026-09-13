@@ -4,7 +4,13 @@
  */
 
 import type { AuthFileItem } from '@/types';
-import { normalizeProviderKey } from './constants';
+import { resolveAuthProvider } from '@/utils/quota';
+import {
+  QUOTA_PROVIDER_TYPES,
+  normalizeProviderKey,
+  type AuthFileQuotaFilter,
+  type QuotaProviderType,
+} from './constants';
 import { deriveAuthFileIdentity } from './identity';
 import type { AuthFilesSortMode } from './uiState';
 
@@ -15,6 +21,20 @@ export const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
   const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
   return new RegExp(pattern, 'i');
+};
+
+/** “全部”展示每张受支持卡片自己的额度；指定提供商时只展示匹配的额度。 */
+export const resolveAuthFileQuotaType = (
+  file: AuthFileItem,
+  filter: AuthFileQuotaFilter
+): QuotaProviderType | null => {
+  if (!filter) return null;
+
+  const provider = resolveAuthProvider(file);
+  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
+  if (filter !== 'all' && provider !== filter) return null;
+
+  return provider as QuotaProviderType;
 };
 
 /**
