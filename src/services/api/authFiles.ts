@@ -16,6 +16,7 @@ import { normalizeAuthFileCooldowns, normalizeCooldownTimestamp } from './authFi
 
 type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
+export type AuthFileLookup = { name: string; authIndex?: string };
 type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
   prefix?: string;
@@ -419,8 +420,13 @@ export const serializeOauthModelAliases = (
 const OAUTH_MODEL_ALIAS_ENDPOINT = '/oauth-model-alias';
 
 export const authFilesApi = {
-  list: async () =>
-    normalizeAuthFilesResponse(await apiClient.get<AuthFilesResponse>('/auth-files')),
+  list: async (lookup?: AuthFileLookup) =>
+    normalizeAuthFilesResponse(
+      await apiClient.get<AuthFilesResponse>(
+        '/auth-files',
+        lookup ? { params: { name: lookup.name, auth_index: lookup.authIndex } } : undefined
+      )
+    ),
 
   setStatus: (name: string, disabled: boolean) =>
     apiClient.patch<AuthFileStatusResponse>('/auth-files/status', { name, disabled }),
@@ -428,7 +434,13 @@ export const authFilesApi = {
   patchFields: (name: string, fields: AuthFileFieldsPatch) =>
     apiClient.patch('/auth-files/fields', { name, ...fields }),
 
-  requestManualRefresh: (name: string) => apiClient.post('/auth-files/refresh', { name }),
+  requestManualRefresh: async (name: string, authIndex?: string): Promise<void> => {
+    // v7.3.0 returns the complete Auth (including tokens). Never return it to callers.
+    await apiClient.post<unknown>('/auth-files/refresh', {
+      name,
+      ...(authIndex ? { auth_index: authIndex } : {}),
+    });
+  },
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);
