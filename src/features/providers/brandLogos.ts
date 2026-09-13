@@ -1,5 +1,7 @@
 import claudeLogo from '@/assets/icons/claude.svg';
 import codexLogo from '@/assets/icons/codex.svg';
+import devinLightLogo from '@/assets/icons/devin.svg';
+import devinDarkLogo from '@/assets/icons/devin-dark.svg';
 import geminiLogo from '@/assets/icons/gemini.svg';
 import openaiLightLogo from '@/assets/icons/openai-light.svg';
 import openaiDarkLogo from '@/assets/icons/openai-dark.svg';
@@ -21,11 +23,14 @@ export interface ProviderBrandLogo {
   invertOnDark?: boolean;
 }
 
-export const PROVIDER_LOGOS: Record<ProviderBrand, ProviderBrandLogo> = {
+export type ProviderBrandLogoKey = ProviderBrand | 'devin';
+
+export const PROVIDER_LOGOS: Record<ProviderBrandLogoKey, ProviderBrandLogo> = {
   gemini: { src: geminiLogo },
   interactions: { src: geminiLogo },
   claude: { src: claudeLogo },
   codex: { src: codexLogo },
+  devin: { src: devinLightLogo, darkSrc: devinDarkLogo, transparent: true },
   xai: { src: xaiLightLogo, darkSrc: xaiDarkLogo, transparent: true },
   vertex: { src: vertexLogo },
   openaiCompatibility: { src: openaiLightLogo, darkSrc: openaiDarkLogo, transparent: true },
