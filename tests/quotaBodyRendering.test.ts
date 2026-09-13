@@ -68,6 +68,36 @@ describe('CodexQuotaBody', () => {
     expect(markup).toMatch(/3 hours/);
   });
 
+  test('renders the spend-control budget as an absolute pool beside its percentage', () => {
+    // Numbers are the observed business payload: limit 37500, used 3138.65…,
+    // used_percent 8. ChatGPT's own usage page reports these as
+    // "3,139 of 37,500 credits used" with "92% left".
+    const creditMetered: CodexQuotaState = {
+      status: 'success',
+      planType: 'business',
+      windows: [
+        {
+          id: 'spend-control',
+          label: 'Monthly credits',
+          labelKey: 'codex_quota.spend_control_window',
+          usedPercent: 8,
+          resetLabel: '10-01 00:00',
+          resetAtMs: now + 26 * DAY_MS,
+          usedAmount: 3138.653407096863,
+          totalAmount: 37500,
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, { quota: creditMetered, classes })
+    );
+
+    expect(markup).toContain('Monthly credits');
+    expect(markup).toContain('quotaAmount');
+    expect(markup).toContain('3,139 / 37,500 credits');
+    expect(markup).toContain('92%');
+  });
+
   test('renders reset-credit expiry in local time with a countdown', () => {
     const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
 

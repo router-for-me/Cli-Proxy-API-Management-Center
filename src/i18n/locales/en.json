@@ -448,6 +448,8 @@
     "primary_window": "5-hour limit",
     "secondary_window": "Weekly limit",
     "team_secondary_window": "Monthly limit",
+    "spend_control_window": "Monthly credits",
+    "spend_control_amount": "{{used}} / {{total}} credits",
     "code_review_primary_window": "Code review 5-hour limit",
     "code_review_secondary_window": "Code review weekly limit",
     "code_review_team_secondary_window": "Code review monthly limit",

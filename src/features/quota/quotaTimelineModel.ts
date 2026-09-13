@@ -11,6 +11,7 @@
  */
 
 import { DAY_MS, HOUR_MS } from '@/utils/time/durations';
+import { CODEX_SPEND_CONTROL_ROW_ID } from './resetSchedule';
 import type { QuotaProviderType } from './providers/types';
 
 export { DAY_MS, HOUR_MS };
@@ -351,7 +352,13 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
 
   if (provider === 'claude' || provider === 'codex') {
     const windows = ((quota as { windows?: WindowLike[] }).windows ?? []).filter(
-      (window) => typeof window.resetAtMs === 'number'
+      (window) =>
+        typeof window.resetAtMs === 'number' &&
+        // A spend-control budget refilling is a billing cycle, not capacity
+        // coming back, so it must not anchor a lane — same rule the xAI branch
+        // below applies to its monthly figure. The card still shows its
+        // countdown.
+        !(provider === 'codex' && window.id === CODEX_SPEND_CONTROL_ROW_ID)
     );
     const preferredCodexId =
       maxPeriodHours !== undefined && maxPeriodHours <= SESSION_PERIOD_HOURS
