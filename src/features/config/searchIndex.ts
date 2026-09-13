@@ -465,6 +465,13 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
 
 const MAX_RESULTS = 8;
 
+export function findConfigFieldById(
+  fieldId: string | null | undefined
+): ConfigFieldSearchEntry | undefined {
+  if (!fieldId) return undefined;
+  return CONFIG_FIELD_SEARCH_INDEX.find((entry) => entry.fieldId === fieldId);
+}
+
 /**
  * Lowercase substring search over label + qualifier + hint + YAML keys + keywords.
  * Returns the best ~8 matches, label/qualifier hits ranked above alias-only hits.
