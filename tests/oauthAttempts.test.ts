@@ -122,6 +122,7 @@ describe('OAuth attempt lifecycle', () => {
     response.resolve('ok');
     await flush();
     expect(old.isCurrent()).toBe(false);
+    expect(old.signal.aborted).toBe(true);
     expect(tasks.size).toBe(0);
     expect(effects).toBe(0);
     expect(attempts.begin('codex').isCurrent()).toBe(true);
@@ -170,13 +171,17 @@ describe('OAuth attempt lifecycle', () => {
     expect(effects).toBe(0);
     expect(tasks.size).toBe(0);
     expect(cancellation.isCurrent()).toBe(true);
+    expect(login.signal.aborted).toBe(true);
+    expect(cancellation.signal.aborted).toBe(false);
 
     // A connection switch or a later login also makes an outstanding DELETE inert.
     attempts.invalidateAll();
     const next = attempts.begin('devin');
     expect(cancellation.isCurrent()).toBe(false);
+    expect(cancellation.signal.aborted).toBe(true);
     cancellation.invalidate();
     expect(next.isCurrent()).toBe(true);
+    expect(next.signal.aborted).toBe(false);
   });
 
   test('Devin terminal status stops polling without disturbing another provider', async () => {

@@ -24,10 +24,11 @@ describe('Devin Management OAuth v7.3.1 contract', () => {
     const redirectUrl = 'https://127.0.0.1:9443/devin/callback?code=fixture-code&state=test-state';
     try {
       await oauthApi.submitCallback('devin', redirectUrl);
-      expect(post).toHaveBeenCalledWith('/oauth-callback', {
-        provider: 'devin',
-        redirect_url: redirectUrl,
-      });
+      expect(post).toHaveBeenCalledWith(
+        '/oauth-callback',
+        { provider: 'devin', redirect_url: redirectUrl },
+        undefined
+      );
     } finally {
       post.mockRestore();
     }
@@ -54,6 +55,43 @@ describe('Devin Management OAuth v7.3.1 contract', () => {
       }
     });
   }
+
+  test('forwards attempt abort signals to every OAuth request', async () => {
+    const signal = new AbortController().signal;
+    const get = spyOn(apiClient, 'get').mockResolvedValue({});
+    const post = spyOn(apiClient, 'post').mockResolvedValue({});
+    const remove = spyOn(apiClient, 'delete').mockResolvedValue({});
+    try {
+      await oauthApi.startAuth('devin', signal);
+      expect(get).toHaveBeenLastCalledWith('/devin-auth-url', {
+        params: { is_webui: true },
+        signal,
+      });
+      await oauthApi.getAuthStatus('test-state', signal);
+      expect(get).toHaveBeenLastCalledWith('/get-auth-status', {
+        params: { state: 'test-state' },
+        signal,
+      });
+      await oauthApi.submitCallback('devin', 'fixture-callback', signal);
+      expect(post).toHaveBeenCalledWith(
+        '/oauth-callback',
+        {
+          provider: 'devin',
+          redirect_url: 'fixture-callback',
+        },
+        { signal }
+      );
+      await oauthApi.cancelSession('test-state', signal);
+      expect(remove).toHaveBeenCalledWith('/oauth-session', {
+        params: { state: 'test-state' },
+        signal,
+      });
+    } finally {
+      get.mockRestore();
+      post.mockRestore();
+      remove.mockRestore();
+    }
+  });
 
   test('propagates cancellation failures instead of claiming success', async () => {
     const error = new Error('connection lost');
