@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { IconFilterAll } from '@/components/ui/icons';
 import {
   getAuthFileIcon,
@@ -7,6 +8,7 @@ import {
   isThemeSurfaceIconProvider,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
+import type { PluginProviderBrandingMap } from '@/stores/usePluginProviderBrandingStore';
 import styles from './ProviderTabs.module.scss';
 
 export type ProviderTabsProps = {
@@ -14,6 +16,8 @@ export type ProviderTabsProps = {
   counts: Record<string, number>;
   active: string;
   resolvedTheme: ResolvedTheme;
+  /** Label/logo fallback for provider keys owned by plugin OAuth providers. */
+  pluginBranding?: PluginProviderBrandingMap;
   onChange: (type: string) => void;
 };
 
@@ -21,15 +25,23 @@ export type ProviderTabsProps = {
  * 提供商过滤 tabs：水平排布、移动端横向滚动。
  * 品牌色只出现在图标上，激活态是文字 + 2px 墨色下划线。
  */
-export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }: ProviderTabsProps) {
+export function ProviderTabs({
+  types,
+  counts,
+  active,
+  resolvedTheme,
+  pluginBranding,
+  onChange,
+}: ProviderTabsProps) {
   const { t } = useTranslation();
 
   return (
     <div className={styles.tabs} role="group" aria-label={t('auth_files.filter_all')}>
       {types.map((type) => {
         const isActive = active === type;
-        const label = type === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, type);
-        const iconSrc = type === 'all' ? null : getAuthFileIcon(type, resolvedTheme);
+        const label = type === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, type, pluginBranding);
+        const iconSrc =
+          type === 'all' ? null : getAuthFileIcon(type, resolvedTheme, pluginBranding);
 
         return (
           <button
@@ -51,13 +63,15 @@ export function ProviderTabs({ types, counts, active, resolvedTheme, onChange }:
                     : undefined
                 }
               >
-                {iconSrc ? (
-                  <img src={iconSrc} alt="" className={styles.tabIcon} />
-                ) : (
-                  <span className={styles.tabIconFallback}>
-                    {label.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
+                <FallbackImage
+                  src={iconSrc}
+                  className={styles.tabIcon}
+                  fallback={
+                    <span className={styles.tabIconFallback}>
+                      {label.slice(0, 1).toUpperCase()}
+                    </span>
+                  }
+                />
               </span>
             )}
             <span className={styles.tabLabel}>{label}</span>

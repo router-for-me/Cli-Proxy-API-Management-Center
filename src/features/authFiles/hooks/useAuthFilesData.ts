@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type RefObj
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
-import { useNotificationStore } from '@/stores';
+import { useNotificationStore, usePluginProviderBrandingStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
@@ -339,7 +339,9 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
       const isProblemOnly = problemOnly === true;
       const isDisabledOnly = disabledOnly === true;
       const isEnabledOnly = enabledOnly === true;
-      const typeLabel = isFiltered ? getTypeLabel(t, filter) : t('auth_files.filter_all');
+      const typeLabel = isFiltered
+        ? getTypeLabel(t, filter, usePluginProviderBrandingStore.getState().branding)
+        : t('auth_files.filter_all');
       let confirmMessage = t('auth_files.delete_all_confirm');
       if (isDisabledOnly || isEnabledOnly) {
         confirmMessage = t('auth_files.delete_filtered_result_confirm');

@@ -1,5 +1,7 @@
+import type { PluginProviderBrandingMap } from '@/stores/usePluginProviderBrandingStore';
 import type { PluginListEntry, PluginMenu, PluginStoreEntry } from '@/types';
 import { normalizeApiBase } from '@/utils/connection';
+import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 
 export const PLUGIN_RESOURCES_REFRESH_EVENT = 'plugin-resources-refresh';
 
@@ -31,6 +33,24 @@ export const resolvePluginAssetURL = (value: string, apiBase: string) => {
   if (!trimmed.startsWith('/')) return trimmed;
   const base = normalizeApiBase(apiBase);
   return base ? `${base}${trimmed}` : trimmed;
+};
+
+// Label and logo for every provider key owned by an active plugin OAuth provider.
+// The first plugin (backend priority order) wins when several claim one key.
+export const collectPluginProviderBranding = (
+  plugins: PluginListEntry[],
+  apiBase: string
+): PluginProviderBrandingMap => {
+  const branding: PluginProviderBrandingMap = {};
+  plugins.forEach((plugin) => {
+    const key = normalizeOAuthProviderKey(plugin.oauthProvider ?? '');
+    if (!plugin.supportsOAuth || !plugin.effectiveEnabled || !key || branding[key]) return;
+    branding[key] = {
+      label: getPluginTitle(plugin),
+      logo: resolvePluginAssetURL(plugin.logo || plugin.metadata?.logo || '', apiBase),
+    };
+  });
+  return branding;
 };
 
 // Registry entries usually carry an "owner/repo" slug rather than a full URL.

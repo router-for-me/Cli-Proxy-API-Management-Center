@@ -10,6 +10,7 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import type { PluginProviderBrandingMap } from '@/stores/usePluginProviderBrandingStore';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 import { parseTimestamp } from '@/utils/timestamp';
@@ -136,12 +137,19 @@ export const isProblemAuthFile = (file: AuthFileItem): boolean => {
   return file.unavailable === true || status === 'error' || hasAuthFileStatusWarning(file);
 };
 
-export const getTypeLabel = (t: TFunction, type: string): string => {
+// Built-in labels win; plugin OAuth providers fall back to the name they declare.
+export const getTypeLabel = (
+  t: TFunction,
+  type: string,
+  pluginBranding?: PluginProviderBrandingMap
+): string => {
   const providerKey = normalizeProviderKey(type);
   const key = `auth_files.filter_${providerKey}`;
   const translated = t(key);
   if (translated !== key) return translated;
   if (providerKey === 'iflow') return 'iFlow';
+  const pluginLabel = pluginBranding?.[providerKey]?.label;
+  if (pluginLabel) return pluginLabel;
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
@@ -150,9 +158,15 @@ export const getTypeColor = (type: string, resolvedTheme: ResolvedTheme): ThemeC
   return resolvedTheme === 'dark' && set.dark ? set.dark : set.light;
 };
 
-export const getAuthFileIcon = (type: string, resolvedTheme: ResolvedTheme): string | null => {
-  const iconEntry = AUTH_FILE_ICONS[normalizeProviderKey(type)];
-  if (!iconEntry) return null;
+// Bundled icons win; plugin OAuth providers fall back to the logo they declare.
+export const getAuthFileIcon = (
+  type: string,
+  resolvedTheme: ResolvedTheme,
+  pluginBranding?: PluginProviderBrandingMap
+): string | null => {
+  const providerKey = normalizeProviderKey(type);
+  const iconEntry = AUTH_FILE_ICONS[providerKey];
+  if (!iconEntry) return pluginBranding?.[providerKey]?.logo || null;
   return typeof iconEntry === 'string'
     ? iconEntry
     : resolvedTheme === 'dark'

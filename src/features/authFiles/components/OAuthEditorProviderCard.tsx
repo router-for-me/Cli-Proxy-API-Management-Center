@@ -2,8 +2,9 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { Card } from '@/components/ui/Card';
+import { FallbackImage } from '@/components/ui/FallbackImage';
 import { IconCheck, IconNetwork } from '@/components/ui/icons';
-import { useThemeStore } from '@/stores';
+import { usePluginProviderBrandingStore, useThemeStore } from '@/stores';
 import { getAuthFileIcon, getTypeLabel, normalizeProviderKey } from '../constants';
 import styles from './OAuthEditor.module.scss';
 
@@ -25,6 +26,7 @@ export function OAuthEditorProviderCard({
   const { t } = useTranslation();
   const id = useId();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const pluginBranding = usePluginProviderBrandingStore((state) => state.branding);
 
   return (
     <Card className={styles.settingsCard}>
@@ -59,7 +61,7 @@ export function OAuthEditorProviderCard({
           >
             {options.map((option) => {
               const active = normalizeProviderKey(provider) === normalizeProviderKey(option);
-              const icon = getAuthFileIcon(option, resolvedTheme);
+              const icon = getAuthFileIcon(option, resolvedTheme, pluginBranding);
               return (
                 <button
                   key={option}
@@ -69,8 +71,11 @@ export function OAuthEditorProviderCard({
                   onClick={() => onChange(option)}
                   disabled={disabled}
                 >
-                  {icon ? <img src={icon} alt="" /> : <IconNetwork size={16} aria-hidden="true" />}
-                  <span>{getTypeLabel(t, option)}</span>
+                  <FallbackImage
+                    src={icon}
+                    fallback={<IconNetwork size={16} aria-hidden="true" />}
+                  />
+                  <span>{getTypeLabel(t, option, pluginBranding)}</span>
                   <IconCheck size={14} className={styles.providerCheck} aria-hidden="true" />
                 </button>
               );
