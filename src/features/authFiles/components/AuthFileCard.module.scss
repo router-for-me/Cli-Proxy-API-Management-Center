@@ -45,27 +45,41 @@
   }
 }
 
-/* ---------- 头部：选择 + 提供商文字 + 唯一启停控件 ---------- */
+/* ---------- 头部：选择 + 供应商药丸 / 账号 + 唯一启停控件 ---------- */
 
 .head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   min-height: 28px;
 }
 
 .selection {
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.providerLabel {
+.identity {
+  flex: 1;
   min-width: 0;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  @include text-ellipsis;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* 恢复最早版本的品牌药丸，让它作为账号文字的行内前缀。 */
+.providerBadge {
+  display: inline-block;
+  max-width: 100%;
+  margin-inline-end: 8px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  vertical-align: baseline;
+  overflow-wrap: anywhere;
 }
 
 .runtimeLabel {
@@ -74,15 +88,11 @@
   color: var(--text-tertiary);
 }
 
-/* 主行：账号（email / 项目 ID）领衔 */
+/* 行内账号可以接着药丸换行，不截断长邮箱或项目 ID。 */
 .account {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.35;
   letter-spacing: -0.005em;
   color: var(--text-primary);
-  @include text-ellipsis;
+  overflow-wrap: anywhere;
 }
 
 /* 无账号线索时主行回落到文件名，沿用 mono 语汇。

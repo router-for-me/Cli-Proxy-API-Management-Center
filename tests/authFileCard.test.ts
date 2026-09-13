@@ -22,6 +22,23 @@ describe('auth file card presentation contract', () => {
     expect(source).toContain('{identity.secondary}');
   });
 
+  test('prefixes the account with a theme-aware legacy provider pill', () => {
+    const heading = source.split('<h3')[1].split('</h3>')[0];
+    expect(heading.indexOf('{typeLabel}')).toBeLessThan(heading.indexOf('{identity.primary}'));
+    expect(heading).toContain('styles.providerBadge');
+    expect(heading).toContain('backgroundColor: typeColor.bg');
+    expect(heading).toContain('color: typeColor.text');
+    expect(source).toContain('getTypeColor(providerKey, resolvedTheme)');
+    const badge = css.split('.providerBadge {')[1].split('}')[0];
+    expect(badge).toContain('border-radius: 12px');
+    expect(badge).toContain('padding: 4px 10px');
+    expect(badge).toContain('font-size: 12px');
+    expect(badge).not.toContain('text-transform: uppercase');
+    const account = css.split('.account {')[1].split('}')[0];
+    expect(account).toContain('overflow-wrap: anywhere');
+    expect(account).not.toContain('text-ellipsis');
+  });
+
   test('uses one header toggle and credential-specific accessible names', () => {
     const header = source.split('<header')[1].split('</header>')[0];
     expect(source.match(/<ToggleSwitch/g)).toHaveLength(1);

@@ -20,6 +20,7 @@ import {
   formatModified,
   getAuthFileStatusMessage,
   hasAuthFileStatusWarning,
+  getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
@@ -62,6 +63,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     file,
     compact,
     selected,
+    resolvedTheme,
     disableControls,
     deleting,
     statusUpdating,
@@ -85,6 +87,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const showManualRefreshButton = !isRuntimeOnly && supportsAuthFileManualRefresh(providerKey);
   const isManualRefreshing = manualRefreshing[file.name] === true;
   const typeLabel = getTypeLabel(t, providerKey);
+  const typeColor = getTypeColor(providerKey, resolvedTheme);
 
   const quotaType = resolveAuthFileQuotaType(file, quotaFilterType);
   const showQuotaLayout = Boolean(quotaType) && !isRuntimeOnly && !compact;
@@ -132,7 +135,24 @@ export function AuthFileCard(props: AuthFileCardProps) {
             title={t('auth_files.card_select', { name: file.name })}
           />
         )}
-        <span className={styles.providerLabel}>{typeLabel}</span>
+        <h3 className={styles.identity}>
+          <span
+            className={styles.providerBadge}
+            style={{
+              backgroundColor: typeColor.bg,
+              color: typeColor.text,
+              ...(typeColor.border ? { border: typeColor.border } : {}),
+            }}
+          >
+            {typeLabel}
+          </span>
+          <span
+            className={`${styles.account} ${identity.kind === 'fileName' ? styles.accountMono : ''}`}
+            title={identity.primary}
+          >
+            {identity.primary}
+          </span>
+        </h3>
         {isRuntimeOnly ? (
           <span className={styles.runtimeLabel}>{t('auth_files.type_virtual')}</span>
         ) : (
@@ -147,13 +167,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
           </div>
         )}
       </header>
-
-      <h3
-        className={`${styles.account} ${identity.kind === 'fileName' ? styles.accountMono : ''}`}
-        title={identity.primary}
-      >
-        {identity.primary}
-      </h3>
 
       {identity.secondary && (
         <p className={styles.fileName} title={identity.fullName}>
