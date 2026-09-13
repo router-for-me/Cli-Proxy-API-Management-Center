@@ -12,12 +12,14 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from '../logic';
 import { QUOTA_ADAPTERS, getQuotaSetter } from '../providers';
 import type { QuotaProviderType } from '../providers/types';
 
 interface BatchFetchResult {
   name: string;
+  cacheKey: string;
   status: 'success' | 'error';
   data?: unknown;
   error?: string;
@@ -56,7 +58,7 @@ export function useQuotaBatchLoader() {
               setQuota((prev) => {
                 const nextState = { ...prev };
                 entries.forEach(({ file }) => {
-                  nextState[file.name] = adapter.buildLoadingState();
+                  nextState[getQuotaCacheKey(file)] = adapter.buildLoadingState();
                 });
                 return nextState;
               });
@@ -64,13 +66,15 @@ export function useQuotaBatchLoader() {
 
             const results = await Promise.all(
               entries.map(async ({ file }): Promise<BatchFetchResult> => {
+                const cacheKey = getQuotaCacheKey(file);
                 try {
                   const data = await adapter.fetchQuota(file, t);
-                  return { name: file.name, status: 'success', data };
+                  return { name: file.name, cacheKey, status: 'success', data };
                 } catch (err: unknown) {
                   const message = err instanceof Error ? err.message : t('common.unknown_error');
                   return {
                     name: file.name,
+                    cacheKey,
                     status: 'error',
                     error: message,
                     errorStatus: getStatusFromError(err),
@@ -87,7 +91,7 @@ export function useQuotaBatchLoader() {
                 commitIfQuotaCacheCurrent(
                   cacheGeneration,
                   () => {
-                    nextState[result.name] =
+                    nextState[result.cacheKey] =
                       result.status === 'success'
                         ? adapter.buildSuccessState(result.data)
                         : adapter.buildErrorState(

@@ -506,6 +506,26 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "devin_quota": {
+    "daily": "Daily remaining",
+    "weekly": "Weekly remaining",
+    "plan_label": "Plan",
+    "plan_end": "Subscription ends",
+    "unavailable": "Unavailable",
+    "reset_unknown": "Reset time unavailable",
+    "observed_at": "Quota observed: {{time}}",
+    "observed_unknown": "Quota observation time unavailable",
+    "missing_identity": "The credential name or auth index is missing. Reload the credential list.",
+    "stale_request": "The connection or credential changed. Please retry.",
+    "file_not_found": "The refreshed Devin credential could not be found. Reload the credential list.",
+    "empty_data": "The backend returned no usable Devin quota observation.",
+    "refresh_unconfirmed": "No newer quota observation was returned. Check the credential and retry.",
+    "loading": "Querying Devin quota…",
+    "idle": "Click to query Devin quota",
+    "load_failed": "Failed to query quota: {{message}}",
+    "empty_title": "No Devin credentials",
+    "empty_desc": "Upload a Devin credential file or sign in using the backend CLI to query quota."
+  },
   "kimi_quota": {
     "title": "Kimi Quota",
     "empty_title": "No Kimi Auth Files",

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { copyToClipboard } from '@/utils/clipboard';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import {
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
@@ -685,7 +686,7 @@ export function AuthFilesPage() {
           <div className={gridClasses}>
             {pageItems.map((file, index) => (
               <AuthFileCard
-                key={file.name}
+                key={getQuotaCacheKey(file)}
                 file={file}
                 compact={compactMode}
                 selected={selectedFiles.has(file.name)}

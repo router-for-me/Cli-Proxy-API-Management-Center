@@ -504,6 +504,26 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "devin_quota": {
+    "daily": "每日剩余额度",
+    "weekly": "每周剩余额度",
+    "plan_label": "套餐",
+    "plan_end": "订阅到期",
+    "unavailable": "暂无数据",
+    "reset_unknown": "暂无重置时间",
+    "observed_at": "额度观测时间：{{time}}",
+    "observed_unknown": "暂无额度观测时间",
+    "missing_identity": "缺少凭据名称或认证索引，请重新加载凭据列表。",
+    "stale_request": "连接或凭据已变更，请重试。",
+    "file_not_found": "未找到刷新后的 Devin 凭据，请重新加载凭据列表。",
+    "empty_data": "后端未返回可用的 Devin 额度观测数据。",
+    "refresh_unconfirmed": "未取得更新的额度观测，请检查凭据后重试。",
+    "loading": "正在查询 Devin 额度…",
+    "idle": "点击查询 Devin 额度",
+    "load_failed": "额度查询失败：{{message}}",
+    "empty_title": "暂无 Devin 凭据",
+    "empty_desc": "上传 Devin 凭据文件或通过后端 CLI 登录后，即可查询额度。"
+  },
   "kimi_quota": {
     "title": "Kimi 额度",
     "empty_title": "暂无 Kimi 认证",

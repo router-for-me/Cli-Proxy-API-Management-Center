@@ -53,6 +53,7 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
       lastObserved.clear();
       observationSession = generation.session;
     }
+    const identityKey = JSON.stringify([name, authIndex]);
     const key = JSON.stringify([generation.session, generation.file, name, authIndex]);
     const existing = inFlight.get(key);
     if (existing) return existing;
@@ -63,7 +64,7 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
         throw new DevinQuotaError('stale_request');
       }
     };
-    const latest = lastObserved.get(name);
+    const latest = lastObserved.get(identityKey);
     const previous = Math.max(
       readDevinQuotaSnapshot(file).observedAtMs ?? 0,
       latest?.key === key ? latest.atMs : 0
@@ -91,7 +92,7 @@ export function createDevinQuotaFetcher(deps: DevinQuotaDependencies) {
             // The backend can return 200 without making an upstream request.
             throw new DevinQuotaError('refresh_unconfirmed');
           }
-          lastObserved.set(name, { key, atMs: quota.observedAtMs });
+          lastObserved.set(identityKey, { key, atMs: quota.observedAtMs });
           return quota;
         };
         const finish = () => {

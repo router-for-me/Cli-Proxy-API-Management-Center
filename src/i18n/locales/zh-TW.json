@@ -504,6 +504,26 @@
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x"
   },
+  "devin_quota": {
+    "daily": "每日剩餘額度",
+    "weekly": "每週剩餘額度",
+    "plan_label": "方案",
+    "plan_end": "訂閱到期",
+    "unavailable": "暫無資料",
+    "reset_unknown": "暫無重設時間",
+    "observed_at": "額度觀測時間：{{time}}",
+    "observed_unknown": "暫無額度觀測時間",
+    "missing_identity": "缺少憑證名稱或驗證索引，請重新載入憑證清單。",
+    "stale_request": "連線或憑證已變更，請重試。",
+    "file_not_found": "找不到重新整理後的 Devin 憑證，請重新載入憑證清單。",
+    "empty_data": "後端未傳回可用的 Devin 額度觀測資料。",
+    "refresh_unconfirmed": "未取得更新的額度觀測，請檢查憑證後重試。",
+    "loading": "正在查詢 Devin 額度…",
+    "idle": "點擊查詢 Devin 額度",
+    "load_failed": "額度查詢失敗：{{message}}",
+    "empty_title": "暫無 Devin 憑證",
+    "empty_desc": "上傳 Devin 憑證檔案或透過後端 CLI 登入後，即可查詢額度。"
+  },
   "kimi_quota": {
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",

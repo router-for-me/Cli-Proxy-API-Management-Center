@@ -6,6 +6,7 @@ import { apiClient } from './client';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelAliasEntry } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import {
   normalizeRecentRequestAuthIndex,
   normalizeRecentRequestBuckets,
@@ -289,7 +290,13 @@ export const normalizeAuthFilesResponse = (
 
   files.forEach((entry) => {
     const name = readTextField(entry, 'name');
-    const key = name || JSON.stringify(entry);
+    const key = name
+      ? getQuotaCacheKey({
+          ...entry,
+          name,
+          authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+        })
+      : JSON.stringify(entry);
     const bucket = grouped.get(key);
     if (bucket) {
       bucket.push(entry);
@@ -301,11 +308,17 @@ export const normalizeAuthFilesResponse = (
   const normalizedFiles = Array.from(grouped.values()).map((entries) =>
     normalizeAuthFileEntry(mergeAuthFileEntries(entries), observedAt, receivedAtMs)
   );
-  normalizedFiles.sort((left, right) =>
-    readTextField(left, 'name').localeCompare(readTextField(right, 'name'), undefined, {
+  normalizedFiles.sort((left, right) => {
+    const nameOrder = readTextField(left, 'name').localeCompare(
+      readTextField(right, 'name'),
+      undefined,
+      { sensitivity: 'accent' }
+    );
+    if (nameOrder !== 0) return nameOrder;
+    return String(left.authIndex ?? '').localeCompare(String(right.authIndex ?? ''), undefined, {
       sensitivity: 'accent',
-    })
-  );
+    });
+  });
 
   return {
     ...payload,

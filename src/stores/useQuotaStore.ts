@@ -3,10 +3,12 @@
  */
 
 import { create } from 'zustand';
+import { getQuotaCacheFileName } from '@/utils/quota/identity';
 import type {
   AntigravityQuotaState,
   ClaudeQuotaState,
   CodexQuotaState,
+  DevinQuotaState,
   KimiQuotaState,
   XaiQuotaState,
 } from '@/types';
@@ -19,11 +21,13 @@ interface QuotaStoreState {
   antigravityQuota: Record<string, AntigravityQuotaState>;
   claudeQuota: Record<string, ClaudeQuotaState>;
   codexQuota: Record<string, CodexQuotaState>;
+  devinQuota: Record<string, DevinQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
   xaiQuota: Record<string, XaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
+  setDevinQuota: (updater: QuotaUpdater<Record<string, DevinQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
   setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: (names?: string[]) => void;
@@ -42,6 +46,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   antigravityQuota: {},
   claudeQuota: {},
   codexQuota: {},
+  devinQuota: {},
   kimiQuota: {},
   xaiQuota: {},
   setAntigravityQuota: (updater) =>
@@ -55,6 +60,10 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
   setCodexQuota: (updater) =>
     set((state) => ({
       codexQuota: resolveUpdater(updater, state.codexQuota),
+    })),
+  setDevinQuota: (updater) =>
+    set((state) => ({
+      devinQuota: resolveUpdater(updater, state.devinQuota),
     })),
   setKimiQuota: (updater) =>
     set((state) => ({
@@ -72,11 +81,14 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
         names.forEach((name) => {
           fileGenerations[name] = (fileGenerations[name] ?? 0) + 1;
         });
+        const invalidatedNames = new Set(names);
         const omitNames = <T>(cache: Record<string, T>): Record<string, T> => {
-          if (!names.some((name) => Object.prototype.hasOwnProperty.call(cache, name)))
-            return cache;
+          const keysToDelete = Object.keys(cache).filter((key) =>
+            invalidatedNames.has(getQuotaCacheFileName(key))
+          );
+          if (keysToDelete.length === 0) return cache;
           const next = { ...cache };
-          names.forEach((name) => delete next[name]);
+          keysToDelete.forEach((key) => delete next[key]);
           return next;
         };
         return {
@@ -84,6 +96,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
           antigravityQuota: omitNames(state.antigravityQuota),
           claudeQuota: omitNames(state.claudeQuota),
           codexQuota: omitNames(state.codexQuota),
+          devinQuota: omitNames(state.devinQuota),
           kimiQuota: omitNames(state.kimiQuota),
           xaiQuota: omitNames(state.xaiQuota),
         };
@@ -94,6 +107,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
         antigravityQuota: {},
         claudeQuota: {},
         codexQuota: {},
+        devinQuota: {},
         kimiQuota: {},
         xaiQuota: {},
       };

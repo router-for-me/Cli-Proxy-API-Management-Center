@@ -409,6 +409,35 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
+  if (provider === 'devin') {
+    const windows =
+      (
+        quota as {
+          windows?: {
+            id: string;
+            label?: string;
+            remainingPercent: number | null;
+            resetAtMs: number | null;
+            periodHours: number;
+          }[];
+        }
+      ).windows ?? [];
+    const chosen = pickLaneWindow(windows, maxPeriodHours);
+    if (!chosen) return empty;
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs,
+      periodHours: chosen.periodHours,
+      remaining: chosen.remainingPercent,
+      limits: windows
+        .filter((window) => window.remainingPercent !== null)
+        .map((window) => ({
+          label: window.label ?? window.id,
+          remaining: window.remainingPercent as number,
+        })),
+    };
+  }
+
   if (provider === 'xai') {
     const billing = (quota as { billing?: XaiBillingLike | null }).billing;
     // Only the weekly limit is a quota window. The monthly figure on the same

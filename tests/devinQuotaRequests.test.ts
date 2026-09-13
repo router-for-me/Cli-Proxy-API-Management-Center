@@ -138,6 +138,20 @@ describe('createDevinQuotaFetcher', () => {
     expect(calls).toBe(4);
   });
 
+  test('tracks observation freshness separately for same-name auth identities', async () => {
+    const fetchQuota = createDevinQuotaFetcher({
+      refresh: async () => {},
+      list: async ({ authIndex }) => ({ files: [devinFile('shared.json', authIndex!, 2)] }),
+      generation: stableGeneration,
+    });
+    const first = devinFile('shared.json', 'first', 1);
+    const second = devinFile('shared.json', 'second', 1);
+    await fetchQuota(first);
+    await fetchQuota(second);
+    await expectCode(fetchQuota(first), 'refresh_unconfirmed');
+    await expectCode(fetchQuota(second), 'refresh_unconfirmed');
+  });
+
   test('deduplicates the same target in the same generation', async () => {
     const refreshGate = deferred<void>();
     let refreshCalls = 0;

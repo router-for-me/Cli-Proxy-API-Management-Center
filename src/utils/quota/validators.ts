@@ -23,6 +23,10 @@ export function isCodexFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'codex';
 }
 
+export function isDevinFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'devin';
+}
+
 export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
 }
