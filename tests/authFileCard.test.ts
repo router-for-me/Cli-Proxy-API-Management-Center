@@ -39,6 +39,19 @@ describe('auth file card presentation contract', () => {
     expect(account).not.toContain('text-ellipsis');
   });
 
+  test('centers the provider pill and account without baseline offsets', () => {
+    const identity = css.split('.identity {')[1].split('}')[0];
+    expect(identity).toContain('display: flex');
+    expect(identity).toContain('align-items: center');
+    expect(identity).toContain('flex-wrap: wrap');
+    expect(identity).toContain('gap: 4px 8px');
+    const badge = css.split('.providerBadge {')[1].split('}')[0];
+    expect(badge).not.toContain('vertical-align: baseline');
+    expect(badge).not.toContain('margin-inline-end');
+    const header = css.split('.head {')[1].split('}')[0];
+    expect(header).toContain('align-items: center');
+  });
+
   test('uses one footer toggle and credential-specific accessible names', () => {
     const header = source.split('<header')[1].split('</header>')[0];
     const footer = source.split('<footer')[1].split('</footer>')[0];

@@ -49,18 +49,21 @@
 
 .head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   min-height: 28px;
 }
 
 .selection {
   flex-shrink: 0;
-  margin-top: 2px;
 }
 
 .identity {
+  display: flex;
   flex: 1;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   min-width: 0;
   margin: 0;
   font-size: 15px;
@@ -68,17 +71,15 @@
   line-height: 1.6;
 }
 
-/* 恢复最早版本的品牌药丸，让它作为账号文字的行内前缀。 */
+/* 品牌药丸与账号按盒子中心对齐，避免不同字号的基线造成视觉偏移。 */
 .providerBadge {
-  display: inline-block;
+  flex-shrink: 0;
   max-width: 100%;
-  margin-inline-end: 8px;
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
-  vertical-align: baseline;
   overflow-wrap: anywhere;
 }
 
@@ -88,8 +89,10 @@
   color: var(--text-tertiary);
 }
 
-/* 行内账号可以接着药丸换行，不截断长邮箱或项目 ID。 */
+/* 窄卡片保留基本阅读宽度；空间不足时换行，不截断邮箱或项目 ID。 */
 .account {
+  flex: 1 1 12ch;
+  min-width: 0;
   letter-spacing: -0.005em;
   color: var(--text-primary);
   overflow-wrap: anywhere;
