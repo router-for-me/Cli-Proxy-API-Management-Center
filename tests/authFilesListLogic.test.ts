@@ -47,6 +47,12 @@ describe('resolveAuthFileQuotaType', () => {
     expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), 'claude')).toBeNull();
     expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), null)).toBeNull();
   });
+
+  test('exposes a plugin quota on its own provider tab', () => {
+    const kiro = authFile({ type: 'kiro', supportsQuota: true, quotaProvider: 'kiro' });
+    expect(resolveAuthFileQuotaType(kiro, 'all')).toBe('plugin');
+    expect(resolveAuthFileQuotaType(kiro, 'kiro')).toBe('plugin');
+  });
 });
 
 describe('matchesAuthFileSearch', () => {

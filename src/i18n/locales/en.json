@@ -437,6 +437,18 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All"
   },
+  "plugin_quota": {
+    "empty_title": "No Plugin Auth Files",
+    "empty_desc": "Connect a plugin account to view its remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "missing_provider": "Auth file missing quota provider",
+    "empty_data": "No quota data available",
+    "plan_label": "Plan",
+    "remaining_percent": "{{percent}}% remaining"
+  },
   "claude_quota": {
     "title": "Claude Quota",
     "empty_title": "No Claude OAuth Files",

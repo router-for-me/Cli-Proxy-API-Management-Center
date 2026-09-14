@@ -240,6 +240,16 @@ const readRuntimeOnlyField = (entry: AuthFileEntry): boolean => {
   return false;
 };
 
+const readBooleanField = (value: unknown): boolean | undefined => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1') return true;
+    if (normalized === 'false' || normalized === '0') return false;
+  }
+  return undefined;
+};
+
 /**
  * 契约边界归一化：把后端 kebab/snake_case 生字段填充到 AuthFileItem 声明的
  * camelCase 字段上。原始字段全部透传——quota resolvers 仍直接读
@@ -261,12 +271,16 @@ const normalizeAuthFileEntry = (
   const modified = readDateField(entry);
   const priority = readIntegerField(entry['priority']);
   const weight = readIntegerField(entry['weight']);
+  const supportsQuota = readBooleanField(entry['supports_quota'] ?? entry.supportsQuota);
+  const quotaProvider = readTextField(entry, 'quota_provider') || readTextField(entry, 'quotaProvider');
 
   return {
     ...entry,
     cooldownSnapshot: normalizeAuthFileCooldowns(entry.cooldowns, observedAt, receivedAtMs),
     runtimeOnly: readRuntimeOnlyField(entry),
     authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+    ...(supportsQuota !== undefined ? { supportsQuota } : {}),
+    ...(quotaProvider ? { quotaProvider } : {}),
     recentRequests: normalizeRecentRequestBuckets(entry.recent_requests ?? entry.recentRequests),
     successCount: normalizeUsageTotal(entry.success),
     failureCount: normalizeUsageTotal(entry.failed),
