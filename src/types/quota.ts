@@ -219,6 +219,20 @@ export interface AntigravityQuotaState {
   errorStatus?: number;
 }
 
+/** A provider-defined numeric/currency value rendered above generic quota windows. */
+export interface PluginQuotaMetric {
+  key: string;
+  label: string;
+  value: number;
+  unit?: string;
+  format?: 'number' | 'currency';
+  currency?: string;
+}
+
+export interface PluginQuotaState extends AntigravityQuotaState {
+  summary: PluginQuotaMetric[];
+}
+
 export interface CodexQuotaWindow {
   id: string;
   label: string;
