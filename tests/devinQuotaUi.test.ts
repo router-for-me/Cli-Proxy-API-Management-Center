@@ -59,7 +59,7 @@ describe('Devin quota UI integration', () => {
     expect(buildTabCounts(entries).devin).toBe(1);
   });
 
-  test('renders both remaining meters, independent resets, plan, and the observation time', () => {
+  test('renders both remaining meters, independent resets and plan without observation time', () => {
     const markup = renderToStaticMarkup(
       createElement(DevinQuotaBody, { quota: snapshot(), classes })
     );
@@ -73,7 +73,15 @@ describe('Devin quota UI integration', () => {
     expect(markup).toContain('Pro');
     expect(markup).toContain('01/02');
     expect(markup).toContain('01/08');
-    expect(markup).toContain('01/01');
+    expect(markup).not.toContain('01/01');
+    expect(markup).not.toContain(classes.quotaMessage);
+  });
+
+  test('does not render an unknown observation time message', () => {
+    const quota = { ...snapshot(), observedAtMs: null };
+    const markup = renderToStaticMarkup(createElement(DevinQuotaBody, { quota, classes }));
+    expect(markup).not.toContain(i18n.t('devin_quota.observed_unknown'));
+    expect(markup).not.toContain(classes.quotaMessage);
   });
 
   test('renders missing quota as unavailable, not a zero-percent reading', () => {

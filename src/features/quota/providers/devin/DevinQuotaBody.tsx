@@ -12,7 +12,6 @@ export function DevinQuotaBody({ quota, classes }: QuotaBodyProps<DevinQuotaStat
   const now = useNow();
   const locale = i18n.resolvedLanguage;
   const urgentRow = pickUrgentRowId(collectQuotaRowInstants('devin', quota), now);
-  const observed = buildResetDisplay(null, quota.observedAtMs, now, locale);
   const planEnd = buildResetDisplay(null, quota.planEndMs, now, locale);
 
   return (
@@ -66,11 +65,6 @@ export function DevinQuotaBody({ quota, classes }: QuotaBodyProps<DevinQuotaStat
           </div>
         );
       })}
-      <div className={classes.quotaMessage}>
-        {observed
-          ? t('devin_quota.observed_at', { time: observed.absolute })
-          : t('devin_quota.observed_unknown')}
-      </div>
     </>
   );
 }
