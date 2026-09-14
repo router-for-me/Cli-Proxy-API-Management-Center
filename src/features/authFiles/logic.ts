@@ -31,10 +31,18 @@ export const resolveAuthFileQuotaType = (
   if (!filter) return null;
 
   const provider = resolveAuthProvider(file);
-  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
-  if (filter !== 'all' && provider !== filter) return null;
+  if (QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) {
+    if (filter !== 'all' && provider !== filter) return null;
+    return provider as QuotaProviderType;
+  }
 
-  return provider as QuotaProviderType;
+  const quotaProvider = String(file.quotaProvider ?? file['quota_provider'] ?? '').trim();
+  const supportsQuota = file.supportsQuota ?? file['supports_quota'];
+  if (!(supportsQuota === true || supportsQuota === 'true' || supportsQuota === '1') || !quotaProvider) {
+    return null;
+  }
+  if (filter !== 'all' && filter !== 'plugin' && provider !== filter) return null;
+  return 'plugin';
 };
 
 /**

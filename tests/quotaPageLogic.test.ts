@@ -43,6 +43,11 @@ describe('resolveQuotaProviderType', () => {
     expect(resolveQuotaProviderType(file('a', 'antigravity'))).toBe('antigravity');
     expect(resolveQuotaProviderType(file('a', 'gemini'))).toBeNull();
     expect(resolveQuotaProviderType(file('a', 'claude', { disabled: true }))).toBeNull();
+    expect(
+      resolveQuotaProviderType(
+        file('kiro-a.json', 'kiro', { supportsQuota: true, quotaProvider: 'kiro', authIndex: '1' })
+      )
+    ).toBe('plugin');
   });
 });
 
@@ -70,6 +75,7 @@ describe('buildTabCounts', () => {
       xai: 1,
       kimi: 1,
       devin: 0,
+      plugin: 0,
     });
   });
 });

@@ -86,7 +86,7 @@ export function buildAntigravityQuotaGroups(
           const window = normalizeStringValue(bucket.window) ?? undefined;
           const rawId =
             normalizeStringValue(bucket.bucketId ?? bucket.bucket_id) ??
-            `${groupId}-${window ?? `bucket-${bucketIndex + 1}`}`;
+            `${groupId}-${window ?? 'bucket'}-${bucketIndex + 1}`;
           const label = normalizeStringValue(bucket.displayName ?? bucket.display_name) ?? rawId;
 
           const resetTime =
