@@ -216,6 +216,18 @@
     "routing_strategy_fill_first": "fill-first（優先填充）"
   },
   "auth_files": {
+    "model_test": "測試",
+    "model_test_button": "測試模型 {{model}}",
+    "model_testing": "測試中…",
+    "model_test_success": "成功",
+    "model_test_failed": "測試失敗",
+    "model_test_latency": "{{ms}} 毫秒",
+    "model_test_images": "已生成 {{count}} 張圖片",
+    "model_test_hint": "每次測試使用目前憑證發送真實生成請求，會消耗額度。",
+    "model_test_upgrade": "請更新 CLI Proxy API 以使用模型測試。",
+    "model_test_unsupported": "暫不支援測試此模型類型。",
+    "model_test_disabled": "請啟用可用憑證後測試模型。",
+
     "title": "驗證檔案管理",
     "meta_total": "{{count}} 個憑證",
     "meta_active": "{{count}} 個啟用",

@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
-import { useNotificationStore } from '@/stores';
+import { useAuthStore, useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import type { AuthFileModelItem } from '@/features/authFiles/constants';
 
@@ -12,11 +12,13 @@ export type UseAuthFilesModelsResult = {
   modelsLoading: boolean;
   modelsList: AuthFileModelItem[];
   modelsFileName: string;
+  modelsAuthIndex: string;
+  modelsAuthDisabled: boolean;
   modelsFileType: string;
   modelsError: ModelsError;
   showModels: (item: AuthFileItem) => Promise<void>;
   closeModelsModal: () => void;
-  /** 文件集变更后失效缓存；不传 names 则全部清空。 */
+  /** Invalidate selected files, or clear the entire cache when names are omitted. */
   invalidateModels: (names?: string[]) => void;
 };
 
@@ -27,6 +29,8 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
   const [modelsModalOpen, setModelsModalOpen] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
+  const [modelsAuthIndex, setModelsAuthIndex] = useState('');
+  const [modelsAuthDisabled, setModelsAuthDisabled] = useState(false);
   const [modelsFileName, setModelsFileName] = useState('');
   const [modelsFileType, setModelsFileType] = useState('');
   const [modelsError, setModelsError] = useState<ModelsError>(null);
@@ -54,11 +58,28 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
     });
   }, []);
 
+  useEffect(
+    () =>
+      useAuthStore.subscribe((state, previous) => {
+        if (
+          state.apiBase !== previous.apiBase ||
+          state.managementKey !== previous.managementKey ||
+          state.isAuthenticated !== previous.isAuthenticated
+        ) {
+          closeModelsModal();
+          invalidateModels();
+        }
+      }),
+    [closeModelsModal, invalidateModels]
+  );
+
   const showModels = useCallback(
     async (item: AuthFileItem) => {
       const cacheKey = item.name.trim();
       const requestId = ++activeModelsRequestIdRef.current;
 
+      setModelsAuthIndex(String(item.authIndex ?? '').trim());
+      setModelsAuthDisabled(Boolean(item.disabled));
       setModelsFileName(item.name);
       setModelsFileType(item.type || '');
       setModelsList([]);
@@ -110,6 +131,8 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
     modelsLoading,
     modelsList,
     modelsFileName,
+    modelsAuthIndex,
+    modelsAuthDisabled,
     modelsFileType,
     modelsError,
     showModels,

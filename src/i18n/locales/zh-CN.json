@@ -216,6 +216,18 @@
     "routing_strategy_fill_first": "fill-first (优先填充)"
   },
   "auth_files": {
+    "model_test": "测试",
+    "model_test_button": "测试模型 {{model}}",
+    "model_testing": "测试中…",
+    "model_test_success": "成功",
+    "model_test_failed": "测试失败",
+    "model_test_latency": "{{ms}} 毫秒",
+    "model_test_images": "已生成 {{count}} 张图片",
+    "model_test_hint": "每次测试使用当前凭证发送真实生成请求，会消耗额度。",
+    "model_test_upgrade": "请更新 CLI Proxy API 以使用模型测试。",
+    "model_test_unsupported": "暂不支持测试此模型类型。",
+    "model_test_disabled": "请启用可用凭证后测试模型。",
+
     "title": "认证文件管理",
     "meta_total": "{{count}} 个凭证",
     "meta_active": "{{count}} 个启用",
