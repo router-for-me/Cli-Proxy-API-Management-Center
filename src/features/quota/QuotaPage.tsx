@@ -19,8 +19,7 @@ import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNow } from '@/hooks/useNow';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
-import type { AuthFileItem, DevinQuotaState, ResolvedTheme } from '@/types';
-import { isDevinFile } from '@/utils/quota';
+import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
@@ -46,7 +45,6 @@ import {
 import { nextRecoveryMs } from './resetSchedule';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers';
 import type { QuotaProviderType } from './providers/types';
-import { getDevinQuotaSnapshotState } from './providers/devin/data';
 import { useDevinQuotaAutoLoad } from './providers/devin/useDevinQuotaAutoLoad';
 import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
@@ -84,12 +82,9 @@ export function QuotaPage() {
 
   const sessionGeneration = useQuotaStore((state) => state.cacheGeneration);
   const [filesGeneration, setFilesGeneration] = useState<number | null>(null);
-  const [filesFileGenerations, setFilesFileGenerations] = useState<Record<string, number>>({});
-  const fileGenerations = useQuotaStore((state) => state.fileGenerations);
   const listRequestRef = useRef(0);
   const loadFiles = useCallback(async () => {
     const requestId = ++listRequestRef.current;
-    const requestFileGenerations = useQuotaStore.getState().fileGenerations;
     if (connectionStatus !== 'connected') {
       setFiles([]);
       setFilesGeneration(null);
@@ -106,7 +101,6 @@ export function QuotaPage() {
       if (!isCurrent()) return;
       setFiles(data?.files || []);
       setFilesGeneration(sessionGeneration);
-      setFilesFileGenerations(requestFileGenerations);
     } catch (err: unknown) {
       if (!isCurrent()) return;
       const message = err instanceof Error ? err.message : t('notification.refresh_failed');
@@ -135,28 +129,17 @@ export function QuotaPage() {
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
-  const devinSnapshots = useMemo(() => {
-    const snapshots: Record<string, DevinQuotaState> = {};
-    if (filesGeneration !== sessionGeneration) return snapshots;
-    files.filter(isDevinFile).forEach((file) => {
-      if ((fileGenerations[file.name] ?? 0) !== (filesFileGenerations[file.name] ?? 0)) return;
-      const snapshot = getDevinQuotaSnapshotState(file, t);
-      if (snapshot) snapshots[getQuotaCacheKey(file)] = snapshot;
-    });
-    return snapshots;
-  }, [files, filesGeneration, filesFileGenerations, fileGenerations, sessionGeneration, t]);
-
   const quotaByType = useMemo<Record<QuotaProviderType, Record<string, QuotaCardState>>>(
     () =>
       ({
         antigravity: antigravityQuota,
         claude: claudeQuota,
         codex: codexQuota,
-        devin: { ...devinSnapshots, ...devinQuota },
+        devin: devinQuota,
         kimi: kimiQuota,
         xai: xaiQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
-    [antigravityQuota, claudeQuota, codexQuota, devinQuota, devinSnapshots, kimiQuota, xaiQuota]
+    [antigravityQuota, claudeQuota, codexQuota, devinQuota, kimiQuota, xaiQuota]
   );
 
   const getQuota = useCallback(

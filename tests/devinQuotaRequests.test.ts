@@ -4,6 +4,7 @@ import {
   DevinQuotaError,
   type DevinRequestGeneration,
 } from '@/features/quota/providers/devin/requests';
+import type { ApiCallRequest, ApiCallResult } from '@/services/api/apiCall';
 import type { AuthFileItem, DevinQuotaData } from '@/types';
 
 type Deferred<T> = {
@@ -22,28 +23,37 @@ const deferred = <T>(): Deferred<T> => {
   return { promise, resolve, reject };
 };
 
-const observedAt = (second: number) => `2026-05-01T00:00:${String(second).padStart(2, '0')}Z`;
-
-const devinFile = (
+const file = (
   name: string,
-  authIndex: string | number,
-  second: number,
+  authIndex: string | number | undefined,
   extra: Record<string, unknown> = {}
 ): AuthFileItem => ({
   name,
   provider: 'devin',
   authIndex,
-  quota: {
-    observed_at: observedAt(second),
-    signals: {
-      daily_quota_remaining_percent: '40%',
-      daily_quota_reset_at: '2026-05-02T00:00:00Z',
-      weekly_quota_remaining_percent: 75,
-      weekly_quota_reset_at: '2026-05-08T00:00:00Z',
-      plan: 'pro',
+  ...extra,
+});
+
+const liveBody = (overrides: Record<string, unknown> = {}) => ({
+  userStatus: {
+    planStatus: {
+      dailyQuotaRemainingPercent: 40,
+      dailyQuotaResetAtUnix: '1777680000',
+      weeklyQuotaRemainingPercent: '75',
+      weeklyQuotaResetAtUnix: 1778198400,
+      planInfo: { planName: 'pro' },
+      planStart: '2026-05-01T00:00:00Z',
+      planEnd: '2026-06-01T00:00:00Z',
+      ...overrides,
     },
   },
-  ...extra,
+});
+
+const result = (statusCode = 200, body: unknown = liveBody()): ApiCallResult => ({
+  statusCode,
+  header: {},
+  bodyText: body === null ? '' : JSON.stringify(body),
+  body,
 });
 
 const expectCode = async (promise: Promise<unknown>, code: string) => {
@@ -58,344 +68,279 @@ const expectCode = async (promise: Promise<unknown>, code: string) => {
 
 const stableGeneration = (): DevinRequestGeneration => ({ session: 1, file: 1 });
 
+const successfulFetcher = (
+  request: (payload: ApiCallRequest) => Promise<ApiCallResult> = async () => result(),
+  generation: (name: string) => DevinRequestGeneration = stableGeneration
+) => createDevinQuotaFetcher({ request, generation });
+
 describe('createDevinQuotaFetcher', () => {
-  test('performs targeted POST then GET and returns only normalized quota data', async () => {
-    const calls: Array<{ operation: string; target: unknown }> = [];
-    const secret = 'raw-refresh-credential';
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: async (target) => {
-        calls.push({ operation: 'refresh', target });
-        // The credential-bearing response is deliberately unavailable at this boundary.
-        return undefined;
-      },
-      list: async (target) => {
-        calls.push({ operation: 'list', target });
-        return {
-          files: [
-            devinFile(' account.json ', 'wrong', 2),
-            devinFile('account.json', 7, 2, {
-              access_token: secret,
-              refresh_token: secret,
-              account: secret,
-              metadata: { api_key: secret },
-            }),
-          ],
-        };
-      },
-      generation: stableGeneration,
+  test('sends the exact Connect RPC request and returns only normalized live values', async () => {
+    const requests: ApiCallRequest[] = [];
+    const secret = 'credential-that-must-not-leak';
+    const before = Date.now();
+    const fetchQuota = successfulFetcher(async (payload) => {
+      requests.push(payload);
+      return result();
     });
 
-    const result = await fetchQuota(devinFile(' account.json ', ' 7 ', 1));
+    const quota = await fetchQuota(
+      file(' account.json ', ' 007 ', {
+        access_token: secret,
+        metadata: { apiKey: secret },
+        quota: {
+          signals: {
+            daily_quota_remaining_percent: 1,
+            plan: secret,
+          },
+        },
+      })
+    );
+    const after = Date.now();
 
-    expect(calls).toEqual([
-      { operation: 'refresh', target: { name: 'account.json', authIndex: '7' } },
-      { operation: 'list', target: { name: 'account.json', authIndex: '7' } },
-    ]);
-    expect(result).toEqual<DevinQuotaData>({
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toEqual({
+      authIndex: '007',
+      method: 'POST',
+      url: 'https://server.codeium.com/exa.seat_management_pb.SeatManagementService/GetUserStatus',
+      header: {
+        'Content-Type': 'application/json',
+        'Connect-Protocol-Version': '1',
+      },
+      data: JSON.stringify({
+        metadata: {
+          ideName: 'chisel',
+          ideVersion: '3000.10.21',
+          apiKey: '$TOKEN$',
+          locale: 'en',
+          os: 'darwin',
+          extensionVersion: '3000.10.21',
+          clientName: 'chisel',
+        },
+      }),
+    });
+    expect(requests[0]!.header).not.toHaveProperty('Authorization');
+    expect(requests[0]!.header).not.toHaveProperty('X-Api-Key');
+    expect(quota).toEqual<DevinQuotaData>({
       windows: [
         {
           id: 'daily',
           remainingPercent: 40,
-          resetAtMs: Date.parse('2026-05-02T00:00:00Z'),
+          resetAtMs: 1777680000 * 1000,
           periodHours: 24,
         },
         {
           id: 'weekly',
           remainingPercent: 75,
-          resetAtMs: Date.parse('2026-05-08T00:00:00Z'),
+          resetAtMs: 1778198400 * 1000,
           periodHours: 168,
         },
       ],
-      observedAtMs: Date.parse(observedAt(2)),
+      observedAtMs: expect.any(Number) as unknown as number,
       plan: 'pro',
-      planStartMs: null,
-      planEndMs: null,
+      planStartMs: Date.parse('2026-05-01T00:00:00Z'),
+      planEndMs: Date.parse('2026-06-01T00:00:00Z'),
     });
-    expect(JSON.stringify(result)).not.toContain(secret);
+    expect(quota.observedAtMs).toBeGreaterThanOrEqual(before);
+    expect(quota.observedAtMs).toBeLessThanOrEqual(after);
+    expect(JSON.stringify(quota)).not.toContain(secret);
   });
 
-  test('requires a newer observation on repeated refreshes even with an old list entry', async () => {
+  test('accepts the same live quota response on repeated refreshes', async () => {
     let calls = 0;
-    let nextSecond = 2;
-    let session = 1;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: async () => {
-        calls += 1;
-      },
-      list: async () => ({ files: [devinFile('account.json', '7', nextSecond)] }),
-      generation: () => ({ session, file: 0 }),
+    const fetchQuota = successfulFetcher(async () => {
+      calls += 1;
+      return result();
     });
-    const original = devinFile('account.json', '7', 1);
-    await fetchQuota(original);
-    // Start again immediately after awaiting: completed work must no longer be deduplicated.
-    await expectCode(fetchQuota(original), 'refresh_unconfirmed');
+    const authFile = file('repeat.json', '7');
+
+    const first = await fetchQuota(authFile);
+    await Promise.resolve();
+    const second = await fetchQuota(authFile);
+
+    expect(first.windows).toEqual(second.windows);
     expect(calls).toBe(2);
-    nextSecond = 3;
-    await fetchQuota(original);
-    session = 2;
-    nextSecond = 2;
-    await fetchQuota(original);
-    expect(calls).toBe(4);
   });
 
-  test('tracks observation freshness separately for same-name auth identities', async () => {
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: async () => {},
-      list: async ({ authIndex }) => ({ files: [devinFile('shared.json', authIndex!, 2)] }),
-      generation: stableGeneration,
+  test('deduplicates an in-flight auth identity but not a different auth index', async () => {
+    const gates = [deferred<ApiCallResult>(), deferred<ApiCallResult>()];
+    const seenIndexes: string[] = [];
+    const fetchQuota = successfulFetcher((payload) => {
+      seenIndexes.push(payload.authIndex!);
+      return gates[seenIndexes.length - 1]!.promise;
     });
-    const first = devinFile('shared.json', 'first', 1);
-    const second = devinFile('shared.json', 'second', 1);
-    await fetchQuota(first);
-    await fetchQuota(second);
-    await expectCode(fetchQuota(first), 'refresh_unconfirmed');
-    await expectCode(fetchQuota(second), 'refresh_unconfirmed');
+
+    const first = fetchQuota(file(' shared.json ', 3));
+    const duplicate = fetchQuota(file('shared.json', ' 3 '));
+    const otherIdentity = fetchQuota(file('shared.json', '4'));
+
+    expect(duplicate).toBe(first);
+    expect(otherIdentity).not.toBe(first);
+    expect(seenIndexes).toEqual(['3', '4']);
+    gates.forEach((gate) => gate.resolve(result()));
+    const [firstResult, duplicateResult] = await Promise.all([first, duplicate, otherIdentity]);
+    expect(firstResult).toBe(duplicateResult);
   });
 
-  test('deduplicates the same target in the same generation', async () => {
-    const refreshGate = deferred<void>();
-    let refreshCalls = 0;
-    let listCalls = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: () => {
-        refreshCalls += 1;
-        return refreshGate.promise;
-      },
-      list: async () => {
-        listCalls += 1;
-        return { files: [devinFile('same.json', '3', 2)] };
-      },
-      generation: stableGeneration,
-    });
-    const file = devinFile('same.json', 3, 1);
-
-    const first = fetchQuota(file);
-    const second = fetchQuota({ ...file });
-    expect(second).toBe(first);
-    expect(refreshCalls).toBe(1);
-
-    refreshGate.resolve(undefined);
-    const [firstResult, secondResult] = await Promise.all([first, second]);
-    expect(firstResult).toBe(secondResult);
-    expect(listCalls).toBe(1);
-  });
-
-  test('limits upstream workflows to three concurrent targets', async () => {
-    const gates = Array.from({ length: 5 }, () => deferred<void>());
+  test('limits requests to three concurrent auth identities', async () => {
+    const gates = Array.from({ length: 5 }, () => deferred<ApiCallResult>());
     let started = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: () => gates[started++]!.promise,
-      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
-      generation: stableGeneration,
-    });
+    const fetchQuota = successfulFetcher(() => gates[started++]!.promise);
 
     const requests = Array.from({ length: 5 }, (_, index) =>
-      fetchQuota(devinFile(`file-${index}.json`, String(index), 1))
+      fetchQuota(file(`file-${index}.json`, String(index)))
     );
     expect(started).toBe(3);
 
-    gates[0]!.resolve(undefined);
+    gates[0]!.resolve(result());
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(started).toBe(4);
 
-    gates[1]!.resolve(undefined);
+    gates[1]!.resolve(result());
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(started).toBe(5);
 
-    gates[2]!.resolve(undefined);
-    gates[3]!.resolve(undefined);
-    gates[4]!.resolve(undefined);
+    gates.slice(2).forEach((gate) => gate.resolve(result()));
     await Promise.all(requests);
   });
 
-  test('does not let requests from an old session block a new connection', async () => {
-    const oldGates = Array.from({ length: 3 }, () => deferred<void>());
+  test('does not let saturated old-session requests block a new session', async () => {
+    const oldGates = Array.from({ length: 3 }, () => deferred<ApiCallResult>());
     const started: string[] = [];
     let oldIndex = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: ({ name }) => {
-        started.push(name);
-        return name.startsWith('old-') ? oldGates[oldIndex++]!.promise : Promise.resolve();
+    const fetchQuota = successfulFetcher(
+      (payload) => {
+        const index = payload.authIndex!;
+        started.push(index);
+        return index.startsWith('old-') ? oldGates[oldIndex++]!.promise : Promise.resolve(result());
       },
-      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
-      generation: (name) => ({ session: name.startsWith('old-') ? 1 : 2, file: 0 }),
-    });
+      (name) => ({ session: name.startsWith('old-') ? 1 : 2, file: 0 })
+    );
 
     const oldRequests = Array.from({ length: 3 }, (_, index) =>
-      fetchQuota(devinFile(`old-${index}.json`, String(index), 1))
+      fetchQuota(file(`old-${index}.json`, `old-${index}`))
     );
-    const currentRequest = fetchQuota(devinFile('current.json', 'current', 1));
+    const currentRequest = fetchQuota(file('current.json', 'current'));
 
-    expect(started).toContain('current.json');
-    await expect(currentRequest).resolves.toMatchObject({
-      observedAtMs: Date.parse(observedAt(2)),
-    });
-
-    oldGates.forEach((gate) => gate.resolve(undefined));
+    expect(started).toContain('current');
+    await expect(currentRequest).resolves.toMatchObject({ plan: 'pro' });
+    oldGates.forEach((gate) => gate.resolve(result()));
     await Promise.all(oldRequests);
   });
 
-  test('rejects a queued request whose file generation changed before it started', async () => {
-    const blockers = Array.from({ length: 3 }, () => deferred<void>());
+  test('checks session and file generations before a queued request executes', async () => {
+    const blockers = Array.from({ length: 3 }, () => deferred<ApiCallResult>());
     const generations: Record<string, DevinRequestGeneration> = {};
-    const refreshed: string[] = [];
+    const requested: string[] = [];
     let blockerIndex = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: ({ name }) => {
-        refreshed.push(name);
-        return name.startsWith('block') ? blockers[blockerIndex++]!.promise : Promise.resolve();
+    const fetchQuota = successfulFetcher(
+      (payload) => {
+        requested.push(payload.authIndex!);
+        return payload.authIndex!.startsWith('block')
+          ? blockers[blockerIndex++]!.promise
+          : Promise.resolve(result());
       },
-      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
-      generation: (name) => generations[name] ?? { session: 1, file: 1 },
-    });
+      (name) => generations[name] ?? { session: 1, file: 1 }
+    );
 
     const active = Array.from({ length: 3 }, (_, index) =>
-      fetchQuota(devinFile(`block-${index}.json`, String(index), 1))
+      fetchQuota(file(`block-${index}.json`, `block-${index}`))
     );
-    const queuedName = 'queued.json';
-    const queued = fetchQuota(devinFile(queuedName, '9', 1));
-    generations[queuedName] = { session: 1, file: 2 };
-    blockers[0]!.resolve(undefined);
+    const staleSession = fetchQuota(file('stale-session.json', 'stale-session'));
+    const staleFile = fetchQuota(file('stale-file.json', 'stale-file'));
+    generations['stale-session.json'] = { session: 2, file: 1 };
+    generations['stale-file.json'] = { session: 1, file: 2 };
 
-    await expectCode(queued, 'stale_request');
-    expect(refreshed).not.toContain(queuedName);
-    blockers[1]!.resolve(undefined);
-    blockers[2]!.resolve(undefined);
+    blockers[0]!.resolve(result());
+    blockers[1]!.resolve(result());
+    await expectCode(staleSession, 'stale_request');
+    await expectCode(staleFile, 'stale_request');
+    expect(requested).not.toContain('stale-session');
+    expect(requested).not.toContain('stale-file');
+
+    blockers[2]!.resolve(result());
     await Promise.all(active);
   });
 
-  test('checks session generation after POST and file generation after GET', async () => {
-    const postGate = deferred<void>();
-    const afterPost = { session: 4, file: 8 };
-    let listCalls = 0;
-    const firstFetcher = createDevinQuotaFetcher({
-      refresh: () => postGate.promise,
-      list: async () => {
-        listCalls += 1;
-        return { files: [devinFile('post.json', '1', 2)] };
-      },
-      generation: () => ({ ...afterPost }),
-    });
-    const afterPostRequest = firstFetcher(devinFile('post.json', '1', 1));
-    afterPost.session += 1;
-    postGate.resolve(undefined);
-    await expectCode(afterPostRequest, 'stale_request');
-    expect(listCalls).toBe(0);
+  test('checks session and file generations after the response', async () => {
+    for (const changed of ['session', 'file'] as const) {
+      const gate = deferred<ApiCallResult>();
+      const generation = { session: 4, file: 8 };
+      const fetchQuota = successfulFetcher(
+        () => gate.promise,
+        () => ({ ...generation })
+      );
+      const request = fetchQuota(file(`${changed}.json`, changed));
 
-    const getGate = deferred<{ files: AuthFileItem[] }>();
-    const afterGet = { session: 4, file: 8 };
-    const secondFetcher = createDevinQuotaFetcher({
-      refresh: async () => undefined,
-      list: () => getGate.promise,
-      generation: () => ({ ...afterGet }),
-    });
-    const afterGetRequest = secondFetcher(devinFile('get.json', '2', 1));
-    afterGet.file += 1;
-    getGate.resolve({ files: [devinFile('get.json', '2', 2)] });
-    await expectCode(afterGetRequest, 'stale_request');
+      generation[changed] += 1;
+      gate.resolve(result());
+      await expectCode(request, 'stale_request');
+    }
   });
 
-  test('rejects missing identities and mismatched returned identity or provider', async () => {
-    let refreshCalls = 0;
-    const missingFetcher = createDevinQuotaFetcher({
-      refresh: async () => {
-        refreshCalls += 1;
-      },
-      list: async () => ({ files: [] }),
-      generation: stableGeneration,
+  test('rejects missing names and auth indexes before making a request', async () => {
+    let calls = 0;
+    const fetchQuota = successfulFetcher(async () => {
+      calls += 1;
+      return result();
     });
-    await expectCode(missingFetcher(devinFile(' ', '1', 1)), 'missing_identity');
-    await expectCode(missingFetcher(devinFile('valid.json', ' ', 1)), 'missing_identity');
-    expect(refreshCalls).toBe(0);
 
-    const returnedFiles = [
-      devinFile('other.json', '1', 2),
-      devinFile('valid.json', '2', 2),
-      { ...devinFile('valid.json', '1', 2), provider: 'codex' },
-    ];
-    const mismatchFetcher = createDevinQuotaFetcher({
-      refresh: async () => undefined,
-      list: async () => ({ files: returnedFiles }),
-      generation: stableGeneration,
-    });
-    await expectCode(mismatchFetcher(devinFile('valid.json', '1', 1)), 'file_not_found');
+    await expectCode(fetchQuota(file(' ', '1')), 'missing_identity');
+    await expectCode(fetchQuota(file('valid.json', ' ')), 'missing_identity');
+    await expectCode(fetchQuota(file('valid.json', undefined)), 'missing_identity');
+    expect(calls).toBe(0);
   });
 
-  test('rejects empty and stale timed observations but accepts issue 429 signals without time', async () => {
-    const responses: AuthFileItem[][] = [
-      [
-        {
-          name: 'empty.json',
-          provider: 'devin',
-          authIndex: '1',
-          quota: { observed_at: observedAt(2), signals: {} },
-        },
-      ],
-      [devinFile('old.json', '2', 1)],
-      [
-        {
-          ...devinFile('missing-time.json', '3', 2),
-          quota: {
-            signals: { daily_quota_remaining_percent: 50 },
-          },
-        },
-      ],
-    ];
-    let responseIndex = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: async () => undefined,
-      list: async () => ({ files: responses[responseIndex++]! }),
-      generation: stableGeneration,
-    });
+  test('rejects unsuccessful statuses with the upstream status and message', async () => {
+    const fetchQuota = successfulFetcher(async () =>
+      result(429, { error: { message: 'quota endpoint throttled' } })
+    );
 
-    await expectCode(fetchQuota(devinFile('empty.json', '1', 1)), 'empty_data');
-    await expectCode(fetchQuota(devinFile('old.json', '2', 1)), 'refresh_unconfirmed');
-    await expect(fetchQuota(devinFile('missing-time.json', '3', 1))).resolves.toMatchObject({
-      observedAtMs: null,
-      windows: [
-        { id: 'daily', remainingPercent: 50 },
-        { id: 'weekly', remainingPercent: null },
-      ],
-    });
+    try {
+      await fetchQuota(file('status.json', '1'));
+      throw new Error('expected request to reject');
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe('429 quota endpoint throttled');
+      expect((error as Error & { status?: number }).status).toBe(429);
+    }
   });
 
-  test('propagates dependency failures and allows a failed target to retry', async () => {
-    const failure = new Error('refresh exploded');
+  test('rejects successful responses without live quota data', async () => {
+    const fetchQuota = successfulFetcher(async () => result(200, { userStatus: {} }));
+    await expectCode(fetchQuota(file('empty.json', '1')), 'empty_data');
+  });
+
+  test('propagates request failures and allows the identity to retry', async () => {
+    const failure = new Error('request exploded');
     let attempts = 0;
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: async () => {
-        attempts += 1;
-        if (attempts === 1) throw failure;
-      },
-      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
-      generation: stableGeneration,
+    const fetchQuota = successfulFetcher(async () => {
+      attempts += 1;
+      if (attempts === 1) throw failure;
+      return result();
     });
-    const file = devinFile('retry.json', '1', 1);
+    const authFile = file('retry.json', '1');
 
-    await expect(fetchQuota(file)).rejects.toBe(failure);
+    await expect(fetchQuota(authFile)).rejects.toBe(failure);
     await Promise.resolve();
-    await expect(fetchQuota(file)).resolves.toMatchObject({
-      observedAtMs: Date.parse(observedAt(2)),
-    });
+    await expect(fetchQuota(authFile)).resolves.toMatchObject({ plan: 'pro' });
     expect(attempts).toBe(2);
   });
 
   test('ignores generation changes belonging to an unrelated file', async () => {
-    const gate = deferred<void>();
+    const gate = deferred<ApiCallResult>();
     const generations: Record<string, DevinRequestGeneration> = {
       'target.json': { session: 3, file: 4 },
       'other.json': { session: 3, file: 7 },
     };
-    const fetchQuota = createDevinQuotaFetcher({
-      refresh: () => gate.promise,
-      list: async ({ name, authIndex }) => ({ files: [devinFile(name, authIndex!, 2)] }),
-      generation: (name) => generations[name]!,
-    });
+    const fetchQuota = successfulFetcher(
+      () => gate.promise,
+      (name) => generations[name]!
+    );
 
-    const request = fetchQuota(devinFile('target.json', '5', 1));
+    const request = fetchQuota(file('target.json', '5'));
     generations['other.json']!.file += 1;
-    gate.resolve(undefined);
+    gate.resolve(result());
 
-    await expect(request).resolves.toMatchObject({ observedAtMs: Date.parse(observedAt(2)) });
+    await expect(request).resolves.toMatchObject({ plan: 'pro' });
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   captureQuotaCacheGeneration,
@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import { bindQuotaClasses } from '@/features/quota/types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '@/features/quota/providers';
-import { getDevinQuotaSnapshotState } from '@/features/quota/providers/devin/data';
 import styles from './AuthFileQuota.module.scss';
 
 /** 认证文件卡片外衣：紧凑额度样式绑定成类型化契约（缺键在模块初始化即抛）。 */
@@ -53,15 +52,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'xai') return state.xaiQuota[cacheKey] as QuotaCardState | undefined;
     return assertNever(quotaType);
   });
-  const sessionGeneration = useQuotaStore((state) => state.cacheGeneration);
-  const fileGeneration = useQuotaStore((state) => state.fileGenerations[file.name] ?? 0);
-  const snapshotGeneration = useMemo(() => captureQuotaCacheGeneration(file.name), [file]);
-  const snapshotIsCurrent =
-    sessionGeneration === snapshotGeneration.cacheGeneration &&
-    fileGeneration === (snapshotGeneration.fileGenerations[file.name] ?? 0);
-  const quota =
-    storedQuota ??
-    (quotaType === 'devin' && snapshotIsCurrent ? getDevinQuotaSnapshotState(file, t) : undefined);
+  const quota = storedQuota;
 
   const updateQuotaState = useQuotaStore(
     (state) => state[adapter.storeSetter] as unknown as QuotaMapUpdater

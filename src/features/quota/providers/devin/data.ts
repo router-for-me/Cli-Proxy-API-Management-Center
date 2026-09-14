@@ -1,15 +1,13 @@
 import type { TFunction } from 'i18next';
-import type { AuthFileItem, DevinQuotaData, DevinQuotaState } from '@/types';
-import { authFilesApi } from '@/services/api/authFiles';
-import { hasDevinQuotaObservation, readDevinQuotaSnapshot } from '@/services/api/devinQuota';
+import type { DevinQuotaData, DevinQuotaState } from '@/types';
+import { apiCallApi } from '@/services/api/apiCall';
 import { useQuotaStore } from '@/stores/useQuotaStore';
 import { isDevinFile, isDisabledAuthFile } from '@/utils/quota';
 import type { QuotaProviderData } from '../types';
 import { createDevinQuotaFetcher, DevinQuotaError } from './requests';
 
 const fetchSnapshot = createDevinQuotaFetcher({
-  refresh: ({ name, authIndex }) => authFilesApi.requestManualRefresh(name, authIndex),
-  list: (target) => authFilesApi.list(target),
+  request: (payload) => apiCallApi.request(payload),
   generation: (name) => {
     const state = useQuotaStore.getState();
     return { session: state.cacheGeneration, file: state.fileGenerations[name] ?? 0 };
@@ -23,17 +21,6 @@ const withLabels = (quota: DevinQuotaData, t: TFunction): DevinQuotaData => ({
     label: t(`devin_quota.${window.id}`),
   })),
 });
-
-/** Render a passive list observation immediately without declaring it freshly queried. */
-export function getDevinQuotaSnapshotState(
-  file: AuthFileItem,
-  t: TFunction
-): DevinQuotaState | undefined {
-  const quota = readDevinQuotaSnapshot(file);
-  return hasDevinQuotaObservation(quota)
-    ? { status: 'success', ...withLabels(quota, t) }
-    : undefined;
-}
 
 const emptyData = (): DevinQuotaData => ({
   windows: [],

@@ -2,8 +2,9 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
-import type { AuthFileItem } from '@/types';
-import { DEVIN_CONFIG, getDevinQuotaSnapshotState } from '@/features/quota/providers/devin/data';
+import type { AuthFileItem, DevinQuotaState } from '@/types';
+import { readDevinQuotaResponse } from '@/services/api/devinQuota';
+import { DEVIN_CONFIG } from '@/features/quota/providers/devin/data';
 import { DevinQuotaBody } from '@/features/quota/providers/devin/DevinQuotaBody';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import { classifyQuotaFiles, buildTabCounts } from '@/features/quota/logic';
@@ -20,15 +21,17 @@ const file: AuthFileItem = {
   name: 'devin-example.json',
   provider: 'devin',
   authIndex: 'example-index',
-  quota: {
-    observed_at: '2099-01-01T00:00:00Z',
-    signals: {
-      daily_quota_remaining_percent: '0%',
-      weekly_quota_remaining_percent: '80%',
-      daily_quota_reset_at: '2099-01-02T00:00:00Z',
-      weekly_quota_reset_at: '2099-01-08T00:00:00Z',
-      plan: 'Pro',
-      plan_end: '2099-01-03T00:00:00Z',
+};
+const observedAtMs = Date.parse('2099-01-01T00:00:00Z');
+const livePayload = {
+  userStatus: {
+    planStatus: {
+      dailyQuotaRemainingPercent: 0,
+      weeklyQuotaRemainingPercent: 80,
+      dailyQuotaResetAtUnix: Date.parse('2099-01-02T00:00:00Z') / 1000,
+      weeklyQuotaResetAtUnix: Date.parse('2099-01-08T00:00:00Z') / 1000,
+      planInfo: { planName: 'Pro' },
+      planEnd: '2099-01-03T00:00:00Z',
     },
   },
 };
@@ -36,7 +39,10 @@ const classes = bindQuotaClasses(
   Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, key])),
   'test'
 );
-const snapshot = () => getDevinQuotaSnapshotState(file, i18n.t)!;
+const snapshot = (): DevinQuotaState => ({
+  status: 'success',
+  ...readDevinQuotaResponse(livePayload, observedAtMs),
+});
 
 afterEach(() => useQuotaStore.getState().clearQuotaCache());
 
