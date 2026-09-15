@@ -106,6 +106,10 @@ describe('splitWindowMinutes', () => {
 });
 
 describe('provider key counts', () => {
+  test('includes Muse API keys and defaults missing configuration to zero', () => {
+    expect(getProviderKeyCounts({ metaApiKeys: [{ apiKey: 'fixture-meta-key' }] }).meta).toBe(1);
+    expect(getProviderKeyCounts({}).meta).toBe(0);
+  });
   test('includes native Interactions API keys in the dashboard total inputs', () => {
     const counts = getProviderKeyCounts({
       geminiApiKeys: [{ apiKey: 'gemini-key' }],

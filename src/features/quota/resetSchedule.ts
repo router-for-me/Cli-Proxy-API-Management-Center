@@ -129,6 +129,39 @@ export function collectQuotaRowInstants(
     return collectRows((quota as { rows?: WindowLike[] }).rows ?? [], 'row');
   }
 
+  if (provider === 'meta') {
+    const windows =
+      (
+        quota as {
+          data?: {
+            windows?: {
+              id: 'window' | 'weekly';
+              usedPercent: number | null;
+              resetAt?: number;
+            }[];
+          };
+        }
+      ).data?.windows ?? [];
+
+    // A reset is a recovery event only when the current window has consumed
+    // capacity. In particular, 0% used must not make an otherwise healthy Meta
+    // credential sort ahead of credentials that are actually blocked. Unknown
+    // usage is not treated as 100% used either.
+    return windows
+      .filter(
+        (window) =>
+          typeof window.usedPercent === 'number' &&
+          Number.isFinite(window.usedPercent) &&
+          window.usedPercent > 0 &&
+          isUsableMs(window.resetAt)
+      )
+      .map((window) => ({
+        rowId: window.id,
+        atMs: (window.resetAt as number) * 1000,
+        kind: 'window' as const,
+      }));
+  }
+
   return [];
 }
 

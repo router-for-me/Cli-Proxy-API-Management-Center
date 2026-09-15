@@ -268,6 +268,29 @@ export interface DevinQuotaState extends DevinQuotaData {
   errorStatus?: number;
 }
 
+/** A whitelisted quota observation from Meta's Muse key endpoint. */
+export interface MetaQuotaWindow {
+  id: 'window' | 'weekly';
+  usedPercent: number | null;
+  /** Reset instant as Unix seconds, matching the upstream contract. */
+  resetAt?: number;
+  durationMinutes?: number;
+}
+
+/** Contains quota/display fields only; credential-bearing response fields are discarded. */
+export interface MetaQuotaData {
+  planName?: string;
+  isSubscriptionActive?: boolean;
+  windows: MetaQuotaWindow[];
+}
+
+export interface MetaQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  data?: MetaQuotaData;
+  error?: string;
+  errorStatus?: number;
+}
+
 // Kimi API payload types
 export interface KimiUsageDetail {
   used?: number | string;

@@ -1,6 +1,7 @@
 const OAUTH_PROVIDER_ALIASES: Record<string, string> = {
   'anti-gravity': 'antigravity',
   grok: 'xai',
+  muse: 'meta',
   'x-ai': 'xai',
   'x.ai': 'xai',
 };
@@ -12,8 +13,10 @@ export const normalizeOAuthProviderKey = (value: string): string => {
   return OAUTH_PROVIDER_ALIASES[key] ?? key;
 };
 
-export const normalizeManagementOAuthProviderKey = (value: string): string =>
-  value.trim().toLowerCase();
+export const normalizeManagementOAuthProviderKey = (value: string): string => {
+  const key = value.trim().toLowerCase();
+  return key === 'muse' ? 'meta' : key;
+};
 
 export const isManagementOAuthProviderKey = (value: string): boolean =>
   MANAGEMENT_OAUTH_PROVIDER_PATTERN.test(value);

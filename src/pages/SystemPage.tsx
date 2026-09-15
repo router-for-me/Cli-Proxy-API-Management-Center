@@ -20,6 +20,7 @@ import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
+import iconMeta from '@/assets/icons/meta.svg';
 import iconDevinLight from '@/assets/icons/devin.svg';
 import iconDevinDark from '@/assets/icons/devin-dark.svg';
 import iconOpenaiLight from '@/assets/icons/openai-light.svg';
@@ -38,6 +39,7 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   devin: { light: iconDevinLight, dark: iconDevinDark },
   gpt: { light: iconOpenaiLight, dark: iconOpenaiDark },
   claude: iconClaude,
+  meta: iconMeta,
   gemini: iconGemini,
   qwen: iconQwen,
   kimi: { light: iconKimiDark, dark: iconKimiLight },
