@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -12,6 +12,12 @@ import {
   PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
 } from './pluginResources';
+import {
+  executePluginManagementBridgeRequest,
+  normalizePluginManagementBridgeRequest,
+  pluginManagementBridgeFailure,
+  resolvePluginManagementBridgeContext,
+} from './pluginManagementBridge';
 import styles from './PluginResourcePage.module.scss';
 
 const hasStatus = (error: unknown, status: number) => isRecord(error) && error.status === status;
@@ -38,6 +44,7 @@ export function PluginResourcePage() {
   const [data, setData] = useState<PluginListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   const connected = connectionStatus === 'connected';
   const pluginID = useMemo(() => safeDecodeURIComponent(params.pluginId), [params.pluginId]);
@@ -86,6 +93,47 @@ export function PluginResourcePage() {
   }, [data?.plugins, menuIndex, pluginID]);
 
   const iframeSrc = resource ? resolvePluginAssetURL(resource.menu.path, apiBase) : '';
+  const bridgeContext = useMemo(
+    () =>
+      resource && iframeSrc
+        ? resolvePluginManagementBridgeContext(resource.pluginID, iframeSrc, apiBase)
+        : null,
+    [apiBase, iframeSrc, resource]
+  );
+
+  useLayoutEffect(() => {
+    if (!bridgeContext) return;
+
+    let active = true;
+    const handleMessage = (event: MessageEvent) => {
+      const target = frameRef.current?.contentWindow;
+      if (!target || event.source !== target || event.origin !== bridgeContext.origin) return;
+
+      const request = normalizePluginManagementBridgeRequest(event.data, bridgeContext.pluginID);
+      if (!request) return;
+
+      void executePluginManagementBridgeRequest(request)
+        .then((response) => {
+          if (active && frameRef.current?.contentWindow === target) {
+            target.postMessage(response, bridgeContext.origin);
+          }
+        })
+        .catch(() => {
+          if (active && frameRef.current?.contentWindow === target) {
+            target.postMessage(
+              pluginManagementBridgeFailure(request.requestID),
+              bridgeContext.origin
+            );
+          }
+        });
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      active = false;
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [bridgeContext]);
 
   return (
     <div className={styles.page}>
@@ -113,6 +161,7 @@ export function PluginResourcePage() {
         </div>
       ) : (
         <iframe
+          ref={frameRef}
           className={styles.frame}
           src={iframeSrc}
           title={resource.label}
