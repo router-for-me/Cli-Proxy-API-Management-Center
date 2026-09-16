@@ -15,6 +15,7 @@ import styles from './Select.module.scss';
 export interface SelectOption {
   value: string;
   label: string;
+  title?: string;
 }
 
 interface SelectProps {
@@ -290,6 +291,7 @@ export function Select({
               type="button"
               role="option"
               aria-selected={active}
+              title={opt.title}
               className={`${styles.option} ${active ? styles.optionActive : ''} ${highlighted ? styles.optionHighlighted : ''}`.trim()}
               onMouseEnter={() => setHighlightedIndex(index)}
               onKeyDown={handleKeyDown}
@@ -325,6 +327,7 @@ export function Select({
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
+          title={selected?.title}
           disabled={disabled}
         >
           <span className={`${styles.triggerText} ${isPlaceholder ? styles.placeholder : ''}`}>
