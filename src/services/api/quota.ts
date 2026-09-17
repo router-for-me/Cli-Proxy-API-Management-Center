@@ -73,9 +73,14 @@ const normalizeGroup = (value: unknown): PluginQuotaGroup | null => {
   return { displayName, buckets };
 };
 
-/** 把宿主响应收敛成面板可渲染的形状；未知字段一律丢弃。 */
+/**
+ * 把宿主响应收敛成面板可渲染的形状；未知字段一律丢弃。
+ *
+ * 非对象入参也返回同一形状（空数组而非缺字段），调用方因此不必区分「没数据」
+ * 与「数据不合法」两种空结果。
+ */
 export const normalizePluginQuotaPayload = (value: unknown): PluginQuotaData => {
-  if (!isRecord(value)) return {};
+  if (!isRecord(value)) return { summary: [], groups: [] };
   const summary = Array.isArray(value.summary)
     ? value.summary
         .map((metric) => normalizeMetric(metric))
