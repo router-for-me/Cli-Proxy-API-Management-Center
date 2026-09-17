@@ -315,6 +315,13 @@ interface MetaWindowLike {
   durationMinutes?: number;
 }
 
+interface PluginRowLike {
+  label?: string;
+  /** Remaining percent 0..100, already normalized by the generic adapter. */
+  percent?: number | null;
+  resetAtMs?: number | null;
+}
+
 export interface TimelineLaneInput {
   name: string;
   displayName: string;
@@ -518,6 +525,32 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       ...empty,
       anchorMs: chosen.resetAtMs ?? null,
       periodHours: chosen.periodHours ?? null,
+      remaining: remainingOf(chosen),
+      limits: rows
+        .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))
+        .filter((limit): limit is TimelineLimit => limit.remaining !== null),
+    };
+  }
+
+  if (provider === 'plugin') {
+    const rows = ((quota as { rows?: PluginRowLike[] }).rows ?? []).filter(
+      (row) => typeof row.resetAtMs === 'number'
+    );
+    const chosen = pickLaneWindow(rows, maxPeriodHours);
+    if (!chosen) return empty;
+
+    // The generic adapter already normalized every upstream shape to a remaining
+    // percent, so unlike the other providers there is nothing to derive here.
+    const remainingOf = (row: PluginRowLike) =>
+      typeof row.percent === 'number' ? clampPercent(Math.round(row.percent)) : null;
+
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs ?? null,
+      // The generic adapter learns a reset instant but no window length — the
+      // normalized payload carries neither a duration nor a period — so the bar
+      // is drawn from the instant instead of an invented span.
+      periodHours: null,
       remaining: remainingOf(chosen),
       limits: rows
         .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))

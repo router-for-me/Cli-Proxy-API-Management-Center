@@ -397,7 +397,8 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "filter_plugin": "外掛"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1880,5 +1881,17 @@
     "modelCatalog": {
       "notLoaded": "未載入"
     }
+  },
+  "plugin_quota": {
+    "title": "外掛額度",
+    "empty_title": "尚無外掛認證",
+    "empty_desc": "新增外掛提供方的認證檔案後即可查看額度。",
+    "idle": "點此重新整理額度",
+    "loading": "正在載入額度…",
+    "load_failed": "額度取得失敗：{{message}}",
+    "missing_auth_index": "認證檔案缺少 auth_index",
+    "empty_data": "未回傳額度資料",
+    "total_label": "總額度",
+    "group_label": "方案"
   }
 }
