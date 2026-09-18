@@ -1,0 +1,352 @@
+@use '../../styles/mixins' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: clamp(24px, 3vw, 34px);
+    letter-spacing: -0.03em;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--viz-success);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.description {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.segment,
+.segmentActive {
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 13px;
+  color: var(--text-tertiary);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.segmentActive {
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.metricControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+
+  select {
+    min-width: 140px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+  }
+}
+
+.errorBanner {
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 15px;
+  background: var(--bg-secondary);
+}
+
+.kpiLabel,
+.cardMeta {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  color: var(--text-primary);
+  font-family: $font-mono;
+  font-size: clamp(18px, 2.4vw, 28px);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  text-transform: none;
+}
+
+.chartWrap {
+  padding: 4px 2px 0;
+}
+
+.chartPlot {
+  position: relative;
+  height: 250px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+}
+
+.chartPlot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chartGridline {
+  stroke: var(--border-color);
+  stroke-dasharray: 2 2;
+  stroke-width: 0.08;
+}
+
+.chartLine {
+  fill: none;
+  stroke: var(--viz-success);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.chartHotspots {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.chartHotspot {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  cursor: crosshair;
+}
+
+.chartHotspot:focus-visible {
+  outline: 2px solid var(--viz-success);
+  outline-offset: -2px;
+}
+
+.chartTooltip {
+  position: absolute;
+  top: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 100px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 7px 9px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  font-size: 11px;
+}
+
+.chartTooltip span {
+  color: var(--viz-success);
+  font-family: $font-mono;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 2px 0;
+  color: var(--text-quaternary);
+  font-family: $font-mono;
+  font-size: 10px;
+}
+
+.emptyChart,
+.emptyTable {
+  padding: 36px 16px;
+  color: var(--text-tertiary);
+  text-align: center;
+  font-size: 13px;
+}
+
+.recordsWrap {
+  min-width: 0;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.recordsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+
+  th,
+  td {
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 9px;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 12px;
+  }
+
+  th {
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}
+
+.monoCell,
+.tokenCell,
+.accountCell {
+  font-family: $font-mono;
+  font-variant-numeric: tabular-nums;
+}
+
+.tokenCell {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modelCell,
+.secondaryCell,
+.errorCell {
+  display: block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.secondaryCell,
+.errorCell {
+  margin-top: 3px;
+  color: var(--text-quaternary);
+  font-size: 10px;
+}
+
+.errorCell {
+  max-width: 180px;
+  color: var(--danger-color);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.statusOk {
+  color: var(--viz-success);
+  background: color-mix(in srgb, var(--viz-success) 12%, transparent);
+}
+
+.statusFailed {
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+}
+
+@media (max-width: 900px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@include mobile {
+  .header,
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .header button {
+    align-self: flex-start;
+  }
+
+  .metricControl {
+    justify-content: space-between;
+  }
+
+  .metricControl select {
+    flex: 1;
+  }
+}
