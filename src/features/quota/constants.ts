@@ -9,6 +9,8 @@ export const QUOTA_TAB_ORDER: readonly QuotaProviderType[] = [
   'kimi',
   'devin',
   'meta',
+  // 通用插件额度排在内置之后：内置适配器优先匹配同一凭证。
+  'plugin',
 ];
 
 export type QuotaTabId = 'all' | QuotaProviderType;

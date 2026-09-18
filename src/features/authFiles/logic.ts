@@ -5,6 +5,7 @@
 
 import type { AuthFileItem } from '@/types';
 import { resolveAuthProvider } from '@/utils/quota';
+import { isPluginQuotaAuthFile } from '@/utils/quota/pluginQuota';
 import {
   QUOTA_PROVIDER_TYPES,
   normalizeProviderKey,
@@ -31,10 +32,16 @@ export const resolveAuthFileQuotaType = (
   if (!filter) return null;
 
   const provider = resolveAuthProvider(file);
-  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
-  if (filter !== 'all' && provider !== filter) return null;
+  if (QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) {
+    if (filter !== 'all' && provider !== filter) return null;
+    return provider as QuotaProviderType;
+  }
 
-  return provider as QuotaProviderType;
+  // 未内置的 provider：宿主标记 supports_quota 的插件凭证归入通用 plugin 额度，
+  // 否则该凭证在额度页与认证文件卡片里都没有额度区块可渲染。
+  if (!isPluginQuotaAuthFile(file)) return null;
+  if (filter !== 'all' && filter !== 'plugin') return null;
+  return 'plugin';
 };
 
 /**

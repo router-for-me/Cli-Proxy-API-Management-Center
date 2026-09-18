@@ -28,7 +28,15 @@ export type AuthFileModelItem = {
 export type AuthFileIconAsset = string | { light: string; dark: string };
 
 export type QuotaProviderType =
-  'antigravity' | 'claude' | 'codex' | 'devin' | 'kimi' | 'xai' | 'meta';
+  | 'antigravity'
+  | 'claude'
+  | 'codex'
+  | 'devin'
+  | 'kimi'
+  | 'meta'
+  | 'xai'
+  /** 未内置的 provider（插件额度）。 */
+  | 'plugin';
 export type AuthFileQuotaFilter = QuotaProviderType | 'all' | null;
 export type OAuthConfigLoadError = 'loading' | 'unsupported' | 'load' | null;
 
@@ -40,6 +48,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'devin',
   'kimi',
   'xai',
+  'plugin',
 ]);
 
 export const OAUTH_PROVIDER_PRESETS = [

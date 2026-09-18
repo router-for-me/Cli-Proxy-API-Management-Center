@@ -397,7 +397,8 @@
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新该认证文件的额度",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "filter_plugin": "插件"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -1854,5 +1855,17 @@
     "modelCatalog": {
       "notLoaded": "未加载"
     }
+  },
+  "plugin_quota": {
+    "title": "插件额度",
+    "empty_title": "暂无插件认证",
+    "empty_desc": "添加插件提供方的认证文件后即可查看额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度…",
+    "load_failed": "额度获取失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "未返回额度数据",
+    "total_label": "总额度",
+    "group_label": "套餐"
   }
 }

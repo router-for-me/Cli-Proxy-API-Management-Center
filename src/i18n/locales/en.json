@@ -399,7 +399,8 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "filter_plugin": "Plugin"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -1856,5 +1857,17 @@
     "modelCatalog": {
       "notLoaded": "Not loaded"
     }
+  },
+  "plugin_quota": {
+    "title": "Plugin quota",
+    "empty_title": "No plugin credentials",
+    "empty_desc": "Add a credential from a plugin provider to see its quota.",
+    "idle": "Click to load quota",
+    "loading": "Loading quota…",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Credential has no auth_index",
+    "empty_data": "No quota data returned",
+    "total_label": "Total quota",
+    "group_label": "Package"
   }
 }

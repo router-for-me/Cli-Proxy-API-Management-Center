@@ -125,7 +125,8 @@ export function collectQuotaRowInstants(
     return collectRows(buckets, 'bucket');
   }
 
-  if (provider === 'kimi') {
+  // kimi 与通用插件额度都把窗口折成 rows，读取方式一致。
+  if (provider === 'kimi' || provider === 'plugin') {
     return collectRows((quota as { rows?: WindowLike[] }).rows ?? [], 'row');
   }
 

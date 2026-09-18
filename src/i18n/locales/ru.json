@@ -402,7 +402,8 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "filter_plugin": "Плагин"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -1850,5 +1851,17 @@
     "modelCatalog": {
       "notLoaded": "Не загружено"
     }
+  },
+  "plugin_quota": {
+    "title": "Квота плагина",
+    "empty_title": "Нет учётных данных плагина",
+    "empty_desc": "Добавьте учётные данные провайдера-плагина, чтобы видеть квоту.",
+    "idle": "Нажмите, чтобы загрузить квоту",
+    "loading": "Загрузка квоты…",
+    "load_failed": "Не удалось получить квоту: {{message}}",
+    "missing_auth_index": "В учётных данных нет auth_index",
+    "empty_data": "Квота не возвращена",
+    "total_label": "Общая квота",
+    "group_label": "Пакет"
   }
 }
