@@ -2,8 +2,56 @@ import { afterEach, expect, spyOn, test } from 'bun:test';
 import { META_CONFIG } from '@/features/quota/providers/meta/data';
 import { authFilesApi } from '@/services/api/authFiles';
 import { apiCallApi } from '@/services/api/apiCall';
+import { apiClient } from '@/services/api/client';
+import { metaQuotaResponse } from './fixtures/metaQuota';
 import { useQuotaStore } from '@/stores/useQuotaStore';
 import i18n from '@/i18n';
+
+for (const hasUsage of [true, false]) {
+  test(`Meta adapter uses /api-call with ${hasUsage ? 'populated' : 'missing'} usage`, async () => {
+    const download = spyOn(authFilesApi, 'downloadText').mockResolvedValue(
+      '{"dca_token":"dca:fixture-only","api_key":"LLM|unused"}'
+    );
+    const post = spyOn(apiClient, 'post').mockResolvedValue({
+      status_code: 200,
+      header: {},
+      body: JSON.stringify({
+        ...metaQuotaResponse,
+        subs_usage: hasUsage ? metaQuotaResponse.subs_usage : undefined,
+      }),
+    });
+    try {
+      const data = await META_CONFIG.fetchQuota(file, i18n.t);
+      expect(post).toHaveBeenCalledWith(
+        '/api-call',
+        {
+          authIndex: 'fixture-index',
+          method: 'POST',
+          url: 'https://api.meta.ai/muse-code/key',
+          header: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer dca:fixture-only',
+            'x-api-version': '1.0.0',
+          },
+          data: '{}',
+        },
+        undefined
+      );
+      const state = META_CONFIG.buildSuccessState(data);
+      expect(state.status).toBe('success');
+      expect(state.data?.windows.map((window) => window.usedPercent)).toEqual(
+        hasUsage ? [2, 0] : [null, null]
+      );
+      for (const secret of ['dca:', 'LLM|', 'fixture@example.invalid', 'Fixture User']) {
+        expect(JSON.stringify(state)).not.toContain(secret);
+      }
+    } finally {
+      download.mockRestore();
+      post.mockRestore();
+    }
+  });
+}
 
 const file = { name: 'meta-fixture.json', type: 'meta', authIndex: 'fixture-index' };
 afterEach(() => useQuotaStore.getState().clearQuotaCache());

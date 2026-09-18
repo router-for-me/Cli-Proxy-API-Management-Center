@@ -194,12 +194,40 @@ describe('Meta Muse DCA quota request', () => {
     }
   });
 
-  test('rejects responses without quota fields', async () => {
-    const fetchQuota = createMetaQuotaFetcher({
-      ...defaults,
-      request: async () => result(200, { api_key: 'fixture-only' }),
-    });
-    await expectMetaError(fetchQuota(file('1')), 'empty_data');
+  test('returns unknown windows for successful responses without quota fields', async () => {
+    for (const body of [{}, { api_key: 'fixture-only' }, { subs_usage: null }]) {
+      const fetchQuota = createMetaQuotaFetcher({
+        ...defaults,
+        request: async () => result(200, body),
+      });
+      expect(await fetchQuota(file('1'))).toEqual({
+        windows: [
+          { id: 'window', usedPercent: null },
+          { id: 'weekly', usedPercent: null },
+        ],
+      });
+    }
+  });
+
+  test('keeps malformed responses distinct from unknown quota without exposing the body', async () => {
+    for (const body of ['<html>fixture-secret</html>', '{bad-json', null, [], 42]) {
+      const fetchQuota = createMetaQuotaFetcher({
+        ...defaults,
+        request: async () => result(200, body),
+      });
+      const error = await expectMetaError(fetchQuota(file('1')), 'invalid_response');
+      expect(JSON.stringify(error)).not.toContain('fixture-secret');
+    }
+  });
+
+  test('does not treat unsuccessful or invalid status codes as unknown quota', async () => {
+    for (const status of [0, NaN, 401, 403, 429, 500]) {
+      const fetchQuota = createMetaQuotaFetcher({
+        ...defaults,
+        request: async () => result(status, {}),
+      });
+      await expectMetaError(fetchQuota(file('1')), 'request_failed', status);
+    }
   });
 
   test('parses bodyText when the parsed body is absent', async () => {

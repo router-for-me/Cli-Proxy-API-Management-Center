@@ -35,7 +35,7 @@ export function MetaQuotaBody({ quota, classes }: QuotaBodyProps<MetaQuotaState>
           )}
         </div>
       )}
-      {data.windows.length === 0 && (
+      {data.windows.every((window) => window.usedPercent === null) && (
         <div className={classes.quotaMessage}>{t('meta_quota.empty_data')}</div>
       )}
       {data.windows.map((window, index) => {

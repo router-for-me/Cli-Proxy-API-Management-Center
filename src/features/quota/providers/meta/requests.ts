@@ -1,6 +1,6 @@
 import type { AuthFileItem, MetaQuotaData } from '@/types';
 import type { ApiCallRequest, ApiCallResult } from '@/services/api/apiCall';
-import { hasMetaQuotaData, parseMetaQuotaPayload } from '@/services/api/metaQuota';
+import { parseMetaQuotaPayload } from '@/services/api/metaQuota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 
 export const META_MUSE_QUOTA_URL = 'https://api.meta.ai/muse-code/key';
@@ -12,7 +12,7 @@ export type MetaQuotaErrorCode =
   | 'invalid_auth_file'
   | 'download_failed'
   | 'stale_request'
-  | 'empty_data'
+  | 'invalid_response'
   | 'request_failed';
 
 export class MetaQuotaError extends Error {
@@ -108,12 +108,12 @@ export function createMetaQuotaFetcher(deps: MetaQuotaDependencies) {
 
     // Never derive an error message from body/bodyText: the endpoint can echo
     // api_key and other PII even on errors.
-    if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (!(response.statusCode >= 200 && response.statusCode < 300)) {
       throw new MetaQuotaError('request_failed', response.statusCode);
     }
 
     const quota = parseMetaQuotaPayload(response.body ?? response.bodyText);
-    if (!hasMetaQuotaData(quota)) throw new MetaQuotaError('empty_data');
+    if (!quota) throw new MetaQuotaError('invalid_response');
     return quota;
   };
 }

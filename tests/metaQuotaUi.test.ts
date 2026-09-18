@@ -6,6 +6,8 @@ import i18n from '@/i18n';
 import type { AuthFileItem, MetaQuotaState } from '@/types';
 import { MetaQuotaBody } from '@/features/quota/providers/meta/MetaQuotaBody';
 import { META_CONFIG } from '@/features/quota/providers/meta/data';
+import { parseMetaQuotaPayload } from '@/services/api/metaQuota';
+import { metaQuotaResponse } from './fixtures/metaQuota';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import { classifyQuotaFiles, buildTabCounts } from '@/features/quota/logic';
 import { QUOTA_PROVIDER_TYPES } from '@/features/authFiles/constants';
@@ -52,6 +54,7 @@ describe('Muse quota UI integration', () => {
         'stale_request',
         'empty_data',
         'request_failed',
+        'invalid_response',
         'plan',
         'active',
         'inactive',
@@ -97,6 +100,33 @@ describe('Muse quota UI integration', () => {
     expect(markup).toContain(i18n.t('meta_quota.unknown'));
     expect(markup.match(/role="meter"/g)).toHaveLength(1);
     expect(markup).toContain('aria-valuenow="0"');
+  });
+
+  test('renders the key endpoint response as 98% window and 100% weekly remaining', () => {
+    const data = parseMetaQuotaPayload(metaQuotaResponse)!;
+    const markup = renderToStaticMarkup(
+      createElement(MetaQuotaBody, { quota: META_CONFIG.buildSuccessState(data), classes })
+    );
+    expect(markup).toContain('Muse Code Everyday Usage');
+    expect(markup).toContain('aria-valuenow="98"');
+    expect(markup).toContain('aria-valuenow="100"');
+    expect(markup).not.toContain(i18n.t('meta_quota.empty_data'));
+    expect(markup).not.toContain('fixture@example.invalid');
+    expect(markup).not.toContain('LLM|');
+  });
+
+  test('missing usage shows unknown windows and a first-request hint, not full meters', () => {
+    const data = parseMetaQuotaPayload({ api_key: 'LLM|fixture-only' })!;
+    const quota = META_CONFIG.buildSuccessState(data);
+    expect(quota.status).toBe('success');
+    const markup = renderToStaticMarkup(createElement(MetaQuotaBody, { quota, classes }));
+    expect(markup).toContain(i18n.t('meta_quota.empty_data'));
+    expect(markup).toContain(i18n.t('meta_quota.window'));
+    expect(markup).toContain(i18n.t('meta_quota.weekly'));
+    expect(markup).toContain(i18n.t('meta_quota.unknown'));
+    expect(markup).not.toContain('role="meter"');
+    expect(markup).not.toContain('width:100%');
+    expect(markup).not.toContain('LLM|');
   });
 
   test('invalidates file-scoped and session caches and rejects stale writes', () => {

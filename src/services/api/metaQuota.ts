@@ -1,9 +1,7 @@
 import type { MetaQuotaData, MetaQuotaWindow } from '@/types';
+import { isRecord } from '@/utils/helpers';
 
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+const asRecord = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
 
 const parseFiniteNumber = (value: unknown): number | null => {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -44,17 +42,21 @@ const parseWindow = (
 /**
  * Parse only fields used by the quota UI. The upstream response may also carry
  * api_key and PII; retaining the source object (or spreading it) here is forbidden.
+ * A valid object without subs_usage is a successful observation with unknown quota
+ * (for example, before the account's first request), not a zero or a request error.
+ * Invalid response bodies return null so transport/protocol errors stay distinct.
  */
-export function parseMetaQuotaPayload(payload: unknown): MetaQuotaData {
+export function parseMetaQuotaPayload(payload: unknown): MetaQuotaData | null {
   if (typeof payload === 'string') {
     try {
       payload = JSON.parse(payload);
     } catch {
-      payload = null;
+      return null;
     }
   }
+  if (!isRecord(payload)) return null;
 
-  const root = asRecord(payload);
+  const root = payload;
   const usage = asRecord(root.subs_usage);
   const explicitPlan = typeof root.subs_tier_name === 'string' ? root.subs_tier_name.trim() : '';
   const usagePlan = typeof usage.tier === 'string' ? usage.tier.trim() : '';
@@ -71,13 +73,3 @@ export function parseMetaQuotaPayload(payload: unknown): MetaQuotaData {
     ],
   };
 }
-
-export const hasMetaQuotaData = (quota: MetaQuotaData): boolean =>
-  quota.planName !== undefined ||
-  quota.isSubscriptionActive !== undefined ||
-  quota.windows.some(
-    (window) =>
-      window.usedPercent !== null ||
-      window.resetAt !== undefined ||
-      window.durationMinutes !== undefined
-  );
