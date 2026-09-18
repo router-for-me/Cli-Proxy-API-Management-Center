@@ -1,6 +1,6 @@
 @use '../../../styles/mixins' as *;
 
-/* 「支持的模型」弹窗：可点击复制的 mono 模型清单 */
+/* Credential model list with independent copy and test actions. */
 
 .list {
   display: flex;
@@ -13,28 +13,36 @@
 
 .item {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 8px 10px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
   border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition:
-    background-color $transition-fast,
-    border-color $transition-fast,
-    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out);
-
-  &:active {
-    transform: scale(0.99);
-  }
+  border: 1px solid var(--border-color);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .item:hover {
-    background: var(--bg-tertiary);
-    border-color: color-mix(in srgb, var(--border-color) 70%, transparent);
-  }
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copyButton {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.copyButton:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
 }
 
 .itemExcluded {
@@ -79,12 +87,24 @@
   white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .item {
-    transition: none;
-  }
+.testSuccess,
+.testFailure {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
 
-  .item:active {
-    transform: none;
-  }
+.testSuccess {
+  color: var(--success-badge-text);
+}
+.testFailure {
+  color: var(--failure-badge-text);
+}
+.testSuccess:empty,
+.testFailure:empty {
+  display: none;
+}
+.imageHint {
+  color: var(--text-tertiary);
+  font-size: 11px;
 }

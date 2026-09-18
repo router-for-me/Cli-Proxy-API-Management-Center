@@ -103,6 +103,8 @@ export function AuthFilesPage() {
     modelsLoading,
     modelsList,
     modelsFileName,
+    modelsAuthIndex,
+    modelsAuthDisabled,
     modelsFileType,
     modelsError,
     showModels,
@@ -772,6 +774,8 @@ export function AuthFilesPage() {
       <AuthFileModelsModal
         open={modelsModalOpen}
         fileName={modelsFileName}
+        authIndex={modelsAuthIndex}
+        disabled={disableControls || modelsAuthDisabled}
         fileType={modelsFileType}
         loading={modelsLoading}
         error={modelsError}
