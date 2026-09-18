@@ -25,6 +25,13 @@ describe('resolvePlanTier', () => {
     expect(resolvePlanTier('pro_lite')).toBe('premium');
   });
 
+  test('recognizes Business Premium without promoting other business entitlements', () => {
+    expect(resolvePlanTier('self_serve_business_prolite')).toBe('premium');
+    expect(resolvePlanTier('  SELF_SERVE_BUSINESS_PROLITE  ')).toBe('premium');
+    expect(resolvePlanTier('self_serve_business_usage_based')).toBe('plain');
+    expect(resolvePlanTier('self_serve_business_prolite_future')).toBe('plain');
+  });
+
   test('maps ordinary and unknown plans to plain', () => {
     expect(resolvePlanTier('plus')).toBe('plain');
     expect(resolvePlanTier('team')).toBe('plain');

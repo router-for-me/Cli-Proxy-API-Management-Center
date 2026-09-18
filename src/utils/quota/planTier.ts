@@ -9,7 +9,13 @@ import { normalizePlanType } from './parsers';
  */
 export type CodexPlanTier = 'elite' | 'premium' | 'plain';
 
-export const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
+export const PREMIUM_CODEX_PLAN_TYPES = new Set([
+  'pro',
+  'prolite',
+  'pro-lite',
+  'pro_lite',
+  'self_serve_business_prolite',
+]);
 
 // Pro 20x（plan=pro）在金色 premium 之上再进一档：液态铂金徽章，
 // 见 QuotaPage.module.scss 的 .elitePlanValue。
