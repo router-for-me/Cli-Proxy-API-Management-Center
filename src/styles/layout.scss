@@ -824,13 +824,13 @@
     padding: 0;
     gap: 0;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--bg-secondary);
 
     .page-transition,
     .page-transition__layer {
       height: 100%;
       gap: 0;
-      background: #ffffff;
+      background: var(--bg-secondary);
     }
   }
 }

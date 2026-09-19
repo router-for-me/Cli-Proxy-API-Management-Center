@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { pluginsApi } from '@/services/api';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useThemeStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginListResponse } from '@/types';
 import {
@@ -34,10 +34,12 @@ export function PluginResourcePage() {
   const params = useParams<{ pluginId: string; menuIndex: string }>();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
   const [data, setData] = useState<PluginListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   const connected = connectionStatus === 'connected';
   const pluginID = useMemo(() => safeDecodeURIComponent(params.pluginId), [params.pluginId]);
@@ -87,6 +89,10 @@ export function PluginResourcePage() {
 
   const iframeSrc = resource ? resolvePluginAssetURL(resource.menu.path, apiBase) : '';
 
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [iframeSrc]);
+
   return (
     <div className={styles.page}>
       {loading ? (
@@ -112,13 +118,28 @@ export function PluginResourcePage() {
           />
         </div>
       ) : (
-        <iframe
-          className={styles.frame}
-          src={iframeSrc}
-          title={resource.label}
-          referrerPolicy="no-referrer"
-          allow="clipboard-read; clipboard-write"
-        />
+        <div className={styles.frameContainer}>
+          {!iframeLoaded && (
+            <div className={styles.loadingOverlay}>
+              <div className={styles.statusPanel}>{t('common.loading')}</div>
+            </div>
+          )}
+          <iframe
+            className={styles.frame}
+            src={iframeSrc}
+            title={resource.label}
+            referrerPolicy="no-referrer"
+            allow="clipboard-read; clipboard-write"
+            allowTransparency={true}
+            onLoad={() => setIframeLoaded(true)}
+            style={{
+              backgroundColor: 'var(--bg-secondary)',
+              colorScheme: resolvedTheme === 'dark' ? 'dark' : 'light',
+              opacity: iframeLoaded ? 1 : 0,
+              transition: 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+          />
+        </div>
       )}
     </div>
   );
