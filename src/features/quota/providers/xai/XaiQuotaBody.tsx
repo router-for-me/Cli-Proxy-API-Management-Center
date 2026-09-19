@@ -133,9 +133,10 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
     billing.periodType === 'weekly' &&
     (weeklyUsed !== null || Boolean(billing.periodEnd) || billing.productUsage.length > 0);
   const hasMonthlyData =
-    billing.monthlyLimitCents !== null ||
-    billing.usedCents !== null ||
-    Boolean(billing.billingPeriodEnd);
+    (billing.monthlyLimitCents !== null ||
+      billing.usedCents !== null ||
+      Boolean(billing.billingPeriodEnd)) &&
+    !(hasWeeklyData && billing.monthlyLimitCents === 0 && billing.usedCents === 0);
 
   return (
     <>
@@ -156,16 +157,18 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
             <span className={classes.quotaModel}>{t('xai_quota.weekly_limit')}</span>
             <div className={classes.quotaMeta}>
               <span className={classes.quotaPercent}>
-                {t('xai_quota.used_percent', {
-                  percent: formatXaiPercent(weeklyUsed),
-                })}
+                {weeklyUsed === null
+                  ? t('xai_quota.usage_unavailable')
+                  : t('xai_quota.used_percent', { percent: formatXaiPercent(weeklyUsed) })}
               </span>
               {weeklyResetDisplay && (
                 <QuotaResetLabel display={weeklyResetDisplay} classes={classes} soon={weeklySoon} />
               )}
             </div>
           </div>
-          <QuotaMeter percent={weeklyRemaining} classes={classes} index={0} />
+          {weeklyRemaining !== null && (
+            <QuotaMeter percent={weeklyRemaining} classes={classes} index={0} />
+          )}
         </div>
       )}
       {billing.productUsage.map((item, index) => {
