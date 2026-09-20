@@ -41,8 +41,7 @@ export const normalizePluginQuotaSummary = (summary: PluginQuotaPayload['summary
 export const isPluginQuotaFile = (file: AuthFileItem): boolean => {
   const rawSupported = file.supportsQuota ?? file['supports_quota'];
   const supported = rawSupported === true || rawSupported === 'true' || rawSupported === '1';
-  const rawProvider = file.quotaProvider ?? file['quota_provider'];
-  return supported && typeof rawProvider === 'string' && rawProvider.trim() !== '';
+  return supported;
 };
 
 const normalizeSubscription = (
@@ -65,10 +64,9 @@ export const fetchPluginQuota = async (
   if (!authIndex) throw new Error(t('plugin_quota.missing_auth_index'));
 
   const provider = String(file.quotaProvider ?? file['quota_provider'] ?? '').trim();
-  if (!provider) throw new Error(t('plugin_quota.missing_provider'));
 
   const payload = await apiClient.post<PluginQuotaPayload>('/quota/fetch', {
-    provider,
+    ...(provider ? { provider } : {}),
     auth_index: authIndex,
   });
   return {

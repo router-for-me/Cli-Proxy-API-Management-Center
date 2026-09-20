@@ -36,9 +36,8 @@ export const resolveAuthFileQuotaType = (
     return provider as QuotaProviderType;
   }
 
-  const quotaProvider = String(file.quotaProvider ?? file['quota_provider'] ?? '').trim();
   const supportsQuota = file.supportsQuota ?? file['supports_quota'];
-  if (!(supportsQuota === true || supportsQuota === 'true' || supportsQuota === '1') || !quotaProvider) {
+  if (!(supportsQuota === true || supportsQuota === 'true' || supportsQuota === '1')) {
     return null;
   }
   if (filter !== 'all' && filter !== 'plugin' && provider !== filter) return null;

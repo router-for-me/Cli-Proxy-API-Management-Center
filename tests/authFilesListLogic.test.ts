@@ -53,6 +53,15 @@ describe('resolveAuthFileQuotaType', () => {
     expect(resolveAuthFileQuotaType(kiro, 'all')).toBe('plugin');
     expect(resolveAuthFileQuotaType(kiro, 'kiro')).toBe('plugin');
   });
+
+  test('exposes a probe-only plugin quota without a provider identifier', () => {
+    expect(resolveAuthFileQuotaType(authFile({ type: 'kiro', supportsQuota: true }), 'all')).toBe(
+      'plugin'
+    );
+    expect(
+      resolveAuthFileQuotaType(authFile({ type: 'kiro', supportsQuota: true }), 'plugin')
+    ).toBe('plugin');
+  });
 });
 
 describe('matchesAuthFileSearch', () => {

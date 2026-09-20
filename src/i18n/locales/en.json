@@ -444,7 +444,6 @@
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
     "missing_auth_index": "Auth file missing auth_index",
-    "missing_provider": "Auth file missing quota provider",
     "empty_data": "No quota data available",
     "plan_label": "Plan",
     "remaining_percent": "{{percent}}% remaining"

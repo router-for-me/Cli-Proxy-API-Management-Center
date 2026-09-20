@@ -6,9 +6,7 @@ const QUOTA_IDENTITY_SEPARATOR = '\0';
 
 const isPluginQuotaFile = (file: AuthFileItem): boolean => {
   const supported = file.supportsQuota ?? file['supports_quota'];
-  const provider = file.quotaProvider ?? file['quota_provider'];
-  return (supported === true || supported === 'true' || supported === '1') &&
-    typeof provider === 'string' && provider.trim() !== '';
+  return supported === true || supported === 'true' || supported === '1';
 };
 
 /**
