@@ -336,7 +336,7 @@ $lane-width: 210px;
   color: var(--text-quaternary);
 }
 
-// Consumed portion of the current window, drawn behind its label.
+// Remaining quota in the current window, matching the percentage in its label.
 .windowFill {
   position: absolute;
   left: 0;

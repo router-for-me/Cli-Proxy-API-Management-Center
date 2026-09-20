@@ -550,10 +550,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme, onEditR
                 {/* Only the API-reported current window has meaningful usage;
                     projected windows intentionally have no fill. */}
                 {window.remaining !== null && (
-                  <span
-                    className={styles.windowFill}
-                    style={{ width: `${100 - window.remaining}%` }}
-                  />
+                  <span className={styles.windowFill} style={{ width: `${window.remaining}%` }} />
                 )}
                 {showLabel && (
                   <span className={styles.windowLabel}>
