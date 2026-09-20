@@ -12,7 +12,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import { getPluginTitle, resolvePluginAssetURL } from '@/features/plugins/pluginResources';
-import { getKimiAffiliateUrl } from '@/features/providers/kimi';
+import { getKimiCodingPlanUrl } from '@/features/providers/kimi';
 import type { PluginListEntry } from '@/types';
 import { createOAuthAttempts, type OAuthAttempt } from './oauthAttempts';
 import { validateDevinCallback } from './devinOAuth';
@@ -685,7 +685,7 @@ export function OAuthPage() {
               <Button
                 onClick={() =>
                   window.open(
-                    getKimiAffiliateUrl(i18n.resolvedLanguage ?? i18n.language),
+                    getKimiCodingPlanUrl(i18n.resolvedLanguage ?? i18n.language),
                     '_blank',
                     'noopener,noreferrer'
                   )

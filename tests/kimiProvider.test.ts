@@ -6,6 +6,8 @@ import {
 import {
   KIMI_ANTHROPIC_BASE_URL,
   KIMI_CHINESE_AFFILIATE_URL,
+  KIMI_CODING_PLAN_CHINESE_URL,
+  KIMI_CODING_PLAN_INTERNATIONAL_URL,
   KIMI_DOMESTIC_ANTHROPIC_BASE_URL,
   KIMI_DOMESTIC_BASE_URL,
   KIMI_DOMESTIC_OPENAI_BASE_URL,
@@ -14,6 +16,7 @@ import {
   KIMI_OPENAI_BASE_URL,
   buildKimiRaw,
   getKimiAffiliateUrl,
+  getKimiCodingPlanUrl,
   getKimiProtocolUrls,
   isKimiClaudeProvider,
   isKimiCodexProvider,
@@ -100,6 +103,13 @@ describe('Kimi provider', () => {
     expect(getKimiAffiliateUrl('zh-TW')).toBe(KIMI_CHINESE_AFFILIATE_URL);
     expect(getKimiAffiliateUrl('en')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
     expect(getKimiAffiliateUrl('ru')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
+  });
+
+  test('points the OAuth sign-up link at the Coding Plan site for each locale', () => {
+    expect(getKimiCodingPlanUrl('zh-CN')).toBe(KIMI_CODING_PLAN_CHINESE_URL);
+    expect(getKimiCodingPlanUrl('zh-TW')).toBe(KIMI_CODING_PLAN_CHINESE_URL);
+    expect(getKimiCodingPlanUrl('en')).toBe(KIMI_CODING_PLAN_INTERNATIONAL_URL);
+    expect(getKimiCodingPlanUrl('ru')).toBe(KIMI_CODING_PLAN_INTERNATIONAL_URL);
   });
 
   test('uses the OAuth-style theme surface for its provider icon', () => {

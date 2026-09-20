@@ -11,6 +11,8 @@ export const KIMI_ANTHROPIC_BASE_URL = `${KIMI_LEGACY_OPENAI_BASE_URL}/anthropic
 export const KIMI_DOMESTIC_ANTHROPIC_BASE_URL = `${KIMI_DOMESTIC_BASE_URL}/anthropic`;
 export const KIMI_CHINESE_AFFILIATE_URL = 'https://platform.kimi.com/?aff=cliproxyapi';
 export const KIMI_INTERNATIONAL_AFFILIATE_URL = 'https://platform.kimi.ai/?aff=cliproxyapi';
+export const KIMI_CODING_PLAN_CHINESE_URL = 'https://www.kimi.com/code?aff=cliproxyapi';
+export const KIMI_CODING_PLAN_INTERNATIONAL_URL = 'https://www.kimi.ai/code?aff=cliproxyapi';
 
 export const KIMI_BASE_URL_OPTIONS = [
   {
@@ -39,6 +41,11 @@ export const getKimiAffiliateUrl = (language: string | undefined | null): string
   language?.toLowerCase().startsWith('zh')
     ? KIMI_CHINESE_AFFILIATE_URL
     : KIMI_INTERNATIONAL_AFFILIATE_URL;
+
+export const getKimiCodingPlanUrl = (language: string | undefined | null): string =>
+  language?.toLowerCase().startsWith('zh')
+    ? KIMI_CODING_PLAN_CHINESE_URL
+    : KIMI_CODING_PLAN_INTERNATIONAL_URL;
 
 const normalizeText = (value: string | undefined | null): string =>
   String(value ?? '')
