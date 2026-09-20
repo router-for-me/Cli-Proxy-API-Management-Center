@@ -13,7 +13,7 @@ import type {
   CodexQuotaWindow,
   CodexUsagePayload,
 } from '@/types';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
 import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
   CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
@@ -418,14 +418,8 @@ const createCodexRedeemRequestId = (): string => {
 
 const consumeCodexRateLimitResetCredit = async (
   file: AuthFileItem,
-  t: TFunction
+  authIndex: string
 ): Promise<void> => {
-  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndex(rawAuthIndex);
-  if (!authIndex) {
-    throw new Error(t('codex_quota.missing_auth_index'));
-  }
-
   const requestHeader = buildCodexRequestHeader(file);
 
   const result = await apiCallApi.request({
@@ -443,8 +437,24 @@ const consumeCodexRateLimitResetCredit = async (
   }
 };
 
+/**
+ * Auth indexes whose credit was redeemed but whose gateway cooldown clear failed.
+ * A retry resumes the clear instead of spending a second credit. In-memory only:
+ * after a reload the next reset redeems again.
+ */
+const pendingGatewayResets = new Set<string>();
+
 const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
-  await consumeCodexRateLimitResetCredit(file, t);
+  const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+  if (!authIndex) {
+    throw new Error(t('codex_quota.missing_auth_index'));
+  }
+  if (!pendingGatewayResets.has(authIndex)) {
+    await consumeCodexRateLimitResetCredit(file, authIndex);
+    pendingGatewayResets.add(authIndex);
+  }
+  await authFilesApi.resetQuota(authIndex);
+  pendingGatewayResets.delete(authIndex);
   return fetchCodexQuota(file, t);
 };
 
