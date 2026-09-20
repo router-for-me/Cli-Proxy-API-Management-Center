@@ -374,6 +374,7 @@
     "priority_placeholder": "e.g. 10 or -1",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
     "weight_label": "Scheduling weight (weight)",
+    "weight_tooltip": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable weighted round robin for it to take effect.",
     "weight_hint": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable <settingsLink>weighted round robin</settingsLink> for it to take effect.",
     "weight_invalid_integer": "Weight must be an integer.",
     "weight_invalid_max": "Weight cannot exceed 1,000,000.",

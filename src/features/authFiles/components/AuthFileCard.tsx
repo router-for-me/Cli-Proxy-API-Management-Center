@@ -222,7 +222,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
             <span className={styles.metaDivider} aria-hidden="true">
               ·
             </span>
-            <span className={styles.metaWeight} title={t('auth_files.weight_hint')}>
+            <span className={styles.metaWeight} title={t('auth_files.weight_tooltip')}>
               <span className={styles.metaMetricLabel}>{t('auth_files.weight_display')}</span>
               <span>{weightValue}</span>
             </span>

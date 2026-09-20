@@ -32,6 +32,29 @@ describe('auth file card presentation contract', () => {
     expect(footer).toContain('!isRuntimeOnly &&');
   });
 
+  test('uses a plain-text weight tooltip while preserving the details link', () => {
+    expect(source).toContain("title={t('auth_files.weight_tooltip')}");
+    expect(source).not.toContain("title={t('auth_files.weight_hint')}");
+    const detailsSource = readFileSync(
+      new URL('../src/features/authFiles/components/AuthFileDetailsSheet.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(detailsSource).toContain('i18nKey="auth_files.weight_hint"');
+
+    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
+      const { auth_files: messages } = JSON.parse(
+        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
+      ) as { auth_files: Record<string, string> };
+      expect(messages.weight_tooltip).toBeTruthy();
+      expect(messages.weight_tooltip).not.toMatch(/<[^>]+>/);
+      expect(messages.weight_hint).toContain('<settingsLink>');
+      expect(messages.weight_hint).toContain('</settingsLink>');
+      expect(messages.weight_tooltip).toBe(
+        messages.weight_hint.replace(/<\/?settingsLink>/g, '')
+      );
+    }
+  });
+
   test('retains individual management actions and warning detail', () => {
     for (const handler of [
       'onShowModels(file)',
