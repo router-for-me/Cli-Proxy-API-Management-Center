@@ -107,12 +107,42 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(markup).not.toContain('Usage unavailable from xAI');
   });
 
-  test('shows the monthly row for a nonzero limit', () => {
-    const markup = render(
-      quotaFor(weeklyConfig(), monthlyConfig({ monthlyLimit: { val: 15000 } }))
+  test.each([0, 3000])('does not use monthly spending %i as weekly usage', (used) => {
+    const quota = quotaFor(
+      weeklyConfig(),
+      monthlyConfig({ monthlyLimit: { val: 15000 }, used: { val: used } })
     );
 
+    expect(quota.billing?.periodType).toBe('weekly');
+    expect(quota.billing?.usagePercent).toBeNull();
+    expect(quota.billing?.usedPercent).toBe((used / 15000) * 100);
+
+    const markup = render(quota);
     expect(markup).toContain('Monthly credits');
+    expect(markup).toContain('Usage unavailable from xAI');
+    expect(markup).toContain(formatQuotaResetTime(WEEKLY_PERIOD_END));
+  });
+
+  test.each([0, 37])('preserves explicit weekly usage %i with monthly spending', (percent) => {
+    const quota = quotaFor(
+      weeklyConfig({ creditUsagePercent: percent }),
+      monthlyConfig({ monthlyLimit: { val: 15000 }, used: { val: 3000 } })
+    );
+
+    expect(quota.billing?.usagePercent).toBe(percent);
+    expect(quota.billing?.usedPercent).toBe(20);
+    expect(render(quota)).toContain(`Used ${percent}%`);
+  });
+
+  test('preserves monthly-only usage', () => {
+    const quota = quotaFor(
+      null,
+      monthlyConfig({ monthlyLimit: { val: 15000 }, used: { val: 3000 } })
+    );
+
+    expect(quota.billing?.periodType).toBe('monthly');
+    expect(quota.billing?.usagePercent).toBe(20);
+    expect(render(quota)).toContain('Monthly credits');
   });
 
   test('shows the monthly row when the limit is zero but usage is nonzero', () => {
