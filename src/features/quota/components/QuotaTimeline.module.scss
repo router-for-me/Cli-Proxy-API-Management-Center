@@ -204,6 +204,50 @@ $lane-width: 210px;
   background: var(--count-badge-bg, var(--bg-tertiary));
 }
 
+.editReset {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text-quaternary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    color $transition-fast,
+    background $transition-fast,
+    border-color $transition-fast;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-color: var(--border-hover);
+  }
+
+  &[data-active='1'] {
+    color: var(--provider-accent);
+    background: color-mix(in srgb, var(--provider-accent) 12%, transparent);
+    border-color: color-mix(in srgb, var(--provider-accent) 32%, transparent);
+  }
+}
+
+.overrideForm {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
 .laneLimits {
   display: flex;
   flex-wrap: wrap;

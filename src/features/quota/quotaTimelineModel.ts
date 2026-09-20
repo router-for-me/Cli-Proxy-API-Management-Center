@@ -58,6 +58,8 @@ export interface TimelineLane {
   remaining: number | null;
   limits: TimelineLimit[];
   resetCredits: TimelineResetCredit[];
+  /** Whether the weekly anchor was replaced by a browser-local operator value. */
+  hasManualResetOverride: boolean;
 }
 
 /** One drawn bar: a single window occurrence within the visible span. */
@@ -326,6 +328,8 @@ export interface TimelineLaneInput {
    * shorter one degenerates into slivers.
    */
   maxPeriodHours?: number;
+  /** Browser-local override for the standard Codex weekly reset only. */
+  weeklyResetOverrideMs?: number | null;
 }
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
@@ -343,7 +347,7 @@ const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
  * scheduled", which is the truth.
  */
 export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
-  const { name, displayName, provider, quota, maxPeriodHours } = input;
+  const { name, displayName, provider, quota, maxPeriodHours, weeklyResetOverrideMs } = input;
   const empty: TimelineLane = {
     name,
     displayName,
@@ -353,6 +357,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     remaining: null,
     limits: [],
     resetCredits: [],
+    hasManualResetOverride: false,
   };
 
   if (!quota || quota.status !== 'success') return empty;
@@ -381,6 +386,13 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
         : undefined;
     const chosen = preferredCodexWindow ?? pickLaneWindow(windows, maxPeriodHours);
     if (!chosen) return empty;
+    const manualResetAtMs =
+      provider === 'codex' &&
+      chosen.id === 'weekly' &&
+      typeof weeklyResetOverrideMs === 'number' &&
+      Number.isFinite(weeklyResetOverrideMs)
+        ? weeklyResetOverrideMs
+        : null;
 
     const resetCredits =
       provider === 'codex'
@@ -402,7 +414,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
 
     return {
       ...empty,
-      anchorMs: chosen.resetAtMs ?? null,
+      anchorMs: manualResetAtMs ?? chosen.resetAtMs ?? null,
       periodHours: chosen.periodHours ?? null,
       // Claude and Codex store percent USED.
       remaining:
@@ -414,6 +426,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
           remaining: clampPercent(100 - (window.usedPercent as number)),
         })),
       resetCredits,
+      hasManualResetOverride: manualResetAtMs !== null,
     };
   }
 
