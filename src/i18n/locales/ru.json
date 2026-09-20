@@ -1289,6 +1289,11 @@
     }
   },
   "quota_management": {
+    "search_label": "Поиск аккаунтов",
+    "search_placeholder": "Поиск по имени файла или электронной почте",
+    "search_empty_title": "Аккаунты не найдены",
+    "search_empty_desc": "Попробуйте другое имя файла или адрес электронной почты либо очистите поиск.",
+    "search_clear": "Очистить поиск",
     "title": "Управление квотами",
     "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex, Claude, Kimi и xAI.",
     "refresh_all_credentials": "Обновить все учётные данные",

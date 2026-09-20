@@ -66,6 +66,17 @@ export function filterEntriesByTab(entries: QuotaFileEntry[], tab: QuotaTabId): 
   return entries.filter((entry) => entry.type === tab);
 }
 
+/** Search public account identifiers only; account may contain an API key. */
+export function filterEntriesBySearch(entries: QuotaFileEntry[], search: string): QuotaFileEntry[] {
+  const query = search.trim().toLowerCase();
+  if (!query) return entries;
+  return entries.filter(({ file }) =>
+    [file.name, file.email].some(
+      (value) => typeof value === 'string' && value.toLowerCase().includes(query)
+    )
+  );
+}
+
 /**
  * Order the grid by whichever credential recovers first.
  *

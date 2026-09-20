@@ -1284,6 +1284,11 @@
     }
   },
   "quota_management": {
+    "search_label": "搜索账号",
+    "search_placeholder": "按文件名或邮箱搜索",
+    "search_empty_title": "没有匹配的账号",
+    "search_empty_desc": "请尝试其他文件名或邮箱，或清空搜索。",
+    "search_clear": "清空搜索",
     "title": "配额管理",
     "description": "集中查看 OAuth 额度与剩余情况",
     "refresh_all_credentials": "刷新全部凭证",

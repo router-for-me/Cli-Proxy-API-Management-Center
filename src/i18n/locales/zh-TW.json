@@ -1310,6 +1310,11 @@
     }
   },
   "quota_management": {
+    "search_label": "搜尋帳號",
+    "search_placeholder": "依檔案名稱或電子郵件搜尋",
+    "search_empty_title": "沒有符合的帳號",
+    "search_empty_desc": "請嘗試其他檔案名稱或電子郵件，或清除搜尋。",
+    "search_clear": "清除搜尋",
     "title": "配額管理",
     "description": "集中查看 OAuth 配額與剩餘情況",
     "refresh_all_credentials": "重新整理全部憑證",
