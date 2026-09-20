@@ -584,6 +584,7 @@
     "weekly_limit": "Недельный лимит",
     "monthly_credits": "Месячные кредиты",
     "used_percent": "Использовано {{percent}}",
+    "usage_unavailable": "Данные об использовании недоступны от xAI",
     "reset_at": "Сброс {{time}}",
     "product_usage": "Использование {{product}}",
     "plan_label": "План",
