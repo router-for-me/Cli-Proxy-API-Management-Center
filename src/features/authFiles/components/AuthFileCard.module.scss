@@ -2,7 +2,7 @@
 
 /* ============================================================
  * 凭证卡片 — statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）
- * 遥测内容一律 mono + tabular-nums；品牌色只出现在头像与类型徽章。
+ * 身份优先；启停仅由底部开关表达，停用不降低内容对比度。
  * ============================================================ */
 
 .card {
@@ -14,17 +14,12 @@
   border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
-  transition:
-    transform var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
-    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
-    box-shadow var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+  transition: border-color 160ms var(--ease-out-strong, ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
-    transform: translateY(-1px);
     border-color: var(--border-hover);
-    box-shadow: 0 12px 26px -14px rgb(0 0 0 / 0.16);
   }
 }
 
@@ -38,153 +33,69 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
 
-.cardDisabled {
-  background: color-mix(in srgb, var(--bg-primary) 55%, transparent);
-
-  .head,
-  .fileName, /* 满宽文件名副行已移出 .head，必须单列 */
-  .note,
-  .health,
-  .metaRow {
-    opacity: 0.55;
-  }
-}
-
 /* 首次数据到达时的一次性级联入场；过滤/翻页/轮询不重播 */
 .cardEnter {
-  animation: card-in 0.45s var(--ease-out-strong, ease-out) both;
+  animation: card-in 180ms var(--ease-out-strong, ease-out) both;
   animation-delay: var(--card-delay, 0s);
 }
 
 @keyframes card-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 16px, 0);
   }
 }
 
-/* ---------- 头部：勾选 + 品牌头像 + 身份 ---------- */
+/* ---------- 头部：选择 + 供应商药丸 / 账号 ---------- */
 
 .head {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
 }
 
 .selection {
-  margin-top: 8px;
-}
-
-.avatar {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-
-.avatarImage {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
-.avatarFallback {
-  font-size: 14px;
-  font-weight: 700;
 }
 
 .identity {
+  display: flex;
   flex: 1;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.badgeRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.typeBadge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  line-height: 1.5;
-  padding: 2px 7px;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-
-.stateBadge {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: $font-mono;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.6;
-  padding: 2px 8px;
-  border-radius: $radius-full;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.stateDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-quaternary);
-}
-
-.stateActive {
-  color: var(--success-badge-text);
-  border-color: color-mix(in srgb, var(--viz-success) 35%, transparent);
-  background: color-mix(in srgb, var(--viz-success) 8%, transparent);
-
-  .stateDot {
-    background: var(--viz-success);
-  }
-}
-
-.stateWarning {
-  color: var(--amber-text);
-  border-color: var(--amber-30);
-  background: var(--amber-10);
-
-  .stateDot {
-    background: var(--amber-color);
-  }
-}
-
-.stateDisabled {
-  color: var(--text-tertiary);
-  border-color: var(--border-color);
-  background: var(--bg-tertiary);
-}
-
-.stateVirtual {
-  color: var(--text-secondary);
-  border-style: dashed;
-  border-color: var(--border-hover);
-}
-
-/* 主行：账号（email / 项目 ID）领衔 */
-.account {
-  font-size: 13px;
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.6;
+}
+
+/* 品牌药丸与账号按盒子中心对齐，避免不同字号的基线造成视觉偏移。 */
+.providerBadge {
+  flex-shrink: 0;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.runtimeLabel {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* 窄卡片保留基本阅读宽度；空间不足时换行，不截断邮箱或项目 ID。 */
+.account {
+  flex: 1 1 12ch;
+  min-width: 0;
   letter-spacing: -0.005em;
   color: var(--text-primary);
-  @include text-ellipsis;
+  overflow-wrap: anywhere;
 }
 
 /* 无账号线索时主行回落到文件名，沿用 mono 语汇。
@@ -459,6 +370,7 @@
 .actions {
   margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -540,6 +452,7 @@
 }
 
 .toggleWrap {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -553,8 +466,9 @@
 }
 
 @include mobile {
-  .actions {
-    flex-wrap: wrap;
+  .toggleWrap {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .actionsMain {
@@ -564,11 +478,6 @@
   .actionsMain > :global(.btn) {
     flex: 1 1 auto;
     min-width: 0;
-  }
-
-  .toggleWrap {
-    width: 100%;
-    justify-content: space-between;
   }
 }
 

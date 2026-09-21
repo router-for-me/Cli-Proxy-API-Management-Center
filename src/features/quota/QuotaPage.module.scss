@@ -35,6 +35,15 @@
   }
 }
 
+.search {
+  width: 100%;
+  max-width: 340px;
+
+  :global(.form-group) {
+    margin-bottom: 0;
+  }
+}
+
 .sort {
   flex: 0 0 auto;
   min-width: 148px;

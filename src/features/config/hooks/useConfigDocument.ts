@@ -38,6 +38,34 @@ export type UseConfigDocumentArgs = {
   applyVisualChangesToYaml: (yaml: string) => string;
 };
 
+/** 可视化保存仅在用户真正编辑过源码时以本地草稿为合并基底。 */
+export function selectVisualMergeBase(
+  latestServerYaml: string,
+  sourceDraftYaml: string,
+  sourceDirty: boolean
+): string {
+  return sourceDirty ? sourceDraftYaml : latestServerYaml;
+}
+
+export function buildConfigSaveDraft(
+  latestServerYaml: string,
+  sourceDraftYaml: string,
+  sourceDirty: boolean,
+  mode: ConfigEditorMode,
+  applyVisualChanges: (yaml: string) => string
+): string {
+  if (sourceDirty && mode === 'source') return sourceDraftYaml;
+  return applyVisualChanges(selectVisualMergeBase(latestServerYaml, sourceDraftYaml, sourceDirty));
+}
+
+/**
+ * 未编辑源码的模式往返不应重载可视化值，否则会清空字段级 dirty，改变并发合并策略。
+ * YAML 曾解析失败时仍须重试解析，避免仅靠切换模式绕过错误。
+ */
+export function shouldReloadVisualDraft(sourceDirty: boolean, visualParseError: string | null) {
+  return sourceDirty || visualParseError !== null;
+}
+
 export function useConfigDocument({
   mode,
   visualDirty,
@@ -53,14 +81,15 @@ export function useConfigDocument({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [dirty, setDirty] = useState(false);
+  // 仅表示用户在源码编辑器中改过草稿；可视化字段同步到 content 不得修改它。
+  const [sourceDirty, setSourceDirty] = useState(false);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [serverYaml, setServerYaml] = useState('');
   const [mergedYaml, setMergedYaml] = useState('');
   const [previewServerYaml, setPreviewServerYaml] = useState('');
   const [previewMode, setPreviewMode] = useState<ConfigEditorMode>('visual');
 
-  const isDirty = dirty || visualDirty;
+  const isDirty = sourceDirty || visualDirty;
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -68,7 +97,7 @@ export function useConfigDocument({
     try {
       const data = await configFileApi.fetchConfigYaml();
       setContent(data);
-      setDirty(false);
+      setSourceDirty(false);
       setDiffModalOpen(false);
       setServerYaml(data);
       setMergedYaml(data);
@@ -92,7 +121,7 @@ export function useConfigDocument({
       const latestServerYaml = await configFileApi.fetchConfigYaml();
       if (latestServerYaml !== previewServerYaml) {
         const nextMergedYaml =
-          previewMode === 'visual' && !dirty
+          previewMode === 'visual' && !sourceDirty
             ? applyVisualChangesToYaml(latestServerYaml)
             : mergedYaml;
         const nextServerYaml =
@@ -105,7 +134,7 @@ export function useConfigDocument({
         setMergedYaml(nextMergedYaml);
 
         if (nextServerYaml === nextMergedYaml) {
-          setDirty(false);
+          setSourceDirty(false);
           setDiffModalOpen(false);
           setContent(latestServerYaml);
           loadVisualValuesFromYaml(latestServerYaml);
@@ -120,7 +149,7 @@ export function useConfigDocument({
 
       await configFileApi.saveConfigYaml(mergedYaml);
       const latestContent = await configFileApi.fetchConfigYaml();
-      setDirty(false);
+      setSourceDirty(false);
       setDiffModalOpen(false);
       setContent(latestContent);
       setServerYaml(latestContent);
@@ -157,7 +186,7 @@ export function useConfigDocument({
     }
   }, [
     applyVisualChangesToYaml,
-    dirty,
+    sourceDirty,
     loadVisualValuesFromYaml,
     mergedYaml,
     previewMode,
@@ -176,9 +205,8 @@ export function useConfigDocument({
     try {
       const latestServerYaml = await configFileApi.fetchConfigYaml();
 
-      const visualBaseYaml = dirty ? content : latestServerYaml;
-
-      if (mode !== 'source') {
+      const visualBaseYaml = selectVisualMergeBase(latestServerYaml, content, sourceDirty);
+      if (mode === 'visual' || !sourceDirty) {
         const latestDocument = parseDocument(latestServerYaml);
         if (latestDocument.errors.length > 0) {
           showNotification(
@@ -208,20 +236,27 @@ export function useConfigDocument({
         }
       }
 
-      // In source mode, save exactly what the user edited. In visual mode, preserve the
-      // local source draft when it has unsaved edits so source-only backend fields are not dropped.
-      const nextMergedYaml = mode === 'source' ? content : applyVisualChangesToYaml(visualBaseYaml);
+      // The edit origin, not the currently visible mode, decides the merge policy. A real source
+      // edit preserves the complete draft; a visual edit still merges onto the latest server YAML
+      // after switching to source merely to inspect the generated document.
+      const nextMergedYaml = buildConfigSaveDraft(
+        latestServerYaml,
+        content,
+        sourceDirty,
+        mode,
+        applyVisualChangesToYaml
+      );
 
-      // In visual mode, applyVisualChangesToYaml re-serializes YAML via parseDocument → toString,
+      // In visual-origin saves, applyVisualChangesToYaml re-serializes YAML via parseDocument → toString,
       // which may reformat comments/whitespace. Normalize the server YAML through the same pipeline
       // so the diff only shows actual value changes, not cosmetic reformatting.
       let diffOriginal = latestServerYaml;
-      if (mode !== 'source') {
+      if (!sourceDirty) {
         diffOriginal = normalizeYamlForVisualDiff(latestServerYaml);
       }
 
       if (diffOriginal === nextMergedYaml) {
-        setDirty(false);
+        setSourceDirty(false);
         setContent(latestServerYaml);
         setServerYaml(latestServerYaml);
         setMergedYaml(nextMergedYaml);
@@ -234,7 +269,7 @@ export function useConfigDocument({
       setServerYaml(diffOriginal);
       setMergedYaml(nextMergedYaml);
       setPreviewServerYaml(latestServerYaml);
-      setPreviewMode(mode);
+      setPreviewMode(sourceDirty ? 'source' : 'visual');
       setDiffModalOpen(true);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '';
@@ -245,7 +280,7 @@ export function useConfigDocument({
   }, [
     applyVisualChangesToYaml,
     content,
-    dirty,
+    sourceDirty,
     loadVisualValuesFromYaml,
     mode,
     showNotification,
@@ -253,10 +288,15 @@ export function useConfigDocument({
     visualParseError,
   ]);
 
-  /** 源码编辑器 onChange：写入内容并标脏。 */
+  /** 可视化→源码时只物化当前字段值，不把同步动作冒充为用户源码编辑。 */
+  const syncContentFromVisual = useCallback((value: string) => {
+    setContent(value);
+  }, []);
+
+  /** 源码编辑器 onChange：写入内容并记录真正的源码草稿。 */
   const handleChange = useCallback((value: string) => {
     setContent(value);
-    setDirty(true);
+    setSourceDirty(true);
   }, []);
 
   const handleReload = useCallback(() => {
@@ -289,7 +329,7 @@ export function useConfigDocument({
       variant: 'danger',
       onConfirm: () => {
         setContent(previewServerYaml);
-        setDirty(false);
+        setSourceDirty(false);
         setDiffModalOpen(false);
         setServerYaml(previewServerYaml);
         setMergedYaml(previewServerYaml);
@@ -302,13 +342,11 @@ export function useConfigDocument({
 
   return {
     content,
-    /** 模式切换握手（可视化→源码时把脏字段写进草稿）需要直接写 content/dirty。 */
-    setContent,
-    setDirty,
+    syncContentFromVisual,
     loading,
     saving,
     error,
-    dirty,
+    sourceDirty,
     isDirty,
     diffModalOpen,
     serverYaml,

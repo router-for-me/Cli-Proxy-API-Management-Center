@@ -9,21 +9,17 @@ export type ProviderBrand =
   | 'gemini'
   | 'interactions'
   | 'codex'
+  | 'meta'
   | 'xai'
   | 'claude'
-  | 'claudeApi'
   | 'vertex'
   | 'openaiCompatibility'
   | 'apikeyFun'
-  | 'code0'
   | 'fennoAI'
   | 'qiniuCloud'
-  | 'lmuAI'
-  | 'infistar'
   | 'kimi';
 
-export type SponsorProviderBrand =
-  'apikeyFun' | 'code0' | 'fennoAI' | 'qiniuCloud' | 'lmuAI' | 'infistar' | 'kimi';
+export type SponsorProviderBrand = 'apikeyFun' | 'fennoAI' | 'qiniuCloud' | 'kimi';
 
 export const PROVIDER_SORT_BY_VALUES = ['name', 'priority', 'recent-success'] as const;
 export type ProviderSortBy = (typeof PROVIDER_SORT_BY_VALUES)[number];
@@ -35,20 +31,13 @@ export type ProviderResourceSelector =
   | { brand: 'gemini'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'interactions'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'codex'; apiKey: string; baseUrl?: string; index: number }
+  | { brand: 'meta'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'xai'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'claude'; apiKey: string; baseUrl?: string; index: number }
-  | { brand: 'claudeApi'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'openaiCompatibility'; name: string; index: number }
   | {
       brand: 'apikeyFun';
-      openaiIndices: number[];
-      claudeIndices: number[];
-      codexIndices: number[];
-      geminiIndices: number[];
-    }
-  | {
-      brand: 'code0';
       openaiIndices: number[];
       claudeIndices: number[];
       codexIndices: number[];
@@ -63,20 +52,6 @@ export type ProviderResourceSelector =
     }
   | {
       brand: 'qiniuCloud';
-      openaiIndices: number[];
-      claudeIndices: number[];
-      codexIndices: number[];
-      geminiIndices: number[];
-    }
-  | {
-      brand: 'lmuAI';
-      openaiIndices: number[];
-      claudeIndices: number[];
-      codexIndices: number[];
-      geminiIndices: number[];
-    }
-  | {
-      brand: 'infistar';
       openaiIndices: number[];
       claudeIndices: number[];
       codexIndices: number[];

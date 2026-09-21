@@ -54,14 +54,8 @@ export const useNotificationStore = create<NotificationState>((set) => ({
       notifications: [...state.notifications, notification],
     }));
 
-    // 自动移除通知
-    if (duration > 0) {
-      setTimeout(() => {
-        set((state) => ({
-          notifications: state.notifications.filter((n) => n.id !== id),
-        }));
-      }, duration);
-    }
+    // NotificationContainer owns readable-time expiry and cleans up timers on unmount.
+    // Keeping timers out of the store allows hover/focus/hidden-tab pauses.
   },
 
   removeNotification: (id) => {

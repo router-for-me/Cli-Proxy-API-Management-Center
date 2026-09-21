@@ -69,6 +69,13 @@ button.quotaMessageAction {
   font-size: $quota-font-size;
   font-weight: 600;
   white-space: nowrap;
+
+  // Button wraps its icon and label in the final content span.
+  > span:last-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 /* ---------- 配额行（全 provider 通用） ---------- */

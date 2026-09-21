@@ -3,27 +3,23 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { AutocompleteInput } from '@/components/ui/AutocompleteInput';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import { IconInfo, IconX } from '@/components/ui/icons';
+import { IconInfo, IconNetwork, IconPlus } from '@/components/ui/icons';
+import { OAuthEditorProviderCard } from '@/features/authFiles/components/OAuthEditorProviderCard';
+import { OAuthAliasMappingRow } from '@/features/authFiles/components/OAuthAliasMappingRow';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
-import {
-  buildOAuthProviderOptions,
-  getTypeLabel,
-  normalizeProviderKey,
-} from '@/features/authFiles/constants';
+import { buildOAuthProviderOptions, normalizeProviderKey } from '@/features/authFiles/constants';
 import {
   getModelAliasDraftSignature,
   isOAuthEditorDirty,
 } from '@/features/authFiles/oauthEditorState';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import { generateId, getErrorMessage } from '@/utils/helpers';
-import styles from './AuthFilesOAuthModelAliasEditPage.module.scss';
+import styles from '@/features/authFiles/components/OAuthEditor.module.scss';
 
 type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
 
@@ -133,7 +129,9 @@ export function AuthFilesOAuthModelAliasEditPage() {
     shouldBlock: isDirty,
     dialog: unsavedChangesDialog,
   });
-  const title = useMemo(() => t('oauth_model_alias.add_title'), [t]);
+  const title = isEditing
+    ? t('oauth_model_alias.edit_title', { provider: provider.trim() || resolvedProviderKey })
+    : t('oauth_model_alias.add_title');
   const headerHint = useMemo(() => {
     if (!provider.trim()) {
       return t('oauth_model_alias.provider_hint');
@@ -401,6 +399,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
       backLabel={t('common.back')}
       backAriaLabel={t('common.back')}
       contentClassName={styles.pageContent}
+      topBarClassName={styles.topBar}
       rightAction={
         <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
           {t('oauth_model_alias.save')}
@@ -430,116 +429,69 @@ export function AuthFilesOAuthModelAliasEditPage() {
         </Card>
       ) : (
         <>
-          <Card className={styles.settingsCard}>
-            <div className={styles.settingsHeader}>
-              <div className={styles.settingsHeaderTitle}>
-                <IconInfo size={16} />
-                <span>{t('oauth_model_alias.title')}</span>
-              </div>
-              <div className={styles.settingsHeaderHint}>{headerHint}</div>
+          <div className={styles.intro}>
+            <span className={styles.introIcon}>
+              <IconNetwork size={22} aria-hidden="true" />
+            </span>
+            <div>
+              <h1 className={styles.introTitle}>{t('oauth_model_alias.title')}</h1>
+              <p className={styles.description}>{t('oauth_model_alias.editor_description')}</p>
             </div>
+          </div>
 
-            <div className={styles.settingsSection}>
-              <div className={styles.settingsRow}>
-                <div className={styles.settingsInfo}>
-                  <div className={styles.settingsLabel}>
-                    {t('oauth_model_alias.provider_label')}
-                  </div>
-                  <div className={styles.settingsDesc}>{t('oauth_model_alias.provider_hint')}</div>
-                </div>
-                <div className={styles.settingsControl}>
-                  <AutocompleteInput
-                    id="oauth-model-alias-provider"
-                    placeholder={t('oauth_model_alias.provider_placeholder')}
-                    value={provider}
-                    onChange={updateProvider}
-                    options={providerOptions}
-                    disabled={disableControls || saving}
-                    wrapperStyle={{ marginBottom: 0 }}
-                  />
-                </div>
-              </div>
-
-              {providerOptions.length > 0 && (
-                <div className={styles.tagList}>
-                  {providerOptions.map((option) => {
-                    const isActive =
-                      normalizeProviderKey(provider) === normalizeProviderKey(option);
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`${styles.tag} ${isActive ? styles.tagActive : ''}`}
-                        onClick={() => updateProvider(option)}
-                        disabled={disableControls || saving}
-                      >
-                        {getTypeLabel(t, option)}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </Card>
+          <OAuthEditorProviderCard
+            provider={provider}
+            options={providerOptions}
+            onChange={updateProvider}
+            disabled={disableControls || saving}
+            translationPrefix="oauth_model_alias"
+          />
 
           <Card className={styles.settingsCard}>
-            <div className={styles.mappingsHeader}>
-              <div className={styles.mappingsTitle}>{t('oauth_model_alias.alias_label')}</div>
+            <div className={styles.editorHeader}>
+              <div className={styles.sectionHeading}>
+                <span className={styles.stepNumber} aria-hidden="true">
+                  02
+                </span>
+                <div className={styles.headingCopy}>
+                  <h2 className={styles.sectionTitle}>{t('oauth_model_alias.alias_label')}</h2>
+                  <p className={styles.description}>{t('oauth_model_alias.mapping_hint')}</p>
+                </div>
+              </div>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={addMappingEntry}
                 disabled={disableControls || saving || modelAliasUnsupported}
               >
+                <IconPlus size={14} aria-hidden="true" />
                 {t('oauth_model_alias.add_alias')}
               </Button>
             </div>
 
+            <div className={styles.catalogHint}>
+              <IconInfo size={15} aria-hidden="true" />
+              <p className={styles.description}>{headerHint}</p>
+            </div>
+
             <div className={styles.mappingsBody}>
               {mappings.map((entry, index) => (
-                <div key={entry.id} className={styles.mappingRow}>
-                  <AutocompleteInput
-                    wrapperStyle={{ flex: 1, marginBottom: 0 }}
-                    placeholder={t('oauth_model_alias.alias_name_placeholder')}
-                    value={entry.name}
-                    onChange={(val) => updateMappingEntry(index, 'name', val)}
-                    disabled={disableControls || saving}
-                    options={modelsList.map((model) => ({
-                      value: model.id,
-                      label:
-                        model.display_name && model.display_name !== model.id
-                          ? model.display_name
-                          : undefined,
-                    }))}
-                  />
-                  <span className={styles.mappingSeparator}>→</span>
-                  <input
-                    className={`input ${styles.mappingAliasInput}`}
-                    placeholder={t('oauth_model_alias.alias_placeholder')}
-                    value={entry.alias}
-                    onChange={(e) => updateMappingEntry(index, 'alias', e.target.value)}
-                    disabled={disableControls || saving}
-                  />
-                  <div className={styles.mappingFork}>
-                    <ToggleSwitch
-                      label={t('oauth_model_alias.alias_fork_label')}
-                      labelPosition="left"
-                      checked={Boolean(entry.fork)}
-                      onChange={(value) => updateMappingEntry(index, 'fork', value)}
-                      disabled={disableControls || saving}
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeMappingEntry(index)}
-                    disabled={disableControls || saving || mappings.length <= 1}
-                    title={t('common.delete')}
-                    aria-label={t('common.delete')}
-                  >
-                    <IconX size={14} />
-                  </Button>
-                </div>
+                <OAuthAliasMappingRow
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                  options={modelsList.map((model) => ({
+                    value: model.id,
+                    label:
+                      model.display_name && model.display_name !== model.id
+                        ? model.display_name
+                        : undefined,
+                  }))}
+                  disabled={disableControls || saving}
+                  canRemove={mappings.length > 1}
+                  onChange={(field, value) => updateMappingEntry(index, field, value)}
+                  onRemove={() => removeMappingEntry(index)}
+                />
               ))}
             </div>
           </Card>

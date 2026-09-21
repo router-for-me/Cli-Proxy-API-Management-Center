@@ -9,9 +9,9 @@ export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'gemini',
   'interactions',
   'codex',
+  'meta',
   'xai',
   'claude',
-  'claudeApi',
   'openaiCompatibility',
 ];
 
@@ -63,7 +63,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
           baseHeaders,
           resolvedAuthIndex
         );
-      } else if (brand === 'codex' || brand === 'xai') {
+      } else if (brand === 'codex' || brand === 'meta' || brand === 'xai') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchV1ModelsViaApiCall(
           baseUrl,
@@ -71,7 +71,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
           baseHeaders,
           resolvedAuthIndex
         );
-      } else if (brand === 'claude' || brand === 'claudeApi') {
+      } else if (brand === 'claude') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchClaudeModelsViaApiCall(
           baseUrl,

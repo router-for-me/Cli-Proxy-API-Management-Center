@@ -34,6 +34,7 @@ const PROVIDER_COMMON_KEY_FIELDS = [
 const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const INTERACTIONS_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
+const META_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
 const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
 const CLAUDE_KEY_FIELDS = [
   ...PROVIDER_COMMON_KEY_FIELDS,
@@ -491,6 +492,34 @@ export const providersApi = {
 
   deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  async getMetaConfigs(): Promise<ProviderKeyConfig[]> {
+    const data = await apiClient.get('/meta-api-key');
+    const list = extractArrayPayload(data, 'meta-api-key');
+    return list
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  },
+
+  createMetaConfig: (config: ProviderKeyConfig) =>
+    mutateLatestProviderList('meta-api-key', (latestItems) =>
+      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
+        mergeProviderKeyPayload(raw, payload, META_KEY_FIELDS)
+      )
+    ),
+
+  updateMetaConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+    mutateLatestProviderList('meta-api-key', (latestItems) =>
+      replaceLatestProviderRecord(
+        latestItems,
+        (record) => matchesProviderKey(record, apiKey, baseUrl),
+        serializeProviderKey(config),
+        (raw, payload) => mergeProviderKeyPayload(raw, payload, META_KEY_FIELDS)
+      )
+    ),
+
+  deleteMetaConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/meta-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
   createXAIConfig: (config: ProviderKeyConfig) =>
     mutateLatestProviderList('xai-api-key', (latestItems) =>

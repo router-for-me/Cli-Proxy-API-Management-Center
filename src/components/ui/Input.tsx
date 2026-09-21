@@ -6,7 +6,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   labelExtra?: ReactNode;
   /** 渲染在标签上方的占位行（用于与同排带 labelExtra 的字段保持输入框对齐）。 */
   topExtra?: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   rightElement?: ReactNode;
 }

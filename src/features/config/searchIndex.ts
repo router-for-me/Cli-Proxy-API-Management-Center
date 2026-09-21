@@ -141,6 +141,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     fieldId: 'maxRetryInterval',
     sectionId: 'network',
     labelKey: L('sections.network.max_retry_interval'),
+    hintKey: L('sections.network.max_retry_interval_hint'),
     yamlKeys: ['max-retry-interval'],
   },
   {
@@ -336,6 +337,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['antigravity', 'obfuscate', 'zero-width'],
   },
   {
+    fieldId: 'devinSensitiveWords',
+    sectionId: 'advanced',
+    labelKey: L('sections.system.devin_sensitive_words'),
+    hintKey: L('sections.system.devin_sensitive_words_desc'),
+    yamlKeys: ['devin', 'sensitive-words'],
+    keywords: ['devin', 'system prompt', 'remove line', 'obfuscate', 'zero-width'],
+  },
+  {
     fieldId: 'antigravitySignatureCacheEnabled',
     sectionId: 'advanced',
     labelKey: L('sections.system.antigravity_signature_cache'),
@@ -463,6 +472,13 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
 ];
 
 const MAX_RESULTS = 8;
+
+export function findConfigFieldById(
+  fieldId: string | null | undefined
+): ConfigFieldSearchEntry | undefined {
+  if (!fieldId) return undefined;
+  return CONFIG_FIELD_SEARCH_INDEX.find((entry) => entry.fieldId === fieldId);
+}
 
 /**
  * Lowercase substring search over label + qualifier + hint + YAML keys + keywords.

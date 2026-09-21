@@ -22,7 +22,7 @@ import { StringListEditor } from '../blocks/StringListEditor';
 
 const Icon = CONFIG_TAB_ICONS.advanced;
 
-/** 06 高级与实验：插件源（只存 env 变量名）、签名缓存、Claude/Codex 请求头默认值。 */
+/** 06 高级与实验：插件源、供应商敏感词、签名缓存与请求头默认值。 */
 export function SectionAdvanced({ values, disabled, animateIn, onChange }: ConfigSectionProps) {
   const { t } = useTranslation();
 
@@ -36,6 +36,10 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
   );
   const handleAntigravitySensitiveWordsChange = useCallback(
     (antigravitySensitiveWords: string[]) => onChange({ antigravitySensitiveWords }),
+    [onChange]
+  );
+  const handleDevinSensitiveWordsChange = useCallback(
+    (devinSensitiveWords: string[]) => onChange({ devinSensitiveWords }),
     [onChange]
   );
 
@@ -176,6 +180,39 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
                 />
               </FieldAnchor>
             </FieldGrid>
+          </FieldStack>
+        </Collapsible>
+
+        <Collapsible
+          label={t('config_management.visual.sections.advanced.devin_title')}
+          defaultOpen={false}
+        >
+          <FieldStack>
+            <FieldAnchor fieldId="devinSensitiveWords">
+              <FieldGroup
+                title={t('config_management.visual.sections.system.devin_sensitive_words')}
+                description={t(
+                  'config_management.visual.sections.system.devin_sensitive_words_desc'
+                )}
+              >
+                <FieldShell
+                  label={t('config_management.visual.sections.system.devin_sensitive_words_label')}
+                  hint={t('config_management.visual.sections.system.devin_sensitive_words_hint')}
+                >
+                  <StringListEditor
+                    value={values.devinSensitiveWords}
+                    disabled={disabled}
+                    placeholder={t(
+                      'config_management.visual.sections.system.devin_sensitive_words_placeholder'
+                    )}
+                    inputAriaLabel={t(
+                      'config_management.visual.sections.system.devin_sensitive_words_label'
+                    )}
+                    onChange={handleDevinSensitiveWordsChange}
+                  />
+                </FieldShell>
+              </FieldGroup>
+            </FieldAnchor>
           </FieldStack>
         </Collapsible>
 

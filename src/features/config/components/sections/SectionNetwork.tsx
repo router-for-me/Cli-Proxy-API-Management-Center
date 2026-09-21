@@ -103,6 +103,7 @@ export function SectionNetwork({
               value={values.maxRetryInterval}
               onChange={(e) => onChange({ maxRetryInterval: e.target.value })}
               disabled={disabled}
+              hint={t('config_management.visual.sections.network.max_retry_interval_hint')}
               error={maxRetryIntervalError}
             />
           </FieldAnchor>

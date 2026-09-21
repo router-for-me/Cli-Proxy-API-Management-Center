@@ -8,6 +8,7 @@ import {
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
 import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
@@ -39,16 +40,20 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const [resettingQuota, setResettingQuota] = useState(false);
   const adapter = QUOTA_ADAPTERS[quotaType];
+  const cacheKey = getQuotaCacheKey(file);
 
-  const quota = useQuotaStore((state) => {
+  const storedQuota = useQuotaStore((state) => {
     if (quotaType === 'antigravity')
-      return state.antigravityQuota[file.name] as QuotaCardState | undefined;
-    if (quotaType === 'claude') return state.claudeQuota[file.name] as QuotaCardState | undefined;
-    if (quotaType === 'codex') return state.codexQuota[file.name] as QuotaCardState | undefined;
-    if (quotaType === 'kimi') return state.kimiQuota[file.name] as QuotaCardState | undefined;
-    if (quotaType === 'xai') return state.xaiQuota[file.name] as QuotaCardState | undefined;
+      return state.antigravityQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'claude') return state.claudeQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'codex') return state.codexQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'devin') return state.devinQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'kimi') return state.kimiQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'meta') return state.metaQuota[cacheKey] as QuotaCardState | undefined;
+    if (quotaType === 'xai') return state.xaiQuota[cacheKey] as QuotaCardState | undefined;
     return assertNever(quotaType);
   });
+  const quota = storedQuota;
 
   const updateQuotaState = useQuotaStore(
     (state) => state[adapter.storeSetter] as unknown as QuotaMapUpdater
@@ -60,11 +65,11 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (file.disabled) return;
     if (quota?.status === 'loading') return;
 
-    const cacheGeneration = captureQuotaCacheGeneration();
+    const cacheGeneration = captureQuotaCacheGeneration(file.name);
 
     updateQuotaState((prev) => ({
       ...prev,
-      [file.name]: adapter.buildLoadingState(),
+      [cacheKey]: adapter.buildLoadingState(),
     }));
 
     try {
@@ -72,7 +77,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
         updateQuotaState((prev) => ({
           ...prev,
-          [file.name]: adapter.buildSuccessState(data),
+          [cacheKey]: adapter.buildSuccessState(data),
         }));
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       });
@@ -82,7 +87,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
         updateQuotaState((prev) => ({
           ...prev,
-          [file.name]: adapter.buildErrorState(message, status),
+          [cacheKey]: adapter.buildErrorState(message, status),
         }));
         showNotification(
           t('auth_files.quota_refresh_failed', { name: file.name, message }),
@@ -90,7 +95,16 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         );
       });
     }
-  }, [adapter, disableControls, file, quota?.status, showNotification, t, updateQuotaState]);
+  }, [
+    adapter,
+    cacheKey,
+    disableControls,
+    file,
+    quota?.status,
+    showNotification,
+    t,
+    updateQuotaState,
+  ]);
 
   const resetQuotaForFile = useCallback(() => {
     if (disableControls) return;
@@ -108,14 +122,14 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       confirmText: t('codex_quota.reset_confirm_button'),
       variant: 'primary',
       onConfirm: async () => {
-        const cacheGeneration = captureQuotaCacheGeneration();
+        const cacheGeneration = captureQuotaCacheGeneration(file.name);
         setResettingQuota(true);
         try {
           const data = await resetQuota(file, t);
           commitIfQuotaCacheCurrent(cacheGeneration, () => {
             updateQuotaState((prev) => ({
               ...prev,
-              [file.name]: adapter.buildSuccessState(data),
+              [cacheKey]: adapter.buildSuccessState(data),
             }));
             showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
           });
@@ -131,6 +145,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     });
   }, [
     adapter,
+    cacheKey,
     disableControls,
     file,
     quota?.status,
@@ -192,8 +207,25 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       ) : (
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
       )}
-      {quotaStatus !== 'idle' && resetQuotaAction && (
-        <div className={styles.quotaCardActions}>{resetQuotaAction}</div>
+      {quotaStatus !== 'idle' && (resetQuotaAction || quotaType === 'devin') && (
+        <div className={styles.quotaCardActions}>
+          {resetQuotaAction}
+          {quotaType === 'devin' && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={styles.quotaResetCreditButton}
+              onClick={() => void refreshQuotaForFile()}
+              disabled={!canRefreshQuota || quotaStatus === 'loading'}
+              loading={quotaStatus === 'loading'}
+              title={t('auth_files.quota_refresh_hint')}
+            >
+              {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
+              {t('auth_files.quota_refresh_single')}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

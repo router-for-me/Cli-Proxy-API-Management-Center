@@ -36,7 +36,6 @@ import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
 import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
-import { CLAUDE_API_BASE_URL } from '../../claudeApi';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 
 /** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
@@ -59,6 +58,7 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   proxyUrl: '',
   weight: undefined,
 });
+const META_API_BASE_URL = 'https://api.meta.ai/v1';
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
 const stripDisableAllRule = (list?: string[]): string[] =>
@@ -69,8 +69,7 @@ const formatJsonObject = (value?: Record<string, unknown>): string => {
   return JSON.stringify(value, null, 2);
 };
 
-const isClaudeLikeBrand = (brand: ProviderBrand): boolean =>
-  brand === 'claude' || brand === 'claudeApi';
+const isClaudeLikeBrand = (brand: ProviderBrand): boolean => brand === 'claude';
 
 function buildInitialForm(
   brand: ProviderBrand,
@@ -81,8 +80,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
-      baseUrl:
-        brand === 'claudeApi' ? CLAUDE_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
+      baseUrl: brand === 'meta' ? META_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
@@ -100,6 +98,7 @@ function buildInitialForm(
       testModel:
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
+        brand === 'meta' ||
         brand === 'xai' ||
         isClaudeLikeBrand(brand) ||
         brand === 'gemini' ||
@@ -198,6 +197,7 @@ function buildInitialForm(
       : undefined,
     testModel:
       brand === 'codex' ||
+      brand === 'meta' ||
       brand === 'xai' ||
       isClaudeLikeBrand(brand) ||
       brand === 'gemini' ||
@@ -482,12 +482,13 @@ export function BaseProviderForm({
     brand === 'gemini' ||
     brand === 'interactions' ||
     brand === 'codex' ||
+    brand === 'meta' ||
     brand === 'xai' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
   const supportsModelImage = brand === 'openaiCompatibility';
   const singleConnectivity =
-    brand === 'codex' || brand === 'xai'
+    brand === 'codex' || brand === 'meta' || brand === 'xai'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
       : brand === 'gemini' || brand === 'interactions'
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
@@ -675,6 +676,7 @@ export function BaseProviderForm({
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
               {brand === 'codex' ||
+              brand === 'meta' ||
               brand === 'xai' ||
               isClaudeLikeBrand(brand) ||
               brand === 'gemini' ||

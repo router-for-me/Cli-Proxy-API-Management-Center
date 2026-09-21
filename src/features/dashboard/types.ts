@@ -15,8 +15,6 @@ export interface TrafficWindow {
   peakTotal: number;
   /** 峰值所在桶下标，-1 表示无数据 */
   peakIndex: number;
-  /** 有请求的桶数量 */
-  activeBuckets: number;
   /** 窗口跨度（分钟） */
   windowMinutes: number;
 }
