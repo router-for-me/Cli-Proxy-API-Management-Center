@@ -97,9 +97,9 @@ export const buildCodexQuotaWindows = (
   const spendLimit = spendControl?.individual_limit ?? spendControl?.individualLimit ?? null;
 
   const addSpendControlWindow = (limitInfo: CodexSpendControlLimit) => {
-    const total = normalizeNumberValue(limitInfo.limit);
     const remainingAmount = normalizeNumberValue(limitInfo.remaining);
     const usedAmount = normalizeNumberValue(limitInfo.used);
+    const limitAmount = normalizeNumberValue(limitInfo.limit);
     const usedPercentRaw = normalizeNumberValue(limitInfo.used_percent ?? limitInfo.usedPercent);
     const remainingPercent = normalizeNumberValue(
       limitInfo.remaining_percent ?? limitInfo.remainingPercent
@@ -107,7 +107,12 @@ export const buildCodexQuotaWindows = (
 
     // used/remaining/limit are sent as decimal strings and any one of them can
     // be absent, so each is derived from the other two rather than dropping
-    // the row. The percentages come as numbers and are preferred when present.
+    // the row. Amounts are completed first so a missing limit still yields
+    // the absolute pool; percentages come as numbers and are preferred when
+    // present.
+    const total =
+      limitAmount ??
+      (usedAmount !== null && remainingAmount !== null ? usedAmount + remainingAmount : null);
     const used =
       usedAmount ?? (total !== null && remainingAmount !== null ? total - remainingAmount : null);
     const usedPercent =

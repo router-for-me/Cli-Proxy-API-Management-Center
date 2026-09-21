@@ -189,7 +189,48 @@ describe('Codex spend-control budget', () => {
     );
 
     expect(windows[0]?.usedAmount).toBe(50);
+    expect(windows[0]?.totalAmount).toBe(200);
     expect(windows[0]?.usedPercent).toBe(25);
+  });
+
+  test('derives the total amount and percentage when only used and remaining arrive', () => {
+    const windows = buildCodexQuotaWindows(
+      { spend_control: { individual_limit: { used: '50', remaining: '150' } } },
+      t
+    );
+
+    expect(windows[0]?.usedAmount).toBe(50);
+    expect(windows[0]?.totalAmount).toBe(200);
+    expect(windows[0]?.usedPercent).toBe(25);
+  });
+
+  test.each([
+    { used_percent: 30 },
+    { remaining_percent: 70 },
+  ])('derives a missing total while preserving the reported percentage: %j', (percentage) => {
+    const windows = buildCodexQuotaWindows(
+      {
+        spend_control: {
+          individual_limit: { used: '50', remaining: '150', ...percentage },
+        },
+      },
+      t
+    );
+
+    expect(windows[0]?.usedAmount).toBe(50);
+    expect(windows[0]?.totalAmount).toBe(200);
+    expect(windows[0]?.usedPercent).toBe(30);
+  });
+
+  test('derives a missing total when used is zero', () => {
+    const windows = buildCodexQuotaWindows(
+      { spend_control: { individual_limit: { used: '0', remaining: '200' } } },
+      t
+    );
+
+    expect(windows[0]?.usedAmount).toBe(0);
+    expect(windows[0]?.totalAmount).toBe(200);
+    expect(windows[0]?.usedPercent).toBe(0);
   });
 
   test('ignores a spend control carrying no usable numbers', () => {

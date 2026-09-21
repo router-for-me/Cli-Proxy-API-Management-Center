@@ -58,17 +58,16 @@
   color: var(--text-quaternary);
 }
 
-/* Countdown beside the absolute reset time. The separator is a pseudo-element
-   so the two spans stay independently styleable (the relative half turns
-   warning-coloured when this is the row that recovers first). */
+/* Countdown beside the absolute reset time. The separator is a sibling
+   pseudo-element so a relative-only row (no absolute date) has no leading ·. */
 .quotaResetRelative {
   color: var(--text-tertiary);
+}
 
-  &::before {
-    content: '·';
-    margin: 0 4px;
-    color: var(--text-quaternary);
-  }
+.quotaReset + .quotaResetRelative::before {
+  content: '·';
+  margin: 0 4px;
+  color: var(--text-quaternary);
 }
 
 .quotaResetRelativeSoon {
@@ -80,6 +79,7 @@
   font-family: $font-mono;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .quotaMessage {

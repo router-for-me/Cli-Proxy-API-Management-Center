@@ -12,6 +12,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
 import { CodexQuotaBody } from '@/features/quota/providers/codex/CodexQuotaBody';
+import { buildCodexQuotaWindows } from '@/features/quota/providers/codex/data';
 import { ClaudeQuotaBody } from '@/features/quota/providers/claude/ClaudeQuotaBody';
 import { KimiQuotaBody } from '@/features/quota/providers/kimi/KimiQuotaBody';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
@@ -125,7 +126,28 @@ describe('CodexQuotaBody', () => {
     expect(markup).toContain('Monthly credits');
     expect(markup).toContain('quotaAmount');
     expect(markup).toContain('3,139 / 37,500 credits');
-    expect(markup).toContain('92%');
+    expect(markup).toContain('92% remaining');
+    expect(markup).toMatch(/26 days/);
+    expect(markup).not.toContain('10-01 00:00');
+    expect(markup).not.toContain('class="quotaReset"');
+  });
+
+  test('renders a derived spend-control pool when upstream omits limit', () => {
+    const windows = buildCodexQuotaWindows(
+      { spend_control: { individual_limit: { used: '50', remaining: '150' } } },
+      i18n.t.bind(i18n)
+    );
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, {
+        quota: { status: 'success', planType: 'business', windows },
+        classes,
+      })
+    );
+
+    expect(markup).toContain('Monthly credits');
+    expect(markup).toContain('quotaAmount');
+    expect(markup).toContain('50 / 200 credits');
+    expect(markup).toContain('75% remaining');
   });
 
   test('renders reset-credit expiry in local time with a countdown', () => {
