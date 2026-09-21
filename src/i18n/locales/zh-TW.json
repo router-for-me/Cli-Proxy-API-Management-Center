@@ -550,6 +550,26 @@
     "unknown": "未知",
     "remaining": "剩餘 {{percent}}%"
   },
+  "cursor_quota": {
+    "title": "Cursor 配額",
+    "empty_title": "暫無 Cursor 憑證",
+    "empty_desc": "在插件登入裡完成 Cursor 授權後即可查看方案用量。",
+    "idle": "點擊載入 Cursor 用量",
+    "loading": "正在讀取 Cursor 用量…",
+    "load_failed": "讀取 Cursor 用量失敗：{{message}}",
+    "empty_data": "Cursor 沒有返回方案用量。",
+    "plan": "方案",
+    "included": "方案",
+    "auto": "Auto",
+    "api": "API",
+    "resets": "重置 {{time}}",
+    "unknown": "未知",
+    "remaining": "剩餘 {{percent}}%",
+    "on_demand_disabled": "按量付費已關閉",
+    "on_demand_unlimited": "按量付費 {{used}} / 不限",
+    "on_demand_fixed": "按量付費 {{used}} / {{limit}}",
+    "on_demand_unknown": "按量付費未知"
+  },
   "kimi_quota": {
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",

@@ -291,6 +291,24 @@ export interface MetaQuotaState {
   errorStatus?: number;
 }
 
+export interface CursorQuotaData {
+  planName?: string;
+  includedPercentUsed: number | null;
+  autoPercentUsed: number | null;
+  apiPercentUsed: number | null;
+  resetsAt?: string;
+  onDemandKind?: string;
+  onDemandUsedCents?: number | null;
+  onDemandLimitCents?: number | null;
+}
+
+export interface CursorQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  data?: CursorQuotaData;
+  error?: string;
+  errorStatus?: number;
+}
+
 // Kimi API payload types
 export interface KimiUsageDetail {
   used?: number | string;

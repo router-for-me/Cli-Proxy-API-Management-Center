@@ -550,6 +550,26 @@
     "unknown": "未知",
     "remaining": "剩余 {{percent}}%"
   },
+  "cursor_quota": {
+    "title": "Cursor 额度",
+    "empty_title": "暂无 Cursor 凭证",
+    "empty_desc": "在插件登录里完成 Cursor 授权后即可查看套餐用量。",
+    "idle": "点击加载 Cursor 用量",
+    "loading": "正在读取 Cursor 用量…",
+    "load_failed": "读取 Cursor 用量失败：{{message}}",
+    "empty_data": "Cursor 没有返回套餐用量。",
+    "plan": "计划",
+    "included": "套餐",
+    "auto": "Auto",
+    "api": "API",
+    "resets": "重置 {{time}}",
+    "unknown": "未知",
+    "remaining": "剩余 {{percent}}%",
+    "on_demand_disabled": "按量付费已关闭",
+    "on_demand_unlimited": "按量付费 {{used}} / 不限",
+    "on_demand_fixed": "按量付费 {{used}} / {{limit}}",
+    "on_demand_unknown": "按量付费未知"
+  },
   "kimi_quota": {
     "title": "Kimi 额度",
     "empty_title": "暂无 Kimi 认证",

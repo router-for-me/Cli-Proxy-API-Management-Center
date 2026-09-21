@@ -555,6 +555,26 @@
     "unknown": "Неизвестно",
     "remaining": "Осталось {{percent}}%"
   },
+  "cursor_quota": {
+    "title": "Квота Cursor",
+    "empty_title": "Нет учетных данных Cursor",
+    "empty_desc": "Войдите через плагин Cursor, чтобы увидеть использование плана.",
+    "idle": "Нажмите, чтобы загрузить использование Cursor",
+    "loading": "Загрузка использования Cursor…",
+    "load_failed": "Не удалось загрузить использование Cursor: {{message}}",
+    "empty_data": "Cursor не вернул использование плана.",
+    "plan": "План",
+    "included": "Включено",
+    "auto": "Auto",
+    "api": "API",
+    "resets": "Сброс {{time}}",
+    "unknown": "Неизвестно",
+    "remaining": "Осталось {{percent}}%",
+    "on_demand_disabled": "Оплата по факту выключена",
+    "on_demand_unlimited": "По факту {{used}} / без лимита",
+    "on_demand_fixed": "По факту {{used}} / {{limit}}",
+    "on_demand_unknown": "Оплата по факту неизвестна"
+  },
   "kimi_quota": {
     "title": "Квота Kimi",
     "empty_title": "Файлы авторизации Kimi отсутствуют",

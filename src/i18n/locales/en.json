@@ -552,6 +552,26 @@
     "unknown": "Unknown",
     "remaining": "{{percent}}% remaining"
   },
+  "cursor_quota": {
+    "title": "Cursor Quota",
+    "empty_title": "No Cursor credentials",
+    "empty_desc": "Sign in with Cursor from the plugin login to view plan usage.",
+    "idle": "Click to load Cursor usage",
+    "loading": "Loading Cursor usage…",
+    "load_failed": "Failed to load Cursor usage: {{message}}",
+    "empty_data": "Cursor returned no plan usage.",
+    "plan": "Plan",
+    "included": "Included",
+    "auto": "Auto",
+    "api": "API",
+    "resets": "Resets {{time}}",
+    "unknown": "Unknown",
+    "remaining": "{{percent}}% remaining",
+    "on_demand_disabled": "On-demand disabled",
+    "on_demand_unlimited": "On-demand {{used}} / unlimited",
+    "on_demand_fixed": "On-demand {{used}} / {{limit}}",
+    "on_demand_unknown": "On-demand unknown"
+  },
   "kimi_quota": {
     "title": "Kimi Quota",
     "empty_title": "No Kimi Auth Files",
