@@ -293,10 +293,21 @@ export interface MetaQuotaState {
 
 export interface CursorQuotaData {
   planName?: string;
+  price?: string;
+  displayMessage?: string;
+  autoDisplayMessage?: string;
+  apiDisplayMessage?: string;
   includedPercentUsed: number | null;
   autoPercentUsed: number | null;
   apiPercentUsed: number | null;
+  includedSpendCents?: number | null;
+  includedLimitCents?: number | null;
+  cycleStartAt?: string;
   resetsAt?: string;
+  grokBotLabel?: string;
+  grokBotPercentUsed: number | null;
+  grokBotCycleStartAt?: string;
+  grokBotResetsAt?: string;
   onDemandKind?: string;
   onDemandUsedCents?: number | null;
   onDemandLimitCents?: number | null;

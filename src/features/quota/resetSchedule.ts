@@ -129,6 +129,20 @@ export function collectQuotaRowInstants(
     return collectRows((quota as { rows?: WindowLike[] }).rows ?? [], 'row');
   }
 
+  if (provider === 'cursor') {
+    const data = (quota as { data?: { resetsAt?: string; grokBotResetsAt?: string } }).data;
+    const instants: QuotaRowInstant[] = [];
+    const planMs = data?.resetsAt ? Date.parse(data.resetsAt) : Number.NaN;
+    if (Number.isFinite(planMs) && planMs > Date.now()) {
+      instants.push({ rowId: 'plan', atMs: planMs, kind: 'window' });
+    }
+    const grokMs = data?.grokBotResetsAt ? Date.parse(data.grokBotResetsAt) : Number.NaN;
+    if (Number.isFinite(grokMs) && grokMs > Date.now()) {
+      instants.push({ rowId: 'grok-bot', atMs: grokMs, kind: 'window' });
+    }
+    return instants;
+  }
+
   if (provider === 'meta') {
     const windows =
       (

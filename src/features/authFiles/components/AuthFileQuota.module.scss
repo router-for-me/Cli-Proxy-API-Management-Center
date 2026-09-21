@@ -172,6 +172,10 @@ button.quotaMessageAction {
   background: var(--viz-failure);
 }
 
+.quotaBarFillUsed {
+  background: color-mix(in srgb, var(--text-primary) 72%, transparent);
+}
+
 /* ---------- 计划徽章（codexPlan*：antigravity/claude/xai 复用） ---------- */
 
 .codexPlan {

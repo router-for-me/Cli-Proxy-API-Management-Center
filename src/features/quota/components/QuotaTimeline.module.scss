@@ -311,6 +311,19 @@ $lane-width: 210px;
 
 // A reset credit is use-it-or-lose-it, so its expiry sits above the window bar
 // as a narrow amber tick without competing with the bar's own label.
+.planResetTick {
+  position: absolute;
+  z-index: 3;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--provider-accent);
+  box-shadow: 0 0 0 1px var(--bg-primary);
+  cursor: help;
+}
+
 .resetCreditTick {
   position: absolute;
   z-index: 3;

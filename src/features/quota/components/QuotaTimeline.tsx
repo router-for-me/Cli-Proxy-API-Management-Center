@@ -24,6 +24,7 @@ import {
   laneHasWindow,
   projectLane,
   projectResetCredits,
+  projectTimelineMarks,
   timelineSpan,
   DAY_MS,
 } from '../quotaTimelineModel';
@@ -123,7 +124,11 @@ export function QuotaTimeline({
             maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
           })
         )
-        .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
+        .filter(
+          (lane) =>
+            laneHasWindow(lane) &&
+            (mode !== 'session' || lane.periodHours === 5 || lane.marks.length > 0)
+        ),
     [laneInputs, mode, span.days]
   );
 
@@ -329,6 +334,10 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
     () => projectResetCredits(lane, span.startMs, span.endMs, now),
     [lane, span, now]
   );
+  const marks = useMemo(
+    () => projectTimelineMarks(lane, span.startMs, span.endMs),
+    [lane, span]
+  );
 
   const colorSet = TYPE_COLORS[lane.provider] || TYPE_COLORS.unknown;
   const color: ThemeColors =
@@ -357,8 +366,13 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
         <div className={styles.laneLimits}>
           {lane.limits.map((limit) => (
             <span key={limit.label} className={styles.laneLimit}>
-              {lane.provider === 'meta' ? t(limit.label) : limit.label}{' '}
+              {lane.provider === 'meta' || lane.provider === 'cursor' ? t(limit.label) : limit.label}{' '}
               <b>{limit.remaining}%</b>
+            </span>
+          ))}
+          {lane.marks.map((mark) => (
+            <span key={`${mark.label}-${mark.atMs}`} className={styles.laneLimit}>
+              {t(mark.label)} <b>{formatDay(mark.atMs)}</b>
             </span>
           ))}
         </div>
@@ -379,7 +393,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
           <div className={styles.nowLine} style={{ left: `${nowPercent}%` }} />
         )}
 
-        {windows.length === 0 ? (
+        {windows.length === 0 && marks.length === 0 ? (
           <span className={styles.laneIdle}>
             {t('quota_management.windows_idle', {
               defaultValue: 'no window counting down',
@@ -424,6 +438,20 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
             );
           })
         )}
+
+        {marks.map((mark) => {
+          const title = `${t(mark.label)} ${formatDay(mark.atMs)} ${formatTime(mark.atMs)}`;
+          return (
+            <span
+              key={`${mark.label}-${mark.atMs}`}
+              className={styles.planResetTick}
+              style={{ left: `${mark.leftPercent}%` }}
+              title={title}
+              role="img"
+              aria-label={title}
+            />
+          );
+        })}
 
         {resetCredits.map((credit, index) => {
           const grantedLabel = t('quota_management.windows_credit_granted', {
