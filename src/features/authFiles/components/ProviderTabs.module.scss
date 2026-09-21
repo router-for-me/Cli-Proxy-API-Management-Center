@@ -10,21 +10,10 @@
   max-width: 100%;
   overflow-x: auto;
   border-bottom: 1px solid var(--border-color);
-  // Keep a draggable affordance for mice without horizontal scrolling.
-  scrollbar-width: thin;
-  scrollbar-color: var(--text-tertiary) transparent;
+  scrollbar-width: none;
 
   &::-webkit-scrollbar {
-    height: 6px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--text-tertiary);
-    border-radius: $radius-full;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
+    display: none;
   }
 }
 

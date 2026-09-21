@@ -15,11 +15,12 @@ describe('provider filter overflow', () => {
     expect(tabsStyles).toMatch(/\.tab\s*\{[^}]*flex-shrink: 0;/);
   });
 
-  test('exposes a scrollbar for mouse users rather than hiding trailing providers', () => {
-    expect(tabsStyles).toContain('scrollbar-width: thin;');
-    expect(tabsStyles).not.toContain('scrollbar-width: none;');
-    expect(tabsStyles).toMatch(/&::-webkit-scrollbar\s*\{\s*height: 6px;/);
-    expect(tabsStyles).not.toMatch(/&::-webkit-scrollbar\s*\{[^}]*display: none/);
+  test('hides the scrollbar while using a cancellable local wheel listener', () => {
+    expect(tabsStyles).toContain('scrollbar-width: none;');
+    expect(tabsStyles).toMatch(/&::-webkit-scrollbar\s*\{[^}]*display: none/);
+    const source = readFileSync('src/features/authFiles/components/ProviderTabs.tsx', 'utf8');
+    expect(source).toContain("strip.addEventListener('wheel', onWheel, { passive: false })");
+    expect(source).toContain("strip.removeEventListener('wheel', onWheel)");
   });
 
   test('allocates remaining quota toolbar width without shrinking the sort control', () => {
