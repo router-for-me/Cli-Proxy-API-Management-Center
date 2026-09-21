@@ -38,12 +38,14 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
         )}
       </div>
       {included && <div className={classes.quotaMessage}>{included}</div>}
-      {data.displayMessage && <div className={classes.quotaMessage}>{data.displayMessage}</div>}
+      {data.displayMessage && (
+        <div className={classes.quotaMessage}>{plainText(data.displayMessage)}</div>
+      )}
       {rows.map((row, index) => {
         const used = data[row.key];
         const detail =
           row.id === 'other_models' && data.apiDisplayMessage
-            ? data.apiDisplayMessage
+            ? plainText(data.apiDisplayMessage)
             : t(`cursor_quota.${row.note}`);
         return (
           <div key={row.id} className={classes.quotaRow}>
@@ -58,7 +60,9 @@ export function CursorQuotaBody({ quota, classes }: QuotaBodyProps<CursorQuotaSt
       })}
       {data.grokBotPercentUsed !== null && (
         <div className={classes.quotaRow}>
-          <div className={classes.quotaMessage}>{data.grokBotLabel || t('cursor_quota.grok_bot')}</div>
+          <div className={classes.quotaMessage}>
+            {plainText(data.grokBotLabel) || t('cursor_quota.grok_bot')}
+          </div>
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('cursor_quota.weekly_usage')}</span>
             <span className={classes.quotaPercent}>{formatUsed(t, data.grokBotPercentUsed)}</span>
@@ -121,6 +125,17 @@ function includedSpend(
     used: dollars(data.includedSpendCents),
     limit: dollars(data.includedLimitCents),
   });
+}
+
+function plainText(value: string | undefined) {
+  if (!value) return '';
+  return value
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 }
 
 function dollars(cents: number) {
