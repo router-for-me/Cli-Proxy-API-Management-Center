@@ -31,6 +31,7 @@
   min-width: 0;
 
   > :first-child {
+    flex: 1 1 auto;
     min-width: 0;
   }
 }

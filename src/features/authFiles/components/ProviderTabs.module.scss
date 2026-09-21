@@ -6,12 +6,25 @@
   display: flex;
   align-items: stretch;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   border-bottom: 1px solid var(--border-color);
-  scrollbar-width: none;
+  // Keep a draggable affordance for mice without horizontal scrolling.
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-tertiary) transparent;
 
   &::-webkit-scrollbar {
-    display: none;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--text-tertiary);
+    border-radius: $radius-full;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
 
