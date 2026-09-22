@@ -13,5 +13,7 @@ export * from './version';
 export * from './models';
 export * from './metaQuota';
 export * from './plugins';
+export * from './pluginProxy';
+export * from './pluginStore';
 export * from './transformers';
 export * from './vertex';
