@@ -586,6 +586,8 @@
     "reset_at": "Resets {{time}}",
     "product_usage": "{{product}} usage",
     "plan_label": "Plan",
+    "resets_label": "Resets",
+    "prepaid": "Prepaid",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
     "plan_paid": "Paid",
