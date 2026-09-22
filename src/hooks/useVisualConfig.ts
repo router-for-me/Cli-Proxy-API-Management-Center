@@ -17,6 +17,7 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import { isValidTimezone } from '@/utils/timezoneValidation';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -208,6 +209,9 @@ export function getVisualConfigValidationErrors(
     maxRetryCredentials: getIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getIntegerError(values.maxRetryInterval),
     authAutoRefreshWorkers: getIntegerError(values.authAutoRefreshWorkers),
+    claudeHeaderTimezone: isValidTimezone(values.claudeHeaderTimezone)
+      ? undefined
+      : 'timezone_invalid',
     'streaming.keepaliveSeconds': getIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getIntegerError(
@@ -1088,6 +1092,7 @@ function getNextDirtyFields(
       'claudeHeaderOs',
       'claudeHeaderArch',
       'claudeHeaderTimeout',
+      'claudeHeaderTimezone',
       'claudeHeaderStabilizeDeviceProfile',
       'codexHeaderUserAgent',
       'codexHeaderBetaFeatures',
@@ -1368,6 +1373,8 @@ export function useVisualConfig() {
           typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
         claudeHeaderTimeout:
           typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
+        claudeHeaderTimezone:
+          typeof claudeHeaderDefaults?.timezone === 'string' ? claudeHeaderDefaults.timezone : '',
         claudeHeaderStabilizeDeviceProfile: Boolean(
           claudeHeaderDefaults?.['stabilize-device-profile']
         ),
@@ -1633,6 +1640,7 @@ export function useVisualConfig() {
           dirtyFields.has('claudeHeaderOs') ||
           dirtyFields.has('claudeHeaderArch') ||
           dirtyFields.has('claudeHeaderTimeout') ||
+          dirtyFields.has('claudeHeaderTimezone') ||
           dirtyFields.has('claudeHeaderStabilizeDeviceProfile');
         if (claudeHeadersDirty) {
           ensureMapInDoc(doc, ['claude-header-defaults']);
@@ -1665,6 +1673,9 @@ export function useVisualConfig() {
           }
           if (dirtyFields.has('claudeHeaderTimeout')) {
             setStringInDoc(doc, ['claude-header-defaults', 'timeout'], values.claudeHeaderTimeout);
+          }
+          if (dirtyFields.has('claudeHeaderTimezone')) {
+            setStringInDoc(doc, ['claude-header-defaults', 'timezone'], values.claudeHeaderTimezone);
           }
           if (dirtyFields.has('claudeHeaderStabilizeDeviceProfile')) {
             setBooleanInDoc(

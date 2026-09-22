@@ -373,6 +373,9 @@
     "prefix_label": "Префикс (prefix)",
     "proxy_url_label": "URL прокси (proxy_url)",
     "proxy_url_placeholder": "socks5://username:password@proxy_ip:port/",
+    "timezone_label": "Часовой пояс (timezone)",
+    "timezone_hint": "Часовой пояс IANA для currentDate Claude Code. Пустое поле использует общий пояс, затем пояс сервера.",
+    "timezone_invalid": "Укажите действительный часовой пояс IANA, например Asia/Shanghai.",
     "priority_label": "Приоритет (priority)",
     "priority_placeholder": "например: 10 или -1",
     "priority_hint": "Только целые числа. Некорректные значения игнорируются. Чем больше число, тем выше приоритет.",
@@ -1136,6 +1139,8 @@
           "os": "OS",
           "arch": "Arch",
           "timeout": "Timeout",
+          "timezone": "Часовой пояс по умолчанию",
+          "timezone_hint": "Часовой пояс IANA для currentDate Claude Code, если он не задан для учётной записи. Пустое поле использует пояс сервера.",
           "stabilize_device": "Стабилизировать профиль устройства",
           "stabilize_device_desc": "Фиксировать OS/Arch и стабилизировать программный отпечаток для учётных данных/API-ключа",
           "beta_features": "Beta Features"
@@ -1289,6 +1294,7 @@
         "integer": "Введите целое число",
         "non_negative_integer": "Введите неотрицательное целое число",
         "integer_range_1_3600": "Введите целое число от 1 до 3600",
+        "timezone_invalid": "Введите действительный часовой пояс IANA, например Asia/Shanghai",
         "payload_invalid_number": "Введите корректное число",
         "payload_invalid_boolean": "Выберите true или false",
         "payload_invalid_json": "Введите корректный JSON"

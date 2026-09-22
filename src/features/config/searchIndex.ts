@@ -408,6 +408,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['claude'],
   },
   {
+    fieldId: 'claudeHeaderTimezone',
+    sectionId: 'advanced',
+    labelKey: L('sections.headers.timezone'),
+    qualifierKey: L('sections.headers.claude_title'),
+    yamlKeys: ['claude-header-defaults', 'timezone'],
+    keywords: ['claude', 'timezone', '时区'],
+  },
+  {
     fieldId: 'claudeHeaderStabilizeDeviceProfile',
     sectionId: 'advanced',
     labelKey: L('sections.headers.stabilize_device'),

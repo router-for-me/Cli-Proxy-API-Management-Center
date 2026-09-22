@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import type { PluginStoreAuthRule } from '@/types/visualConfig';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
+import { getValidationMessage } from '../blocks/shared';
 import { SectionCard } from '../SectionCard';
 import {
   Divider,
@@ -23,7 +24,7 @@ import { StringListEditor } from '../blocks/StringListEditor';
 const Icon = CONFIG_TAB_ICONS.advanced;
 
 /** 06 高级与实验：插件源、供应商敏感词、签名缓存与请求头默认值。 */
-export function SectionAdvanced({ values, disabled, animateIn, onChange }: ConfigSectionProps) {
+export function SectionAdvanced({ values, validationErrors, disabled, animateIn, onChange }: ConfigSectionProps) {
   const { t } = useTranslation();
 
   const handlePluginStoreSourcesChange = useCallback(
@@ -277,6 +278,17 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
                   placeholder="600"
                   value={values.claudeHeaderTimeout}
                   onChange={(e) => onChange({ claudeHeaderTimeout: e.target.value })}
+                  disabled={disabled}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="claudeHeaderTimezone">
+                <Input
+                  label={t('config_management.visual.sections.headers.timezone')}
+                  placeholder="Asia/Shanghai"
+                  hint={t('config_management.visual.sections.headers.timezone_hint')}
+                  error={getValidationMessage(t, validationErrors?.claudeHeaderTimezone)}
+                  value={values.claudeHeaderTimezone}
+                  onChange={(e) => onChange({ claudeHeaderTimezone: e.target.value })}
                   disabled={disabled}
                 />
               </FieldAnchor>
