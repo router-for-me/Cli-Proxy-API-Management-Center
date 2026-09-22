@@ -307,6 +307,14 @@ interface AntigravityBucketLike {
   periodHours?: number | null;
 }
 
+interface MetaWindowLike {
+  id: 'window' | 'weekly';
+  usedPercent: number | null;
+  /** Unix seconds from the upstream Meta contract. */
+  resetAt?: number;
+  durationMinutes?: number;
+}
+
 export interface TimelineLaneInput {
   name: string;
   displayName: string;
@@ -409,6 +417,35 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
+  if (provider === 'devin') {
+    const windows =
+      (
+        quota as {
+          windows?: {
+            id: string;
+            label?: string;
+            remainingPercent: number | null;
+            resetAtMs: number | null;
+            periodHours: number;
+          }[];
+        }
+      ).windows ?? [];
+    const chosen = pickLaneWindow(windows, maxPeriodHours);
+    if (!chosen) return empty;
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs,
+      periodHours: chosen.periodHours,
+      remaining: chosen.remainingPercent,
+      limits: windows
+        .filter((window) => window.remainingPercent !== null)
+        .map((window) => ({
+          label: window.label ?? window.id,
+          remaining: window.remainingPercent as number,
+        })),
+    };
+  }
+
   if (provider === 'xai') {
     const billing = (quota as { billing?: XaiBillingLike | null }).billing;
     // Only the weekly limit is a quota window. The monthly figure on the same
@@ -484,6 +521,49 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       remaining: remainingOf(chosen),
       limits: rows
         .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))
+        .filter((limit): limit is TimelineLimit => limit.remaining !== null),
+    };
+  }
+
+  if (provider === 'meta') {
+    const sourceWindows = (quota as { data?: { windows?: MetaWindowLike[] } }).data?.windows ?? [];
+    const windows = sourceWindows
+      // The upstream weekly bucket has no duration field; its scope defines seven days.
+      .map((window) => ({
+        ...window,
+        durationMinutes: window.id === 'weekly' ? 7 * 24 * 60 : window.durationMinutes,
+      }))
+      .filter(
+        (window) =>
+          typeof window.resetAt === 'number' &&
+          Number.isFinite(window.resetAt) &&
+          typeof window.durationMinutes === 'number' &&
+          Number.isFinite(window.durationMinutes) &&
+          window.durationMinutes > 0
+      )
+      .map((window) => ({
+        ...window,
+        resetAtMs: (window.resetAt as number) * 1000,
+        periodHours: (window.durationMinutes as number) / 60,
+      }));
+    const chosen = pickLaneWindow(windows, maxPeriodHours);
+    if (!chosen) return empty;
+
+    const remainingOf = (window: MetaWindowLike) =>
+      typeof window.usedPercent === 'number' && Number.isFinite(window.usedPercent)
+        ? clampPercent(100 - window.usedPercent)
+        : null;
+
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs,
+      periodHours: chosen.periodHours,
+      remaining: remainingOf(chosen),
+      limits: windows
+        .map((window) => ({
+          label: `meta_quota.${window.id}`,
+          remaining: remainingOf(window),
+        }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
     };
   }

@@ -286,7 +286,7 @@ export function useConnectivityTest(
   }, [apiKeyEntries, brand, runOpenAIKey]);
 
   const runCodex = useCallback(async (): Promise<void> => {
-    if (brand !== 'codex' && brand !== 'xai') return;
+    if (brand !== 'codex' && brand !== 'meta' && brand !== 'xai') return;
 
     const trimmedBase = baseUrl.trim();
     if (!trimmedBase) {

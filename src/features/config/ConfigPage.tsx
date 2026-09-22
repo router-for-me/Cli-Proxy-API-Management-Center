@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useRevealGroup } from '@/hooks/motion';
@@ -25,6 +26,7 @@ import {
   resolveDirtyTabs,
   resolveStatus,
 } from './uiState';
+import { findConfigFieldById } from './searchIndex';
 import { shouldReloadVisualDraft, useConfigDocument } from './hooks/useConfigDocument';
 import { useFieldJump } from './hooks/useFieldJump';
 import { useSourceSearch } from './hooks/useSourceSearch';
@@ -50,6 +52,12 @@ const ENTRANCE_BUDGET_MS = 800;
 
 export function ConfigPage() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const requestedFieldEntry = useMemo(() => {
+    const fieldId = new URLSearchParams(location.search).get('field');
+    return findConfigFieldById(fieldId);
+  }, [location.search]);
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.isCurrentLayer : true;
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -71,11 +79,14 @@ export function ConfigPage() {
   } = useVisualConfig();
 
   const [mode, setMode] = useState<ConfigEditorMode>(() =>
-    readSavedMode(localStorage.getItem(CONFIG_MODE_STORAGE_KEY))
+    requestedFieldEntry ? 'visual' : readSavedMode(localStorage.getItem(CONFIG_MODE_STORAGE_KEY))
   );
-  const [activeSection, setActiveSection] = useState<ConfigTabId>(() =>
-    readSavedSection(localStorage.getItem(CONFIG_SECTION_STORAGE_KEY))
+  const [activeSection, setActiveSection] = useState<ConfigTabId>(
+    () =>
+      requestedFieldEntry?.sectionId ??
+      readSavedSection(localStorage.getItem(CONFIG_SECTION_STORAGE_KEY))
   );
+  const handledRequestedFieldRef = useRef<string | null>(null);
   // 首载入场：挂载后一个预算周期内为 true；此后切 tab 新挂载的卡片不再播入场。
   const [animateCards, setAnimateCards] = useState(true);
   useEffect(() => {
@@ -180,6 +191,35 @@ export function ConfigPage() {
     values: visualValues,
     setActiveSection: handleSectionChange,
   });
+
+  useEffect(() => {
+    if (!requestedFieldEntry || handledRequestedFieldRef.current === requestedFieldEntry.fieldId) {
+      return;
+    }
+
+    handledRequestedFieldRef.current = requestedFieldEntry.fieldId;
+    localStorage.setItem(CONFIG_MODE_STORAGE_KEY, 'visual');
+    jumpToField(requestedFieldEntry);
+
+    const nextSearchParams = new URLSearchParams(location.search);
+    nextSearchParams.delete('field');
+    const nextSearch = nextSearchParams.toString();
+    void navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : '',
+        hash: location.hash,
+      },
+      { replace: true }
+    );
+  }, [
+    jumpToField,
+    location.hash,
+    location.pathname,
+    location.search,
+    navigate,
+    requestedFieldEntry,
+  ]);
 
   const errorCounts = useMemo(
     () => countSectionErrors(visualValidationErrors, visualHasPayloadValidationErrors),

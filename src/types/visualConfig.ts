@@ -124,6 +124,7 @@ export type VisualConfigValues = {
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
   antigravitySensitiveWords: string[];
+  devinSensitiveWords: string[];
   antigravitySignatureCacheEnabled: boolean;
   antigravitySignatureBypassStrict: boolean;
   claudeHeaderUserAgent: string;
@@ -190,6 +191,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingSessionAffinityTTL: '',
   wsAuth: true,
   antigravitySensitiveWords: [],
+  devinSensitiveWords: [],
   antigravitySignatureCacheEnabled: true,
   antigravitySignatureBypassStrict: false,
   claudeHeaderUserAgent: '',

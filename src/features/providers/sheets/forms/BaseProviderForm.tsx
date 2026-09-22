@@ -58,6 +58,7 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   proxyUrl: '',
   weight: undefined,
 });
+const META_API_BASE_URL = 'https://api.meta.ai/v1';
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
 const stripDisableAllRule = (list?: string[]): string[] =>
@@ -79,7 +80,7 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
-      baseUrl: brand === 'xai' ? XAI_API_BASE_URL : '',
+      baseUrl: brand === 'meta' ? META_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
@@ -97,6 +98,7 @@ function buildInitialForm(
       testModel:
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
+        brand === 'meta' ||
         brand === 'xai' ||
         isClaudeLikeBrand(brand) ||
         brand === 'gemini' ||
@@ -195,6 +197,7 @@ function buildInitialForm(
       : undefined,
     testModel:
       brand === 'codex' ||
+      brand === 'meta' ||
       brand === 'xai' ||
       isClaudeLikeBrand(brand) ||
       brand === 'gemini' ||
@@ -479,12 +482,13 @@ export function BaseProviderForm({
     brand === 'gemini' ||
     brand === 'interactions' ||
     brand === 'codex' ||
+    brand === 'meta' ||
     brand === 'xai' ||
     isClaudeLikeBrand(brand) ||
     brand === 'openaiCompatibility';
   const supportsModelImage = brand === 'openaiCompatibility';
   const singleConnectivity =
-    brand === 'codex' || brand === 'xai'
+    brand === 'codex' || brand === 'meta' || brand === 'xai'
       ? { status: connectivity.codexStatus, run: connectivity.runCodex }
       : brand === 'gemini' || brand === 'interactions'
         ? { status: connectivity.geminiStatus, run: connectivity.runGemini }
@@ -672,6 +676,7 @@ export function BaseProviderForm({
             <label className={styles.label} htmlFor={`${fid}-testModel`}>
               {t('providersPage.form.testModel')}
               {brand === 'codex' ||
+              brand === 'meta' ||
               brand === 'xai' ||
               isClaudeLikeBrand(brand) ||
               brand === 'gemini' ||

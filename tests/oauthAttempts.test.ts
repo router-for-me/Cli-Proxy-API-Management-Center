@@ -122,6 +122,7 @@ describe('OAuth attempt lifecycle', () => {
     response.resolve('ok');
     await flush();
     expect(old.isCurrent()).toBe(false);
+    expect(old.signal.aborted).toBe(true);
     expect(tasks.size).toBe(0);
     expect(effects).toBe(0);
     expect(attempts.begin('codex').isCurrent()).toBe(true);
@@ -141,6 +142,72 @@ describe('OAuth attempt lifecycle', () => {
     tick();
     expect(resets).toBe(1);
     expect(next.isCurrent()).toBe(true);
+  });
+
+  test('Devin cancellation invalidates an in-flight poll and callback before DELETE settles', async () => {
+    const { attempts, tasks, tick } = setup();
+    const response = deferred<string>();
+    const callback = deferred<void>();
+    let effects = 0;
+    const login = attempts.begin('devin');
+    login.poll(
+      () => response.promise,
+      () => {
+        effects++;
+        return true;
+      },
+      () => effects++,
+      3000
+    );
+    const submission = callback.promise.then(() => {
+      if (login.isCurrent()) effects++;
+    });
+    tick();
+    const cancellation = attempts.begin('devin');
+    response.resolve('ok');
+    callback.resolve();
+    await submission;
+    await flush();
+    expect(effects).toBe(0);
+    expect(tasks.size).toBe(0);
+    expect(cancellation.isCurrent()).toBe(true);
+    expect(login.signal.aborted).toBe(true);
+    expect(cancellation.signal.aborted).toBe(false);
+
+    // A connection switch or a later login also makes an outstanding DELETE inert.
+    attempts.invalidateAll();
+    const next = attempts.begin('devin');
+    expect(cancellation.isCurrent()).toBe(false);
+    expect(cancellation.signal.aborted).toBe(true);
+    cancellation.invalidate();
+    expect(next.isCurrent()).toBe(true);
+    expect(next.signal.aborted).toBe(false);
+  });
+
+  test('Devin terminal status stops polling without disturbing another provider', async () => {
+    for (const status of ['ok', 'error']) {
+      const { attempts, tasks, tick } = setup();
+      const other = attempts.begin('codex');
+      other.schedule(() => {}, 3000);
+      const devin = attempts.begin('devin');
+      const results: string[] = [];
+      devin.poll(
+        async () => status,
+        (result) => {
+          results.push(result);
+          devin.invalidate();
+          return false;
+        },
+        () => {},
+        3000
+      );
+      tick();
+      await flush();
+      expect(results).toEqual([status]);
+      expect(tasks.size).toBe(0);
+      expect(other.isCurrent()).toBe(true);
+      expect(devin.isCurrent()).toBe(false);
+    }
   });
 
   test('terminal results and request errors do not schedule another poll', async () => {
