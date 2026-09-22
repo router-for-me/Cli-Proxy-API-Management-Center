@@ -16,19 +16,23 @@ export interface QuotaMeterProps {
   percent: number | null;
   classes: QuotaClassMap;
   index?: number;
+  /** `used` fills by percent consumed with one neutral color. Default colors mean remaining. */
+  mode?: 'remaining' | 'used';
 }
 
-export function QuotaMeter({ percent, classes, index }: QuotaMeterProps) {
+export function QuotaMeter({ percent, classes, index, mode = 'remaining' }: QuotaMeterProps) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const normalized = percent === null ? null : clamp(percent, 0, 100);
   const fillClass =
-    normalized === null
-      ? classes.quotaBarFillMedium
-      : normalized >= QUOTA_PROGRESS_HIGH_THRESHOLD
-        ? classes.quotaBarFillHigh
-        : normalized >= QUOTA_PROGRESS_MEDIUM_THRESHOLD
-          ? classes.quotaBarFillMedium
-          : classes.quotaBarFillLow;
+    mode === 'used'
+      ? classes.quotaBarFillUsed
+      : normalized === null
+        ? classes.quotaBarFillMedium
+        : normalized >= QUOTA_PROGRESS_HIGH_THRESHOLD
+          ? classes.quotaBarFillHigh
+          : normalized >= QUOTA_PROGRESS_MEDIUM_THRESHOLD
+            ? classes.quotaBarFillMedium
+            : classes.quotaBarFillLow;
   const widthPercent = Math.round((normalized ?? 0) * 100) / 100;
   const style: CSSProperties & { '--meter-index'?: number } = { width: `${widthPercent}%` };
   if (index !== undefined) {

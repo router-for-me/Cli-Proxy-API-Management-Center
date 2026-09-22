@@ -58,6 +58,18 @@ export interface TimelineLane {
   remaining: number | null;
   limits: TimelineLimit[];
   resetCredits: TimelineResetCredit[];
+  /** Resets that are not the bar itself, such as a monthly plan beside a weekly window. */
+  marks: TimelineMark[];
+}
+
+/** A dated reset drawn in the lane head and, when it falls in view, as a tick. */
+export interface TimelineMark {
+  atMs: number;
+  label: string;
+}
+
+export interface TimelineMarkView extends TimelineMark {
+  leftPercent: number;
 }
 
 /** One drawn bar: a single window occurrence within the visible span. */
@@ -210,6 +222,36 @@ export function projectResetCredits(
     }));
 }
 
+/** Project lane marks that fall inside the span. The bar's own anchor is the bar edge, not a second tick. */
+export function projectTimelineMarks(
+  lane: TimelineLane,
+  spanStartMs: number,
+  spanEndMs: number
+): TimelineMarkView[] {
+  const span = spanEndMs - spanStartMs;
+  if (span <= 0) return [];
+  return lane.marks
+    .filter(
+      (mark) => mark.atMs >= spanStartMs && mark.atMs < spanEndMs && mark.atMs !== lane.anchorMs
+    )
+    .map((mark) => ({
+      ...mark,
+      leftPercent: ((mark.atMs - spanStartMs) / span) * 100,
+    }));
+}
+
+function displayedUsedPercent(value: number) {
+  if (value <= 0) return 0;
+  if (value < 1) return 1;
+  return Math.round(value);
+}
+
+function parseIso(value: string | undefined) {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 /**
  * Pick the window a lane is drawn from: the one whose period best fits the
  * visible span, tie-broken by the soonest reset.
@@ -353,6 +395,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     remaining: null,
     limits: [],
     resetCredits: [],
+    marks: [],
   };
 
   if (!quota || quota.status !== 'success') return empty;
@@ -522,6 +565,63 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       limits: rows
         .map((row) => ({ label: row.label ?? '', remaining: remainingOf(row) }))
         .filter((limit): limit is TimelineLimit => limit.remaining !== null),
+    };
+  }
+
+  if (provider === 'cursor') {
+    const data = (
+      quota as {
+        data?: {
+          resetsAt?: string;
+          cycleStartAt?: string;
+          autoPercentUsed?: number | null;
+          apiPercentUsed?: number | null;
+          grokBotPercentUsed?: number | null;
+          grokBotCycleStartAt?: string;
+          grokBotResetsAt?: string;
+        };
+      }
+    ).data;
+    const remainingOf = (used: number | null | undefined) =>
+      typeof used === 'number' && Number.isFinite(used)
+        ? clampPercent(100 - displayedUsedPercent(used))
+        : null;
+    const windows: { resetAtMs: number; periodHours: number; remaining: number | null }[] = [];
+    const grokEnd = parseIso(data?.grokBotResetsAt);
+    const grokStart = parseIso(data?.grokBotCycleStartAt);
+    if (grokEnd !== null && grokStart !== null && grokEnd > grokStart) {
+      windows.push({
+        resetAtMs: grokEnd,
+        periodHours: (grokEnd - grokStart) / HOUR_MS,
+        remaining: remainingOf(data?.grokBotPercentUsed),
+      });
+    }
+    const planEnd = parseIso(data?.resetsAt);
+    const planStart = parseIso(data?.cycleStartAt);
+    if (planEnd !== null) {
+      windows.push({
+        resetAtMs: planEnd,
+        periodHours:
+          planStart !== null && planEnd > planStart ? (planEnd - planStart) / HOUR_MS : 24 * 30,
+        remaining: remainingOf(data?.apiPercentUsed),
+      });
+    }
+    const chosen = pickLaneWindow(windows, maxPeriodHours);
+    if (!chosen) return empty;
+    const marks: TimelineMark[] = [];
+    if (grokEnd !== null) marks.push({ atMs: grokEnd, label: 'cursor_quota.grok_bot' });
+    if (planEnd !== null) marks.push({ atMs: planEnd, label: 'cursor_quota.plan_reset' });
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs ?? null,
+      periodHours: chosen.periodHours ?? null,
+      remaining: chosen.remaining,
+      limits: [
+        { label: 'cursor_quota.cursor_models', remaining: remainingOf(data?.autoPercentUsed) },
+        { label: 'cursor_quota.other_models', remaining: remainingOf(data?.apiPercentUsed) },
+        { label: 'cursor_quota.grok_bot', remaining: remainingOf(data?.grokBotPercentUsed) },
+      ].filter((limit): limit is TimelineLimit => limit.remaining !== null),
+      marks,
     };
   }
 

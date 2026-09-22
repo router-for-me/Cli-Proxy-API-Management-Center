@@ -108,6 +108,7 @@ describe('projectLane', () => {
     remaining: 40,
     limits: [],
     resetCredits: [],
+    marks: [],
     ...over,
   });
 
@@ -506,6 +507,63 @@ describe('buildTimelineLane', () => {
     expect(
       buildTimelineLane({ ...base, provider: 'claude', quota: { status: 'error' } }).anchorMs
     ).toBeNull();
+  });
+
+  test('cursor weekly lane follows the grok bot week and keeps both reset dates', () => {
+    const grokReset = Date.parse('2026-09-22T20:23:06.799Z');
+    const planReset = Date.parse('2026-10-11T20:21:37.000Z');
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'cursor',
+      maxPeriodHours: 14 * 24,
+      quota: {
+        status: 'success',
+        data: {
+          resetsAt: '2026-10-11T20:21:37.000Z',
+          cycleStartAt: '2026-09-11T20:21:37.000Z',
+          autoPercentUsed: 0.001,
+          apiPercentUsed: 66.14,
+          grokBotPercentUsed: 6.93,
+          grokBotCycleStartAt: '2026-09-15T20:23:06.799Z',
+          grokBotResetsAt: '2026-09-22T20:23:06.799Z',
+        },
+      },
+    });
+
+    expect(lane.anchorMs).toBe(grokReset);
+    expect(lane.periodHours).toBeCloseTo(24 * 7);
+    expect(lane.remaining).toBe(93);
+    expect(lane.limits).toEqual([
+      { label: 'cursor_quota.cursor_models', remaining: 99 },
+      { label: 'cursor_quota.other_models', remaining: 34 },
+      { label: 'cursor_quota.grok_bot', remaining: 93 },
+    ]);
+    expect(lane.marks).toEqual([
+      { atMs: grokReset, label: 'cursor_quota.grok_bot' },
+      { atMs: planReset, label: 'cursor_quota.plan_reset' },
+    ]);
+  });
+
+  test('cursor has no 5-hour session window to invent', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'cursor',
+      maxPeriodHours: 5,
+      quota: {
+        status: 'success',
+        data: {
+          resetsAt: '2026-10-11T20:21:37.000Z',
+          cycleStartAt: '2026-09-11T20:21:37.000Z',
+          apiPercentUsed: 66,
+          grokBotPercentUsed: 7,
+          grokBotCycleStartAt: '2026-09-15T20:23:06.799Z',
+          grokBotResetsAt: '2026-09-22T20:23:06.799Z',
+        },
+      },
+    });
+
+    expect(lane.periodHours).not.toBe(5);
+    expect(lane.marks).toHaveLength(2);
   });
 
   test('windows without a reset instant do not anchor the lane', () => {
