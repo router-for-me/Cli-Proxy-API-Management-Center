@@ -3,7 +3,7 @@
  *
  * When the weekly endpoint omits creditUsagePercent the summary keeps
  * usagePercent null; the body should say the usage is unavailable and hide
- * the meter rather than render a fabricated "Used 0%". The legacy
+ * the meter rather than render a fabricated "100% remaining". The legacy
  * zero-limit/zero-used monthly row is hidden only while weekly data exists.
  */
 
@@ -76,8 +76,8 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
 
     expect(markup).toContain('Usage unavailable from xAI');
     expect(markup).toContain(formatQuotaResetTime(WEEKLY_PERIOD_END));
-    expect(markup).not.toContain('Used --');
-    expect(markup).not.toContain('Used 0%');
+    expect(markup).not.toContain('-- remaining');
+    expect(markup).not.toContain('100% remaining');
     // Zero-budget zero-used monthly row is hidden while weekly data exists.
     expect(markup).not.toContain('Monthly credits');
     expect(markup).not.toContain('$0.00 / $0.00');
@@ -90,20 +90,20 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     const markup = render(quota);
 
     expect(markup).toContain('Usage unavailable from xAI');
-    expect(markup).not.toContain('Used 0%');
+    expect(markup).not.toContain('100% remaining');
   });
 
-  test('renders an explicit zero percent as Used 0%', () => {
+  test('renders an explicit zero percent as 100% remaining', () => {
     const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: 0 }), monthlyConfig()));
 
-    expect(markup).toContain('Used 0%');
+    expect(markup).toContain('100% remaining');
     expect(markup).not.toContain('Usage unavailable from xAI');
   });
 
-  test('renders an explicit percent as Used 37%', () => {
+  test('renders an explicit percent as 63% remaining', () => {
     const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: 37 }), monthlyConfig()));
 
-    expect(markup).toContain('Used 37%');
+    expect(markup).toContain('63% remaining');
     expect(markup).not.toContain('Usage unavailable from xAI');
   });
 
@@ -131,7 +131,7 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
 
     expect(quota.billing?.usagePercent).toBe(percent);
     expect(quota.billing?.usedPercent).toBe(20);
-    expect(render(quota)).toContain(`Used ${percent}%`);
+    expect(render(quota)).toContain(`${100 - percent}% remaining`);
   });
 
   test('preserves monthly-only usage', () => {

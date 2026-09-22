@@ -157,9 +157,11 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
             <span className={classes.quotaModel}>{t('xai_quota.weekly_limit')}</span>
             <div className={classes.quotaMeta}>
               <span className={classes.quotaPercent}>
-                {weeklyUsed === null
+                {weeklyRemaining === null
                   ? t('xai_quota.usage_unavailable')
-                  : t('xai_quota.used_percent', { percent: formatXaiPercent(weeklyUsed) })}
+                  : t('xai_quota.remaining_percent', {
+                      percent: formatXaiPercent(weeklyRemaining),
+                    })}
               </span>
               {weeklyResetDisplay && (
                 <QuotaResetLabel display={weeklyResetDisplay} classes={classes} soon={weeklySoon} />
@@ -183,8 +185,8 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
               </span>
               <div className={classes.quotaMeta}>
                 <span className={classes.quotaPercent}>
-                  {t('xai_quota.used_percent', {
-                    percent: formatXaiPercent(used),
+                  {t('xai_quota.remaining_percent', {
+                    percent: formatXaiPercent(remainingPercent),
                   })}
                 </span>
               </div>
