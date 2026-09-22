@@ -589,6 +589,8 @@
     "reset_at": "Сброс {{time}}",
     "product_usage": "Использование {{product}}",
     "plan_label": "План",
+    "resets_label": "Сброс",
+    "prepaid": "Предоплата",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
     "plan_paid": "Платный",

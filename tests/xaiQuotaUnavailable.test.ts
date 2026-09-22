@@ -15,8 +15,10 @@ import { XaiQuotaBody } from '@/features/quota/providers/xai/XaiQuotaBody';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import {
   buildXaiBillingSummary,
+  formatInstantShort,
   formatQuotaResetTime,
   mergeXaiBillingSummaries,
+  resolveXaiSubscriptionPlan,
 } from '@/utils/quota';
 import type { XaiBillingConfig, XaiQuotaState } from '@/types';
 
@@ -65,6 +67,26 @@ const render = (quota: XaiQuotaState): string =>
 
 beforeAll(async () => {
   await i18n.changeLanguage('en');
+});
+
+describe('resolveXaiSubscriptionPlan', () => {
+  test('uses the settings display name and treats Heavy as the elite badge', () => {
+    expect(resolveXaiSubscriptionPlan('SuperGrokPro', 'SuperGrok Heavy')).toEqual({
+      label: 'SuperGrok Heavy',
+      tier: 'elite',
+    });
+  });
+
+  test('treats X Premium+ as the premium badge', () => {
+    expect(resolveXaiSubscriptionPlan('XPremiumPlus', 'X Premium+')).toEqual({
+      label: 'X Premium+',
+      tier: 'premium',
+    });
+  });
+
+  test('returns null when neither call produced a name', () => {
+    expect(resolveXaiSubscriptionPlan(null, '  ')).toBeNull();
+  });
 });
 
 describe('XaiQuotaBody unavailable weekly usage', () => {
@@ -149,6 +171,34 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     const markup = render(quotaFor(weeklyConfig(), monthlyConfig({ used: { val: 100 } })));
 
     expect(markup).toContain('Monthly credits');
+  });
+
+  test('shows the Grok subscription name and the weekly reset beside it', () => {
+    const quota = quotaFor(
+      weeklyConfig({
+        creditUsagePercent: 94,
+        prepaidBalance: { val: 250 },
+        productUsage: [
+          { product: 'GrokBuild', usagePercent: 93 },
+          { product: 'GrokChat', usagePercent: 1 },
+        ],
+      }),
+      monthlyConfig({ used: { val: 4 } })
+    );
+    if (!quota.billing) throw new Error('missing billing');
+    quota.billing.planLabel = 'SuperGrok Heavy';
+    quota.billing.planTier = 'elite';
+
+    const markup = render(quota);
+
+    expect(markup).toContain('elitePlanValue');
+    expect(markup).toContain('SuperGrok Heavy');
+    expect(markup).toContain('Resets');
+    expect(markup).toContain(formatInstantShort(Date.parse(WEEKLY_PERIOD_END)));
+    expect(markup).toContain('GrokChat usage');
+    expect(markup).toContain('Prepaid');
+    expect(markup).toContain('$2.50');
+    expect(markup).toContain('$0.04 / $0.00');
   });
 
   test('keeps the monthly-only zero row when no weekly data exists', () => {
