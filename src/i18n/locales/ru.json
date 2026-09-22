@@ -584,7 +584,7 @@
     "fetch_all": "Получить все",
     "weekly_limit": "Недельный лимит",
     "monthly_credits": "Месячные кредиты",
-    "used_percent": "Использовано {{percent}}",
+    "remaining_percent": "Осталось {{percent}}",
     "usage_unavailable": "Данные об использовании недоступны от xAI",
     "reset_at": "Сброс {{time}}",
     "product_usage": "Использование {{product}}",

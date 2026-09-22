@@ -579,7 +579,7 @@
     "fetch_all": "获取全部",
     "weekly_limit": "周限额",
     "monthly_credits": "月度积分",
-    "used_percent": "已用 {{percent}}",
+    "remaining_percent": "剩余 {{percent}}",
     "usage_unavailable": "xAI 用量暂不可用",
     "reset_at": "重置 {{time}}",
     "product_usage": "{{product}} 使用",
