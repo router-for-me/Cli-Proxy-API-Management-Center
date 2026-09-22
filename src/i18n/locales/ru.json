@@ -555,6 +555,17 @@
     "unknown": "Неизвестно",
     "remaining": "Осталось {{percent}}%"
   },
+  "plugin_quota": {
+    "empty_title": "Нет файлов плагинов",
+    "empty_desc": "Подключите аккаунт плагина, чтобы просмотреть оставшуюся квоту.",
+    "idle": "Нажмите, чтобы обновить квоту",
+    "loading": "Загрузка квоты…",
+    "load_failed": "Не удалось загрузить квоту: {{message}}",
+    "missing_auth_index": "В файле авторизации отсутствует auth_index",
+    "empty_data": "Нет доступных данных о квоте",
+    "plan_label": "План",
+    "remaining_percent": "Осталось {{percent}}%"
+  },
   "kimi_quota": {
     "title": "Квота Kimi",
     "empty_title": "Файлы авторизации Kimi отсутствуют",

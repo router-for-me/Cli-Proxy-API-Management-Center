@@ -550,6 +550,17 @@
     "unknown": "未知",
     "remaining": "剩余 {{percent}}%"
   },
+  "plugin_quota": {
+    "empty_title": "暂无插件凭证",
+    "empty_desc": "连接插件账户后查看剩余额度。",
+    "idle": "点击此处刷新额度",
+    "loading": "正在加载额度…",
+    "load_failed": "额度加载失败：{{message}}",
+    "missing_auth_index": "认证文件缺少 auth_index",
+    "empty_data": "暂无可用额度数据",
+    "plan_label": "方案",
+    "remaining_percent": "剩余 {{percent}}%"
+  },
   "kimi_quota": {
     "title": "Kimi 额度",
     "empty_title": "暂无 Kimi 认证",

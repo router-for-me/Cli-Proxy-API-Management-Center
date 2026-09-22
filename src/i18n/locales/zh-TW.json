@@ -550,6 +550,17 @@
     "unknown": "未知",
     "remaining": "剩餘 {{percent}}%"
   },
+  "plugin_quota": {
+    "empty_title": "暫無插件憑證",
+    "empty_desc": "連接插件帳戶後即可查看剩餘額度。",
+    "idle": "點擊此處重新整理配額",
+    "loading": "正在載入配額…",
+    "load_failed": "配額取得失敗：{{message}}",
+    "missing_auth_index": "驗證檔案缺少 auth_index",
+    "empty_data": "暫無可用配額資料",
+    "plan_label": "方案",
+    "remaining_percent": "剩餘 {{percent}}%"
+  },
   "kimi_quota": {
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",
