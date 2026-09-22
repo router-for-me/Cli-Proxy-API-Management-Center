@@ -84,6 +84,7 @@ button.quotaMessageAction {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .quotaRowHeader {
@@ -124,12 +125,12 @@ button.quotaMessageAction {
 /* Compact host: same contract class as QuotaBody.module.scss, tighter gutter. */
 .quotaResetRelative {
   color: var(--text-tertiary);
+}
 
-  &::before {
-    content: '·';
-    margin: 0 3px;
-    color: var(--text-quaternary);
-  }
+.quotaReset + .quotaResetRelative::before {
+  content: '·';
+  margin: 0 3px;
+  color: var(--text-quaternary);
 }
 
 .quotaResetRelativeSoon {
@@ -143,6 +144,7 @@ button.quotaMessageAction {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 /* ---------- 进度条（QuotaProgressBar 注入，Meter 风 6px 轨道） ---------- */
