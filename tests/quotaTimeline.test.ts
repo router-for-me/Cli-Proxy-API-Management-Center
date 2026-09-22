@@ -108,6 +108,7 @@ describe('projectLane', () => {
     remaining: 40,
     limits: [],
     resetCredits: [],
+    hasManualResetOverride: false,
     ...over,
   });
 
@@ -312,6 +313,51 @@ describe('buildTimelineLane', () => {
     expect(lane.anchorMs).toBe(accountReset);
     expect(lane.periodHours).toBe(168);
     expect(lane.remaining).toBe(30);
+  });
+
+  test('codex: applies a manual reset only to the standard weekly lane', () => {
+    const apiWeeklyReset = at(2026, 7, 1, 20);
+    const manualWeeklyReset = at(2026, 6, 30, 12);
+    const fiveHourReset = at(2026, 6, 29, 20);
+    const quota = {
+      status: 'success',
+      windows: [
+        {
+          id: 'five-hour',
+          label: '5-hour limit',
+          usedPercent: 20,
+          resetAtMs: fiveHourReset,
+          periodHours: 5,
+        },
+        {
+          id: 'weekly',
+          label: 'Weekly limit',
+          usedPercent: 70,
+          resetAtMs: apiWeeklyReset,
+          periodHours: 168,
+        },
+      ],
+    };
+
+    const weekly = buildTimelineLane({
+      ...base,
+      provider: 'codex',
+      quota,
+      maxPeriodHours: 14 * 24,
+      weeklyResetOverrideMs: manualWeeklyReset,
+    });
+    expect(weekly.anchorMs).toBe(manualWeeklyReset);
+    expect(weekly.hasManualResetOverride).toBe(true);
+
+    const session = buildTimelineLane({
+      ...base,
+      provider: 'codex',
+      quota,
+      maxPeriodHours: 5,
+      weeklyResetOverrideMs: manualWeeklyReset,
+    });
+    expect(session.anchorMs).toBe(fiveHourReset);
+    expect(session.hasManualResetOverride).toBe(false);
   });
 
   test('codex: includes available reset credits with parseable expiry dates', () => {

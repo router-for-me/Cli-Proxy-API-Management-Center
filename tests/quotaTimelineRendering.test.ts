@@ -149,6 +149,9 @@ describe('QuotaTimeline rendering', () => {
 
     expect(markup).toContain('role="img"');
     expect(markup).toContain('08/03 12:00');
+    // The label says 10% remaining, so the emphasized share of the bar must
+    // also be 10%, rather than visualizing the inverse 90% consumed value.
+    expect(markup).toContain('style="width:10%"');
   });
 
   test('stays hidden before any credential exposes a usable quota window', () => {

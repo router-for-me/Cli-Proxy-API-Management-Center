@@ -12,9 +12,13 @@
  * quotaTimeline.ts.)
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { IconPencil } from '@/components/ui/icons';
 import { formatRelativeInstant, TYPE_COLORS } from '@/utils/quota';
 import { getQuotaCacheKey, getQuotaDisplayName } from '@/utils/quota/identity';
 import { useNow } from '@/hooks/useNow';
@@ -30,6 +34,13 @@ import {
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
 import type { QuotaCardState } from '../providers';
+import {
+  CODEX_RESET_OVERRIDES_KEY,
+  formatLocalDateTimeInput,
+  parseLocalDateTimeInput,
+  readCodexResetOverrides,
+  writeCodexResetOverrides,
+} from '../codexResetOverrides';
 import styles from './QuotaTimeline.module.scss';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -43,6 +54,11 @@ const formatTime = (ms: number) => {
   const d = new Date(ms);
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+
+interface ResetOverrideEditor {
+  name: string;
+  displayName: string;
+}
 
 export interface QuotaTimelineProps {
   entries: QuotaFileEntry[];
@@ -74,6 +90,10 @@ export function QuotaTimeline({
   const { t } = useTranslation();
   const [mode, setMode] = useState<TimelineMode>(initialMode);
   const [offset, setOffset] = useState(initialOffset);
+  const [resetOverrides, setResetOverrides] = useState(readCodexResetOverrides);
+  const [overrideEditor, setOverrideEditor] = useState<ResetOverrideEditor | null>(null);
+  const [overrideInput, setOverrideInput] = useState('');
+  const [overrideError, setOverrideError] = useState('');
 
   // The clock has to advance on its own: bars are classified past/live/next
   // against it and the marker is positioned by it, so a long-lived tab would
@@ -81,6 +101,16 @@ export function QuotaTimeline({
   // the chart rather than each running its own timer.
   const tick = useNow(nowProp === undefined); // fixed clock: tests and screenshots
   const now = nowProp ?? tick;
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CODEX_RESET_OVERRIDES_KEY) {
+        setResetOverrides(readCodexResetOverrides());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const span = useMemo(() => timelineSpan(mode, offset, now), [mode, offset, now]);
   const todayLabel = t('quota_management.windows_today', { defaultValue: 'Today' });
@@ -121,11 +151,54 @@ export function QuotaTimeline({
             // asks specifically for a real 5-hour window; longer periods must
             // not be reinterpreted as 5-hour resets.
             maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
+            weeklyResetOverrideMs:
+              mode === 'weekly' && input.provider === 'codex'
+                ? resetOverrides[input.name]
+                : undefined,
           })
         )
         .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
-    [laneInputs, mode, span.days]
+    [laneInputs, mode, resetOverrides, span.days]
   );
+
+  const openOverrideEditor = (lane: TimelineLane) => {
+    setOverrideEditor({ name: lane.name, displayName: lane.displayName });
+    setOverrideInput(formatLocalDateTimeInput(resetOverrides[lane.name] ?? lane.anchorMs ?? now));
+    setOverrideError('');
+  };
+
+  const closeOverrideEditor = () => {
+    setOverrideEditor(null);
+    setOverrideError('');
+  };
+
+  const updateOverrides = (next: Record<string, number>) => {
+    setResetOverrides(next);
+    writeCodexResetOverrides(next);
+  };
+
+  const saveOverride = () => {
+    if (!overrideEditor) return;
+    const resetAtMs = parseLocalDateTimeInput(overrideInput);
+    if (resetAtMs === null || resetAtMs <= now) {
+      setOverrideError(
+        t('quota_management.windows_override_future_error', {
+          defaultValue: 'Choose a valid time in the future.',
+        })
+      );
+      return;
+    }
+    updateOverrides({ ...resetOverrides, [overrideEditor.name]: resetAtMs });
+    closeOverrideEditor();
+  };
+
+  const clearOverride = () => {
+    if (!overrideEditor) return;
+    const next = { ...resetOverrides };
+    delete next[overrideEditor.name];
+    updateOverrides(next);
+    closeOverrideEditor();
+  };
 
   /** Weekly: one cell per day. Session: one per 6 hours. */
   const cells = useMemo(() => {
@@ -265,6 +338,7 @@ export function QuotaTimeline({
                 cells={cells}
                 nowPercent={nowPercent}
                 resolvedTheme={resolvedTheme}
+                onEditReset={openOverrideEditor}
               />
             ))}
           </>
@@ -304,6 +378,52 @@ export function QuotaTimeline({
           </span>
         </footer>
       )}
+      <Modal
+        open={overrideEditor !== null}
+        onClose={closeOverrideEditor}
+        title={t('quota_management.windows_override_title', {
+          defaultValue: 'Override weekly reset',
+        })}
+        width={440}
+        footer={
+          <>
+            {overrideEditor && resetOverrides[overrideEditor.name] !== undefined && (
+              <Button variant="ghost" onClick={clearOverride}>
+                {t('quota_management.windows_override_restore', {
+                  defaultValue: 'Use API time',
+                })}
+              </Button>
+            )}
+            <Button variant="secondary" onClick={closeOverrideEditor}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={saveOverride}>{t('common.save')}</Button>
+          </>
+        }
+      >
+        <div className={styles.overrideForm}>
+          <p>
+            {t('quota_management.windows_override_description', {
+              name: overrideEditor?.displayName ?? '',
+              defaultValue:
+                'Set the announced weekly reset for {{name}}. This only changes the timeline in this browser.',
+            })}
+          </p>
+          <Input
+            type="datetime-local"
+            label={t('quota_management.windows_override_field', {
+              defaultValue: 'Weekly reset time',
+            })}
+            value={overrideInput}
+            min={formatLocalDateTimeInput(now)}
+            onChange={(event) => {
+              setOverrideInput(event.target.value);
+              setOverrideError('');
+            }}
+            error={overrideError}
+          />
+        </div>
+      </Modal>
     </section>
   );
 }
@@ -316,9 +436,10 @@ interface LaneProps {
   cells: { at: number; isWeekend: boolean; isDayStart: boolean }[];
   nowPercent: number | null;
   resolvedTheme: ResolvedTheme;
+  onEditReset: (lane: TimelineLane) => void;
 }
 
-function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneProps) {
+function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme, onEditReset }: LaneProps) {
   const { t, i18n } = useTranslation();
 
   const windows = useMemo(
@@ -353,12 +474,32 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
             {lane.displayName}
           </span>
           {periodLabel && <span className={styles.lanePeriod}>{periodLabel}</span>}
+          {mode === 'weekly' && lane.provider === 'codex' && lane.periodHours === 7 * 24 && (
+            <button
+              type="button"
+              className={styles.editReset}
+              data-active={lane.hasManualResetOverride ? 1 : 0}
+              onClick={() => onEditReset(lane)}
+              aria-label={t('quota_management.windows_override_edit', {
+                name: lane.displayName,
+                defaultValue: 'Edit weekly reset for {{name}}',
+              })}
+              title={
+                lane.hasManualResetOverride
+                  ? t('quota_management.windows_override_active', {
+                      defaultValue: 'Manual weekly reset active',
+                    })
+                  : undefined
+              }
+            >
+              <IconPencil size={12} />
+            </button>
+          )}
         </div>
         <div className={styles.laneLimits}>
           {lane.limits.map((limit) => (
             <span key={limit.label} className={styles.laneLimit}>
-              {lane.provider === 'meta' ? t(limit.label) : limit.label}{' '}
-              <b>{limit.remaining}%</b>
+              {lane.provider === 'meta' ? t(limit.label) : limit.label} <b>{limit.remaining}%</b>
             </span>
           ))}
         </div>
@@ -409,10 +550,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
                 {/* Only the API-reported current window has meaningful usage;
                     projected windows intentionally have no fill. */}
                 {window.remaining !== null && (
-                  <span
-                    className={styles.windowFill}
-                    style={{ width: `${100 - window.remaining}%` }}
-                  />
+                  <span className={styles.windowFill} style={{ width: `${window.remaining}%` }} />
                 )}
                 {showLabel && (
                   <span className={styles.windowLabel}>
