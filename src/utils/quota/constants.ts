@@ -107,7 +107,14 @@ export const ANTIGRAVITY_REQUEST_HEADERS = {
 // Claude API configuration
 export const CLAUDE_PROFILE_URL = 'https://api.anthropic.com/api/oauth/profile';
 
-export const CLAUDE_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
+// `cedar_ember=1` adds the free usage-limit reset grant block (the flag Claude Code sends).
+export const CLAUDE_USAGE_URL = 'https://api.anthropic.com/api/oauth/usage?cedar_ember=1';
+
+// Spends one reset grant; `{org_id}` is the organization uuid from the profile endpoint.
+export const CLAUDE_RESET_RATE_LIMITS_URL =
+  'https://api.anthropic.com/api/organizations/{org_id}/reset_rate_limits';
+
+export const CLAUDE_RESET_GRANT_PROGRAM = 'cedar_ember';
 
 export const CLAUDE_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',

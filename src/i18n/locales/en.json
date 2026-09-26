@@ -465,7 +465,16 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "Team"
+    "plan_team": "Team",
+    "reset_grants_label": "Free resets",
+    "reset_button": "Reset quota",
+    "reset_confirm_title": "Reset Claude quota",
+    "reset_confirm_message": "This will spend 1 free reset to refill the Claude usage limits for \"{{name}}\". This cannot be undone. Continue?",
+    "reset_confirm_button": "Reset quota",
+    "reset_success": "Reset Claude quota for \"{{name}}\"",
+    "reset_failed": "Failed to reset Claude quota for \"{{name}}\": {{message}}",
+    "reset_unavailable": "No free reset is available right now",
+    "reset_missing_org": "Could not resolve the Claude organization for this account"
   },
   "codex_quota": {
     "title": "Codex Quota",

@@ -126,6 +126,34 @@ export interface ClaudeUsagePayload {
   iguana_necktie?: ClaudeUsageWindow | null;
   limits?: ClaudeUsageLimit[] | null;
   extra_usage?: ClaudeExtraUsage | null;
+  // Free usage-limit reset grants, only returned when the request sends `cedar_ember=1`.
+  cedar_ember?: ClaudeResetGrantsPayload | null;
+}
+
+export interface ClaudeResetGrantPayload {
+  id?: string;
+  label?: string;
+  resets_left?: number | string;
+  resets_total?: number | string;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  clears?: string[];
+  paused?: boolean;
+  usable_now?: boolean;
+}
+
+export interface ClaudeResetGrantsPayload {
+  eligible?: boolean;
+  next_grant_id?: string | null;
+  cooldown_until?: string | null;
+  grants?: ClaudeResetGrantPayload[] | null;
+}
+
+export interface ClaudeResetGrants {
+  availableCount: number;
+  nextGrantId: string | null;
+  expiresAt: string | null;
+  cooldownUntil: string | null;
 }
 
 export interface ClaudeProfileResponse {
@@ -171,6 +199,7 @@ export interface ClaudeQuotaState {
   windows: ClaudeQuotaWindow[];
   extraUsage?: ClaudeExtraUsage | null;
   planType?: string | null;
+  resetGrants?: ClaudeResetGrants | null;
   error?: string;
   errorStatus?: number;
 }

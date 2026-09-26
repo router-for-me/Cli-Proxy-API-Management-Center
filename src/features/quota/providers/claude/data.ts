@@ -10,11 +10,15 @@ import type {
   ClaudeProfileResponse,
   ClaudeQuotaState,
   ClaudeQuotaWindow,
+  ClaudeResetGrants,
+  ClaudeResetGrantsPayload,
   ClaudeUsagePayload,
 } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import {
   CLAUDE_PROFILE_URL,
+  CLAUDE_RESET_GRANT_PROGRAM,
+  CLAUDE_RESET_RATE_LIMITS_URL,
   CLAUDE_USAGE_URL,
   CLAUDE_REQUEST_HEADERS,
   CLAUDE_USAGE_WINDOW_KEYS,
@@ -35,6 +39,49 @@ export type ClaudeQuotaData = {
   windows: ClaudeQuotaWindow[];
   extraUsage?: ClaudeExtraUsage | null;
   planType?: string | null;
+  resetGrants?: ClaudeResetGrants | null;
+};
+
+const CLAUDE_RESET_GRANT_ID_PATTERN = /^[a-z0-9_-]{1,40}$/i;
+
+/**
+ * Summarises the `cedar_ember` block: `null` when the account is not eligible, otherwise the
+ * spendable reset count and the grant a reset would consume (the server's pick, else the first
+ * usable one). Paused grants and grants with no resets left are not spendable.
+ */
+export const parseClaudeResetGrants = (
+  block: ClaudeResetGrantsPayload | null | undefined
+): ClaudeResetGrants | null => {
+  if (!block || block.eligible !== true || !Array.isArray(block.grants)) return null;
+
+  const spendable = block.grants.filter((grant) => {
+    const id = normalizeStringValue(grant?.id);
+    const left = normalizeNumberValue(grant?.resets_left) ?? 0;
+    return (
+      Boolean(id && CLAUDE_RESET_GRANT_ID_PATTERN.test(id)) && grant.paused !== true && left > 0
+    );
+  });
+  const next = spendable.find((grant) => grant.id === block.next_grant_id) ?? spendable[0] ?? null;
+
+  return {
+    availableCount: spendable.reduce(
+      (sum, grant) => sum + (normalizeNumberValue(grant.resets_left) ?? 0),
+      0
+    ),
+    nextGrantId: next ? (normalizeStringValue(next.id) ?? null) : null,
+    expiresAt: next ? (normalizeStringValue(next.ends_at) ?? null) : null,
+    cooldownUntil: normalizeStringValue(block.cooldown_until) ?? null,
+  };
+};
+
+export const canResetClaudeQuota = (
+  quota: Pick<ClaudeQuotaState, 'resetGrants'>,
+  nowMs: number = Date.now()
+): boolean => {
+  const grants = quota.resetGrants;
+  if (!grants || grants.availableCount <= 0 || !grants.nextGrantId) return false;
+  const cooldownMs = grants.cooldownUntil ? Date.parse(grants.cooldownUntil) : NaN;
+  return !(Number.isFinite(cooldownMs) && cooldownMs > nowMs);
 };
 
 const findFableUsageLimit = (payload: ClaudeUsagePayload) => {
@@ -201,7 +248,105 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
         )
       : null;
 
-  return { windows, extraUsage: payload.extra_usage, planType };
+  return {
+    windows,
+    extraUsage: payload.extra_usage,
+    planType,
+    resetGrants: parseClaudeResetGrants(payload.cedar_ember),
+  };
+};
+
+const createClaudeResetRequestId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const value = Math.floor(Math.random() * 16);
+    const segment = char === 'x' ? value : (value & 0x3) | 0x8;
+    return segment.toString(16);
+  });
+};
+
+const parseJsonObject = (body: unknown, bodyText?: string): Record<string, unknown> | null => {
+  const source = body ?? bodyText;
+  if (typeof source === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(source);
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+  return source && typeof source === 'object' ? (source as Record<string, unknown>) : null;
+};
+
+const consumeClaudeResetGrant = async (file: AuthFileItem, t: TFunction): Promise<void> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('claude_quota.missing_auth_index'));
+  }
+
+  // Re-read the grant right before spending so a stale card never picks an old grant id.
+  const usageResult = await apiCallApi.request({
+    authIndex,
+    method: 'GET',
+    url: CLAUDE_USAGE_URL,
+    header: { ...CLAUDE_REQUEST_HEADERS },
+  });
+  if (usageResult.statusCode < 200 || usageResult.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(usageResult), usageResult.statusCode);
+  }
+  const grants = parseClaudeResetGrants(
+    parseClaudeUsagePayload(usageResult.body ?? usageResult.bodyText)?.cedar_ember
+  );
+  if (!grants || !canResetClaudeQuota({ resetGrants: grants })) {
+    throw new Error(t('claude_quota.reset_unavailable'));
+  }
+
+  const profileResult = await apiCallApi.request({
+    authIndex,
+    method: 'GET',
+    url: CLAUDE_PROFILE_URL,
+    header: { ...CLAUDE_REQUEST_HEADERS },
+  });
+  if (profileResult.statusCode < 200 || profileResult.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(profileResult), profileResult.statusCode);
+  }
+  const orgId = normalizeStringValue(
+    parseClaudeProfilePayload(profileResult.body ?? profileResult.bodyText)?.organization?.uuid
+  );
+  if (!orgId) {
+    throw new Error(t('claude_quota.reset_missing_org'));
+  }
+
+  const result = await apiCallApi.request({
+    authIndex,
+    method: 'POST',
+    url: CLAUDE_RESET_RATE_LIMITS_URL.replace('{org_id}', encodeURIComponent(orgId)),
+    header: { ...CLAUDE_REQUEST_HEADERS },
+    data: JSON.stringify({
+      program: CLAUDE_RESET_GRANT_PROGRAM,
+      grant_id: grants.nextGrantId,
+      request_id: createClaudeResetRequestId(),
+    }),
+  });
+  if (result.statusCode < 200 || result.statusCode >= 300) {
+    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+  }
+
+  // A 200 is not enough: the grant is only spent when Anthropic answers `result: "reset"`.
+  const body = parseJsonObject(result.body, result.bodyText);
+  if (normalizeStringValue(body?.result) !== 'reset') {
+    const reason = normalizeStringValue(body?.reason) ?? normalizeStringValue(body?.result);
+    throw new Error(reason ?? t('common.unknown_error'));
+  }
+};
+
+const resetClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<ClaudeQuotaData> => {
+  await consumeClaudeResetGrant(file, t);
+  return fetchClaudeQuota(file, t);
 };
 
 export const CLAUDE_CONFIG: QuotaProviderData<ClaudeQuotaState, ClaudeQuotaData> = {
@@ -209,6 +354,8 @@ export const CLAUDE_CONFIG: QuotaProviderData<ClaudeQuotaState, ClaudeQuotaData>
   i18nPrefix: 'claude_quota',
   filterFn: (file) => isClaudeFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchClaudeQuota,
+  resetQuota: resetClaudeQuota,
+  canResetQuota: (quota) => canResetClaudeQuota(quota),
   storeSelector: (state) => state.claudeQuota,
   storeSetter: 'setClaudeQuota',
   buildLoadingState: () => ({ status: 'loading', windows: [] }),
@@ -217,6 +364,7 @@ export const CLAUDE_CONFIG: QuotaProviderData<ClaudeQuotaState, ClaudeQuotaData>
     windows: data.windows,
     extraUsage: data.extraUsage,
     planType: data.planType,
+    resetGrants: data.resetGrants,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',
