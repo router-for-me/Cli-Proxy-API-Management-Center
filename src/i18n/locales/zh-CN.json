@@ -463,7 +463,16 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "团队版"
+    "plan_team": "团队版",
+    "reset_grants_label": "免费重置次数",
+    "reset_button": "重置额度",
+    "reset_confirm_title": "重置 Claude 额度",
+    "reset_confirm_message": "将消耗 1 次免费重置次数来恢复 \"{{name}}\" 的 Claude 用量限额，此操作不可撤销。是否继续？",
+    "reset_confirm_button": "确认重置",
+    "reset_success": "已重置 \"{{name}}\" 的 Claude 额度",
+    "reset_failed": "重置 \"{{name}}\" 的 Claude 额度失败：{{message}}",
+    "reset_unavailable": "当前没有可用的免费重置次数",
+    "reset_missing_org": "无法获取该账号的 Claude 组织信息"
   },
   "codex_quota": {
     "title": "Codex 额度",

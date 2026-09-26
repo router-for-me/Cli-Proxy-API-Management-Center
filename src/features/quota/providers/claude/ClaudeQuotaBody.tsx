@@ -22,6 +22,7 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
   const windows = quota.windows ?? [];
   const extraUsage = quota.extraUsage ?? null;
   const planType = quota.planType ?? null;
+  const resetGrants = quota.resetGrants ?? null;
 
   return (
     <>
@@ -37,6 +38,12 @@ export function ClaudeQuotaBody({ quota, classes }: QuotaBodyProps<ClaudeQuotaSt
           <span className={classes.codexPlanValue}>
             {`$${(extraUsage.used_credits / 100).toFixed(2)} / $${(extraUsage.monthly_limit / 100).toFixed(2)}`}
           </span>
+        </div>
+      )}
+      {resetGrants && (
+        <div className={classes.codexPlan}>
+          <span className={classes.codexPlanLabel}>{t('claude_quota.reset_grants_label')}</span>
+          <span className={classes.codexPlanValue}>{resetGrants.availableCount.toString()}</span>
         </div>
       )}
       {windows.length === 0 ? (

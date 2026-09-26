@@ -468,7 +468,16 @@
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "Team"
+    "plan_team": "Team",
+    "reset_grants_label": "Бесплатные сбросы",
+    "reset_button": "Сбросить квоту",
+    "reset_confirm_title": "Сброс квоты Claude",
+    "reset_confirm_message": "Будет потрачен 1 бесплатный сброс, чтобы восстановить лимиты Claude для «{{name}}». Это действие нельзя отменить. Продолжить?",
+    "reset_confirm_button": "Сбросить квоту",
+    "reset_success": "Квота Claude для «{{name}}» сброшена",
+    "reset_failed": "Не удалось сбросить квоту Claude для «{{name}}»: {{message}}",
+    "reset_unavailable": "Сейчас нет доступных бесплатных сбросов",
+    "reset_missing_org": "Не удалось определить организацию Claude для этого аккаунта"
   },
   "codex_quota": {
     "title": "Квота Codex",

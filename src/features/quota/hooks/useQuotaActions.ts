@@ -76,9 +76,9 @@ export function useQuotaActions(disableControls: boolean) {
       if (resettingQuotaName === cacheKey) return;
 
       showConfirmation({
-        title: t('codex_quota.reset_confirm_title'),
-        message: t('codex_quota.reset_confirm_message', { name: file.name }),
-        confirmText: t('codex_quota.reset_confirm_button'),
+        title: t(`${adapter.i18nPrefix}.reset_confirm_title`),
+        message: t(`${adapter.i18nPrefix}.reset_confirm_message`, { name: file.name }),
+        confirmText: t(`${adapter.i18nPrefix}.reset_confirm_button`),
         variant: 'primary',
         onConfirm: async () => {
           const cacheGeneration = captureQuotaCacheGeneration(file.name);
@@ -91,13 +91,16 @@ export function useQuotaActions(disableControls: boolean) {
                 ...prev,
                 [cacheKey]: adapter.buildSuccessState(data),
               }));
-              showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+              showNotification(
+                t(`${adapter.i18nPrefix}.reset_success`, { name: file.name }),
+                'success'
+              );
             });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('common.unknown_error');
             commitIfQuotaCacheCurrent(cacheGeneration, () => {
               showNotification(
-                t('codex_quota.reset_failed', { name: file.name, message }),
+                t(`${adapter.i18nPrefix}.reset_failed`, { name: file.name, message }),
                 'error'
               );
             });

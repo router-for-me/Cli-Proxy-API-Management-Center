@@ -117,9 +117,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (!resetQuota) return;
 
     showConfirmation({
-      title: t('codex_quota.reset_confirm_title'),
-      message: t('codex_quota.reset_confirm_message', { name: file.name }),
-      confirmText: t('codex_quota.reset_confirm_button'),
+      title: t(`${adapter.i18nPrefix}.reset_confirm_title`),
+      message: t(`${adapter.i18nPrefix}.reset_confirm_message`, { name: file.name }),
+      confirmText: t(`${adapter.i18nPrefix}.reset_confirm_button`),
       variant: 'primary',
       onConfirm: async () => {
         const cacheGeneration = captureQuotaCacheGeneration(file.name);
@@ -131,12 +131,18 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
               ...prev,
               [cacheKey]: adapter.buildSuccessState(data),
             }));
-            showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            showNotification(
+              t(`${adapter.i18nPrefix}.reset_success`, { name: file.name }),
+              'success'
+            );
           });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : t('common.unknown_error');
           commitIfQuotaCacheCurrent(cacheGeneration, () => {
-            showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
+            showNotification(
+              t(`${adapter.i18nPrefix}.reset_failed`, { name: file.name, message }),
+              'error'
+            );
           });
         } finally {
           setResettingQuota(false);
@@ -170,11 +176,11 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         onClick={() => resetQuotaForFile()}
         disabled={!canUseResetQuota}
         loading={resettingQuota}
-        title={t('codex_quota.reset_button')}
-        aria-label={t('codex_quota.reset_button')}
+        title={t(`${adapter.i18nPrefix}.reset_button`)}
+        aria-label={t(`${adapter.i18nPrefix}.reset_button`)}
       >
         {!resettingQuota && <IconRefreshCw size={14} />}
-        {t('codex_quota.reset_button')}
+        {t(`${adapter.i18nPrefix}.reset_button`)}
       </Button>
     ) : undefined;
   const quotaErrorMessage = resolveQuotaErrorMessage(
