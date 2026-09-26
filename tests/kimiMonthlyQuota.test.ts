@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { KIMI_CONFIG } from '@/features/quota/providers/kimi/data';
-import { buildKimiQuotaRows } from '@/utils/quota';
+import { apiCallApi } from '@/services/api';
+import { KIMI_AI_USAGE_URL, KIMI_USAGE_URL, buildKimiQuotaRows } from '@/utils/quota';
 import type { AuthFileItem } from '@/types';
 
 describe('Kimi monthly quota', () => {
@@ -38,5 +39,25 @@ describe('Kimi International auth files', () => {
   test('kimi-ai credentials are listed on the Kimi quota page', () => {
     const file = { name: 'kimi-ai-1.json', provider: 'kimi-ai', type: 'kimi-ai' } as AuthFileItem;
     expect(KIMI_CONFIG.filterFn(file)).toBe(true);
+  });
+
+  test('kimi-ai credentials query the kimi.ai host', async () => {
+    const urls: string[] = [];
+    const request = apiCallApi.request;
+    apiCallApi.request = (async ({ url }: { url: string }) => {
+      urls.push(url);
+      return { statusCode: 200, body: { limits: [] } };
+    }) as unknown as typeof apiCallApi.request;
+    try {
+      for (const provider of ['kimi', 'kimi-ai', 'kimi_ai']) {
+        await KIMI_CONFIG.fetchQuota(
+          { name: 'k.json', provider, auth_index: 'a1' } as AuthFileItem,
+          ((key: string) => key) as never
+        );
+      }
+    } finally {
+      apiCallApi.request = request;
+    }
+    expect(urls).toEqual([KIMI_USAGE_URL, KIMI_AI_USAGE_URL, KIMI_AI_USAGE_URL]);
   });
 });

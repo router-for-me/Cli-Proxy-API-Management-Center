@@ -32,7 +32,8 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
     url:
       String(file.provider ?? file.type ?? '')
         .trim()
-        .toLowerCase() === 'kimi-ai'
+        .toLowerCase()
+        .replace(/_/g, '-') === 'kimi-ai'
         ? KIMI_AI_USAGE_URL
         : KIMI_USAGE_URL,
     header: { ...KIMI_REQUEST_HEADERS },
