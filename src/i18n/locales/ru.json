@@ -567,6 +567,7 @@
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
     "weekly_limit": "Недельный лимит",
+    "monthly_limit": "Месячный лимит",
     "limit_window": "Лимит {{duration}}",
     "limit_index": "Лимит #{{index}}",
     "reset_hint": "сброс через {{hint}}"
