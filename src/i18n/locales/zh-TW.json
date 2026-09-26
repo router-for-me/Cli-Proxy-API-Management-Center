@@ -562,6 +562,7 @@
     "refresh_button": "重新整理配額",
     "fetch_all": "取得全部",
     "weekly_limit": "週限額",
+    "monthly_limit": "月限額",
     "limit_window": "{{duration}} 限額",
     "limit_index": "限額 #{{index}}",
     "reset_hint": "{{hint}} 後重置"

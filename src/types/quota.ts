@@ -330,9 +330,18 @@ export interface KimiLimitItem {
   ttl?: number | string;
 }
 
+export interface KimiUsageRatio {
+  used_ratio?: number | string;
+  reset_time?: string;
+}
+
 export interface KimiUsagePayload {
   usage?: KimiUsageDetail;
   limits?: KimiLimitItem[];
+  /** Plans without a weekly limit report their monthly total here as a 0–1 ratio. */
+  usages?: {
+    limit_month_total?: KimiUsageRatio;
+  };
 }
 
 export interface KimiQuotaRow {

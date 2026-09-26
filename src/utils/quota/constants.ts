@@ -145,6 +145,7 @@ export const CODEX_REQUEST_HEADERS = {
 
 // Kimi API configuration
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
+export const KIMI_AI_USAGE_URL = 'https://api.kimi.ai/coding/v1/usages';
 
 export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',

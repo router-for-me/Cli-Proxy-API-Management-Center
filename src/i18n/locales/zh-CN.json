@@ -562,6 +562,7 @@
     "refresh_button": "刷新额度",
     "fetch_all": "获取全部",
     "weekly_limit": "周限额",
+    "monthly_limit": "月限额",
     "limit_window": "{{duration}} 限额",
     "limit_index": "限额 #{{index}}",
     "reset_hint": "{{hint}} 后重置"

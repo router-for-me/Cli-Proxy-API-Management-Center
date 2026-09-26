@@ -7,6 +7,7 @@ import type { AuthFileItem, KimiQuotaRow, KimiQuotaState } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import {
   KIMI_USAGE_URL,
+  KIMI_AI_USAGE_URL,
   KIMI_REQUEST_HEADERS,
   parseKimiUsagePayload,
   buildKimiQuotaRows,
@@ -27,7 +28,13 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
   const result = await apiCallApi.request({
     authIndex,
     method: 'GET',
-    url: KIMI_USAGE_URL,
+    // China and international accounts are not interchangeable: each token only works on its own host.
+    url:
+      String(file.provider ?? file.type ?? '')
+        .trim()
+        .toLowerCase() === 'kimi-ai'
+        ? KIMI_AI_USAGE_URL
+        : KIMI_USAGE_URL,
     header: { ...KIMI_REQUEST_HEADERS },
   });
 
