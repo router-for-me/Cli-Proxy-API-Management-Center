@@ -4,13 +4,17 @@ import {
   canResetClaudeQuota,
   parseClaudeResetGrants,
 } from '@/features/quota/providers/claude/data';
-import { CLAUDE_USAGE_URL } from '@/utils/quota';
+import { CLAUDE_REQUEST_HEADERS, CLAUDE_USAGE_URL } from '@/utils/quota';
 
 const NOW = Date.parse('2026-09-26T12:00:00Z');
 
 describe('Claude reset grants', () => {
   test('asks the usage endpoint for the reset grant block', () => {
     expect(new URL(CLAUDE_USAGE_URL).searchParams.get('cedar_ember')).toBe('1');
+  });
+
+  test('identifies as Claude Code, which Anthropic requires to report grants as eligible', () => {
+    expect(CLAUDE_REQUEST_HEADERS['User-Agent']).toStartWith('claude-cli/');
   });
 
   test('returns null when the account is not eligible', () => {

@@ -116,10 +116,15 @@ export const CLAUDE_RESET_RATE_LIMITS_URL =
 
 export const CLAUDE_RESET_GRANT_PROGRAM = 'cedar_ember';
 
+// Anthropic only reports reset grants as eligible to Claude Code clients; without this
+// User-Agent the `cedar_ember` block comes back with `eligible: false`.
+export const CLAUDE_CLI_USER_AGENT = 'claude-cli/2.1.280 (external, cli)';
+
 export const CLAUDE_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
   'Content-Type': 'application/json',
   'anthropic-beta': 'oauth-2025-04-20',
+  'User-Agent': CLAUDE_CLI_USER_AGENT,
 };
 
 export const CLAUDE_USAGE_WINDOW_KEYS = [
