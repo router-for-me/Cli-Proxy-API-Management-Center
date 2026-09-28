@@ -472,6 +472,12 @@ async function updateOauthProviderMap(path: string, provider: string, value?: un
   });
 }
 
+export interface AuthFileCooldownResetResponse {
+  status: 'ok';
+  auth_index: string;
+  models: string[];
+}
+
 export const authFilesApi = {
   list: async (lookup?: AuthFileLookup) =>
     normalizeAuthFilesResponse(
@@ -494,6 +500,11 @@ export const authFilesApi = {
       ...(authIndex ? { auth_index: authIndex } : {}),
     });
   },
+
+  resetCooldown: (authIndex: string) =>
+    apiClient.post<AuthFileCooldownResetResponse>('/routing/cooldown/reset', {
+      auth_index: authIndex,
+    }),
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);

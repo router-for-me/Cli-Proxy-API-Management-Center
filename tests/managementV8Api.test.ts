@@ -294,6 +294,7 @@ describe('v8 management API contracts', () => {
   test('operational routes and YAML retain business payloads, config booleans are unwrapped', async () => {
     const get = mock('get');
     const put = mock('put');
+    const post = mock('post');
     const raw = mock('getRaw', { data: 'config: yaml' });
     const form = mock('postForm');
     await configApi.updateRequestLog(false);
@@ -310,6 +311,10 @@ describe('v8 management API contracts', () => {
     expect(get).toHaveBeenLastCalledWith('/server/latest-version');
     await apiKeyUsageApi.getUsage();
     expect(get.mock.calls.at(-1)?.[0]).toBe('/observability/usage/api-keys');
+    await authFilesApi.resetCooldown('auth-index-1');
+    expect(post).toHaveBeenLastCalledWith('/routing/cooldown/reset', {
+      auth_index: 'auth-index-1',
+    });
     await vertexApi.importCredential(new File(['{}'], 'fixture.json'));
     expect(form.mock.calls.at(-1)?.[0]).toBe('/oauth/import?provider=vertex');
     expect(await configFileApi.fetchConfigYaml()).toBe('config: yaml');
