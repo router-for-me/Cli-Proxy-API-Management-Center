@@ -12,6 +12,8 @@ export interface ProviderSource {
  */
 
 export interface ModelAlias {
+  /** Persisted model position; null marks a new form row. Never sent to the backend. */
+  sourceIndex?: number | null;
   name: string;
   alias?: string;
   priority?: number;

@@ -20,7 +20,7 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
         .map((model) => {
           if (!model?.name) return null;
           const payload: Record<string, unknown> = { name: model.name };
-          if (model.alias && model.alias !== model.name) {
+          if (model.alias) {
             payload.alias = model.alias;
           }
           if (model.priority !== undefined) {
@@ -55,7 +55,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.websockets !== undefined) payload.websockets = config.websockets;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
-  if (config.disableCooling) payload['disable-cooling'] = true;
+  if (config.disableCooling !== undefined) payload['disable-cooling'] = config.disableCooling;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(config.models);
@@ -125,7 +125,7 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
-  if (config.disableCooling) payload['disable-cooling'] = true;
+  if (config.disableCooling !== undefined) payload['disable-cooling'] = config.disableCooling;
   const headers = serializeHeaders(config.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(config.models);
@@ -152,7 +152,7 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   if (models && models.length) payload.models = models;
   if (provider.priority !== undefined) payload.priority = provider.priority;
   if (provider.testModel) payload['test-model'] = provider.testModel;
-  if (provider.disableCooling) payload['disable-cooling'] = true;
+  if (provider.disableCooling !== undefined) payload['disable-cooling'] = provider.disableCooling;
   return payload;
 };
 
@@ -291,6 +291,56 @@ export const applyProviderChanges = (
   }
   return next;
 };
+/** Form row identity survives renames, deletion and reordering; it is never serialized. */
+const preserveModelMetadata = (
+  next: Record<string, unknown>,
+  raw: unknown,
+  before: unknown,
+  after: unknown,
+  original: ModelAlias[] | undefined,
+  desired: ModelAlias[] | undefined,
+  serialize: (models?: ModelAlias[]) => unknown
+) => {
+  if (!Array.isArray(after) || !Array.isArray(raw)) return;
+  const sameRows = equal(
+    original?.map((model) => model.sourceIndex),
+    desired?.map((model) => model.sourceIndex)
+  );
+  if (equal(before, after) && sameRows) return;
+  const used = new Set<number>();
+  const reserved = new Set(desired?.flatMap((model) => model.sourceIndex ?? []) ?? []);
+  next.models = (desired ?? []).flatMap((model) => {
+    const serialized = serialize([model]);
+    if (!Array.isArray(serialized) || !isRecord(serialized[0])) return [];
+    const value = serialized[0];
+    if (model.sourceIndex === null) return [value];
+    let old: ModelAlias | undefined;
+    if (model.sourceIndex !== undefined) {
+      old = original?.find((entry) => entry.sourceIndex === model.sourceIndex);
+      if (!old || used.has(model.sourceIndex)) throw conflict();
+    } else {
+      // Preserve compatibility with callers without row identities, but never guess
+      // between multiple aliases of the same upstream model or steal an indexed row.
+      const candidates = (original ?? []).filter(
+        (entry) =>
+          typeof entry.sourceIndex === 'number' &&
+          !used.has(entry.sourceIndex) &&
+          !reserved.has(entry.sourceIndex) &&
+          entry.name === model.name
+      );
+      const exact = candidates.filter((entry) => entry.alias === model.alias);
+      old = exact.length === 1 ? exact[0] : candidates.length === 1 ? candidates[0] : undefined;
+    }
+    const index = old?.sourceIndex;
+    if (!old || typeof index !== 'number') return [value];
+    if (!isRecord(raw[index])) throw conflict();
+    used.add(index);
+    const previous = serialize([old]);
+    if (!Array.isArray(previous) || !isRecord(previous[0])) throw conflict();
+    return [applyProviderChanges(raw[index], previous[0], value)];
+  });
+};
+
 const findKeySource = (
   groups: Record<string, unknown>[],
   apiKey: string,
@@ -347,7 +397,17 @@ const updateKey = async (
   }
   delete before['base-url'];
   delete after['base-url'];
+  const rawModels = keys[keyIndex].models ?? group.models;
   keys[keyIndex] = applyProviderChanges(keys[keyIndex], before, after, group);
+  preserveModelMetadata(
+    keys[keyIndex],
+    rawModels,
+    before.models,
+    after.models,
+    original.models,
+    config.models,
+    family === 'vertex' ? serializeVertexModelAliases : serializeModelAliases
+  );
   // Response metadata belongs to credentials, not arbitrary nested maps such as headers.
   delete keys[keyIndex]['auth-index'];
   groups[index] = { ...nextGroup, keys };
@@ -437,6 +497,15 @@ export const providersApi = {
     const before = serializeOpenAIGroup(original);
     const after = serializeOpenAIGroup(config);
     const next = applyProviderChanges(groups[index], before, after);
+    preserveModelMetadata(
+      next,
+      groups[index].models,
+      before.models,
+      after.models,
+      original.models,
+      config.models,
+      (models) => serializeModelAliases(models, true)
+    );
     if (!equal(before.keys, after.keys)) {
       const rawKeys = groups[index].keys as Record<string, unknown>[];
       const used = new Set<number>();

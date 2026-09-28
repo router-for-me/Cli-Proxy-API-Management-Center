@@ -836,28 +836,64 @@ function syncConditionSequence(
   baseline: PayloadParamEntry[] | undefined,
   desired: PayloadParamEntry[] | undefined
 ): void {
+  // Unedited conditions retain their original grouping and nested value comments.
+  if (JSON.stringify(baseline ?? []) === JSON.stringify(desired ?? [])) return;
+
   const entries = (desired ?? []).filter((entry) => entry.path.trim());
   if (entries.length === 0) {
     deleteMapValue(modelMap, key);
     return;
   }
   const seq = ensureSeqValue(doc, modelMap, key);
-  const nodesById = new Map((baseline ?? []).map((entry, index) => [entry.id, seq.items[index]]));
+  const flattened: YAMLMap[] = [];
+  seq.items.forEach((node, itemIndex) => {
+    if (isMap(node)) {
+      // Match parsePayloadConditions' Object.entries order, including numeric keys.
+      // Every map field is a condition, not an unknown extension field. The backend
+      // ANDs all fields across all maps, so singleton maps preserve its semantics.
+      Object.keys(node.toJSON()).forEach((path) => {
+        const pair = mapPair(node, path);
+        if (!pair) return;
+        const item = doc.createNode({}) as YAMLMap;
+        item.flow = node.flow;
+        item.items = [pair];
+        if (pair === node.items[0]) {
+          item.commentBefore = itemIndex === 0 ? seq.commentBefore : node.commentBefore;
+          item.spaceBefore = node.spaceBefore;
+        }
+        if (pair === node.items[node.items.length - 1]) item.comment = node.comment;
+        flattened.push(item);
+      });
+    } else if (isScalar(node) && typeof node.value === 'string') {
+      // Keep the parser's compatibility with scalar entries without shifting IDs.
+      const item = doc.createNode({ [node.value]: '' }) as YAMLMap;
+      preserveNodeComments(node, item);
+      if (itemIndex === 0) item.commentBefore = seq.commentBefore;
+      flattened.push(item);
+    }
+  });
+  const nodesById = new Map((baseline ?? []).map((entry, index) => [entry.id, flattened[index]]));
+  const priorById = new Map((baseline ?? []).map((entry) => [entry.id, entry]));
   const items = entries.map((entry) => {
-    const existing = nodesById.get(entry.id);
-    const item = isMap(existing) ? existing : (doc.createNode({}) as YAMLMap);
-    const prior = baseline?.find((candidate) => candidate.id === entry.id);
-    syncEntryMap(
-      doc,
-      item,
-      prior ? [prior] : [],
-      [entry],
-      (value) => value.path,
-      (value) => serializePayloadParamEntryValue(value)
-    );
+    const item = nodesById.get(entry.id) ?? (doc.createNode({}) as YAMLMap);
+    const prior = priorById.get(entry.id);
+    const pair = item.items[0];
+    if (pair) {
+      if (isScalar(pair.key)) pair.key.value = entry.path.trim();
+      else pair.key = doc.createNode(entry.path.trim());
+      if (prior?.value !== entry.value || prior?.valueType !== entry.valueType) {
+        updatePairValue(doc, pair, serializePayloadParamEntryValue(entry));
+      }
+    } else {
+      item.items.push(doc.createPair(entry.path.trim(), serializePayloadParamEntryValue(entry)));
+    }
     return item;
   });
-  replaceSequenceItems(seq, items);
+  // These are new singleton wrappers; replaceSequenceItems would discard their
+  // comments because they are not members of the original sequence.
+  seq.items = items;
+  seq.commentBefore = items[0]?.commentBefore;
+  if (items[0]) items[0].commentBefore = undefined;
 }
 
 function syncPayloadModels(

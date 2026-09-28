@@ -153,3 +153,236 @@ describe('visual config payload YAML AST updates', () => {
     expect(output).not.toContain('belongs-to-deleted-param');
   });
 });
+
+const conditionYaml = (section: string, key: string) => `requests:
+  payload:
+    ${section}:
+      - models:
+          - name: example
+            future-model: preserve
+            ${key}:
+              # first-condition
+              - first: 1 # first-inline
+                # second-condition
+                second: false # second-inline
+              # third-condition
+              - first: 3 # third-inline
+                # fourth-condition
+                fourth:
+                  # nested-condition-value
+                  future-value: [one, two]
+        future-rule: preserve
+        params: ${section === 'filter' ? '[remove.path]' : '{}'}
+`;
+
+describe('multi-field payload conditions', () => {
+  const sections = [
+    ['default', 'payloadDefaultRules'],
+    ['override', 'payloadOverrideRules'],
+    ['default-raw', 'payloadDefaultRawRules'],
+    ['override-raw', 'payloadOverrideRawRules'],
+    ['filter', 'payloadFilterRules'],
+  ] as const;
+  const conditions = [
+    ['match', 'match'],
+    ['not-match', 'notMatch'],
+  ] as const;
+
+  for (const [section, field] of sections) {
+    for (const [key, property] of conditions) {
+      const yaml = conditionYaml(section, key);
+      const getModel = (output: string) => parseYaml(output).requests.payload[section][0].models[0];
+
+      test(`${section}/${key}: edits, deletes, reorders and adds without stale siblings`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          const model = rule.models[0];
+          const entries = model[property]!;
+          expect(entries.map((entry) => entry.path)).toEqual([
+            'first',
+            'second',
+            'first',
+            'fourth',
+          ]);
+          return {
+            [field]: [
+              {
+                ...rule,
+                models: [
+                  {
+                    ...model,
+                    [property]: [
+                      entries[3],
+                      { ...entries[1], path: 'renamed', value: 'true' },
+                      { ...entries[2], value: '9' },
+                      { id: 'new-condition', path: 'added', valueType: 'string', value: 'new' },
+                    ],
+                  },
+                ],
+              },
+            ],
+          };
+        });
+        expect(getModel(output)[key]).toEqual([
+          { fourth: { 'future-value': ['one', 'two'] } },
+          { renamed: true },
+          { first: 9 },
+          { added: 'new' },
+        ]);
+        expect(getModel(output)['future-model']).toBe('preserve');
+        expect(parseYaml(output).requests.payload[section][0]['future-rule']).toBe('preserve');
+        for (const comment of [
+          'second-condition',
+          'second-inline',
+          'third-condition',
+          'third-inline',
+          'fourth-condition',
+          'nested-condition-value',
+        ]) {
+          expect(output.split(`# ${comment}`)).toHaveLength(2);
+        }
+        expect(output).not.toContain('first-condition');
+        expect(output).not.toContain('first-inline');
+        // Reload the emitted singleton maps, then remove the first two conditions.
+        const reloaded = applyPayloadEdit(output, (values) => {
+          const rule = values[field][0];
+          const model = rule.models[0];
+          return {
+            [field]: [{ ...rule, models: [{ ...model, [property]: model[property]!.slice(2) }] }],
+          };
+        });
+        expect(getModel(reloaded)[key]).toEqual([{ first: 9 }, { added: 'new' }]);
+        expect(reloaded).toContain('third-condition');
+        expect(reloaded).not.toContain('second-condition');
+        expect(reloaded).not.toContain('fourth-condition');
+      });
+
+      test(`${section}/${key}: editing one field keeps every sibling exactly once`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          const model = rule.models[0];
+          return {
+            [field]: [
+              {
+                ...rule,
+                models: [
+                  {
+                    ...model,
+                    [property]: model[property]!.map((entry, index) =>
+                      index === 0 ? { ...entry, value: '7' } : entry
+                    ),
+                  },
+                ],
+              },
+            ],
+          };
+        });
+        expect(getModel(output)[key]).toEqual([
+          { first: 7 },
+          { second: false },
+          { first: 3 },
+          { fourth: { 'future-value': ['one', 'two'] } },
+        ]);
+        expect(output).toContain('nested-condition-value');
+      });
+
+      test(`${section}/${key}: reverse order keeps duplicate paths and their comments`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          const model = rule.models[0];
+          return {
+            [field]: [
+              { ...rule, models: [{ ...model, [property]: [...model[property]!].reverse() }] },
+            ],
+          };
+        });
+        expect(getModel(output)[key]).toEqual([
+          { fourth: { 'future-value': ['one', 'two'] } },
+          { first: 3 },
+          { second: false },
+          { first: 1 },
+        ]);
+        expect(output.indexOf('# third-condition')).toBeLessThan(
+          output.indexOf('# first-condition')
+        );
+        expect(output.indexOf('# second-condition')).toBeLessThan(
+          output.indexOf('# first-condition')
+        );
+      });
+
+      test(`${section}/${key}: deleting a later field does not resurrect it`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          const model = rule.models[0];
+          return {
+            [field]: [{ ...rule, models: [{ ...model, [property]: [model[property]![0]] }] }],
+          };
+        });
+        expect(getModel(output)[key]).toEqual([{ first: 1 }]);
+        expect(output).toContain('first-condition');
+        expect(output).toContain('first-inline');
+        expect(output).not.toContain('second-condition');
+        expect(output).not.toContain('third-condition');
+      });
+
+      test(`${section}/${key}: clearing removes the sequence`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          return { [field]: [{ ...rule, models: [{ ...rule.models[0], [property]: [] }] }] };
+        });
+        expect(getModel(output)[key]).toBeUndefined();
+        expect(output).not.toContain('first-condition');
+      });
+
+      test(`${section}/${key}: unrelated model edits preserve grouping and comments`, () => {
+        const output = applyPayloadEdit(yaml, (values) => {
+          const rule = values[field][0];
+          return { [field]: [{ ...rule, models: [{ ...rule.models[0], name: 'renamed' }] }] };
+        });
+        expect(getModel(output)[key]).toEqual(getModel(yaml)[key]);
+        expect(output).toContain('nested-condition-value');
+        expect(output).toContain('second-condition');
+      });
+    }
+  }
+
+  test('numeric path keys follow parser order rather than YAML pair order', () => {
+    const yaml = `requests:
+  payload:
+    default:
+      - models:
+          - name: example
+            match:
+              # ten-condition
+              - "10": ten
+                # two-condition
+                "2": two
+              - tail: true
+        params: {}
+`;
+    const output = applyPayloadEdit(yaml, (values) => {
+      const rule = values.payloadDefaultRules[0];
+      const model = rule.models[0];
+      expect(model.match!.map((entry) => entry.path)).toEqual(['2', '10', 'tail']);
+      return {
+        payloadDefaultRules: [
+          {
+            ...rule,
+            models: [
+              {
+                ...model,
+                match: [{ ...model.match![0], path: 'renamed', value: 'edited' }, model.match![2]],
+              },
+            ],
+          },
+        ],
+      };
+    });
+    expect(parseYaml(output).requests.payload.default[0].models[0].match).toEqual([
+      { renamed: 'edited' },
+      { tail: true },
+    ]);
+    expect(output).toContain('two-condition');
+    expect(output).not.toContain('ten-condition');
+  });
+});
