@@ -86,13 +86,12 @@ describe('provider credential weight normalization', () => {
       return undefined;
     }) as typeof apiClient.put;
 
+    const current = (await providersApi.getOpenAIProviders())[0];
     await providersApi.updateOpenAIProvider('example', 0, {
-      source: (await providersApi.getOpenAIProviders())[0].source,
-      name: 'example',
-      baseUrl: 'https://example.com/v1',
+      ...current,
       apiKeyEntries: [
-        { apiKey: 'key-a', weight: undefined },
-        { apiKey: 'key-b', weight: 4 },
+        { ...current.apiKeyEntries[0], weight: undefined },
+        { ...current.apiKeyEntries[1], weight: 4 },
       ],
     });
 

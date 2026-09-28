@@ -117,6 +117,98 @@ describe('v8 management API contracts', () => {
     expect(put).toHaveBeenLastCalledWith('/config/oauth/excluded-models', { claude: ['keep'] });
   });
 
+  test('concurrent OAuth alias renames and deletes preserve every provider update', async () => {
+    let stored: Record<string, unknown> = {
+      codex: [{ name: 'codex-model', alias: 'shared' }],
+      claude: [{ name: 'claude-model', alias: 'shared' }],
+      gemini: [{ name: 'untouched', alias: 'keep', future: true }],
+    };
+    mock('get').mockImplementation(async () => structuredClone(stored));
+    mock('put').mockImplementation(async (_path, value) => {
+      stored = structuredClone(value) as Record<string, unknown>;
+      return {};
+    });
+
+    await Promise.all([
+      authFilesApi.saveOauthModelAlias('codex', [{ name: 'codex-model', alias: 'renamed' }]),
+      authFilesApi.saveOauthModelAlias('claude', [{ name: 'claude-model', alias: 'renamed' }]),
+    ]);
+    expect(stored).toEqual({
+      codex: [{ name: 'codex-model', alias: 'renamed' }],
+      claude: [{ name: 'claude-model', alias: 'renamed' }],
+      gemini: [{ name: 'untouched', alias: 'keep', future: true }],
+    });
+
+    await Promise.all([
+      authFilesApi.deleteOauthModelAlias('codex'),
+      authFilesApi.deleteOauthModelAlias('claude'),
+    ]);
+    expect(stored).toEqual({ gemini: [{ name: 'untouched', alias: 'keep', future: true }] });
+  });
+
+  test('concurrent excluded-model writes preserve changes and recover after a failed write', async () => {
+    let stored: Record<string, unknown> = { codex: ['old'], claude: ['old'] };
+    mock('get').mockImplementation(async () => structuredClone(stored));
+    const put = mock('put').mockImplementation(async (_path, value) => {
+      stored = structuredClone(value) as Record<string, unknown>;
+      return {};
+    });
+    await Promise.all([
+      authFilesApi.saveOauthExcludedModels('codex', ['new']),
+      authFilesApi.saveOauthExcludedModels('claude', ['new']),
+    ]);
+    expect(stored).toEqual({ codex: ['new'], claude: ['new'] });
+
+    put.mockRejectedValueOnce(new Error('write failed'));
+    const results = await Promise.allSettled([
+      authFilesApi.deleteOauthExcludedEntry('codex'),
+      authFilesApi.deleteOauthExcludedEntry('claude'),
+    ]);
+    expect(results.map((result) => result.status)).toEqual(['rejected', 'fulfilled']);
+    expect(stored).toEqual({ codex: ['new'] });
+    await authFilesApi.deleteOauthExcludedEntry('codex');
+    expect(stored).toEqual({});
+  });
+
+  test('queued OAuth writes abort before reading after an ABA connection switch', async () => {
+    const first = { apiBase: 'https://first.invalid', managementKey: 'fixture' };
+    apiClient.setConfig(first);
+    let releaseRead!: (value: unknown) => void;
+    const blockedRead = new Promise<unknown>((resolve) => {
+      releaseRead = resolve;
+    });
+    let notifyRead!: () => void;
+    const readStarted = new Promise<void>((resolve) => {
+      notifyRead = resolve;
+    });
+    const get = mock('get').mockImplementationOnce(async () => {
+      notifyRead();
+      return blockedRead;
+    });
+    const put = mock('put');
+    try {
+      const results = Promise.allSettled([
+        authFilesApi.deleteOauthModelAlias('codex'),
+        authFilesApi.deleteOauthModelAlias('claude'),
+      ]);
+      await readStarted;
+      apiClient.setConfig({ apiBase: 'https://second.invalid', managementKey: 'other' });
+      apiClient.setConfig(first);
+      releaseRead({});
+      for (const result of await results) {
+        expect(result.status).toBe('rejected');
+        if (result.status === 'rejected') expect(result.reason.name).toBe('AbortError');
+      }
+      expect(get).toHaveBeenCalledTimes(1);
+      expect(put).not.toHaveBeenCalled();
+      await authFilesApi.deleteOauthModelAlias('codex');
+      expect(put).toHaveBeenCalledTimes(1);
+    } finally {
+      releaseRead({});
+      apiClient.setConfig({ apiBase: '', managementKey: '' });
+    }
+  });
+
   test('only missing persisted config fields default; auth/network/route failures propagate', async () => {
     const get = mock('get');
     const readers = [

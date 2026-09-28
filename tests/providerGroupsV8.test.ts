@@ -355,3 +355,112 @@ test('Claude fingerprint opt-in and clear do not erase unrelated persisted field
   });
   expect(b.groups()[0].keys).toEqual([{ 'api-key': 'fixture', future: 'keep' }]);
 });
+
+for (const prepend of [false, true]) {
+  test(`OpenAI new same-key credential has independent proxy and metadata (prepend=${prepend})`, async () => {
+    const group = {
+      name: 'compat',
+      'base-url': 'https://example.invalid',
+      keys: [{ 'api-key': 'fixture', 'proxy-url': 'direct', weight: 2, custom: 'keep' }],
+    };
+    const b = backend('openai-compatibility', [group]);
+    const current = (await providersApi.getOpenAIProviders())[0];
+    const added = { apiKey: 'fixture', proxyUrl: 'http://proxy.invalid', weight: 3 };
+    const entries = [current.apiKeyEntries[0], added];
+    await providersApi.updateOpenAIProvider(current.name, 0, {
+      ...current,
+      apiKeyEntries: prepend ? entries.toReversed() : entries,
+    });
+    const expected = [
+      group.keys[0],
+      { 'api-key': 'fixture', 'proxy-url': added.proxyUrl, weight: 3 },
+    ];
+    expect(b.groups()[0].keys).toEqual(prepend ? expected.toReversed() : expected);
+    expect(b.writes).toHaveLength(1);
+  });
+}
+
+test.each([-1, 2, 0.5])(
+  'OpenAI rejects invalid sourceIndex %s without writing',
+  async (sourceIndex) => {
+    const group = {
+      name: 'compat',
+      'base-url': 'https://example.invalid',
+      keys: [{ 'api-key': 'fixture' }],
+    };
+    const b = backend('openai-compatibility', [group]);
+    const current = (await providersApi.getOpenAIProviders())[0];
+    await expect(
+      providersApi.updateOpenAIProvider(current.name, 0, {
+        ...current,
+        apiKeyEntries: [{ ...current.apiKeyEntries[0], sourceIndex, weight: 2 }],
+      })
+    ).rejects.toThrow();
+    expect(b.writes).toHaveLength(0);
+  }
+);
+
+test('OpenAI rejects repeated sourceIndex without writing', async () => {
+  const b = backend('openai-compatibility', [
+    { name: 'compat', 'base-url': 'https://example.invalid', keys: [{ 'api-key': 'fixture' }] },
+  ]);
+  const current = (await providersApi.getOpenAIProviders())[0];
+  await expect(
+    providersApi.updateOpenAIProvider(current.name, 0, {
+      ...current,
+      apiKeyEntries: [current.apiKeyEntries[0], { ...current.apiKeyEntries[0], weight: 2 }],
+    })
+  ).rejects.toThrow();
+  expect(b.writes).toHaveLength(0);
+});
+
+for (const inherited of [false, true]) {
+  test(`credential edits preserve auth-index headers (inherited=${inherited})`, async () => {
+    const headers = { 'auth-index': 'request-header', Other: 'before' };
+    const key = {
+      'api-key': 'fixture',
+      'auth-index': 'response-metadata',
+      headers: inherited ? null : headers,
+      models: [{ name: 'model', alias: 'before', 'auth-index': 'opaque-model-field' }],
+    };
+    const group = { name: 'team', ...(inherited ? { headers } : {}), keys: [key] };
+    const b = backend('codex', [group]);
+    const row = rows([group])[0];
+    await providersApi.updateCodexConfig(row.apiKey, undefined, {
+      ...row,
+      headers: { ...row.headers, Other: 'after' },
+      models: [{ name: 'model', alias: 'after' }],
+    });
+    expect(b.groups()[0]).toEqual({
+      ...group,
+      keys: [
+        {
+          'api-key': 'fixture',
+          headers: { ...headers, Other: 'after' },
+          models: [{ ...key.models[0], alias: 'after' }],
+        },
+      ],
+    });
+  });
+}
+
+test('OpenAI group headers retain auth-index while edited credentials drop response metadata', async () => {
+  const group = {
+    name: 'compat',
+    'base-url': 'https://example.invalid',
+    headers: { 'auth-index': 'request-header', Other: 'before' },
+    keys: [{ 'api-key': 'fixture', 'auth-index': 'response-metadata', custom: 'keep' }],
+  };
+  const b = backend('openai-compatibility', [group]);
+  const current = (await providersApi.getOpenAIProviders())[0];
+  await providersApi.updateOpenAIProvider(current.name, 0, {
+    ...current,
+    headers: { ...current.headers, Other: 'after' },
+    apiKeyEntries: [{ ...current.apiKeyEntries[0], weight: 2 }],
+  });
+  expect(b.groups()[0]).toEqual({
+    ...group,
+    headers: { ...group.headers, Other: 'after' },
+    keys: [{ 'api-key': 'fixture', custom: 'keep', weight: 2 }],
+  });
+});

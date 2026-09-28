@@ -424,27 +424,52 @@ export const serializeOauthModelAliases = (
 const OAUTH_MODEL_ALIAS_ENDPOINT = '/config/oauth/model-alias';
 const OAUTH_EXCLUDED_MODELS_ENDPOINT = '/config/oauth/excluded-models';
 
+const oauthMapWrites = new Map<string, Promise<void>>();
+
+// v8 replaces a whole provider map. Serialize local read/modify/write operations
+// so a batch cannot overwrite another provider's changes with an older snapshot.
+function queueOauthMapWrite(path: string, write: () => Promise<void>): Promise<void> {
+  const assertConnection = guardConfigConnection();
+  const queueKey = `${apiClient.getConnectionRevision()}:${path}`;
+  const previous = oauthMapWrites.get(queueKey) ?? Promise.resolve();
+  const pending = previous.then(async () => {
+    assertConnection();
+    await write();
+  });
+  const settled = pending.then(
+    () => undefined,
+    () => undefined
+  );
+  oauthMapWrites.set(queueKey, settled);
+  void settled.then(() => {
+    if (oauthMapWrites.get(queueKey) === settled) oauthMapWrites.delete(queueKey);
+  });
+  return pending;
+}
+
 async function updateOauthProviderMap(path: string, provider: string, value?: unknown) {
   const key = normalizeOAuthProviderKey(provider);
   if (!key) throw new Error('Invalid OAuth provider');
-  const assertConnection = guardConfigConnection();
-  const current = await getConfigValue<unknown>(path, {});
-  assertConnection();
-  if (current != null && !isRecord(current)) throw new Error('Invalid OAuth configuration map');
-  // v8 reads preserve YAML key spelling. The UI groups normalized providers, so
-  // remove every spelling of this provider, preserving unrelated entries verbatim.
-  const next = Object.fromEntries(
-    Object.entries(current ?? {}).filter(([name]) => normalizeOAuthProviderKey(name) !== key)
-  );
-  if (value !== undefined) {
-    Object.defineProperty(next, key, {
-      value,
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  }
-  await apiClient.put(path, next);
+  return queueOauthMapWrite(path, async () => {
+    const assertConnection = guardConfigConnection();
+    const current = await getConfigValue<unknown>(path, {});
+    assertConnection();
+    if (current != null && !isRecord(current)) throw new Error('Invalid OAuth configuration map');
+    // v8 reads preserve YAML key spelling. The UI groups normalized providers, so
+    // remove every spelling of this provider, preserving unrelated entries verbatim.
+    const next = Object.fromEntries(
+      Object.entries(current ?? {}).filter(([name]) => normalizeOAuthProviderKey(name) !== key)
+    );
+    if (value !== undefined) {
+      Object.defineProperty(next, key, {
+        value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    }
+    await apiClient.put(path, next);
+  });
 }
 
 export const authFilesApi = {
@@ -528,7 +553,9 @@ export const authFilesApi = {
     updateOauthProviderMap(OAUTH_EXCLUDED_MODELS_ENDPOINT, provider),
 
   replaceOauthExcludedModels: (map: Record<string, string[]>) =>
-    apiClient.put(OAUTH_EXCLUDED_MODELS_ENDPOINT, normalizeOauthExcludedModels(map)),
+    queueOauthMapWrite(OAUTH_EXCLUDED_MODELS_ENDPOINT, async () => {
+      await apiClient.put(OAUTH_EXCLUDED_MODELS_ENDPOINT, normalizeOauthExcludedModels(map));
+    }),
 
   // OAuth 模型别名
   async getOauthModelAlias(): Promise<Record<string, OAuthModelAliasEntry[]>> {

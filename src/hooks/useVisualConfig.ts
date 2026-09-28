@@ -1402,6 +1402,26 @@ export function useVisualConfig() {
         const values = visualValues;
         const shouldWritePluginStoreAuth = dirtyFields.has('pluginStoreAuth');
 
+        // The backend accepts null routing as defaults, but YAML setIn cannot traverse it.
+        // Normalize only this legal null section, and only when routing is being edited.
+        const routingNode = doc.getIn(['routing'], true);
+        if (
+          isScalar(routingNode) &&
+          routingNode.value === null &&
+          [
+            'forceModelPrefix',
+            'requestRetry',
+            'maxRetryCredentials',
+            'maxRetryInterval',
+            'disableCooling',
+            'routingStrategy',
+            'routingSessionAffinity',
+            'routingSessionAffinityTTL',
+          ].some((field) => dirtyFields.has(field as keyof VisualConfigValues))
+        ) {
+          ensureMapInDoc(doc, ['routing']);
+        }
+
         if (dirtyFields.has('host')) setStringInDoc(doc, ['server', 'host'], values.host);
         if (dirtyFields.has('port')) setIntFromStringInDoc(doc, ['server', 'port'], values.port);
 

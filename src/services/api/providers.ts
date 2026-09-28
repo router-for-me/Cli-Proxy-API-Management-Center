@@ -289,7 +289,6 @@ export const applyProviderChanges = (
       next[field] = emptyOverride(field);
     else delete next[field];
   }
-  delete next['auth-index'];
   return next;
 };
 const findKeySource = (
@@ -349,6 +348,8 @@ const updateKey = async (
   delete before['base-url'];
   delete after['base-url'];
   keys[keyIndex] = applyProviderChanges(keys[keyIndex], before, after, group);
+  // Response metadata belongs to credentials, not arbitrary nested maps such as headers.
+  delete keys[keyIndex]['auth-index'];
   groups[index] = { ...nextGroup, keys };
   await putGroups(family, groups);
 };
@@ -440,18 +441,21 @@ export const providersApi = {
       const rawKeys = groups[index].keys as Record<string, unknown>[];
       const used = new Set<number>();
       next.keys = config.apiKeyEntries.map((entry) => {
-        const keyIndex =
-          entry.sourceIndex ?? rawKeys.findIndex((key) => key['api-key'] === entry.apiKey);
-        if (keyIndex < 0) return serializeApiKeyEntry(entry);
+        // Existing form entries retain their source index; its absence means a new credential.
+        // API keys alone are not identities: the same key can use different proxies.
+        const keyIndex = entry.sourceIndex;
+        if (keyIndex === undefined) return serializeApiKeyEntry(entry);
         if (used.has(keyIndex) || !isRecord(rawKeys[keyIndex])) throw conflict();
         used.add(keyIndex);
         const old = normalizeApiKeyEntry(rawKeys[keyIndex]);
         if (!old) throw conflict();
-        return applyProviderChanges(
+        const key = applyProviderChanges(
           rawKeys[keyIndex],
           serializeApiKeyEntry(old),
           serializeApiKeyEntry(entry)
         );
+        delete key['auth-index'];
+        return key;
       });
     }
     groups[index] = next;

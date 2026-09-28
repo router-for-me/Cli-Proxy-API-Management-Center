@@ -96,6 +96,69 @@ describe('v8 visual config contract', () => {
     expect(output.payload).toBeUndefined();
   });
 
+  const nullRouting = 'config-version: 8\nserver: {port: 8317}\nrouting: null\n';
+  const nullRoutingCases: [string, Partial<VisualConfigValues>, Record<string, unknown>][] = [
+    ['request retry', { requestRetry: '3' }, { retry: { 'request-retry': 3 } }],
+    ['retry credentials', { maxRetryCredentials: '4' }, { retry: { 'max-retry-credentials': 4 } }],
+    ['retry interval', { maxRetryInterval: '5' }, { retry: { 'max-retry-interval': 5 } }],
+    ['force prefix', { forceModelPrefix: true }, { 'force-model-prefix': true }],
+    ['cooling', { disableCooling: true }, { cooldown: { 'disable-cooling': true } }],
+    ['strategy', { routingStrategy: 'fill-first' }, { strategy: 'fill-first' }],
+    ['session affinity', { routingSessionAffinity: true }, { 'session-affinity': true }],
+    ['affinity TTL', { routingSessionAffinityTTL: '1h' }, { 'session-affinity-ttl': '1h' }],
+  ];
+
+  for (const [name, patch, expectedRouting] of nullRoutingCases) {
+    test(`null routing accepts ${name} without losing other edits`, () => {
+      const config = runVisualConfig(nullRouting, [{ port: '9000', ...patch }]);
+      const output = parseYaml(config.applyVisualChangesToYaml(nullRouting));
+      expect(output).toEqual({
+        'config-version': 8,
+        server: { port: 9000 },
+        routing: expectedRouting,
+      });
+    });
+  }
+
+  test('normalizes null routing in the latest document and writes explicit zero and false', () => {
+    const baseline = `config-version: 8
+server: {port: 8317}
+routing:
+  force-model-prefix: true
+  retry: {request-retry: 3, max-retry-credentials: 4, max-retry-interval: 5}
+  cooldown: {disable-cooling: true}
+`;
+    const config = runVisualConfig(baseline, [
+      {
+        port: '9000',
+        requestRetry: '0',
+        maxRetryCredentials: '0',
+        maxRetryInterval: '0',
+        forceModelPrefix: false,
+        disableCooling: false,
+      },
+    ]);
+    const output = parseYaml(config.applyVisualChangesToYaml(nullRouting));
+    expect(output.server.port).toBe(9000);
+    expect(output.routing).toEqual({
+      'force-model-prefix': false,
+      retry: { 'request-retry': 0, 'max-retry-credentials': 0, 'max-retry-interval': 0 },
+      cooldown: { 'disable-cooling': false },
+    });
+  });
+
+  test('preserves null routing when routing fields are not edited', () => {
+    expect(parseYaml(runVisualConfig(nullRouting).applyVisualChangesToYaml(nullRouting))).toEqual(
+      parseYaml(nullRouting)
+    );
+    const config = runVisualConfig(nullRouting, [{ port: '9000' }]);
+    expect(parseYaml(config.applyVisualChangesToYaml(nullRouting))).toEqual({
+      'config-version': 8,
+      server: { port: 9000 },
+      routing: null,
+    });
+  });
+
   test('commercial mode warning detection uses server.commercial-mode only', () => {
     expect(readCommercialModeFromYaml('server: {commercial-mode: true}')).toBe(true);
     expect(readCommercialModeFromYaml(fixture)).toBe(false);
