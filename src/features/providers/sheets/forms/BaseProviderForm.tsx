@@ -265,6 +265,7 @@ export function BaseProviderForm({
     {
       brand,
       baseUrl: form.baseUrl,
+      proxyUrl: form.proxyUrl,
       testModel: form.testModel,
       models: form.models,
       formHeaders: form.headers,
@@ -279,6 +280,7 @@ export function BaseProviderForm({
   const discovery = useModelDiscovery({
     brand,
     baseUrl: form.baseUrl,
+    proxyUrl: form.proxyUrl,
     formHeaders: form.headers,
     apiKeyEntries: form.apiKeyEntries,
     apiKey: form.apiKey,
