@@ -7,6 +7,10 @@ const source = readFileSync(
   new URL('../src/features/authFiles/components/AuthFileCard.tsx', import.meta.url),
   'utf8'
 );
+const styles = readFileSync(
+  new URL('../src/features/authFiles/components/AuthFileCard.module.scss', import.meta.url),
+  'utf8'
+);
 
 describe('auth file card presentation contract', () => {
   test('uses identity rather than logos or duplicate status badges', () => {
@@ -30,6 +34,12 @@ describe('auth file card presentation contract', () => {
     expect(footer).toContain('checked={!file.disabled}');
     expect(footer).toContain('statusUpdating[file.name] === true || isManualRefreshing');
     expect(footer).toContain('!isRuntimeOnly &&');
+  });
+
+  test('dims disabled card content but keeps the re-enable controls clear', () => {
+    expect(source).toContain("file.disabled === true ? styles.cardDisabled : ''");
+    expect(styles).toMatch(/\.cardDisabled\s*>\s*:not\(\.actions\)\s*\{\s*opacity:\s*0\.68;/);
+    expect(styles).not.toMatch(/\.cardDisabled\s*\{[^}]*opacity:/);
   });
 
   test('uses a plain-text weight tooltip while preserving the details link', () => {

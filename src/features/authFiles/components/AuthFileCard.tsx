@@ -119,6 +119,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     styles.card,
     compact ? styles.cardCompact : '',
     selected ? styles.cardSelected : '',
+    file.disabled === true ? styles.cardDisabled : '',
     mountEntranceDelayMs != null ? styles.cardEnter : '',
   ]
     .filter(Boolean)
