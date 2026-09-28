@@ -5,7 +5,7 @@
 [English](README.md)
 
 **主项目**: https://github.com/router-for-me/CLIProxyAPI  
-**最低版本要求**: ≥ 7.2.147（推荐最新）
+**最低版本要求**: ≥ 8.0.0（推荐最新 v8 版本）
 
 从6.0.19版本开始，Web UI 随主程序一起提供；服务运行后，通过 API 端口上的"/management.html"访问它。
 
@@ -19,8 +19,12 @@ APIMart 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低�
 
 ## 这是什么（以及不是什么）
 
-- 本仓库只包含 Web 管理界面本身，通过 CLI Proxy API 的 **Management API**（`/v0/management`）读取/修改配置、上传凭据与查看日志。
+- 本仓库只包含 Web 管理界面本身，仅通过 CLI Proxy API 的 **v8 Management API**（`/v8/management`）及 v8 配置结构读取/修改配置、上传凭据与查看日志，不提供 v0 回退。插件资源与自定义扩展仍遵循后端声明的路径。
 - 它 **不是** 代理本体，不参与流量转发。
+
+### 从 v7 升级
+
+部署本界面前请先升级后端并备份 `config.yaml`。后端读取时提供 v8 格式的配置视图，成功的 v8 配置写入会迁移磁盘文件。编辑器仅写入 v8 字段：客户端密钥位于 `access.api-keys`，顶层 `api-keys` 存放上游提供商分组。
 
 ## 快速开始
 
@@ -63,7 +67,7 @@ bun run build
 - `localhost:8317`
 - `http://192.168.1.10:8317`
 - `https://example.com:8317`
-- `http://example.com:8317/v0/management`（也可填写，后缀会被自动去除）
+- `http://example.com:8317/v8/management`（也可填写，后缀会被自动去除）
 
 ### 管理密钥（注意：不是 API Keys）
 
@@ -71,17 +75,17 @@ bun run build
 
 - `Authorization: Bearer <MANAGEMENT_KEY>`（默认）
 
-这与 Web UI 中"API Keys"页面管理的 `api-keys` 不同：后者是代理对外接口（如 OpenAI 兼容接口）给客户端使用的鉴权 key。
+这与 Web UI 中管理的 `access.api-keys` 不同：后者是代理对外接口（如 OpenAI 兼容接口）给客户端使用的鉴权 key。
 
 ### 远程管理
 
-当你从非 localhost 的浏览器访问时，服务端通常需要开启远程管理（例如 `allow-remote-management: true`）。  
+当你从非 localhost 的浏览器访问时，服务端通常需要开启远程管理（例如 `management.allow-remote: true`）。
 完整鉴权规则、服务端限制与边界情况请参考 CLI Proxy API 服务端文档或配置注释。
 
 ## 功能一览（按页面对应）
 
 - **仪表盘**：连接状态、服务版本/构建时间、关键数量概览、可用模型概览。
-- **配置面板**：可视化编辑常用 `config.yaml` 字段、基础设置与代理 `api-keys`；也支持源码编辑、YAML 高亮/搜索与保存前差异预览。
+- **配置面板**：可视化编辑常用 `config.yaml` 字段、基础设置与客户端 `access.api-keys`；也支持源码编辑、YAML 高亮/搜索与保存前差异预览。
 - **AI 提供商**：
   - Gemini/Codex/Claude/Vertex 配置（Base URL、Headers、代理、模型别名、排除模型、Prefix）。
   - OpenAI 兼容提供商（多 Key、Header、自助从 `/v1/models` 拉取并导入模型别名、可选浏览器侧 `chat/completions` 测试）。

@@ -38,25 +38,26 @@ function applyPayloadEdit(
   return unwrapPre(renderToStaticMarkup(createElement(Harness)));
 }
 
-const ruleYaml = (section: string, raw: boolean) => `payload:
-  ${section}:
-    # belongs-to-deleted-rule
-    - models:
-        - name: delete-me
-      params:
-        obsolete: ${raw ? "'false'" : 'false'}
-      future-rule: deleted
-    # belongs-to-kept-rule
-    - models:
-        # belongs-to-kept-model
-        - name: keep-me
-          future-model: preserve
-      params:
-        # belongs-to-deleted-param
-        remove-me: ${raw ? "'0'" : '0'}
-        # belongs-to-kept-param
-        temperature: ${raw ? "'1'" : '1'}
-      future-rule: preserve
+const ruleYaml = (section: string, raw: boolean) => `requests:
+  payload:
+    ${section}:
+      # belongs-to-deleted-rule
+      - models:
+          - name: delete-me
+        params:
+          obsolete: ${raw ? "'false'" : 'false'}
+        future-rule: deleted
+      # belongs-to-kept-rule
+      - models:
+          # belongs-to-kept-model
+          - name: keep-me
+            future-model: preserve
+        params:
+          # belongs-to-deleted-param
+          remove-me: ${raw ? "'0'" : '0'}
+          # belongs-to-kept-param
+          temperature: ${raw ? "'1'" : '1'}
+        future-rule: preserve
 `;
 
 function retainAndEditRule(rules: PayloadRule[], raw: boolean): PayloadRule[] {
@@ -89,11 +90,11 @@ describe('visual config payload YAML AST updates', () => {
       const output = applyPayloadEdit(ruleYaml(section, raw), (values) => ({
         [field]: retainAndEditRule(values[field], raw),
       }));
-      const parsed = parseYaml(output) as Record<string, Record<string, unknown[]>>;
-      const rule = parsed.payload[section][0] as Record<string, unknown>;
+      const parsed = parseYaml(output) as { requests: { payload: Record<string, unknown[]> } };
+      const rule = parsed.requests.payload[section][0] as Record<string, unknown>;
       const model = (rule.models as Array<Record<string, unknown>>)[0];
 
-      expect(parsed.payload[section]).toHaveLength(1);
+      expect(parsed.requests.payload[section]).toHaveLength(1);
       expect(model.name).toBe('kept-and-edited');
       expect(model['future-model']).toBe('preserve');
       expect(rule['future-rule']).toBe('preserve');
@@ -107,24 +108,25 @@ describe('visual config payload YAML AST updates', () => {
   }
 
   test('preserves filter rule nodes and sequence-item comments through deletion and reordering', () => {
-    const yaml = `payload:
-  filter:
-    # belongs-to-deleted-filter
-    - models:
-        - name: delete-me
-      params:
-        - deleted.path
-      future-rule: deleted
-    # belongs-to-kept-filter
-    - models:
-        - name: keep-me
-          future-model: preserve
-      params:
-        # belongs-to-deleted-param
-        - first.path
-        # belongs-to-kept-param
-        - keep.path
-      future-rule: preserve
+    const yaml = `requests:
+  payload:
+    filter:
+      # belongs-to-deleted-filter
+      - models:
+          - name: delete-me
+        params:
+          - deleted.path
+        future-rule: deleted
+      # belongs-to-kept-filter
+      - models:
+          - name: keep-me
+            future-model: preserve
+        params:
+          # belongs-to-deleted-param
+          - first.path
+          # belongs-to-kept-param
+          - keep.path
+        future-rule: preserve
 `;
     const output = applyPayloadEdit(yaml, (values) => {
       const retained = values.payloadFilterRules[1];
@@ -138,10 +140,10 @@ describe('visual config payload YAML AST updates', () => {
     const parsed = parseYaml(output) as {
       payload: { filter: Array<Record<string, unknown>> };
     };
-    const rule = parsed.payload.filter[0];
+    const rule = parsed.requests.payload.filter[0];
     const model = (rule.models as Array<Record<string, unknown>>)[0];
 
-    expect(parsed.payload.filter).toHaveLength(1);
+    expect(parsed.requests.payload.filter).toHaveLength(1);
     expect(model).toEqual({ name: 'kept-filter', 'future-model': 'preserve' });
     expect(rule.params).toEqual(['keep.path', 'new.path']);
     expect(rule['future-rule']).toBe('preserve');

@@ -5,7 +5,7 @@ const API_KEY_USAGE_TIMEOUT_MS = 15 * 1000;
 
 export const apiKeyUsageApi = {
   getUsage: () =>
-    apiClient.get<ApiKeyUsageResponse>('/api-key-usage', {
+    apiClient.get<ApiKeyUsageResponse>('/observability/usage/api-keys', {
       timeout: API_KEY_USAGE_TIMEOUT_MS,
     }),
 };

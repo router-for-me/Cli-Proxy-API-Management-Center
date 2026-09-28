@@ -159,6 +159,7 @@ export interface SponsorKeyEntryInput {
 }
 
 export interface ApiKeyEntryInput {
+  sourceIndex?: number;
   apiKey: string;
   existingApiKey?: string;
   proxyUrl: string;

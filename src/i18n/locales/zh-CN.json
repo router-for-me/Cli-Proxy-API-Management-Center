@@ -65,7 +65,7 @@
     "subtitle": "管理中心"
   },
   "login": {
-    "subtitle": "请输入连接信息以访问管理界面",
+    "subtitle": "连接 CLI Proxy API v8 或更高版本",
     "connection_current": "当前地址",
     "connection_auto_hint": "系统将自动使用当前访问地址进行连接",
     "custom_connection_label": "自定义连接地址:",
@@ -83,7 +83,7 @@
     "error_timeout": "连接超时，服务器无响应",
     "error_unauthorized": "认证失败，管理密钥缺失或无效",
     "error_forbidden": "访问被拒绝，远程管理未启用、管理密钥未配置或 IP 被临时封禁",
-    "error_not_found": "未找到 Management API，请确认服务地址指向 CLIProxyAPI 后端",
+    "error_not_found": "未找到 v8 Management API，请检查服务地址并将 CLIProxyAPI 升级至 v8 或更高版本；不再支持 v0 接口。",
     "error_server": "后端处理管理接口时发生错误，请查看服务日志",
     "error_cors": "跨域请求被阻止，请检查服务器配置",
     "error_ssl": "SSL/TLS 证书验证失败"
@@ -1058,7 +1058,7 @@
           "panel_repo": "面板仓库"
         },
         "auth": {
-          "auth_dir": "认证文件目录 (auth-dir)",
+          "auth_dir": "OAuth 认证文件目录 (oauth.auth-dir)",
           "auth_dir_hint": "存放认证文件的目录路径（支持 ~）"
         },
         "system": {
@@ -1107,12 +1107,12 @@
           "redis_usage_retention_hint": "RESP 接口 LPOP/RPOP 用量队列的内存保留时间，最大 3600 秒",
           "antigravity_sensitive_words": "敏感词混淆",
           "antigravity_sensitive_words_desc": "在 Antigravity 系统提示词匹配项中插入零宽字符，降低上游精确关键词匹配",
-          "antigravity_sensitive_words_label": "敏感词（antigravity.sensitive-words）",
+          "antigravity_sensitive_words_label": "OAuth 敏感词（oauth.providers.antigravity.sensitive-words）",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "每项填写一个词或短语；匹配不区分大小写，保存时移除空项，少于 2 个字符的项会被后端忽略",
           "devin_sensitive_words": "Devin 系统提示词敏感词",
           "devin_sensitive_words_desc": "仅处理 Devin 系统提示词：含配置词的整行会被删除，剩余系统提示词再进行混淆；普通消息和工具参数不会被修改",
-          "devin_sensitive_words_label": "敏感词（devin.sensitive-words）",
+          "devin_sensitive_words_label": "OAuth 敏感词（oauth.providers.devin.sensitive-words）",
           "devin_sensitive_words_placeholder": "敏感短语",
           "devin_sensitive_words_hint": "每项填写一个词或短语。请谨慎配置：命中内容会导致整行系统提示词被删除；保存时移除空项",
           "antigravity_signature_cache": "启用 Antigravity 签名缓存",
@@ -1123,8 +1123,8 @@
         "headers": {
           "title": "Header 默认值",
           "description": "Claude 与 Codex OAuth 请求在客户端缺少 Header 时使用的默认值",
-          "claude_title": "Claude Header Defaults",
-          "codex_title": "Codex Header Defaults",
+          "claude_title": "Claude OAuth 默认请求头",
+          "codex_title": "Codex OAuth 默认请求头",
           "user_agent": "User-Agent",
           "package_version": "Package Version",
           "runtime_version": "Runtime Version",
@@ -1169,7 +1169,7 @@
           "disable_cooling_desc": "全局禁用认证/模型失败后的冷却窗口",
           "session_affinity": "会话粘性路由",
           "ws_auth": "WebSocket 认证",
-          "ws_auth_desc": "启用 WebSocket 连接认证 (/v1/ws)"
+          "ws_auth_desc": "启用 AI Studio WebSocket 连接认证（oauth.providers.aistudio.ws-auth）"
         },
         "quota": {
           "title": "配额回退",
@@ -1207,7 +1207,7 @@
         }
       },
       "api_keys": {
-        "label": "API 密钥列表 (api-keys)",
+        "label": "客户端 API 密钥 (access.api-keys)",
         "add": "添加 API 密钥",
         "generate": "生成",
         "empty": "暂无 API 密钥",
@@ -1216,7 +1216,7 @@
         "add_title": "添加 API 密钥",
         "input_label": "API 密钥",
         "input_placeholder": "粘贴你的 API 密钥",
-        "input_hint": "此处仅修改本地配置文件内容，不会自动同步到 API 密钥管理接口",
+        "input_hint": "保存配置后生效。上游提供商密钥独立管理，不受此处修改影响。",
         "error_empty": "请输入 API 密钥",
         "error_invalid": "API 密钥包含无效字符",
         "strength": {
@@ -1586,6 +1586,9 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "groups": {
+      "rowHint": "未修改的字段保留组继承。修改基础 URL 将影响组内所有密钥。新建行会创建新组。"
+    },
     "header": {
       "title": "AI 提供商",
       "activeResources": "{{active}}/{{total}} 个活跃资源",

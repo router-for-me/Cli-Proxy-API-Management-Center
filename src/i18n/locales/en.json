@@ -65,7 +65,7 @@
     "subtitle": "Management Center"
   },
   "login": {
-    "subtitle": "Please enter connection information to access the management interface",
+    "subtitle": "Connect to CLI Proxy API v8 or later",
     "connection_current": "Current URL",
     "connection_auto_hint": "The system will automatically use the current URL for connection",
     "custom_connection_label": "Custom Connection URL:",
@@ -83,7 +83,7 @@
     "error_timeout": "Connection timed out, server not responding",
     "error_unauthorized": "Authentication failed, management key is missing or invalid",
     "error_forbidden": "Access denied, remote management is disabled, the management key is not configured, or this IP is temporarily banned",
-    "error_not_found": "Management API not found, confirm the server address points to the CLIProxyAPI backend",
+    "error_not_found": "v8 Management API not found. Check the server address and upgrade CLIProxyAPI to v8 or later; v0 is not supported.",
     "error_server": "Backend failed while handling the management request, check the server logs",
     "error_cors": "Cross-origin request blocked, please check server configuration",
     "error_ssl": "SSL/TLS certificate verification failed"
@@ -1060,7 +1060,7 @@
           "panel_repo": "Panel Repository"
         },
         "auth": {
-          "auth_dir": "Auth Directory (auth-dir)",
+          "auth_dir": "OAuth Credential Directory (oauth.auth-dir)",
           "auth_dir_hint": "Directory path for authentication files (supports ~)"
         },
         "system": {
@@ -1109,12 +1109,12 @@
           "redis_usage_retention_hint": "In-memory retention for RESP LPOP/RPOP usage output, max 3600 seconds",
           "antigravity_sensitive_words": "Sensitive Word Obfuscation",
           "antigravity_sensitive_words_desc": "Insert zero-width characters into matching words in Antigravity system instructions to reduce exact keyword matching upstream",
-          "antigravity_sensitive_words_label": "Sensitive words (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_label": "OAuth sensitive words (oauth.providers.antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
           "devin_sensitive_words": "Devin System Prompt Sensitive Words",
           "devin_sensitive_words_desc": "In Devin system prompts only, a line containing a configured word is removed in full; the remaining system prompt is then obfuscated. Regular messages and tool arguments are not changed",
-          "devin_sensitive_words_label": "Sensitive words (devin.sensitive-words)",
+          "devin_sensitive_words_label": "OAuth sensitive words (oauth.providers.devin.sensitive-words)",
           "devin_sensitive_words_placeholder": "sensitive phrase",
           "devin_sensitive_words_hint": "One word or phrase per row. Configure carefully: matching content causes the entire system-prompt line to be deleted; empty entries are removed when saved",
           "antigravity_signature_cache": "Enable Antigravity Signature Cache",
@@ -1125,8 +1125,8 @@
         "headers": {
           "title": "Header Defaults",
           "description": "Default headers for Claude and Codex OAuth requests when the client omits them",
-          "claude_title": "Claude Header Defaults",
-          "codex_title": "Codex Header Defaults",
+          "claude_title": "Claude OAuth Header Defaults",
+          "codex_title": "Codex OAuth Header Defaults",
           "user_agent": "User-Agent",
           "package_version": "Package Version",
           "runtime_version": "Runtime Version",
@@ -1171,7 +1171,7 @@
           "disable_cooling_desc": "Globally disable auth/model cooldown windows after failures",
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
-          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+          "ws_auth_desc": "Require authentication for AI Studio WebSocket connections (oauth.providers.aistudio.ws-auth)"
         },
         "quota": {
           "title": "Quota Fallback",
@@ -1209,7 +1209,7 @@
         }
       },
       "api_keys": {
-        "label": "API Keys List (api-keys)",
+        "label": "Client API Keys (access.api-keys)",
         "add": "Add API Key",
         "generate": "Generate",
         "empty": "No API keys",
@@ -1218,7 +1218,7 @@
         "add_title": "Add API Key",
         "input_label": "API Key",
         "input_placeholder": "Paste your API key",
-        "input_hint": "This only modifies the local config file content, it will not sync to the API Key Management interface",
+        "input_hint": "Changes take effect after saving the configuration. Upstream provider keys are managed separately.",
         "error_empty": "Please enter an API key",
         "error_invalid": "API key contains invalid characters",
         "strength": {
@@ -1588,6 +1588,9 @@
     "version": "Management UI Version"
   },
   "providersPage": {
+    "groups": {
+      "rowHint": "Unchanged fields keep their group inheritance. Base URL changes affect every key in this group. New rows create new groups."
+    },
     "header": {
       "title": "AI Providers",
       "activeResources": "{{active}}/{{total}} active resources",

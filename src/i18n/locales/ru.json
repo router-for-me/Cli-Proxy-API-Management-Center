@@ -65,7 +65,7 @@
     "subtitle": "Центр управления"
   },
   "login": {
-    "subtitle": "Введите данные подключения, чтобы получить доступ к панели управления",
+    "subtitle": "Подключение к CLI Proxy API v8 или новее",
     "connection_current": "Текущий URL",
     "connection_auto_hint": "Система автоматически использует текущий URL для подключения",
     "custom_connection_label": "Пользовательский URL подключения:",
@@ -83,7 +83,7 @@
     "error_timeout": "Время ожидания истекло, сервер не отвечает",
     "error_unauthorized": "Аутентификация не удалась, ключ управления отсутствует или неверен",
     "error_forbidden": "Доступ запрещён: удалённое управление отключено, ключ управления не настроен или IP временно заблокирован",
-    "error_not_found": "Management API не найден, проверьте, что адрес указывает на backend CLIProxyAPI",
+    "error_not_found": "Management API v8 не найден. Проверьте адрес сервера и обновите CLIProxyAPI до v8 или новее; API v0 не поддерживается.",
     "error_server": "Backend не смог обработать запрос управления, проверьте журналы сервера",
     "error_cors": "Блокировка CORS, проверьте конфигурацию сервера",
     "error_ssl": "Ошибка проверки SSL/TLS сертификата"
@@ -1063,7 +1063,7 @@
           "panel_repo": "Репозиторий панели"
         },
         "auth": {
-          "auth_dir": "Каталог auth-dir",
+          "auth_dir": "Каталог OAuth (oauth.auth-dir)",
           "auth_dir_hint": "Путь к каталогу с файлами аутентификации (поддерживает ~)"
         },
         "system": {
@@ -1112,12 +1112,12 @@
           "redis_usage_retention_hint": "Время хранения вывода RESP LPOP/RPOP в памяти, максимум 3600 секунд",
           "antigravity_sensitive_words": "Обфускация стоп-слов",
           "antigravity_sensitive_words_desc": "Вставляет символы нулевой ширины в совпадающие слова системных инструкций Antigravity, затрудняя точное распознавание ключевых слов на стороне сервиса",
-          "antigravity_sensitive_words_label": "Стоп-слова (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_label": "Стоп-слова OAuth (oauth.providers.antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "Одно слово или фраза в строке. Регистр не учитывается; пустые значения удаляются, а значения короче 2 символов игнорируются backend",
           "devin_sensitive_words": "Стоп-слова системного промпта Devin",
           "devin_sensitive_words_desc": "Обрабатываются только системные промпты Devin: строка с настроенным словом удаляется целиком, затем оставшийся промпт обфусцируется. Обычные сообщения и аргументы инструментов не изменяются",
-          "devin_sensitive_words_label": "Стоп-слова (devin.sensitive-words)",
+          "devin_sensitive_words_label": "Стоп-слова OAuth (oauth.providers.devin.sensitive-words)",
           "devin_sensitive_words_placeholder": "чувствительная фраза",
           "devin_sensitive_words_hint": "Одно слово или фраза в строке. Настраивайте осторожно: при совпадении вся строка системного промпта удаляется; пустые значения удаляются при сохранении",
           "antigravity_signature_cache": "Включить кэш подписей Antigravity",
@@ -1128,8 +1128,8 @@
         "headers": {
           "title": "Заголовки по умолчанию",
           "description": "Заголовки по умолчанию для OAuth-запросов Claude и Codex, когда клиент их не отправил",
-          "claude_title": "Claude Header Defaults",
-          "codex_title": "Codex Header Defaults",
+          "claude_title": "Заголовки Claude OAuth по умолчанию",
+          "codex_title": "Заголовки Codex OAuth по умолчанию",
           "user_agent": "User-Agent",
           "package_version": "Package Version",
           "runtime_version": "Runtime Version",
@@ -1174,7 +1174,7 @@
           "disable_cooling_desc": "Глобально отключить окна охлаждения auth/model после ошибок",
           "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
-          "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)"
+          "ws_auth_desc": "Аутентификация WebSocket AI Studio (oauth.providers.aistudio.ws-auth)"
         },
         "quota": {
           "title": "Резерв по квоте",
@@ -1212,7 +1212,7 @@
         }
       },
       "api_keys": {
-        "label": "Список API-ключей (api-keys)",
+        "label": "Клиентские API-ключи (access.api-keys)",
         "add": "Добавить API-ключ",
         "generate": "Сгенерировать",
         "empty": "API-ключи отсутствуют",
@@ -1221,7 +1221,7 @@
         "add_title": "Добавление API-ключа",
         "input_label": "API-ключ",
         "input_placeholder": "Вставьте API-ключ",
-        "input_hint": "Меняет только содержимое локального файла конфигурации, не синхронизируется с интерфейсом управления API-ключами",
+        "input_hint": "Изменения вступают в силу после сохранения конфигурации. Ключи провайдеров управляются отдельно.",
         "error_empty": "Введите API-ключ",
         "error_invalid": "API-ключ содержит недопустимые символы",
         "strength": {
@@ -1582,6 +1582,9 @@
     "version": "Версия интерфейса управления"
   },
   "providersPage": {
+    "groups": {
+      "rowHint": "Неизменённые поля сохраняют наследование. Изменение базового URL влияет на все ключи группы. Новая строка создаёт группу."
+    },
     "header": {
       "title": "AI Провайдеры",
       "activeResources": "{{active}}/{{total}} активных",

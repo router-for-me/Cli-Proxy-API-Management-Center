@@ -22,7 +22,7 @@ describe('OAuth transport cancellation', () => {
       const attempts = createOAuthAttempts({ setTimeout: () => 0, clearTimeout: () => {} });
       const attempt = attempts.begin('devin');
       try {
-        const request = apiClient.get('/get-auth-status', {
+        const request = apiClient.get('/oauth/status', {
           signal: attempt.signal,
           adapter: (config) =>
             new Promise<AxiosResponse>((resolve, reject) => {

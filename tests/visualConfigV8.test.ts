@@ -1,0 +1,153 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, test } from 'bun:test';
+import { parse as parseYaml } from 'yaml';
+import { CONFIG_FIELD_SEARCH_INDEX } from '../src/features/config/searchIndex';
+import { FIELD_VALUE_KEYS } from '../src/features/config/constants';
+import { DEFAULT_VISUAL_VALUES, type VisualConfigValues } from '../src/types/visualConfig';
+import { readCommercialModeFromYaml } from '../src/features/config/hooks/useConfigDocument';
+import { runVisualConfig } from './helpers/visualConfig';
+
+const fixture = readFileSync(new URL('./fixtures/visualConfig-v8.yaml', import.meta.url), 'utf8');
+
+describe('v8 visual config contract', () => {
+  test('reads nested values without losing explicit false and zero', () => {
+    const config = runVisualConfig(fixture);
+    expect(config.visualValues).toMatchObject({
+      host: 'localhost',
+      port: '8317',
+      apiKeysText: 'fixture-client',
+      commercialMode: false,
+      wsAuth: false,
+      requestRetry: '0',
+      maxRetryCredentials: '0',
+      maxRetryInterval: '0',
+      authAutoRefreshWorkers: '0',
+      logsMaxTotalSizeMb: '0',
+      errorLogsMaxFiles: '0',
+      antigravitySignatureCacheEnabled: false,
+      quotaAntigravityCredits: false,
+      codexHeaderUserAgent: 'fixture-oauth-agent',
+      streaming: { keepaliveSeconds: '0', bootstrapRetries: '0', nonstreamKeepaliveInterval: '0' },
+    });
+    expect(config.visualDirty).toBe(false);
+    expect(parseYaml(config.applyVisualChangesToYaml(fixture))).toEqual(parseYaml(fixture));
+  });
+
+  test('client key writes and deletion never replace upstream provider groups', () => {
+    for (const apiKeysText of ['new-fixture-client', '']) {
+      const config = runVisualConfig(fixture, [{ apiKeysText }]);
+      const output = parseYaml(config.applyVisualChangesToYaml(fixture));
+      expect(output['api-keys']).toEqual(parseYaml(fixture)['api-keys']);
+      expect(output.access?.['api-keys']).toEqual(apiKeysText ? [apiKeysText] : undefined);
+    }
+    expect(runVisualConfig('api-keys:\n  codex: []\n').visualValues.apiKeysText).toBe('');
+  });
+
+  test('OAuth edits stay OAuth-only and preserve unmoved routing, quota, and plugin fields', () => {
+    const config = runVisualConfig(fixture, [
+      {
+        codexHeaderUserAgent: 'new-oauth-agent',
+        antigravitySensitiveWords: [],
+        quotaAntigravityCredits: true,
+        quotaSwitchProject: true,
+      },
+    ]);
+    const original = parseYaml(fixture);
+    const output = parseYaml(config.applyVisualChangesToYaml(fixture));
+    expect(output['api-keys']).toEqual(original['api-keys']);
+    expect(output.routing).toEqual(original.routing);
+    expect(output.plugins).toEqual(original.plugins);
+    expect(output['quota-exceeded']).toEqual({
+      'switch-project': true,
+      'switch-preview-model': false,
+    });
+    expect(output.oauth.providers.codex['header-defaults']['user-agent']).toBe('new-oauth-agent');
+    expect(output.oauth.providers.antigravity['sensitive-words']).toBeUndefined();
+    expect(output.oauth.providers.antigravity['antigravity-credits']).toBe(true);
+    expect(output['codex-header-defaults']).toBeUndefined();
+  });
+
+  test('writes zero and false to v8 paths on the latest document while preserving unknown payload data', () => {
+    const baseline = fixture
+      .replace('request-retry: 0', 'request-retry: 2')
+      .replace('ws-auth: false', 'ws-auth: true');
+    const initial = runVisualConfig(baseline);
+    const rule = initial.visualValues.payloadDefaultRules[0];
+    const config = runVisualConfig(baseline, [
+      {
+        requestRetry: '0',
+        wsAuth: false,
+        payloadDefaultRules: [{ ...rule, params: [{ ...rule.params[0], value: '1' }] }],
+      },
+    ]);
+    const latest = baseline.replace('future-rule: keep', 'future-rule: server-update');
+    const outputText = config.applyVisualChangesToYaml(latest);
+    const output = parseYaml(outputText);
+    expect(output.routing.retry['request-retry']).toBe(0);
+    expect(output.oauth.providers.aistudio['ws-auth']).toBe(false);
+    expect(output.requests.payload['future-section']).toEqual({ enabled: false });
+    expect(output.requests.payload.default[0]).toMatchObject({
+      'future-rule': 'server-update',
+      params: { temperature: 1 },
+      models: [{ name: 'fixture-model', 'future-model': 'keep' }],
+    });
+    expect(outputText).toContain('# v8 visual editor fixture');
+    expect(output['future-root']).toEqual({ unknown: 'keep' });
+    expect(output.payload).toBeUndefined();
+  });
+
+  test('commercial mode warning detection uses server.commercial-mode only', () => {
+    expect(readCommercialModeFromYaml('server: {commercial-mode: true}')).toBe(true);
+    expect(readCommercialModeFromYaml(fixture)).toBe(false);
+    expect(readCommercialModeFromYaml('commercial-mode: true')).toBe(false);
+    expect(readCommercialModeFromYaml('server: null')).toBe(false);
+    expect(readCommercialModeFromYaml('server: [')).toBe(false);
+  });
+});
+
+describe('v8 scalar read/write path parity', () => {
+  const numericFields = new Set([
+    'port',
+    'errorLogsMaxFiles',
+    'logsMaxTotalSizeMb',
+    'redisUsageQueueRetentionSeconds',
+    'requestRetry',
+    'maxRetryCredentials',
+    'maxRetryInterval',
+    'authAutoRefreshWorkers',
+  ]);
+  for (const entry of CONFIG_FIELD_SEARCH_INDEX) {
+    const field = FIELD_VALUE_KEYS[entry.fieldId][0];
+    if (field.includes('.') || !entry.yamlKeys) continue;
+    const key = field as keyof VisualConfigValues;
+    const initial = DEFAULT_VISUAL_VALUES[key];
+    if (typeof initial !== 'string' && typeof initial !== 'boolean') continue;
+    test(`${field} reads and writes ${entry.yamlKeys.join('.')}`, () => {
+      const baseline = runVisualConfig(fixture).visualValues[key];
+      const value =
+        typeof baseline === 'boolean'
+          ? !baseline
+          : numericFields.has(field)
+            ? '1'
+            : field === 'routingStrategy'
+              ? 'fill-first'
+              : field === 'disableImageGeneration'
+                ? 'chat'
+                : 'fixture-updated';
+      const config = runVisualConfig(fixture, [{ [field]: value }]);
+      const output = config.applyVisualChangesToYaml(fixture);
+      const path = [...entry.yamlKeys!];
+      if (field === 'tlsEnable') path.push('enable');
+      if (field === 'pluginsEnabled') path.push('enabled');
+      const expected =
+        field === 'apiKeysText' ? [value] : numericFields.has(field) ? Number(value) : value;
+      expect(
+        path.reduce<unknown>(
+          (node, key) => (node as Record<string, unknown>)[key],
+          parseYaml(output)
+        )
+      ).toEqual(expected);
+      expect(runVisualConfig(output).visualValues[key]).toEqual(value);
+    });
+  }
+});

@@ -23,52 +23,15 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-function extractApiKeyValue(raw: unknown): string | null {
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    return trimmed ? trimmed : null;
-  }
-
-  const record = asRecord(raw);
-  if (!record) return null;
-
-  const candidates = [record['api-key'], record.apiKey, record.key, record.Key];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const trimmed = candidate.trim();
-      if (trimmed) return trimmed;
-    }
-  }
-
-  return null;
-}
-
 function parseApiKeysText(raw: unknown): string {
   if (!Array.isArray(raw)) return '';
 
   const keys: string[] = [];
   for (const item of raw) {
-    const key = extractApiKeyValue(item);
+    const key = typeof item === 'string' ? item.trim() : '';
     if (key) keys.push(key);
   }
   return keys.join('\n');
-}
-
-function resolveApiKeysText(parsed: Record<string, unknown>): string {
-  if (Object.prototype.hasOwnProperty.call(parsed, 'api-keys')) {
-    return parseApiKeysText(parsed['api-keys']);
-  }
-
-  const auth = asRecord(parsed.auth);
-  const providers = asRecord(auth?.providers);
-  const configApiKeyProvider = asRecord(providers?.['config-api-key']);
-  if (!configApiKeyProvider) return '';
-
-  if (Object.prototype.hasOwnProperty.call(configApiKeyProvider, 'api-key-entries')) {
-    return parseApiKeysText(configApiKeyProvider['api-key-entries']);
-  }
-
-  return parseApiKeysText(configApiKeyProvider['api-keys']);
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
@@ -88,7 +51,13 @@ function ensureMapInDoc(doc: YamlDocument, path: YamlPath): void {
 function deleteIfMapEmpty(doc: YamlDocument, path: YamlPath): void {
   const value = doc.getIn(path, true);
   if (!isMap(value)) return;
-  if (value.items.length === 0) doc.deleteIn(path);
+  if (value.items.length === 0) deletePathInDoc(doc, path);
+}
+
+/** Prune only ancestors made empty by this deletion; keep unknown sibling nodes. */
+function deletePathInDoc(doc: YamlDocument, path: YamlPath): void {
+  doc.deleteIn(path);
+  if (path.length > 1) deleteIfMapEmpty(doc, path.slice(0, -1));
 }
 
 function setBooleanInDoc(doc: YamlDocument, path: YamlPath, value: boolean): void {
@@ -117,14 +86,14 @@ function setStringListInDoc(doc: YamlDocument, path: YamlPath, values: string[])
     doc.setIn(path, nextValues);
     return;
   }
-  if (docHas(doc, path)) doc.deleteIn(path);
+  if (docHas(doc, path)) deletePathInDoc(doc, path);
 }
 
 function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
   const safe = typeof value === 'string' ? value : '';
   const trimmed = safe.trim();
   if (trimmed === '') {
-    if (docHas(doc, path)) doc.deleteIn(path);
+    if (docHas(doc, path)) deletePathInDoc(doc, path);
     return;
   }
 
@@ -566,18 +535,6 @@ function parsePluginStoreAuthRules(raw: unknown): PluginStoreAuthRule[] {
     .filter((rule): rule is PluginStoreAuthRule => Boolean(rule));
 }
 
-function deleteLegacyApiKeysProvider(doc: YamlDocument): void {
-  if (docHas(doc, ['auth', 'providers', 'config-api-key', 'api-key-entries'])) {
-    doc.deleteIn(['auth', 'providers', 'config-api-key', 'api-key-entries']);
-  }
-  if (docHas(doc, ['auth', 'providers', 'config-api-key', 'api-keys'])) {
-    doc.deleteIn(['auth', 'providers', 'config-api-key', 'api-keys']);
-  }
-  deleteIfMapEmpty(doc, ['auth', 'providers', 'config-api-key']);
-  deleteIfMapEmpty(doc, ['auth', 'providers']);
-  deleteIfMapEmpty(doc, ['auth']);
-}
-
 function parsePayloadModelEntries(raw: unknown, idPrefix: string): PayloadRule['models'] {
   if (!Array.isArray(raw)) return [];
 
@@ -951,7 +908,7 @@ function syncPayloadRuleSequence(
   desired: PayloadRule[],
   rawValues: boolean
 ): void {
-  const payload = doc.getIn(['payload'], true);
+  const payload = doc.getIn(['requests', 'payload'], true);
   if (!isMap(payload)) throw new Error('Expected payload map');
   const rules = desired.filter((rule) => rule.models.some((model) => model.name.trim()));
   if (rules.length === 0) {
@@ -985,7 +942,7 @@ function syncPayloadFilterSequence(
   baseline: PayloadFilterRule[],
   desired: PayloadFilterRule[]
 ): void {
-  const payload = doc.getIn(['payload'], true);
+  const payload = doc.getIn(['requests', 'payload'], true);
   if (!isMap(payload)) throw new Error('Expected payload map');
   const rules = desired.filter((rule) => rule.models.some((model) => model.name.trim()));
   if (rules.length === 0) {
@@ -1280,21 +1237,36 @@ export function useVisualConfig() {
 
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
-      const tls = asRecord(parsed.tls);
-      const remoteManagement = asRecord(parsed['remote-management']);
+      const v8Server = asRecord(parsed?.['server']);
+      const v8Routing = asRecord(parsed?.['routing']);
+      const v8RoutingRetry = asRecord(v8Routing?.['retry']);
+      const v8RoutingCooldown = asRecord(v8Routing?.['cooldown']);
+      const v8Requests = asRecord(parsed?.['requests']);
+      const v8Oauth = asRecord(parsed?.['oauth']);
+      const v8OauthProviders = asRecord(v8Oauth?.['providers']);
+      const v8OauthProvidersAistudio = asRecord(v8OauthProviders?.['aistudio']);
+      const v8OauthProvidersCodex = asRecord(v8OauthProviders?.['codex']);
+      const v8OauthProvidersClaude = asRecord(v8OauthProviders?.['claude']);
+      const v8OauthProvidersAntigravity = asRecord(v8OauthProviders?.['antigravity']);
+      const v8Multimedia = asRecord(parsed?.['multimedia']);
+      const v8Observability = asRecord(parsed?.['observability']);
+      const v8ObservabilityLogs = asRecord(v8Observability?.['logs']);
+      const v8ObservabilityUsage = asRecord(v8Observability?.['usage']);
+      const tls = asRecord(v8Server?.['tls']);
+      const remoteManagement = asRecord(parsed['management']);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
-      const payload = asRecord(parsed.payload);
-      const streaming = asRecord(parsed.streaming);
+      const payload = asRecord(v8Requests?.['payload']);
+      const streaming = asRecord(v8Requests?.['streaming']);
       const plugins = asRecord(parsed.plugins);
-      const antigravity = asRecord(parsed.antigravity);
-      const devin = asRecord(parsed.devin);
-      const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
-      const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
+      const antigravity = asRecord(v8OauthProviders?.['antigravity']);
+      const devin = asRecord(v8OauthProviders?.['devin']);
+      const claudeHeaderDefaults = asRecord(v8OauthProvidersClaude?.['header-defaults']);
+      const codexHeaderDefaults = asRecord(v8OauthProvidersCodex?.['header-defaults']);
 
       const newValues: VisualConfigValues = {
-        host: typeof parsed.host === 'string' ? parsed.host : '',
-        port: String(parsed.port ?? ''),
+        host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
+        port: String(v8Server?.['port'] ?? ''),
 
         tlsEnable: Boolean(tls?.enable),
         tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
@@ -1310,46 +1282,48 @@ export function useVisualConfig() {
         rmPanelRepo:
           typeof remoteManagement?.['panel-github-repository'] === 'string'
             ? remoteManagement['panel-github-repository']
-            : typeof remoteManagement?.['panel-repo'] === 'string'
-              ? remoteManagement['panel-repo']
-              : '',
+            : '',
 
-        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
+        authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
+        apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
         pluginsEnabled: Boolean(plugins?.enabled),
         pluginStoreSources: parseStringList(plugins?.['store-sources']),
         pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
 
-        debug: Boolean(parsed.debug),
-        commercialMode: Boolean(parsed['commercial-mode']),
-        loggingToFile: Boolean(parsed['logging-to-file']),
-        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
-        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
-        usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
+        debug: Boolean(v8ObservabilityLogs?.['debug']),
+        commercialMode: Boolean(v8Server?.['commercial-mode']),
+        loggingToFile: Boolean(v8ObservabilityLogs?.['logging-to-file']),
+        logsMaxTotalSizeMb: String(v8ObservabilityLogs?.['logs-max-total-size-mb'] ?? ''),
+        errorLogsMaxFiles: String(v8ObservabilityLogs?.['error-logs-max-files'] ?? ''),
+        usageStatisticsEnabled: Boolean(v8ObservabilityUsage?.['usage-statistics-enabled']),
         redisUsageQueueRetentionSeconds: String(
-          parsed['redis-usage-queue-retention-seconds'] ?? ''
+          v8ObservabilityUsage?.['redis-usage-queue-retention-seconds'] ?? ''
         ),
 
-        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
-        forceModelPrefix: Boolean(parsed['force-model-prefix']),
-        passthroughHeaders: Boolean(parsed['passthrough-headers']),
-        requestRetry: String(parsed['request-retry'] ?? ''),
-        maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
-        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
-        disableCooling: Boolean(parsed['disable-cooling']),
-        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
+        proxyUrl: typeof v8Requests?.['proxy-url'] === 'string' ? v8Requests?.['proxy-url'] : '',
+        forceModelPrefix: Boolean(v8Routing?.['force-model-prefix']),
+        passthroughHeaders: Boolean(v8Requests?.['passthrough-headers']),
+        requestRetry: String(v8RoutingRetry?.['request-retry'] ?? ''),
+        maxRetryCredentials: String(v8RoutingRetry?.['max-retry-credentials'] ?? ''),
+        maxRetryInterval: String(v8RoutingRetry?.['max-retry-interval'] ?? ''),
+        disableCooling: Boolean(v8RoutingCooldown?.['disable-cooling']),
+        disableImageGeneration: parseDisableImageGenerationMode(
+          v8Multimedia?.['disable-image-generation']
+        ),
         gptImage2BaseModel:
-          typeof parsed['gpt-image-2-base-model'] === 'string'
-            ? parsed['gpt-image-2-base-model']
+          typeof v8Multimedia?.['gpt-image-2-base-model'] === 'string'
+            ? v8Multimedia?.['gpt-image-2-base-model']
             : '',
-        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
-        wsAuth: Boolean(parsed['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
+        authAutoRefreshWorkers: String(v8Oauth?.['auth-auto-refresh-workers'] ?? ''),
+        wsAuth: Boolean(v8OauthProvidersAistudio?.['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
         antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
         devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
         antigravitySignatureCacheEnabled: Boolean(
-          parsed['antigravity-signature-cache-enabled'] ?? true
+          v8OauthProvidersAntigravity?.['signature-cache-enabled'] ?? true
         ),
-        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+        antigravitySignatureBypassStrict: Boolean(
+          v8OauthProvidersAntigravity?.['signature-bypass-strict']
+        ),
 
         claudeHeaderUserAgent:
           typeof claudeHeaderDefaults?.['user-agent'] === 'string'
@@ -1386,20 +1360,14 @@ export function useVisualConfig() {
         quotaSwitchPreviewModel: Boolean(
           quotaExceeded?.['switch-preview-model'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchPreviewModel
         ),
-        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
+        quotaAntigravityCredits: Boolean(antigravity?.['antigravity-credits'] ?? false),
 
         routingStrategy: parseRoutingStrategy(routing?.strategy),
-        routingSessionAffinity: Boolean(
-          routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
-        ),
+        routingSessionAffinity: Boolean(routing?.['session-affinity']),
         routingSessionAffinityTTL:
           typeof routing?.['session-affinity-ttl'] === 'string'
             ? routing['session-affinity-ttl']
-            : typeof routing?.sessionAffinityTTL === 'string'
-              ? routing.sessionAffinityTTL
-              : typeof routing?.['sessionAffinityTTL'] === 'string'
-                ? routing['sessionAffinityTTL']
-                : '',
+            : '',
 
         payloadDefaultRules: parsePayloadRules(payload?.default),
         payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
@@ -1410,7 +1378,7 @@ export function useVisualConfig() {
         streaming: {
           keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
           bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
-          nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
+          nonstreamKeepaliveInterval: String(v8Requests?.['nonstream-keepalive-interval'] ?? ''),
         },
       };
 
@@ -1434,19 +1402,21 @@ export function useVisualConfig() {
         const values = visualValues;
         const shouldWritePluginStoreAuth = dirtyFields.has('pluginStoreAuth');
 
-        if (dirtyFields.has('host')) setStringInDoc(doc, ['host'], values.host);
-        if (dirtyFields.has('port')) setIntFromStringInDoc(doc, ['port'], values.port);
+        if (dirtyFields.has('host')) setStringInDoc(doc, ['server', 'host'], values.host);
+        if (dirtyFields.has('port')) setIntFromStringInDoc(doc, ['server', 'port'], values.port);
 
         const tlsDirty =
           dirtyFields.has('tlsEnable') || dirtyFields.has('tlsCert') || dirtyFields.has('tlsKey');
         if (tlsDirty) {
-          ensureMapInDoc(doc, ['tls']);
+          ensureMapInDoc(doc, ['server', 'tls']);
           if (dirtyFields.has('tlsEnable')) {
-            setBooleanInDoc(doc, ['tls', 'enable'], values.tlsEnable);
+            setBooleanInDoc(doc, ['server', 'tls', 'enable'], values.tlsEnable);
           }
-          if (dirtyFields.has('tlsCert')) setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
-          if (dirtyFields.has('tlsKey')) setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
-          deleteIfMapEmpty(doc, ['tls']);
+          if (dirtyFields.has('tlsCert'))
+            setStringInDoc(doc, ['server', 'tls', 'cert'], values.tlsCert);
+          if (dirtyFields.has('tlsKey'))
+            setStringInDoc(doc, ['server', 'tls', 'key'], values.tlsKey);
+          deleteIfMapEmpty(doc, ['server', 'tls']);
         }
 
         const remoteManagementDirty =
@@ -1456,52 +1426,44 @@ export function useVisualConfig() {
           dirtyFields.has('rmDisableAutoUpdatePanel') ||
           dirtyFields.has('rmPanelRepo');
         if (remoteManagementDirty) {
-          ensureMapInDoc(doc, ['remote-management']);
+          ensureMapInDoc(doc, ['management']);
           if (dirtyFields.has('rmAllowRemote')) {
-            setBooleanInDoc(doc, ['remote-management', 'allow-remote'], values.rmAllowRemote);
+            setBooleanInDoc(doc, ['management', 'allow-remote'], values.rmAllowRemote);
           }
           if (dirtyFields.has('rmSecretKey')) {
-            setStringInDoc(doc, ['remote-management', 'secret-key'], values.rmSecretKey);
+            setStringInDoc(doc, ['management', 'secret-key'], values.rmSecretKey);
           }
           if (dirtyFields.has('rmDisableControlPanel')) {
             setBooleanInDoc(
               doc,
-              ['remote-management', 'disable-control-panel'],
+              ['management', 'disable-control-panel'],
               values.rmDisableControlPanel
             );
           }
           if (dirtyFields.has('rmDisableAutoUpdatePanel')) {
             setBooleanInDoc(
               doc,
-              ['remote-management', 'disable-auto-update-panel'],
+              ['management', 'disable-auto-update-panel'],
               values.rmDisableAutoUpdatePanel
             );
           }
           if (dirtyFields.has('rmPanelRepo')) {
-            setStringInDoc(
-              doc,
-              ['remote-management', 'panel-github-repository'],
-              values.rmPanelRepo
-            );
+            setStringInDoc(doc, ['management', 'panel-github-repository'], values.rmPanelRepo);
           }
-          if (dirtyFields.has('rmPanelRepo') && docHas(doc, ['remote-management', 'panel-repo'])) {
-            doc.deleteIn(['remote-management', 'panel-repo']);
-          }
-          deleteIfMapEmpty(doc, ['remote-management']);
+          deleteIfMapEmpty(doc, ['management']);
         }
 
-        if (dirtyFields.has('authDir')) setStringInDoc(doc, ['auth-dir'], values.authDir);
+        if (dirtyFields.has('authDir')) setStringInDoc(doc, ['oauth', 'auth-dir'], values.authDir);
         if (dirtyFields.has('apiKeysText')) {
           const apiKeys = values.apiKeysText
             .split('\n')
             .map((key) => key.trim())
             .filter(Boolean);
           if (apiKeys.length > 0) {
-            doc.setIn(['api-keys'], apiKeys);
-          } else if (docHas(doc, ['api-keys'])) {
-            doc.deleteIn(['api-keys']);
+            doc.setIn(['access', 'api-keys'], apiKeys);
+          } else if (docHas(doc, ['access', 'api-keys'])) {
+            doc.deleteIn(['access', 'api-keys']);
           }
-          deleteLegacyApiKeysProvider(doc);
         }
 
         const pluginsDirty =
@@ -1527,75 +1489,102 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['plugins']);
         }
 
-        if (dirtyFields.has('debug')) setBooleanInDoc(doc, ['debug'], values.debug);
+        if (dirtyFields.has('debug'))
+          setBooleanInDoc(doc, ['observability', 'logs', 'debug'], values.debug);
         if (dirtyFields.has('commercialMode')) {
-          setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
+          setBooleanInDoc(doc, ['server', 'commercial-mode'], values.commercialMode);
         }
         if (dirtyFields.has('loggingToFile')) {
-          setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
+          setBooleanInDoc(doc, ['observability', 'logs', 'logging-to-file'], values.loggingToFile);
         }
         if (dirtyFields.has('logsMaxTotalSizeMb')) {
-          setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
+          setIntFromStringInDoc(
+            doc,
+            ['observability', 'logs', 'logs-max-total-size-mb'],
+            values.logsMaxTotalSizeMb
+          );
         }
         if (dirtyFields.has('errorLogsMaxFiles')) {
-          setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
+          setIntFromStringInDoc(
+            doc,
+            ['observability', 'logs', 'error-logs-max-files'],
+            values.errorLogsMaxFiles
+          );
         }
         if (dirtyFields.has('usageStatisticsEnabled')) {
-          setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
+          setBooleanInDoc(
+            doc,
+            ['observability', 'usage', 'usage-statistics-enabled'],
+            values.usageStatisticsEnabled
+          );
         }
         if (dirtyFields.has('redisUsageQueueRetentionSeconds')) {
           setIntFromStringInDoc(
             doc,
-            ['redis-usage-queue-retention-seconds'],
+            ['observability', 'usage', 'redis-usage-queue-retention-seconds'],
             values.redisUsageQueueRetentionSeconds
           );
         }
 
-        if (dirtyFields.has('proxyUrl')) setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
+        if (dirtyFields.has('proxyUrl'))
+          setStringInDoc(doc, ['requests', 'proxy-url'], values.proxyUrl);
         if (dirtyFields.has('forceModelPrefix')) {
-          setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);
+          setBooleanInDoc(doc, ['routing', 'force-model-prefix'], values.forceModelPrefix);
         }
         if (dirtyFields.has('passthroughHeaders')) {
-          setBooleanInDoc(doc, ['passthrough-headers'], values.passthroughHeaders);
+          setBooleanInDoc(doc, ['requests', 'passthrough-headers'], values.passthroughHeaders);
         }
         if (dirtyFields.has('requestRetry')) {
-          setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
+          setIntFromStringInDoc(doc, ['routing', 'retry', 'request-retry'], values.requestRetry);
         }
         if (dirtyFields.has('maxRetryCredentials')) {
-          setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
+          setIntFromStringInDoc(
+            doc,
+            ['routing', 'retry', 'max-retry-credentials'],
+            values.maxRetryCredentials
+          );
         }
         if (dirtyFields.has('maxRetryInterval')) {
-          setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+          setIntFromStringInDoc(
+            doc,
+            ['routing', 'retry', 'max-retry-interval'],
+            values.maxRetryInterval
+          );
         }
         if (dirtyFields.has('disableCooling')) {
-          setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
+          setBooleanInDoc(doc, ['routing', 'cooldown', 'disable-cooling'], values.disableCooling);
         }
         if (dirtyFields.has('disableImageGeneration')) {
           setDisableImageGenerationInDoc(
             doc,
-            ['disable-image-generation'],
+            ['multimedia', 'disable-image-generation'],
             values.disableImageGeneration
           );
         }
         if (dirtyFields.has('gptImage2BaseModel')) {
-          setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
+          setStringInDoc(doc, ['multimedia', 'gpt-image-2-base-model'], values.gptImage2BaseModel);
         }
         if (dirtyFields.has('authAutoRefreshWorkers')) {
-          setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
+          setIntFromStringInDoc(
+            doc,
+            ['oauth', 'auth-auto-refresh-workers'],
+            values.authAutoRefreshWorkers
+          );
         }
-        if (dirtyFields.has('wsAuth')) setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
+        if (dirtyFields.has('wsAuth'))
+          setBooleanInDoc(doc, ['oauth', 'providers', 'aistudio', 'ws-auth'], values.wsAuth);
         if (dirtyFields.has('antigravitySensitiveWords')) {
-          ensureMapInDoc(doc, ['antigravity']);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'antigravity']);
           setStringListInDoc(
             doc,
-            ['antigravity', 'sensitive-words'],
+            ['oauth', 'providers', 'antigravity', 'sensitive-words'],
             values.antigravitySensitiveWords
           );
-          deleteIfMapEmpty(doc, ['antigravity']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'antigravity']);
         }
         if (dirtyFields.has('devinSensitiveWords')) {
-          ensureMapInDoc(doc, ['devin']);
-          const devin = doc.getIn(['devin'], true);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'devin']);
+          const devin = doc.getIn(['oauth', 'providers', 'devin'], true);
           if (isMap(devin)) {
             syncStringSequence(
               doc,
@@ -1605,15 +1594,15 @@ export function useVisualConfig() {
               values.devinSensitiveWords
             );
           }
-          deleteIfMapEmpty(doc, ['devin']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'devin']);
         }
         if (dirtyFields.has('antigravitySignatureCacheEnabled')) {
           if (
-            docHas(doc, ['antigravity-signature-cache-enabled']) ||
+            docHas(doc, ['oauth', 'providers', 'antigravity', 'signature-cache-enabled']) ||
             !values.antigravitySignatureCacheEnabled
           ) {
             doc.setIn(
-              ['antigravity-signature-cache-enabled'],
+              ['oauth', 'providers', 'antigravity', 'signature-cache-enabled'],
               values.antigravitySignatureCacheEnabled
             );
           }
@@ -1621,7 +1610,7 @@ export function useVisualConfig() {
         if (dirtyFields.has('antigravitySignatureBypassStrict')) {
           setBooleanInDoc(
             doc,
-            ['antigravity-signature-bypass-strict'],
+            ['oauth', 'providers', 'antigravity', 'signature-bypass-strict'],
             values.antigravitySignatureBypassStrict
           );
         }
@@ -1635,66 +1624,78 @@ export function useVisualConfig() {
           dirtyFields.has('claudeHeaderTimeout') ||
           dirtyFields.has('claudeHeaderStabilizeDeviceProfile');
         if (claudeHeadersDirty) {
-          ensureMapInDoc(doc, ['claude-header-defaults']);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'claude', 'header-defaults']);
           if (dirtyFields.has('claudeHeaderUserAgent')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'user-agent'],
+              ['oauth', 'providers', 'claude', 'header-defaults', 'user-agent'],
               values.claudeHeaderUserAgent
             );
           }
           if (dirtyFields.has('claudeHeaderPackageVersion')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'package-version'],
+              ['oauth', 'providers', 'claude', 'header-defaults', 'package-version'],
               values.claudeHeaderPackageVersion
             );
           }
           if (dirtyFields.has('claudeHeaderRuntimeVersion')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'runtime-version'],
+              ['oauth', 'providers', 'claude', 'header-defaults', 'runtime-version'],
               values.claudeHeaderRuntimeVersion
             );
           }
           if (dirtyFields.has('claudeHeaderOs')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'os'], values.claudeHeaderOs);
+            setStringInDoc(
+              doc,
+              ['oauth', 'providers', 'claude', 'header-defaults', 'os'],
+              values.claudeHeaderOs
+            );
           }
           if (dirtyFields.has('claudeHeaderArch')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'arch'], values.claudeHeaderArch);
+            setStringInDoc(
+              doc,
+              ['oauth', 'providers', 'claude', 'header-defaults', 'arch'],
+              values.claudeHeaderArch
+            );
           }
           if (dirtyFields.has('claudeHeaderTimeout')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'timeout'], values.claudeHeaderTimeout);
+            setStringInDoc(
+              doc,
+              ['oauth', 'providers', 'claude', 'header-defaults', 'timeout'],
+              values.claudeHeaderTimeout
+            );
           }
           if (dirtyFields.has('claudeHeaderStabilizeDeviceProfile')) {
             setBooleanInDoc(
               doc,
-              ['claude-header-defaults', 'stabilize-device-profile'],
+              ['oauth', 'providers', 'claude', 'header-defaults', 'stabilize-device-profile'],
               values.claudeHeaderStabilizeDeviceProfile
             );
           }
-          deleteIfMapEmpty(doc, ['claude-header-defaults']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'claude', 'header-defaults']);
         }
 
         const codexHeadersDirty =
           dirtyFields.has('codexHeaderUserAgent') || dirtyFields.has('codexHeaderBetaFeatures');
         if (codexHeadersDirty) {
-          ensureMapInDoc(doc, ['codex-header-defaults']);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'codex', 'header-defaults']);
           if (dirtyFields.has('codexHeaderUserAgent')) {
             setStringInDoc(
               doc,
-              ['codex-header-defaults', 'user-agent'],
+              ['oauth', 'providers', 'codex', 'header-defaults', 'user-agent'],
               values.codexHeaderUserAgent
             );
           }
           if (dirtyFields.has('codexHeaderBetaFeatures')) {
             setStringInDoc(
               doc,
-              ['codex-header-defaults', 'beta-features'],
+              ['oauth', 'providers', 'codex', 'header-defaults', 'beta-features'],
               values.codexHeaderBetaFeatures
             );
           }
-          deleteIfMapEmpty(doc, ['codex-header-defaults']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'codex', 'header-defaults']);
         }
 
         const quotaDirty =
@@ -1710,7 +1711,10 @@ export function useVisualConfig() {
             doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
           }
           if (dirtyFields.has('quotaAntigravityCredits')) {
-            doc.setIn(['quota-exceeded', 'antigravity-credits'], values.quotaAntigravityCredits);
+            doc.setIn(
+              ['oauth', 'providers', 'antigravity', 'antigravity-credits'],
+              values.quotaAntigravityCredits
+            );
           }
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
@@ -1754,22 +1758,34 @@ export function useVisualConfig() {
           dirtyFields.has('streaming.keepaliveSeconds') ||
           dirtyFields.has('streaming.bootstrapRetries');
         if (streamingDirty) {
-          ensureMapInDoc(doc, ['streaming']);
+          ensureMapInDoc(doc, ['requests', 'streaming']);
           if (dirtyFields.has('streaming.keepaliveSeconds')) {
-            setIntFromStringInDoc(doc, ['streaming', 'keepalive-seconds'], keepaliveSeconds);
+            setIntFromStringInDoc(
+              doc,
+              ['requests', 'streaming', 'keepalive-seconds'],
+              keepaliveSeconds
+            );
           }
           if (dirtyFields.has('streaming.bootstrapRetries')) {
-            setIntFromStringInDoc(doc, ['streaming', 'bootstrap-retries'], bootstrapRetries);
+            setIntFromStringInDoc(
+              doc,
+              ['requests', 'streaming', 'bootstrap-retries'],
+              bootstrapRetries
+            );
           }
-          deleteIfMapEmpty(doc, ['streaming']);
+          deleteIfMapEmpty(doc, ['requests', 'streaming']);
         }
 
         if (dirtyFields.has('streaming.nonstreamKeepaliveInterval')) {
-          setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
+          setIntFromStringInDoc(
+            doc,
+            ['requests', 'nonstream-keepalive-interval'],
+            nonstreamKeepaliveInterval
+          );
         }
 
         if (hasPayloadDirtyFields(dirtyFields)) {
-          ensureMapInDoc(doc, ['payload']);
+          ensureMapInDoc(doc, ['requests', 'payload']);
           if (dirtyFields.has('payloadDefaultRules')) {
             syncPayloadRuleSequence(
               doc,
@@ -1813,7 +1829,7 @@ export function useVisualConfig() {
               values.payloadFilterRules
             );
           }
-          deleteIfMapEmpty(doc, ['payload']);
+          deleteIfMapEmpty(doc, ['requests', 'payload']);
         }
 
         return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });

@@ -1,3 +1,11 @@
+/** Persisted v8 identity. Never derive a group from its endpoint or credential. */
+export interface ProviderSource {
+  groups?: unknown[];
+  groupIndex: number;
+  keyIndex?: number;
+  group: Record<string, unknown>;
+}
+
 /**
  * AI 提供商相关类型
  * 基于原项目 src/modules/ai-providers.js
@@ -13,6 +21,7 @@ export interface ModelAlias {
 }
 
 export interface ApiKeyEntry {
+  sourceIndex?: number;
   apiKey: string;
   proxyUrl?: string;
   weight?: number;
@@ -27,6 +36,7 @@ export interface CloakConfig {
 }
 
 export interface GeminiKeyConfig {
+  source?: ProviderSource;
   apiKey: string;
   priority?: number;
   weight?: number;
@@ -41,6 +51,7 @@ export interface GeminiKeyConfig {
 }
 
 export interface ProviderKeyConfig {
+  source?: ProviderSource;
   apiKey: string;
   priority?: number;
   weight?: number;
@@ -58,6 +69,7 @@ export interface ProviderKeyConfig {
 }
 
 export interface OpenAIProviderConfig {
+  source?: ProviderSource;
   name: string;
   prefix?: string;
   baseUrl: string;

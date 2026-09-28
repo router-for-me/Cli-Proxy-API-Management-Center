@@ -11,7 +11,7 @@ describe('single credential manual refresh', () => {
       await authFilesApi.requestManualRefresh(name);
 
       expect(post).toHaveBeenCalledTimes(1);
-      expect(post).toHaveBeenCalledWith('/auth-files/refresh', { name });
+      expect(post).toHaveBeenCalledWith('/credentials/refresh', { name });
       expect(patch).not.toHaveBeenCalled();
     } finally {
       post.mockRestore();

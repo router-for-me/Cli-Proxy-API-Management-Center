@@ -23,7 +23,7 @@ describe('Devin quota Management API integration', () => {
         i18n.t
       );
       expect(post).toHaveBeenCalledTimes(1);
-      expect(post.mock.calls[0][0]).toBe('/api-call');
+      expect(post.mock.calls[0][0]).toBe('/requests/api-call');
       expect(post.mock.calls[0][1]).toMatchObject({
         authIndex: '42',
         method: 'POST',

@@ -5,7 +5,7 @@ A single-file Web UI (React + TypeScript) for operating and troubleshooting the 
 [中文文档](README_CN.md)
 
 **Main Project**: https://github.com/router-for-me/CLIProxyAPI   
-**Minimum Required Version**: ≥ 7.2.147 (recommended latest)
+**Minimum Required Version**: ≥ 8.0.0 (latest v8 release recommended)
 
 Since version 6.0.19, the Web UI ships with the main program; access it via `/management.html` on the API port once the service is running.
 
@@ -19,8 +19,12 @@ APIMart is a low-cost API platform for AI image & video generation — GPT-Image
 
 ## What this is (and isn’t)
 
-- This repository is the Web UI only. It talks to the CLI Proxy API **Management API** (`/v0/management`) to read/update config, upload credentials, and view logs.
+- This repository is the Web UI only. It exclusively uses the CLI Proxy API **v8 Management API** (`/v8/management`) and v8 configuration layout to read/update config, upload credentials, and view logs. There is no v0 fallback. Plugin resources and custom extensions retain their backend-declared paths.
 - It is **not** a proxy and does not forward traffic.
+
+### Upgrading from v7
+
+Upgrade the backend before deploying this UI and back up `config.yaml`. The backend renders existing configuration in the v8 layout on reads; a successful v8 configuration write migrates the stored file. The editor only writes v8 fields. Client keys live in `access.api-keys`; top-level `api-keys` contains upstream provider groups.
 
 ## Quick start
 
@@ -63,7 +67,7 @@ You can enter any of the following; the UI will normalize it:
 - `localhost:8317`
 - `http://192.168.1.10:8317`
 - `https://example.com:8317`
-- `http://example.com:8317/v0/management` (also accepted; the suffix is removed internally)
+- `http://example.com:8317/v8/management` (also accepted; the suffix is removed internally)
 
 ### Management key (not the same as API keys)
 
@@ -71,17 +75,17 @@ The management key is sent with every request as:
 
 - `Authorization: Bearer <MANAGEMENT_KEY>` (default)
 
-This is different from the proxy `api-keys` you manage inside the UI (those are for client requests to the proxy endpoints).
+This is different from the proxy `access.api-keys` you manage inside the UI (those are for client requests to the proxy endpoints).
 
 ### Remote management
 
-If you connect from a non-localhost browser, the server must allow remote management (e.g. `allow-remote-management: true`).  
+If you connect from a non-localhost browser, the server must allow remote management (e.g. `management.allow-remote: true`).
 Check the CLI Proxy API server documentation/config comments for the full authentication rules, server-side limits, and edge cases.
 
 ## What you can manage (mapped to the UI pages)
 
 - **Dashboard**: connection status, server version/build date, quick counts, model availability snapshot.
-- **Config Panel**: visual editor for common `config.yaml` fields, basic settings, proxy `api-keys`, and source editing with YAML highlighting/search plus a save diff preview.
+- **Config Panel**: visual editor for common `config.yaml` fields, basic settings, client `access.api-keys`, and source editing with YAML highlighting/search plus a save diff preview.
 - **AI Providers**:
   - Gemini/Codex/Claude/Vertex key entries (base URL, headers, proxy, model aliases, excluded models, prefix).
   - OpenAI-compatible providers (multiple API keys, custom headers, model alias import via `/v1/models`, optional browser-side "chat/completions" test).

@@ -1,10 +1,8 @@
-/**
- * AI 提供商相关 API
- */
-
+import { useAuthStore } from '@/stores/useAuthStore';
 import { apiClient } from './client';
+import { guardConfigConnection } from './configValue';
 import { isRecord } from '@/utils/helpers';
-import { normalizeOpenAIProvider, normalizeProviderKeyConfig } from './transformers';
+import { normalizeApiKeyEntry, normalizeProviderGroups } from './transformers';
 import type {
   GeminiKeyConfig,
   OpenAIProviderConfig,
@@ -12,284 +10,10 @@ import type {
   ApiKeyEntry,
   ModelAlias,
 } from '@/types';
+import type { ProviderSource } from '@/types/provider';
 
 const serializeHeaders = (headers?: Record<string, string>) =>
   headers && Object.keys(headers).length ? headers : undefined;
-
-const RESPONSE_ONLY_FIELDS = ['auth-index'] as const;
-
-const PROVIDER_COMMON_KEY_FIELDS = [
-  'api-key',
-  'priority',
-  'weight',
-  'prefix',
-  'base-url',
-  'proxy-url',
-  'headers',
-  'models',
-  'excluded-models',
-  'disable-cooling',
-] as const;
-
-const GEMINI_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
-const INTERACTIONS_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
-const CODEX_KEY_FIELDS = [...PROVIDER_COMMON_KEY_FIELDS, 'websockets'] as const;
-const META_KEY_FIELDS = PROVIDER_COMMON_KEY_FIELDS;
-const XAI_KEY_FIELDS = CODEX_KEY_FIELDS;
-const CLAUDE_KEY_FIELDS = [
-  ...PROVIDER_COMMON_KEY_FIELDS,
-  'cloak',
-  'fingerprint-profile',
-  // Keep stripping the deprecated field when a Claude entry is saved.
-  'experimental-cch-signing',
-] as const;
-const VERTEX_KEY_FIELDS = [
-  'api-key',
-  'priority',
-  'weight',
-  'prefix',
-  'base-url',
-  'proxy-url',
-  'headers',
-  'models',
-  'excluded-models',
-] as const;
-
-const OPENAI_PROVIDER_FIELDS = [
-  'name',
-  'priority',
-  'disabled',
-  'prefix',
-  'base-url',
-  'api-key-entries',
-  'headers',
-  'models',
-  'test-model',
-  'disable-cooling',
-] as const;
-
-const MODEL_ALIAS_FIELDS = ['name', 'alias', 'priority', 'test-model', 'thinking'] as const;
-const OPENAI_MODEL_ALIAS_FIELDS = [...MODEL_ALIAS_FIELDS, 'image'] as const;
-
-const API_KEY_ENTRY_FIELDS = ['api-key', 'proxy-url', 'weight'] as const;
-
-const CLOAK_FIELDS = ['mode', 'strict-mode', 'sensitive-words', 'cache-user-id'] as const;
-
-const getStringField = (record: Record<string, unknown>, keys: readonly string[]) => {
-  for (const key of keys) {
-    const value = record[key];
-    if (value === undefined || value === null) continue;
-    const text = String(value).trim();
-    if (text) return text;
-  }
-  return '';
-};
-
-const openAIProviderIdentity = (record: Record<string, unknown>) =>
-  getStringField(record, ['name']);
-
-const modelIdentity = (record: Record<string, unknown>) => getStringField(record, ['name']);
-
-const apiKeyEntryIdentity = (record: Record<string, unknown>) =>
-  getStringField(record, ['api-key']);
-
-const cloneWithoutKnownFields = (
-  raw: unknown,
-  knownFields: readonly string[]
-): Record<string, unknown> => {
-  const next: Record<string, unknown> = isRecord(raw) ? { ...raw } : {};
-  [...knownFields, ...RESPONSE_ONLY_FIELDS].forEach((field) => {
-    delete next[field];
-  });
-  return next;
-};
-
-const mergeKnownFields = (
-  raw: unknown,
-  payload: Record<string, unknown>,
-  knownFields: readonly string[]
-) => {
-  const next = cloneWithoutKnownFields(raw, knownFields);
-  Object.entries(payload).forEach(([key, value]) => {
-    if (value !== undefined) {
-      next[key] = value;
-    }
-  });
-  return next;
-};
-
-const findRawRecord = (
-  rawRecords: Array<Record<string, unknown> | undefined>,
-  usedIndexes: Set<number>,
-  payload: Record<string, unknown>,
-  index: number,
-  getIdentity: (record: Record<string, unknown>) => string,
-  fallbackByIndex = true
-) => {
-  const identity = getIdentity(payload);
-  if (identity) {
-    for (let i = 0; i < rawRecords.length; i += 1) {
-      const candidate = rawRecords[i];
-      if (!candidate || usedIndexes.has(i)) continue;
-      if (getIdentity(candidate) === identity) {
-        usedIndexes.add(i);
-        return candidate;
-      }
-    }
-  }
-
-  if (fallbackByIndex) {
-    const fallback = rawRecords[index];
-    if (fallback && !usedIndexes.has(index)) {
-      usedIndexes.add(index);
-      return fallback;
-    }
-  }
-
-  return undefined;
-};
-
-const mergeKnownRecordList = (
-  rawItems: unknown,
-  payloadItems: Record<string, unknown>[],
-  knownFields: readonly string[],
-  getIdentity: (record: Record<string, unknown>) => string,
-  fallbackByIndex = true
-) => {
-  const rawRecords = Array.isArray(rawItems)
-    ? rawItems.map((item) => (isRecord(item) ? item : undefined))
-    : [];
-  const usedIndexes = new Set<number>();
-
-  return payloadItems.map((payload, index) => {
-    const raw = findRawRecord(
-      rawRecords,
-      usedIndexes,
-      payload,
-      index,
-      getIdentity,
-      fallbackByIndex
-    );
-    return mergeKnownFields(raw, payload, knownFields);
-  });
-};
-
-const getRawSectionList = (rawConfig: unknown, section: string): unknown[] => {
-  if (!isRecord(rawConfig)) return [];
-  const value = rawConfig[section];
-  return Array.isArray(value) ? value : [];
-};
-
-type ProviderRecordMerger = (
-  raw: unknown,
-  payload: Record<string, unknown>
-) => Record<string, unknown>;
-
-export function appendLatestProviderRecord(
-  latestItems: unknown[],
-  payload: Record<string, unknown>,
-  mergePayload: ProviderRecordMerger
-): unknown[] {
-  return [...latestItems, mergePayload(undefined, payload)];
-}
-
-export function replaceLatestProviderRecord(
-  latestItems: unknown[],
-  isTarget: (record: Record<string, unknown>, index: number) => boolean,
-  payload: Record<string, unknown>,
-  mergePayload: ProviderRecordMerger
-): unknown[] {
-  const targetIndex = latestItems.findIndex(
-    (item, index) => isRecord(item) && isTarget(item, index)
-  );
-  if (targetIndex < 0) {
-    throw new Error('Provider configuration changed; refresh and try again.');
-  }
-
-  return latestItems.map((item, index) =>
-    index === targetIndex ? mergePayload(item, payload) : item
-  );
-}
-
-const mutateLatestProviderList = async (
-  section: string,
-  mutate: (latestItems: unknown[]) => unknown[]
-) => {
-  const rawConfig = await apiClient.get('/config');
-  const latestItems = getRawSectionList(rawConfig, section);
-  await apiClient.put(`/${section}`, mutate(latestItems));
-};
-
-const matchesProviderKey = (record: Record<string, unknown>, apiKey: string, baseUrl?: string) =>
-  getStringField(record, ['api-key']) === apiKey.trim() &&
-  getStringField(record, ['base-url']) === (baseUrl ?? '').trim();
-
-const matchesOpenAIProvider = (record: Record<string, unknown>, name: string) =>
-  openAIProviderIdentity(record) === name.trim();
-
-const mergeModelPayloads = (
-  raw: unknown,
-  models: unknown,
-  knownFields: readonly string[] = MODEL_ALIAS_FIELDS
-) =>
-  Array.isArray(models)
-    ? mergeKnownRecordList(
-        isRecord(raw) ? raw.models : undefined,
-        models.filter(isRecord),
-        knownFields,
-        modelIdentity,
-        false
-      )
-    : undefined;
-
-const mergeProviderKeyPayload = (
-  raw: unknown,
-  payload: Record<string, unknown>,
-  knownFields: readonly string[]
-) => {
-  const next = mergeKnownFields(raw, payload, knownFields);
-  const models = mergeModelPayloads(raw, payload.models);
-  if (models) next.models = models;
-  if (isRecord(payload.cloak)) {
-    next.cloak = mergeKnownFields(
-      isRecord(raw) ? raw.cloak : undefined,
-      payload.cloak,
-      CLOAK_FIELDS
-    );
-  }
-  return next;
-};
-
-const mergeOpenAIProviderPayload = (raw: unknown, payload: Record<string, unknown>) => {
-  const next = mergeKnownFields(raw, payload, OPENAI_PROVIDER_FIELDS);
-  const rawApiKeyEntries = isRecord(raw) ? raw['api-key-entries'] : undefined;
-  const apiKeyEntries = payload['api-key-entries'];
-  if (Array.isArray(apiKeyEntries)) {
-    next['api-key-entries'] = mergeKnownRecordList(
-      rawApiKeyEntries,
-      apiKeyEntries.filter(isRecord),
-      API_KEY_ENTRY_FIELDS,
-      apiKeyEntryIdentity
-    );
-  }
-  const models = mergeModelPayloads(raw, payload.models, OPENAI_MODEL_ALIAS_FIELDS);
-  if (models) next.models = models;
-  return next;
-};
-
-const extractArrayPayload = (data: unknown, key: string): unknown[] => {
-  if (!isRecord(data)) return [];
-  const list = data[key];
-  return Array.isArray(list) ? list : [];
-};
-
-const buildProviderDeleteQuery = (apiKey: string, baseUrl?: string) => {
-  const params = new URLSearchParams();
-  params.set('api-key', apiKey.trim());
-  params.set('base-url', (baseUrl ?? '').trim());
-  return `?${params.toString()}`;
-};
-
 const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = false) =>
   Array.isArray(models)
     ? models
@@ -416,7 +140,7 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   const payload: Record<string, unknown> = {
     name: provider.name,
     'base-url': provider.baseUrl,
-    'api-key-entries': Array.isArray(provider.apiKeyEntries)
+    keys: Array.isArray(provider.apiKeyEntries)
       ? provider.apiKeyEntries.map((entry) => serializeApiKeyEntry(entry))
       : [],
   };
@@ -432,193 +156,319 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   return payload;
 };
 
+export type ProviderFamily =
+  | 'gemini'
+  | 'interactions'
+  | 'codex'
+  | 'meta'
+  | 'xai'
+  | 'claude'
+  | 'vertex'
+  | 'openai-compatibility';
+type KeyConfig = ProviderKeyConfig | GeminiKeyConfig;
+const equal = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b))
+    return a.length === b.length && a.every((v, i) => equal(v, b[i]));
+  if (isRecord(a) && isRecord(b)) {
+    const keys = Object.keys(a).filter((k) => a[k] !== undefined);
+    return (
+      keys.length === Object.keys(b).filter((k) => b[k] !== undefined).length &&
+      keys.every((k) => equal(a[k], b[k]))
+    );
+  }
+  return false;
+};
+const conflict = () =>
+  new Error('Provider configuration changed or is ambiguous; refresh and try again.');
+
+export const readProviderGroups = (
+  raw: unknown,
+  family: ProviderFamily
+): Record<string, unknown>[] => {
+  if (!isRecord(raw) || !isRecord(raw['api-keys'])) return [];
+  const groups = raw['api-keys'][family];
+  if (groups === undefined) return [];
+  if (!Array.isArray(groups) || !groups.every((g) => isRecord(g) && Array.isArray(g.keys)))
+    throw conflict();
+  return groups;
+};
+const getGroups = async (family: ProviderFamily) => {
+  const assertConnection = guardConfigConnection();
+  const session = useAuthStore.getState();
+  const raw = await apiClient.get('/config');
+  assertConnection();
+  const current = useAuthStore.getState();
+  if (
+    session.apiBase !== current.apiBase ||
+    session.managementKey !== current.managementKey ||
+    session.isAuthenticated !== current.isAuthenticated
+  )
+    throw conflict();
+  return readProviderGroups(raw, family);
+};
+const putGroups = (family: ProviderFamily, groups: Record<string, unknown>[]) =>
+  apiClient.put(`/config/api-keys/${family}`, groups);
+
+/** Locate by persisted snapshot, never by flattened row index. Refuse ambiguous duplicates. */
+export const locateProviderGroup = (
+  groups: Record<string, unknown>[],
+  source: ProviderSource
+): number => {
+  if (
+    source.groups &&
+    equal(groups, source.groups) &&
+    equal(groups[source.groupIndex], source.group)
+  )
+    return source.groupIndex;
+  const matches = groups.flatMap((group, index) => {
+    if (source.keyIndex === undefined) return equal(group, source.group) ? [index] : [];
+    const { keys: oldKeys, ...oldPolicy } = source.group;
+    const { keys, ...policy } = group;
+    if (!equal(policy, oldPolicy) || !Array.isArray(oldKeys) || !Array.isArray(keys)) return [];
+    return keys.some((key) => equal(key, oldKeys[source.keyIndex!])) ? [index] : [];
+  });
+  if (matches.length !== 1) throw conflict();
+  return matches[0];
+};
+const keySerializer = (family: ProviderFamily) =>
+  family === 'vertex'
+    ? serializeVertexKey
+    : family === 'gemini' || family === 'interactions'
+      ? serializeGeminiKey
+      : serializeProviderKey;
+const emptyOverride = (field: string): unknown => {
+  if (['models', 'excluded-models'].includes(field)) return [];
+  if (['headers', 'cloak'].includes(field)) return {};
+  if (['disable-cooling', 'websockets', 'disabled'].includes(field)) return false;
+  if (['priority', 'weight'].includes(field)) return 0;
+  return '';
+};
+/** Only changed effective fields become overrides. Unchanged null/missing values retain inheritance. */
+export const applyProviderChanges = (
+  raw: Record<string, unknown>,
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+  inherited?: Record<string, unknown>
+) => {
+  const next = { ...raw };
+  for (const field of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if (equal(before[field], after[field])) continue;
+    // The row form displays an omitted WebSocket flag as off. Do not materialize
+    // that default when editing another field (preserve missing/null on disk).
+    if (field === 'websockets' && before[field] === undefined && after[field] === false) continue;
+    if (after[field] !== undefined) {
+      const fieldRaw = raw[field] ?? inherited?.[field];
+      if (isRecord(fieldRaw) && isRecord(before[field]) && isRecord(after[field])) {
+        next[field] = applyProviderChanges(fieldRaw, before[field], after[field]);
+      } else if (
+        Array.isArray(fieldRaw) &&
+        Array.isArray(before[field]) &&
+        Array.isArray(after[field])
+      ) {
+        const rawItems = fieldRaw as unknown[];
+        const beforeItems = before[field] as unknown[];
+        const used = new Set<number>();
+        next[field] = (after[field] as unknown[]).map((item) => {
+          if (!isRecord(item)) return item;
+          const identity = item.name ?? item['api-key'];
+          const i = beforeItems.findIndex(
+            (old, index) =>
+              !used.has(index) && isRecord(old) && (old.name ?? old['api-key']) === identity
+          );
+          if (i < 0 || !isRecord(rawItems[i]) || !isRecord(beforeItems[i])) return item;
+          used.add(i);
+          return applyProviderChanges(
+            rawItems[i] as Record<string, unknown>,
+            beforeItems[i] as Record<string, unknown>,
+            item
+          );
+        });
+      } else next[field] = after[field];
+    } else if (inherited?.[field] !== undefined && inherited[field] !== null)
+      next[field] = emptyOverride(field);
+    else delete next[field];
+  }
+  delete next['auth-index'];
+  return next;
+};
+const findKeySource = (
+  groups: Record<string, unknown>[],
+  apiKey: string,
+  baseUrl?: string
+): ProviderSource => {
+  const matches = (normalizeProviderGroups(groups) as KeyConfig[]).filter(
+    (c) => c.apiKey === apiKey && (c.baseUrl ?? '') === (baseUrl ?? '')
+  );
+  if (matches.length !== 1 || !matches[0].source) throw conflict();
+  return matches[0].source;
+};
+const createKey = async (family: ProviderFamily, config: KeyConfig) => {
+  const groups = await getGroups(family);
+  const payload = keySerializer(family)(config);
+  const baseUrl = payload['base-url'];
+  delete payload['base-url'];
+  const names = new Set(groups.map((g) => g.name));
+  let number = groups.length + 1;
+  while (names.has(`${family}-${number}`)) number++;
+  await putGroups(family, [
+    ...groups,
+    { name: `${family}-${number}`, ...(baseUrl ? { 'base-url': baseUrl } : {}), keys: [payload] },
+  ]);
+};
+const updateKey = async (
+  family: ProviderFamily,
+  apiKey: string,
+  baseUrl: string | undefined,
+  config: KeyConfig
+) => {
+  const groups = await getGroups(family);
+  const source = config.source ?? findKeySource(groups, apiKey, baseUrl);
+  const index = locateProviderGroup(groups, source);
+  const group = groups[index];
+  const keys = [...(group.keys as Record<string, unknown>[])];
+  const originalKeys = source.group.keys;
+  if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
+  const matches = equal(group, source.group)
+    ? [source.keyIndex]
+    : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
+  if (matches.length !== 1) throw conflict();
+  const keyIndex = matches[0];
+  const original = (normalizeProviderGroups([group]) as KeyConfig[]).find(
+    (c) => c.source?.keyIndex === keyIndex
+  );
+  if (!original) throw conflict();
+  const serialize = keySerializer(family);
+  const before = serialize(original);
+  const after = serialize(config);
+  const nextGroup = { ...group };
+  if (!equal(before['base-url'], after['base-url'])) {
+    if (after['base-url'] === undefined) delete nextGroup['base-url'];
+    else nextGroup['base-url'] = after['base-url'];
+  }
+  delete before['base-url'];
+  delete after['base-url'];
+  keys[keyIndex] = applyProviderChanges(keys[keyIndex], before, after, group);
+  groups[index] = { ...nextGroup, keys };
+  await putGroups(family, groups);
+};
+const deleteKey = async (
+  family: ProviderFamily,
+  apiKey: string,
+  baseUrl?: string,
+  expected?: ProviderSource
+) => {
+  const groups = await getGroups(family);
+  const source = expected ?? findKeySource(groups, apiKey, baseUrl);
+  const index = locateProviderGroup(groups, source);
+  const originalKeys = source.group.keys;
+  if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
+  const keys = groups[index].keys as unknown[];
+  const matches = equal(groups[index], source.group)
+    ? [source.keyIndex]
+    : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
+  if (matches.length !== 1) throw conflict();
+  groups[index] = { ...groups[index], keys: keys.filter((_, i) => i !== matches[0]) };
+  await putGroups(family, groups);
+};
+const serializeOpenAIGroup = serializeOpenAIProvider;
+const findOpenAISource = (groups: Record<string, unknown>[], source?: ProviderSource): number => {
+  if (!source) throw conflict();
+  return locateProviderGroup(groups, source);
+};
+
 export const providersApi = {
-  createGeminiKey: (config: GeminiKeyConfig) =>
-    mutateLatestProviderList('gemini-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeGeminiKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, GEMINI_KEY_FIELDS)
-      )
-    ),
-
+  createGeminiKey: (config: GeminiKeyConfig) => createKey('gemini', config),
   updateGeminiKey: (apiKey: string, baseUrl: string | undefined, config: GeminiKeyConfig) =>
-    mutateLatestProviderList('gemini-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeGeminiKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, GEMINI_KEY_FIELDS)
-      )
-    ),
-
-  deleteGeminiKey: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/gemini-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  createInteractionsKey: (config: GeminiKeyConfig) =>
-    mutateLatestProviderList('interactions-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeGeminiKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, INTERACTIONS_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('gemini', apiKey, baseUrl, config),
+  deleteGeminiKey: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('gemini', apiKey, baseUrl, source),
+  createInteractionsKey: (config: GeminiKeyConfig) => createKey('interactions', config),
   updateInteractionsKey: (apiKey: string, baseUrl: string | undefined, config: GeminiKeyConfig) =>
-    mutateLatestProviderList('interactions-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeGeminiKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, INTERACTIONS_KEY_FIELDS)
-      )
-    ),
-
-  deleteInteractionsKey: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/interactions-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  createCodexConfig: (config: ProviderKeyConfig) =>
-    mutateLatestProviderList('codex-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('interactions', apiKey, baseUrl, config),
+  deleteInteractionsKey: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('interactions', apiKey, baseUrl, source),
+  createCodexConfig: (config: ProviderKeyConfig) => createKey('codex', config),
   updateCodexConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
-    mutateLatestProviderList('codex-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeProviderKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, CODEX_KEY_FIELDS)
-      )
-    ),
-
-  deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  async getMetaConfigs(): Promise<ProviderKeyConfig[]> {
-    const data = await apiClient.get('/meta-api-key');
-    const list = extractArrayPayload(data, 'meta-api-key');
-    return list
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  },
-
-  createMetaConfig: (config: ProviderKeyConfig) =>
-    mutateLatestProviderList('meta-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, META_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('codex', apiKey, baseUrl, config),
+  deleteCodexConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('codex', apiKey, baseUrl, source),
+  createMetaConfig: (config: ProviderKeyConfig) => createKey('meta', config),
   updateMetaConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
-    mutateLatestProviderList('meta-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeProviderKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, META_KEY_FIELDS)
-      )
-    ),
-
-  deleteMetaConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/meta-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  createXAIConfig: (config: ProviderKeyConfig) =>
-    mutateLatestProviderList('xai-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, XAI_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('meta', apiKey, baseUrl, config),
+  deleteMetaConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('meta', apiKey, baseUrl, source),
+  createXAIConfig: (config: ProviderKeyConfig) => createKey('xai', config),
   updateXAIConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
-    mutateLatestProviderList('xai-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeProviderKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, XAI_KEY_FIELDS)
-      )
-    ),
-
-  deleteXAIConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/xai-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  createClaudeConfig: (config: ProviderKeyConfig) =>
-    mutateLatestProviderList('claude-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeProviderKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, CLAUDE_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('xai', apiKey, baseUrl, config),
+  deleteXAIConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('xai', apiKey, baseUrl, source),
+  createClaudeConfig: (config: ProviderKeyConfig) => createKey('claude', config),
   updateClaudeConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
-    mutateLatestProviderList('claude-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeProviderKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, CLAUDE_KEY_FIELDS)
-      )
-    ),
-
-  deleteClaudeConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/claude-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  async getVertexConfigs(): Promise<ProviderKeyConfig[]> {
-    const data = await apiClient.get('/vertex-api-key');
-    const list = extractArrayPayload(data, 'vertex-api-key');
-    return list
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  },
-
-  createVertexConfig: (config: ProviderKeyConfig) =>
-    mutateLatestProviderList('vertex-api-key', (latestItems) =>
-      appendLatestProviderRecord(latestItems, serializeVertexKey(config), (raw, payload) =>
-        mergeProviderKeyPayload(raw, payload, VERTEX_KEY_FIELDS)
-      )
-    ),
-
+    updateKey('claude', apiKey, baseUrl, config),
+  deleteClaudeConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('claude', apiKey, baseUrl, source),
+  createVertexConfig: (config: ProviderKeyConfig) => createKey('vertex', config),
   updateVertexConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
-    mutateLatestProviderList('vertex-api-key', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record) => matchesProviderKey(record, apiKey, baseUrl),
-        serializeVertexKey(config),
-        (raw, payload) => mergeProviderKeyPayload(raw, payload, VERTEX_KEY_FIELDS)
-      )
-    ),
-
-  deleteVertexConfig: (apiKey: string, baseUrl?: string) =>
-    apiClient.delete(`/vertex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
-
-  async getOpenAIProviders(): Promise<OpenAIProviderConfig[]> {
-    const data = await apiClient.get('/openai-compatibility');
-    const list = extractArrayPayload(data, 'openai-compatibility');
-    return list
-      .map((item, index) => normalizeOpenAIProvider(item, index))
-      .filter(Boolean) as OpenAIProviderConfig[];
+    updateKey('vertex', apiKey, baseUrl, config),
+  deleteVertexConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('vertex', apiKey, baseUrl, source),
+  async getMetaConfigs() {
+    return normalizeProviderGroups(await getGroups('meta')) as ProviderKeyConfig[];
   },
-
-  createOpenAIProvider: (provider: OpenAIProviderConfig) =>
-    mutateLatestProviderList('openai-compatibility', (latestItems) =>
-      appendLatestProviderRecord(
-        latestItems,
-        serializeOpenAIProvider(provider),
-        mergeOpenAIProviderPayload
-      )
-    ),
-
-  updateOpenAIProvider: (name: string, index: number, provider: OpenAIProviderConfig) =>
-    mutateLatestProviderList('openai-compatibility', (latestItems) =>
-      replaceLatestProviderRecord(
-        latestItems,
-        (record, currentIndex) => currentIndex === index && matchesOpenAIProvider(record, name),
-        serializeOpenAIProvider(provider),
-        mergeOpenAIProviderPayload
-      )
-    ),
-
-  updateOpenAIProviderDisabled: (index: number, disabled: boolean) =>
-    apiClient.patch('/openai-compatibility', { index, value: { disabled } }),
-
-  deleteOpenAIProvider: (index: number) =>
-    apiClient.delete(`/openai-compatibility?index=${encodeURIComponent(String(index))}`),
+  async getVertexConfigs() {
+    return normalizeProviderGroups(await getGroups('vertex')) as ProviderKeyConfig[];
+  },
+  async getOpenAIProviders() {
+    return normalizeProviderGroups(
+      await getGroups('openai-compatibility'),
+      true
+    ) as OpenAIProviderConfig[];
+  },
+  async createOpenAIProvider(config: OpenAIProviderConfig) {
+    const groups = await getGroups('openai-compatibility');
+    await putGroups('openai-compatibility', [...groups, serializeOpenAIGroup(config)]);
+  },
+  async updateOpenAIProvider(_name: string, _index: number, config: OpenAIProviderConfig) {
+    const groups = await getGroups('openai-compatibility');
+    const index = findOpenAISource(groups, config.source);
+    const original = (normalizeProviderGroups([groups[index]], true) as OpenAIProviderConfig[])[0];
+    const before = serializeOpenAIGroup(original);
+    const after = serializeOpenAIGroup(config);
+    const next = applyProviderChanges(groups[index], before, after);
+    if (!equal(before.keys, after.keys)) {
+      const rawKeys = groups[index].keys as Record<string, unknown>[];
+      const used = new Set<number>();
+      next.keys = config.apiKeyEntries.map((entry) => {
+        const keyIndex =
+          entry.sourceIndex ?? rawKeys.findIndex((key) => key['api-key'] === entry.apiKey);
+        if (keyIndex < 0) return serializeApiKeyEntry(entry);
+        if (used.has(keyIndex) || !isRecord(rawKeys[keyIndex])) throw conflict();
+        used.add(keyIndex);
+        const old = normalizeApiKeyEntry(rawKeys[keyIndex]);
+        if (!old) throw conflict();
+        return applyProviderChanges(
+          rawKeys[keyIndex],
+          serializeApiKeyEntry(old),
+          serializeApiKeyEntry(entry)
+        );
+      });
+    }
+    groups[index] = next;
+    await putGroups('openai-compatibility', groups);
+  },
+  async updateOpenAIProviderDisabled(_index: number, disabled: boolean, source?: ProviderSource) {
+    const groups = await getGroups('openai-compatibility');
+    const index = findOpenAISource(groups, source);
+    groups[index] = { ...groups[index], disabled };
+    await putGroups('openai-compatibility', groups);
+  },
+  async deleteOpenAIProvider(_index: number, source?: ProviderSource) {
+    const groups = await getGroups('openai-compatibility');
+    const index = findOpenAISource(groups, source);
+    await putGroups(
+      'openai-compatibility',
+      groups.filter((_, i) => i !== index)
+    );
+  },
 };

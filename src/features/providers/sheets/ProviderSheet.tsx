@@ -158,16 +158,19 @@ export function ProviderSheet({
       );
     }
     return (
-      <BaseProviderForm
-        key={formKey}
-        brand={state.brand}
-        resource={state.resource}
-        mode={state.mode}
-        mutating={formMutating}
-        formId={formId}
-        onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
-        onDirtyChange={handleDirtyChange}
-      />
+      <>
+        <p className="hint">{t('providersPage.groups.rowHint')}</p>
+        <BaseProviderForm
+          key={formKey}
+          brand={state.brand}
+          resource={state.resource}
+          mode={state.mode}
+          mutating={formMutating}
+          formId={formId}
+          onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
+          onDirtyChange={handleDirtyChange}
+        />
+      </>
     );
   };
 

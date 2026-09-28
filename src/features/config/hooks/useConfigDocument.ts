@@ -10,11 +10,13 @@ import { useConfigStore, useNotificationStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
 import type { ConfigEditorMode } from '../constants';
 
-function readCommercialModeFromYaml(yamlContent: string): boolean {
+export function readCommercialModeFromYaml(yamlContent: string): boolean {
   try {
     const parsed = parseYaml(yamlContent);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-    return Boolean((parsed as Record<string, unknown>)['commercial-mode']);
+    const server: unknown = (parsed as Record<string, unknown>).server;
+    if (!server || typeof server !== 'object' || Array.isArray(server)) return false;
+    return Boolean((server as Record<string, unknown>)['commercial-mode']);
   } catch {
     return false;
   }
