@@ -2,7 +2,9 @@
  * 日志相关 API
  */
 
+import type { ApiError } from '@/types';
 import { apiClient } from './client';
+import { parseApiErrorResponse } from './apiError';
 import { LOGS_TIMEOUT_MS } from '@/utils/constants';
 import { isRecord } from '@/utils/helpers';
 
@@ -26,7 +28,7 @@ export interface ErrorLogFile {
 }
 
 export interface ErrorLogsResponse {
-  files?: ErrorLogFile[];
+  files: ErrorLogFile[];
 }
 
 const stringValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
@@ -57,31 +59,102 @@ const normalizeLogsResponse = (data: unknown): LogsResponse => {
   return {
     lines,
     latestAfter: latestTimestamp > 0 ? latestTimestamp : undefined,
-    nextCursor: stringValue(data['next-cursor']) || undefined,
+    // An explicit empty cursor clears the previous cursor after a reset.
+    nextCursor: typeof data['next-cursor'] === 'string' ? data['next-cursor'] : undefined,
     cursorReset: booleanValue(data['cursor-reset']),
   };
 };
 
+export interface LogsRequestOptions {
+  signal?: AbortSignal;
+}
+
+const normalizeErrorLogsResponse = (data: unknown): ErrorLogsResponse => {
+  if (!isRecord(data) || !Array.isArray(data.files)) return { files: [] };
+  return {
+    files: data.files.flatMap((file): ErrorLogFile[] => {
+      if (!isRecord(file) || typeof file.name !== 'string' || !file.name.trim()) return [];
+      return [
+        {
+          name: file.name,
+          size:
+            typeof file.size === 'number' && Number.isFinite(file.size) && file.size >= 0
+              ? file.size
+              : undefined,
+          modified: unixSecondsFromValue(file.modified) || undefined,
+        },
+      ];
+    }),
+  };
+};
+
+/** Decode download bodies without interpreting successful log contents as API errors. */
+export const responseDataToText = async (data: unknown): Promise<string> => {
+  if (data instanceof Blob) return data.text();
+  if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) {
+    return new TextDecoder().decode(data);
+  }
+  if (typeof data === 'string') return data;
+  if (data === undefined || data === null) return '';
+  try {
+    return JSON.stringify(data, null, 2) ?? String(data);
+  } catch {
+    return String(data);
+  }
+};
+
+const downloadLog = async (path: string, options: LogsRequestOptions) => {
+  try {
+    return await apiClient.getRaw(path, {
+      ...options,
+      responseType: 'blob',
+      timeout: LOGS_TIMEOUT_MS,
+    });
+  } catch (error: unknown) {
+    // The client already emitted unauthorized on 401 and normalized the Axios error.
+    // It retains the body in data/details, NOT response.data. Preserve its identity,
+    // status, transport code and body while enriching the human-readable error.
+    if (error instanceof Error) {
+      const apiError = error as ApiError;
+      const body = apiError.data instanceof Blob ? apiError.data : apiError.details;
+      if (body instanceof Blob) {
+        try {
+          const text = await responseDataToText(body);
+          const parsed = parseApiErrorResponse(JSON.parse(text), apiError.message);
+          apiError.message = parsed.message;
+          if (parsed.apiCode !== undefined) apiError.apiCode = parsed.apiCode;
+        } catch {
+          // Unreadable/non-JSON bodies must not mask the original transport failure.
+        }
+      }
+    }
+    throw error;
+  }
+};
+
 export const logsApi = {
-  async fetchLogs(params: LogsQuery = {}): Promise<LogsResponse> {
-    const data = await apiClient.get('/observability/logs', { params, timeout: LOGS_TIMEOUT_MS });
+  async fetchLogs(params: LogsQuery = {}, options: LogsRequestOptions = {}): Promise<LogsResponse> {
+    const data = await apiClient.get('/observability/logs', {
+      ...options,
+      params,
+      timeout: LOGS_TIMEOUT_MS,
+    });
     return normalizeLogsResponse(data);
   },
 
-  clearLogs: () => apiClient.delete('/observability/logs'),
+  clearLogs: (options: LogsRequestOptions = {}) => apiClient.delete('/observability/logs', options),
 
-  fetchErrorLogs: (): Promise<ErrorLogsResponse> =>
-    apiClient.get('/observability/logs/errors', { timeout: LOGS_TIMEOUT_MS }),
-
-  downloadErrorLog: (filename: string) =>
-    apiClient.getRaw(`/observability/logs/errors/${encodeURIComponent(filename)}`, {
-      responseType: 'blob',
+  async fetchErrorLogs(options: LogsRequestOptions = {}): Promise<ErrorLogsResponse> {
+    const data = await apiClient.get('/observability/logs/errors', {
+      ...options,
       timeout: LOGS_TIMEOUT_MS,
-    }),
+    });
+    return normalizeErrorLogsResponse(data);
+  },
 
-  downloadRequestLogById: (id: string) =>
-    apiClient.getRaw(`/observability/logs/requests/${encodeURIComponent(id)}`, {
-      responseType: 'blob',
-      timeout: LOGS_TIMEOUT_MS,
-    }),
+  downloadErrorLog: (filename: string, options: LogsRequestOptions = {}) =>
+    downloadLog(`/observability/logs/errors/${encodeURIComponent(filename)}`, options),
+
+  downloadRequestLogById: (id: string, options: LogsRequestOptions = {}) =>
+    downloadLog(`/observability/logs/requests/${encodeURIComponent(id)}`, options),
 };
