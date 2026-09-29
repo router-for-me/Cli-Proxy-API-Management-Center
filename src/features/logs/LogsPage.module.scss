@@ -1,10 +1,11 @@
 @use '../../styles/mixins' as *;
 
 .container {
+  --log-control-height: 40px;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
+  gap: 24px;
   min-width: 0;
   min-height: 0;
 }
@@ -20,9 +21,9 @@
 .pageTitle {
   margin: 0;
   color: var(--text-primary);
-  font-size: 22px;
+  font-size: 28px;
   line-height: 1.3;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: -0.025em;
 }
 
@@ -36,7 +37,7 @@
 
 .tabItem {
   @include button-reset;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 7px;
   color: var(--text-secondary);
   font-size: 13px;
@@ -99,8 +100,8 @@
   align-items: center;
   flex: none;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 16px;
   border-bottom: 1px solid var(--border-color);
 
   :global(.form-group) {
@@ -113,9 +114,33 @@
   min-width: 120px;
 }
 
-.searchInput {
-  padding-right: 36px !important;
+.searchInput:global(.input),
+.levelSelect > button,
+.filterPanelToggle:global(.btn),
+.actionButton:global(.btn) {
+  box-sizing: border-box;
+  height: var(--log-control-height);
+  min-height: var(--log-control-height);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
   font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.searchInput:global(.input) {
+  padding: 0 38px 0 12px;
+}
+
+.levelSelect > button,
+.filterPanelToggle:global(.btn) {
+  padding: 0 12px;
+}
+
+.levelSelect {
+  min-width: 110px;
 }
 
 .searchIcon {
@@ -161,15 +186,15 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-left: auto;
+  padding-left: 4px;
   flex: none;
 }
 
 .actionButton:global(.btn) {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: var(--log-control-height);
   padding: 0;
   > span {
     display: flex;
@@ -341,6 +366,7 @@
   color: var(--text-secondary);
 }
 .logList {
+  padding-block: 8px;
   width: max-content;
   min-width: 100%;
 }
@@ -384,12 +410,12 @@
   position: relative;
   display: grid;
   grid-template-columns: 160px minmax(0, 1fr);
-  gap: 12px;
-  padding: 2px 4px 2px 10px;
+  gap: 16px;
+  padding: 4px 12px 4px 16px;
   border-left: 2px solid transparent;
   color: var(--text-primary);
   &:nth-child(even) {
-    background: color-mix(in srgb, var(--bg-secondary) 45%, transparent);
+    background: color-mix(in srgb, var(--bg-secondary) 20%, transparent);
   }
 }
 .rowWarn {
@@ -590,7 +616,8 @@
 
 @media (max-width: 768px) {
   .container {
-    gap: 8px;
+    --log-control-height: 36px;
+    gap: 16px;
   }
   .pageHeader {
     gap: 8px 12px;
@@ -603,18 +630,15 @@
     font-size: 12px;
   }
   .filters {
-    padding: 8px;
-    gap: 6px;
+    padding: 12px;
+    gap: 8px;
   }
   .searchWrapper {
     flex-basis: calc(100% - 200px);
   }
   .toolbar {
     gap: 4px;
-  }
-  .filterPanelToggle:global(.btn) {
-    padding: 6px 8px;
-    font-size: 12px;
+    padding-left: 0;
   }
   .wrapped .logRow {
     grid-template-columns: 1fr;
@@ -642,6 +666,10 @@
 }
 
 @media (max-height: 480px) {
+  .container {
+    --log-control-height: 36px;
+    gap: 12px;
+  }
   .pageHeader {
     gap: 8px;
   }

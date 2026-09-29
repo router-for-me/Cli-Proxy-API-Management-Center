@@ -68,6 +68,25 @@ describe('log workspace layout contract', () => {
     expect(page).toContain('data-log-id={line.id}');
   });
 
+  test('routine buffer eviction does not add a persistent warning banner', () => {
+    expect(page).not.toContain("t('logs.buffer_evicted')");
+    expect(page).not.toContain('logBuffer.evicted > 0');
+    // A lost reading position and a backend cursor reset remain actionable notices.
+    expect(page).toContain("t('logs.history_evicted')");
+    expect(page).toContain("t('logs.cursor_reset_notice')");
+  });
+
+  test('toolbar controls share one sizing rule rather than mixing small variants', () => {
+    expect(page).toContain('className={styles.levelSelect}');
+    expect(styles).toMatch(
+      /\.searchInput:global\(\.input\),\s*\.levelSelect > button,\s*\.filterPanelToggle:global\(\.btn\),\s*\.actionButton:global\(\.btn\) \{[^}]*height: var\(--log-control-height\)/
+    );
+    expect(styles).toContain('--log-control-height: 40px');
+    expect(styles).toContain('--log-control-height: 36px');
+    expect(styles).toContain('width: var(--log-control-height)');
+    expect(styles).not.toContain('height: 32px');
+  });
+
   test('all supported locales describe both filtering and display settings', () => {
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
       const messages = JSON.parse(readSource(`src/i18n/locales/${locale}.json`));

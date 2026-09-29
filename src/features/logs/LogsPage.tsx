@@ -474,7 +474,6 @@ export function LogsPage() {
               </div>
             </footer>
             <div className={styles.notices}>
-              {logBuffer.evicted > 0 && <div className="hint">{t('logs.buffer_evicted')}</div>}
               {wasReset && (
                 <div className="hint" role="status">
                   {t('logs.cursor_reset_notice')}
@@ -524,8 +523,8 @@ export function LogsPage() {
               </div>
 
               <Select
+                className={styles.levelSelect}
                 fullWidth={false}
-                size="sm"
                 value={levelFilter}
                 onChange={setLevelFilter}
                 ariaLabel={t('logs.level_filter')}
