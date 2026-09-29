@@ -795,6 +795,7 @@
 
   &.content-logs {
     overflow: hidden;
+    scrollbar-gutter: auto;
   }
 
   &.content-plugin-resource {
@@ -815,6 +816,7 @@
   &.main-content-logs {
     flex: 1 1 auto;
     min-height: 0;
+    padding: 64px clamp(12px, 2vw, 28px) 16px;
     overflow: hidden;
   }
 
@@ -980,9 +982,9 @@
     overflow-y: auto;
 
     &.content-logs {
-      overflow: visible;
-      overflow-y: auto;
-      height: auto;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
     }
 
     &.content-plugin-resource {
@@ -1007,9 +1009,10 @@
     }
 
     &.main-content-logs {
-      flex: 0 0 auto;
-      min-height: auto;
-      overflow: visible;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: calc(var(--header-height) + 8px) 8px max(8px, env(safe-area-inset-bottom));
+      overflow: hidden;
     }
   }
 }

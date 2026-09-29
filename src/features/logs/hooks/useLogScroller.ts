@@ -52,6 +52,7 @@ interface UseLogScrollerOptions {
   filteredLineCount: number;
   hasStructuredFilters: boolean;
   showRawLogs: boolean;
+  wrapLogs?: boolean;
 }
 
 interface UseLogScrollerReturn {
@@ -76,6 +77,7 @@ export function useLogScroller(options: UseLogScrollerOptions): UseLogScrollerRe
     filteredLineCount,
     hasStructuredFilters,
     showRawLogs,
+    wrapLogs = false,
   } = options;
 
   const logViewerRef = useRef<HTMLDivElement | null>(null);
@@ -204,7 +206,15 @@ export function useLogScroller(options: UseLogScrollerOptions): UseLogScrollerRe
     pendingPrependScrollRef.current = null;
     lastScrollTopRef.current = node.scrollTop;
     anchorRef.current = findVisibleLogAnchor(readLogRows(node));
-  }, [bufferStart, loading, logState.buffer, logState.visibleFrom, showRawLogs, isFollowing]);
+  }, [
+    bufferStart,
+    loading,
+    logState.buffer,
+    logState.visibleFrom,
+    showRawLogs,
+    wrapLogs,
+    isFollowing,
+  ]);
 
   const tryAutoLoadMoreUntilScrollable = useCallback(() => {
     const node = logViewerRef.current;

@@ -9,8 +9,7 @@ import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { lockScroll, unlockScroll } from '@/components/ui/scrollLock';
 import {
-  IconChevronDown,
-  IconChevronUp,
+  IconCopy,
   IconCode,
   IconDownload,
   IconEye,
@@ -69,10 +68,8 @@ export function LogsPage() {
     true
   );
   const [showRawLogs, setShowRawLogs] = useLocalStorage('logsPage.showRawLogs', false);
-  const [structuredFiltersExpanded, setStructuredFiltersExpanded] = useLocalStorage(
-    'logsPage.structuredFiltersExpanded',
-    true
-  );
+  const [wrapLogs, setWrapLogs] = useLocalStorage('logsPage.wrapLogs', false);
+  const [structuredFiltersExpanded, setStructuredFiltersExpanded] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogFile[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
   const [errorLogsError, setErrorLogsError] = useState('');
@@ -344,6 +341,7 @@ export function LogsPage() {
     filteredLineCount: filteredLines.length,
     hasStructuredFilters: filters.hasStructuredFilters,
     showRawLogs,
+    wrapLogs,
   });
 
   const copyLogLine = async (raw: string) => {
@@ -401,27 +399,30 @@ export function LogsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
-
-      <div className={styles.tabBar}>
-        <button
-          type="button"
-          className={`${styles.tabItem} ${activeTab === 'logs' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('logs')}
-        >
-          {t('logs.log_content')}
-        </button>
-        <button
-          type="button"
-          className={`${styles.tabItem} ${activeTab === 'errors' ? styles.tabActive : ''}`}
-          onClick={() => {
-            setFullscreenLogs(false);
-            setActiveTab('errors');
-          }}
-        >
-          {t('logs.error_logs_modal_title')}
-        </button>
-      </div>
+      <header className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+        <div className={styles.tabBar} role="group" aria-label={t('logs.title')}>
+          <button
+            type="button"
+            className={`${styles.tabItem} ${activeTab === 'logs' ? styles.tabActive : ''}`}
+            aria-pressed={activeTab === 'logs'}
+            onClick={() => setActiveTab('logs')}
+          >
+            {t('logs.log_content')}
+          </button>
+          <button
+            type="button"
+            className={`${styles.tabItem} ${activeTab === 'errors' ? styles.tabActive : ''}`}
+            aria-pressed={activeTab === 'errors'}
+            onClick={() => {
+              setFullscreenLogs(false);
+              setActiveTab('errors');
+            }}
+          >
+            {t('logs.error_logs_modal_title')}
+          </button>
+        </div>
+      </header>
 
       <div className={styles.content}>
         {activeTab === 'logs' && (
@@ -444,120 +445,132 @@ export function LogsPage() {
                 {error}
               </div>
             )}
-            <div className="hint" role="status">
-              {t(
-                catchingUp && autoRefresh
-                  ? 'logs.read_status_catching_up'
-                  : autoRefresh
-                    ? 'logs.read_status_live'
-                    : 'logs.read_status_paused'
+            <footer className={styles.statusBar}>
+              <div
+                className={styles.readStatus}
+                role="status"
+                data-live={autoRefresh && !disableControls}
+              >
+                <span className={styles.statusDot} aria-hidden="true" />
+                {t(
+                  catchingUp && autoRefresh
+                    ? 'logs.read_status_catching_up'
+                    : autoRefresh
+                      ? 'logs.read_status_live'
+                      : 'logs.read_status_paused'
+                )}
+                {lastUpdated && (
+                  <>
+                    {' '}
+                    · {t('logs.last_updated', { time: new Date(lastUpdated).toLocaleTimeString() })}
+                  </>
+                )}
+              </div>
+              <div className={styles.bufferStatus}>
+                {t('logs.buffer_scope', {
+                  count: logBuffer.buffer.length,
+                  matched: filteredLines.length,
+                })}
+              </div>
+            </footer>
+            <div className={styles.notices}>
+              {logBuffer.evicted > 0 && <div className="hint">{t('logs.buffer_evicted')}</div>}
+              {wasReset && (
+                <div className="hint" role="status">
+                  {t('logs.cursor_reset_notice')}
+                </div>
               )}
-              {lastUpdated && (
-                <>
-                  {' '}
-                  · {t('logs.last_updated', { time: new Date(lastUpdated).toLocaleTimeString() })}
-                </>
+              {historyEvicted && (
+                <div className="hint" role="status">
+                  {t('logs.history_evicted')}
+                </div>
               )}
             </div>
-            <div className="hint">
-              {t('logs.buffer_scope', {
-                count: logBuffer.buffer.length,
-                matched: filteredLines.length,
-              })}
-            </div>
-            {logBuffer.evicted > 0 && <div className="hint">{t('logs.buffer_evicted')}</div>}
-            {wasReset && (
-              <div className="hint" role="status">
-                {t('logs.cursor_reset_notice')}
-              </div>
-            )}
-            {historyEvicted && (
-              <div className="hint" role="status">
-                {t('logs.history_evicted')}
-              </div>
-            )}
             {!isFollowing && (
-              <Button variant="secondary" size="sm" onClick={resumeFollowing}>
+              <Button
+                className={styles.followButton}
+                variant="secondary"
+                size="sm"
+                onClick={resumeFollowing}
+              >
                 {t('logs.resume_following', { count: pendingLines })}
               </Button>
             )}
 
             <div className={styles.filters}>
-              {!fullscreenLogs && (
-                <>
-                  <div className={styles.searchWrapper}>
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={t('logs.search_placeholder')}
-                      className={styles.searchInput}
-                      rightElement={
-                        searchQuery ? (
-                          <button
-                            type="button"
-                            className={styles.searchClear}
-                            onClick={() => setSearchQuery('')}
-                            title={t('logs.clear_search')}
-                            aria-label={t('logs.clear_search')}
-                          >
-                            <IconX size={16} />
-                          </button>
-                        ) : (
-                          <IconSearch size={16} className={styles.searchIcon} />
-                        )
-                      }
-                    />
-                  </div>
+              <div className={styles.searchWrapper}>
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('logs.search_placeholder')}
+                  aria-label={t('logs.search_placeholder')}
+                  className={styles.searchInput}
+                  rightElement={
+                    searchQuery ? (
+                      <button
+                        type="button"
+                        className={styles.searchClear}
+                        onClick={() => setSearchQuery('')}
+                        title={t('logs.clear_search')}
+                        aria-label={t('logs.clear_search')}
+                      >
+                        <IconX size={16} />
+                      </button>
+                    ) : (
+                      <IconSearch size={16} className={styles.searchIcon} />
+                    )
+                  }
+                />
+              </div>
 
-                  <Select
-                    fullWidth={false}
-                    size="sm"
-                    value={levelFilter}
-                    onChange={setLevelFilter}
-                    ariaLabel={t('logs.level_filter')}
-                    options={[
-                      { value: '', label: t('logs.all_levels') },
-                      ...['trace', 'debug', 'info', 'warn', 'error', 'fatal'].map((level) => ({
-                        value: level,
-                        label: level.toUpperCase(),
-                      })),
-                    ]}
-                  />
-                  <div className={styles.filterPanelHeader}>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className={styles.filterPanelToggle}
-                      onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
-                      aria-expanded={structuredFiltersExpanded}
-                      aria-controls={structuredFiltersPanelId}
-                      title={
-                        structuredFiltersExpanded
-                          ? t('logs.filter_panel_collapse')
-                          : t('logs.filter_panel_expand')
-                      }
-                    >
-                      <span className={styles.filterPanelButtonContent}>
-                        <IconSlidersHorizontal size={16} />
-                        <span>{t('logs.filter_panel_title')}</span>
-                        {structuredFilterCount > 0 && (
-                          <span className={styles.filterPanelCount}>
-                            {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
-                          </span>
-                        )}
-                        {structuredFiltersExpanded ? (
-                          <IconChevronUp size={16} />
-                        ) : (
-                          <IconChevronDown size={16} />
-                        )}
+              <Select
+                fullWidth={false}
+                size="sm"
+                value={levelFilter}
+                onChange={setLevelFilter}
+                ariaLabel={t('logs.level_filter')}
+                options={[
+                  { value: '', label: t('logs.all_levels') },
+                  ...['trace', 'debug', 'info', 'warn', 'error', 'fatal'].map((level) => ({
+                    value: level,
+                    label: level.toUpperCase(),
+                  })),
+                ]}
+              />
+              <div className={styles.filterPanelHeader}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className={styles.filterPanelToggle}
+                  onClick={() => setStructuredFiltersExpanded((prev) => !prev)}
+                  aria-haspopup="dialog"
+                  aria-label={t('logs.filter_panel_title')}
+                  title={t('logs.filter_panel_title')}
+                >
+                  <span className={styles.filterPanelButtonContent}>
+                    <IconSlidersHorizontal size={16} />
+                    <span className={styles.filterPanelLabel}>{t('logs.filter_panel_title')}</span>
+                    {structuredFilterCount > 0 && (
+                      <span className={styles.filterPanelCount}>
+                        {t('logs.filter_panel_active_count', { count: structuredFilterCount })}
                       </span>
-                    </Button>
-                  </div>
-                </>
-              )}
+                    )}
+                  </span>
+                </Button>
+              </div>
 
-              {!fullscreenLogs && structuredFiltersExpanded && (
+              <Modal
+                open={structuredFiltersExpanded}
+                onClose={() => setStructuredFiltersExpanded(false)}
+                title={t('logs.filter_panel_title')}
+                width={640}
+                footer={
+                  <Button variant="secondary" onClick={() => setStructuredFiltersExpanded(false)}>
+                    {t('common.close')}
+                  </Button>
+                }
+              >
                 <div id={structuredFiltersPanelId} className={styles.structuredFilters}>
                   <div className={styles.filterChipGroup}>
                     <span className={styles.filterChipLabel}>{t('logs.filter_method')}</span>
@@ -637,34 +650,41 @@ export function LogsPage() {
                     {t('logs.clear_filters')}
                   </Button>
                 </div>
-              )}
 
-              <ToggleSwitch
-                checked={hideManagementLogs}
-                onChange={setHideManagementLogs}
-                label={
-                  <span className={styles.switchLabel}>
-                    <IconEyeOff size={16} />
-                    {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
-                  </span>
-                }
-              />
+                <div className={styles.displayOptions}>
+                  <ToggleSwitch
+                    checked={wrapLogs}
+                    onChange={setWrapLogs}
+                    label={t('logs.wrap_lines')}
+                  />
+                  <ToggleSwitch
+                    checked={hideManagementLogs}
+                    onChange={setHideManagementLogs}
+                    label={
+                      <span className={styles.switchLabel}>
+                        <IconEyeOff size={16} />
+                        {t('logs.hide_management_logs', { prefix: MANAGEMENT_API_PREFIX })}
+                      </span>
+                    }
+                  />
 
-              <ToggleSwitch
-                checked={showRawLogs}
-                onChange={setShowRawLogs}
-                label={
-                  <span
-                    className={styles.switchLabel}
-                    title={t('logs.show_raw_logs_hint', {
-                      defaultValue: 'Show original log text for easier multi-line copy',
-                    })}
-                  >
-                    <IconCode size={16} />
-                    {t('logs.show_raw_logs', { defaultValue: 'Show raw logs' })}
-                  </span>
-                }
-              />
+                  <ToggleSwitch
+                    checked={showRawLogs}
+                    onChange={setShowRawLogs}
+                    label={
+                      <span
+                        className={styles.switchLabel}
+                        title={t('logs.show_raw_logs_hint', {
+                          defaultValue: 'Show original log text for easier multi-line copy',
+                        })}
+                      >
+                        <IconCode size={16} />
+                        {t('logs.show_raw_logs', { defaultValue: 'Show raw logs' })}
+                      </span>
+                    }
+                  />
+                </div>
+              </Modal>
 
               <div className={styles.toolbar}>
                 <Button
@@ -673,46 +693,44 @@ export function LogsPage() {
                   onClick={() => loadLogs(false)}
                   disabled={refreshDisabled}
                   className={styles.actionButton}
+                  title={t('logs.refresh_button')}
+                  aria-label={t('logs.refresh_button')}
                 >
-                  <span className={styles.buttonContent}>
-                    <IconRefreshCw size={16} />
-                    {t('logs.refresh_button')}
-                  </span>
+                  <IconRefreshCw size={16} />
                 </Button>
-                <ToggleSwitch
-                  checked={autoRefresh}
-                  onChange={(value) => setAutoRefresh(value)}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className={styles.actionButton}
+                  aria-pressed={autoRefresh}
+                  aria-label={t('logs.reading_enabled')}
+                  title={t('logs.reading_enabled')}
+                  onClick={() => setAutoRefresh(!autoRefresh)}
                   disabled={autoRefreshDisabled}
-                  label={
-                    <span className={styles.switchLabel}>
-                      <IconTimer size={16} />
-                      {t('logs.reading_enabled')}
-                    </span>
-                  }
-                />
+                >
+                  <IconTimer size={16} />
+                </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={downloadLogs}
                   disabled={logBuffer.buffer.length === 0}
                   className={styles.actionButton}
+                  title={t('logs.download_cached')}
+                  aria-label={t('logs.download_cached')}
                 >
-                  <span className={styles.buttonContent}>
-                    <IconDownload size={16} />
-                    {t('logs.download_cached')}
-                  </span>
+                  <IconDownload size={16} />
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="ghost"
                   size="sm"
                   onClick={clearLogs}
                   disabled={clearDisabled}
                   className={styles.actionButton}
+                  title={t('logs.clear_button')}
+                  aria-label={t('logs.clear_button')}
                 >
-                  <span className={styles.buttonContent}>
-                    <IconTrash2 size={16} />
-                    {t('logs.clear_button')}
-                  </span>
+                  <IconTrash2 size={16} />
                 </Button>
                 <Button
                   variant="secondary"
@@ -720,200 +738,216 @@ export function LogsPage() {
                   onClick={() => setFullscreenLogs((prev) => !prev)}
                   className={styles.actionButton}
                   aria-pressed={fullscreenLogs}
+                  aria-label={
+                    fullscreenLogs ? t('logs.exit_fullscreen_button') : t('logs.fullscreen_button')
+                  }
                   title={
                     fullscreenLogs ? t('logs.exit_fullscreen_button') : t('logs.fullscreen_button')
                   }
                 >
                   <span className={styles.buttonContent}>
                     {fullscreenLogs ? <IconMinimize2 size={16} /> : <IconMaximize2 size={16} />}
-                    {fullscreenLogs
-                      ? t('logs.exit_fullscreen_button')
-                      : t('logs.fullscreen_button')}
                   </span>
                 </Button>
               </div>
             </div>
 
-            {loading ? (
-              <div className="hint">{t('logs.loading')}</div>
-            ) : logBuffer.buffer.length > 0 && filteredLines.length > 0 ? (
-              <div
-                ref={logViewerRef}
-                className={[styles.logPanel, fullscreenLogs ? styles.logPanelFullscreen : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onScroll={handleLogScroll}
-              >
-                {canLoadMore && (
-                  <div className={styles.loadMoreBanner}>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() =>
-                        setVisibleCount((count) => Math.min(filteredLines.length, count + 200))
-                      }
-                    >
-                      {t('logs.filter_load_more')}
-                    </Button>
-                    <div className={styles.loadMoreStats}>
-                      <span>{t('logs.loaded_lines', { count: parsedVisibleLines.length })}</span>
-                      {removedCount > 0 && (
+            <div className={styles.viewerArea}>
+              {loading && logBuffer.buffer.length === 0 ? (
+                <div className="hint">{t('logs.loading')}</div>
+              ) : logBuffer.buffer.length > 0 && filteredLines.length > 0 ? (
+                <div
+                  ref={logViewerRef}
+                  className={[
+                    styles.logPanel,
+                    wrapLogs ? styles.wrapped : '',
+                    fullscreenLogs ? styles.logPanelFullscreen : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onScroll={handleLogScroll}
+                  tabIndex={0}
+                  role="region"
+                  aria-label={t('logs.log_content')}
+                  aria-busy={loading}
+                >
+                  {canLoadMore && (
+                    <div className={styles.loadMoreBanner}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setVisibleCount((count) => Math.min(filteredLines.length, count + 200))
+                        }
+                      >
+                        {t('logs.filter_load_more')}
+                      </Button>
+                      <div className={styles.loadMoreStats}>
+                        <span>{t('logs.loaded_lines', { count: parsedVisibleLines.length })}</span>
+                        {removedCount > 0 && (
+                          <span className={styles.loadMoreCount}>
+                            {t('logs.filtered_lines', { count: removedCount })}
+                          </span>
+                        )}
                         <span className={styles.loadMoreCount}>
-                          {t('logs.filtered_lines', { count: removedCount })}
+                          {t('logs.hidden_lines', { count: logState.visibleFrom })}
                         </span>
-                      )}
-                      <span className={styles.loadMoreCount}>
-                        {t('logs.hidden_lines', { count: logState.visibleFrom })}
-                      </span>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {showRawLogs ? (
-                  <pre className={styles.rawLog} spellCheck={false}>
-                    {parsedVisibleLines.map((line) => (
-                      <span key={line.id} data-log-id={line.id} style={{ display: 'block' }}>
-                        {line.raw || '\u00a0'}
-                      </span>
-                    ))}
-                  </pre>
-                ) : (
-                  <div className={styles.logList}>
-                    {parsedVisibleLines.map((line) => {
-                      const rowClassNames = [styles.logRow];
-                      if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
-                      if (line.level === 'error' || line.level === 'fatal')
-                        rowClassNames.push(styles.rowError);
-                      return (
-                        <div
-                          key={line.id}
-                          data-log-id={line.id}
-                          className={rowClassNames.join(' ')}
-                          onDoubleClick={() => {
-                            void copyLogLine(line.raw);
-                          }}
-                          title={t('logs.double_click_copy_hint', {
-                            defaultValue: 'Double-click to copy',
-                          })}
-                        >
-                          <div className={styles.timestamp}>{line.timestamp || ''}</div>
-                          <div className={styles.rowMain}>
-                            {line.level && (
-                              <span
-                                className={[
-                                  styles.badge,
-                                  line.level === 'info' ? styles.levelInfo : '',
-                                  line.level === 'warn' ? styles.levelWarn : '',
-                                  line.level === 'error' || line.level === 'fatal'
-                                    ? styles.levelError
-                                    : '',
-                                  line.level === 'debug' ? styles.levelDebug : '',
-                                  line.level === 'trace' ? styles.levelTrace : '',
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ')}
+                  )}
+                  {showRawLogs ? (
+                    <pre className={styles.rawLog} spellCheck={false}>
+                      {parsedVisibleLines.map((line) => (
+                        <span key={line.id} data-log-id={line.id} style={{ display: 'block' }}>
+                          {line.raw || '\u00a0'}
+                        </span>
+                      ))}
+                    </pre>
+                  ) : (
+                    <div className={styles.logList}>
+                      {parsedVisibleLines.map((line) => {
+                        const rowClassNames = [styles.logRow];
+                        if (line.level === 'warn') rowClassNames.push(styles.rowWarn);
+                        if (line.level === 'error' || line.level === 'fatal')
+                          rowClassNames.push(styles.rowError);
+                        return (
+                          <div
+                            key={line.id}
+                            data-log-id={line.id}
+                            className={rowClassNames.join(' ')}
+                            onDoubleClick={() => {
+                              void copyLogLine(line.raw);
+                            }}
+                            title={t('logs.double_click_copy_hint', {
+                              defaultValue: 'Double-click to copy',
+                            })}
+                          >
+                            <div className={styles.timestamp}>{line.timestamp || ''}</div>
+                            <div className={styles.rowMain}>
+                              {line.level && (
+                                <span
+                                  className={[
+                                    styles.badge,
+                                    line.level === 'info' ? styles.levelInfo : '',
+                                    line.level === 'warn' ? styles.levelWarn : '',
+                                    line.level === 'error' || line.level === 'fatal'
+                                      ? styles.levelError
+                                      : '',
+                                    line.level === 'debug' ? styles.levelDebug : '',
+                                    line.level === 'trace' ? styles.levelTrace : '',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                >
+                                  {line.level.toUpperCase()}
+                                </span>
+                              )}
+
+                              {line.source && (
+                                <span className={styles.source} title={line.source}>
+                                  {line.source}
+                                </span>
+                              )}
+
+                              {line.requestId && (
+                                <button
+                                  type="button"
+                                  className={[styles.badge, styles.requestIdBadge].join(' ')}
+                                  title={t('logs.view_request', { id: line.requestId })}
+                                  aria-label={t('logs.view_request', { id: line.requestId })}
+                                  onClick={() =>
+                                    void openErrorLog(
+                                      { name: `request-${line.requestId}.log` },
+                                      line.requestId
+                                    )
+                                  }
+                                >
+                                  {line.requestId}
+                                </button>
+                              )}
+
+                              {typeof line.statusCode === 'number' && (
+                                <span
+                                  className={[
+                                    styles.badge,
+                                    styles.statusBadge,
+                                    line.statusCode >= 200 && line.statusCode < 300
+                                      ? styles.statusSuccess
+                                      : line.statusCode >= 300 && line.statusCode < 400
+                                        ? styles.statusInfo
+                                        : line.statusCode >= 400 && line.statusCode < 500
+                                          ? styles.statusWarn
+                                          : styles.statusError,
+                                  ].join(' ')}
+                                >
+                                  {line.statusCode}
+                                </span>
+                              )}
+
+                              {line.latency && <span className={styles.pill}>{line.latency}</span>}
+                              {line.ip && <span className={styles.pill}>{line.ip}</span>}
+
+                              {line.method && (
+                                <span className={[styles.badge, styles.methodBadge].join(' ')}>
+                                  {line.method}
+                                </span>
+                              )}
+
+                              {line.path && (
+                                <span className={styles.path} title={line.path}>
+                                  {line.path}
+                                </span>
+                              )}
+
+                              {line.message && (
+                                <span className={styles.message}>{line.message}</span>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={styles.copyButton}
+                                title={t('logs.copy_line')}
+                                onClick={() => void copyLogLine(line.raw)}
+                                aria-label={t('logs.copy_line')}
                               >
-                                {line.level.toUpperCase()}
-                              </span>
-                            )}
-
-                            {line.source && (
-                              <span className={styles.source} title={line.source}>
-                                {line.source}
-                              </span>
-                            )}
-
-                            {line.requestId && (
-                              <button
-                                type="button"
-                                className={[styles.badge, styles.requestIdBadge].join(' ')}
-                                title={t('logs.view_request', { id: line.requestId })}
-                                aria-label={t('logs.view_request', { id: line.requestId })}
-                                onClick={() =>
-                                  void openErrorLog(
-                                    { name: `request-${line.requestId}.log` },
-                                    line.requestId
-                                  )
-                                }
-                              >
-                                {line.requestId}
-                              </button>
-                            )}
-
-                            {typeof line.statusCode === 'number' && (
-                              <span
-                                className={[
-                                  styles.badge,
-                                  styles.statusBadge,
-                                  line.statusCode >= 200 && line.statusCode < 300
-                                    ? styles.statusSuccess
-                                    : line.statusCode >= 300 && line.statusCode < 400
-                                      ? styles.statusInfo
-                                      : line.statusCode >= 400 && line.statusCode < 500
-                                        ? styles.statusWarn
-                                        : styles.statusError,
-                                ].join(' ')}
-                              >
-                                {line.statusCode}
-                              </span>
-                            )}
-
-                            {line.latency && <span className={styles.pill}>{line.latency}</span>}
-                            {line.ip && <span className={styles.pill}>{line.ip}</span>}
-
-                            {line.method && (
-                              <span className={[styles.badge, styles.methodBadge].join(' ')}>
-                                {line.method}
-                              </span>
-                            )}
-
-                            {line.path && (
-                              <span className={styles.path} title={line.path}>
-                                {line.path}
-                              </span>
-                            )}
-
-                            {line.message && <span className={styles.message}>{line.message}</span>}
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => void copyLogLine(line.raw)}
-                              aria-label={t('logs.copy_line')}
-                            >
-                              {t('common.copy')}
-                            </Button>
+                                <IconCopy size={14} />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : logBuffer.buffer.length > 0 ? (
-              <EmptyState
-                title={t('logs.search_empty_title')}
-                description={t('logs.search_empty_desc')}
-              />
-            ) : showFileLoggingRequired ? (
-              <EmptyState
-                title={t(
-                  cpaNeedsFileLogging
-                    ? 'logs.cpa_file_logging_required_title'
-                    : 'logs.file_logging_required_title'
-                )}
-                description={t(
-                  cpaNeedsFileLogging
-                    ? 'logs.cpa_file_logging_required_desc'
-                    : 'logs.file_logging_required_desc'
-                )}
-              />
-            ) : (
-              <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
-            )}
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : logBuffer.buffer.length > 0 ? (
+                <EmptyState
+                  title={t('logs.search_empty_title')}
+                  description={t('logs.search_empty_desc')}
+                />
+              ) : showFileLoggingRequired ? (
+                <EmptyState
+                  title={t(
+                    cpaNeedsFileLogging
+                      ? 'logs.cpa_file_logging_required_title'
+                      : 'logs.file_logging_required_title'
+                  )}
+                  description={t(
+                    cpaNeedsFileLogging
+                      ? 'logs.cpa_file_logging_required_desc'
+                      : 'logs.file_logging_required_desc'
+                  )}
+                />
+              ) : (
+                <EmptyState title={t('logs.empty_title')} description={t('logs.empty_desc')} />
+              )}
+            </div>
           </Card>
         )}
 
         {activeTab === 'errors' && (
           <Card
+            className={styles.errorCard}
+            title={t('logs.error_logs_modal_title')}
             extra={
               <Button
                 variant="secondary"
@@ -926,7 +960,7 @@ export function LogsPage() {
               </Button>
             }
           >
-            <div className="stack">
+            <div className={styles.errorBody}>
               <div className="hint">{t('logs.error_logs_description')}</div>
 
               {requestLogEnabled && (
