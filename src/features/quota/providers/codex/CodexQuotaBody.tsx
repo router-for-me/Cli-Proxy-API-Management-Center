@@ -20,7 +20,12 @@ import { formatDateTimeValue } from '@/utils/format';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
-import { collectQuotaRowInstants, pickUrgentRowId, resetCreditRowId } from '../../resetSchedule';
+import {
+  CODEX_SPEND_CONTROL_ROW_ID,
+  collectQuotaRowInstants,
+  pickUrgentRowId,
+  resetCreditRowId,
+} from '../../resetSchedule';
 import type { QuotaBodyProps, QuotaClassMap } from '../../types';
 
 const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): string => {
@@ -163,7 +168,24 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
           const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
           const remaining =
             clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
-          const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+          const isSpendControl = window.id === CODEX_SPEND_CONTROL_ROW_ID;
+          const percentLabel =
+            remaining === null
+              ? '--'
+              : isSpendControl
+                ? t('codex_quota.spend_control_remaining', { percent: Math.round(remaining) })
+                : `${Math.round(remaining)}%`;
+          // Only the spend-control row carries an absolute budget; a
+          // percentage alone never says how large the pool being spent is.
+          // Upstream sends fractional credits ("3138.653407096863") — rounded
+          // here to match how ChatGPT's own usage page reports them.
+          const amountLabel =
+            typeof window.usedAmount === 'number' && typeof window.totalAmount === 'number'
+              ? t('codex_quota.spend_control_amount', {
+                  used: Math.round(window.usedAmount).toLocaleString(locale),
+                  total: Math.round(window.totalAmount).toLocaleString(locale),
+                })
+              : null;
           const windowLabel = window.labelKey
             ? t(window.labelKey, window.labelParams as Record<string, string | number>)
             : window.label;
@@ -181,8 +203,14 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
                 <span className={classes.quotaModel}>{windowLabel}</span>
                 <div className={classes.quotaMeta}>
                   <span className={classes.quotaPercent}>{percentLabel}</span>
+                  {amountLabel && <span className={classes.quotaAmount}>{amountLabel}</span>}
                   {resetDisplay && (
-                    <QuotaResetLabel display={resetDisplay} classes={classes} soon={soon} />
+                    <QuotaResetLabel
+                      display={resetDisplay}
+                      classes={classes}
+                      soon={soon}
+                      showAbsolute={!isSpendControl}
+                    />
                   )}
                 </div>
               </div>

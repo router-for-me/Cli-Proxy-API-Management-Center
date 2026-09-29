@@ -11,6 +11,7 @@
   display: flex;
   flex-direction: column;
   gap: 11px;
+  min-width: 0;
   padding: 15px 16px;
   border-radius: 14px;
   border: 1px solid var(--border-color);
