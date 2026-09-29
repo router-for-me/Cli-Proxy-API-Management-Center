@@ -999,17 +999,122 @@ function syncPayloadFilterSequence(
   replaceSequenceItems(seq, items);
 }
 
+/** IDs are editor identity, not YAML data. Reserve exact matches before matching edited
+ * entries, so a deletion/reorder cannot steal another entry's AST node. New entries
+ * use a separate namespace rather than their parsed positional IDs.
+ */
+function withoutEditorIds(value: unknown): string {
+  return JSON.stringify(value, (key, item: unknown) => (key === 'id' ? undefined : item));
+}
+
+function alignRebasedEntries<T extends { id: string }>(
+  baseline: T[],
+  draft: T[],
+  identity: (entry: T) => string,
+  alignChildren: (entry: T, prior: T | undefined) => T = (entry) => entry
+): T[] {
+  const available = new Set(baseline.map((_, index) => index));
+  const matches = new Map<number, number>();
+  for (const key of [withoutEditorIds, identity]) {
+    draft.forEach((entry, index) => {
+      if (matches.has(index)) return;
+      const signature = key(entry);
+      const match = [...available].find((candidate) => key(baseline[candidate]) === signature);
+      if (match !== undefined) {
+        matches.set(index, match);
+        available.delete(match);
+      }
+    });
+  }
+  return draft.map((entry, index) => {
+    const match = matches.get(index);
+    const prior = match === undefined ? undefined : baseline[match];
+    return alignChildren({ ...entry, id: prior?.id ?? `rebase-new-${entry.id}` }, prior);
+  });
+}
+
+function alignRebasedModels(
+  draft: PayloadRule['models'],
+  baseline: PayloadRule['models']
+): PayloadRule['models'] {
+  const alignParams = (entries: PayloadParamEntry[], prior: PayloadParamEntry[]) =>
+    alignRebasedEntries(prior, entries, (entry) => entry.path);
+  return alignRebasedEntries(
+    baseline,
+    draft,
+    (model) => JSON.stringify([model.name, model.protocol, model.fromProtocol]),
+    (model, prior) => ({
+      ...model,
+      headers: alignRebasedEntries(
+        prior?.headers ?? [],
+        model.headers ?? [],
+        (entry) => entry.name
+      ),
+      match: alignParams(model.match ?? [], prior?.match ?? []),
+      notMatch: alignParams(model.notMatch ?? [], prior?.notMatch ?? []),
+    })
+  );
+}
+
+function alignRebasedValues(
+  baseline: VisualConfigValues,
+  draft: VisualConfigValues
+): VisualConfigValues {
+  const ruleIdentity = (rule: PayloadRule | PayloadFilterRule) =>
+    JSON.stringify(rule.models.map((model) => [model.name, model.protocol, model.fromProtocol]));
+  const alignRules = (prior: PayloadRule[], rules: PayloadRule[]) =>
+    alignRebasedEntries(prior, rules, ruleIdentity, (rule, original) => ({
+      ...rule,
+      models: alignRebasedModels(rule.models, original?.models ?? []),
+      params: alignRebasedEntries(original?.params ?? [], rule.params, (param) => param.path),
+    }));
+  return {
+    ...draft,
+    payloadDefaultRules: alignRules(baseline.payloadDefaultRules, draft.payloadDefaultRules),
+    payloadDefaultRawRules: alignRules(
+      baseline.payloadDefaultRawRules,
+      draft.payloadDefaultRawRules
+    ),
+    payloadOverrideRules: alignRules(baseline.payloadOverrideRules, draft.payloadOverrideRules),
+    payloadOverrideRawRules: alignRules(
+      baseline.payloadOverrideRawRules,
+      draft.payloadOverrideRawRules
+    ),
+    payloadFilterRules: alignRebasedEntries(
+      baseline.payloadFilterRules,
+      draft.payloadFilterRules,
+      ruleIdentity,
+      (rule, original) => ({
+        ...rule,
+        models: alignRebasedModels(rule.models, original?.models ?? []),
+      })
+    ),
+    pluginStoreAuth: alignRebasedEntries(
+      baseline.pluginStoreAuth,
+      draft.pluginStoreAuth,
+      (rule) => rule.match
+    ),
+  };
+}
+
 type VisualConfigState = {
   visualValues: VisualConfigValues;
   baselineValues: VisualConfigValues;
   dirtyFields: Set<string>;
   visualParseError: string | null;
+  rebasedPayload: { yaml: string; values: VisualConfigValues } | null;
 };
 
 type VisualConfigAction =
   | {
       type: 'load_success';
       values: VisualConfigValues;
+    }
+  | {
+      type: 'rebase_success';
+      baseline: VisualConfigValues;
+      draft: VisualConfigValues;
+      draftYaml: string;
     }
   | {
       type: 'load_error';
@@ -1027,6 +1132,7 @@ function createInitialVisualConfigState(): VisualConfigState {
     baselineValues: deepClone(initialValues),
     dirtyFields: new Set(),
     visualParseError: null,
+    rebasedPayload: null,
   };
 }
 
@@ -1210,9 +1316,20 @@ function visualConfigReducer(
       return {
         visualValues: action.values,
         baselineValues: deepClone(action.values),
+        rebasedPayload: null,
         dirtyFields: new Set(),
         visualParseError: null,
       };
+    case 'rebase_success': {
+      const values = alignRebasedValues(action.baseline, action.draft);
+      return {
+        visualValues: values,
+        baselineValues: action.baseline,
+        rebasedPayload: { yaml: action.draftYaml, values: deepClone(values) },
+        dirtyFields: getNextDirtyFields(new Set(), values, values, action.baseline),
+        visualParseError: null,
+      };
+    }
     case 'load_error':
       return {
         ...state,
@@ -1238,13 +1355,163 @@ function visualConfigReducer(
   }
 }
 
+function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
+  const document = parseDocument(yamlContent);
+  if (document.errors.length > 0) {
+    throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+  }
+
+  const parsedRaw: unknown = parseYaml(yamlContent) || {};
+  const parsed = asRecord(parsedRaw) ?? {};
+  const v8Server = asRecord(parsed?.['server']);
+  const v8Routing = asRecord(parsed?.['routing']);
+  const v8RoutingRetry = asRecord(v8Routing?.['retry']);
+  const v8RoutingCooldown = asRecord(v8Routing?.['cooldown']);
+  const v8Requests = asRecord(parsed?.['requests']);
+  const v8Oauth = asRecord(parsed?.['oauth']);
+  const v8OauthProviders = asRecord(v8Oauth?.['providers']);
+  const v8OauthProvidersAistudio = asRecord(v8OauthProviders?.['aistudio']);
+  const v8OauthProvidersCodex = asRecord(v8OauthProviders?.['codex']);
+  const v8OauthProvidersClaude = asRecord(v8OauthProviders?.['claude']);
+  const v8OauthProvidersAntigravity = asRecord(v8OauthProviders?.['antigravity']);
+  const v8Multimedia = asRecord(parsed?.['multimedia']);
+  const v8Observability = asRecord(parsed?.['observability']);
+  const v8ObservabilityLogs = asRecord(v8Observability?.['logs']);
+  const v8ObservabilityUsage = asRecord(v8Observability?.['usage']);
+  const tls = asRecord(v8Server?.['tls']);
+  const remoteManagement = asRecord(parsed['management']);
+  const quotaExceeded = asRecord(parsed['quota-exceeded']);
+  const routing = asRecord(parsed.routing);
+  const payload = asRecord(v8Requests?.['payload']);
+  const streaming = asRecord(v8Requests?.['streaming']);
+  const plugins = asRecord(parsed.plugins);
+  const antigravity = asRecord(v8OauthProviders?.['antigravity']);
+  const devin = asRecord(v8OauthProviders?.['devin']);
+  const claudeHeaderDefaults = asRecord(v8OauthProvidersClaude?.['header-defaults']);
+  const codexHeaderDefaults = asRecord(v8OauthProvidersCodex?.['header-defaults']);
+
+  const newValues: VisualConfigValues = {
+    host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
+    port: String(v8Server?.['port'] ?? ''),
+
+    tlsEnable: Boolean(tls?.enable),
+    tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
+    tlsKey: typeof tls?.key === 'string' ? tls.key : '',
+
+    rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
+    rmSecretKey:
+      typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+    rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
+    rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
+    rmPanelRepo:
+      typeof remoteManagement?.['panel-github-repository'] === 'string'
+        ? remoteManagement['panel-github-repository']
+        : '',
+
+    authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
+    apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
+    pluginsEnabled: Boolean(plugins?.enabled),
+    pluginStoreSources: parseStringList(plugins?.['store-sources']),
+    pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
+
+    debug: Boolean(v8ObservabilityLogs?.['debug']),
+    commercialMode: Boolean(v8Server?.['commercial-mode']),
+    loggingToFile: Boolean(v8ObservabilityLogs?.['logging-to-file']),
+    logsMaxTotalSizeMb: String(v8ObservabilityLogs?.['logs-max-total-size-mb'] ?? ''),
+    errorLogsMaxFiles: String(v8ObservabilityLogs?.['error-logs-max-files'] ?? ''),
+    usageStatisticsEnabled: Boolean(v8ObservabilityUsage?.['usage-statistics-enabled']),
+    redisUsageQueueRetentionSeconds: String(
+      v8ObservabilityUsage?.['redis-usage-queue-retention-seconds'] ?? ''
+    ),
+
+    proxyUrl: typeof v8Requests?.['proxy-url'] === 'string' ? v8Requests?.['proxy-url'] : '',
+    forceModelPrefix: Boolean(v8Routing?.['force-model-prefix']),
+    passthroughHeaders: Boolean(v8Requests?.['passthrough-headers']),
+    requestRetry: String(v8RoutingRetry?.['request-retry'] ?? ''),
+    maxRetryCredentials: String(v8RoutingRetry?.['max-retry-credentials'] ?? ''),
+    maxRetryInterval: String(v8RoutingRetry?.['max-retry-interval'] ?? ''),
+    disableCooling: Boolean(v8RoutingCooldown?.['disable-cooling']),
+    disableImageGeneration: parseDisableImageGenerationMode(
+      v8Multimedia?.['disable-image-generation']
+    ),
+    gptImage2BaseModel:
+      typeof v8Multimedia?.['gpt-image-2-base-model'] === 'string'
+        ? v8Multimedia?.['gpt-image-2-base-model']
+        : '',
+    authAutoRefreshWorkers: String(v8Oauth?.['auth-auto-refresh-workers'] ?? ''),
+    wsAuth: Boolean(v8OauthProvidersAistudio?.['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
+    antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
+    devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
+    antigravitySignatureCacheEnabled: Boolean(
+      v8OauthProvidersAntigravity?.['signature-cache-enabled'] ?? true
+    ),
+    antigravitySignatureBypassStrict: Boolean(
+      v8OauthProvidersAntigravity?.['signature-bypass-strict']
+    ),
+
+    claudeHeaderUserAgent:
+      typeof claudeHeaderDefaults?.['user-agent'] === 'string'
+        ? claudeHeaderDefaults['user-agent']
+        : '',
+    claudeHeaderPackageVersion:
+      typeof claudeHeaderDefaults?.['package-version'] === 'string'
+        ? claudeHeaderDefaults['package-version']
+        : '',
+    claudeHeaderRuntimeVersion:
+      typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
+        ? claudeHeaderDefaults['runtime-version']
+        : '',
+    claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
+    claudeHeaderArch:
+      typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
+    claudeHeaderTimeout:
+      typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
+    claudeHeaderStabilizeDeviceProfile: Boolean(claudeHeaderDefaults?.['stabilize-device-profile']),
+    codexHeaderUserAgent:
+      typeof codexHeaderDefaults?.['user-agent'] === 'string'
+        ? codexHeaderDefaults['user-agent']
+        : '',
+    codexHeaderBetaFeatures:
+      typeof codexHeaderDefaults?.['beta-features'] === 'string'
+        ? codexHeaderDefaults['beta-features']
+        : '',
+
+    quotaSwitchProject: Boolean(
+      quotaExceeded?.['switch-project'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchProject
+    ),
+    quotaSwitchPreviewModel: Boolean(
+      quotaExceeded?.['switch-preview-model'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchPreviewModel
+    ),
+    quotaAntigravityCredits: Boolean(antigravity?.['antigravity-credits'] ?? false),
+
+    routingStrategy: parseRoutingStrategy(routing?.strategy),
+    routingSessionAffinity: Boolean(routing?.['session-affinity']),
+    routingSessionAffinityTTL:
+      typeof routing?.['session-affinity-ttl'] === 'string' ? routing['session-affinity-ttl'] : '',
+
+    payloadDefaultRules: parsePayloadRules(payload?.default),
+    payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
+    payloadOverrideRules: parsePayloadRules(payload?.override),
+    payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
+    payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+
+    streaming: {
+      keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
+      bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
+      nonstreamKeepaliveInterval: String(v8Requests?.['nonstream-keepalive-interval'] ?? ''),
+    },
+  };
+
+  return newValues;
+}
+
 export function useVisualConfig() {
   const [state, dispatch] = useReducer(
     visualConfigReducer,
     undefined,
     createInitialVisualConfigState
   );
-  const { visualValues, baselineValues, visualParseError, dirtyFields } = state;
+  const { visualValues, baselineValues, visualParseError, dirtyFields, rebasedPayload } = state;
   const visualDirty = dirtyFields.size > 0;
   const visualValidationErrors = useMemo(
     () => getVisualConfigValidationErrors(visualValues),
@@ -1266,163 +1533,27 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const document = parseDocument(yamlContent);
-      if (document.errors.length > 0) {
-        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
-      }
-
-      const parsedRaw: unknown = parseYaml(yamlContent) || {};
-      const parsed = asRecord(parsedRaw) ?? {};
-      const v8Server = asRecord(parsed?.['server']);
-      const v8Routing = asRecord(parsed?.['routing']);
-      const v8RoutingRetry = asRecord(v8Routing?.['retry']);
-      const v8RoutingCooldown = asRecord(v8Routing?.['cooldown']);
-      const v8Requests = asRecord(parsed?.['requests']);
-      const v8Oauth = asRecord(parsed?.['oauth']);
-      const v8OauthProviders = asRecord(v8Oauth?.['providers']);
-      const v8OauthProvidersAistudio = asRecord(v8OauthProviders?.['aistudio']);
-      const v8OauthProvidersCodex = asRecord(v8OauthProviders?.['codex']);
-      const v8OauthProvidersClaude = asRecord(v8OauthProviders?.['claude']);
-      const v8OauthProvidersAntigravity = asRecord(v8OauthProviders?.['antigravity']);
-      const v8Multimedia = asRecord(parsed?.['multimedia']);
-      const v8Observability = asRecord(parsed?.['observability']);
-      const v8ObservabilityLogs = asRecord(v8Observability?.['logs']);
-      const v8ObservabilityUsage = asRecord(v8Observability?.['usage']);
-      const tls = asRecord(v8Server?.['tls']);
-      const remoteManagement = asRecord(parsed['management']);
-      const quotaExceeded = asRecord(parsed['quota-exceeded']);
-      const routing = asRecord(parsed.routing);
-      const payload = asRecord(v8Requests?.['payload']);
-      const streaming = asRecord(v8Requests?.['streaming']);
-      const plugins = asRecord(parsed.plugins);
-      const antigravity = asRecord(v8OauthProviders?.['antigravity']);
-      const devin = asRecord(v8OauthProviders?.['devin']);
-      const claudeHeaderDefaults = asRecord(v8OauthProvidersClaude?.['header-defaults']);
-      const codexHeaderDefaults = asRecord(v8OauthProvidersCodex?.['header-defaults']);
-
-      const newValues: VisualConfigValues = {
-        host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
-        port: String(v8Server?.['port'] ?? ''),
-
-        tlsEnable: Boolean(tls?.enable),
-        tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
-        tlsKey: typeof tls?.key === 'string' ? tls.key : '',
-
-        rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
-        rmSecretKey:
-          typeof remoteManagement?.['secret-key'] === 'string'
-            ? remoteManagement['secret-key']
-            : '',
-        rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
-        rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
-        rmPanelRepo:
-          typeof remoteManagement?.['panel-github-repository'] === 'string'
-            ? remoteManagement['panel-github-repository']
-            : '',
-
-        authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
-        apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
-        pluginsEnabled: Boolean(plugins?.enabled),
-        pluginStoreSources: parseStringList(plugins?.['store-sources']),
-        pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
-
-        debug: Boolean(v8ObservabilityLogs?.['debug']),
-        commercialMode: Boolean(v8Server?.['commercial-mode']),
-        loggingToFile: Boolean(v8ObservabilityLogs?.['logging-to-file']),
-        logsMaxTotalSizeMb: String(v8ObservabilityLogs?.['logs-max-total-size-mb'] ?? ''),
-        errorLogsMaxFiles: String(v8ObservabilityLogs?.['error-logs-max-files'] ?? ''),
-        usageStatisticsEnabled: Boolean(v8ObservabilityUsage?.['usage-statistics-enabled']),
-        redisUsageQueueRetentionSeconds: String(
-          v8ObservabilityUsage?.['redis-usage-queue-retention-seconds'] ?? ''
-        ),
-
-        proxyUrl: typeof v8Requests?.['proxy-url'] === 'string' ? v8Requests?.['proxy-url'] : '',
-        forceModelPrefix: Boolean(v8Routing?.['force-model-prefix']),
-        passthroughHeaders: Boolean(v8Requests?.['passthrough-headers']),
-        requestRetry: String(v8RoutingRetry?.['request-retry'] ?? ''),
-        maxRetryCredentials: String(v8RoutingRetry?.['max-retry-credentials'] ?? ''),
-        maxRetryInterval: String(v8RoutingRetry?.['max-retry-interval'] ?? ''),
-        disableCooling: Boolean(v8RoutingCooldown?.['disable-cooling']),
-        disableImageGeneration: parseDisableImageGenerationMode(
-          v8Multimedia?.['disable-image-generation']
-        ),
-        gptImage2BaseModel:
-          typeof v8Multimedia?.['gpt-image-2-base-model'] === 'string'
-            ? v8Multimedia?.['gpt-image-2-base-model']
-            : '',
-        authAutoRefreshWorkers: String(v8Oauth?.['auth-auto-refresh-workers'] ?? ''),
-        wsAuth: Boolean(v8OauthProvidersAistudio?.['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
-        antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
-        devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
-        antigravitySignatureCacheEnabled: Boolean(
-          v8OauthProvidersAntigravity?.['signature-cache-enabled'] ?? true
-        ),
-        antigravitySignatureBypassStrict: Boolean(
-          v8OauthProvidersAntigravity?.['signature-bypass-strict']
-        ),
-
-        claudeHeaderUserAgent:
-          typeof claudeHeaderDefaults?.['user-agent'] === 'string'
-            ? claudeHeaderDefaults['user-agent']
-            : '',
-        claudeHeaderPackageVersion:
-          typeof claudeHeaderDefaults?.['package-version'] === 'string'
-            ? claudeHeaderDefaults['package-version']
-            : '',
-        claudeHeaderRuntimeVersion:
-          typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
-            ? claudeHeaderDefaults['runtime-version']
-            : '',
-        claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
-        claudeHeaderArch:
-          typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
-        claudeHeaderTimeout:
-          typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
-        claudeHeaderStabilizeDeviceProfile: Boolean(
-          claudeHeaderDefaults?.['stabilize-device-profile']
-        ),
-        codexHeaderUserAgent:
-          typeof codexHeaderDefaults?.['user-agent'] === 'string'
-            ? codexHeaderDefaults['user-agent']
-            : '',
-        codexHeaderBetaFeatures:
-          typeof codexHeaderDefaults?.['beta-features'] === 'string'
-            ? codexHeaderDefaults['beta-features']
-            : '',
-
-        quotaSwitchProject: Boolean(
-          quotaExceeded?.['switch-project'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchProject
-        ),
-        quotaSwitchPreviewModel: Boolean(
-          quotaExceeded?.['switch-preview-model'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchPreviewModel
-        ),
-        quotaAntigravityCredits: Boolean(antigravity?.['antigravity-credits'] ?? false),
-
-        routingStrategy: parseRoutingStrategy(routing?.strategy),
-        routingSessionAffinity: Boolean(routing?.['session-affinity']),
-        routingSessionAffinityTTL:
-          typeof routing?.['session-affinity-ttl'] === 'string'
-            ? routing['session-affinity-ttl']
-            : '',
-
-        payloadDefaultRules: parsePayloadRules(payload?.default),
-        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
-        payloadOverrideRules: parsePayloadRules(payload?.override),
-        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
-        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
-
-        streaming: {
-          keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
-          bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
-          nonstreamKeepaliveInterval: String(v8Requests?.['nonstream-keepalive-interval'] ?? ''),
-        },
-      };
-
+      const newValues = parseVisualValuesFromYaml(yamlContent);
       dispatch({ type: 'load_success', values: newValues });
       return { ok: true as const };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid YAML';
       dispatch({ type: 'load_error', error: message });
+      return { ok: false as const, error: message };
+    }
+  }, []);
+
+  // Both documents are parsed before dispatch so a malformed draft cannot advance the baseline.
+  const rebaseVisualValuesFromYaml = useCallback((serverYaml: string, draftYaml: string) => {
+    try {
+      const baseline = parseVisualValuesFromYaml(serverYaml);
+      const draft = parseVisualValuesFromYaml(draftYaml);
+      dispatch({ type: 'rebase_success', baseline, draft, draftYaml });
+      return { ok: true as const };
+    } catch (error: unknown) {
+      // A failed readback is not a parse failure of the user's retained draft. Keep
+      // the whole editor state intact; the document hook blocks editing until recovery.
+      const message = error instanceof Error ? error.message : 'Invalid YAML';
       return { ok: false as const, error: message };
     }
   }, []);
@@ -1434,6 +1565,27 @@ export function useVisualConfig() {
         if (doc.errors.length > 0) return currentYaml;
         if (!isMap(doc.contents)) {
           doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
+        }
+        // YAML has no stable rule IDs. For rebased payload edits, retain the already
+        // merged draft's AST as well as its ID snapshot. Inferring lineage solely
+        // from server/draft contents is ambiguous (e.g. delete + rename + append),
+        // and could otherwise attach unknown fields to the wrong rule/model.
+        const payloadBaseline = rebasedPayload?.values ?? baselineValues;
+        if (rebasedPayload && hasPayloadDirtyFields(dirtyFields)) {
+          const draftDoc = parseDocument(rebasedPayload.yaml);
+          const sections = ['default', 'default-raw', 'override', 'override-raw', 'filter'];
+          PAYLOAD_DIRTY_FIELDS.forEach((field, index) => {
+            if (!dirtyFields.has(field)) return;
+            const path = ['requests', 'payload', sections[index]];
+            const node = draftDoc.getIn(path, true);
+            if (node) {
+              ensureMapInDoc(doc, ['requests']);
+              ensureMapInDoc(doc, ['requests', 'payload']);
+              doc.setIn(path, node);
+            } else if (doc.hasIn(path)) {
+              deletePathInDoc(doc, path);
+            }
+          });
         }
         const values = visualValues;
         const shouldWritePluginStoreAuth = dirtyFields.has('pluginStoreAuth');
@@ -1846,7 +1998,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'default',
-              baselineValues.payloadDefaultRules,
+              payloadBaseline.payloadDefaultRules,
               values.payloadDefaultRules,
               false
             );
@@ -1855,7 +2007,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'default-raw',
-              baselineValues.payloadDefaultRawRules,
+              payloadBaseline.payloadDefaultRawRules,
               values.payloadDefaultRawRules,
               true
             );
@@ -1864,7 +2016,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'override',
-              baselineValues.payloadOverrideRules,
+              payloadBaseline.payloadOverrideRules,
               values.payloadOverrideRules,
               false
             );
@@ -1873,7 +2025,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'override-raw',
-              baselineValues.payloadOverrideRawRules,
+              payloadBaseline.payloadOverrideRawRules,
               values.payloadOverrideRawRules,
               true
             );
@@ -1881,7 +2033,7 @@ export function useVisualConfig() {
           if (dirtyFields.has('payloadFilterRules')) {
             syncPayloadFilterSequence(
               doc,
-              baselineValues.payloadFilterRules,
+              payloadBaseline.payloadFilterRules,
               values.payloadFilterRules
             );
           }
@@ -1893,7 +2045,7 @@ export function useVisualConfig() {
         return currentYaml;
       }
     },
-    [baselineValues, dirtyFields, visualValues]
+    [baselineValues, dirtyFields, visualValues, rebasedPayload]
   );
 
   const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
@@ -1909,6 +2061,7 @@ export function useVisualConfig() {
     visualValidationErrors,
     visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
+    rebaseVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,
   };

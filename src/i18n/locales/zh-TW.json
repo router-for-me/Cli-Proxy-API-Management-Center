@@ -84,6 +84,7 @@
     "error_unauthorized": "驗證失敗，管理金鑰缺失或無效",
     "error_forbidden": "存取被拒絕，遠端管理未啟用、管理金鑰未設定或 IP 被暫時封鎖",
     "error_not_found": "找不到 v8 Management API，請檢查服務位址並將 CLIProxyAPI 升級至 v8 或更新版本；不再支援 v0 介面。",
+    "error_legacy_backend": "目前後端可使用 v0 管理介面，但不支援 v8。請將 CLIProxyAPI 升級至 v8 或更新版本後再使用此管理頁面。",
     "error_server": "後端處理管理介面時發生錯誤，請查看服務日誌",
     "error_cors": "跨域請求被阻擋，請檢查伺服器設定",
     "error_ssl": "SSL/TLS 憑證驗證失敗"
@@ -1047,6 +1048,9 @@
     "validation_blocked_short": "待修復",
     "visual_mode_unavailable_detail": "目前設定存在無效 YAML，暫時無法使用視覺化編輯：{{message}}",
     "visual_mode_save_blocked": "請先修復 YAML 語法錯誤，再從視覺化模式儲存",
+    "source_changes_before_visual": "原始碼有未儲存的修改，請先儲存或放棄修改，再切換到視覺化模式。",
+    "precise_save_incomplete": "精準儲存未完成，部分修改可能已生效。草稿已保留，請再次儲存以重新核對伺服器差異。",
+    "precise_save_recovery_required": "無法回讀儲存結果，已暫停編輯。請再次儲存以恢復草稿基準，或重新載入設定。",
     "visual_mode_latest_yaml_invalid": "伺服器最新設定包含無效 YAML，請先切回原始碼模式檢查後再儲存視覺化修改：{{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "搜尋設定內容...",
