@@ -9,6 +9,7 @@ import { apiClient } from '@/services/api/client';
 import {
   applyConfigPatch,
   buildConfigPatch,
+  ConfigDraftConflictError,
   hasConfigPatchChanges,
   rebaseConfigDraft,
   type ConfigPatchPlan,
@@ -244,7 +245,12 @@ export function useConfigDocument({
       }
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message = err instanceof Error ? err.message : '';
+      const message =
+        err instanceof ConfigDraftConflictError
+          ? t('config_management.concurrent_list_conflict', { path: err.path.join('.') })
+          : err instanceof Error
+            ? err.message
+            : '';
       if (writeAttempted && previewMode === 'visual') {
         // v8 field mutations are not a transaction. Never roll back with a full document.
         // Re-read immediately so changing an already-applied value back remains a dirty edit.
@@ -261,11 +267,18 @@ export function useConfigDocument({
           ) {
             showNotification(t('notification.commercial_mode_restart_required'), 'warning');
           }
-        } catch {
+        } catch (recoveryError) {
           if (!operation.isCurrent()) return;
           // Until readback succeeds, freeze editing against the stale baseline. Saving retries
           // recovery; reloading can explicitly replace the draft from the server.
-          showNotification(t('config_management.precise_save_recovery_required'), 'error');
+          showNotification(
+            recoveryError instanceof ConfigDraftConflictError
+              ? t('config_management.concurrent_list_conflict', {
+                  path: recoveryError.path.join('.'),
+                })
+              : t('config_management.precise_save_recovery_required'),
+            'error'
+          );
         }
         if (!operation.isCurrent()) return;
         try {
@@ -368,7 +381,12 @@ export function useConfigDocument({
       setDiffModalOpen(true);
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message = err instanceof Error ? err.message : '';
+      const message =
+        err instanceof ConfigDraftConflictError
+          ? t('config_management.concurrent_list_conflict', { path: err.path.join('.') })
+          : err instanceof Error
+            ? err.message
+            : '';
       showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
     } finally {
       if (operation.isCurrent()) setSaving(false);

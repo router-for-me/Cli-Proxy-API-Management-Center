@@ -17,6 +17,7 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -133,6 +134,8 @@ const PAYLOAD_DIRTY_FIELDS = [
   'payloadOverrideRawRules',
   'payloadFilterRules',
 ] as const;
+
+const PAYLOAD_SECTIONS = ['default', 'default-raw', 'override', 'override-raw', 'filter'] as const;
 
 function hasPayloadDirtyFields(dirtyFields: Set<string>): boolean {
   return PAYLOAD_DIRTY_FIELDS.some((field) => dirtyFields.has(field));
@@ -1102,7 +1105,7 @@ type VisualConfigState = {
   baselineValues: VisualConfigValues;
   dirtyFields: Set<string>;
   visualParseError: string | null;
-  rebasedPayload: { yaml: string; values: VisualConfigValues } | null;
+  rebasedPayload: { yaml: string; serverYaml: string; values: VisualConfigValues } | null;
 };
 
 type VisualConfigAction =
@@ -1115,6 +1118,7 @@ type VisualConfigAction =
       baseline: VisualConfigValues;
       draft: VisualConfigValues;
       draftYaml: string;
+      serverYaml: string;
     }
   | {
       type: 'load_error';
@@ -1325,7 +1329,11 @@ function visualConfigReducer(
       return {
         visualValues: values,
         baselineValues: action.baseline,
-        rebasedPayload: { yaml: action.draftYaml, values: deepClone(values) },
+        rebasedPayload: {
+          yaml: action.draftYaml,
+          serverYaml: action.serverYaml,
+          values: deepClone(values),
+        },
         dirtyFields: getNextDirtyFields(new Set(), values, values, action.baseline),
         visualParseError: null,
       };
@@ -1548,7 +1556,7 @@ export function useVisualConfig() {
     try {
       const baseline = parseVisualValuesFromYaml(serverYaml);
       const draft = parseVisualValuesFromYaml(draftYaml);
-      dispatch({ type: 'rebase_success', baseline, draft, draftYaml });
+      dispatch({ type: 'rebase_success', baseline, draft, draftYaml, serverYaml });
       return { ok: true as const };
     } catch (error: unknown) {
       // A failed readback is not a parse failure of the user's retained draft. Keep
@@ -1559,7 +1567,7 @@ export function useVisualConfig() {
   }, []);
 
   const applyVisualChangesToYaml = useCallback(
-    (currentYaml: string): string => {
+    (currentYaml: string, target: 'server' | 'draft' = 'server'): string => {
       try {
         const doc = parseDocument(currentYaml);
         if (doc.errors.length > 0) return currentYaml;
@@ -1573,10 +1581,9 @@ export function useVisualConfig() {
         const payloadBaseline = rebasedPayload?.values ?? baselineValues;
         if (rebasedPayload && hasPayloadDirtyFields(dirtyFields)) {
           const draftDoc = parseDocument(rebasedPayload.yaml);
-          const sections = ['default', 'default-raw', 'override', 'override-raw', 'filter'];
           PAYLOAD_DIRTY_FIELDS.forEach((field, index) => {
             if (!dirtyFields.has(field)) return;
-            const path = ['requests', 'payload', sections[index]];
+            const path = ['requests', 'payload', PAYLOAD_SECTIONS[index]];
             const node = draftDoc.getIn(path, true);
             if (node) {
               ensureMapInDoc(doc, ['requests']);
@@ -2040,8 +2047,18 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['requests', 'payload']);
         }
 
-        return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
-      } catch {
+        const draftYaml = doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
+        if (target === 'server' && rebasedPayload && hasPayloadDirtyFields(dirtyFields)) {
+          // The retained AST preserves local lineage, but must never silently replace a
+          // list another client changed after recovery (including unknown model fields).
+          const paths = PAYLOAD_DIRTY_FIELDS.flatMap((field, index) =>
+            dirtyFields.has(field) ? [['requests', 'payload', PAYLOAD_SECTIONS[index]]] : []
+          );
+          assertConfigListsUnchanged(rebasedPayload.serverYaml, draftYaml, currentYaml, paths);
+        }
+        return draftYaml;
+      } catch (error) {
+        if (error instanceof ConfigDraftConflictError) throw error;
         return currentYaml;
       }
     },

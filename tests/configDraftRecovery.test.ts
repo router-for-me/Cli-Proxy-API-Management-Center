@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { parse } from 'yaml';
-import { rebaseConfigDraft } from '../src/services/api/configPatch';
+import { ConfigDraftConflictError, rebaseConfigDraft } from '../src/services/api/configPatch';
 
 describe('confirmed config draft recovery', () => {
   test('retains pending changes without resetting untouched concurrent values', () => {
@@ -28,6 +28,24 @@ describe('confirmed config draft recovery', () => {
     const draft =
       'routing: {strategy: round-robin}\nplugins: {configs: {fixture: {}}}\noptional: null\n';
     expect(parse(rebaseConfigDraft(before, draft, before))).toEqual(parse(draft));
+  });
+
+  test('rejects concurrent changes to a list before advancing the recovery baseline', () => {
+    const before =
+      'requests: {payload: {default: [{models: [{name: a}], params: {temperature: 1}}]}}';
+    const draft = before.replace('temperature: 1', 'temperature: 2');
+    const latest = before.replace('name: a', 'name: b');
+    expect(() => rebaseConfigDraft(before, draft, latest)).toThrow(ConfigDraftConflictError);
+    // Deleting a list must not discard concurrent additions either.
+    expect(() => rebaseConfigDraft(before, 'server: {}', latest)).toThrow(ConfigDraftConflictError);
+    expect(parse(rebaseConfigDraft(before, draft, draft))).toEqual(parse(draft));
+  });
+
+  test('list comparisons ignore formatting and mapping key order', () => {
+    const before = 'access: {api-keys: [a, b]}';
+    const draft = 'access: {api-keys: [b]}';
+    const latest = '# formatting only\naccess:\n  api-keys:\n    - a\n    - b\n';
+    expect(parse(rebaseConfigDraft(before, draft, latest))).toEqual(parse(draft));
   });
 
   test('rejects malformed readback without producing a new baseline', () => {

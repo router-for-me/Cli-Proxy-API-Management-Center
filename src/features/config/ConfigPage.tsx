@@ -157,7 +157,8 @@ export function ConfigPage() {
 
       if (nextMode === 'source') {
         if (visualDirty) {
-          const nextContent = applyVisualChangesToYaml(doc.content);
+          // content may be an earlier local source preview, not a server readback.
+          const nextContent = applyVisualChangesToYaml(doc.content, 'draft');
           if (nextContent !== doc.content) {
             doc.syncContentFromVisual(nextContent);
           }

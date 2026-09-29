@@ -3,7 +3,11 @@ import { createElement, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parse, stringify } from 'yaml';
 import { useVisualConfig } from '../src/hooks/useVisualConfig';
-import { buildConfigPatch, rebaseConfigDraft } from '../src/services/api/configPatch';
+import {
+  buildConfigPatch,
+  ConfigDraftConflictError,
+  rebaseConfigDraft,
+} from '../src/services/api/configPatch';
 
 type Visual = ReturnType<typeof useVisualConfig>;
 
@@ -194,6 +198,86 @@ describe('visual config rebase', () => {
         expect(parse(v.applyVisualChangesToYaml(readback)).requests.payload.default).toEqual([
           rule('b', 2),
         ]);
+      }
+    );
+  });
+
+  for (const section of ['default', 'default-raw', 'override', 'override-raw', 'filter']) {
+    test(`${section}: a retry blocks concurrent list changes instead of replacing the snapshot`, () => {
+      const entry = (value: number) => ({
+        ...rule('b', 1),
+        params:
+          section === 'filter'
+            ? [value === 1 ? 'secret' : 'other-secret']
+            : { temperature: section.endsWith('-raw') ? String(value) : value },
+      });
+      const saved = stringify({ requests: { payload: { [section]: [entry(1)] } } });
+      const draft = stringify({ requests: { payload: { [section]: [entry(2)] } } });
+      const concurrent = entry(1);
+      concurrent.models[0].match = [{ count: 99 }];
+      const latest = stringify({ requests: { payload: { [section]: [concurrent] } } });
+      runSteps(
+        (v) => {
+          v.rebaseVisualValuesFromYaml(saved, draft);
+        },
+        (v) => {
+          expect(() => v.applyVisualChangesToYaml(latest)).toThrow(ConfigDraftConflictError);
+          // Repeated previews/confirmations cannot silently accept the stale snapshot.
+          expect(() => v.applyVisualChangesToYaml(latest)).toThrow(ConfigDraftConflictError);
+          expect(v.visualDirty).toBe(true);
+          expect(parse(v.applyVisualChangesToYaml(saved))).toEqual(parse(draft));
+          // A lost response from an already-applied write is not a conflict.
+          expect(parse(v.applyVisualChangesToYaml(draft))).toEqual(parse(draft));
+        }
+      );
+    });
+  }
+
+  test('retry adopts concurrent unrelated lists, but detects unknown fields and list deletion', () => {
+    const saved = stringify({ requests: { payload: { default: [rule('a', 1)] } } });
+    const draft = stringify({ requests: { payload: { default: [rule('a', 2)] } } });
+    const unrelated = `${saved}access: {api-keys: [fixture-only]}\n`;
+    const changed = parse(saved);
+    changed.requests.payload.default[0]['future-rule'] = 'concurrent';
+    runSteps(
+      (v) => {
+        v.rebaseVisualValuesFromYaml(saved, draft);
+      },
+      (v) => {
+        expect(parse(v.applyVisualChangesToYaml(unrelated)).access).toEqual({
+          'api-keys': ['fixture-only'],
+        });
+        expect(() => v.applyVisualChangesToYaml(stringify(changed))).toThrow(
+          ConfigDraftConflictError
+        );
+        expect(() => v.applyVisualChangesToYaml('server: {}')).toThrow(ConfigDraftConflictError);
+      }
+    );
+  });
+
+  test('local source previews are not treated as concurrent server snapshots', () => {
+    const saved = stringify({ requests: { payload: { default: [rule('a', 1)] } } });
+    const draft = stringify({ requests: { payload: { default: [rule('a', 2)] } } });
+    let sourcePreview = '';
+    runSteps(
+      (v) => {
+        v.rebaseVisualValuesFromYaml(saved, draft);
+      },
+      (v) => {
+        sourcePreview = v.applyVisualChangesToYaml(saved, 'draft');
+        const entry = v.visualValues.payloadDefaultRules[0];
+        v.setVisualValues({
+          payloadDefaultRules: [
+            { ...entry, params: entry.params.map((param) => ({ ...param, value: '3' })) },
+          ],
+        });
+      },
+      (v) => {
+        const nextPreview = v.applyVisualChangesToYaml(sourcePreview, 'draft');
+        expect(parse(nextPreview).requests.payload.default[0].params.temperature).toBe(3);
+        expect(parse(v.applyVisualChangesToYaml(saved))).toEqual(parse(nextPreview));
+        // The same document from a real server must still trigger a conflict.
+        expect(() => v.applyVisualChangesToYaml(sourcePreview)).toThrow(ConfigDraftConflictError);
       }
     );
   });

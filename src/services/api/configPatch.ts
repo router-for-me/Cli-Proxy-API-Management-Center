@@ -129,6 +129,57 @@ export function buildConfigPatch(beforeYaml: string, afterYaml: string): ConfigP
   return { patch, deletions, ...(emptyMaps.length ? { emptyMaps } : {}) };
 }
 
+export class ConfigDraftConflictError extends Error {
+  constructor(readonly path: readonly string[]) {
+    super(`Configuration list changed concurrently: ${path.join('.')}`);
+    this.name = 'ConfigDraftConflictError';
+  }
+}
+
+/** Lists have no stable backend IDs: refuse an ambiguous three-way replacement. */
+export function assertConfigListsUnchanged(
+  beforeYaml: string,
+  draftYaml: string,
+  latestYaml: string,
+  paths?: readonly (readonly string[])[]
+): void {
+  const before = parseConfig(beforeYaml);
+  const draft = parseConfig(draftYaml);
+  const latest = parseConfig(latestYaml);
+  const readPath = (root: unknown, path: readonly string[]): unknown =>
+    path.reduce<unknown>(
+      (value, key) => (isMap(value) && hasOwn(value, key) ? value[key] : undefined),
+      root
+    );
+  const check = (old: unknown, desired: unknown, current: unknown, path: readonly string[]) => {
+    if (Array.isArray(old) || Array.isArray(desired)) {
+      if (!equal(current, old) && !equal(current, desired)) {
+        throw new ConfigDraftConflictError(path);
+      }
+      return;
+    }
+    const keys = new Set([
+      ...Object.keys(isMap(old) ? old : {}),
+      ...Object.keys(isMap(desired) ? desired : {}),
+    ]);
+    for (const key of keys) {
+      const nextPath = [...path, key];
+      const oldValue = readPath(before, nextPath);
+      const desiredValue = readPath(draft, nextPath);
+      if (!equal(oldValue, desiredValue)) {
+        check(oldValue, desiredValue, readPath(latest, nextPath), nextPath);
+      }
+    }
+  };
+  if (paths) {
+    for (const path of paths) {
+      check(readPath(before, path), readPath(draft, path), readPath(latest, path), path);
+    }
+  } else {
+    check(before, draft, latest, []);
+  }
+}
+
 /** Replay the confirmed wire-level intent, not positional editor IDs, after a partial save. */
 export function rebaseConfigDraft(
   beforeYaml: string,
@@ -136,8 +187,8 @@ export function rebaseConfigDraft(
   latestYaml: string
 ): string {
   const plan = buildConfigPatch(beforeYaml, draftYaml);
-  // Validate readback before it can become the editor's new baseline.
-  parseConfig(latestYaml);
+  // Validate readback and reject ambiguous list mutations before advancing the baseline.
+  assertConfigListsUnchanged(beforeYaml, draftYaml, latestYaml);
   const doc = parseDocument(latestYaml);
 
   const ensureParents = (path: string[]) => {
