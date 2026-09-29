@@ -43,6 +43,7 @@ import { MANAGEMENT_API_PREFIX } from '@/utils/constants';
 import { HTTP_METHODS, STATUS_GROUPS, type LogState } from './model/logTypes';
 import { createLogRequestGuard } from './model/logRequests';
 import { errorLogViewerReducer } from './model/errorLogViewer';
+import { shouldExitLogFullscreen } from './model/logFullscreen';
 import { useLogFilters } from './hooks/useLogFilters';
 import { isNearBottom, useLogScroller } from './hooks/useLogScroller';
 import styles from './LogsPage.module.scss';
@@ -383,8 +384,7 @@ export function LogsPage() {
     lockScroll();
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (document.querySelector('.modal-overlay')) return;
+      if (!shouldExitLogFullscreen(event, !!document.querySelector('.modal-overlay'))) return;
       setFullscreenLogs(false);
     };
 
