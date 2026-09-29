@@ -1,4 +1,4 @@
-import { parseDocument } from 'yaml';
+import { isMap as isYamlMap, parseDocument } from 'yaml';
 import { apiClient } from './client';
 
 export interface ConfigPatchPlan {
@@ -127,6 +127,54 @@ export function buildConfigPatch(beforeYaml: string, afterYaml: string): ConfigP
   }
   const patch = diff(before, after, []);
   return { patch, deletions, ...(emptyMaps.length ? { emptyMaps } : {}) };
+}
+
+/** Replay the confirmed wire-level intent, not positional editor IDs, after a partial save. */
+export function rebaseConfigDraft(
+  beforeYaml: string,
+  draftYaml: string,
+  latestYaml: string
+): string {
+  const plan = buildConfigPatch(beforeYaml, draftYaml);
+  // Validate readback before it can become the editor's new baseline.
+  parseConfig(latestYaml);
+  const doc = parseDocument(latestYaml);
+
+  const ensureParents = (path: string[]) => {
+    for (let length = 1; length < path.length; length += 1) {
+      const parent = path.slice(0, length);
+      if (!isYamlMap(doc.getIn(parent, true))) doc.setIn(parent, doc.createNode({}));
+    }
+  };
+  const merge = (patch: Record<string, unknown>, parent: string[]) => {
+    for (const [key, value] of Object.entries(patch)) {
+      const path = [...parent, key];
+      ensureParents(path);
+      if (isMap(value)) {
+        if (!isYamlMap(doc.getIn(path, true))) doc.setIn(path, doc.createNode({}));
+        merge(value, path);
+      } else {
+        doc.setIn(path, doc.createNode(value));
+      }
+    }
+  };
+  merge(plan.patch, []);
+  for (const path of plan.emptyMaps ?? []) {
+    ensureParents(path);
+    doc.setIn(path, doc.createNode({}));
+  }
+  for (const path of plan.deletions) {
+    if (!doc.hasIn(path)) continue;
+    doc.deleteIn(path);
+    // Match the backend's empty-ancestor pruning, without deleting concurrent siblings.
+    for (let length = path.length - 1; length > 0; length -= 1) {
+      const parent = path.slice(0, length);
+      const node = doc.getIn(parent, true);
+      if (!isYamlMap(node) || node.items.length > 0) break;
+      doc.deleteIn(parent);
+    }
+  }
+  return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
 }
 
 export function hasConfigPatchChanges(plan: ConfigPatchPlan): boolean {

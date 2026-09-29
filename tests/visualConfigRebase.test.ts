@@ -3,7 +3,7 @@ import { createElement, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parse, stringify } from 'yaml';
 import { useVisualConfig } from '../src/hooks/useVisualConfig';
-import { buildConfigPatch } from '../src/services/api/configPatch';
+import { buildConfigPatch, rebaseConfigDraft } from '../src/services/api/configPatch';
 
 type Visual = ReturnType<typeof useVisualConfig>;
 
@@ -111,6 +111,92 @@ describe('visual config rebase', () => {
       );
     });
   }
+
+  for (const [section, field] of [
+    ['default', 'payloadDefaultRules'],
+    ['default-raw', 'payloadDefaultRawRules'],
+    ['override', 'payloadOverrideRules'],
+    ['override-raw', 'payloadOverrideRawRules'],
+    ['filter', 'payloadFilterRules'],
+  ] as const) {
+    test(`${section}: recovery does not replay old list indexes after a successful PATCH`, () => {
+      const rules = [rule('a', 1), rule('b', 2), rule('c', 3)].map((entry) => ({
+        ...entry,
+        params:
+          section === 'filter'
+            ? ['secret']
+            : {
+                temperature: section.endsWith('-raw')
+                  ? String(entry.params.temperature)
+                  : entry.params.temperature,
+              },
+      }));
+      const original = stringify({
+        requests: { payload: { [section]: rules } },
+        routing: { retry: { 'request-retry': 3 } },
+      });
+      let confirmed = '';
+      let readback = '';
+      runSteps(
+        (v) => {
+          v.loadVisualValuesFromYaml(original);
+        },
+        (v) => {
+          // Delete A and reorder the survivors. Their original indexes no longer exist.
+          const entries = v.visualValues[field];
+          v.setVisualValues({ [field]: [entries[2], entries[1]], requestRetry: '' });
+        },
+        (v) => {
+          confirmed = v.applyVisualChangesToYaml(original);
+          const saved = parse(confirmed);
+          // PATCH applied, DELETE failed; another client also changed an unrelated value.
+          saved.routing = { retry: { 'request-retry': 3 } };
+          saved.observability = { logs: { debug: true } };
+          readback = stringify(saved);
+          const recovered = rebaseConfigDraft(original, confirmed, readback);
+          expect(parse(recovered).requests.payload[section]).toEqual([rules[2], rules[1]]);
+          expect(v.rebaseVisualValuesFromYaml(readback, recovered)).toEqual({ ok: true });
+        },
+        (v) => {
+          expect([...v.visualDirtyFields]).toEqual(['requestRetry']);
+          expect(v.visualValues.debug).toBe(true);
+          expect(buildConfigPatch(readback, v.applyVisualChangesToYaml(readback))).toEqual({
+            patch: {},
+            deletions: [['routing', 'retry', 'request-retry']],
+          });
+        }
+      );
+    });
+  }
+
+  test('recovery retains unapplied list intent and adopts concurrent unrelated fields', () => {
+    const original = stringify({
+      requests: { payload: { default: [rule('a', 1), rule('b', 2)] } },
+    });
+    let confirmed = '';
+    const readback = `${original}server: {port: 9000}\n`;
+    runSteps(
+      (v) => {
+        v.loadVisualValuesFromYaml(original);
+      },
+      (v) => {
+        v.setVisualValues({ payloadDefaultRules: [v.visualValues.payloadDefaultRules[1]] });
+      },
+      (v) => {
+        confirmed = v.applyVisualChangesToYaml(original);
+        const recovered = rebaseConfigDraft(original, confirmed, readback);
+        expect(parse(recovered).requests.payload.default).toEqual([rule('b', 2)]);
+        v.rebaseVisualValuesFromYaml(readback, recovered);
+      },
+      (v) => {
+        expect(v.visualValues.port).toBe('9000');
+        expect([...v.visualDirtyFields]).toEqual(['payloadDefaultRules']);
+        expect(parse(v.applyVisualChangesToYaml(readback)).requests.payload.default).toEqual([
+          rule('b', 2),
+        ]);
+      }
+    );
+  });
 
   test('subsequent nested edits use the rebased draft IDs, not old positional nodes', () => {
     const saved = stringify({ requests: { payload: { default: [rule('a', 1), rule('b', 2)] } } });

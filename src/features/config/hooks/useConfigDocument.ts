@@ -10,6 +10,7 @@ import {
   applyConfigPatch,
   buildConfigPatch,
   hasConfigPatchChanges,
+  rebaseConfigDraft,
   type ConfigPatchPlan,
 } from '@/services/api/configPatch';
 import type { ConfigEditorMode } from '../constants';
@@ -145,9 +146,9 @@ export function useConfigDocument({
   // dirty baseline. Retain the intended edits while also adopting untouched concurrent values.
   const recoverVisualDraft = useCallback(
     (latestYaml: string) => {
-      const draftYaml = applyVisualChangesToYaml(latestYaml);
-      // Do not advance the baseline from an empty/malformed or non-JSON server response.
-      buildConfigPatch(latestYaml, draftYaml);
+      // The server may already contain the list mutations. Replaying old visual IDs
+      // against that new order would apply deletions/reorders twice and lose conditions.
+      const draftYaml = rebaseConfigDraft(previewServerYaml, mergedYaml, latestYaml);
       const result = rebaseVisualValuesFromYaml(latestYaml, draftYaml);
       if (!result.ok) throw new Error(result.error);
       setContent(latestYaml);
@@ -157,7 +158,7 @@ export function useConfigDocument({
       setRecoveryRequired(false);
       return draftYaml;
     },
-    [applyVisualChangesToYaml, rebaseVisualValuesFromYaml]
+    [mergedYaml, previewServerYaml, rebaseVisualValuesFromYaml]
   );
 
   const handleConfirmSave = useCallback(async () => {
