@@ -477,7 +477,7 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
-  if (provider === 'antigravity') {
+  if (provider === 'antigravity' || provider === 'plugin') {
     // Buckets live one level down, inside groups, and the groups are a display
     // concern the chart doesn't care about — flatten them.
     const buckets = ((quota as { groups?: { buckets?: AntigravityBucketLike[] }[] }).groups ?? [])
