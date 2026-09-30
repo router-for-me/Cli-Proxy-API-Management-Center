@@ -589,6 +589,8 @@
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",
     "empty_desc": "上傳 Kimi 驗證檔案後即可查看配額。",
+    "domain_unavailable": "無法讀取 Kimi 憑證的網域，需要可下載且有效的驗證檔案。",
+    "stale_request": "連線或憑證已變更，請重試。",
     "idle": "點擊此處重新整理配額",
     "loading": "正在載入配額...",
     "load_failed": "配額取得失敗：{{message}}",

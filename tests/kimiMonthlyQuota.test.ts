@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { KIMI_CONFIG } from '@/features/quota/providers/kimi/data';
-import { apiCallApi } from '@/services/api';
+import { apiCallApi, authFilesApi } from '@/services/api';
 import { KIMI_AI_USAGE_URL, KIMI_USAGE_URL, buildKimiQuotaRows } from '@/utils/quota';
 import type { AuthFileItem } from '@/types';
 
@@ -43,6 +43,7 @@ describe('Kimi International auth files', () => {
 
   test('kimi-ai credentials query the kimi.ai host', async () => {
     const urls: string[] = [];
+    const download = spyOn(authFilesApi, 'downloadText').mockResolvedValue('{}');
     const request = apiCallApi.request;
     apiCallApi.request = (async ({ url }: { url: string }) => {
       urls.push(url);
@@ -57,6 +58,7 @@ describe('Kimi International auth files', () => {
       }
     } finally {
       apiCallApi.request = request;
+      download.mockRestore();
     }
     expect(urls).toEqual([KIMI_USAGE_URL, KIMI_AI_USAGE_URL, KIMI_AI_USAGE_URL]);
   });

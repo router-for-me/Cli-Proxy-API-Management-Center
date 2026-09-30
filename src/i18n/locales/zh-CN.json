@@ -589,6 +589,8 @@
     "title": "Kimi 额度",
     "empty_title": "暂无 Kimi 认证",
     "empty_desc": "上传 Kimi 认证文件后即可查看额度。",
+    "domain_unavailable": "无法读取 Kimi 凭据的域名，需要可下载且有效的认证文件。",
+    "stale_request": "连接或凭据已变更，请重试。",
     "idle": "点击此处刷新额度",
     "loading": "正在加载额度...",
     "load_failed": "额度获取失败：{{message}}",
