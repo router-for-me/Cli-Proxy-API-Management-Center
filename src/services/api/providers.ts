@@ -63,14 +63,21 @@ const serializeRuntimePolicy = (config: ProviderRuntimePolicy, supportsErrors = 
 };
 
 /** Restore parent inheritance without turning untouched nulls into persisted defaults. */
-const applyPolicyInheritance = (
+const applyPolicyIntent = (
   next: Record<string, unknown>,
   raw: Record<string, unknown>,
-  config: ProviderRuntimePolicy
+  config: ProviderRuntimePolicy,
+  after: Record<string, unknown>
 ) => {
-  for (const field of config.inheritFields ?? []) {
-    if (raw[field] === null) next[field] = null;
-    else delete next[field];
+  if (!config.inheritFields) return;
+  for (const field of ['disable-cooling', 'request-retry', 'request-scoped-errors'] as const) {
+    if (config.inheritFields.includes(field)) {
+      if (raw[field] === null) next[field] = null;
+      else delete next[field];
+    } else if (after[field] !== undefined && raw[field] == null) {
+      // An explicit override equal to the inherited effective value is still a change.
+      next[field] = after[field];
+    }
   }
 };
 
@@ -439,7 +446,7 @@ const updateKey = async (
   const rawModels = keys[keyIndex].models ?? group.models;
   const rawKey = keys[keyIndex];
   keys[keyIndex] = applyProviderChanges(rawKey, before, after, group);
-  applyPolicyInheritance(keys[keyIndex], rawKey, config);
+  applyPolicyIntent(keys[keyIndex], rawKey, config, after);
   preserveModelMetadata(
     keys[keyIndex],
     rawModels,
@@ -538,7 +545,7 @@ export const providersApi = {
     const before = serializeOpenAIGroup(original);
     const after = serializeOpenAIGroup(config);
     const next = applyProviderChanges(groups[index], before, after);
-    applyPolicyInheritance(next, groups[index], config);
+    applyPolicyIntent(next, groups[index], config, after);
     preserveModelMetadata(
       next,
       groups[index].models,

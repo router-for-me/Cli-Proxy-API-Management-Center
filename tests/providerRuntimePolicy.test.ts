@@ -152,6 +152,57 @@ describe('provider runtime policies', () => {
     expect(stored()).not.toHaveProperty('disable-cooling');
     expect(keyOf(stored()).weight).toBe(4);
   });
+  test.each([undefined, null])(
+    'explicit policies equal to inherited values still create overrides (%s)',
+    async (value) => {
+      const rules = [{ status: 429, match: ['quota'], action: 'stop' }];
+      const raw = {
+        'api-key': 'fixture-key',
+        ...(value === null
+          ? { 'request-retry': null, 'disable-cooling': null, 'request-scoped-errors': null }
+          : {}),
+      };
+      const stored = backend('codex', {
+        name: 'fixture',
+        'request-retry': 0,
+        'disable-cooling': false,
+        'request-scoped-errors': rules,
+        keys: [raw],
+      });
+      const config = row(stored());
+      await providersApi.updateCodexConfig(config.apiKey, undefined, {
+        ...config,
+        ...buildRuntimePolicy({
+          ...readRuntimePolicy(config),
+          cooling: 'enabled',
+          retry: '0',
+          errorsMode: 'override',
+        }),
+      });
+      expect(keyOf(stored())).toEqual({
+        'api-key': 'fixture-key',
+        'request-retry': 0,
+        'disable-cooling': false,
+        'request-scoped-errors': rules,
+      });
+    }
+  );
+  test('existing action casing and whitespace remain editable and preserved', async () => {
+    const rules = [{ status: 429, match: ['quota'], action: ' STOP ' }];
+    const stored = backend('claude', {
+      name: 'fixture',
+      keys: [{ 'api-key': 'fixture-key', 'request-scoped-errors': rules }],
+    });
+    const config = row(stored());
+    const draft = readRuntimePolicy(config);
+    expect(validateRuntimePolicy(draft)).toBeNull();
+    await providersApi.updateClaudeConfig(config.apiKey, undefined, {
+      ...config,
+      ...buildRuntimePolicy(draft),
+      weight: 5,
+    });
+    expect(keyOf(stored())['request-scoped-errors']).toEqual(rules);
+  });
   test('Vertex excludes error rules while allowing cooling and negative global retry', () => {
     const policy = buildRuntimePolicy(
       {

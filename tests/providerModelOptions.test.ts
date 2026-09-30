@@ -111,6 +111,27 @@ describe('provider model options', () => {
     ).toMatchObject({ displayName: 'Catalog', maxContextLength: undefined });
   });
 
+  test('preserves untouched empty modalities and explicit null thinking budgets', () => {
+    const entry = draft({
+      name: 'model',
+      inputModalities: [],
+      outputModalities: [],
+      thinking: { min: null, max: null, levels: ['high'] },
+    });
+    expect(validateModelOptions([entry])).toBeNull();
+    expect(buildModelOptions(entry)).toMatchObject({
+      inputModalities: [],
+      outputModalities: [],
+      thinking: { min: null, max: null, levels: ['high'] },
+    });
+    expect(
+      buildModelOptions({ ...entry, inputModalitiesText: '', inputModalitiesTouched: true })
+        .inputModalities
+    ).toBeUndefined();
+    expect(
+      buildModelOptions({ ...entry, thinkingMin: '0', thinkingBudgetTouched: true }).thinking
+    ).toEqual({ min: 0, levels: ['high'] });
+  });
   test('validates safe non-negative integers and ranges, with zero maximum unspecified', () => {
     for (const value of ['-1', '1.5', 'Infinity', '9007199254740992', '1e3']) {
       expect(validateModelOptions([{ name: 'model', maxContextLength: value }])).toBe(

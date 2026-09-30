@@ -45,6 +45,8 @@ export function ModelAdvancedFields({
         onChange={(event) =>
           onUpdate({
             [key]: event.target.value,
+            ...(key === 'inputModalitiesText' ? { inputModalitiesTouched: true } : {}),
+            ...(key === 'outputModalitiesText' ? { outputModalitiesTouched: true } : {}),
             ...(budget ? { thinkingBudgetTouched: true } : {}),
           })
         }

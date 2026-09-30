@@ -78,7 +78,10 @@ export function validateRuntimePolicy(
         return 'providersPage.runtimePolicy.invalidMatches';
       }
     }
-    if ('action' in rule && (typeof rule.action !== 'string' || !actions.includes(rule.action))) {
+    if (
+      'action' in rule &&
+      (typeof rule.action !== 'string' || !actions.includes(rule.action.trim().toLowerCase()))
+    ) {
       return 'providersPage.runtimePolicy.invalidAction';
     }
   }

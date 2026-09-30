@@ -10,6 +10,10 @@ export interface ModelOptionsInput {
   supportConfigurationUpdate?: boolean;
   inputModalitiesText?: string;
   outputModalitiesText?: string;
+  originalInputModalities?: string[];
+  originalOutputModalities?: string[];
+  inputModalitiesTouched?: boolean;
+  outputModalitiesTouched?: boolean;
   useMaxCompletionTokens?: boolean;
   thinkingEnabled?: boolean;
   thinkingMin?: string;
@@ -31,6 +35,8 @@ export function readModelOptions(model: ModelAlias): ModelOptionsInput & {
     supportConfigurationUpdate: model.supportConfigurationUpdate,
     inputModalitiesText: model.inputModalities?.join(', '),
     outputModalitiesText: model.outputModalities?.join(', '),
+    originalInputModalities: model.inputModalities,
+    originalOutputModalities: model.outputModalities,
     useMaxCompletionTokens: model.useMaxCompletionTokens,
     thinkingEnabled: thinking !== undefined,
     thinkingMin: typeof thinking?.min === 'number' ? String(thinking.min) : undefined,
@@ -98,8 +104,14 @@ export function buildModelOptions(entry: ModelEntryInput): Partial<ModelAlias> {
     forceMapping: entry.forceMapping,
     isCompat: entry.isCompat,
     supportConfigurationUpdate: entry.supportConfigurationUpdate,
-    inputModalities: modalities(entry.inputModalitiesText),
-    outputModalities: modalities(entry.outputModalitiesText),
+    inputModalities:
+      !entry.inputModalitiesTouched && entry.originalInputModalities !== undefined
+        ? entry.originalInputModalities
+        : modalities(entry.inputModalitiesText),
+    outputModalities:
+      !entry.outputModalitiesTouched && entry.originalOutputModalities !== undefined
+        ? entry.originalOutputModalities
+        : modalities(entry.outputModalitiesText),
     useMaxCompletionTokens: entry.useMaxCompletionTokens,
     thinking,
   };
@@ -131,8 +143,7 @@ export function validateModelOptions(entries: ModelEntryInput[]): string | null 
     if (
       [min, max].some(
         (value) =>
-          value !== undefined &&
-          (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+          value != null && (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
       )
     )
       return 'providersPage.modelOptions.invalidBudget';
