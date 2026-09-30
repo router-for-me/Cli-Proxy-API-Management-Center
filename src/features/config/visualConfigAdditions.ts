@@ -6,6 +6,7 @@ import type {
   VisualConfigValidationErrors,
 } from '@/types/visualConfig';
 import { assertConfigListsUnchanged } from '@/services/api/configPatch';
+import { readConfigBoolean } from './visualConfigBoolean';
 
 // Source: backend config_v8.go/config_types.go; provider paths are OAuth-only.
 export const ADDITION_FIELDS = [
@@ -147,11 +148,7 @@ export function readVisualAdditions(doc: Doc) {
     const raw = doc.getIn(path);
     Object.assign(values, {
       [key]:
-        kind === 'boolean'
-          ? typeof raw === 'boolean'
-            ? raw
-            : DEFAULT_VISUAL_VALUES[key]
-          : String(raw ?? ''),
+        kind === 'boolean' ? readConfigBoolean(raw, DEFAULT_VISUAL_VALUES[key]) : String(raw ?? ''),
     });
   }
   const raw = doc.getIn(ICE_PATH, true);

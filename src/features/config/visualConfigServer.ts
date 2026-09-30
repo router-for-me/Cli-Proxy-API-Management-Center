@@ -2,6 +2,7 @@ import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 import type { VisualConfigValues, VisualConfigValidationErrors } from '@/types/visualConfig';
 import { assertConfigListsUnchanged } from '@/services/api/configPatch';
+import { readConfigBoolean } from './visualConfigBoolean';
 
 // Backend: config_v8.go, trusted_proxies.go and discovery/service.go.
 export const SERVER_FIELDS = [
@@ -45,9 +46,11 @@ export function readVisualServer(doc: Doc) {
                 )
               )
             : []
-          : typeof raw === kind
-            ? raw
-            : DEFAULT_VISUAL_VALUES[key],
+          : kind === 'boolean'
+            ? readConfigBoolean(raw, DEFAULT_VISUAL_VALUES[key])
+            : typeof raw === 'string'
+              ? raw
+              : DEFAULT_VISUAL_VALUES[key],
     });
   }
   return values;
