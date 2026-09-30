@@ -1043,6 +1043,46 @@
       "no_changes": "No changes detected"
     },
     "visual": {
+      "serverExtras": {
+        "trustedProxies": {
+          "label": "Trusted proxies",
+          "hint": "IP addresses or CIDRs; empty means forwarded headers are not trusted. Trusting all-address ranges risks client IP spoofing. Requires a backend restart."
+        },
+        "discoveryEnabled": {
+          "label": "Enable discovery",
+          "hint": "Broadcast via mDNS / DNS-SD on the LAN. Off by default; changes apply without a restart."
+        },
+        "discoveryServiceName": {
+          "label": "Service name prefix",
+          "hint": "The backend appends a short ID. Empty uses CPA-<ShortID>."
+        },
+        "discoveryServiceType": {
+          "label": "Service type",
+          "hint": "Empty uses _ai-gateway._tcp."
+        },
+        "discoverySubtypes": {
+          "label": "Protocol subtypes",
+          "hint": "Empty uses the five default protocols. Missing leading _ is added; invalid entries are ignored."
+        },
+        "discoveryInterfacesInclude": {
+          "label": "Include interfaces",
+          "hint": "Empty auto-selects physical LAN interfaces. Use names or prefix patterns ending in *."
+        },
+        "discoveryInterfacesExclude": {
+          "label": "Exclude interfaces",
+          "hint": "Use names or prefix patterns ending in *. Exclusions take priority over inclusions."
+        },
+        "discoveryAuthRequired": {
+          "label": "Advertise authentication requirement",
+          "hint": "On by default. Broadcast metadata only; does not change actual API authentication."
+        },
+        "discoveryAdvertiseManagement": {
+          "label": "Advertise management service",
+          "hint": "Off by default. Only announces the management service exists; does not change remote access permissions."
+        },
+        "discoveryTitle": "LAN discovery",
+        "discoveryHint": "Requires multicast-capable physical interfaces and a non-loopback listener. Docker usually needs host networking; reachability is not guaranteed."
+      },
       "additions": {
         "oauthTitle": "OAuth provider behavior",
         "oauthHint": "These provider settings apply only to OAuth/file-backed credentials, not API-key credentials.",
@@ -1435,6 +1475,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
+        "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
         "validation_blocked": "Fix validation errors before saving",
         "invalid_duration": "Enter a valid duration, such as 30s or 3h",
         "positive_duration": "Enter a duration greater than zero",
@@ -1702,6 +1744,7 @@
     "clear_login_confirm": "Clear local login data and sign out now?"
   },
   "notification": {
+    "trusted_proxies_restart_required": "Trusted proxy settings saved. Restart the backend to apply them.",
     "region_label": "Notifications",
     "type_success": "Success",
     "type_info": "Information",

@@ -1041,6 +1041,46 @@
       "no_changes": "未检测到变更"
     },
     "visual": {
+      "serverExtras": {
+        "trustedProxies": {
+          "label": "可信代理",
+          "hint": "填写 IP 地址或 CIDR；留空不信任转发头。信任覆盖所有地址的网段有客户端 IP 伪造风险。重启后端后生效。"
+        },
+        "discoveryEnabled": {
+          "label": "启用服务发现",
+          "hint": "通过 mDNS / DNS-SD 在局域网广播。默认关闭，支持热更新。"
+        },
+        "discoveryServiceName": {
+          "label": "服务名称前缀",
+          "hint": "后端自动追加短 ID，留空使用 CPA-<ShortID>。"
+        },
+        "discoveryServiceType": {
+          "label": "服务类型",
+          "hint": "留空使用 _ai-gateway._tcp。"
+        },
+        "discoverySubtypes": {
+          "label": "协议子类型",
+          "hint": "留空使用默认的五种协议。缺少前导 _ 时自动补齐，非法项会被忽略。"
+        },
+        "discoveryInterfacesInclude": {
+          "label": "包含网卡",
+          "hint": "留空自动选择物理局域网网卡。支持网卡名称或以 * 结尾的前缀匹配。"
+        },
+        "discoveryInterfacesExclude": {
+          "label": "排除网卡",
+          "hint": "支持网卡名称或以 * 结尾的前缀匹配。排除规则优先于包含规则。"
+        },
+        "discoveryAuthRequired": {
+          "label": "广播鉴权要求",
+          "hint": "默认开启。仅广播元数据，不改变实际 API 鉴权。"
+        },
+        "discoveryAdvertiseManagement": {
+          "label": "广播管理服务",
+          "hint": "默认关闭。仅广播管理服务存在，不修改远程访问权限。"
+        },
+        "discoveryTitle": "局域网发现",
+        "discoveryHint": "需要支持组播的物理网卡及非回环监听地址。Docker 通常需使用 host 网络；不保证服务可达。"
+      },
       "additions": {
         "oauthTitle": "OAuth 提供商行为",
         "oauthHint": "本组提供商设置仅适用于 OAuth/认证文件凭据，不影响 API Key 凭据。",
@@ -1433,6 +1473,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_trusted_proxies": "每个可信代理必须是有效的 IP 地址或 CIDR。",
+        "invalid_discovery_service_type": "请使用 _名称._tcp 格式：名称为 1–15 位英文字母、数字或连字符，首尾不能是连字符。",
         "validation_blocked": "请先修复表单校验错误再保存",
         "invalid_duration": "请输入有效时长，例如 30s 或 3h",
         "positive_duration": "请输入大于零的时长",
@@ -1700,6 +1742,7 @@
     "clear_login_confirm": "确认清理本地登录信息并退出登录？"
   },
   "notification": {
+    "trusted_proxies_restart_required": "可信代理配置已保存，重启后端后生效。",
     "region_label": "通知",
     "type_success": "成功",
     "type_info": "提示",

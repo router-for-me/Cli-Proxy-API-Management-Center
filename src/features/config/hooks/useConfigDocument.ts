@@ -28,6 +28,24 @@ export function readCommercialModeFromYaml(yamlContent: string): boolean {
   }
 }
 
+export function hasTrustedProxiesChange(beforeYaml: string, afterYaml: string): boolean {
+  const read = (yaml: string): string[] => {
+    try {
+      const parsed: unknown = parseYaml(yaml);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return [];
+      const server: unknown = (parsed as Record<string, unknown>).server;
+      if (!server || typeof server !== 'object' || Array.isArray(server)) return [];
+      const value: unknown = (server as Record<string, unknown>)['trusted-proxies'];
+      return Array.isArray(value)
+        ? [...new Set(value.filter((entry): entry is string => typeof entry === 'string'))].sort()
+        : [];
+    } catch {
+      return [];
+    }
+  };
+  return JSON.stringify(read(beforeYaml)) !== JSON.stringify(read(afterYaml));
+}
+
 function normalizeYamlForVisualDiff(yamlContent: string): string {
   try {
     const doc = parseDocument(yamlContent);
@@ -199,6 +217,7 @@ export function useConfigDocument({
       const previousCommercialMode = readCommercialModeFromYaml(latestServerYaml);
       const nextCommercialMode = readCommercialModeFromYaml(mergedYaml);
       const commercialModeChanged = previousCommercialMode !== nextCommercialMode;
+      const trustedProxiesChanged = hasTrustedProxiesChange(latestServerYaml, mergedYaml);
 
       if (previewMode === 'visual' && !previewPlan) return;
       writeAttempted = true;
@@ -243,6 +262,9 @@ export function useConfigDocument({
       if (commercialModeChanged) {
         showNotification(t('notification.commercial_mode_restart_required'), 'warning');
       }
+      if (trustedProxiesChanged) {
+        showNotification(t('notification.trusted_proxies_restart_required'), 'warning');
+      }
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
       const message =
@@ -266,6 +288,9 @@ export function useConfigDocument({
             readCommercialModeFromYaml(previewServerYaml) !== readCommercialModeFromYaml(latestYaml)
           ) {
             showNotification(t('notification.commercial_mode_restart_required'), 'warning');
+          }
+          if (hasTrustedProxiesChange(previewServerYaml, latestYaml)) {
+            showNotification(t('notification.trusted_proxies_restart_required'), 'warning');
           }
         } catch (recoveryError) {
           if (!operation.isCurrent()) return;

@@ -1067,6 +1067,46 @@
       "no_changes": "未偵測到變更"
     },
     "visual": {
+      "serverExtras": {
+        "trustedProxies": {
+          "label": "可信任代理",
+          "hint": "填寫 IP 位址或 CIDR；留空不信任轉送標頭。信任涵蓋所有位址的網段有用戶端 IP 偽造風險。重新啟動後端後生效。"
+        },
+        "discoveryEnabled": {
+          "label": "啟用服務探索",
+          "hint": "透過 mDNS / DNS-SD 在區域網路廣播。預設關閉，支援熱更新。"
+        },
+        "discoveryServiceName": {
+          "label": "服務名稱前綴",
+          "hint": "後端自動附加短 ID，留空使用 CPA-<ShortID>。"
+        },
+        "discoveryServiceType": {
+          "label": "服務類型",
+          "hint": "留空使用 _ai-gateway._tcp。"
+        },
+        "discoverySubtypes": {
+          "label": "協定子類型",
+          "hint": "留空使用預設的五種協定。缺少開頭的 _ 時自動補齊，無效項目會被忽略。"
+        },
+        "discoveryInterfacesInclude": {
+          "label": "包含網卡",
+          "hint": "留空自動選擇實體區域網路網卡。支援網卡名稱或以 * 結尾的前綴比對。"
+        },
+        "discoveryInterfacesExclude": {
+          "label": "排除網卡",
+          "hint": "支援網卡名稱或以 * 結尾的前綴比對。排除規則優先於包含規則。"
+        },
+        "discoveryAuthRequired": {
+          "label": "廣播驗證要求",
+          "hint": "預設開啟。僅廣播中繼資料，不改變實際 API 身分驗證。"
+        },
+        "discoveryAdvertiseManagement": {
+          "label": "廣播管理服務",
+          "hint": "預設關閉。僅廣播管理服務存在，不修改遠端存取權限。"
+        },
+        "discoveryTitle": "區域網路探索",
+        "discoveryHint": "需要支援多播的實體網卡及非回環監聽位址。Docker 通常需使用 host 網路；不保證服務可連線。"
+      },
       "additions": {
         "oauthTitle": "OAuth 供應商行為",
         "oauthHint": "本組供應商設定僅適用於 OAuth/驗證檔案憑證，不影響 API Key 憑證。",
@@ -1459,6 +1499,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_trusted_proxies": "每個可信任代理必須是有效的 IP 位址或 CIDR。",
+        "invalid_discovery_service_type": "請使用 _名稱._tcp 格式：名稱為 1–15 位英文字母、數字或連字號，首尾不能是連字號。",
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
         "invalid_duration": "請輸入有效的時間長度，例如 30s 或 3h",
         "positive_duration": "請輸入大於零的時間長度",
@@ -1726,6 +1768,7 @@
     "clear_login_confirm": "確認清理本地登入資訊並登出？"
   },
   "notification": {
+    "trusted_proxies_restart_required": "可信任代理設定已儲存，重新啟動後端後生效。",
     "region_label": "通知",
     "type_success": "成功",
     "type_info": "提示",

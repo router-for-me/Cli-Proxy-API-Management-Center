@@ -1,12 +1,23 @@
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Input } from '@/components/ui/Input';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
 import { SectionCard } from '../SectionCard';
-import { Divider, FieldAnchor, FieldGrid, FieldStack, ToggleRow } from '../fields/FieldPrimitives';
+import {
+  Divider,
+  FieldAnchor,
+  FieldGrid,
+  FieldShell,
+  FieldStack,
+  ToggleRow,
+} from '../fields/FieldPrimitives';
 import { ApiKeysField, HostField, PortField } from '../fields/sharedFields';
 import { getValidationMessage } from '../blocks/shared';
+
+import { StringListEditor } from '../blocks/StringListEditor';
+import { SectionDiscovery } from './SectionDiscovery';
 
 const Icon = CONFIG_TAB_ICONS.connectivity;
 
@@ -19,6 +30,8 @@ export function SectionConnectivity({
   onChange,
 }: ConfigSectionProps) {
   const { t } = useTranslation();
+  const id = useId();
+  const trustedProxiesError = getValidationMessage(t, validationErrors?.trustedProxies);
   const portError = getValidationMessage(t, validationErrors?.port);
 
   return (
@@ -47,6 +60,32 @@ export function SectionConnectivity({
         </FieldAnchor>
 
         <ApiKeysField values={values} disabled={disabled} onChange={onChange} />
+
+        <FieldAnchor fieldId="trustedProxies">
+          <FieldShell
+            label={t('config_management.visual.serverExtras.trustedProxies.label')}
+            labelId={`${id}-trustedProxies-label`}
+            hint={t('config_management.visual.serverExtras.trustedProxies.hint')}
+            hintId={`${id}-trustedProxies-hint`}
+            error={trustedProxiesError}
+            errorId={`${id}-trustedProxies-error`}
+          >
+            <div
+              role="group"
+              aria-labelledby={`${id}-trustedProxies-label`}
+              aria-describedby={`${id}-trustedProxies-hint${trustedProxiesError ? ` ${id}-trustedProxies-error` : ''}`}
+              aria-invalid={Boolean(trustedProxiesError)}
+            >
+              <StringListEditor
+                value={values.trustedProxies}
+                disabled={disabled}
+                placeholder="192.168.0.0/24"
+                inputAriaLabel={t('config_management.visual.serverExtras.trustedProxies.label')}
+                onChange={(trustedProxies) => onChange({ trustedProxies })}
+              />
+            </div>
+          </FieldShell>
+        </FieldAnchor>
 
         <Collapsible
           label={t('config_management.visual.sections.tls.title')}
@@ -152,6 +191,12 @@ export function SectionConnectivity({
             </FieldGrid>
           </FieldStack>
         </Collapsible>
+        <SectionDiscovery
+          values={values}
+          validationErrors={validationErrors}
+          disabled={disabled}
+          onChange={onChange}
+        />
       </FieldStack>
     </SectionCard>
   );

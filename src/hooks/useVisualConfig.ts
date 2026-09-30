@@ -27,6 +27,13 @@ import {
   validateVisualAdditions,
 } from '@/features/config/visualConfigAdditions';
 
+import {
+  SERVER_FIELDS,
+  readVisualServer,
+  writeVisualServer,
+  validateVisualServer,
+} from '@/features/config/visualConfigServer';
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
@@ -181,6 +188,7 @@ export function getVisualConfigValidationErrors(
 ): VisualConfigValidationErrors {
   return {
     ...validateVisualAdditions(values),
+    ...validateVisualServer(values),
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -1184,6 +1192,11 @@ function getNextDirtyFields(
     }
   };
 
+  SERVER_FIELDS.forEach(({ key }) => {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      updateDirty(key, JSON.stringify(nextValues[key]) === JSON.stringify(baselineValues[key]));
+    }
+  });
   ADDITION_FIELDS.forEach(({ key }) => updateScalarDirty(key));
   if (Object.prototype.hasOwnProperty.call(patch, ICE_KEY)) {
     updateDirty(
@@ -1423,6 +1436,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
 
   const newValues: VisualConfigValues = {
     ...readVisualAdditions(document),
+    ...readVisualServer(document),
     host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
     port: String(v8Server?.['port'] ?? ''),
 
@@ -1627,6 +1641,14 @@ export function useVisualConfig() {
         }
         const values = visualValues;
         writeVisualAdditions(doc, values, dirtyFields);
+        writeVisualServer(
+          doc,
+          values,
+          dirtyFields,
+          rebasedPayload?.yaml ?? baselineYaml,
+          rebasedPayload?.serverYaml ?? baselineYaml,
+          target === 'server'
+        );
         if (dirtyFields.has(ICE_KEY)) {
           writeICEServers(
             doc,

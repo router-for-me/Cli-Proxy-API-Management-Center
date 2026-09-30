@@ -14,6 +14,8 @@ export type CodexLiveICEServerDraft = {
 };
 
 export type VisualConfigFieldPath =
+  | 'trustedProxies'
+  | 'discoveryServiceType'
   | 'transientErrorCooldownSeconds'
   | 'videoResultAuthCacheTTL'
   | 'claudeHeaderTimezone'
@@ -38,6 +40,8 @@ export type VisualConfigFieldPath =
   | 'streaming.nonstreamKeepaliveInterval';
 
 export type VisualConfigValidationErrorCode =
+  | 'invalid_trusted_proxies'
+  | 'invalid_discovery_service_type'
   | 'invalid_duration'
   | 'positive_duration'
   | 'invalid_timezone'
@@ -113,6 +117,16 @@ export type PluginStoreAuthRule = {
 
 /** UI draft keys; YAML persistence uses the v8 tree, not these flattened names. */
 export type VisualConfigValues = {
+  trustedProxies: string[];
+  discoveryEnabled: boolean;
+  discoveryServiceName: string;
+  discoveryServiceType: string;
+  discoverySubtypes: string[];
+  discoveryInterfacesInclude: string[];
+  discoveryInterfacesExclude: string[];
+  discoveryAuthRequired: boolean;
+  discoveryAdvertiseManagement: boolean;
+
   routingSessionAffinitySubagents: boolean;
   saveCooldownStatus: boolean;
   transientErrorCooldownSeconds: string;
@@ -207,6 +221,16 @@ export const makeClientId = () => {
 };
 
 export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
+  trustedProxies: [],
+  discoveryEnabled: false,
+  discoveryServiceName: '',
+  discoveryServiceType: '',
+  discoverySubtypes: [],
+  discoveryInterfacesInclude: [],
+  discoveryInterfacesExclude: [],
+  discoveryAuthRequired: true,
+  discoveryAdvertiseManagement: false,
+
   routingSessionAffinitySubagents: true,
   saveCooldownStatus: false,
   transientErrorCooldownSeconds: '',

@@ -71,7 +71,7 @@ export const COMMON_FIELD_IDS = [
  */
 export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualConfigFieldPath[]> =
   {
-    connectivity: ['port'],
+    connectivity: ['port', 'trustedProxies', 'discoveryServiceType'],
     network: [
       'requestRetry',
       'maxRetryCredentials',
@@ -135,6 +135,15 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   codexLiveMediaRelayICEServers: ['codexLiveMediaRelayICEServers'],
 
   // ── connectivity ──────────────────────────────────────────────────────────
+  trustedProxies: ['trustedProxies'],
+  discoveryEnabled: ['discoveryEnabled'],
+  discoveryServiceName: ['discoveryServiceName'],
+  discoveryServiceType: ['discoveryServiceType'],
+  discoverySubtypes: ['discoverySubtypes'],
+  discoveryInterfacesInclude: ['discoveryInterfacesInclude'],
+  discoveryInterfacesExclude: ['discoveryInterfacesExclude'],
+  discoveryAuthRequired: ['discoveryAuthRequired'],
+  discoveryAdvertiseManagement: ['discoveryAdvertiseManagement'],
   host: ['host'],
   port: ['port'],
   authDir: ['authDir'],
