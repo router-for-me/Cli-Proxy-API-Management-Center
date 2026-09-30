@@ -76,7 +76,14 @@ export interface CodexRateLimitResetCredit {
   expiresAt: string;
 }
 
+export interface CodexAccountCredits {
+  has_credits?: boolean;
+  unlimited?: boolean;
+  balance?: string | number | null;
+}
+
 export interface CodexUsagePayload {
+  credits?: CodexAccountCredits | null;
   plan_type?: string;
   planType?: string;
   rate_limit?: CodexRateLimitInfo | null;
@@ -237,6 +244,8 @@ export interface CodexQuotaState {
   windows: CodexQuotaWindow[];
   planType?: string | null;
   subscriptionActiveUntil?: string | number | null;
+  creditBalance?: string | null;
+  creditsUnlimited?: boolean;
   rateLimitResetCreditsAvailableCount?: number | null;
   rateLimitResetCreditsApplicableAvailableCount?: number | null;
   rateLimitResetCredits?: CodexRateLimitResetCredit[];

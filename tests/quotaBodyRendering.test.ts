@@ -90,6 +90,37 @@ describe('CodexQuotaBody', () => {
     expect(markup).toContain(`<span class="${className}">${label}</span>`);
   });
 
+  test.each([
+    ['en', 'Credit balance', 'Unlimited'],
+    ['zh-CN', 'Credit 余额', '无限额'],
+    ['zh-TW', 'Credit 餘額', '無限額'],
+    ['ru', 'Остаток кредитов', 'Без ограничений'],
+  ])(
+    'renders account credits independently of manual resets in %s',
+    async (language, label, unlimited) => {
+      await i18n.changeLanguage(language);
+      try {
+        const balance = renderToStaticMarkup(
+          createElement(CodexQuotaBody, { quota: { ...quota, creditBalance: '0' }, classes })
+        );
+        expect(balance).toContain(label);
+        expect(balance).toContain('<span class="codexPlanValue">0</span>');
+        const infinite = renderToStaticMarkup(
+          createElement(CodexQuotaBody, {
+            quota: { ...quota, creditBalance: null, creditsUnlimited: true },
+            classes,
+          })
+        );
+        expect(infinite).toContain(label);
+        expect(infinite).toContain(unlimited);
+        const absent = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
+        expect(absent).not.toContain(label);
+      } finally {
+        await i18n.changeLanguage('en');
+      }
+    }
+  );
+
   test('renders a window reset as absolute plus countdown', () => {
     const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
 

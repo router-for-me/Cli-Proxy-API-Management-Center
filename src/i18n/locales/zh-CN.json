@@ -496,6 +496,8 @@
     "additional_team_secondary_window": "{{name}} 月度限额",
     "plan_label": "套餐",
     "expires_label": "续期时间",
+    "credit_balance_label": "Credit 余额",
+    "credit_unlimited": "无限额",
     "reset_credits_label": "主动重置次数",
     "reset_credits_expiry_label": "主动重置过期时间（{{timezone}}）",
     "reset_credit_number": "第 {{index}} 次",

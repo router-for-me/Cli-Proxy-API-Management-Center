@@ -498,6 +498,8 @@
     "additional_team_secondary_window": "{{name}} monthly limit",
     "plan_label": "Plan",
     "expires_label": "Renewal time",
+    "credit_balance_label": "Credit balance",
+    "credit_unlimited": "Unlimited",
     "reset_credits_label": "Manual resets",
     "reset_credits_expiry_label": "Manual reset expiry ({{timezone}})",
     "reset_credit_number": "Reset {{index}}",
