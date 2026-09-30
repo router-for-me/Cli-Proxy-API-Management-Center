@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useNotificationStore } from '@/stores';
-import { readApiKeyNames, saveApiKeyName } from '../../apiKeyNames';
+import { apiKeyNameFingerprint, readApiKeyNames, saveApiKeyName } from '../../apiKeyNames';
 import { copyToClipboard } from '@/utils/clipboard';
 import { makeClientId } from '@/types/visualConfig';
 import { generateSecureApiKey } from '@/utils/apiKey';
@@ -41,6 +41,10 @@ function ScopedApiKeysCardEditor({
         .filter(Boolean),
     [value]
   );
+  const nameFingerprints = useMemo(
+    () => apiKeys.map((key) => apiKeyNameFingerprint(apiBase, key)),
+    [apiBase, apiKeys]
+  );
   const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
   const renderApiKeyIds = useMemo(() => {
     if (apiKeyIds.length === apiKeys.length) return apiKeyIds;
@@ -73,11 +77,7 @@ function ScopedApiKeysCardEditor({
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     const latestNames = readApiKeyNames(apiBase);
     setNames(latestNames);
-    setNameValue(
-      Object.prototype.hasOwnProperty.call(latestNames, apiKeys[editingIndex])
-        ? latestNames[apiKeys[editingIndex]]
-        : ''
-    );
+    setNameValue(latestNames[nameFingerprints[editingIndex]] ?? '');
     setEditingApiKeyId(apiKeyId);
     setInputValue(apiKeys[editingIndex] ?? '');
     setFormError('');
@@ -125,7 +125,7 @@ function ScopedApiKeysCardEditor({
       return;
     }
     setNames(readApiKeyNames(apiBase));
-    // Retain old-key names: configuration edits can still be discarded or fail to save.
+    // Retain old fingerprints: configuration edits can still be discarded or fail to save.
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
@@ -164,9 +164,8 @@ function ScopedApiKeysCardEditor({
               <div className="item-meta">
                 <div className="pill">#{index + 1}</div>
                 <div className="item-title">
-                  {Object.prototype.hasOwnProperty.call(names, key)
-                    ? names[key]
-                    : t('config_management.visual.api_keys.input_label')}
+                  {names[nameFingerprints[index]] ??
+                    t('config_management.visual.api_keys.input_label')}
                 </div>
                 <div className="item-subtitle">{maskApiKey(String(key || ''))}</div>
               </div>
