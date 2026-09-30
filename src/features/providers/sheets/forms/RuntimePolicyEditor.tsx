@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import type { RuntimePolicyDraft } from '../../runtimePolicy';
+import { ErrorRulesEditor } from './ErrorRulesEditor';
 import styles from './sharedForm.module.scss';
 
 export interface RuntimePolicyEditorProps {
@@ -90,32 +91,11 @@ export function RuntimePolicyEditor({
               </span>
             </div>
             {value.errorsMode === 'override' && (
-              <div className={styles.field}>
-                <label htmlFor={`${id}-errors-json`} className={styles.label}>
-                  {t(`${key}.errorsJson`)}
-                </label>
-                <textarea
-                  id={`${id}-errors-json`}
-                  className={styles.textarea}
-                  rows={8}
-                  value={value.errorsJson}
-                  disabled={disabled}
-                  spellCheck={false}
-                  aria-describedby={`${id}-schema-hint ${id}-example`}
-                  onChange={(event) => onChange({ ...value, errorsJson: event.target.value })}
-                />
-                <span id={`${id}-schema-hint`} className={styles.labelHint}>
-                  {t(`${key}.schemaHint`)}
-                </span>
-                <span id={`${id}-example`} className={styles.labelHint}>
-                  {t(`${key}.example`)}{' '}
-                  <code>
-                    {
-                      '[{"status":429,"match":["rate limit"],"matchRegex":["(?i)quota"],"action":"continue-and-cooldown"}]'
-                    }
-                  </code>
-                </span>
-              </div>
+              <ErrorRulesEditor
+                rules={value.errorRules}
+                onChange={(errorRules) => onChange({ ...value, errorRules })}
+                disabled={disabled}
+              />
             )}
           </>
         )}

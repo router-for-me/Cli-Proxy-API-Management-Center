@@ -1,10 +1,16 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types/provider';
+import {
+  buildErrorRules,
+  readErrorRules,
+  validateErrorRule,
+  type ErrorRuleDraft,
+} from './errorRules';
 
 export interface RuntimePolicyDraft {
   cooling: 'inherit' | 'enabled' | 'disabled';
   retry: string;
   errorsMode: 'inherit' | 'override';
-  errorsJson: string;
+  errorRules: ErrorRuleDraft[];
 }
 
 type RuntimePolicy = Pick<
@@ -36,8 +42,7 @@ export function readRuntimePolicy(
     cooling: typeof cooling === 'boolean' ? (cooling ? 'disabled' : 'enabled') : 'inherit',
     retry: typeof retry === 'number' ? String(retry) : '',
     errorsMode: errors == null ? 'inherit' : 'override',
-    // Use the API-normalized camelCase schema, never raw backend rule field names.
-    errorsJson: JSON.stringify(config?.requestScopedErrors ?? [], null, 2),
+    errorRules: readErrorRules(config?.requestScopedErrors),
   };
 }
 
@@ -51,41 +56,10 @@ export function validateRuntimePolicy(
   }
   if (!supportsErrors || draft.errorsMode === 'inherit') return null;
 
-  let rules: unknown;
-  try {
-    rules = JSON.parse(draft.errorsJson);
-  } catch {
-    return 'providersPage.runtimePolicy.invalidJson';
+  for (const rule of draft.errorRules) {
+    const error = validateErrorRule(rule);
+    if (error) return error;
   }
-  if (!Array.isArray(rules)) return 'providersPage.runtimePolicy.invalidRules';
-  const actions = ['stop', 'stop-and-cooldown', 'continue', 'continue-and-cooldown'];
-  for (const rule of rules) {
-    if (!isRecord(rule)) return 'providersPage.runtimePolicy.invalidRules';
-    if (
-      Object.keys(rule).some((key) => !['status', 'match', 'matchRegex', 'action'].includes(key))
-    ) {
-      return 'providersPage.runtimePolicy.invalidRules';
-    }
-    // Backend Status is a Go int, not restricted to HTTP 100–599. Nonpositive values are inert.
-    if ('status' in rule && !Number.isSafeInteger(rule.status)) {
-      return 'providersPage.runtimePolicy.invalidStatus';
-    }
-    for (const field of ['match', 'matchRegex']) {
-      if (
-        field in rule &&
-        (!Array.isArray(rule[field]) || !rule[field].every((item) => typeof item === 'string'))
-      ) {
-        return 'providersPage.runtimePolicy.invalidMatches';
-      }
-    }
-    if (
-      'action' in rule &&
-      (typeof rule.action !== 'string' || !actions.includes(rule.action.trim().toLowerCase()))
-    ) {
-      return 'providersPage.runtimePolicy.invalidAction';
-    }
-  }
-  // Go regular expressions are intentionally left to the backend, not compiled with JS RegExp.
   return null;
 }
 
@@ -108,7 +82,7 @@ export function buildRuntimePolicy(
   else result.requestRetry = Number(draft.retry.trim());
   if (supportsErrors) {
     if (draft.errorsMode === 'inherit') result.inheritFields!.push('request-scoped-errors');
-    else result.requestScopedErrors = JSON.parse(draft.errorsJson);
+    else result.requestScopedErrors = buildErrorRules(draft.errorRules);
   }
   return result;
 }

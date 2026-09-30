@@ -10,6 +10,7 @@ import {
   validateRuntimePolicy,
 } from '@/features/providers/runtimePolicy';
 import { RuntimePolicyEditor } from '@/features/providers/sheets/forms/RuntimePolicyEditor';
+import { createErrorRule, moveErrorRule, readErrorRules } from '@/features/providers/errorRules';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
 const originalGet = apiClient.get;
@@ -110,7 +111,9 @@ describe('provider runtime policies', () => {
     let draft = {
       ...readRuntimePolicy(config),
       errorsMode: 'override' as const,
-      errorsJson: '[{"status":429,"matchRegex":["(?i)quota"],"action":"continue-and-cooldown"}]',
+      errorRules: readErrorRules([
+        { status: 429, matchRegex: ['(?i)quota'], action: 'continue-and-cooldown' },
+      ]),
     };
     await providersApi.updateClaudeConfig(config.apiKey, undefined, {
       ...config,
@@ -120,8 +123,10 @@ describe('provider runtime policies', () => {
       { status: 429, 'match-regexr': ['(?i)quota'], action: 'continue-and-cooldown' },
     ]);
     config = row(stored());
-    expect(JSON.parse(readRuntimePolicy(config).errorsJson)[0].matchRegex).toEqual(['(?i)quota']);
-    draft = { ...readRuntimePolicy(config), errorsMode: 'override', errorsJson: '[]' };
+    expect(readRuntimePolicy(config).errorRules[0].matches).toMatchObject([
+      { kind: 'regex', value: '(?i)quota' },
+    ]);
+    draft = { ...readRuntimePolicy(config), errorsMode: 'override', errorRules: [] };
     await providersApi.updateClaudeConfig(config.apiKey, undefined, {
       ...config,
       ...buildRuntimePolicy(draft),
@@ -134,6 +139,34 @@ describe('provider runtime policies', () => {
     });
     expect(keyOf(stored())).not.toHaveProperty('request-scoped-errors');
     expect(stored()['request-scoped-errors']).toHaveLength(1);
+  });
+  test('row reordering and deletion persist exact rule precedence and patterns', async () => {
+    const first = {
+      status: 429,
+      match: [' quota ', 'line one\nline two'],
+      action: ' STOP ',
+      'match-regexr': [],
+    };
+    const second = { status: 429, 'match-regexr': ['(?i)quota'], action: 'continue' };
+    const stored = backend('codex', {
+      name: 'fixture',
+      keys: [{ 'api-key': 'fixture-key', 'request-scoped-errors': [first, second] }],
+    });
+    let config = row(stored());
+    const draft = readRuntimePolicy(config);
+    const errorRules = moveErrorRule(draft.errorRules, draft.errorRules[1].id, -1);
+    await providersApi.updateCodexConfig(config.apiKey, undefined, {
+      ...config,
+      ...buildRuntimePolicy({ ...draft, errorRules }),
+    });
+    expect(keyOf(stored())['request-scoped-errors']).toEqual([second, first]);
+    config = row(stored());
+    const current = readRuntimePolicy(config);
+    await providersApi.updateCodexConfig(config.apiKey, undefined, {
+      ...config,
+      ...buildRuntimePolicy({ ...current, errorRules: current.errorRules.slice(1) }),
+    });
+    expect(keyOf(stored())['request-scoped-errors']).toEqual([first]);
   });
   test('OpenAI edits and removes group policy without losing key metadata', async () => {
     const stored = backend('openai-compatibility', {
@@ -202,6 +235,19 @@ describe('provider runtime policies', () => {
       weight: 5,
     });
     expect(keyOf(stored())['request-scoped-errors']).toEqual(rules);
+    const current = row(stored());
+    const edited = readRuntimePolicy(current);
+    edited.errorRules[0] = {
+      ...edited.errorRules[0],
+      matches: edited.errorRules[0].matches.map((match) => ({ ...match, value: 'changed quota' })),
+    };
+    await providersApi.updateClaudeConfig(current.apiKey, undefined, {
+      ...current,
+      ...buildRuntimePolicy(edited),
+    });
+    expect(keyOf(stored())['request-scoped-errors']).toEqual([
+      { ...rules[0], match: ['changed quota'] },
+    ]);
   });
   test('Vertex excludes error rules while allowing cooling and negative global retry', () => {
     const policy = buildRuntimePolicy(
@@ -210,7 +256,7 @@ describe('provider runtime policies', () => {
         cooling: 'disabled',
         retry: '-1',
         errorsMode: 'override',
-        errorsJson: 'invalid',
+        errorRules: [createErrorRule('invalid')],
       },
       false
     );
@@ -221,24 +267,32 @@ describe('provider runtime policies', () => {
   test.each(['1.5', 'NaN', '9007199254740992', '1e3'])('rejects invalid retry %s', (retry) => {
     expect(validateRuntimePolicy({ ...readRuntimePolicy(), retry })).toBeTruthy();
   });
-  test.each([
-    '{}',
-    '[null]',
-    '[{"status":1.5}]',
-    '[{"match":"text"}]',
-    '[{"match-regexr":[]}]',
-    '[{"action":"retry"}]',
-  ])('rejects invalid rules %s', (errorsJson) => {
-    const draft = { ...readRuntimePolicy(), errorsMode: 'override' as const, errorsJson };
-    expect(validateRuntimePolicy(draft)).toBeTruthy();
-    expect(() => buildRuntimePolicy(draft)).toThrow();
-  });
+  test.each(['', '0', '-1', '1.5', '9007199254740992', '1e3'])(
+    'rejects invalid rule status %s',
+    (status) => {
+      const draft = {
+        ...readRuntimePolicy(),
+        errorsMode: 'override' as const,
+        errorRules: [{ ...createErrorRule('new'), status }],
+      };
+      expect(validateRuntimePolicy(draft)).toBe('providersPage.errorRules.invalidStatus');
+      expect(() => buildRuntimePolicy(draft)).toThrow();
+      expect(validateRuntimePolicy({ ...draft, errorsMode: 'inherit' })).toBeNull();
+    }
+  );
   test('does not validate Go regex with JavaScript syntax', () => {
     expect(
       validateRuntimePolicy({
         ...readRuntimePolicy(),
         errorsMode: 'override',
-        errorsJson: '[{"status":429,"matchRegex":["(?i)quota"],"action":"stop"}]',
+        errorRules: [
+          {
+            ...createErrorRule('new'),
+            status: '429',
+            action: 'stop',
+            matches: [{ id: 'regex', kind: 'regex', value: '(?i)quota' }],
+          },
+        ],
       })
     ).toBeNull();
   });
