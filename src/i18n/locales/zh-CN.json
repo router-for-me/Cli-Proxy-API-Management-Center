@@ -1041,6 +1041,126 @@
       "no_changes": "未检测到变更"
     },
     "visual": {
+      "additions": {
+        "oauthTitle": "OAuth 提供商行为",
+        "oauthHint": "本组提供商设置仅适用于 OAuth/认证文件凭据，不影响 API Key 凭据。",
+        "claudeTitle": "Claude",
+        "codexTitle": "Codex",
+        "antigravityTitle": "Antigravity",
+        "xaiTitle": "xAI",
+        "liveRelayTitle": "Codex Live 媒体中继",
+        "liveRelayHint": "在代理进程内中继 WebRTC 音频和 DataChannel 流量，需要入站 UDP 可达。请勿在截图或日志中暴露 ICE 凭据。",
+        "iceAdd": "添加 ICE 服务器",
+        "iceRemove": "移除 ICE 服务器 {{index}}",
+        "iceURLs": "STUN/TURN URL",
+        "iceUsername": "TURN 用户名",
+        "iceCredential": "TURN 密码",
+        "iceServer": "ICE 服务器 {{index}}",
+        "routingSessionAffinitySubagents": {
+          "label": "子代理会话亲和性",
+          "hint": "默认开启，仅在启用会话亲和性时生效。子代理继承父会话的凭据以复用缓存；关闭后通过凭据池分散子代理请求，提高并发能力。"
+        },
+        "saveCooldownStatus": {
+          "label": "持久化冷却状态",
+          "hint": "将各凭据的冷却状态保存到认证文件旁的 .cds 文件。默认关闭，关闭时仅在内存中保存状态。"
+        },
+        "transientErrorCooldownSeconds": {
+          "label": "瞬时错误冷却时间（秒）",
+          "hint": "适用于上游 408/500/502/503/504/520–526 错误。0 使用默认的 60 秒冷却时间，负数禁用此类冷却。"
+        },
+        "videoResultAuthCacheTTL": {
+          "label": "视频结果凭据缓存有效期",
+          "hint": "视频 ID 与创建它的凭据保持绑定的时长。使用 30m、3h 等时长格式，默认 3h。"
+        },
+        "claudeHeaderTimezone": {
+          "label": "后备时区",
+          "hint": "用于伪装请求中 currentDate 的 IANA 时区，例如 Asia/Singapore；Local 表示后端主机时区。凭据 JSON 中的 timezone 优先。"
+        },
+        "claudeModelLevelCooling": {
+          "label": "按模型冷却",
+          "hint": "仅对请求的模型应用 Claude 配额冷却，而非冷却该凭据下的所有模型。默认关闭。"
+        },
+        "claudeDisableCloakMode": {
+          "label": "禁用请求伪装",
+          "hint": "禁用 Claude Code CLI 身份伪装和系统提示词替换，原样传递系统提示词。凭据文件可通过 cloak_mode 覆盖。默认 false，即仅对非 Claude Code 客户端自动伪装。"
+        },
+        "claudeCodeDisableCloakingModelList": {
+          "label": "禁用模型 ID 伪装",
+          "hint": "在 Anthropic 模型列表响应中返回原始模型 ID，而非伪装后的 ID。默认关闭。"
+        },
+        "codexDisableCloaking": {
+          "label": "禁用请求伪装",
+          "hint": "不再为 HTTP/SSE 和 WebSocket 请求强制设置官方 Codex User-Agent 与 Originator 请求头。默认关闭。"
+        },
+        "codexModelLevelCooling": {
+          "label": "按模型冷却",
+          "hint": "仅对请求的模型应用 usage_limit_reached 配额冷却，而非冷却该凭据下的所有模型。默认关闭。"
+        },
+        "codexStreamBootstrapBuffering": {
+          "label": "流启动缓冲",
+          "hint": "暂存初始空事件和心跳，以便在早期过载或限流拒绝时切换凭据重试。默认关闭。会延迟响应头，可能触发客户端或反向代理超时；缓冲受帧数和字节数预算限制。"
+        },
+        "codexStreamBootstrapTimeout": {
+          "label": "流启动缓冲超时",
+          "hint": "可选的缓冲时间上限，例如 20s。默认 0，表示不限制时间，但仍受帧数和字节数预算限制。仅在收到上游帧时检查，并非所有网络卡死场景的硬截止时间；响应头仍可能等待转换后的输出。"
+        },
+        "codexOptimizeMultiAgentV2": {
+          "label": "多代理 v2 优化",
+          "hint": "优化官方 Codex 多代理请求：更新 spawn_agent 模型信息、移除消息参数加密、规范化 agent_message 内容，并为非 Codex 协议转换为用户消息。默认关闭。"
+        },
+        "codexOrphanDelegationCompatibility": {
+          "label": "孤立委派输出兼容",
+          "hint": "对带有 X-Openai-Subagent: collab_spawn 的请求，将缺少有效匹配调用的 codex_app/create_thread 和 codex_app/send_message_to_thread 孤立输出转换为用户消息。默认关闭。"
+        },
+        "codexResponseSteering": {
+          "label": "响应引导",
+          "hint": "实验性全双工 Codex Responses WebSocket。每条连接始终绑定同一上游账号和模型，已接受的输入不会重放。默认关闭。"
+        },
+        "antigravityConnectionPoolEnabled": {
+          "label": "启用连接池",
+          "hint": "复用上游 HTTP/1.1 连接。默认 false，使用短连接。"
+        },
+        "antigravityConnectionPoolIdleTimeout": {
+          "label": "空闲连接超时",
+          "hint": "空闲连接在池中保留的时长，默认 30s，上限 210s。设为 0 或负时长时切换为短连接。"
+        },
+        "antigravityConnectionPoolMaxIdleConnsPerHost": {
+          "label": "每主机最大空闲连接数",
+          "hint": "每个凭据为每个上游主机保留的最大空闲连接数，默认 2，上限 100。0 使用 Go 默认值 2，负数切换为短连接。"
+        },
+        "xaiInjectXSearch": {
+          "label": "注入 x_search",
+          "hint": "请求未声明 xAI 原生 x_search 工具时自动添加，并在适用时加入 tool_choice.allowed_tools。默认关闭。"
+        },
+        "codexLiveMediaRelayEnabled": {
+          "label": "启用媒体中继",
+          "hint": "在当前进程内终止并中继 Codex Live WebRTC 媒体连接，需要入站 UDP 可达。默认关闭，以保持媒体直连。"
+        },
+        "codexLiveMediaRelayMaxSessions": {
+          "label": "最大并发媒体会话数",
+          "hint": "留空或设为 0 使用默认的 32 个会话。自定义 UDP 端口范围必须为每个会话提供至少两个端口。"
+        },
+        "codexLiveMediaRelayDisablePrivateRemoteIPs": {
+          "label": "阻止私有远端 IP 候选",
+          "hint": "默认 false，允许私有地址候选，适合本地或可信网络客户端。开启后拒绝指向私有、回环、链路本地或未指定 IP 的下游 SDP 候选，减少内网暴露风险，但可能导致本地连接失败。"
+        },
+        "codexLiveMediaRelayPublicIP": {
+          "label": "通告的公网 IP",
+          "hint": "代理位于 1:1 NAT 后时，可填写向对端通告的公网 IPv4 或 IPv6 地址。请填写 IP 地址而非主机名。"
+        },
+        "codexLiveMediaRelayUDPPortMin": {
+          "label": "UDP 端口下限",
+          "hint": "上下限均为 0 时由系统分配；否则须提供包含两端的连续端口范围，端口数量至少为实际会话上限的两倍。"
+        },
+        "codexLiveMediaRelayUDPPortMax": {
+          "label": "UDP 端口上限",
+          "hint": "不得小于下限。上下限须同时为 0 或同时非零；自定义范围每个会话至少需要两个端口，默认 32 个会话需要至少 64 个端口。"
+        },
+        "codexLiveMediaRelayICEServers": {
+          "label": "ICE 服务器",
+          "hint": "可选的 STUN/TURN 服务器，URL 支持 stun:、stuns:、turn: 或 turns:。JSON 配置 API 不返回 TURN 凭据。请通过密码字段填写凭据，勿将秘密暴露在截图或日志中。"
+        }
+      },
       "search": {
         "placeholder": "搜索配置项（标签或 YAML 键名）",
         "no_results": "没有匹配的配置项"
@@ -1314,6 +1434,14 @@
       },
       "validation": {
         "validation_blocked": "请先修复表单校验错误再保存",
+        "invalid_duration": "请输入有效时长，例如 30s 或 3h",
+        "positive_duration": "请输入大于零的时长",
+        "invalid_timezone": "请输入有效的 IANA 时区，例如 Asia/Singapore",
+        "invalid_ip": "请输入有效的 IPv4 或 IPv6 地址",
+        "udp_port_pair": "UDP 端口上下限须同时为 0，或同时设置且下限不大于上限",
+        "udp_port_capacity": "UDP 端口数量须至少为实际最大会话数的两倍（会话数为 0 时按 32 计算）",
+        "invalid_ice_servers": "每个 ICE 服务器须至少包含一个有效的 stun:、stuns:、turn: 或 turns: URL",
+        "integer_range_0_65535": "请输入 0 到 65535 之间的整数",
         "port_range": "请输入 1 到 65535 之间的有效端口",
         "integer": "请输入整数",
         "non_negative_integer": "请输入非负整数",

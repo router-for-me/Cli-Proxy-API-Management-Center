@@ -1043,6 +1043,126 @@
       "no_changes": "No changes detected"
     },
     "visual": {
+      "additions": {
+        "oauthTitle": "OAuth provider behavior",
+        "oauthHint": "These provider settings apply only to OAuth/file-backed credentials, not API-key credentials.",
+        "claudeTitle": "Claude",
+        "codexTitle": "Codex",
+        "antigravityTitle": "Antigravity",
+        "xaiTitle": "xAI",
+        "liveRelayTitle": "Codex Live media relay",
+        "liveRelayHint": "Relay WebRTC audio and DataChannel traffic in the proxy process. Inbound UDP must be reachable. Keep ICE credentials out of screenshots and logs.",
+        "iceAdd": "Add ICE server",
+        "iceRemove": "Remove ICE server {{index}}",
+        "iceURLs": "STUN/TURN URLs",
+        "iceUsername": "TURN username",
+        "iceCredential": "TURN password",
+        "iceServer": "ICE server {{index}}",
+        "routingSessionAffinitySubagents": {
+          "label": "Subagent session affinity",
+          "hint": "Enabled by default; only effective when session affinity is enabled. Subagents inherit their parent's credential to reuse caches. Disable to distribute subagents across the credential pool for greater concurrency."
+        },
+        "saveCooldownStatus": {
+          "label": "Persist cooldown status",
+          "hint": "Save per-credential cooldown status in .cds files beside auth files. Disabled by default; otherwise status is kept only in memory."
+        },
+        "transientErrorCooldownSeconds": {
+          "label": "Transient error cooldown (seconds)",
+          "hint": "Cooldown for upstream 408/500/502/503/504/520–526 errors. 0 uses the default 60 seconds; a negative value disables this cooldown."
+        },
+        "videoResultAuthCacheTTL": {
+          "label": "Video result credential cache TTL",
+          "hint": "How long video IDs remain bound to the credential that created them. Use a duration such as 30m or 3h; default: 3h."
+        },
+        "claudeHeaderTimezone": {
+          "label": "Fallback timezone",
+          "hint": "IANA timezone for the cloaked currentDate, e.g. Asia/Singapore, or Local for the backend host's timezone. The credential JSON's timezone takes priority."
+        },
+        "claudeModelLevelCooling": {
+          "label": "Model-level cooldown",
+          "hint": "Apply Claude quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+        },
+        "claudeDisableCloakMode": {
+          "label": "Disable request cloaking",
+          "hint": "Disable the Claude Code CLI disguise and system prompt replacement; pass through the original system prompt. Credential files can override this with cloak_mode. Default: false (automatic cloaking for non-Claude-Code clients)."
+        },
+        "claudeCodeDisableCloakingModelList": {
+          "label": "Disable model ID cloaking",
+          "hint": "Return original model IDs in Anthropic model list responses instead of cloaked IDs. Disabled by default."
+        },
+        "codexDisableCloaking": {
+          "label": "Disable request cloaking",
+          "hint": "Stop forcing official Codex User-Agent and Originator headers on HTTP/SSE and WebSocket requests. Disabled by default."
+        },
+        "codexModelLevelCooling": {
+          "label": "Model-level cooldown",
+          "hint": "Apply usage_limit_reached quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+        },
+        "codexStreamBootstrapBuffering": {
+          "label": "Buffer stream bootstrap",
+          "hint": "Hold initial empty events and heartbeats to allow credential failover on early overload or rate-limit rejections. Disabled by default. Delays response headers and may trigger client or reverse-proxy timeouts; buffering has frame and byte budgets."
+        },
+        "codexStreamBootstrapTimeout": {
+          "label": "Stream bootstrap timeout",
+          "hint": "Optional buffering time limit, e.g. 20s. Default: 0 (unlimited time; frame and byte budgets still apply). Checked as upstream frames arrive; not a hard deadline for every network stall. Headers may still wait for translated output."
+        },
+        "codexOptimizeMultiAgentV2": {
+          "label": "Optimize multi-agent v2",
+          "hint": "Optimize official Codex multi-agent requests: refresh spawn_agent model details, remove message parameter encryption, normalize agent_message content, and convert it to user messages for non-Codex protocols. Disabled by default."
+        },
+        "codexOrphanDelegationCompatibility": {
+          "label": "Orphan delegation compatibility",
+          "hint": "For X-Openai-Subagent: collab_spawn requests, convert orphan codex_app/create_thread and codex_app/send_message_to_thread outputs without a valid matching call into user messages. Disabled by default."
+        },
+        "codexResponseSteering": {
+          "label": "Response steering",
+          "hint": "Experimental full-duplex Codex Responses WebSockets. Each socket stays bound to one upstream account and model; accepted input is never replayed. Disabled by default."
+        },
+        "antigravityConnectionPoolEnabled": {
+          "label": "Enable connection pooling",
+          "hint": "Reuse upstream HTTP/1.1 connections. Default: false (short-lived connections)."
+        },
+        "antigravityConnectionPoolIdleTimeout": {
+          "label": "Idle connection timeout",
+          "hint": "How long idle connections remain in the pool. Default: 30s; capped at 210s. Zero or a negative duration switches to short-lived connections."
+        },
+        "antigravityConnectionPoolMaxIdleConnsPerHost": {
+          "label": "Maximum idle connections per host",
+          "hint": "Maximum idle connections retained per upstream host per credential. Default: 2; capped at 100. Zero uses Go's default of 2; a negative value switches to short-lived connections."
+        },
+        "xaiInjectXSearch": {
+          "label": "Inject x_search",
+          "hint": "Add xAI's native x_search tool when absent from the request, including tool_choice.allowed_tools when applicable. Disabled by default."
+        },
+        "codexLiveMediaRelayEnabled": {
+          "label": "Enable media relay",
+          "hint": "Terminate and relay Codex Live WebRTC media in this process. Requires inbound UDP reachability. Disabled by default to preserve direct media connections."
+        },
+        "codexLiveMediaRelayMaxSessions": {
+          "label": "Maximum concurrent media sessions",
+          "hint": "Blank or 0 uses the default of 32 sessions. A custom UDP range must provide at least two ports per session."
+        },
+        "codexLiveMediaRelayDisablePrivateRemoteIPs": {
+          "label": "Block private remote IP candidates",
+          "hint": "Default: false, allowing private candidates for local or trusted-network clients. Enable to reject downstream SDP candidates targeting private, loopback, link-local, or unspecified IPs and reduce internal-network exposure; local connections may fail."
+        },
+        "codexLiveMediaRelayPublicIP": {
+          "label": "Advertised public IP",
+          "hint": "Optional public IPv4 or IPv6 address to advertise when the proxy is behind 1:1 NAT. Enter an IP address, not a hostname."
+        },
+        "codexLiveMediaRelayUDPPortMin": {
+          "label": "Minimum UDP port",
+          "hint": "Set both UDP bounds to 0 for system allocation, or specify an inclusive continuous range with at least twice the effective session limit in ports."
+        },
+        "codexLiveMediaRelayUDPPortMax": {
+          "label": "Maximum UDP port",
+          "hint": "Must be at least the minimum port. Both bounds must be 0 or both nonzero; a custom range needs at least two ports per session (64 with the default 32 sessions)."
+        },
+        "codexLiveMediaRelayICEServers": {
+          "label": "ICE servers",
+          "hint": "Optional STUN/TURN servers using stun:, stuns:, turn:, or turns: URLs. TURN credentials are omitted from the JSON config API. Enter the credential as a password and keep secrets out of screenshots and logs."
+        }
+      },
       "search": {
         "placeholder": "Search settings (label or YAML key)",
         "no_results": "No matching settings"
@@ -1316,6 +1436,14 @@
       },
       "validation": {
         "validation_blocked": "Fix validation errors before saving",
+        "invalid_duration": "Enter a valid duration, such as 30s or 3h",
+        "positive_duration": "Enter a duration greater than zero",
+        "invalid_timezone": "Enter a valid IANA timezone, such as Asia/Singapore",
+        "invalid_ip": "Enter a valid IPv4 or IPv6 address",
+        "udp_port_pair": "Set both UDP ports to 0, or set both with the minimum not exceeding the maximum",
+        "udp_port_capacity": "The UDP range must contain at least twice the effective maximum session count in ports (0 sessions uses 32)",
+        "invalid_ice_servers": "Each ICE server needs at least one valid stun:, stuns:, turn:, or turns: URL",
+        "integer_range_0_65535": "Enter a whole number between 0 and 65535",
         "port_range": "Enter a valid port between 1 and 65535",
         "integer": "Enter a whole number",
         "non_negative_integer": "Enter a non-negative whole number",

@@ -178,6 +178,11 @@ describe('v8 scalar read/write path parity', () => {
     'maxRetryCredentials',
     'maxRetryInterval',
     'authAutoRefreshWorkers',
+    'transientErrorCooldownSeconds',
+    'antigravityConnectionPoolMaxIdleConnsPerHost',
+    'codexLiveMediaRelayMaxSessions',
+    'codexLiveMediaRelayUDPPortMin',
+    'codexLiveMediaRelayUDPPortMax',
   ]);
   for (const entry of CONFIG_FIELD_SEARCH_INDEX) {
     const field = FIELD_VALUE_KEYS[entry.fieldId][0];

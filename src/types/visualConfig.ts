@@ -6,7 +6,25 @@ export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =
   'payload_invalid_number' | 'payload_invalid_boolean' | 'payload_invalid_json';
 
+export type CodexLiveICEServerDraft = {
+  id: string;
+  urlsText: string;
+  username: string;
+  credential: string;
+};
+
 export type VisualConfigFieldPath =
+  | 'transientErrorCooldownSeconds'
+  | 'videoResultAuthCacheTTL'
+  | 'claudeHeaderTimezone'
+  | 'codexStreamBootstrapTimeout'
+  | 'antigravityConnectionPoolIdleTimeout'
+  | 'antigravityConnectionPoolMaxIdleConnsPerHost'
+  | 'codexLiveMediaRelayMaxSessions'
+  | 'codexLiveMediaRelayPublicIP'
+  | 'codexLiveMediaRelayUDPPortMin'
+  | 'codexLiveMediaRelayUDPPortMax'
+  | 'codexLiveMediaRelayICEServers'
   | 'port'
   | 'errorLogsMaxFiles'
   | 'logsMaxTotalSizeMb'
@@ -20,7 +38,18 @@ export type VisualConfigFieldPath =
   | 'streaming.nonstreamKeepaliveInterval';
 
 export type VisualConfigValidationErrorCode =
-  'port_range' | 'integer' | 'non_negative_integer' | 'integer_range_1_3600';
+  | 'invalid_duration'
+  | 'positive_duration'
+  | 'invalid_timezone'
+  | 'invalid_ip'
+  | 'udp_port_pair'
+  | 'udp_port_capacity'
+  | 'invalid_ice_servers'
+  | 'integer_range_0_65535'
+  | 'port_range'
+  | 'integer'
+  | 'non_negative_integer'
+  | 'integer_range_1_3600';
 
 export type VisualConfigValidationErrors = Partial<
   Record<VisualConfigFieldPath, VisualConfigValidationErrorCode>
@@ -84,6 +113,32 @@ export type PluginStoreAuthRule = {
 
 /** UI draft keys; YAML persistence uses the v8 tree, not these flattened names. */
 export type VisualConfigValues = {
+  routingSessionAffinitySubagents: boolean;
+  saveCooldownStatus: boolean;
+  transientErrorCooldownSeconds: string;
+  videoResultAuthCacheTTL: string;
+  claudeHeaderTimezone: string;
+  claudeModelLevelCooling: boolean;
+  claudeDisableCloakMode: boolean;
+  claudeCodeDisableCloakingModelList: boolean;
+  codexDisableCloaking: boolean;
+  codexModelLevelCooling: boolean;
+  codexStreamBootstrapBuffering: boolean;
+  codexStreamBootstrapTimeout: string;
+  codexOptimizeMultiAgentV2: boolean;
+  codexOrphanDelegationCompatibility: boolean;
+  codexResponseSteering: boolean;
+  antigravityConnectionPoolEnabled: boolean;
+  antigravityConnectionPoolIdleTimeout: string;
+  antigravityConnectionPoolMaxIdleConnsPerHost: string;
+  xaiInjectXSearch: boolean;
+  codexLiveMediaRelayEnabled: boolean;
+  codexLiveMediaRelayMaxSessions: string;
+  codexLiveMediaRelayDisablePrivateRemoteIPs: boolean;
+  codexLiveMediaRelayPublicIP: string;
+  codexLiveMediaRelayUDPPortMin: string;
+  codexLiveMediaRelayUDPPortMax: string;
+  codexLiveMediaRelayICEServers: CodexLiveICEServerDraft[];
   host: string;
   port: string;
   tlsEnable: boolean;
@@ -152,6 +207,32 @@ export const makeClientId = () => {
 };
 
 export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
+  routingSessionAffinitySubagents: true,
+  saveCooldownStatus: false,
+  transientErrorCooldownSeconds: '',
+  videoResultAuthCacheTTL: '',
+  claudeHeaderTimezone: '',
+  claudeModelLevelCooling: false,
+  claudeDisableCloakMode: false,
+  claudeCodeDisableCloakingModelList: false,
+  codexDisableCloaking: false,
+  codexModelLevelCooling: false,
+  codexStreamBootstrapBuffering: false,
+  codexStreamBootstrapTimeout: '',
+  codexOptimizeMultiAgentV2: false,
+  codexOrphanDelegationCompatibility: false,
+  codexResponseSteering: false,
+  antigravityConnectionPoolEnabled: false,
+  antigravityConnectionPoolIdleTimeout: '',
+  antigravityConnectionPoolMaxIdleConnsPerHost: '',
+  xaiInjectXSearch: false,
+  codexLiveMediaRelayEnabled: false,
+  codexLiveMediaRelayMaxSessions: '',
+  codexLiveMediaRelayDisablePrivateRemoteIPs: false,
+  codexLiveMediaRelayPublicIP: '',
+  codexLiveMediaRelayUDPPortMin: '',
+  codexLiveMediaRelayUDPPortMax: '',
+  codexLiveMediaRelayICEServers: [],
   host: '',
   port: '',
   tlsEnable: false,

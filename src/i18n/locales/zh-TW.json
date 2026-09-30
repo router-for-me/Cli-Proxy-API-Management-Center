@@ -1067,6 +1067,126 @@
       "no_changes": "未偵測到變更"
     },
     "visual": {
+      "additions": {
+        "oauthTitle": "OAuth 供應商行為",
+        "oauthHint": "本組供應商設定僅適用於 OAuth/驗證檔案憑證，不影響 API Key 憑證。",
+        "claudeTitle": "Claude",
+        "codexTitle": "Codex",
+        "antigravityTitle": "Antigravity",
+        "xaiTitle": "xAI",
+        "liveRelayTitle": "Codex Live 媒體中繼",
+        "liveRelayHint": "在代理程序內中繼 WebRTC 音訊與 DataChannel 流量，需要可接收傳入的 UDP 流量。請勿在螢幕截圖或日誌中暴露 ICE 憑證。",
+        "iceAdd": "新增 ICE 伺服器",
+        "iceRemove": "移除 ICE 伺服器 {{index}}",
+        "iceURLs": "STUN/TURN URL",
+        "iceUsername": "TURN 使用者名稱",
+        "iceCredential": "TURN 密碼",
+        "iceServer": "ICE 伺服器 {{index}}",
+        "routingSessionAffinitySubagents": {
+          "label": "子代理工作階段親和性",
+          "hint": "預設開啟，僅在啟用工作階段親和性時生效。子代理繼承父工作階段的憑證以重用快取；關閉後透過憑證池分散子代理請求，提高並行能力。"
+        },
+        "saveCooldownStatus": {
+          "label": "持久保存冷卻狀態",
+          "hint": "將各憑證的冷卻狀態儲存至驗證檔案旁的 .cds 檔案。預設關閉，關閉時僅在記憶體中保存狀態。"
+        },
+        "transientErrorCooldownSeconds": {
+          "label": "暫時性錯誤冷卻時間（秒）",
+          "hint": "適用於上游 408/500/502/503/504/520–526 錯誤。0 使用預設的 60 秒冷卻時間，負數停用此類冷卻。"
+        },
+        "videoResultAuthCacheTTL": {
+          "label": "影片結果憑證快取有效期",
+          "hint": "影片 ID 與建立它的憑證保持綁定的時間。使用 30m、3h 等時間長度格式，預設 3h。"
+        },
+        "claudeHeaderTimezone": {
+          "label": "備援時區",
+          "hint": "用於偽裝請求中 currentDate 的 IANA 時區，例如 Asia/Singapore；Local 表示後端主機時區。憑證 JSON 中的 timezone 優先。"
+        },
+        "claudeModelLevelCooling": {
+          "label": "依模型冷卻",
+          "hint": "僅對請求的模型套用 Claude 配額冷卻，而非冷卻該憑證下的所有模型。預設關閉。"
+        },
+        "claudeDisableCloakMode": {
+          "label": "停用請求偽裝",
+          "hint": "停用 Claude Code CLI 身分偽裝與系統提示詞替換，原樣傳遞系統提示詞。憑證檔案可透過 cloak_mode 覆寫。預設 false，即僅對非 Claude Code 用戶端自動偽裝。"
+        },
+        "claudeCodeDisableCloakingModelList": {
+          "label": "停用模型 ID 偽裝",
+          "hint": "在 Anthropic 模型清單回應中傳回原始模型 ID，而非偽裝後的 ID。預設關閉。"
+        },
+        "codexDisableCloaking": {
+          "label": "停用請求偽裝",
+          "hint": "不再為 HTTP/SSE 與 WebSocket 請求強制設定官方 Codex User-Agent 與 Originator 標頭。預設關閉。"
+        },
+        "codexModelLevelCooling": {
+          "label": "依模型冷卻",
+          "hint": "僅對請求的模型套用 usage_limit_reached 配額冷卻，而非冷卻該憑證下的所有模型。預設關閉。"
+        },
+        "codexStreamBootstrapBuffering": {
+          "label": "串流啟動緩衝",
+          "hint": "暫存初始空事件與心跳，以便在早期過載或限流拒絕時切換憑證重試。預設關閉。會延遲回應標頭，可能觸發用戶端或反向代理逾時；緩衝受影格數與位元組數預算限制。"
+        },
+        "codexStreamBootstrapTimeout": {
+          "label": "串流啟動緩衝逾時",
+          "hint": "可選的緩衝時間上限，例如 20s。預設 0，表示不限制時間，但仍受影格數與位元組數預算限制。僅在收到上游影格時檢查，並非所有網路停滯情況的硬性截止時間；回應標頭仍可能等待轉換後的輸出。"
+        },
+        "codexOptimizeMultiAgentV2": {
+          "label": "多代理 v2 最佳化",
+          "hint": "最佳化官方 Codex 多代理請求：更新 spawn_agent 模型資訊、移除訊息參數加密、正規化 agent_message 內容，並為非 Codex 協定轉換為使用者訊息。預設關閉。"
+        },
+        "codexOrphanDelegationCompatibility": {
+          "label": "孤立委派輸出相容性",
+          "hint": "對帶有 X-Openai-Subagent: collab_spawn 的請求，將缺少有效對應呼叫的 codex_app/create_thread 與 codex_app/send_message_to_thread 孤立輸出轉換為使用者訊息。預設關閉。"
+        },
+        "codexResponseSteering": {
+          "label": "回應引導",
+          "hint": "實驗性全雙工 Codex Responses WebSocket。每條連線始終綁定同一上游帳號與模型，已接受的輸入不會重播。預設關閉。"
+        },
+        "antigravityConnectionPoolEnabled": {
+          "label": "啟用連線池",
+          "hint": "重用上游 HTTP/1.1 連線。預設 false，使用短連線。"
+        },
+        "antigravityConnectionPoolIdleTimeout": {
+          "label": "閒置連線逾時",
+          "hint": "閒置連線在池中保留的時間，預設 30s，上限 210s。設為 0 或負時長時切換為短連線。"
+        },
+        "antigravityConnectionPoolMaxIdleConnsPerHost": {
+          "label": "每主機最大閒置連線數",
+          "hint": "每個憑證為每個上游主機保留的最大閒置連線數，預設 2，上限 100。0 使用 Go 預設值 2，負數切換為短連線。"
+        },
+        "xaiInjectXSearch": {
+          "label": "注入 x_search",
+          "hint": "請求未宣告 xAI 原生 x_search 工具時自動新增，並在適用時加入 tool_choice.allowed_tools。預設關閉。"
+        },
+        "codexLiveMediaRelayEnabled": {
+          "label": "啟用媒體中繼",
+          "hint": "在目前程序內終止並中繼 Codex Live WebRTC 媒體連線，需要可接收傳入的 UDP 流量。預設關閉，以保持媒體直連。"
+        },
+        "codexLiveMediaRelayMaxSessions": {
+          "label": "最大並行媒體工作階段數",
+          "hint": "留空或設為 0 使用預設的 32 個工作階段。自訂 UDP 連接埠範圍必須為每個工作階段提供至少兩個連接埠。"
+        },
+        "codexLiveMediaRelayDisablePrivateRemoteIPs": {
+          "label": "封鎖私有遠端 IP 候選",
+          "hint": "預設 false，允許私有位址候選，適合本機或可信網路用戶端。開啟後拒絕指向私有、回送、鏈路本地或未指定位址的下游 SDP 候選，減少內網暴露風險，但可能導致本機連線失敗。"
+        },
+        "codexLiveMediaRelayPublicIP": {
+          "label": "通告的公用 IP",
+          "hint": "代理位於 1:1 NAT 後方時，可填寫向對端通告的公用 IPv4 或 IPv6 位址。請填寫 IP 位址而非主機名稱。"
+        },
+        "codexLiveMediaRelayUDPPortMin": {
+          "label": "UDP 連接埠下限",
+          "hint": "上下限皆為 0 時由系統分配；否則須提供包含兩端的連續連接埠範圍，連接埠數量至少為實際工作階段上限的兩倍。"
+        },
+        "codexLiveMediaRelayUDPPortMax": {
+          "label": "UDP 連接埠上限",
+          "hint": "不得小於下限。上下限須同時為 0 或同時非零；自訂範圍每個工作階段至少需要兩個連接埠，預設 32 個工作階段需要至少 64 個連接埠。"
+        },
+        "codexLiveMediaRelayICEServers": {
+          "label": "ICE 伺服器",
+          "hint": "可選的 STUN/TURN 伺服器，URL 支援 stun:、stuns:、turn: 或 turns:。JSON 設定 API 不會傳回 TURN 憑證。請透過密碼欄位填寫憑證，勿將機密暴露在螢幕截圖或日誌中。"
+        }
+      },
       "search": {
         "placeholder": "搜尋設定項（標籤或 YAML 鍵名）",
         "no_results": "沒有符合的設定項"
@@ -1340,6 +1460,14 @@
       },
       "validation": {
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
+        "invalid_duration": "請輸入有效的時間長度，例如 30s 或 3h",
+        "positive_duration": "請輸入大於零的時間長度",
+        "invalid_timezone": "請輸入有效的 IANA 時區，例如 Asia/Singapore",
+        "invalid_ip": "請輸入有效的 IPv4 或 IPv6 位址",
+        "udp_port_pair": "UDP 連接埠上下限須同時為 0，或同時設定且下限不大於上限",
+        "udp_port_capacity": "UDP 連接埠數量須至少為實際最大工作階段數的兩倍（工作階段數為 0 時以 32 計算）",
+        "invalid_ice_servers": "每個 ICE 伺服器須至少包含一個有效的 stun:、stuns:、turn: 或 turns: URL",
+        "integer_range_0_65535": "請輸入 0 到 65535 之間的整數",
         "port_range": "請輸入 1 到 65535 之間的有效連接埠",
         "integer": "請輸入整數",
         "non_negative_integer": "請輸入非負整數",
