@@ -31,6 +31,7 @@ import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
 
 const XAI_PAID_HEALTH_REQUEST_TIMEOUT_MS = 15000;
+const XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS = 8000;
 
 const toXaiRecord = (value: unknown): Record<string, unknown> | null => {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -174,8 +175,14 @@ const readPlanField = (record: Record<string, unknown> | null, keys: string[]) =
 const requestXaiSubscription = async (authIndex: string) => {
   const header = { ...XAI_REQUEST_HEADERS };
   const [userResult, settingsResult] = await Promise.allSettled([
-    apiCallApi.request({ authIndex, method: 'GET', url: XAI_USER_URL, header }),
-    apiCallApi.request({ authIndex, method: 'GET', url: XAI_SETTINGS_URL, header }),
+    apiCallApi.request(
+      { authIndex, method: 'GET', url: XAI_USER_URL, header },
+      { timeout: XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS }
+    ),
+    apiCallApi.request(
+      { authIndex, method: 'GET', url: XAI_SETTINGS_URL, header },
+      { timeout: XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS }
+    ),
   ]);
   const user = userResult.status === 'fulfilled' ? readJsonRecord(userResult.value) : null;
   const settings =
@@ -201,10 +208,8 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
     throw new Error(t('xai_quota.missing_auth_index'));
   }
 
-  const subscriptionPlan = await requestXaiSubscription(authIndex);
-
   if (isPaidXaiAuthFile(file)) {
-    return withSubscriptionPlan(await requestXaiPaidHealth(authIndex), subscriptionPlan);
+    return requestXaiPaidHealth(authIndex);
   }
 
   const requestHeader = buildXaiRequestHeaders(file);
@@ -215,7 +220,7 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
   const weeklySummary = weeklyResult.status === 'fulfilled' ? weeklyResult.value : null;
   const monthlySummary = monthlyResult.status === 'fulfilled' ? monthlyResult.value : null;
   const summary = mergeXaiBillingSummaries(weeklySummary, monthlySummary);
-  if (summary) return withSubscriptionPlan(summary, subscriptionPlan);
+  if (summary) return summary;
 
   const billingError =
     weeklyResult.status === 'rejected' && monthlyResult.status === 'rejected'
@@ -223,7 +228,7 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
       : new Error(t('xai_quota.empty_data'));
 
   try {
-    return withSubscriptionPlan(await requestXaiPaidHealth(authIndex), subscriptionPlan);
+    return await requestXaiPaidHealth(authIndex);
   } catch {
     // Preserve the original free billing error when neither account mode can be queried.
     throw billingError;
@@ -235,6 +240,11 @@ export const XAI_CONFIG: QuotaProviderData<XaiQuotaState, XaiBillingSummary> = {
   i18nPrefix: 'xai_quota',
   filterFn: (file) => isXaiFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchXaiQuota,
+  enrichQuota: async (file, summary) => {
+    const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+    if (!authIndex) return summary;
+    return withSubscriptionPlan(summary, await requestXaiSubscription(authIndex));
+  },
   storeSelector: (state) => state.xaiQuota,
   storeSetter: 'setXaiQuota',
   buildLoadingState: () => ({ status: 'loading', billing: null }),

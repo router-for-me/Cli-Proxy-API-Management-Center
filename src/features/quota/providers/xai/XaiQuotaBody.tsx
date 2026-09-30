@@ -21,11 +21,15 @@ const formatUsdFromCents = (cents: number | null): string => {
   }).format(cents / 100);
 };
 
-const formatXaiSpentAmount = (billing: XaiBillingSummary): string => {
-  const used = formatUsdFromCents(billing.usedCents);
+const formatXaiRemainingAmount = (billing: XaiBillingSummary): string => {
+  const remainingCents =
+    billing.monthlyLimitCents !== null && billing.includedUsedCents !== null
+      ? Math.max(0, billing.monthlyLimitCents - billing.includedUsedCents)
+      : null;
+  const remaining = formatUsdFromCents(remainingCents);
   const limit = formatUsdFromCents(billing.monthlyLimitCents);
-  if (billing.monthlyLimitCents === null) return used;
-  return `${used} / ${limit}`;
+  if (billing.monthlyLimitCents === null) return remaining;
+  return `${remaining} / ${limit}`;
 };
 
 const formatXaiOnDemandAmount = (billing: XaiBillingSummary): string => {
@@ -90,7 +94,13 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
       <>
         <div className={classes.codexPlan}>
           <span className={classes.codexPlanLabel}>{t('xai_quota.plan_label')}</span>
-          <span className={planValueClass(billing.planTier, classes)}>
+          <span
+            className={
+              billing.planLabel
+                ? planValueClass(billing.planTier, classes)
+                : classes.premiumPlanValue
+            }
+          >
             {billing.planLabel ?? t('xai_quota.plan_paid')}
           </span>
         </div>
@@ -103,7 +113,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
     billing.usedPercent === null ? null : Math.max(0, Math.min(100, billing.usedPercent));
   const remaining = clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
   const percentLabel = formatXaiPercent(remaining);
-  const amountLabel = formatXaiSpentAmount(billing);
+  const amountLabel = formatXaiRemainingAmount(billing);
   const resetLabel = formatQuotaResetTime(billing.billingPeriodEnd);
   // The monthly row is a billing cycle, so it carries no resetAtMs (that field
   // is derived from periodEnd, the weekly quota window). Parse for the
