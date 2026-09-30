@@ -9,6 +9,8 @@ const COLLAPSED_LIMIT = 10;
 
 interface ModelEntriesEditorProps {
   models: ModelEntryInput[];
+  /** Restrict advanced controls to the OAuthModelAlias contract. */
+  oauthAliasOnly?: boolean;
   providerBrand?: ProviderBrand;
   /** Only OpenAI-compatible entries can expose the image-generation capability. */
   supportsImage: boolean;
@@ -23,6 +25,7 @@ interface ModelEntriesEditorProps {
 
 export function ModelEntriesEditor({
   models,
+  oauthAliasOnly = false,
   providerBrand = 'gemini',
   supportsImage,
   supportsThinking,
@@ -72,19 +75,28 @@ export function ModelEntriesEditor({
               />
               <input
                 className={styles.input}
-                placeholder={t('providersPage.modelOptions.modelAlias')}
-                aria-label={t('providersPage.modelOptions.modelAlias')}
+                placeholder={t(
+                  oauthAliasOnly
+                    ? 'auth_files.policy_alias_name'
+                    : 'providersPage.modelOptions.modelAlias'
+                )}
+                aria-label={t(
+                  oauthAliasOnly
+                    ? 'auth_files.policy_alias_name'
+                    : 'providersPage.modelOptions.modelAlias'
+                )}
+                required={oauthAliasOnly}
                 value={entry.alias ?? ''}
                 onChange={(e) => onUpdate(idx, { alias: e.target.value })}
                 disabled={mutating}
               />
               <div className={styles.modelEntryActions}>
-                {supportsImage && !expanded && entry.image === true ? (
+                {!oauthAliasOnly && supportsImage && !expanded && entry.image === true ? (
                   <span className={styles.entryBadge}>
                     {t('providersPage.form.modelBadgeImage')}
                   </span>
                 ) : null}
-                {supportsThinking && !expanded && hasThinking ? (
+                {!oauthAliasOnly && supportsThinking && !expanded && hasThinking ? (
                   <span className={styles.entryBadge}>
                     {t('providersPage.form.modelBadgeThinking')}
                   </span>
@@ -121,7 +133,7 @@ export function ModelEntriesEditor({
             </div>
             {expanded ? (
               <div className={styles.modelEntryDetails}>
-                {supportsImage ? (
+                {!oauthAliasOnly && supportsImage ? (
                   <label className={styles.checkboxRow}>
                     <input
                       type="checkbox"
@@ -136,13 +148,47 @@ export function ModelEntriesEditor({
                     </span>
                   </label>
                 ) : null}
-                <ModelAdvancedFields
-                  entry={entry}
-                  providerBrand={providerBrand}
-                  disabled={mutating}
-                  supportsThinking={supportsThinking}
-                  onUpdate={(patch) => onUpdate(idx, patch)}
-                />
+                {oauthAliasOnly ? (
+                  <>
+                    <div className={styles.field}>
+                      <label className={styles.label}>
+                        {t('auth_files.policy_alias_display_name')}
+                        <input
+                          className={styles.input}
+                          value={entry.displayName ?? ''}
+                          disabled={mutating}
+                          onChange={(event) => onUpdate(idx, { displayName: event.target.value })}
+                        />
+                      </label>
+                    </div>
+                    {(['fork', 'forceMapping'] as const).map((field) => (
+                      <label key={field} className={styles.checkboxRow}>
+                        <input
+                          type="checkbox"
+                          className={styles.checkboxBox}
+                          checked={entry[field] === true}
+                          disabled={mutating}
+                          onChange={(event) => onUpdate(idx, { [field]: event.target.checked })}
+                        />
+                        <span className={styles.checkboxText}>
+                          {t(
+                            field === 'fork'
+                              ? 'auth_files.policy_alias_fork'
+                              : 'auth_files.policy_alias_force_mapping'
+                          )}
+                        </span>
+                      </label>
+                    ))}
+                  </>
+                ) : (
+                  <ModelAdvancedFields
+                    entry={entry}
+                    providerBrand={providerBrand}
+                    disabled={mutating}
+                    supportsThinking={supportsThinking}
+                    onUpdate={(patch) => onUpdate(idx, patch)}
+                  />
+                )}
               </div>
             ) : null}
           </div>

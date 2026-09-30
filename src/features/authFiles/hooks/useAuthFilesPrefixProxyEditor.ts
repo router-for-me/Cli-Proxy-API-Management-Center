@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import {
+  applyCredentialPolicyPatch,
+  buildCredentialPolicyPatch,
+  credentialPolicyError,
+  readCredentialPolicy,
+  type CredentialPolicyDraft,
+  type CredentialPolicyField,
+  type CredentialPolicyValue,
+} from '@/features/authFiles/credentialPolicy';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi, type AuthFileFieldsPatch } from '@/services/api';
+import { apiClient, authFilesApi, type AuthFileFieldsPatch } from '@/services/api';
+import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
 import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
 import {
@@ -32,6 +42,7 @@ type AuthFileWeightErrorKey = 'auth_files.weight_invalid_integer' | 'auth_files.
 type AuthFileEditorErrorKey = AuthFileHeadersErrorKey | AuthFileWeightErrorKey;
 
 export type PrefixProxyEditorField =
+  | CredentialPolicyField
   | 'prefix'
   | 'proxyUrl'
   | 'priority'
@@ -43,9 +54,10 @@ export type PrefixProxyEditorField =
   | 'excludedModelsText'
   | 'headersText';
 
-export type PrefixProxyEditorFieldValue = string | boolean;
+export type PrefixProxyEditorFieldValue = string | boolean | CredentialPolicyValue;
 
 export type PrefixProxyEditorState = {
+  policy?: CredentialPolicyDraft;
   fileName: string;
   fileInfoText: string;
   loading: boolean;
@@ -79,6 +91,7 @@ export type PrefixProxyEditorState = {
 export type UseAuthFilesPrefixProxyEditorOptions = {
   disableControls: boolean;
   loadFiles: () => Promise<void>;
+  onFilesMutated?: (names: string[]) => void;
 };
 
 export type UseAuthFilesPrefixProxyEditorResult = {
@@ -375,6 +388,7 @@ export const buildAuthFileFieldsPatch = (
     }
   }
 
+  Object.assign(patch, buildCredentialPolicyPatch(original, editor.policy));
   return patch;
 };
 
@@ -438,6 +452,7 @@ const buildPrefixProxyUpdatedText = (
     next['excluded-models'] = patch['excluded-models'];
   }
 
+  applyCredentialPolicyPatch(next, patch);
   applyHeadersPatch(next, patch.headers);
 
   if (patch.websockets !== undefined) {
@@ -454,7 +469,9 @@ const buildPrefixProxyUpdatedText = (
 export function useAuthFilesPrefixProxyEditor(
   options: UseAuthFilesPrefixProxyEditorOptions
 ): UseAuthFilesPrefixProxyEditorResult {
-  const { disableControls, loadFiles } = options;
+  const { disableControls, loadFiles, onFilesMutated } = options;
+  const editorConnectionRef = useRef(apiClient.getConnectionRevision());
+  const editorRequestRef = useRef(0);
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
 
@@ -462,7 +479,8 @@ export function useAuthFilesPrefixProxyEditor(
 
   const hasBlockingValidationError = Boolean(
     (prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError) ||
-    prefixProxyEditor?.weightError
+    prefixProxyEditor?.weightError ||
+    credentialPolicyError(prefixProxyEditor?.policy)
   );
   const prefixProxyUpdatedText =
     prefixProxyEditor && !hasBlockingValidationError
@@ -474,9 +492,11 @@ export function useAuthFilesPrefixProxyEditor(
       ? buildAuthFileFieldsPatch(prefixProxyEditor, (key) => t(key))
       : null;
 
-  const prefixProxyDirty = hasKeys(prefixProxyPatch);
+  const prefixProxyDirty =
+    hasKeys(prefixProxyPatch) || Boolean(credentialPolicyError(prefixProxyEditor?.policy));
 
   const closePrefixProxyEditor = () => {
+    editorRequestRef.current += 1;
     setPrefixProxyEditor(null);
   };
 
@@ -486,9 +506,14 @@ export function useAuthFilesPrefixProxyEditor(
 
     if (disableControls) return;
     if (prefixProxyEditor?.fileName === name) {
-      setPrefixProxyEditor(null);
+      closePrefixProxyEditor();
       return;
     }
+    const revision = apiClient.getConnectionRevision();
+    editorConnectionRef.current = revision;
+    const requestId = ++editorRequestRef.current;
+    const isCurrentEditor = () =>
+      revision === apiClient.getConnectionRevision() && requestId === editorRequestRef.current;
 
     setPrefixProxyEditor({
       fileName: name,
@@ -523,6 +548,7 @@ export function useAuthFilesPrefixProxyEditor(
 
     try {
       const rawText = await authFilesApi.downloadText(name);
+      if (!isCurrentEditor()) return;
       const trimmed = rawText.trim();
 
       let parsed: unknown;
@@ -584,6 +610,7 @@ export function useAuthFilesPrefixProxyEditor(
           rawText: originalText,
           invalidContentPreview: '',
           json,
+          policy: readCredentialPolicy(json),
           providerKey,
           prefix,
           proxyUrl,
@@ -607,6 +634,7 @@ export function useAuthFilesPrefixProxyEditor(
         };
       });
     } catch (err: unknown) {
+      if (!isCurrentEditor()) return;
       const errorMessage = err instanceof Error ? err.message : t('notification.download_failed');
       setPrefixProxyEditor((prev) => {
         if (!prev || prev.fileName !== name) return prev;
@@ -622,6 +650,17 @@ export function useAuthFilesPrefixProxyEditor(
   ) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
+      if (field === 'requestRetry' || field === 'modelAliases' || field === 'errorRules') {
+        const policy = prev.policy ?? readCredentialPolicy(prev.json ?? {});
+        return {
+          ...prev,
+          policy: {
+            ...policy,
+            [field]: value,
+            touched: { ...policy.touched, [field]: true },
+          },
+        };
+      }
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
@@ -670,8 +709,13 @@ export function useAuthFilesPrefixProxyEditor(
   };
 
   const handlePrefixProxySave = async () => {
-    if (!prefixProxyEditor?.json) return;
-    if (!prefixProxyDirty) return;
+    if (disableControls || prefixProxyEditor?.saving || !prefixProxyEditor?.json) return;
+    const revision = editorConnectionRef.current;
+    const requestId = editorRequestRef.current;
+    const isCurrentEditor = () =>
+      revision === apiClient.getConnectionRevision() && requestId === editorRequestRef.current;
+    if (!isCurrentEditor()) return;
+    if (!prefixProxyDirty || hasBlockingValidationError) return;
 
     const name = prefixProxyEditor.fileName;
     let payload: AuthFileFieldsPatch;
@@ -691,10 +735,14 @@ export function useAuthFilesPrefixProxyEditor(
 
     try {
       await authFilesApi.patchFields(name, payload);
+      if (!isCurrentEditor()) return;
+      onFilesMutated?.([name]);
+      notifyAuthFilesChanged();
       showNotification(t('auth_files.prefix_proxy_saved_success', { name }), 'success');
       await loadFiles();
-      setPrefixProxyEditor(null);
+      if (isCurrentEditor()) closePrefixProxyEditor();
     } catch (err: unknown) {
+      if (!isCurrentEditor()) return;
       const errorMessage = err instanceof Error ? err.message : '';
       showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
       setPrefixProxyEditor((prev) => {

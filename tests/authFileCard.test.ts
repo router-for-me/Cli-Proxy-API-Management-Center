@@ -32,7 +32,8 @@ describe('auth file card presentation contract', () => {
     expect(footer).toContain('<ToggleSwitch');
     expect(footer).toContain("t('auth_files.card_toggle', { name: file.name })");
     expect(footer).toContain('checked={!file.disabled}');
-    expect(footer).toContain('statusUpdating[file.name] === true || isManualRefreshing');
+    expect(footer).toContain('statusUpdating[getAuthFileRefreshKey(file)] === true ||');
+    expect(footer).toContain('isManualRefreshing');
     expect(footer).toContain('!isRuntimeOnly &&');
   });
 
@@ -59,9 +60,7 @@ describe('auth file card presentation contract', () => {
       expect(messages.weight_tooltip).not.toMatch(/<[^>]+>/);
       expect(messages.weight_hint).toContain('<settingsLink>');
       expect(messages.weight_hint).toContain('</settingsLink>');
-      expect(messages.weight_tooltip).toBe(
-        messages.weight_hint.replace(/<\/?settingsLink>/g, '')
-      );
+      expect(messages.weight_tooltip).toBe(messages.weight_hint.replace(/<\/?settingsLink>/g, ''));
     }
   });
 

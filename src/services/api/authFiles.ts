@@ -21,6 +21,20 @@ type AuthFileStatusResponse = { status: string; disabled: boolean };
 export type AuthFileLookup = { name: string; authIndex?: string };
 type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
+  request_retry?: number | null;
+  model_aliases?: Array<{
+    name: string;
+    alias: string;
+    fork?: boolean;
+    'display-name'?: string;
+    'force-mapping'?: boolean;
+  }>;
+  request_scoped_errors?: Array<{
+    status?: number;
+    match?: string[];
+    'match-regexr'?: string[];
+    action?: string;
+  }>;
   prefix?: string;
   proxy_url?: string;
   headers?: Record<string, string>;
@@ -472,6 +486,34 @@ async function updateOauthProviderMap(path: string, provider: string, value?: un
   });
 }
 
+export interface AuthFileRefreshResult {
+  id: string;
+  success: boolean;
+  error?: string;
+}
+
+export const normalizeAuthFileRefreshResults = (payload: unknown): AuthFileRefreshResult[] => {
+  if (!isRecord(payload) || payload.ok !== true || !Array.isArray(payload.results)) {
+    throw new Error('Invalid credential refresh response');
+  }
+  return payload.results.map((entry: unknown) => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.id !== 'string' ||
+      !entry.id.trim() ||
+      typeof entry.success !== 'boolean'
+    ) {
+      throw new Error('Invalid credential refresh result');
+    }
+    // Whitelist result fields: never expose credential metadata or tokens.
+    return {
+      id: entry.id,
+      success: entry.success,
+      ...(!entry.success && typeof entry.error === 'string' ? { error: entry.error } : {}),
+    };
+  });
+};
+
 export interface AuthFileCooldownResetResponse {
   status: 'ok';
   auth_index: string;
@@ -487,8 +529,12 @@ export const authFilesApi = {
       )
     ),
 
-  setStatus: (name: string, disabled: boolean) =>
-    apiClient.patch<AuthFileStatusResponse>('/credentials/status', { name, disabled }),
+  setStatus: (name: string, disabled: boolean, authIndex?: string) =>
+    apiClient.patch<AuthFileStatusResponse>('/credentials/status', {
+      name,
+      disabled,
+      ...(authIndex ? { auth_index: authIndex } : {}),
+    }),
 
   patchFields: (name: string, fields: AuthFileFieldsPatch) =>
     apiClient.patch('/credentials/fields', { name, ...fields }),
@@ -499,6 +545,15 @@ export const authFilesApi = {
       name,
       ...(authIndex ? { auth_index: authIndex } : {}),
     });
+  },
+
+  requestAllManualRefresh: async (): Promise<AuthFileRefreshResult[]> => {
+    const response = await apiClient.post<unknown>(
+      '/credentials/refresh',
+      { all: true },
+      { timeout: 300_000 }
+    );
+    return normalizeAuthFileRefreshResults(response);
   },
 
   resetCooldown: (authIndex: string) =>
