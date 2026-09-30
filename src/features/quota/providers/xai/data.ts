@@ -12,6 +12,8 @@ import {
   XAI_API_REQUEST_HEADERS,
   XAI_BILLING_MONTHLY_URL,
   XAI_BILLING_WEEKLY_URL,
+  XAI_SETTINGS_URL,
+  XAI_USER_URL,
   XAI_PAID_HEALTH_MODEL,
   XAI_REQUEST_HEADERS,
   normalizeStringValue,
@@ -19,6 +21,7 @@ import {
   buildXaiBillingSummary,
   buildXaiPaidHealthSummary,
   mergeXaiBillingSummaries,
+  resolveXaiSubscriptionPlan,
   createStatusError,
   isDisabledAuthFile,
   isPaidXaiAuthFile,
@@ -145,6 +148,52 @@ const requestXaiPaidHealth = async (authIndex: string): Promise<XaiBillingSummar
   return buildXaiPaidHealthSummary(profile);
 };
 
+const readJsonRecord = (result: { statusCode: number; body?: unknown; bodyText?: string }) => {
+  if (result.statusCode < 200 || result.statusCode >= 300) return null;
+  const body = result.body ?? result.bodyText;
+  if (typeof body === 'string') {
+    try {
+      const parsed = JSON.parse(body) as unknown;
+      return toXaiRecord(parsed);
+    } catch {
+      return null;
+    }
+  }
+  return toXaiRecord(body);
+};
+
+const readPlanField = (record: Record<string, unknown> | null, keys: string[]) => {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = normalizeStringValue(record[key]);
+    if (value) return value;
+  }
+  return null;
+};
+
+const requestXaiSubscription = async (authIndex: string) => {
+  const header = { ...XAI_REQUEST_HEADERS };
+  const [userResult, settingsResult] = await Promise.allSettled([
+    apiCallApi.request({ authIndex, method: 'GET', url: XAI_USER_URL, header }),
+    apiCallApi.request({ authIndex, method: 'GET', url: XAI_SETTINGS_URL, header }),
+  ]);
+  const user = userResult.status === 'fulfilled' ? readJsonRecord(userResult.value) : null;
+  const settings =
+    settingsResult.status === 'fulfilled' ? readJsonRecord(settingsResult.value) : null;
+  return resolveXaiSubscriptionPlan(
+    readPlanField(user, ['subscriptionTier', 'subscription_tier']),
+    readPlanField(settings, ['subscription_tier_display', 'subscriptionTierDisplay'])
+  );
+};
+
+const withSubscriptionPlan = (
+  summary: XaiBillingSummary,
+  plan: { label: string; tier: 'elite' | 'premium' | 'standard' } | null
+): XaiBillingSummary => {
+  if (!plan) return summary;
+  return { ...summary, planLabel: plan.label, planTier: plan.tier };
+};
+
 const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBillingSummary> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
@@ -152,8 +201,10 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
     throw new Error(t('xai_quota.missing_auth_index'));
   }
 
+  const subscriptionPlan = await requestXaiSubscription(authIndex);
+
   if (isPaidXaiAuthFile(file)) {
-    return requestXaiPaidHealth(authIndex);
+    return withSubscriptionPlan(await requestXaiPaidHealth(authIndex), subscriptionPlan);
   }
 
   const requestHeader = buildXaiRequestHeaders(file);
@@ -164,7 +215,7 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
   const weeklySummary = weeklyResult.status === 'fulfilled' ? weeklyResult.value : null;
   const monthlySummary = monthlyResult.status === 'fulfilled' ? monthlyResult.value : null;
   const summary = mergeXaiBillingSummaries(weeklySummary, monthlySummary);
-  if (summary) return summary;
+  if (summary) return withSubscriptionPlan(summary, subscriptionPlan);
 
   const billingError =
     weeklyResult.status === 'rejected' && monthlyResult.status === 'rejected'
@@ -172,7 +223,7 @@ const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBilli
       : new Error(t('xai_quota.empty_data'));
 
   try {
-    return await requestXaiPaidHealth(authIndex);
+    return withSubscriptionPlan(await requestXaiPaidHealth(authIndex), subscriptionPlan);
   } catch {
     // Preserve the original free billing error when neither account mode can be queried.
     throw billingError;

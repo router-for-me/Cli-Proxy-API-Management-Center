@@ -7,6 +7,8 @@ import {
   XAI_API_ME_URL,
   XAI_BILLING_MONTHLY_URL,
   XAI_BILLING_WEEKLY_URL,
+  XAI_SETTINGS_URL,
+  XAI_USER_URL,
   isPaidXaiAuthFile,
 } from '@/utils/quota';
 
@@ -77,8 +79,14 @@ describe('xAI paid OAuth quota fallback', () => {
       t
     );
 
-    expect(requests.map((request) => request.url)).toEqual([XAI_API_ME_URL, XAI_API_CHAT_URL]);
-    expect(JSON.parse(requests[1]?.data ?? '{}')).toMatchObject({
+    expect(requests.map((request) => request.url)).toEqual([
+      XAI_USER_URL,
+      XAI_SETTINGS_URL,
+      XAI_API_ME_URL,
+      XAI_API_CHAT_URL,
+    ]);
+    const chatRequest = requests.find((request) => request.url === XAI_API_CHAT_URL);
+    expect(JSON.parse(chatRequest?.data ?? '{}')).toMatchObject({
       model: 'grok-4.5',
       max_tokens: 1,
       stream: false,
@@ -123,7 +131,7 @@ describe('xAI paid OAuth quota fallback', () => {
     );
 
     expect(requests.map((request) => request.url).sort()).toEqual(
-      [XAI_BILLING_WEEKLY_URL, XAI_BILLING_MONTHLY_URL].sort()
+      [XAI_USER_URL, XAI_SETTINGS_URL, XAI_BILLING_WEEKLY_URL, XAI_BILLING_MONTHLY_URL].sort()
     );
     expect(summary).toMatchObject({
       mode: 'billing',
@@ -155,6 +163,8 @@ describe('xAI paid OAuth quota fallback', () => {
     );
 
     expect(requests.map((request) => request.url)).toEqual([
+      XAI_USER_URL,
+      XAI_SETTINGS_URL,
       XAI_BILLING_WEEKLY_URL,
       XAI_BILLING_MONTHLY_URL,
       XAI_API_ME_URL,
