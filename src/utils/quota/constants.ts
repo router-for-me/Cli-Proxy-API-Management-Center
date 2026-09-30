@@ -153,6 +153,8 @@ export const KIMI_REQUEST_HEADERS = {
 // xAI/Grok API configuration
 export const XAI_BILLING_WEEKLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing?format=credits';
 export const XAI_BILLING_MONTHLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing';
+export const XAI_USER_URL = 'https://cli-chat-proxy.grok.com/v1/user?include=subscription';
+export const XAI_SETTINGS_URL = 'https://cli-chat-proxy.grok.com/v1/settings';
 export const XAI_API_ME_URL = 'https://api.x.ai/v1/me';
 export const XAI_API_CHAT_URL = 'https://api.x.ai/v1/chat/completions';
 export const XAI_PAID_HEALTH_MODEL = 'grok-4.5';

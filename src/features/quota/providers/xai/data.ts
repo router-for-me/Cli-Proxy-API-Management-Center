@@ -12,6 +12,8 @@ import {
   XAI_API_REQUEST_HEADERS,
   XAI_BILLING_MONTHLY_URL,
   XAI_BILLING_WEEKLY_URL,
+  XAI_SETTINGS_URL,
+  XAI_USER_URL,
   XAI_PAID_HEALTH_MODEL,
   XAI_REQUEST_HEADERS,
   normalizeStringValue,
@@ -19,6 +21,7 @@ import {
   buildXaiBillingSummary,
   buildXaiPaidHealthSummary,
   mergeXaiBillingSummaries,
+  resolveXaiSubscriptionPlan,
   createStatusError,
   isDisabledAuthFile,
   isPaidXaiAuthFile,
@@ -28,6 +31,7 @@ import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
 
 const XAI_PAID_HEALTH_REQUEST_TIMEOUT_MS = 15000;
+const XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS = 8000;
 
 const toXaiRecord = (value: unknown): Record<string, unknown> | null => {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -145,6 +149,58 @@ const requestXaiPaidHealth = async (authIndex: string): Promise<XaiBillingSummar
   return buildXaiPaidHealthSummary(profile);
 };
 
+const readJsonRecord = (result: { statusCode: number; body?: unknown; bodyText?: string }) => {
+  if (result.statusCode < 200 || result.statusCode >= 300) return null;
+  const body = result.body ?? result.bodyText;
+  if (typeof body === 'string') {
+    try {
+      const parsed = JSON.parse(body) as unknown;
+      return toXaiRecord(parsed);
+    } catch {
+      return null;
+    }
+  }
+  return toXaiRecord(body);
+};
+
+const readPlanField = (record: Record<string, unknown> | null, keys: string[]) => {
+  if (!record) return null;
+  for (const key of keys) {
+    const value = normalizeStringValue(record[key]);
+    if (value) return value;
+  }
+  return null;
+};
+
+const requestXaiSubscription = async (authIndex: string) => {
+  const header = { ...XAI_REQUEST_HEADERS };
+  const [userResult, settingsResult] = await Promise.allSettled([
+    apiCallApi.request(
+      { authIndex, method: 'GET', url: XAI_USER_URL, header },
+      { timeout: XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS }
+    ),
+    apiCallApi.request(
+      { authIndex, method: 'GET', url: XAI_SETTINGS_URL, header },
+      { timeout: XAI_SUBSCRIPTION_REQUEST_TIMEOUT_MS }
+    ),
+  ]);
+  const user = userResult.status === 'fulfilled' ? readJsonRecord(userResult.value) : null;
+  const settings =
+    settingsResult.status === 'fulfilled' ? readJsonRecord(settingsResult.value) : null;
+  return resolveXaiSubscriptionPlan(
+    readPlanField(user, ['subscriptionTier', 'subscription_tier']),
+    readPlanField(settings, ['subscription_tier_display', 'subscriptionTierDisplay'])
+  );
+};
+
+const withSubscriptionPlan = (
+  summary: XaiBillingSummary,
+  plan: { label: string; tier: 'elite' | 'premium' | 'standard' } | null
+): XaiBillingSummary => {
+  if (!plan) return summary;
+  return { ...summary, planLabel: plan.label, planTier: plan.tier };
+};
+
 const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiBillingSummary> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
@@ -184,6 +240,11 @@ export const XAI_CONFIG: QuotaProviderData<XaiQuotaState, XaiBillingSummary> = {
   i18nPrefix: 'xai_quota',
   filterFn: (file) => isXaiFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchXaiQuota,
+  enrichQuota: async (file, summary) => {
+    const authIndex = normalizeAuthIndex(file['auth_index'] ?? file.authIndex);
+    if (!authIndex) return summary;
+    return withSubscriptionPlan(summary, await requestXaiSubscription(authIndex));
+  },
   storeSelector: (state) => state.xaiQuota,
   storeSetter: 'setXaiQuota',
   buildLoadingState: () => ({ status: 'loading', billing: null }),
