@@ -28,7 +28,8 @@ import {
   vertexToResource,
   xaiToResource,
 } from './adapters';
-import { PROVIDER_BRAND_ORDER } from './descriptors';
+import { PROVIDER_BRAND_ORDER, PROVIDER_DESCRIPTORS } from './descriptors';
+import { buildRuntimePolicy } from './runtimePolicy';
 import { buildThinkingFromLevels } from './thinkingLevels';
 import type {
   ProviderBrand,
@@ -178,6 +179,12 @@ const buildProviderKeyConfig = (
     headers: Object.keys(headers).length ? headers : undefined,
     excludedModels: excluded,
     disableCooling: input.disableCooling,
+    ...(input.runtimePolicy
+      ? buildRuntimePolicy(
+          input.runtimePolicy,
+          PROVIDER_DESCRIPTORS[brand].supportsRequestScopedErrors
+        )
+      : {}),
     authIndex: existing?.authIndex,
   };
   if ((brand === 'codex' || brand === 'xai') && input.websockets !== undefined) {
@@ -226,6 +233,7 @@ const buildOpenAIConfig = (
     apiKeyEntries,
     disabled: input.disabled,
     disableCooling: input.disableCooling,
+    ...(input.runtimePolicy ? buildRuntimePolicy(input.runtimePolicy) : {}),
     headers: Object.keys(headers).length ? headers : undefined,
     models: models.length ? models : undefined,
     priority: input.priority,
@@ -264,6 +272,7 @@ const buildSponsorOpenAIConfig = (
     prefix: entry.prefix.trim() || undefined,
     disabled: entry.disabled,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     priority: entry.priority,
     apiKeyEntries,
     models: models.length ? models : undefined,
@@ -292,6 +301,7 @@ const buildSponsorProviderKeyConfig = (
     priority: entry.priority,
     weight: entry.weight,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     excludedModels: excluded,
     models: models.length ? models : undefined,
   };
@@ -318,6 +328,7 @@ const buildSponsorGeminiConfig = (
     priority: entry.priority,
     weight: entry.weight,
     disableCooling: entry.disableCooling,
+    ...(entry.runtimePolicy ? buildRuntimePolicy(entry.runtimePolicy) : {}),
     excludedModels: excluded,
     models: models.length ? models : undefined,
   };

@@ -44,6 +44,8 @@ import { ModelEntriesEditor } from './ModelEntriesEditor';
 import { useModelDiscovery, type UseModelDiscoveryResult } from './useModelDiscovery';
 import { useSponsorUsageCheck, type SponsorUsageMessages } from './useSponsorUsageCheck';
 import styles from './sharedForm.module.scss';
+import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
+import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 
 interface SponsorProviderFormProps {
   brand?: SponsorProviderBrand;
@@ -93,6 +95,7 @@ const emptySponsorKeyEntry = (
   prefix: '',
   disabled: false,
   disableCooling: undefined,
+  runtimePolicy: readRuntimePolicy(),
   priority: undefined,
   weight: undefined,
   models: [emptyModel()],
@@ -183,6 +186,7 @@ const sponsorEntryFromProviderKey = (
   prefix: config.prefix ?? '',
   disabled: hasDisableAllModelsRule(config.excludedModels),
   disableCooling: config.disableCooling,
+  runtimePolicy: readRuntimePolicy(config),
   priority: config.priority,
   weight: config.weight,
   models: modelsFromConfig(config.models),
@@ -201,6 +205,7 @@ const sponsorEntryFromOpenAI = (
     prefix: config.prefix ?? '',
     disabled: config.disabled === true,
     disableCooling: config.disableCooling,
+    runtimePolicy: readRuntimePolicy(config),
     priority: config.priority,
     weight: firstEntry?.weight,
     models: modelsFromConfig(config.models),
@@ -696,19 +701,11 @@ function SponsorKeyEntryCard({
             </span>
           </label>
 
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              className={styles.checkboxBox}
-              checked={entry.disableCooling ?? false}
-              disabled={mutating}
-              onChange={(event) => updateEntry({ disableCooling: event.target.checked })}
-            />
-            <span className={styles.checkboxText}>
-              <span>{t('providersPage.form.disableCooling')}</span>
-              <small>{t('providersPage.form.disableCoolingHint')}</small>
-            </span>
-          </label>
+          <RuntimePolicyEditor
+            value={entry.runtimePolicy ?? readRuntimePolicy()}
+            onChange={(runtimePolicy) => updateEntry({ runtimePolicy })}
+            disabled={mutating}
+          />
 
           <SponsorModelSection
             label={t(`providersPage.sponsor.protocolModels.${modelKey}`)}
@@ -798,6 +795,11 @@ export function SponsorProviderForm({
   };
 
   const validateEntries = (): string | null => {
+    for (const entry of entries) {
+      if (!entry.runtimePolicy) continue;
+      const policyError = validateRuntimePolicy(entry.runtimePolicy);
+      if (policyError) return t(policyError);
+    }
     if (!entries.length) {
       return mode === 'edit' ? null : t('providersPage.sponsor.validation.keyRequired');
     }

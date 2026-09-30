@@ -1793,6 +1793,28 @@
     "version": "Management UI Version"
   },
   "providersPage": {
+    "runtimePolicy": {
+      "title": "Advanced runtime policy",
+      "description": "Inherit uses the parent group policy, then backend defaults. Overrides apply only to this entry.",
+      "cooling": "Cooling",
+      "inherit": "Inherit",
+      "coolingEnabled": "Enable cooling",
+      "coolingDisabled": "Disable cooling",
+      "retry": "Request retries",
+      "retryHint": "Blank inherits the group setting. Use an integer: 0 disables retries; a negative value uses the global retry policy instead of the group policy.",
+      "errorsMode": "Request error rules",
+      "override": "Override",
+      "errorsHint": "Inherit follows the parent policy. Override replaces the list; [] is an explicit empty list. Switching modes keeps your JSON draft.",
+      "errorsJson": "Error rules (JSON)",
+      "schemaHint": "Frontend schema: status (integer), match and matchRegex (string arrays), action (stop, stop-and-cooldown, continue, continue-and-cooldown). Use camelCase matchRegex, not backend YAML field names. Use Go regular expressions; invalid patterns are ignored. Nonpositive status values do not match errors.",
+      "example": "Example:",
+      "invalidRetry": "Retries must be a safe integer, or blank to inherit.",
+      "invalidJson": "Error rules must be valid JSON.",
+      "invalidRules": "Use an array of objects containing only status, match, matchRegex and action.",
+      "invalidStatus": "Rule status must be a safe integer.",
+      "invalidMatches": "Rule match and matchRegex must be arrays of strings.",
+      "invalidAction": "Rule action must be stop, stop-and-cooldown, continue, or continue-and-cooldown."
+    },
     "groups": {
       "rowHint": "Unchanged fields keep their group inheritance. Base URL changes affect every key in this group. New rows create new groups."
     },

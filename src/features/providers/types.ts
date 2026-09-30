@@ -4,6 +4,7 @@
 
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ThinkingLevel } from './thinkingLevels';
+import type { RuntimePolicyDraft } from './runtimePolicy';
 
 export type ProviderBrand =
   | 'gemini'
@@ -154,6 +155,7 @@ export interface SponsorKeyEntryInput {
   prefix: string;
   disabled: boolean;
   disableCooling?: boolean;
+  runtimePolicy?: RuntimePolicyDraft;
   priority?: number;
   weight?: number;
   models: ModelEntryInput[];
@@ -185,6 +187,7 @@ export interface ProviderEntryFormInput {
   prefix: string;
   disabled: boolean;
   disableCooling?: boolean;
+  runtimePolicy?: RuntimePolicyDraft;
   priority?: number;
   weight?: number;
 

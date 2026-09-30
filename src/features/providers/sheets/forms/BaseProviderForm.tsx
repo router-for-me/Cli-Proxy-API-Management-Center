@@ -38,6 +38,8 @@ import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
+import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 
 /** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
 const DISABLE_ALL_RULES = [DISABLE_ALL_RULE];
@@ -86,6 +88,7 @@ function buildInitialForm(
       prefix: '',
       disabled: false,
       disableCooling: undefined,
+      runtimePolicy: readRuntimePolicy(),
       priority: undefined,
       weight: undefined,
       models: [emptyModel()],
@@ -121,6 +124,7 @@ function buildInitialForm(
       prefix: cfg.prefix ?? '',
       disabled: cfg.disabled === true,
       disableCooling: cfg.disableCooling,
+      runtimePolicy: readRuntimePolicy(cfg),
       priority: cfg.priority,
       models: cfg.models?.length
         ? cfg.models.map((m) => ({
@@ -167,6 +171,7 @@ function buildInitialForm(
     prefix: cfg.prefix ?? '',
     disabled,
     disableCooling: cfg.disableCooling,
+    runtimePolicy: readRuntimePolicy(cfg),
     priority: cfg.priority,
     weight: cfg.weight,
     models: cfg.models?.length
@@ -368,6 +373,13 @@ export function BaseProviderForm({
   };
 
   const validate = (): string | null => {
+    if (form.runtimePolicy) {
+      const policyError = validateRuntimePolicy(
+        form.runtimePolicy,
+        descriptor.supportsRequestScopedErrors
+      );
+      if (policyError) return t(policyError);
+    }
     if (descriptor.supportsName && !form.name.trim()) {
       return t('providersPage.form.validation.nameRequired');
     }
@@ -456,14 +468,6 @@ export function BaseProviderForm({
         ? 'unavailable'
         : 'ready';
   const actualApiKeyEntries = form.apiKeyEntries ?? [];
-  const supportsDisableCooling =
-    brand === 'gemini' ||
-    brand === 'interactions' ||
-    brand === 'codex' ||
-    brand === 'meta' ||
-    brand === 'xai' ||
-    isClaudeLikeBrand(brand) ||
-    brand === 'openaiCompatibility';
   const supportsModelImage = brand === 'openaiCompatibility';
   const singleConnectivity =
     brand === 'codex' || brand === 'meta' || brand === 'xai'
@@ -732,23 +736,14 @@ export function BaseProviderForm({
             </span>
           </label>
         ) : null}
-
-        {supportsDisableCooling ? (
-          <label className={styles.checkboxRow}>
-            <input
-              type="checkbox"
-              className={styles.checkboxBox}
-              checked={form.disableCooling ?? false}
-              disabled={mutating}
-              onChange={(e) => updateField('disableCooling', e.target.checked)}
-            />
-            <span className={styles.checkboxText}>
-              <span>{t('providersPage.form.disableCooling')}</span>
-              <small>{t('providersPage.form.disableCoolingHint')}</small>
-            </span>
-          </label>
-        ) : null}
       </div>
+
+      <RuntimePolicyEditor
+        value={form.runtimePolicy ?? readRuntimePolicy()}
+        onChange={(value) => updateField('runtimePolicy', value)}
+        disabled={mutating}
+        supportsErrors={descriptor.supportsRequestScopedErrors}
+      />
 
       {/* 高级折叠区 */}
       {descriptor.supportsApiKeyEntries && form.apiKeyEntries ? (

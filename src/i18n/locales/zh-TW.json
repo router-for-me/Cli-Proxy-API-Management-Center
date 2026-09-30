@@ -1817,6 +1817,28 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "runtimePolicy": {
+      "title": "進階執行策略",
+      "description": "繼承使用所屬群組策略，再回退至後端預設值。覆寫僅套用於目前項目。",
+      "cooling": "冷卻策略",
+      "inherit": "繼承",
+      "coolingEnabled": "啟用冷卻",
+      "coolingDisabled": "停用冷卻",
+      "retry": "請求重試次數",
+      "retryHint": "留空繼承群組設定。請輸入整數：0 表示不重試；負數使用全域重試策略，而非群組策略。",
+      "errorsMode": "請求錯誤規則",
+      "override": "覆寫",
+      "errorsHint": "繼承使用上層策略。覆寫會取代整個清單；[] 表示明確的空清單。切換模式會保留 JSON 草稿。",
+      "errorsJson": "錯誤規則（JSON）",
+      "schemaHint": "前端格式：status（整數）、match 和 matchRegex（字串陣列）、action（stop、stop-and-cooldown、continue、continue-and-cooldown）。請使用駝峰欄位 matchRegex，不要使用後端 YAML 欄位名稱。使用 Go 正規表示式語法；無效的表示式會被忽略。非正數 status 不會比對錯誤。",
+      "example": "範例：",
+      "invalidRetry": "重試次數必須是安全範圍內的整數，或留空以繼承。",
+      "invalidJson": "錯誤規則必須是有效的 JSON。",
+      "invalidRules": "錯誤規則必須是物件陣列，僅可包含 status、match、matchRegex 和 action。",
+      "invalidStatus": "規則的 status 必須是安全範圍內的整數。",
+      "invalidMatches": "規則的 match 和 matchRegex 必須是字串陣列。",
+      "invalidAction": "規則的 action 必須是 stop、stop-and-cooldown、continue 或 continue-and-cooldown。"
+    },
     "groups": {
       "rowHint": "未修改的欄位保留組繼承。修改基礎 URL 將影響組內所有金鑰。新增行會建立新組。"
     },

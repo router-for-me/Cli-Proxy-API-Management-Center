@@ -1791,6 +1791,28 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "runtimePolicy": {
+      "title": "高级运行策略",
+      "description": "继承使用所属分组策略，再回退到后端默认值。覆盖仅作用于当前条目。",
+      "cooling": "冷却策略",
+      "inherit": "继承",
+      "coolingEnabled": "启用冷却",
+      "coolingDisabled": "禁用冷却",
+      "retry": "请求重试次数",
+      "retryHint": "留空继承分组设置。请输入整数：0 表示不重试；负数使用全局重试策略，而非分组策略。",
+      "errorsMode": "请求错误规则",
+      "override": "覆盖",
+      "errorsHint": "继承使用上级策略。覆盖会替换整个列表；[] 表示显式空列表。切换模式会保留 JSON 草稿。",
+      "errorsJson": "错误规则（JSON）",
+      "schemaHint": "前端格式：status（整数）、match 和 matchRegex（字符串数组）、action（stop、stop-and-cooldown、continue、continue-and-cooldown）。请使用驼峰字段 matchRegex，不要使用后端 YAML 字段名。使用 Go 正则语法；无效表达式会被忽略。非正数 status 不会匹配错误。",
+      "example": "示例：",
+      "invalidRetry": "重试次数必须是安全范围内的整数，或留空以继承。",
+      "invalidJson": "错误规则必须是有效的 JSON。",
+      "invalidRules": "错误规则必须是对象数组，仅可包含 status、match、matchRegex 和 action。",
+      "invalidStatus": "规则的 status 必须是安全范围内的整数。",
+      "invalidMatches": "规则的 match 和 matchRegex 必须是字符串数组。",
+      "invalidAction": "规则的 action 必须是 stop、stop-and-cooldown、continue 或 continue-and-cooldown。"
+    },
     "groups": {
       "rowHint": "未修改的字段保留组继承。修改基础 URL 将影响组内所有密钥。新建行会创建新组。"
     },
