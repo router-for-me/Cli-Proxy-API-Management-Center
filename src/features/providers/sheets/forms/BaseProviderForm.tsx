@@ -40,6 +40,8 @@ import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
 import { readModelOptions, validateModelOptions } from '../../modelOptions';
 import { RuntimePolicyEditor } from './RuntimePolicyEditor';
+import { ProviderBehaviorEditor } from './ProviderBehaviorEditor';
+import { pickProviderBehavior } from '../../providerBehavior';
 
 /** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
 const DISABLE_ALL_RULES = [DISABLE_ALL_RULE];
@@ -125,6 +127,7 @@ function buildInitialForm(
       disabled: cfg.disabled === true,
       disableCooling: cfg.disableCooling,
       runtimePolicy: readRuntimePolicy(cfg),
+      ...pickProviderBehavior(cfg, brand),
       priority: cfg.priority,
       models: cfg.models?.length
         ? cfg.models.map((m) => ({
@@ -172,6 +175,7 @@ function buildInitialForm(
     disabled,
     disableCooling: cfg.disableCooling,
     runtimePolicy: readRuntimePolicy(cfg),
+    ...pickProviderBehavior(cfg, brand),
     priority: cfg.priority,
     weight: cfg.weight,
     models: cfg.models?.length
@@ -740,6 +744,12 @@ export function BaseProviderForm({
         ) : null}
       </div>
 
+      <ProviderBehaviorEditor
+        brand={brand}
+        value={form}
+        onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+        disabled={mutating}
+      />
       <RuntimePolicyEditor
         value={form.runtimePolicy ?? readRuntimePolicy()}
         onChange={(value) => updateField('runtimePolicy', value)}

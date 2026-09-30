@@ -6,6 +6,7 @@ import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@
 import type { ThinkingLevel } from './thinkingLevels';
 import type { RuntimePolicyDraft } from './runtimePolicy';
 import type { ModelOptionsInput } from './modelOptions';
+import type { ProviderBehaviorOptions } from '@/types/provider';
 
 export type ProviderBrand =
   | 'gemini'
@@ -147,7 +148,7 @@ export interface ModelEntryInput extends ModelOptionsInput {
 
 export type SponsorProtocol = 'openai' | 'codex' | 'claude' | 'gemini';
 
-export interface SponsorKeyEntryInput {
+export interface SponsorKeyEntryInput extends ProviderBehaviorOptions {
   protocol: SponsorProtocol;
   apiKey: string;
   existingApiKey?: string;
@@ -178,7 +179,7 @@ export interface CloakInput {
   cacheUserId: boolean;
 }
 
-export interface ProviderEntryFormInput {
+export interface ProviderEntryFormInput extends ProviderBehaviorOptions {
   /** OpenAI 创建时只在 apiKeyEntries 中传 */
   apiKey: string;
   /** OpenAI 必填,其余 brand 不展示 */

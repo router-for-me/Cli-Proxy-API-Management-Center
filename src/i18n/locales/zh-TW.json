@@ -1817,6 +1817,20 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "behavior": {
+      "title": "提供商專屬行為",
+      "alphaSearch": "啟用 Alpha Search",
+      "alphaSearchHint": "允許此 Codex 金鑰用於 Alpha Search。上游必須支援此功能。",
+      "codexCloaking": "Codex 請求偽裝",
+      "codexCloakingHint": "為此 API 金鑰覆寫官方 Codex 身分請求標頭設定。選擇預設值會移除此憑證的覆寫設定；僅適用於 OAuth 的設定在此不生效。",
+      "useDefault": "使用後端預設值",
+      "cloakingEnabled": "啟用偽裝",
+      "cloakingDisabled": "停用偽裝",
+      "rebuildMidSystemMessage": "重建系統訊息",
+      "rebuildMidSystemMessageHint": "將 Claude 中 role 為 system 的訊息移至頂層 system 欄位。",
+      "supportPromptCacheKey": "注入提示詞快取鍵",
+      "supportPromptCacheKeyHint": "為相容的請求衍生並注入 prompt_cache_key。僅在上游支援此欄位時啟用。"
+    },
     "modelOptions": {
       "displayName": "顯示名稱",
       "maxContextLength": "上下文長度",

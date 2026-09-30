@@ -151,6 +151,14 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   if (!trimmed) return null;
 
   const config: ProviderKeyConfig = { apiKey: trimmed, ...normalizeRuntimePolicy(record) };
+  for (const [key, wire] of [
+    ['alphaSearch', 'alpha-search'],
+    ['disableCodexCloaking', 'disable-codex-cloaking'],
+    ['rebuildMidSystemMessage', 'rebuild-mid-system-message'],
+  ] as const) {
+    const value = normalizeBoolean(record?.[wire]);
+    if (value !== undefined) config[key] = value;
+  }
   const weight = readCredentialWeight(record?.weight);
   if (weight !== undefined) config.weight = weight;
   const priority = record?.priority;
@@ -279,6 +287,8 @@ const normalizeOpenAIProvider = (
     ...normalizeRuntimePolicy(provider),
   };
 
+  const supportPromptCacheKey = normalizeBoolean(provider['support-prompt-cache-key']);
+  if (supportPromptCacheKey !== undefined) result.supportPromptCacheKey = supportPromptCacheKey;
   const disabled = normalizeBoolean(provider.disabled);
   if (disabled !== undefined) result.disabled = disabled;
   const disableCooling = normalizeBoolean(provider['disable-cooling']);

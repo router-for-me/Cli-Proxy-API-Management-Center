@@ -7,6 +7,13 @@ export interface RequestScopedErrorRule {
   action?: 'stop' | 'stop-and-cooldown' | 'continue' | 'continue-and-cooldown';
 }
 
+export interface ProviderBehaviorOptions {
+  alphaSearch?: boolean;
+  disableCodexCloaking?: boolean;
+  rebuildMidSystemMessage?: boolean;
+  supportPromptCacheKey?: boolean;
+}
+
 export interface ProviderRuntimePolicy {
   requestRetry?: number;
   requestScopedErrors?: RequestScopedErrorRule[];
@@ -76,7 +83,7 @@ export interface GeminiKeyConfig extends ProviderRuntimePolicy {
   authIndex?: string;
 }
 
-export interface ProviderKeyConfig extends ProviderRuntimePolicy {
+export interface ProviderKeyConfig extends ProviderRuntimePolicy, ProviderBehaviorOptions {
   source?: ProviderSource;
   apiKey: string;
   priority?: number;
@@ -94,7 +101,7 @@ export interface ProviderKeyConfig extends ProviderRuntimePolicy {
   authIndex?: string;
 }
 
-export interface OpenAIProviderConfig extends ProviderRuntimePolicy {
+export interface OpenAIProviderConfig extends ProviderRuntimePolicy, ProviderBehaviorOptions {
   source?: ProviderSource;
   name: string;
   prefix?: string;

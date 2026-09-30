@@ -47,6 +47,8 @@ import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
 import { readModelOptions, validateModelOptions } from '../../modelOptions';
 import type { ModelAlias } from '@/types';
 import { RuntimePolicyEditor } from './RuntimePolicyEditor';
+import { ProviderBehaviorEditor } from './ProviderBehaviorEditor';
+import { pickProviderBehavior } from '../../providerBehavior';
 
 interface SponsorProviderFormProps {
   brand?: SponsorProviderBrand;
@@ -176,6 +178,7 @@ const sponsorEntryFromProviderKey = (
   disabled: hasDisableAllModelsRule(config.excludedModels),
   disableCooling: config.disableCooling,
   runtimePolicy: readRuntimePolicy(config),
+  ...pickProviderBehavior(config, protocol),
   priority: config.priority,
   weight: config.weight,
   models: modelsFromConfig(config.models),
@@ -195,6 +198,7 @@ const sponsorEntryFromOpenAI = (
     disabled: config.disabled === true,
     disableCooling: config.disableCooling,
     runtimePolicy: readRuntimePolicy(config),
+    ...pickProviderBehavior(config, 'openaiCompatibility'),
     priority: config.priority,
     weight: firstEntry?.weight,
     models: modelsFromConfig(config.models),
@@ -691,6 +695,12 @@ function SponsorKeyEntryCard({
             </span>
           </label>
 
+          <ProviderBehaviorEditor
+            brand={entry.protocol === 'openai' ? 'openaiCompatibility' : entry.protocol}
+            value={entry}
+            onChange={updateEntry}
+            disabled={mutating}
+          />
           <RuntimePolicyEditor
             value={entry.runtimePolicy ?? readRuntimePolicy()}
             onChange={(runtimePolicy) => updateEntry({ runtimePolicy })}

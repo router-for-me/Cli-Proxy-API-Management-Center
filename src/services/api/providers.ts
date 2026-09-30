@@ -81,7 +81,7 @@ const applyPolicyIntent = (
   }
 };
 
-const serializeProviderKey = (config: ProviderKeyConfig) => {
+const serializeProviderKey = (config: ProviderKeyConfig, family: ProviderFamily) => {
   const payload: Record<string, unknown> = {
     'api-key': config.apiKey,
     ...serializeRuntimePolicy(config),
@@ -91,6 +91,14 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.websockets !== undefined) payload.websockets = config.websockets;
+  if (family === 'codex') {
+    if (config.alphaSearch !== undefined) payload['alpha-search'] = config.alphaSearch;
+    if (config.disableCodexCloaking !== undefined)
+      payload['disable-codex-cloaking'] = config.disableCodexCloaking;
+  }
+  if (family === 'claude' && config.rebuildMidSystemMessage !== undefined) {
+    payload['rebuild-mid-system-message'] = config.rebuildMidSystemMessage;
+  }
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
   if (config.disableCooling !== undefined) payload['disable-cooling'] = config.disableCooling;
   const headers = serializeHeaders(config.headers);
@@ -191,6 +199,8 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   };
   if (provider.prefix?.trim()) payload.prefix = provider.prefix.trim();
   if (provider.disabled !== undefined) payload.disabled = provider.disabled;
+  if (provider.supportPromptCacheKey !== undefined)
+    payload['support-prompt-cache-key'] = provider.supportPromptCacheKey;
   const headers = serializeHeaders(provider.headers);
   if (headers) payload.headers = headers;
   const models = serializeModelAliases(provider.models, true);
@@ -281,7 +291,7 @@ const keySerializer = (family: ProviderFamily) =>
     ? serializeVertexKey
     : family === 'gemini' || family === 'interactions'
       ? serializeGeminiKey
-      : serializeProviderKey;
+      : (config: ProviderKeyConfig) => serializeProviderKey(config, family);
 const emptyOverride = (field: string): unknown => {
   if (['models', 'excluded-models', 'request-scoped-errors'].includes(field)) return [];
   if (field === 'request-retry') return -1;

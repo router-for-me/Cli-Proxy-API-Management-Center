@@ -1793,6 +1793,20 @@
     "version": "Management UI Version"
   },
   "providersPage": {
+    "behavior": {
+      "title": "Provider-specific behavior",
+      "alphaSearch": "Enable Alpha Search",
+      "alphaSearchHint": "Allow this Codex key to serve Alpha Search. The upstream must support it.",
+      "codexCloaking": "Codex request cloaking",
+      "codexCloakingHint": "Override official Codex identity headers for this API key. Default removes the credential override; OAuth-only settings do not apply here.",
+      "useDefault": "Use backend default",
+      "cloakingEnabled": "Enable cloaking",
+      "cloakingDisabled": "Disable cloaking",
+      "rebuildMidSystemMessage": "Rebuild system messages",
+      "rebuildMidSystemMessageHint": "Move Claude messages with role system into the top-level system field.",
+      "supportPromptCacheKey": "Inject prompt cache key",
+      "supportPromptCacheKeyHint": "Derive and inject prompt_cache_key for compatible requests. Enable only when the upstream supports this field."
+    },
     "modelOptions": {
       "displayName": "Display name",
       "maxContextLength": "Context length",

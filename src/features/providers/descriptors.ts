@@ -265,6 +265,13 @@ export const PROVIDER_DESCRIPTORS: Record<ProviderBrand, ProviderDescriptor> = {
   },
 };
 
+export const getProviderBehaviorCapabilities = (brand: ProviderBrand) => ({
+  alphaSearch: brand === 'codex',
+  disableCodexCloaking: brand === 'codex',
+  rebuildMidSystemMessage: brand === 'claude',
+  supportPromptCacheKey: brand === 'openaiCompatibility',
+});
+
 export interface ProviderModelCapabilities {
   maxContextLength: boolean;
   isCompat: boolean;

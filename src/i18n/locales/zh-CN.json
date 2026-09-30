@@ -1791,6 +1791,20 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "behavior": {
+      "title": "提供商专属行为",
+      "alphaSearch": "启用 Alpha Search",
+      "alphaSearchHint": "允许此 Codex 密钥用于 Alpha Search。上游必须支持此功能。",
+      "codexCloaking": "Codex 请求伪装",
+      "codexCloakingHint": "为此 API 密钥覆盖官方 Codex 身份请求头设置。选择默认值会移除此凭据的覆盖设置；仅适用于 OAuth 的设置在此不生效。",
+      "useDefault": "使用后端默认值",
+      "cloakingEnabled": "启用伪装",
+      "cloakingDisabled": "禁用伪装",
+      "rebuildMidSystemMessage": "重建系统消息",
+      "rebuildMidSystemMessageHint": "将 Claude 中 role 为 system 的消息移至顶层 system 字段。",
+      "supportPromptCacheKey": "注入提示词缓存键",
+      "supportPromptCacheKeyHint": "为兼容的请求派生并注入 prompt_cache_key。仅在上游支持此字段时启用。"
+    },
     "modelOptions": {
       "displayName": "显示名称",
       "maxContextLength": "上下文长度",
