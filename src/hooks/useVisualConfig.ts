@@ -184,10 +184,11 @@ function getRedisRetentionError(value: string): 'integer_range_1_3600' | undefin
 }
 
 export function getVisualConfigValidationErrors(
-  values: VisualConfigValues
+  values: VisualConfigValues,
+  dirtyFields?: ReadonlySet<string>
 ): VisualConfigValidationErrors {
   return {
-    ...validateVisualAdditions(values),
+    ...validateVisualAdditions(values, dirtyFields),
     ...validateVisualServer(values),
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
@@ -1567,8 +1568,8 @@ export function useVisualConfig() {
   } = state;
   const visualDirty = dirtyFields.size > 0;
   const visualValidationErrors = useMemo(
-    () => getVisualConfigValidationErrors(visualValues),
-    [visualValues]
+    () => getVisualConfigValidationErrors(visualValues, dirtyFields),
+    [visualValues, dirtyFields]
   );
   const visualHasPayloadValidationErrors = useMemo(
     () =>

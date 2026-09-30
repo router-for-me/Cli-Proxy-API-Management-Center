@@ -289,7 +289,10 @@ function validIP(raw: string): boolean {
     return false;
   }
 }
-export function validateVisualAdditions(values: VisualConfigValues): VisualConfigValidationErrors {
+export function validateVisualAdditions(
+  values: VisualConfigValues,
+  dirtyFields?: ReadonlySet<string>
+): VisualConfigValidationErrors {
   const errors: VisualConfigValidationErrors = {
     transientErrorCooldownSeconds: undefined,
     videoResultAuthCacheTTL: undefined,
@@ -323,6 +326,9 @@ export function validateVisualAdditions(values: VisualConfigValues): VisualConfi
     'antigravityConnectionPoolIdleTimeout',
     'codexStreamBootstrapTimeout',
   ] as const) {
+    // The backend accepts these strings with runtime fallbacks. Existing values must not
+    // block unrelated edits, but newly edited durations still receive strict validation.
+    if (dirtyFields && !dirtyFields.has(key)) continue;
     const value = values[key].trim();
     if (!value) continue;
     const codex = key === 'codexStreamBootstrapTimeout';
