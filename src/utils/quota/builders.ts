@@ -426,6 +426,7 @@ const emptyXaiBillingSummary = (): XaiBillingSummary => ({
   onDemandCapCents: null,
   onDemandUsedCents: null,
   onDemandUsedPercent: null,
+  prepaidBalanceCents: null,
   usedPercent: null,
 });
 
@@ -448,6 +449,22 @@ function xaiPeriodInstants(
       ? (resetAtMs - startMs) / 3_600_000
       : null;
   return { resetAtMs, periodHours };
+}
+
+export function resolveXaiSubscriptionPlan(
+  tier: string | null | undefined,
+  display: string | null | undefined
+): { label: string; tier: 'elite' | 'premium' | 'standard' } | null {
+  const label = normalizeStringValue(display) ?? normalizeStringValue(tier);
+  if (!label) return null;
+  const key = `${display ?? ''} ${tier ?? ''}`.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const planTier =
+    key.includes('heavy')
+      ? 'elite'
+      : key.includes('supergrok') || key.includes('premium')
+        ? 'premium'
+        : 'standard';
+  return { label, tier: planTier };
 }
 
 export function buildXaiBillingSummary(
@@ -496,6 +513,9 @@ export function buildXaiBillingSummary(
       ? Math.max(0, usedCents - monthlyLimitCents)
       : null;
   const onDemandUsedCents = explicitOnDemandUsedCents ?? derivedOnDemandUsedCents;
+  const prepaidBalanceCents = normalizeXaiCentValue(
+    config.prepaidBalance ?? config.prepaid_balance
+  );
   const usedPercent =
     monthlyLimitCents !== null && monthlyLimitCents > 0 && includedUsedCents !== null
       ? (includedUsedCents / monthlyLimitCents) * 100
@@ -529,6 +549,7 @@ export function buildXaiBillingSummary(
   summary.onDemandCapCents = onDemandCapCents;
   summary.onDemandUsedCents = onDemandUsedCents;
   summary.onDemandUsedPercent = onDemandUsedPercent;
+  summary.prepaidBalanceCents = prepaidBalanceCents;
   summary.billingPeriodStart = hasMonthlyData ? billingPeriodStart : undefined;
   summary.billingPeriodEnd = hasMonthlyData ? billingPeriodEnd : undefined;
   summary.usedPercent = usedPercent;
@@ -578,6 +599,9 @@ export function mergeXaiBillingSummaries(
     onDemandCapCents: primary.onDemandCapCents ?? fallback.onDemandCapCents,
     onDemandUsedCents: primary.onDemandUsedCents ?? fallback.onDemandUsedCents,
     onDemandUsedPercent: primary.onDemandUsedPercent ?? fallback.onDemandUsedPercent,
+    prepaidBalanceCents: primary.prepaidBalanceCents ?? fallback.prepaidBalanceCents,
+    planLabel: primary.planLabel ?? fallback.planLabel,
+    planTier: primary.planTier ?? fallback.planTier,
     billingPeriodStart: primary.billingPeriodStart ?? fallback.billingPeriodStart,
     billingPeriodEnd: primary.billingPeriodEnd ?? fallback.billingPeriodEnd,
     usedPercent: primary.usedPercent ?? fallback.usedPercent,
