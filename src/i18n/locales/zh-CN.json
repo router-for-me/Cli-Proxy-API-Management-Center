@@ -1854,9 +1854,6 @@
       "invalidMatches": "规则的 match 和 matchRegex 必须是字符串数组。",
       "invalidAction": "规则的 action 必须是 stop、stop-and-cooldown、continue 或 continue-and-cooldown。"
     },
-    "groups": {
-      "rowHint": "未修改的字段保留组继承。修改基础 URL 将影响组内所有密钥。新建行会创建新组。"
-    },
     "header": {
       "title": "AI 提供商",
       "activeResources": "{{active}}/{{total}} 个活跃资源",

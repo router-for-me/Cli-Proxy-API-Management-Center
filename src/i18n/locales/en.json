@@ -1856,9 +1856,6 @@
       "invalidMatches": "Rule match and matchRegex must be arrays of strings.",
       "invalidAction": "Rule action must be stop, stop-and-cooldown, continue, or continue-and-cooldown."
     },
-    "groups": {
-      "rowHint": "Unchanged fields keep their group inheritance. Base URL changes affect every key in this group. New rows create new groups."
-    },
     "header": {
       "title": "AI Providers",
       "activeResources": "{{active}}/{{total}} active resources",

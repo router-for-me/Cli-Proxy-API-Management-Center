@@ -1880,9 +1880,6 @@
       "invalidMatches": "規則的 match 和 matchRegex 必須是字串陣列。",
       "invalidAction": "規則的 action 必須是 stop、stop-and-cooldown、continue 或 continue-and-cooldown。"
     },
-    "groups": {
-      "rowHint": "未修改的欄位保留組繼承。修改基礎 URL 將影響組內所有金鑰。新增行會建立新組。"
-    },
     "header": {
       "title": "AI 提供商",
       "activeResources": "{{active}}/{{total}} 個活躍資源",

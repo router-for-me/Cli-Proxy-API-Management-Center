@@ -1850,9 +1850,6 @@
       "invalidMatches": "Поля match и matchRegex должны быть массивами строк.",
       "invalidAction": "Поле action должно быть stop, stop-and-cooldown, continue или continue-and-cooldown."
     },
-    "groups": {
-      "rowHint": "Неизменённые поля сохраняют наследование. Изменение базового URL влияет на все ключи группы. Новая строка создаёт группу."
-    },
     "header": {
       "title": "AI Провайдеры",
       "activeResources": "{{active}}/{{total}} активных",

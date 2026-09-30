@@ -14,12 +14,17 @@ describe('provider workbench editing surface', () => {
     expect(providersApi.updateCodexConfig).toBeFunction();
   });
 
-  test('locales retain the group-safety hint without linking to the removed editor', () => {
+  test('omits the group explanation from provider forms and locales', () => {
+    const source = readFileSync(
+      new URL('../src/features/providers/sheets/ProviderSheet.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(source).not.toContain('providersPage.groups.rowHint');
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
       const messages = JSON.parse(
         readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
       );
-      expect(Object.keys(messages.providersPage.groups)).toEqual(['rowHint']);
+      expect(messages.providersPage.groups).toBeUndefined();
     }
   });
 });
