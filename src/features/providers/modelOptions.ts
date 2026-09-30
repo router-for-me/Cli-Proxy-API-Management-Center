@@ -147,7 +147,13 @@ export function validateModelOptions(entries: ModelEntryInput[]): string | null 
       )
     )
       return 'providersPage.modelOptions.invalidBudget';
-    if (typeof min === 'number' && typeof max === 'number' && max > 0 && min > max) {
+    // Go uses zero for omitted bounds. Only min=max=0 means no numeric range;
+    // a zero maximum with a positive minimum is not an unlimited budget.
+    // Keep pre-existing configurations editable when their budget was not touched.
+    if (
+      (entry.thinkingBudgetTouched || !entry.thinkingJson?.trim()) &&
+      Number(min ?? 0) > Number(max ?? 0)
+    ) {
       return 'providersPage.modelOptions.invalidRange';
     }
   }

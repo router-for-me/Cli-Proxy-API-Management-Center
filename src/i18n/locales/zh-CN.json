@@ -1819,7 +1819,7 @@
       "thinkingMode": "思考配置覆盖",
       "useDefault": "使用默认",
       "custom": "自定义",
-      "thinkingHint": "默认继承后端行为；空的自定义覆盖是显式的 {}。预算和思考档位可以同时设置。最大值 0 表示未指定。",
+      "thinkingHint": "默认继承后端行为；空的自定义覆盖是显式的 {}。预算和思考档位可以同时设置。仅当最小值和最大值均为 0 或留空时，才不指定数值范围。最小值大于 0 时须设置不小于它的最大值。",
       "thinkingMin": "最小思考预算",
       "thinkingMax": "最大思考预算",
       "thinkingZeroAllowed": "允许零预算",
@@ -1827,7 +1827,7 @@
       "invalidContext": "上下文长度必须是非负安全整数。",
       "invalidThinking": "思考配置必须是有效的 JSON 对象。",
       "invalidBudget": "思考预算必须是非负安全整数。",
-      "invalidRange": "最小思考预算不能大于最大值（最大值为 0 时除外）。",
+      "invalidRange": "最小思考预算不能大于最大值，留空的边界按 0 处理。",
       "removeModel": "移除模型",
       "modelName": "模型名称",
       "modelAlias": "别名（可选）"

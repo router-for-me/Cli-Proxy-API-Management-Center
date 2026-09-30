@@ -1845,7 +1845,7 @@
       "thinkingMode": "思考設定覆寫",
       "useDefault": "使用預設",
       "custom": "自訂",
-      "thinkingHint": "預設繼承後端行為；空的自訂覆寫是明確的 {}。預算和思考等級可以同時設定。最大值 0 表示未指定。",
+      "thinkingHint": "預設繼承後端行為；空的自訂覆寫是明確的 {}。預算和思考等級可以同時設定。僅當最小值和最大值均為 0 或留空時，才不指定數值範圍。最小值大於 0 時須設定不小於它的最大值。",
       "thinkingMin": "最小思考預算",
       "thinkingMax": "最大思考預算",
       "thinkingZeroAllowed": "允許零預算",
@@ -1853,7 +1853,7 @@
       "invalidContext": "上下文長度必須是非負安全整數。",
       "invalidThinking": "思考設定必須是有效的 JSON 物件。",
       "invalidBudget": "思考預算必須是非負安全整數。",
-      "invalidRange": "最小思考預算不能大於最大值（最大值為 0 時除外）。",
+      "invalidRange": "最小思考預算不能大於最大值，留空的邊界按 0 處理。",
       "removeModel": "移除模型",
       "modelName": "模型名稱",
       "modelAlias": "別名（選填）"

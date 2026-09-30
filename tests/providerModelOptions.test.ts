@@ -132,7 +132,7 @@ describe('provider model options', () => {
       buildModelOptions({ ...entry, thinkingMin: '0', thinkingBudgetTouched: true }).thinking
     ).toEqual({ min: 0, levels: ['high'] });
   });
-  test('validates safe non-negative integers and ranges, with zero maximum unspecified', () => {
+  test('validates budgets using backend zero-bound semantics without blocking untouched imports', () => {
     for (const value of ['-1', '1.5', 'Infinity', '9007199254740992', '1e3']) {
       expect(validateModelOptions([{ name: 'model', maxContextLength: value }])).toBe(
         'providersPage.modelOptions.invalidContext'
@@ -150,6 +150,17 @@ describe('provider model options', () => {
       validateModelOptions([
         { name: 'model', thinkingEnabled: true, thinkingMin: '20', thinkingMax: '0' },
       ])
+    ).toBe('providersPage.modelOptions.invalidRange');
+    expect(
+      validateModelOptions([{ name: 'model', thinkingEnabled: true, thinkingMin: '20' }])
+    ).toBe('providersPage.modelOptions.invalidRange');
+    expect(
+      validateModelOptions([
+        { name: 'model', thinkingEnabled: true, thinkingMin: '0', thinkingMax: '0' },
+      ])
+    ).toBeNull();
+    expect(
+      validateModelOptions([draft({ name: 'model', thinking: { min: 20, max: 0 } })])
     ).toBeNull();
     expect(validateModelOptions([{ name: 'model', thinkingJson: '[]' }])).toBe(
       'providersPage.modelOptions.invalidThinking'

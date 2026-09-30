@@ -1821,7 +1821,7 @@
       "thinkingMode": "Thinking override",
       "useDefault": "Use default",
       "custom": "Custom",
-      "thinkingHint": "Default inherits backend behavior; an empty custom override is an explicit {}. Budgets and effort levels can coexist. Maximum 0 means unspecified.",
+      "thinkingHint": "Default inherits backend behavior; an empty custom override is an explicit {}. Budgets and effort levels can coexist. Only when both budgets are 0 or blank is the numeric range unspecified. Set a maximum at least as large as a positive minimum.",
       "thinkingMin": "Minimum thinking budget",
       "thinkingMax": "Maximum thinking budget",
       "thinkingZeroAllowed": "Allow zero budget",
@@ -1829,7 +1829,7 @@
       "invalidContext": "Context length must be a non-negative safe integer.",
       "invalidThinking": "Thinking must be a valid JSON object.",
       "invalidBudget": "Thinking budgets must be non-negative safe integers.",
-      "invalidRange": "Minimum thinking budget must not exceed the maximum (unless maximum is 0).",
+      "invalidRange": "Minimum thinking budget must not exceed the maximum. Blank bounds count as 0.",
       "removeModel": "Remove model",
       "modelName": "Model name",
       "modelAlias": "Alias (optional)"
