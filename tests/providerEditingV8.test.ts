@@ -213,7 +213,16 @@ describe('v8 model row identity', () => {
     const config = row(b.group());
     await providersApi.updateCodexConfig(config.apiKey, undefined, {
       ...config,
-      models: [{ ...config.models![0], sourceIndex: null }],
+      // A new form row contains only the fields the user enters, not a clone of
+      // the deleted row's now-editable advanced properties.
+      models: [
+        {
+          name: originalModel.name,
+          alias: originalModel.alias,
+          thinking: originalModel.thinking,
+          sourceIndex: null,
+        },
+      ],
     });
     expect(key(b.group()).models).toEqual([
       {

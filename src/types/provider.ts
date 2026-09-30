@@ -35,6 +35,14 @@ export interface ModelAlias {
   priority?: number;
   testModel?: string;
   image?: boolean;
+  displayName?: string;
+  maxContextLength?: number;
+  forceMapping?: boolean;
+  isCompat?: boolean;
+  supportConfigurationUpdate?: boolean;
+  inputModalities?: string[];
+  outputModalities?: string[];
+  useMaxCompletionTokens?: boolean;
   thinking?: Record<string, unknown>;
 }
 

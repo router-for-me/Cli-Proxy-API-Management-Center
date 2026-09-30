@@ -19,7 +19,6 @@ import { maskApiKey } from '@/utils/format';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { mergeDiscoveredModels } from '../../modelEntries';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
-import { readThinkingLevels } from '../../thinkingLevels';
 import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
 import {
   discoveryBrandForSponsorProtocol,
@@ -45,6 +44,8 @@ import { useModelDiscovery, type UseModelDiscoveryResult } from './useModelDisco
 import { useSponsorUsageCheck, type SponsorUsageMessages } from './useSponsorUsageCheck';
 import styles from './sharedForm.module.scss';
 import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
+import { readModelOptions, validateModelOptions } from '../../modelOptions';
+import type { ModelAlias } from '@/types';
 import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 
 interface SponsorProviderFormProps {
@@ -145,19 +146,7 @@ const isHealthyUsageSummary = (summary: ApiKeyFunUsageSummary): boolean => {
   return summary.isValid && (!normalizedStatus || normalizedStatus === 'active');
 };
 
-const modelsFromConfig = (
-  models:
-    | Array<{
-        sourceIndex?: number | null;
-        name?: string;
-        alias?: string;
-        priority?: number;
-        testModel?: string;
-        image?: boolean;
-        thinking?: Record<string, unknown>;
-      }>
-    | undefined
-): ModelEntryInput[] =>
+const modelsFromConfig = (models: ModelAlias[] | undefined): ModelEntryInput[] =>
   models?.length
     ? models.map((model) => ({
         sourceIndex: model.sourceIndex,
@@ -167,7 +156,7 @@ const modelsFromConfig = (
         testModel: model.testModel,
         image: model.image === true,
         thinkingJson: model.thinking ? JSON.stringify(model.thinking, null, 2) : '',
-        thinkingLevels: readThinkingLevels(model.thinking),
+        ...readModelOptions(model),
       }))
     : [emptyModel()];
 
@@ -285,6 +274,7 @@ function SponsorModelSection({
           />
         ) : null}
         <ModelEntriesEditor
+          providerBrand={protocol === 'openai' ? 'openaiCompatibility' : protocol}
           models={modelsList}
           supportsImage={protocol === 'openai'}
           supportsThinking
@@ -796,6 +786,8 @@ export function SponsorProviderForm({
 
   const validateEntries = (): string | null => {
     for (const entry of entries) {
+      const modelError = validateModelOptions(entry.models);
+      if (modelError) return t(modelError);
       if (!entry.runtimePolicy) continue;
       const policyError = validateRuntimePolicy(entry.runtimePolicy);
       if (policyError) return t(policyError);

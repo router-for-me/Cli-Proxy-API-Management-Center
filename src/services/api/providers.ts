@@ -3,6 +3,7 @@ import { apiClient } from './client';
 import { guardConfigConnection } from './configValue';
 import { isRecord } from '@/utils/helpers';
 import { normalizeApiKeyEntry, normalizeProviderGroups } from './transformers';
+import { serializeModelOptions } from './providerModels';
 import type {
   GeminiKeyConfig,
   OpenAIProviderConfig,
@@ -19,7 +20,10 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
     ? models
         .map((model) => {
           if (!model?.name) return null;
-          const payload: Record<string, unknown> = { name: model.name };
+          const payload: Record<string, unknown> = {
+            name: model.name,
+            ...serializeModelOptions(model, includeOpenAIFields),
+          };
           if (model.alias) {
             payload.alias = model.alias;
           }
@@ -31,9 +35,6 @@ const serializeModelAliases = (models?: ModelAlias[], includeOpenAIFields = fals
           }
           if (includeOpenAIFields && model.image) {
             payload.image = true;
-          }
-          if (model.thinking) {
-            payload.thinking = model.thinking;
           }
           return payload;
         })
@@ -124,7 +125,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
           return {
             name,
             alias,
-            ...(model.thinking ? { thinking: model.thinking } : {}),
+            ...serializeModelOptions(model, false, true),
           };
         })
         .filter(Boolean)

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconPlus, IconX } from '@/components/ui/icons';
-import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
-import { THINKING_LEVELS, type ThinkingLevel } from '../../thinkingLevels';
-import type { ModelEntryInput } from '../../types';
+import { ModelAdvancedFields } from './ModelAdvancedFields';
+import type { ModelEntryInput, ProviderBrand } from '../../types';
 import styles from './sharedForm.module.scss';
 
 const COLLAPSED_LIMIT = 10;
 
 interface ModelEntriesEditorProps {
   models: ModelEntryInput[];
+  providerBrand?: ProviderBrand;
   /** Only OpenAI-compatible entries can expose the image-generation capability. */
   supportsImage: boolean;
   /** Every backend provider model can override its thinking capability. */
@@ -23,6 +23,7 @@ interface ModelEntriesEditorProps {
 
 export function ModelEntriesEditor({
   models,
+  providerBrand = 'gemini',
   supportsImage,
   supportsThinking,
   mutating,
@@ -56,31 +57,23 @@ export function ModelEntriesEditor({
   return (
     <>
       {visible.map((entry, idx) => {
-        const hasExtendedOptions = supportsImage || supportsThinking;
-        const expanded = hasExtendedOptions && expandedIdx === idx;
-        const thinkingLevels = entry.thinkingLevels ?? [];
-        const hasThinking = entry.thinkingLevelsTouched
-          ? thinkingLevels.length > 0
-          : (entry.thinkingJson ?? '').trim().length > 0;
-        const toggleThinkingLevel = (level: ThinkingLevel) => {
-          const nextLevels = thinkingLevels.includes(level)
-            ? thinkingLevels.filter((item) => item !== level)
-            : THINKING_LEVELS.filter((item) => item === level || thinkingLevels.includes(item));
-          onUpdate(idx, { thinkingLevels: nextLevels, thinkingLevelsTouched: true });
-        };
+        const expanded = expandedIdx === idx;
+        const hasThinking = entry.thinkingEnabled ?? Boolean(entry.thinkingJson?.trim());
         return (
           <div key={idx} className={styles.modelEntry}>
             <div className={styles.modelAliasRow}>
               <input
                 className={styles.input}
-                placeholder="model-name"
+                placeholder={t('providersPage.modelOptions.modelName')}
+                aria-label={t('providersPage.modelOptions.modelName')}
                 value={entry.name}
                 onChange={(e) => onUpdate(idx, { name: e.target.value })}
                 disabled={mutating}
               />
               <input
                 className={styles.input}
-                placeholder="alias (optional)"
+                placeholder={t('providersPage.modelOptions.modelAlias')}
+                aria-label={t('providersPage.modelOptions.modelAlias')}
                 value={entry.alias ?? ''}
                 onChange={(e) => onUpdate(idx, { alias: e.target.value })}
                 disabled={mutating}
@@ -96,29 +89,29 @@ export function ModelEntriesEditor({
                     {t('providersPage.form.modelBadgeThinking')}
                   </span>
                 ) : null}
-                {hasExtendedOptions ? (
-                  <button
-                    type="button"
-                    className={styles.entryCardIconBtn}
-                    onClick={() => setExpandedIdx(expanded ? null : idx)}
-                    title={expanded ? t('common.collapse') : t('common.expand')}
-                    aria-label={expanded ? t('common.collapse') : t('common.expand')}
-                    aria-expanded={expanded}
-                  >
-                    <IconChevronDown
-                      className={[
-                        styles.entryCardChevron,
-                        expanded ? styles.entryCardChevronOpen : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      size={14}
-                    />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  className={styles.entryCardIconBtn}
+                  onClick={() => setExpandedIdx(expanded ? null : idx)}
+                  title={expanded ? t('common.collapse') : t('common.expand')}
+                  aria-label={expanded ? t('common.collapse') : t('common.expand')}
+                  aria-expanded={expanded}
+                  disabled={mutating}
+                >
+                  <IconChevronDown
+                    className={[
+                      styles.entryCardChevron,
+                      expanded ? styles.entryCardChevronOpen : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    size={14}
+                  />
+                </button>
                 <button
                   type="button"
                   className={styles.removeBtn}
+                  aria-label={t('providersPage.modelOptions.removeModel')}
                   disabled={mutating || removeDisabled}
                   onClick={() => handleRemove(idx)}
                 >
@@ -143,38 +136,13 @@ export function ModelEntriesEditor({
                     </span>
                   </label>
                 ) : null}
-                {supportsThinking ? (
-                  <fieldset className={styles.thinkingFieldset}>
-                    <legend className={styles.label}>
-                      {t('providersPage.form.thinkingConfig')}
-                    </legend>
-                    <div className={styles.thinkingLevelGrid}>
-                      {THINKING_LEVELS.map((level) => (
-                        <SelectionCheckbox
-                          key={level}
-                          checked={thinkingLevels.includes(level)}
-                          disabled={mutating}
-                          onChange={() => toggleThinkingLevel(level)}
-                          className={`${styles.thinkingLevelOption} ${
-                            thinkingLevels.includes(level) ? styles.thinkingLevelOptionSelected : ''
-                          }`}
-                          labelClassName={styles.thinkingLevelLabel}
-                          label={
-                            <>
-                              <span>{t(`providersPage.form.thinkingLevels.${level}`)}</span>
-                              <code>{level}</code>
-                            </>
-                          }
-                        />
-                      ))}
-                    </div>
-                    {(entry.thinkingJson ?? '').trim() && !entry.thinkingLevelsTouched ? (
-                      <p className={styles.thinkingExistingHint}>
-                        {t('providersPage.form.thinkingExistingHint')}
-                      </p>
-                    ) : null}
-                  </fieldset>
-                ) : null}
+                <ModelAdvancedFields
+                  entry={entry}
+                  providerBrand={providerBrand}
+                  disabled={mutating}
+                  supportsThinking={supportsThinking}
+                  onUpdate={(patch) => onUpdate(idx, patch)}
+                />
               </div>
             ) : null}
           </div>

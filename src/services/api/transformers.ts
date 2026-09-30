@@ -11,12 +11,10 @@ import type { ProviderRuntimePolicy, RequestScopedErrorRule } from '@/types/prov
 import { buildHeaderObject } from '@/utils/headers';
 import { isRecord } from '@/utils/helpers';
 import { readCredentialWeight } from '@/utils/credentialWeight';
+import { normalizeModelOptions, normalizeModelThinking } from './providerModels';
 
 const normalizeBoolean = (value: unknown): boolean | undefined =>
   typeof value === 'boolean' ? value : undefined;
-
-const normalizeRecord = (value: unknown): Record<string, unknown> | undefined =>
-  isRecord(value) ? value : undefined;
 
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
@@ -35,8 +33,8 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       const priority = item.priority;
       const testModel = item['test-model'];
       const image = normalizeBoolean(item.image);
-      const thinking = normalizeRecord(item.thinking);
-      const entry: ModelAlias = { name: String(name), sourceIndex };
+      const thinking = normalizeModelThinking(item.thinking);
+      const entry: ModelAlias = { name: String(name), sourceIndex, ...normalizeModelOptions(item) };
       if (alias) {
         entry.alias = String(alias);
       }

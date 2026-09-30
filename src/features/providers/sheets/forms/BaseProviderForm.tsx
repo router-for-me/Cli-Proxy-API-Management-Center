@@ -21,7 +21,6 @@ import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
-import { readThinkingLevels } from '../../thinkingLevels';
 import { mergeDiscoveredModels } from '../../modelEntries';
 import type {
   ApiKeyEntryInput,
@@ -39,6 +38,7 @@ import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
+import { readModelOptions, validateModelOptions } from '../../modelOptions';
 import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 
 /** 模块级常量，免得每次渲染都给 picker 一个新数组引用。 */
@@ -135,7 +135,7 @@ function buildInitialForm(
             testModel: m.testModel,
             image: m.image === true,
             thinkingJson: formatJsonObject(m.thinking),
-            thinkingLevels: readThinkingLevels(m.thinking),
+            ...readModelOptions(m),
           }))
         : [emptyModel()],
       headers: cfg.headers
@@ -182,7 +182,7 @@ function buildInitialForm(
           priority: m.priority,
           testModel: m.testModel,
           thinkingJson: formatJsonObject(m.thinking),
-          thinkingLevels: readThinkingLevels(m.thinking),
+          ...readModelOptions(m),
         }))
       : [emptyModel()],
     headers: cfg.headers
@@ -373,6 +373,8 @@ export function BaseProviderForm({
   };
 
   const validate = (): string | null => {
+    const modelError = validateModelOptions(form.models);
+    if (modelError) return t(modelError);
     if (form.runtimePolicy) {
       const policyError = validateRuntimePolicy(
         form.runtimePolicy,
@@ -880,6 +882,7 @@ export function BaseProviderForm({
               />
             ) : null}
             <ModelEntriesEditor
+              providerBrand={brand}
               models={modelsList}
               supportsImage={supportsModelImage}
               supportsThinking

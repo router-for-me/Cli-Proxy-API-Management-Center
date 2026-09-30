@@ -5,6 +5,7 @@
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ThinkingLevel } from './thinkingLevels';
 import type { RuntimePolicyDraft } from './runtimePolicy';
+import type { ModelOptionsInput } from './modelOptions';
 
 export type ProviderBrand =
   | 'gemini'
@@ -131,7 +132,7 @@ export interface SponsorProviderRaw {
  * 通用 Sheet 表单值。
  * Gemini/Codex/Claude/Vertex/OpenAI 共用基础字段,各自启用 advanced 区。
  */
-export interface ModelEntryInput {
+export interface ModelEntryInput extends ModelOptionsInput {
   sourceIndex?: number | null;
   name: string;
   alias?: string;

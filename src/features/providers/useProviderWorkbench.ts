@@ -30,7 +30,7 @@ import {
 } from './adapters';
 import { PROVIDER_BRAND_ORDER, PROVIDER_DESCRIPTORS } from './descriptors';
 import { buildRuntimePolicy } from './runtimePolicy';
-import { buildThinkingFromLevels } from './thinkingLevels';
+import { buildModelOptions } from './modelOptions';
 import type {
   ProviderBrand,
   ProviderEntryFormInput,
@@ -103,16 +103,6 @@ const headersFromEntries = (
   return out;
 };
 
-const parseThinkingJson = (value: string | undefined): Record<string, unknown> | undefined => {
-  const trimmed = (value ?? '').trim();
-  if (!trimmed) return undefined;
-  const parsed = JSON.parse(trimmed) as unknown;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Thinking config must be a JSON object');
-  }
-  return parsed as Record<string, unknown>;
-};
-
 /**
  * `'*'` 是「该 provider 已停用」的编码，其唯一所有者是 `form.disabled`：
  * 载入时 `stripDisableAllModelsRule` 把它剥进该 flag，保存时仅凭该 flag 重新追加。
@@ -147,9 +137,7 @@ const buildModelAliases = (
         alias: m.alias?.trim() || undefined,
         priority: m.priority,
         testModel: m.testModel,
-        thinking: m.thinkingLevelsTouched
-          ? buildThinkingFromLevels(m.thinkingLevels)
-          : parseThinkingJson(m.thinkingJson),
+        ...buildModelOptions(m),
       };
       if (includeImage) {
         entry.image = m.image === true;

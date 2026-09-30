@@ -48,8 +48,8 @@ describe('provider model thinking config', () => {
                 thinking: {
                   min: 128,
                   max: 32768,
-                  zero_allowed: true,
-                  dynamic_allowed: true,
+                  'zero-allowed': true,
+                  'dynamic-allowed': true,
                 },
               },
             ],
