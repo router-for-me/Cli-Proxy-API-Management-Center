@@ -144,10 +144,10 @@ export function QuotaCard(props: QuotaCardProps) {
               className={styles.actionPill}
               onClick={onReset}
               disabled={!canRefresh || loading || resetting}
-              title={t('codex_quota.reset_button')}
+              title={t(`${adapter.i18nPrefix}.reset_button`)}
             >
               <IconRefreshCw size={13} className={resetting ? styles.spinning : undefined} />
-              {t('codex_quota.reset_button')}
+              {t(`${adapter.i18nPrefix}.reset_button`)}
             </button>
           )}
           <button
