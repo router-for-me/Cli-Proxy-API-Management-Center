@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconChevronUp, IconPlus, IconTrash2 } from '@/components/ui/icons';
+import { Select } from '@/components/ui/Select';
 import {
   ERROR_RULE_ACTIONS,
   createErrorMatch,
@@ -121,25 +122,25 @@ export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditor
                 <label htmlFor={`${id}-${rule.id}-action`} className={form.label}>
                   {t(`${key}.action`)}
                 </label>
-                <select
+                <Select
                   id={`${id}-${rule.id}-action`}
-                  className={form.input}
+                  ariaLabel={t(`${key}.action`)}
                   value={rule.action}
                   disabled={disabled}
-                  aria-invalid={actionError || undefined}
-                  aria-describedby={actionError ? errorId : undefined}
-                  onChange={(event) => update({ ...rule, action: event.target.value })}
-                >
-                  <option value="">{t(`${key}.selectAction`)}</option>
-                  {rule.action && !actions.includes(rule.action) && (
-                    <option value={rule.action}>{rule.action}</option>
-                  )}
-                  {actions.map((action) => (
-                    <option key={action} value={action}>
-                      {t(`${key}.actions.${action}`)}
-                    </option>
-                  ))}
-                </select>
+                  ariaInvalid={actionError || undefined}
+                  ariaDescribedBy={actionError ? errorId : undefined}
+                  options={[
+                    { value: '', label: t(`${key}.selectAction`) },
+                    ...(rule.action && !actions.includes(rule.action)
+                      ? [{ value: rule.action, label: rule.action }]
+                      : []),
+                    ...actions.map((action) => ({
+                      value: action,
+                      label: t(`${key}.actions.${action}`),
+                    })),
+                  ]}
+                  onChange={(action) => update({ ...rule, action })}
+                />
               </div>
             </div>
             {rule.matches.map((match, matchIndex) => (
@@ -148,25 +149,24 @@ export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditor
                   <label htmlFor={`${id}-${match.id}-kind`} className={form.label}>
                     {t(`${key}.matchType`)}
                   </label>
-                  <select
+                  <Select
                     id={`${id}-${match.id}-kind`}
-                    className={form.input}
+                    ariaLabel={t(`${key}.matchType`)}
                     value={match.kind}
                     disabled={disabled}
-                    onChange={(event) =>
+                    options={[
+                      { value: 'text', label: t(`${key}.text`) },
+                      { value: 'regex', label: t(`${key}.regex`) },
+                    ]}
+                    onChange={(kind) =>
                       update({
                         ...rule,
                         matches: rule.matches.map((item) =>
-                          item.id === match.id
-                            ? { ...item, kind: event.target.value as 'text' | 'regex' }
-                            : item
+                          item.id === match.id ? { ...item, kind: kind as 'text' | 'regex' } : item
                         ),
                       })
                     }
-                  >
-                    <option value="text">{t(`${key}.text`)}</option>
-                    <option value="regex">{t(`${key}.regex`)}</option>
-                  </select>
+                  />
                 </div>
                 <div className={form.field}>
                   <label htmlFor={matchId(match.id)} className={form.label}>

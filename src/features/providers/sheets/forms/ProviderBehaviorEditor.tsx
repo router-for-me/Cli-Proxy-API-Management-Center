@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
+import { Select } from '@/components/ui/Select';
 import type { ProviderBehaviorOptions } from '@/types/provider';
 import { getProviderBehaviorCapabilities } from '../../descriptors';
 import type { ProviderBrand } from '../../types';
@@ -48,9 +49,9 @@ export function ProviderBehaviorEditor({
             <label htmlFor={`${id}-cloak`} className={styles.label}>
               {t('providersPage.behavior.codexCloaking')}
             </label>
-            <select
+            <Select
               id={`${id}-cloak`}
-              className={styles.input}
+              ariaLabel={t('providersPage.behavior.codexCloaking')}
               value={
                 value.disableCodexCloaking === undefined
                   ? 'default'
@@ -59,20 +60,18 @@ export function ProviderBehaviorEditor({
                     : 'enabled'
               }
               disabled={disabled}
-              aria-describedby={`${id}-cloak-hint`}
-              onChange={(event) =>
+              ariaDescribedBy={`${id}-cloak-hint`}
+              options={[
+                { value: 'default', label: t('providersPage.behavior.useDefault') },
+                { value: 'enabled', label: t('providersPage.behavior.cloakingEnabled') },
+                { value: 'disabled', label: t('providersPage.behavior.cloakingDisabled') },
+              ]}
+              onChange={(mode) =>
                 onChange({
-                  disableCodexCloaking:
-                    event.target.value === 'default'
-                      ? undefined
-                      : event.target.value === 'disabled',
+                  disableCodexCloaking: mode === 'default' ? undefined : mode === 'disabled',
                 })
               }
-            >
-              <option value="default">{t('providersPage.behavior.useDefault')}</option>
-              <option value="enabled">{t('providersPage.behavior.cloakingEnabled')}</option>
-              <option value="disabled">{t('providersPage.behavior.cloakingDisabled')}</option>
-            </select>
+            />
             <small id={`${id}-cloak-hint`} className={styles.labelHint}>
               {t('providersPage.behavior.codexCloakingHint')}
             </small>

@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { getProviderModelCapabilities } from '../../descriptors';
 import { THINKING_LEVELS } from '../../thinkingLevels';
@@ -21,6 +23,7 @@ export function ModelAdvancedFields({
   onUpdate,
 }: ModelAdvancedFieldsProps) {
   const { t } = useTranslation();
+  const id = useId();
   const capabilities = getProviderModelCapabilities(providerBrand);
   const enabled = entry.thinkingEnabled ?? Boolean(entry.thinkingJson?.trim());
   const levels = entry.thinkingLevels ?? [];
@@ -102,18 +105,22 @@ export function ModelAdvancedFields({
       {supportsThinking ? (
         <fieldset className={styles.thinkingFieldset}>
           <legend className={styles.label}>{t('providersPage.form.thinkingConfig')}</legend>
-          <label className={styles.field}>
-            <span className={styles.label}>{t('providersPage.modelOptions.thinkingMode')}</span>
-            <select
-              className={styles.input}
+          <div className={styles.field}>
+            <label htmlFor={`${id}-thinking-mode`} className={styles.label}>
+              {t('providersPage.modelOptions.thinkingMode')}
+            </label>
+            <Select
+              id={`${id}-thinking-mode`}
+              ariaLabel={t('providersPage.modelOptions.thinkingMode')}
               value={enabled ? 'custom' : 'default'}
               disabled={disabled}
-              onChange={(event) => onUpdate({ thinkingEnabled: event.target.value === 'custom' })}
-            >
-              <option value="default">{t('providersPage.modelOptions.useDefault')}</option>
-              <option value="custom">{t('providersPage.modelOptions.custom')}</option>
-            </select>
-          </label>
+              options={[
+                { value: 'default', label: t('providersPage.modelOptions.useDefault') },
+                { value: 'custom', label: t('providersPage.modelOptions.custom') },
+              ]}
+              onChange={(mode) => onUpdate({ thinkingEnabled: mode === 'custom' })}
+            />
+          </div>
           <p className={styles.thinkingExistingHint}>
             {t('providersPage.modelOptions.thinkingHint')}
           </p>

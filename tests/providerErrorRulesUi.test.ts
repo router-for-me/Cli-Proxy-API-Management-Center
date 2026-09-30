@@ -37,6 +37,8 @@ describe('error-rule editor UI', () => {
     expect(html).toContain('Add rule');
     expect(html).toContain('Add condition');
     expect(html).not.toContain('JSON');
+    expect(html).not.toContain('<select');
+    expect(html).toContain('aria-haspopup="listbox"');
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
     expect(new Set(ids).size).toBe(ids.length);
     for (const label of html.matchAll(/\bfor="([^"]+)"/g)) expect(ids).toContain(label[1]);
@@ -90,7 +92,8 @@ describe('error-rule editor UI', () => {
     const html = renderRows([{ ...rows[0], action: '<unknown>' }]);
     expect(html).toContain('&lt;unknown&gt;');
     expect(html).not.toContain('<unknown>');
-    expect(html).toContain('value="&lt;unknown&gt;" selected=""');
+    expect(html).toContain('>&lt;unknown&gt;</span>');
+    expect(html).toContain('aria-label="Action"');
   });
   test('every locale contains complete row labels, errors, actions and no stale JSON guidance', () => {
     for (const messages of [en, zhCN, zhTW, ru]) {

@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
+import { Select } from '@/components/ui/Select';
 import type { RuntimePolicyDraft } from '../../runtimePolicy';
 import { ErrorRulesEditor } from './ErrorRulesEditor';
 import styles from './sharedForm.module.scss';
@@ -32,19 +33,20 @@ export function RuntimePolicyEditor({
           <label htmlFor={`${id}-cooling`} className={styles.label}>
             {t(`${key}.cooling`)}
           </label>
-          <select
+          <Select
             id={`${id}-cooling`}
-            className={styles.input}
+            ariaLabel={t(`${key}.cooling`)}
             value={value.cooling}
             disabled={disabled}
-            onChange={(event) =>
-              onChange({ ...value, cooling: event.target.value as RuntimePolicyDraft['cooling'] })
+            options={[
+              { value: 'inherit', label: t(`${key}.inherit`) },
+              { value: 'enabled', label: t(`${key}.coolingEnabled`) },
+              { value: 'disabled', label: t(`${key}.coolingDisabled`) },
+            ]}
+            onChange={(cooling) =>
+              onChange({ ...value, cooling: cooling as RuntimePolicyDraft['cooling'] })
             }
-          >
-            <option value="inherit">{t(`${key}.inherit`)}</option>
-            <option value="enabled">{t(`${key}.coolingEnabled`)}</option>
-            <option value="disabled">{t(`${key}.coolingDisabled`)}</option>
-          </select>
+          />
         </div>
         <div className={styles.field}>
           <label htmlFor={`${id}-retry`} className={styles.label}>
@@ -70,22 +72,20 @@ export function RuntimePolicyEditor({
               <label htmlFor={`${id}-errors-mode`} className={styles.label}>
                 {t(`${key}.errorsMode`)}
               </label>
-              <select
+              <Select
                 id={`${id}-errors-mode`}
-                className={styles.input}
+                ariaLabel={t(`${key}.errorsMode`)}
                 value={value.errorsMode}
                 disabled={disabled}
-                aria-describedby={`${id}-errors-hint`}
-                onChange={(event) =>
-                  onChange({
-                    ...value,
-                    errorsMode: event.target.value as RuntimePolicyDraft['errorsMode'],
-                  })
+                ariaDescribedBy={`${id}-errors-hint`}
+                options={[
+                  { value: 'inherit', label: t(`${key}.inherit`) },
+                  { value: 'override', label: t(`${key}.override`) },
+                ]}
+                onChange={(errorsMode) =>
+                  onChange({ ...value, errorsMode: errorsMode as RuntimePolicyDraft['errorsMode'] })
                 }
-              >
-                <option value="inherit">{t(`${key}.inherit`)}</option>
-                <option value="override">{t(`${key}.override`)}</option>
-              </select>
+              />
               <span id={`${id}-errors-hint`} className={styles.labelHint}>
                 {t(`${key}.errorsHint`)}
               </span>

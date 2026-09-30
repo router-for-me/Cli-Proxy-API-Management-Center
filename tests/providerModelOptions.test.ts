@@ -213,6 +213,11 @@ describe('provider model options', () => {
     const defaultThinking = render('gemini', false, false).split('<fieldset')[1];
     const inputs = defaultThinking.match(/<(?:input|button)\b[^>]*>/g) ?? [];
     expect(inputs.length).toBeGreaterThan(4);
-    for (const input of inputs) expect(input).toContain('disabled=""');
+    const mode = inputs.filter((input) => input.includes('aria-haspopup="listbox"'));
+    expect(mode).toHaveLength(1);
+    expect(mode[0]).not.toContain('disabled=""');
+    for (const input of inputs.filter((input) => !input.includes('aria-haspopup="listbox"'))) {
+      expect(input).toContain('disabled=""');
+    }
   });
 });
