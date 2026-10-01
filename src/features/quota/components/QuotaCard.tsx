@@ -9,6 +9,8 @@
 
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuotaStore } from '@/stores/useQuotaStore';
+import { isCodexResetPending } from '../providers/codex/reset';
 import { IconRefreshCw } from '@/components/ui/icons';
 import type { ResolvedTheme } from '@/types';
 import { resolveQuotaErrorMessage } from '@/utils/quota';
@@ -64,6 +66,9 @@ export function QuotaCard(props: QuotaCardProps) {
       ? undefined
       : ({ '--card-delay': `${mountEntranceDelayMs}ms` } as CSSProperties);
 
+  const pendingReset = useQuotaStore((state) => state.codexPendingResets[file.name]);
+  const retryReset = entry.type === 'codex' && isCodexResetPending(file, pendingReset);
+  const resetButtonKey = retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_button';
   const status = quota?.status ?? 'idle';
   const loading = status === 'loading';
   const claudeReset = useClaudeResetGrants(
@@ -81,10 +86,9 @@ export function QuotaCard(props: QuotaCardProps) {
     quota?.error || t('common.unknown_error')
   );
   const showReset =
-    status === 'success' &&
     Boolean(adapter.resetQuota) &&
-    quota !== undefined &&
-    Boolean(adapter.canResetQuota?.(quota));
+    (retryReset ||
+      (status === 'success' && quota !== undefined && Boolean(adapter.canResetQuota?.(quota))));
 
   return (
     <article
@@ -159,7 +163,7 @@ export function QuotaCard(props: QuotaCardProps) {
         )}
       </div>
 
-      {status !== 'idle' && (
+      {(status !== 'idle' || retryReset) && (
         <footer className={styles.actionRow}>
           {entry.type === 'claude' && (
             <button
@@ -179,10 +183,10 @@ export function QuotaCard(props: QuotaCardProps) {
               className={styles.actionPill}
               onClick={onReset}
               disabled={!canRefresh || loading || resetting}
-              title={t('codex_quota.reset_button')}
+              title={t(resetButtonKey)}
             >
               <IconRefreshCw size={13} className={resetting ? styles.spinning : undefined} />
-              {t('codex_quota.reset_button')}
+              {t(resetButtonKey)}
             </button>
           )}
           <button
