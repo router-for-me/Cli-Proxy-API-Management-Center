@@ -7,6 +7,8 @@ import {
   useQuotaStore,
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
+import { apiClient } from '@/services/api/client';
+import { isCodexResetPending } from '@/features/quota/providers/codex/reset';
 import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
@@ -54,6 +56,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     return assertNever(quotaType);
   });
   const quota = storedQuota;
+  const pendingReset = useQuotaStore((state) => state.codexPendingResets[file.name]);
+  const retryReset = quotaType === 'codex' && isCodexResetPending(file, pendingReset);
+  const resetButtonKey = retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_button';
 
   const updateQuotaState = useQuotaStore(
     (state) => state[adapter.storeSetter] as unknown as QuotaMapUpdater
@@ -116,13 +121,26 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     const resetQuota = adapter.resetQuota;
     if (!resetQuota) return;
 
+    const cacheGeneration = captureQuotaCacheGeneration(file.name);
+    const connectionRevision = apiClient.getConnectionRevision();
     showConfirmation({
-      title: t('codex_quota.reset_confirm_title'),
-      message: t('codex_quota.reset_confirm_message', { name: file.name }),
-      confirmText: t('codex_quota.reset_confirm_button'),
+      title: t(retryReset ? 'codex_quota.reset_retry_title' : 'codex_quota.reset_confirm_title'),
+      message: t(
+        retryReset ? 'codex_quota.reset_retry_message' : 'codex_quota.reset_confirm_message',
+        {
+          name: file.name,
+        }
+      ),
+      confirmText: t(
+        retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_confirm_button'
+      ),
       variant: 'primary',
       onConfirm: async () => {
-        const cacheGeneration = captureQuotaCacheGeneration(file.name);
+        if (
+          connectionRevision !== apiClient.getConnectionRevision() ||
+          !commitIfQuotaCacheCurrent(cacheGeneration, () => {})
+        )
+          return;
         setResettingQuota(true);
         try {
           const data = await resetQuota(file, t);
@@ -150,6 +168,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     file,
     quota?.status,
     resettingQuota,
+    retryReset,
     showConfirmation,
     showNotification,
     t,
@@ -159,7 +178,8 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const quotaStatus = quota?.status ?? 'idle';
   const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
   const canUseResetQuota = canRefreshQuota && quotaStatus !== 'loading';
-  const showResetQuotaAction = quota !== undefined && Boolean(adapter.canResetQuota?.(quota));
+  const showResetQuotaAction =
+    retryReset || (quota !== undefined && Boolean(adapter.canResetQuota?.(quota)));
   const resetQuotaAction =
     adapter.resetQuota && showResetQuotaAction ? (
       <Button
@@ -170,11 +190,11 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         onClick={() => resetQuotaForFile()}
         disabled={!canUseResetQuota}
         loading={resettingQuota}
-        title={t('codex_quota.reset_button')}
-        aria-label={t('codex_quota.reset_button')}
+        title={t(resetButtonKey)}
+        aria-label={t(resetButtonKey)}
       >
         {!resettingQuota && <IconRefreshCw size={14} />}
-        {t('codex_quota.reset_button')}
+        {t(resetButtonKey)}
       </Button>
     ) : undefined;
   const quotaErrorMessage = resolveQuotaErrorMessage(
@@ -207,7 +227,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       ) : (
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
       )}
-      {quotaStatus !== 'idle' && (resetQuotaAction || quotaType === 'devin') && (
+      {(quotaStatus !== 'idle' || retryReset) && (resetQuotaAction || quotaType === 'devin') && (
         <div className={styles.quotaCardActions}>
           {resetQuotaAction}
           {quotaType === 'devin' && (

@@ -10,8 +10,11 @@ import {
   captureQuotaCacheGeneration,
   commitIfQuotaCacheCurrent,
   useNotificationStore,
+  useQuotaStore,
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
+import { apiClient } from '@/services/api/client';
+import { isCodexResetPending } from '../providers/codex/reset';
 import { getStatusFromError } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { enrichQuotaInBackground } from '../quotaEnrichment';
@@ -78,13 +81,29 @@ export function useQuotaActions(disableControls: boolean) {
       if (getQuotaState(adapter, file)?.status === 'loading') return;
       if (resettingQuotaName === cacheKey) return;
 
+      const cacheGeneration = captureQuotaCacheGeneration(file.name);
+      const connectionRevision = apiClient.getConnectionRevision();
+      const retryReset =
+        adapter.type === 'codex' &&
+        isCodexResetPending(file, useQuotaStore.getState().codexPendingResets[file.name]);
       showConfirmation({
-        title: t('codex_quota.reset_confirm_title'),
-        message: t('codex_quota.reset_confirm_message', { name: file.name }),
-        confirmText: t('codex_quota.reset_confirm_button'),
+        title: t(retryReset ? 'codex_quota.reset_retry_title' : 'codex_quota.reset_confirm_title'),
+        message: t(
+          retryReset ? 'codex_quota.reset_retry_message' : 'codex_quota.reset_confirm_message',
+          {
+            name: file.name,
+          }
+        ),
+        confirmText: t(
+          retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_confirm_button'
+        ),
         variant: 'primary',
         onConfirm: async () => {
-          const cacheGeneration = captureQuotaCacheGeneration(file.name);
+          if (
+            connectionRevision !== apiClient.getConnectionRevision() ||
+            !commitIfQuotaCacheCurrent(cacheGeneration, () => {})
+          )
+            return;
           const setQuota = getQuotaSetter(adapter);
           setResettingQuotaName(cacheKey);
           try {
