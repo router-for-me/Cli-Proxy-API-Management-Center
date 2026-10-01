@@ -15,6 +15,8 @@ import type { AuthFileCooldownSnapshot, AuthFilesResponse } from '../src/types/a
 
 const observedAt = '2026-07-17T10:00:00.000Z';
 const receivedAtMs = Date.now();
+const escapeText = (value: string) =>
+  renderToStaticMarkup(createElement('span', null, value)).slice(6, -7);
 const modelRecord = {
   scope: 'model',
   model_key: 'model-a',
@@ -225,7 +227,7 @@ describe('cooldown section rendering', () => {
 
     const available = render(snapshot, { onReset: () => {} });
     expect(available).toContain(i18n.t('auth_files.cooldown_reset_button'));
-    expect(available).toContain(i18n.t('auth_files.cooldown_reset_hint'));
+    expect(available).toContain(`title="${escapeText(i18n.t('auth_files.cooldown_reset_hint'))}"`);
     expect(available).not.toContain('disabled=""');
 
     const pending = render(snapshot, { onReset: () => {}, resetting: true });
