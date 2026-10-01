@@ -22,6 +22,7 @@ import {
 import { bindQuotaClasses } from '../types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
+import { ClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -138,6 +139,13 @@ export function QuotaCard(props: QuotaCardProps) {
 
       {status !== 'idle' && (
         <footer className={styles.actionRow}>
+          {entry.type === 'claude' && (
+            <ClaudeResetGrants
+              file={file}
+              disabled={!canRefresh || loading || resetting}
+              onRefresh={onRefresh}
+            />
+          )}
           {showReset && (
             <button
               type="button"
