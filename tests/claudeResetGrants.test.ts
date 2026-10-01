@@ -1,3 +1,5 @@
+import { selectResetGrant } from '../src/features/quota/providers/claude/selectResetGrant';
+
 import { afterEach, describe, expect, test } from 'bun:test';
 import {
   anthropicResetGrantBlocker,
@@ -299,7 +301,9 @@ test('all grant messages and confirmation are translated in four locales', async
   );
   for (const locale of locales) {
     expect(Object.keys(locale).sort()).toEqual(Object.keys(locales[0]).sort());
-    expect(locale.confirm_text).toContain('{{grant}}');
+    expect(locale.confirm_text).toContain('{{name}}');
+    expect(locale.retry_confirm).toContain('{{name}}');
+    expect(typeof locale.remaining).toBe('string');
     expect(locale.count).toContain('{{left}}');
     for (const key of [
       ...ANTHROPIC_RESET_RESULTS,
@@ -311,4 +315,40 @@ test('all grant messages and confirmation are translated in four locales', async
       expect(typeof locale[key]).toBe('string');
     }
   }
+});
+
+test('card selection prefers usable recommendation and has deterministic fallback', () => {
+  const base = status();
+  const a = { ...base.grants[0], id: 'a' };
+  const b = { ...a, id: 'b' };
+  const multiple = { ...base, grants: [b, a], nextGrantId: 'b' };
+  expect(selectResetGrant(multiple, 0)?.id).toBe('b');
+  expect(selectResetGrant({ ...multiple, nextGrantId: null }, 0)?.id).toBe('a');
+  expect(selectResetGrant({ ...multiple, grants: [a, { ...b, paused: true }] }, 0)?.id).toBe('a');
+  expect(selectResetGrant({ ...multiple, eligible: false }, 0)).toBeUndefined();
+  expect(selectResetGrant({ ...multiple, atLimit: false }, 0)).toBeUndefined();
+  expect(
+    selectResetGrant({ ...multiple, cooldownUntil: new Date(1000).toISOString() }, 0)
+  ).toBeUndefined();
+  for (const changed of [
+    { resetsLeft: 0 },
+    { usableNow: false },
+    { paused: true },
+    { startsAt: new Date(1000).toISOString() },
+    { endsAt: new Date(0).toISOString() },
+  ]) {
+    expect(selectResetGrant({ ...base, grants: [{ ...a, ...changed }] }, 0)).toBeUndefined();
+  }
+});
+
+test('Claude card uses Codex count and action styles and shared confirmation, not a grant dialog', async () => {
+  const card = await Bun.file('src/features/quota/components/QuotaCard.tsx').text();
+  const hook = await Bun.file('src/features/quota/providers/claude/ClaudeResetGrants.tsx').text();
+  expect(card).toContain('quotaClasses.codexPlanValue}>{claudeReset.count');
+  expect(card).toContain('disabled={claudeReset.blocked}');
+  expect(card).toContain('onClick={claudeReset.confirm}');
+  expect(hook).toContain('showConfirmation({');
+  expect(hook).toContain("pending ? 'claude_reset.retry_confirm'");
+  expect(hook).not.toContain('<Modal');
+  expect(hook).not.toContain('status.grants.map');
 });

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CLI Proxy API Management Center · Local Demo</title>
+    <link rel="icon" href="data:," />
+    <!-- Only Vite's local development socket may use a live connection. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="connect-src ws://127.0.0.1:5179 ws://localhost:5179; form-action 'none'"
+    />
+    <script>
+      // Isolate persisted authentication before any application module is evaluated.
+      for (const name of ['localStorage', 'sessionStorage']) {
+        const values = new Map();
+        Object.defineProperty(window, name, {
+          value: {
+            getItem: (key) => values.get(String(key)) ?? null,
+            setItem: (key, value) => values.set(String(key), String(value)),
+            removeItem: (key) => values.delete(String(key)),
+            clear: () => values.clear(),
+            key: (index) => [...values.keys()][index] ?? null,
+            get length() {
+              return values.size;
+            },
+          },
+        });
+      }
+      // Application API calls are mocked; fail closed if another transport is used.
+      window.fetch = async () => {
+        throw new Error('Preview: network transport blocked');
+      };
+      XMLHttpRequest.prototype.send = function () {
+        throw new Error('Preview: network transport blocked');
+      };
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/demo/claude-reset.tsx"></script>
+  </body>
+</html>

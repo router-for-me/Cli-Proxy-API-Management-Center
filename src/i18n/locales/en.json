@@ -2201,6 +2201,8 @@
     }
   },
   "claude_reset": {
+    "retry_confirm": "Retry the unknown reset for “{{name}}” with its original request ID? A reset may already have been spent. Retry within 10 minutes; do not reload or start another claim in another tab.",
+    "remaining": "Resets remaining",
     "title": "Banked resets",
     "scope": "Uses a limited reset grant to clear eligible Claude usage windows. Only confirm when you want to spend a reset. Recovery is limited to this tab/session; do not reload or use another tab while an outcome is unknown.",
     "loading": "Loading…",
@@ -2212,9 +2214,9 @@
     "empty": "No banked reset grants.",
     "count": "{{left}} / {{total}} resets remaining",
     "ends": "Expires: {{date}}",
-    "use": "Use reset",
+    "use": "Reset limits",
     "confirm": "Confirm reset",
-    "confirm_text": "Spend one reset from “{{grant}}”? An unknown claim will be retried with its original request ID.",
+    "confirm_text": "Spend one reset to clear eligible usage limits for “{{name}}”? This uses a limited reset grant.",
     "reset": "Usage limits reset.",
     "already_used": "This grant was already used.",
     "not_limited": "No reset: the account is not currently limited.",
