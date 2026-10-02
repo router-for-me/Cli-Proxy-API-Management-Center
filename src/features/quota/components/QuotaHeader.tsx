@@ -42,21 +42,6 @@ export function QuotaHeader(props: QuotaHeaderProps) {
           <span className={loadedCount > 0 ? styles.metaLoaded : styles.metaMuted}>
             {t('quota_management.meta_loaded', { count: displayLoadedCount })}
           </span>
-          <span className={styles.metaDot} aria-hidden="true">
-            ·
-          </span>
-          <span
-            style={{
-              color: '#10b981',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontWeight: 500,
-            }}
-            title="Auto-pings refreshed 5-hour quota accounts immediately to maximize margins"
-          >
-            ⚡ 5h Auto-Ping Active
-          </span>
           {attentionCount > 0 && (
             <>
               <span className={styles.metaDot} aria-hidden="true">

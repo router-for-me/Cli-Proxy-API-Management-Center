@@ -1,18 +1,32 @@
 import { apiCallApi } from '@/services/api';
 import { ANTIGRAVITY_REQUEST_HEADERS } from '@/utils/quota';
+import { useQuotaStore } from '@/stores/useQuotaStore';
 import type { AntigravityQuotaBucket } from '@/types';
 
-const pingedBuckets = new Set<string>();
+/** Cooldown period per bucket to prevent redundant probes (4.5 hours) */
+export const AUTO_PING_COOLDOWN_MS = 4.5 * 3600 * 1000;
+
+/** Five-hour window in milliseconds */
+const FIVE_HOURS_MS = 5 * 3600 * 1000;
+
+/** Margin buffer to detect unstarted countdown (60 seconds) */
+const IDLE_DELTA_MARGIN_MS = 60 * 1000;
+
+/** Timestamp map recording the last successful ping per bucket key `${authIndex}:${bucket.id}` */
+export const lastPingAtMap = new Map<string, number>();
+
+/** Candidate model lists for each model group */
+const CANDIDATE_MODELS = {
+  gemini: ['gemini-3.1-pro-low', 'gemini-2.5-flash', 'gemini-3.5-flash'],
+  claude_gpt: ['claude-sonnet-4-6', 'gpt-oss-120b-medium', 'claude-opus-4-6-thinking'],
+} as const;
 
 export async function pingAntigravityBucket(
   authIndex: string,
   projectId: string,
   groupType: 'gemini' | 'claude_gpt'
 ): Promise<boolean> {
-  const models =
-    groupType === 'gemini'
-      ? ['gemini-3.1-pro-low', 'gemini-2.5-flash', 'gemini-3.5-flash']
-      : ['claude-sonnet-4-6', 'gpt-oss-120b-medium', 'claude-opus-4-6-thinking'];
+  const models = CANDIDATE_MODELS[groupType];
 
   for (const model of models) {
     try {
@@ -42,15 +56,24 @@ export async function pingAntigravityBucket(
         return true;
       }
     } catch {
-      // Continue to next candidate model
+      // Continue to next candidate model on error
     }
   }
 
   return false;
 }
 
+export function isFiveHourBucket(bucket: AntigravityQuotaBucket): boolean {
+  if (bucket.periodHours === 5) return true;
+  const windowLower = (bucket.window ?? '').trim().toLowerCase();
+  if (windowLower === '5h' || windowLower === 'five-hour' || windowLower === 'five_hour') {
+    return true;
+  }
+  return bucket.id.toLowerCase().includes('5h');
+}
+
 export function isFiveHourBucketIdle(bucket: AntigravityQuotaBucket, nowMs: number): boolean {
-  if (bucket.window !== '5h' && !bucket.id.includes('5h')) return false;
+  if (!isFiveHourBucket(bucket)) return false;
   if (typeof bucket.remainingFraction === 'number' && bucket.remainingFraction < 0.99999) {
     return false;
   }
@@ -61,8 +84,8 @@ export function isFiveHourBucketIdle(bucket: AntigravityQuotaBucket, nowMs: numb
     const resetMs = new Date(bucket.resetTime).getTime();
     if (!Number.isNaN(resetMs)) {
       const deltaMs = resetMs - nowMs;
-      // If deltaMs is significantly less than 5 hours (e.g. < 4h 55m), countdown is already active
-      if (deltaMs > 0 && deltaMs < (5 * 3600 - 300) * 1000) {
+      // If deltaMs is between 0 and (5h - 1min), the countdown has actively begun
+      if (deltaMs > 0 && deltaMs <= FIVE_HOURS_MS - IDLE_DELTA_MARGIN_MS) {
         return false;
       }
     }
@@ -94,15 +117,47 @@ export function triggerAutoPingIfIdle(
   if (!groupType) return;
 
   const key = `${authIndex}:${bucket.id}`;
-  if (pingedBuckets.has(key)) return;
-  pingedBuckets.add(key);
+  const lastPingAt = lastPingAtMap.get(key);
+  if (lastPingAt !== undefined && nowMs - lastPingAt < AUTO_PING_COOLDOWN_MS) {
+    return;
+  }
 
   void pingAntigravityBucket(authIndex, projectId, groupType).then((success) => {
     if (success) {
-      bucket.remainingFraction = 0.99999;
-      bucket.resetTime = new Date(Date.now() + 5 * 3600 * 1000).toISOString();
-      bucket.description =
-        'You have used some of your 5-hour limit, it will fully refresh in 4 hours, 59 minutes.';
+      const pingTime = Date.now();
+      lastPingAtMap.set(key, pingTime);
+
+      const resetInstantMs = pingTime + FIVE_HOURS_MS;
+      const resetTimeIso = new Date(resetInstantMs).toISOString();
+
+      // Synchronize through Zustand store so all React components re-render with the new countdown
+      useQuotaStore.getState().setAntigravityQuota((prev) => {
+        const current = prev[authIndex];
+        if (!current || !Array.isArray(current.groups)) return prev;
+
+        const updatedGroups = current.groups.map((group) => ({
+          ...group,
+          buckets: group.buckets.map((b) => {
+            if (b.id !== bucket.id) return b;
+            return {
+              ...b,
+              remainingFraction: 0.99999,
+              resetTime: resetTimeIso,
+              resetAtMs: resetInstantMs,
+              description:
+                'You have used some of your 5-hour limit, it will fully refresh in 4 hours, 59 minutes.',
+            };
+          }),
+        }));
+
+        return {
+          ...prev,
+          [authIndex]: {
+            ...current,
+            groups: updatedGroups,
+          },
+        };
+      });
     }
   });
 }
