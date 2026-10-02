@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import {
   AUTO_PING_COOLDOWN_MS,
+  inFlightPings,
   isFiveHourBucket,
   isFiveHourBucketIdle,
   lastPingAtMap,
@@ -12,6 +13,7 @@ describe('antigravityAutoPing', () => {
 
   beforeEach(() => {
     lastPingAtMap.clear();
+    inFlightPings.clear();
   });
 
   describe('isFiveHourBucket', () => {
@@ -38,26 +40,37 @@ describe('antigravityAutoPing', () => {
   });
 
   describe('isFiveHourBucketIdle', () => {
-    it('returns true when a 5h bucket is at 100% capacity with 5h remaining', () => {
+    it('returns true when a 5h bucket has no resetTime yet (unstarted/idle)', () => {
       const bucket: AntigravityQuotaBucket = {
         id: 'gemini-5h',
         label: 'Five Hour Limit',
         window: '5h',
         remainingFraction: 1,
-        resetTime: new Date(now + 5 * 3600 * 1000).toISOString(),
         description: 'Full quota available',
       };
       expect(isFiveHourBucketIdle(bucket, now)).toBe(true);
     });
 
-    it('returns true when a 5h bucket has no resetTime yet (unstarted)', () => {
+    it('returns true when a 5h bucket has passed its previous reset time (deltaMs <= 0)', () => {
       const bucket: AntigravityQuotaBucket = {
         id: 'gemini-5h',
         label: 'Five Hour Limit',
         window: '5h',
         remainingFraction: 1,
+        resetTime: new Date(now - 1000).toISOString(),
       };
       expect(isFiveHourBucketIdle(bucket, now)).toBe(true);
+    });
+
+    it('returns false when bucket has a future resetTime indicating active countdown', () => {
+      const bucket: AntigravityQuotaBucket = {
+        id: 'gemini-5h',
+        label: 'Five Hour Limit',
+        window: '5h',
+        remainingFraction: 1,
+        resetTime: new Date(now + 4.9 * 3600 * 1000).toISOString(),
+      };
+      expect(isFiveHourBucketIdle(bucket, now)).toBe(false);
     });
 
     it('returns false when bucket is not a 5h window', () => {
@@ -66,7 +79,6 @@ describe('antigravityAutoPing', () => {
         label: 'Weekly Limit',
         window: '7d',
         remainingFraction: 1,
-        resetTime: new Date(now + 7 * 24 * 3600 * 1000).toISOString(),
       };
       expect(isFiveHourBucketIdle(bucket, now)).toBe(false);
     });
@@ -77,18 +89,6 @@ describe('antigravityAutoPing', () => {
         label: 'Five Hour Limit',
         window: '5h',
         remainingFraction: 0.85,
-        resetTime: new Date(now + 4 * 3600 * 1000).toISOString(),
-      };
-      expect(isFiveHourBucketIdle(bucket, now)).toBe(false);
-    });
-
-    it('returns false when countdown timer is actively in progress (e.g. 4h 30m remaining)', () => {
-      const bucket: AntigravityQuotaBucket = {
-        id: 'gemini-5h',
-        label: 'Five Hour Limit',
-        window: '5h',
-        remainingFraction: 1,
-        resetTime: new Date(now + 4.5 * 3600 * 1000).toISOString(),
       };
       expect(isFiveHourBucketIdle(bucket, now)).toBe(false);
     });
@@ -99,14 +99,13 @@ describe('antigravityAutoPing', () => {
         label: 'Five Hour Limit',
         window: '5h',
         remainingFraction: 1,
-        resetTime: new Date(now + 5 * 3600 * 1000).toISOString(),
         description: 'You have used some of your 5-hour limit, it will refresh soon',
       };
       expect(isFiveHourBucketIdle(bucket, now)).toBe(false);
     });
   });
 
-  describe('cooldown constants', () => {
+  describe('cooldown and in-flight guards', () => {
     it('sets minimum cooldown to 4.5 hours', () => {
       expect(AUTO_PING_COOLDOWN_MS).toBe(4.5 * 3600 * 1000);
     });

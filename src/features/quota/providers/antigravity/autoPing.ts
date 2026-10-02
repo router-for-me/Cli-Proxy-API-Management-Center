@@ -9,11 +9,11 @@ export const AUTO_PING_COOLDOWN_MS = 4.5 * 3600 * 1000;
 /** Five-hour window in milliseconds */
 const FIVE_HOURS_MS = 5 * 3600 * 1000;
 
-/** Margin buffer to detect unstarted countdown (60 seconds) */
-const IDLE_DELTA_MARGIN_MS = 60 * 1000;
-
-/** Timestamp map recording the last successful ping per bucket key `${authIndex}:${bucket.id}` */
+/** Timestamp map recording the last successful ping per bucket key `${cacheKey}:${bucket.id}` */
 export const lastPingAtMap = new Map<string, number>();
+
+/** Lock set preventing concurrent in-flight probe requests for the same bucket */
+export const inFlightPings = new Set<string>();
 
 /** Candidate model lists for each model group */
 const CANDIDATE_MODELS = {
@@ -84,8 +84,8 @@ export function isFiveHourBucketIdle(bucket: AntigravityQuotaBucket, nowMs: numb
     const resetMs = new Date(bucket.resetTime).getTime();
     if (!Number.isNaN(resetMs)) {
       const deltaMs = resetMs - nowMs;
-      // If deltaMs is between 0 and (5h - 1min), the countdown has actively begun
-      if (deltaMs > 0 && deltaMs <= FIVE_HOURS_MS - IDLE_DELTA_MARGIN_MS) {
+      // If deltaMs > 0, Google's rolling countdown timer is already actively counting down
+      if (deltaMs > 0) {
         return false;
       }
     }
@@ -94,6 +94,7 @@ export function isFiveHourBucketIdle(bucket: AntigravityQuotaBucket, nowMs: numb
 }
 
 export function triggerAutoPingIfIdle(
+  cacheKey: string,
   authIndex: string,
   projectId: string,
   groupLabel: string,
@@ -106,58 +107,69 @@ export function triggerAutoPingIfIdle(
   let groupType: 'gemini' | 'claude_gpt' | null = null;
   if (groupLower.includes('gemini')) {
     groupType = 'gemini';
-  } else if (
-    groupLower.includes('claude') ||
-    groupLower.includes('gpt') ||
-    groupLower.includes('3p')
-  ) {
+  } else if (groupLower.includes('claude') || groupLower.includes('gpt')) {
     groupType = 'claude_gpt';
   }
 
   if (!groupType) return;
 
-  const key = `${authIndex}:${bucket.id}`;
-  const lastPingAt = lastPingAtMap.get(key);
+  const lockKey = `${cacheKey}:${bucket.id}`;
+  if (inFlightPings.has(lockKey)) return;
+
+  const lastPingAt = lastPingAtMap.get(lockKey);
   if (lastPingAt !== undefined && nowMs - lastPingAt < AUTO_PING_COOLDOWN_MS) {
     return;
   }
 
-  void pingAntigravityBucket(authIndex, projectId, groupType).then((success) => {
-    if (success) {
-      const pingTime = Date.now();
-      lastPingAtMap.set(key, pingTime);
+  inFlightPings.add(lockKey);
 
-      const resetInstantMs = pingTime + FIVE_HOURS_MS;
-      const resetTimeIso = new Date(resetInstantMs).toISOString();
+  void pingAntigravityBucket(authIndex, projectId, groupType)
+    .then((success) => {
+      if (success) {
+        const pingTime = Date.now();
+        lastPingAtMap.set(lockKey, pingTime);
 
-      // Synchronize through Zustand store so all React components re-render with the new countdown
-      useQuotaStore.getState().setAntigravityQuota((prev) => {
-        const current = prev[authIndex];
-        if (!current || !Array.isArray(current.groups)) return prev;
+        const resetInstantMs = pingTime + FIVE_HOURS_MS;
+        const resetTimeIso = new Date(resetInstantMs).toISOString();
 
-        const updatedGroups = current.groups.map((group) => ({
-          ...group,
-          buckets: group.buckets.map((b) => {
-            if (b.id !== bucket.id) return b;
-            return {
-              ...b,
-              remainingFraction: 0.99999,
-              resetTime: resetTimeIso,
-              resetAtMs: resetInstantMs,
-              description:
-                'You have used some of your 5-hour limit, it will fully refresh in 4 hours, 59 minutes.',
-            };
-          }),
-        }));
+        // Update in-place so returned groups from the current fetch carry the new countdown
+        bucket.remainingFraction = 0.99999;
+        bucket.resetTime = resetTimeIso;
+        bucket.resetAtMs = resetInstantMs;
+        bucket.description =
+          'You have used some of your 5-hour limit, it will fully refresh in 4 hours, 59 minutes.';
 
-        return {
-          ...prev,
-          [authIndex]: {
-            ...current,
-            groups: updatedGroups,
-          },
-        };
-      });
-    }
-  });
+        // Synchronize through Zustand store under the correct cacheKey
+        useQuotaStore.getState().setAntigravityQuota((prev) => {
+          const current = prev[cacheKey];
+          if (!current || !Array.isArray(current.groups)) return prev;
+
+          const updatedGroups = current.groups.map((group) => ({
+            ...group,
+            buckets: group.buckets.map((b) => {
+              if (b.id !== bucket.id) return b;
+              return {
+                ...b,
+                remainingFraction: 0.99999,
+                resetTime: resetTimeIso,
+                resetAtMs: resetInstantMs,
+                description:
+                  'You have used some of your 5-hour limit, it will fully refresh in 4 hours, 59 minutes.',
+              };
+            }),
+          }));
+
+          return {
+            ...prev,
+            [cacheKey]: {
+              ...current,
+              groups: updatedGroups,
+            },
+          };
+        });
+      }
+    })
+    .finally(() => {
+      inFlightPings.delete(lockKey);
+    });
 }
