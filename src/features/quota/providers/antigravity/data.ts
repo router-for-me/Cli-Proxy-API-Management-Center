@@ -30,6 +30,7 @@ import {
   isDisabledAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
+import { triggerAutoPingIfIdle } from './autoPing';
 import type { QuotaProviderData } from '../types';
 
 export type AntigravityQuotaData = {
@@ -173,6 +174,14 @@ const fetchAntigravityQuota = async (
       if (groups.length === 0) {
         lastError = t('antigravity_quota.empty_models');
         continue;
+      }
+
+      // Auto-ping any 5-hour quota bucket that is currently refreshed & idle (5h 0m)
+      const now = Date.now();
+      for (const group of groups) {
+        for (const bucket of group.buckets) {
+          triggerAutoPingIfIdle(authIndex, projectId, group.label, bucket, now);
+        }
       }
 
       return {
