@@ -79,8 +79,8 @@ describe('CodexQuotaBody', () => {
   );
 
   test.each([
-    ['pro', 'Pro 20x', 'elitePlanValue'],
-    ['prolite', 'Pro 5x', 'premiumPlanValue'],
+    ['pro', 'Pro 200', 'elitePlanValue'],
+    ['prolite', 'Pro 100', 'premiumPlanValue'],
     ['team', 'Team', 'codexPlanValue'],
     ['self_serve_business_usage_based', 'self_serve_business_usage_based', 'codexPlanValue'],
   ])('preserves the label and badge for %s', (planType, label, className) => {
