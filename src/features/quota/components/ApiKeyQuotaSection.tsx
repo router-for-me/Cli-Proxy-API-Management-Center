@@ -44,6 +44,9 @@ interface AccountMetric {
   row: ApiKeyQuotaAccount;
   /** % of the paid cap left; null when the account has no cap. */
   capPercentLeft: number | null;
+  /** The cap total capPercentLeft was derived from — segment widths must use
+   * the same source, or mixed-unit bars size segments inconsistently. */
+  capTotal: number;
   /** % of the daily free allowance already used; null when not reported. */
   freePercentUsed: number | null;
 }
@@ -77,9 +80,14 @@ const toMetric = (row: ApiKeyQuotaAccount): AccountMetric => {
       : row.limit != null && row.remaining != null && row.limit > 0
         ? Math.max(0, Math.min(100, (row.remaining / row.limit) * 100))
         : null;
+  // Same precedence as capPercentLeft: summary-bar segment widths are sized by
+  // capTotal so the bar proportions always match the percentages shown.
+  const capTotal =
+    credits?.total != null && credits.total > 0 ? credits.total : row.limit ?? 1;
   return {
     row,
     capPercentLeft,
+    capTotal: Math.max(capTotal, 0.01),
     freePercentUsed:
       row.free_model_requests?.limit != null && row.free_model_requests.limit > 0
         ? Math.max(0, Math.min(100, ((row.free_model_requests.used ?? 0) / row.free_model_requests.limit) * 100))
@@ -115,6 +123,9 @@ const groupByProvider = (accounts: ApiKeyQuotaAccount[]): ProviderGroup[] => {
 const formatMoney = (value: number | null | undefined): string =>
   value == null ? '—' : `$${value.toFixed(2)}`;
 
+/** Stable identity for the "no data yet" case; see the accounts useMemo. */
+const EMPTY_ACCOUNTS: ApiKeyQuotaAccount[] = [];
+
 export function ApiKeyQuotaSection() {
   const { t } = useTranslation();
   const [state, setState] = useState<LoadState>({ kind: 'idle' });
@@ -135,7 +146,12 @@ export function ApiKeyQuotaSection() {
     void load();
   }, [load]);
 
-  const accounts = state.kind === 'ready' ? state.data.accounts ?? [] : [];
+  // Memoized so groupByProvider only reruns on real data changes; a bare
+  // `?? []` fallback here would hand useMemo a fresh array every render.
+  const accounts = useMemo(
+    () => (state.kind === 'ready' ? state.data.accounts ?? [] : EMPTY_ACCOUNTS),
+    [state]
+  );
   const groups = useMemo(() => groupByProvider(accounts), [accounts]);
   const updatedAt =
     state.kind === 'ready' ? state.data.served_at ?? state.data.updated_at : undefined;
@@ -213,7 +229,7 @@ export function ApiKeyQuotaSection() {
                       <div
                         key={m.row.key_id}
                         className={`${styles.segment} ${fillClassFor(m.capPercentLeft)}`}
-                        style={{ flex: Math.max(m.row.limit ?? 1, 0.01) }}
+                        style={{ flex: m.capTotal }}
                         title={`${m.row.account ?? m.row.key_id}: ${m.capPercentLeft?.toFixed(1)}%`}
                       />
                     ))
