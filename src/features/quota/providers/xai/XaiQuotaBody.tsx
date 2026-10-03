@@ -220,7 +220,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           )}
         </div>
       )}
-      {billing.productUsage.map((item, index) => {
+      {(hasWeeklyData ? [] : billing.productUsage).map((item, index) => {
         const used =
           item.usagePercent === null ? null : Math.max(0, Math.min(100, item.usagePercent));
         const remainingPercent = used === null ? null : Math.max(0, Math.min(100, 100 - used));
