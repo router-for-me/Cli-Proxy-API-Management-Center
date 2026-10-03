@@ -1,0 +1,257 @@
+@use '../../../styles/mixins' as *;
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.meta {
+  color: var(--text-secondary, #888);
+  font-size: 0.82rem;
+  margin-right: 4px;
+}
+
+.note {
+  color: var(--text-secondary, #888);
+  font-size: 0.85rem;
+}
+
+/* ---- 摘要卡 ---- */
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  border-radius: 12px;
+  background: var(--bg-secondary, rgba(128, 128, 128, 0.05));
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary-color, #6c8cff);
+  flex-shrink: 0;
+}
+
+.cardIcon,
+.groupIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.groupIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.cardProvider {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.cardCount {
+  margin-left: auto;
+  color: var(--text-secondary, #888);
+  font-size: 0.75rem;
+}
+
+.cardMetric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cardBig {
+  font-size: 1.9rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.cardOf {
+  color: var(--text-secondary, #888);
+  font-size: 0.8rem;
+}
+
+.cardLabel {
+  color: var(--text-secondary, #888);
+  font-size: 0.75rem;
+}
+
+.segmented {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+}
+
+.segment {
+  height: 100%;
+  min-width: 6px;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.cardMeta {
+  color: var(--text-secondary, #888);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 分组行 ---- */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #888);
+  text-transform: capitalize;
+}
+
+.groupCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--bg-secondary, rgba(128, 128, 128, 0.15));
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.accountRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.18));
+  border-radius: 10px;
+  // 整行铺满宽屏时水位条被拉到近全屏宽；限制可读宽度。
+  max-width: 720px;
+}
+
+.accountId {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.accountName {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.planChip,
+.stateChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.planChip {
+  background: var(--primary-color, #6c8cff);
+  color: #fff;
+  text-transform: capitalize;
+}
+
+.stateChip {
+  text-transform: capitalize;
+}
+
+.stateOk {
+  background: rgba(46, 158, 91, 0.15);
+  color: var(--success-color, #2e9e5b);
+}
+
+.stateBad {
+  background: rgba(214, 69, 69, 0.15);
+  color: var(--error-color, #d64545);
+}
+
+.stateStale {
+  background: rgba(199, 139, 30, 0.15);
+  color: var(--warning-color, #c78b1e);
+}
+
+.meterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .accountRow {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .accountId {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+  }
+}

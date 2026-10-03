@@ -26,6 +26,7 @@ import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
 import { QuotaTimeline } from './components/QuotaTimeline';
+import { ApiKeyQuotaSection } from './components/ApiKeyQuotaSection';
 import {
   CARD_ENTRANCE_BUDGET_MS,
   QUOTA_PAGE_SIZE,
@@ -467,6 +468,9 @@ export function QuotaPage() {
           resolvedTheme={resolvedTheme}
         />
       </section>
+
+      {/* API-key quota (OpenRouter etc.): server-side snapshot, outside the auth-file flow. */}
+      <ApiKeyQuotaSection />
     </div>
   );
 }
