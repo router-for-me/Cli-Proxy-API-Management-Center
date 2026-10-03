@@ -475,9 +475,10 @@ export function buildXaiBillingSummary(
   const summary = emptyXaiBillingSummary();
   const currentPeriod = config.currentPeriod ?? config.current_period ?? null;
   const periodType = resolveXaiPeriodType(currentPeriod);
-  const creditUsagePercent = normalizeNumberValue(
-    config.creditUsagePercent ?? config.credit_usage_percent
-  );
+  const rawCreditUsagePercent = config.creditUsagePercent ?? config.credit_usage_percent;
+  const creditUsagePercent =
+    normalizeNumberValue(rawCreditUsagePercent) ??
+    (periodType === 'weekly' && rawCreditUsagePercent == null ? 0 : null);
   const periodStart =
     normalizeStringValue(currentPeriod?.start) ??
     normalizeStringValue(config.billingPeriodStart ?? config.billing_period_start) ??
