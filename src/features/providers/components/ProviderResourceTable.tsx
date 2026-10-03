@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import {
   IconAlertTriangle,
   IconCheckCircle2,
+  IconExternalLink,
   IconEye,
   IconPencil,
   IconTrash2,
 } from '@/components/ui/icons';
+import { OPENAI_COMPAT_PROVIDER_SITES } from '../descriptors';
 import {
   Table,
   TableBody,
@@ -170,9 +172,27 @@ export function ProviderResourceTable({
     }
     if (r.brand === 'openaiCompatibility') {
       const extra = r.apiKeyEntryCount > 1 ? ` · +${r.apiKeyEntryCount - 1}` : '';
+      const site =
+        r.name && Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_PROVIDER_SITES, r.name.toLowerCase())
+          ? OPENAI_COMPAT_PROVIDER_SITES[r.name.toLowerCase()]
+          : undefined;
       return (
         <div className={styles.primaryCell}>
-          <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
+          <span className={styles.primaryName}>
+            {r.name ?? r.identifier}
+            {site ? (
+              <a
+                className={styles.siteLink}
+                href={site}
+                target="_blank"
+                rel="noreferrer noopener"
+                title={t('providersPage.categories.visit', { name: r.name ?? '' })}
+                aria-label={t('providersPage.categories.visit', { name: r.name ?? '' })}
+              >
+                <IconExternalLink size={13} />
+              </a>
+            ) : null}
+          </span>
           <span className={styles.primarySub}>{(r.apiKeyPreview ?? '—') + extra}</span>
         </div>
       );

@@ -30,6 +30,7 @@ import {
   IconSidebarStore,
   IconSidebarSystem,
   IconChevronDown,
+  IconBot,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -57,6 +58,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
   quickStart: <IconSidebarQuickStart size={18} />,
   aiProviders: <IconSidebarProviders size={18} />,
+  codingAgents: <IconBot size={18} />,
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
@@ -615,6 +617,12 @@ export function MainLayout() {
           labelKey: 'nav.ai_providers',
           metaKey: 'nav_meta.ai_providers',
           icon: sidebarIcons.aiProviders,
+        },
+        {
+          path: '/coding-agents',
+          labelKey: 'nav.coding_agents',
+          metaKey: 'nav_meta.coding_agents',
+          icon: sidebarIcons.codingAgents,
         },
         {
           path: '/auth-files',

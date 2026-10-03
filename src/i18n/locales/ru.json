@@ -107,7 +107,8 @@
     "plugin_store": "Магазин плагинов",
     "config_management": "Панель конфигурации",
     "logs": "Просмотр логов",
-    "system_info": "Информация системы"
+    "system_info": "Информация системы",
+    "coding_agents": "Кодинг-агенты"
   },
   "nav_groups": {
     "operate": "Работа",
@@ -126,7 +127,8 @@
     "plugin_store": "Поиск и установка плагинов",
     "logs": "Трассировка запросов",
     "config_management": "Базовая конфигурация шлюза",
-    "system_info": "Состояние и диагностика"
+    "system_info": "Состояние и диагностика",
+    "coding_agents": "Автонастройка кодинг-CLI"
   },
   "dashboard": {
     "hero_verdict_good": "Всё стабильно",
@@ -1586,7 +1588,29 @@
     "weekday_wed": "Ср",
     "weekday_thu": "Чт",
     "weekday_fri": "Пт",
-    "weekday_sat": "Сб"
+    "weekday_sat": "Сб",
+    "api_keys_title": "Квота API-ключей",
+    "api_keys_refresh": "Обновить",
+    "api_keys_empty": "Снимков квоты API-ключей пока нет.",
+    "api_keys_count": "{{count}} аккаунт(ов)",
+    "api_keys_accounts": "{{count}} ключ(ей)",
+    "api_keys_show": "Показать аккаунты",
+    "api_keys_hide": "Скрыть аккаунты",
+    "api_keys_worst": "минимальный остаток",
+    "api_keys_credits": "Кредиты",
+    "api_keys_free": "Бесплатные запросы",
+    "api_keys_credits_total": "Использовано кредитов на ${{used}}",
+    "col_provider": "Провайдер",
+    "col_account": "Аккаунт",
+    "col_state": "Состояние",
+    "col_plan": "План",
+    "col_limit": "Лимит",
+    "col_remaining": "Остаток",
+    "col_percent": "% остатка",
+    "col_usage": "Использовано",
+    "col_free_requests": "Бесплатные запросы исп./лимит",
+    "col_credits": "Кредиты исп./всего",
+    "api_keys_of_total": "из {{total}}%"
   },
   "plugin_management": {
     "title": "Управление плагинами",
@@ -1926,6 +1950,8 @@
       "disable": "Отключить"
     },
     "categories": {
+      "signup": "Регистрация {{name}}",
+      "visit": "Сайт {{name}}",
       "title": "Провайдеры",
       "quickFill": "Быстрое заполнение",
       "activeCount": "{{active}}/{{total}} активных"
@@ -2219,5 +2245,27 @@
     "unavailable": "Сбросы временно недоступны.",
     "rate_limited": "Слишком много запросов.",
     "auth_error": "Авторизация отклонена."
+  },
+  "codingAgents": {
+    "title": "Кодинг-агенты",
+    "refresh": "Обновить",
+    "revert_last": "Отменить последнюю",
+    "hint": "Настройте кодинг-агенты на этот прокси. Каждое изменение сначала сохраняется в резервную копию и может быть отменено. За раз — один агент.",
+    "status_configured": "Настроен",
+    "status_not_installed": "Не установлен",
+    "status_other": "Другая конфигурация",
+    "working": "Выполняется…",
+    "confirm_overwrite": "Перезаписать? Нажмите ещё раз",
+    "apply": "Настроить",
+    "create": "Настроить",
+    "backups": "Резервные копии",
+    "revert": "Восстановить",
+    "plan_toggle": "Что будет настроено",
+    "plan_loading": "Загрузка предпросмотра…",
+    "plan_error": "Ошибка предпросмотра.",
+    "plan_file": "Изменения в:",
+    "plan_creates": "Файл будет создан:",
+    "plan_hooks": "Хуки и дополнения",
+    "plan_backup": "Существующий файл сначала резервируется; восстановить можно из списка резервных копий ниже."
   }
 }

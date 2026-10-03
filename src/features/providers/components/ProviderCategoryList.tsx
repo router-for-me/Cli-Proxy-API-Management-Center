@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { IconExternalLink } from '@/components/ui/icons';
+import { PROVIDER_SIGNUP_URLS } from '../descriptors';
 import { PROVIDER_LOGOS } from '../brandLogos';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import styles from './ProviderCategoryList.module.scss';
@@ -56,9 +58,11 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
           .filter(Boolean)
           .join(' ');
 
+        const signupUrl = PROVIDER_SIGNUP_URLS[group.id];
+
         return (
+          <div key={group.id} className={styles.itemWrap}>
           <button
-            key={group.id}
             type="button"
             className={itemClass}
             onClick={() => onSelect(group.id)}
@@ -101,6 +105,24 @@ export function ProviderCategoryList({ groups, activeBrand, onSelect }: Provider
               {total}
             </span>
           </button>
+          {/* 跳转链接浮在卡片右上角：<a> 不能嵌进 <button>，绝对定位重叠即可。 */}
+          {signupUrl ? (
+            <a
+              className={styles.signupLink}
+              href={signupUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              title={t('providersPage.categories.signup', {
+                name: t(`providersPage.providerNames.${group.id}`),
+              })}
+              aria-label={t('providersPage.categories.signup', {
+                name: t(`providersPage.providerNames.${group.id}`),
+              })}
+            >
+              <IconExternalLink size={13} />
+            </a>
+          ) : null}
+          </div>
         );
       })}
     </div>

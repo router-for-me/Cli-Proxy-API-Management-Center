@@ -252,3 +252,21 @@
     color: var(--destructive-color);
   }
 }
+
+.siteLink {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: -2px;
+  border-radius: 5px;
+  padding: 1px;
+  color: var(--muted-foreground);
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    color: var(--primary-color, #6c8cff);
+  }
+}

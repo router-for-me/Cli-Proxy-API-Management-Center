@@ -107,7 +107,8 @@
     "plugin_store": "插件商店",
     "config_management": "設定面板",
     "logs": "記錄檢視",
-    "system_info": "中心資訊"
+    "system_info": "中心資訊",
+    "coding_agents": "編碼代理"
   },
   "nav_groups": {
     "operate": "運行",
@@ -127,7 +128,8 @@
     "plugin_store": "探索並安裝插件",
     "logs": "請求追蹤與排查",
     "config_management": "閘道基礎設定",
-    "system_info": "運行與診斷資訊"
+    "system_info": "運行與診斷資訊",
+    "coding_agents": "自動設定編碼 CLI"
   },
   "dashboard": {
     "hero_verdict_good": "運行平穩",
@@ -1607,7 +1609,29 @@
     "weekday_wed": "三",
     "weekday_thu": "四",
     "weekday_fri": "五",
-    "weekday_sat": "六"
+    "weekday_sat": "六",
+    "api_keys_title": "API 金鑰額度",
+    "api_keys_refresh": "重新整理",
+    "api_keys_empty": "尚無 API 金鑰額度快照。",
+    "api_keys_count": "{{count}} 個帳戶",
+    "api_keys_accounts": "{{count}} 把金鑰",
+    "api_keys_show": "顯示帳戶",
+    "api_keys_hide": "隱藏帳戶",
+    "api_keys_worst": "剩餘最少帳戶",
+    "api_keys_credits": "點數額度",
+    "api_keys_free": "免費請求",
+    "api_keys_credits_total": "已用點數 ${{used}}",
+    "col_provider": "提供商",
+    "col_account": "帳戶",
+    "col_state": "狀態",
+    "col_plan": "方案",
+    "col_limit": "上限",
+    "col_remaining": "剩餘",
+    "col_percent": "剩餘百分比",
+    "col_usage": "已用",
+    "col_free_requests": "免費請求 已用/上限",
+    "col_credits": "額度 已用/總計",
+    "api_keys_of_total": "共 {{total}}%"
   },
   "plugin_management": {
     "title": "插件管理",
@@ -1956,6 +1980,8 @@
       "disable": "停用"
     },
     "categories": {
+      "signup": "註冊 {{name}}",
+      "visit": "造訪 {{name}}",
       "title": "提供商",
       "quickFill": "快速接入",
       "activeCount": "{{active}}/{{total}} 活躍"
@@ -2249,5 +2275,27 @@
     "unavailable": "重置暫不可用。",
     "rate_limited": "請求過於頻繁。",
     "auth_error": "授權遭拒。"
+  },
+  "codingAgents": {
+    "title": "編碼代理",
+    "refresh": "重新整理",
+    "revert_last": "復原最近一次",
+    "hint": "將編碼代理指向本代理。每次修改都會先備份，可隨時復原。每次只操作一個代理。",
+    "status_configured": "已設定",
+    "status_not_installed": "未安裝",
+    "status_other": "其他設定",
+    "working": "執行中…",
+    "confirm_overwrite": "覆蓋？再次點擊",
+    "apply": "設定",
+    "create": "設定",
+    "backups": "備份",
+    "revert": "還原",
+    "plan_toggle": "將設定哪些內容",
+    "plan_loading": "載入預覽…",
+    "plan_error": "預覽失敗。",
+    "plan_file": "修改：",
+    "plan_creates": "將建立檔案：",
+    "plan_hooks": "掛鉤與附加項",
+    "plan_backup": "現有檔案會先備份，可隨時從下方備份清單還原。"
   }
 }

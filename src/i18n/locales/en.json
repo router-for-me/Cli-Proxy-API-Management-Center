@@ -107,7 +107,8 @@
     "plugin_store": "Plugin Store",
     "config_management": "Config Panel",
     "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "system_info": "Management Center Info",
+    "coding_agents": "Coding Agents"
   },
   "nav_groups": {
     "operate": "Operate",
@@ -127,7 +128,8 @@
     "plugin_store": "Discover & install plugins",
     "logs": "Request tracing",
     "config_management": "Gateway configuration",
-    "system_info": "Runtime & diagnostics"
+    "system_info": "Runtime & diagnostics",
+    "coding_agents": "Auto-configure coding CLIs"
   },
   "dashboard": {
     "hero_verdict_good": "All systems steady",
@@ -1583,7 +1585,29 @@
     "weekday_wed": "Wed",
     "weekday_thu": "Thu",
     "weekday_fri": "Fri",
-    "weekday_sat": "Sat"
+    "weekday_sat": "Sat",
+    "api_keys_title": "API-key quota",
+    "api_keys_refresh": "Refresh",
+    "api_keys_empty": "No API-key quota snapshots yet.",
+    "api_keys_count": "{{count}} accounts",
+    "api_keys_accounts": "{{count}} keys",
+    "api_keys_show": "Show accounts",
+    "api_keys_hide": "Hide accounts",
+    "api_keys_worst": "worst account remaining",
+    "api_keys_credits": "Credits",
+    "api_keys_free": "Free requests",
+    "api_keys_credits_total": "${{used}} credits used",
+    "col_provider": "Provider",
+    "col_account": "Account",
+    "col_state": "State",
+    "col_plan": "Plan",
+    "col_limit": "Limit",
+    "col_remaining": "Remaining",
+    "col_percent": "% left",
+    "col_usage": "Usage",
+    "col_free_requests": "Free req used/limit",
+    "col_credits": "Credits used/total",
+    "api_keys_of_total": "of {{total}}%"
   },
   "plugin_management": {
     "title": "Plugin Management",
@@ -1932,6 +1956,8 @@
       "disable": "Disable"
     },
     "categories": {
+      "signup": "Sign up for {{name}}",
+      "visit": "Visit {{name}}",
       "title": "Providers",
       "quickFill": "Quick Fill",
       "activeCount": "{{active}}/{{total}} active"
@@ -2225,5 +2251,27 @@
     "unavailable": "Resets are currently unavailable.",
     "rate_limited": "Request rate limited.",
     "auth_error": "Authorization was refused."
+  },
+  "codingAgents": {
+    "title": "Coding Agents",
+    "refresh": "Refresh",
+    "revert_last": "Revert last",
+    "hint": "Point coding agents at this proxy. Every change is backed up first and can be reverted. One agent per action.",
+    "status_configured": "Configured",
+    "status_not_installed": "Not installed",
+    "status_other": "Other config",
+    "working": "Working…",
+    "confirm_overwrite": "Overwrite? Click again",
+    "apply": "Configure",
+    "create": "Set up",
+    "backups": "Backups",
+    "revert": "Restore",
+    "plan_toggle": "What gets configured",
+    "plan_loading": "Loading preview…",
+    "plan_error": "Preview failed.",
+    "plan_file": "Changes to:",
+    "plan_creates": "File will be created:",
+    "plan_hooks": "Hooks & extras",
+    "plan_backup": "Existing file is backed up first; restore anytime from Backups below."
   }
 }

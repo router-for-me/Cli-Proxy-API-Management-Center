@@ -33,12 +33,17 @@
   gap: 4px;
 }
 
+.itemWrap {
+  position: relative;
+}
+
 .item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  // 右侧留给悬浮的注册跳转链接，徽标不被覆盖。
+  padding: 10px 38px 10px 12px;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
@@ -172,6 +177,29 @@
   border: 1px solid var(--border-color);
   color: var(--muted-foreground);
   flex-shrink: 0;
+}
+
+.signupLink {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  opacity: 0.65;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+    color: var(--primary-color, #6c8cff);
+    background: var(--bg-secondary, rgba(128, 128, 128, 0.12));
+  }
 }
 
 .badgeAmber {

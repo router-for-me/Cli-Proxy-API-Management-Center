@@ -107,7 +107,8 @@
     "plugin_store": "插件商店",
     "config_management": "配置面板",
     "logs": "日志查看",
-    "system_info": "中心信息"
+    "system_info": "中心信息",
+    "coding_agents": "编码代理"
   },
   "nav_groups": {
     "operate": "运行",
@@ -127,7 +128,8 @@
     "plugin_store": "发现并安装插件",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
-    "system_info": "运行与诊断信息"
+    "system_info": "运行与诊断信息",
+    "coding_agents": "自动配置编码 CLI"
   },
   "dashboard": {
     "hero_verdict_good": "运行平稳",
@@ -1581,7 +1583,29 @@
     "weekday_wed": "三",
     "weekday_thu": "四",
     "weekday_fri": "五",
-    "weekday_sat": "六"
+    "weekday_sat": "六",
+    "api_keys_title": "API 密钥额度",
+    "api_keys_refresh": "刷新",
+    "api_keys_empty": "尚无 API 密钥额度快照。",
+    "api_keys_count": "{{count}} 个账户",
+    "api_keys_accounts": "{{count}} 个密钥",
+    "api_keys_show": "显示账户",
+    "api_keys_hide": "隐藏账户",
+    "api_keys_worst": "剩余最少账户",
+    "api_keys_credits": "积分额度",
+    "api_keys_free": "免费请求",
+    "api_keys_credits_total": "已用积分 ${{used}}",
+    "col_provider": "提供商",
+    "col_account": "账户",
+    "col_state": "状态",
+    "col_plan": "套餐",
+    "col_limit": "上限",
+    "col_remaining": "剩余",
+    "col_percent": "剩余百分比",
+    "col_usage": "已用",
+    "col_free_requests": "免费请求 已用/上限",
+    "col_credits": "额度 已用/总计",
+    "api_keys_of_total": "共 {{total}}%"
   },
   "plugin_management": {
     "title": "插件管理",
@@ -1930,6 +1954,8 @@
       "disable": "停用"
     },
     "categories": {
+      "signup": "注册 {{name}}",
+      "visit": "访问 {{name}}",
       "title": "提供商",
       "quickFill": "快速接入",
       "activeCount": "{{active}}/{{total}} 活跃"
@@ -2223,5 +2249,27 @@
     "unavailable": "重置暂不可用。",
     "rate_limited": "请求过于频繁。",
     "auth_error": "授权被拒绝。"
+  },
+  "codingAgents": {
+    "title": "编码代理",
+    "refresh": "刷新",
+    "revert_last": "撤销最近一次",
+    "hint": "将编码代理指向本代理。每次修改都会先备份，可随时撤销。每次只操作一个代理。",
+    "status_configured": "已配置",
+    "status_not_installed": "未安装",
+    "status_other": "其他配置",
+    "working": "执行中…",
+    "confirm_overwrite": "覆盖？再次点击",
+    "apply": "配置",
+    "create": "配置",
+    "backups": "备份",
+    "revert": "还原",
+    "plan_toggle": "将配置哪些内容",
+    "plan_loading": "加载预览…",
+    "plan_error": "预览失败。",
+    "plan_file": "修改：",
+    "plan_creates": "将创建文件：",
+    "plan_hooks": "钩子与附加项",
+    "plan_backup": "现有文件会先备份，可随时从下方备份列表还原。"
   }
 }
