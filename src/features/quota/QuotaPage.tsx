@@ -22,6 +22,7 @@ import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
+import { AUTH_FILE_COOLDOWN_RESET_EVENT } from '@/features/authFiles/authFilesEvents';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
@@ -115,6 +116,12 @@ export function QuotaPage() {
   }, [connectionStatus, sessionGeneration, t]);
 
   useHeaderRefresh(loadFiles);
+
+  useEffect(() => {
+    const refreshCooldowns = () => void loadFiles();
+    window.addEventListener(AUTH_FILE_COOLDOWN_RESET_EVENT, refreshCooldowns);
+    return () => window.removeEventListener(AUTH_FILE_COOLDOWN_RESET_EVENT, refreshCooldowns);
+  }, [loadFiles]);
 
   useEffect(() => {
     void loadFiles();

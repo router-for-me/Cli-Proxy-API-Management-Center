@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { apiClient, authFilesApi } from '@/services/api';
 import type { AuthFileRefreshResult } from '@/services/api/authFiles';
 import { getAuthFileRefreshKey } from '@/features/authFiles/manualRefresh';
-import { notifyAuthFilesChanged } from '@/features/authFiles/authFilesEvents';
+import {
+  AUTH_FILE_COOLDOWN_RESET_EVENT,
+  notifyAuthFilesChanged,
+} from '@/features/authFiles/authFilesEvents';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
@@ -239,6 +242,15 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     },
     [t]
   );
+
+  useEffect(() => {
+    const refreshCooldowns = () => {
+      invalidateInFlightLoads();
+      void loadFiles({ background: true });
+    };
+    window.addEventListener(AUTH_FILE_COOLDOWN_RESET_EVENT, refreshCooldowns);
+    return () => window.removeEventListener(AUTH_FILE_COOLDOWN_RESET_EVENT, refreshCooldowns);
+  }, [invalidateInFlightLoads, loadFiles]);
 
   const handleUploadClick = useCallback(() => {
     if (uploadPendingRef.current) return;

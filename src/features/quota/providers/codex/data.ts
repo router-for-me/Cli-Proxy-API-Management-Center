@@ -39,6 +39,7 @@ import {
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
+import { runCodexQuotaReset } from './reset';
 
 const CODEX_OPTIONAL_REQUEST_TIMEOUT_MS = 8000;
 
@@ -515,8 +516,12 @@ const consumeCodexRateLimitResetCredit = async (
 };
 
 const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
-  await consumeCodexRateLimitResetCredit(file, t);
-  return fetchCodexQuota(file, t);
+  return runCodexQuotaReset(
+    file,
+    t,
+    () => consumeCodexRateLimitResetCredit(file, t),
+    () => fetchCodexQuota(file, t)
+  );
 };
 
 export const CODEX_CONFIG: QuotaProviderData<CodexQuotaState, CodexQuotaData> = {
