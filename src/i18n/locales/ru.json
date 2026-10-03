@@ -467,6 +467,8 @@
     "remaining_percent": "Осталось {{percent}}%",
     "refreshes_in": "Обновится через {{duration}}",
     "refresh_available": "Можно обновить",
+    "disabled_weekly_exhausted": "Недельный лимит исчерпан; 5-часовой лимит не действует",
+    "disabled_weekly_exhausted_in": "Недельный лимит исчерпан; 5-часовой лимит не действует. Восстановится через {{duration}}",
     "duration_day_hour": "{{days}} д {{hours}} ч",
     "duration_hour_minute": "{{hours}} ч {{minutes}} мин",
     "duration_minute": "{{minutes}} мин",

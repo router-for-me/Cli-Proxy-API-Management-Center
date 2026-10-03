@@ -172,6 +172,11 @@ button.quotaMessageAction {
   background: var(--viz-failure);
 }
 
+/* 窗口被更宽窗口压制：空轨道，不着色 */
+.quotaBarFillDisabled {
+  background: transparent;
+}
+
 /* ---------- 计划徽章（codexPlan*：antigravity/claude/xai 复用） ---------- */
 
 .codexPlan {

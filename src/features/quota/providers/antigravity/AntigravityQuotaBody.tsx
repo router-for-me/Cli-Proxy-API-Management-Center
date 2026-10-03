@@ -9,46 +9,26 @@ import type { AntigravityQuotaState, AntigravityQuotaSubscription } from '@/type
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
-import { getNextAntigravityCountdownUpdateDelay } from './countdown';
+import {
+  formatAntigravityDuration,
+  getNextAntigravityCountdownUpdateDelay,
+  resolveAntigravityCountdown,
+  type AntigravityCountdown,
+} from './countdown';
 
-const formatAntigravityDuration = (t: TFunction, deltaMs: number): string => {
-  const totalMinutes = Math.max(1, Math.ceil(deltaMs / 60000));
-  const days = Math.floor(totalMinutes / 1440);
-  const hours = Math.floor((totalMinutes % 1440) / 60);
-  const minutes = totalMinutes % 60;
-
-  if (days > 0) {
-    return t('antigravity_quota.duration_day_hour', {
-      days,
-      hours,
-    });
-  }
-  if (hours > 0) {
-    return t('antigravity_quota.duration_hour_minute', {
-      hours,
-      minutes,
-    });
-  }
-  if (minutes > 0) {
-    return t('antigravity_quota.duration_minute', {
-      minutes,
-    });
-  }
-  return t('antigravity_quota.duration_less_than_minute');
-};
-
+/**
+ * 行尾"X 后刷新"文案。
+ *
+ * `unknown` 渲染成 '-'：字段缺失时宁可留空，也不要拼出"…后刷新"。
+ */
 const formatAntigravityResetLabel = (
-  resetTime: string | undefined,
-  t: TFunction,
-  nowMs: number
+  countdown: AntigravityCountdown,
+  t: TFunction
 ): string => {
-  if (!resetTime) return '-';
-  const resetMs = new Date(resetTime).getTime();
-  if (Number.isNaN(resetMs)) return '-';
-  const deltaMs = resetMs - nowMs;
-  if (deltaMs <= 0) return t('antigravity_quota.refresh_available');
+  if (countdown.kind === 'unknown') return '-';
+  if (countdown.kind === 'elapsed') return t('antigravity_quota.refresh_available');
   return t('antigravity_quota.refreshes_in', {
-    duration: formatAntigravityDuration(t, deltaMs),
+    duration: formatAntigravityDuration(t, countdown.deltaMs),
   });
 };
 
@@ -119,7 +99,12 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
     () =>
       (quota.groups ?? []).flatMap((group) =>
         group.buckets
-          .map((bucket) => (bucket.resetTime ? new Date(bucket.resetTime).getTime() : Number.NaN))
+          .flatMap((bucket) =>
+            // 被压制行的倒计时走 disabledResetTime：不到点就没有重渲染，文案会卡在"还有 N 天"。
+            [bucket.resetTime, bucket.disabledResetTime].map((value) =>
+              value ? new Date(value).getTime() : Number.NaN
+            )
+          )
           .filter(Number.isFinite)
       ),
     [quota.groups]
@@ -188,13 +173,30 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
               {group.buckets.map((bucket, index) => {
                 const clamped = Math.max(0, Math.min(1, bucket.remainingFraction));
                 const percent = clamped * 100;
+                // 周额度已耗尽时 5h 窗口不生效：不再报"额度可用"，改报压制原因与恢复时长。
+                const recovery = bucket.disabled
+                  ? resolveAntigravityCountdown(bucket.disabledResetTime, nowMs)
+                  : null;
                 const percentLabel =
-                  bucket.remainingFraction === 1
-                    ? t('antigravity_quota.quota_available')
-                    : t('antigravity_quota.remaining_percent', {
-                        percent: Math.round(percent),
-                      });
-                const resetLabel = formatAntigravityResetLabel(bucket.resetTime, t, nowMs);
+                  recovery === null
+                    ? bucket.remainingFraction === 1
+                      ? t('antigravity_quota.quota_available')
+                      : t('antigravity_quota.remaining_percent', {
+                          percent: Math.round(percent),
+                        })
+                    : // 恢复时刻已过或缺失时退到无时长文案，绝不拼出"…后刷新"或"- 后刷新"。
+                      recovery.kind === 'countdown'
+                      ? t('antigravity_quota.disabled_weekly_exhausted_in', {
+                          duration: formatAntigravityDuration(t, recovery.deltaMs),
+                        })
+                      : t('antigravity_quota.disabled_weekly_exhausted');
+                // 左侧已写着恢复时长，行尾再挂 5h 自己的倒计时就是同一行两个倒计时。
+                const resetLabel = recovery
+                  ? null
+                  : formatAntigravityResetLabel(
+                      resolveAntigravityCountdown(bucket.resetTime, nowMs),
+                      t
+                    );
                 const bucketLabel = translateAntigravityQuotaLabel(
                   bucket.label,
                   ANTIGRAVITY_BUCKET_LABEL_KEYS,
@@ -215,19 +217,26 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
                       </span>
                       <div className={classes.quotaMeta}>
                         <span className={classes.quotaPercent}>{percentLabel}</span>
-                        <span
-                          className={
-                            soon
-                              ? `${classes.quotaReset} ${classes.quotaResetRelativeSoon}`
-                              : classes.quotaReset
-                          }
-                          title={soon ? t('quota_management.soonest_row_hint') : undefined}
-                        >
-                          {resetLabel}
-                        </span>
+                        {resetLabel !== null && (
+                          <span
+                            className={
+                              soon
+                                ? `${classes.quotaReset} ${classes.quotaResetRelativeSoon}`
+                                : classes.quotaReset
+                            }
+                            title={soon ? t('quota_management.soonest_row_hint') : undefined}
+                          >
+                            {resetLabel}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <QuotaMeter percent={percent} classes={classes} index={index} />
+                    <QuotaMeter
+                      percent={percent}
+                      classes={classes}
+                      index={index}
+                      disabled={bucket.disabled}
+                    />
                   </div>
                 );
               })}

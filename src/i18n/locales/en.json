@@ -464,6 +464,8 @@
     "remaining_percent": "{{percent}}% remaining",
     "refreshes_in": "Refreshes in {{duration}}",
     "refresh_available": "Refresh available",
+    "disabled_weekly_exhausted": "Weekly limit reached; the 5-hour limit does not apply",
+    "disabled_weekly_exhausted_in": "Weekly limit reached; the 5-hour limit does not apply. Recovers in {{duration}}",
     "duration_day_hour": "{{days}}d {{hours}}h",
     "duration_hour_minute": "{{hours}}h {{minutes}}m",
     "duration_minute": "{{minutes}}m",

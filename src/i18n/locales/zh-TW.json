@@ -462,6 +462,8 @@
     "remaining_percent": "剩餘 {{percent}}%",
     "refreshes_in": "{{duration}} 後重新整理",
     "refresh_available": "可重新整理",
+    "disabled_weekly_exhausted": "週額度已用完，5 小時額度暫不生效",
+    "disabled_weekly_exhausted_in": "週額度已用完，5 小時額度暫不生效，{{duration}} 後恢復",
     "duration_day_hour": "{{days}} 天 {{hours}} 小時",
     "duration_hour_minute": "{{hours}} 小時 {{minutes}} 分鐘",
     "duration_minute": "{{minutes}} 分鐘",

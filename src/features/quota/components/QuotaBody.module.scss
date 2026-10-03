@@ -132,6 +132,11 @@
   background: var(--viz-failure);
 }
 
+/* 窗口被更宽窗口压制：空轨道，不着色 */
+.quotaBarFillDisabled {
+  background: transparent;
+}
+
 /* ---------- Antigravity 分组 ---------- */
 
 .antigravityQuotaGroup {

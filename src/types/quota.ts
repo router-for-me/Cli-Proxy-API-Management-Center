@@ -215,6 +215,15 @@ export interface AntigravityQuotaBucket {
   resetAtMs?: number | null;
   /** Window length in hours, from the bucket's `window` field. */
   periodHours?: number | null;
+  /**
+   * True when this window is not enforced because a wider window in the same
+   * group is exhausted. Antigravity keeps reporting full remaining fraction for
+   * the 5-hour window while the weekly limit blocks it, so the fraction alone
+   * cannot tell "available" from "suspended".
+   */
+  disabled?: boolean;
+  /** ISO reset instant of the wider window that disabled this bucket. */
+  disabledResetTime?: string;
 }
 
 export interface AntigravityQuotaState {

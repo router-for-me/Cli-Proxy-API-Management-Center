@@ -20,13 +20,21 @@ import type {
 import { normalizeNumberValue, normalizeQuotaFraction, normalizeStringValue } from './parsers';
 import { parseOffsetSecondsToMs, resolveResetMs } from './resetInstants';
 
-const ANTIGRAVITY_BUCKET_WINDOW_ORDER = new Map<string, number>([
-  ['5h', 0],
-  ['five-hour', 0],
-  ['five_hour', 0],
-  ['weekly', 1],
-  ['week', 1],
+/**
+ * The two windows Antigravity states explicitly, keyed by every accepted
+ * spelling of `window`. One table drives the sort order, the period length and
+ * the weekly-exhaustion rule, so a new spelling is taught in a single place.
+ */
+const ANTIGRAVITY_BUCKET_WINDOWS = new Map<string, { order: number; hours: number }>([
+  ['5h', { order: 0, hours: 5 }],
+  ['five-hour', { order: 0, hours: 5 }],
+  ['five_hour', { order: 0, hours: 5 }],
+  ['weekly', { order: 1, hours: 24 * 7 }],
+  ['week', { order: 1, hours: 24 * 7 }],
 ]);
+
+const ANTIGRAVITY_FIVE_HOUR_ORDER = 0;
+const ANTIGRAVITY_WEEKLY_ORDER = 1;
 
 function toStableId(value: string, fallback: string): string {
   const normalized = value
@@ -37,31 +45,62 @@ function toStableId(value: string, fallback: string): string {
   return normalized || fallback;
 }
 
-function getAntigravityWindowOrder(bucket: AntigravityQuotaBucket): number {
-  const window = bucket.window?.toLowerCase();
-  if (!window) return Number.MAX_SAFE_INTEGER;
-  return ANTIGRAVITY_BUCKET_WINDOW_ORDER.get(window) ?? Number.MAX_SAFE_INTEGER;
+/** Null for any window name outside the table above; unknown windows sort last. */
+function lookupAntigravityWindow(window: string | undefined): { order: number; hours: number } | null {
+  const normalized = window?.trim().toLowerCase();
+  if (!normalized) return null;
+  return ANTIGRAVITY_BUCKET_WINDOWS.get(normalized) ?? null;
+}
+
+function getAntigravityWindowOrder(window: string | undefined): number {
+  return lookupAntigravityWindow(window)?.order ?? Number.MAX_SAFE_INTEGER;
+}
+
+/** The 5-hour window and its accepted spellings. */
+function isAntigravityFiveHourWindow(window: string | undefined): boolean {
+  return lookupAntigravityWindow(window)?.order === ANTIGRAVITY_FIVE_HOUR_ORDER;
+}
+
+/** The weekly window and its accepted spellings. */
+function isAntigravityWeeklyWindow(window: string | undefined): boolean {
+  return lookupAntigravityWindow(window)?.order === ANTIGRAVITY_WEEKLY_ORDER;
+}
+
+/**
+ * Suspend the 5-hour window when the weekly limit of the same group is spent.
+ *
+ * Antigravity keeps reporting `remainingFraction: 1` for the 5-hour bucket while
+ * the weekly bucket reads 0 — the official CLI shows "Disabled: You have hit your
+ * weekly limit, the 5-hour limit does not currently apply." Inferring it here
+ * keeps the panel from painting a full green bar for a window that cannot be used.
+ *
+ * Only the 5-hour window is touched. Any other window name the API invents later
+ * (daily, monthly, …) is a different rule that we have not confirmed, so it is
+ * left exactly as the server reported it rather than guessed at.
+ */
+function applyAntigravityWeeklyExhaustion(
+  buckets: AntigravityQuotaBucket[]
+): AntigravityQuotaBucket[] {
+  const weekly = buckets.find(
+    (bucket) => isAntigravityWeeklyWindow(bucket.window) && bucket.remainingFraction <= 0
+  );
+  if (!weekly) return buckets;
+
+  return buckets.map((bucket) =>
+    isAntigravityFiveHourWindow(bucket.window)
+      ? { ...bucket, disabled: true, disabledResetTime: weekly.resetTime }
+      : bucket
+  );
 }
 
 /**
  * Window length in hours for an Antigravity bucket.
  *
- * Antigravity states the period explicitly in `window`, so unlike Kimi this is
- * a lookup rather than a keyword guess. The accepted spellings mirror
- * ANTIGRAVITY_BUCKET_WINDOW_ORDER above.
+ * Antigravity states the period explicitly in `window`, so unlike Kimi this is a
+ * lookup rather than a keyword guess.
  */
 function antigravityPeriodHours(window: string | undefined): number | null {
-  switch ((window ?? '').trim().toLowerCase()) {
-    case '5h':
-    case 'five-hour':
-    case 'five_hour':
-      return 5;
-    case 'weekly':
-    case 'week':
-      return 24 * 7;
-    default:
-      return null;
-  }
+  return lookupAntigravityWindow(window)?.hours ?? null;
 }
 
 export function buildAntigravityQuotaGroups(
@@ -105,18 +144,21 @@ export function buildAntigravityQuotaGroups(
         })
         .filter((bucket): bucket is AntigravityQuotaBucket => bucket !== null)
         .sort((a, b) => {
-          const orderDiff = getAntigravityWindowOrder(a) - getAntigravityWindowOrder(b);
+          const orderDiff =
+            getAntigravityWindowOrder(a.window) - getAntigravityWindowOrder(b.window);
           if (orderDiff !== 0) return orderDiff;
           return a.label.localeCompare(b.label);
         });
 
       if (parsedBuckets.length === 0) return null;
 
+      const disabledBuckets = applyAntigravityWeeklyExhaustion(parsedBuckets);
+
       return {
         id: groupId,
         label,
         description: normalizeStringValue(group.description) ?? undefined,
-        buckets: parsedBuckets,
+        buckets: disabledBuckets,
       };
     })
     .filter((group): group is AntigravityQuotaGroup => group !== null);
