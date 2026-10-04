@@ -61,12 +61,47 @@ button.quotaMessageAction {
 
 .quotaCardActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.quotaResetCreditButton {
+.nativeQuotaBody {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.quotaMeta [data-quota-reset] {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+@container (max-width: 320px) {
+  .quotaRowHeader:has([data-quota-updated]) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 6px;
+    .quotaMeta {
+      display: contents;
+    }
+    .quotaMeta > :first-child {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .quotaMeta > :not(:first-child) {
+      grid-column: 1 / -1;
+      justify-self: end;
+    }
+  }
+}
+
+.quotaSection .quotaResetCreditButton {
   font-size: $quota-font-size;
+  padding: 7px 8px;
   font-weight: 600;
   white-space: nowrap;
 
@@ -76,6 +111,10 @@ button.quotaMessageAction {
     align-items: center;
     gap: 6px;
   }
+}
+
+.quotaCardActions > :last-child:not(:first-child) {
+  margin-inline-start: auto;
 }
 
 /* ---------- 配额行（全 provider 通用） ---------- */

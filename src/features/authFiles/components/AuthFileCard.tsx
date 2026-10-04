@@ -9,7 +9,7 @@ import {
   IconDownload,
   IconInfo,
   IconModelCluster,
-  IconRefreshCw,
+  IconKey,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
@@ -115,6 +115,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const identity = deriveAuthFileIdentity(file);
 
   // 挂载时捕获一次入场延迟：父级随后传 null 也不会中断已开始的动画
+  const [accountRefreshing, setAccountRefreshing] = useState(false);
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
   const cardClasses = [
     styles.card,
@@ -247,7 +248,12 @@ export function AuthFileCard(props: AuthFileCardProps) {
       </div>
 
       {showQuotaLayout && quotaType && (
-        <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />
+        <AuthFileQuotaSection
+          file={file}
+          quotaType={quotaType}
+          disableControls={disableControls || isManualRefreshing}
+          onRefreshingChange={setAccountRefreshing}
+        />
       )}
 
       <footer className={styles.actions}>
@@ -271,16 +277,17 @@ export function AuthFileCard(props: AuthFileCardProps) {
                   variant="secondary"
                   size="sm"
                   onClick={() => onManualRefresh(file)}
-                  className={styles.iconButton}
-                  title={t('auth_files.manual_refresh_button')}
+                  title={t('auth_files.credential_refresh_hint')}
                   disabled={
                     disableControls ||
                     file.disabled ||
                     statusUpdating[getAuthFileRefreshKey(file)] === true ||
-                    isManualRefreshing
+                    isManualRefreshing ||
+                    accountRefreshing
                   }
                 >
-                  {isManualRefreshing ? <LoadingSpinner size={14} /> : <IconRefreshCw size={15} />}
+                  {isManualRefreshing ? <LoadingSpinner size={14} /> : <IconKey size={14} />}
+                  {t('auth_files.credential_refresh_button')}
                 </Button>
               )}
               <Button

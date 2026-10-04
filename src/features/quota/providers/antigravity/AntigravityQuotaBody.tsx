@@ -1,3 +1,4 @@
+import { QuotaObservedPercent } from '../../QuotaObservedPercent';
 /**
  * Antigravity 额度渲染体：套餐 chip 行（ultra/ultra-lite=金卡）+ 分组水位条。
  */
@@ -214,7 +215,9 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
                         {bucketLabel}
                       </span>
                       <div className={classes.quotaMeta}>
-                        <span className={classes.quotaPercent}>{percentLabel}</span>
+                        <QuotaObservedPercent className={classes.quotaPercent}>
+                          {percentLabel}
+                        </QuotaObservedPercent>
                         <span
                           className={
                             soon

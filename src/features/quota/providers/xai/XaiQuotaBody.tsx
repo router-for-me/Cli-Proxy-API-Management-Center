@@ -1,3 +1,5 @@
+import { QuotaObservedPercent } from '../../QuotaObservedPercent';
+import { useAuthFileResetDisplay } from '../../authFileObservation';
 /**
  * xAI 额度渲染体：套餐 chip 行（SuperGrok Heavy / 付费档=金卡）、
  * 周/月账单水位条、按量付费余额。
@@ -6,7 +8,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { XaiBillingSummary, XaiQuotaState } from '@/types';
-import { buildResetDisplay, formatQuotaResetTime, parseIsoToMs } from '@/utils/quota';
+import { formatQuotaResetTime, parseIsoToMs } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
@@ -74,6 +76,7 @@ const resolveXaiPlan = (
 
 export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) {
   const { t, i18n } = useTranslation();
+  const buildResetDisplay = useAuthFileResetDisplay();
   // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
   const locale = i18n.resolvedLanguage;
@@ -205,13 +208,18 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('xai_quota.weekly_limit')}</span>
             <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>
+              <QuotaObservedPercent className={classes.quotaPercent}>
                 {weeklyUsed === null
                   ? t('xai_quota.usage_unavailable')
                   : t('xai_quota.used_percent', { percent: formatXaiPercent(weeklyUsed) })}
-              </span>
+              </QuotaObservedPercent>
               {weeklyResetDisplay && (
-                <QuotaResetLabel display={weeklyResetDisplay} classes={classes} soon={weeklySoon} />
+                <QuotaResetLabel
+                  group
+                  display={weeklyResetDisplay}
+                  classes={classes}
+                  soon={weeklySoon}
+                />
               )}
             </div>
           </div>
@@ -231,11 +239,11 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
                 {t('xai_quota.product_usage', { product: item.product })}
               </span>
               <div className={classes.quotaMeta}>
-                <span className={classes.quotaPercent}>
+                <QuotaObservedPercent className={classes.quotaPercent}>
                   {t('xai_quota.used_percent', {
                     percent: formatXaiPercent(used),
                   })}
-                </span>
+                </QuotaObservedPercent>
               </div>
             </div>
             <QuotaMeter percent={remainingPercent} classes={classes} index={index + 1} />
@@ -247,7 +255,9 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('xai_quota.pay_as_you_go_label')}</span>
             <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>{onDemandPercentLabel}</span>
+              <QuotaObservedPercent className={classes.quotaPercent}>
+                {onDemandPercentLabel}
+              </QuotaObservedPercent>
               <span className={classes.quotaAmount}>{onDemandAmountLabel}</span>
             </div>
           </div>
@@ -268,10 +278,12 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('xai_quota.monthly_credits')}</span>
             <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>{percentLabel}</span>
+              <QuotaObservedPercent className={classes.quotaPercent}>
+                {percentLabel}
+              </QuotaObservedPercent>
               <span className={classes.quotaAmount}>{amountLabel}</span>
               {monthlyResetDisplay && (
-                <QuotaResetLabel display={monthlyResetDisplay} classes={classes} />
+                <QuotaResetLabel group display={monthlyResetDisplay} classes={classes} />
               )}
             </div>
           </div>

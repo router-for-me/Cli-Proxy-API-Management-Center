@@ -431,7 +431,13 @@
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新该认证文件的额度",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "account_refresh_button": "刷新账号数据",
+    "account_refresh_hint": "刷新套餐、续期、余额、额度和重置时间，不重置额度。",
+    "account_refresh_failed": "账号数据刷新失败：{{message}}",
+    "credential_refresh_button": "刷新凭据",
+    "credential_refresh_hint": "更新 OAuth 凭据，不刷新账号或额度数据。",
+    "account_refresh_success": "已刷新“{{name}}”的账号数据"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -2224,5 +2230,11 @@
     "unavailable": "重置暂不可用。",
     "rate_limited": "请求过于频繁。",
     "auth_error": "授权被拒绝。"
+  },
+  "quota_updated": {
+    "updated": "最后更新",
+    "source": "来源",
+    "provider_query": "服务商额度查询",
+    "stale": "数据已过期"
   }
 }

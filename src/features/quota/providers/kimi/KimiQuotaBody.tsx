@@ -1,3 +1,5 @@
+import { QuotaObservedPercent } from '../../QuotaObservedPercent';
+import { useAuthFileResetDisplay } from '../../authFileObservation';
 /**
  * Kimi 额度渲染体：用量行水位条。
  */
@@ -5,7 +7,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KimiQuotaState } from '@/types';
-import { buildResetDisplay, formatKimiResetHint } from '@/utils/quota';
+import { formatKimiResetHint } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
@@ -14,6 +16,7 @@ import type { QuotaBodyProps } from '../../types';
 
 export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>) {
   const { t, i18n } = useTranslation();
+  const buildResetDisplay = useAuthFileResetDisplay();
   // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
   const soonestRowId = useMemo(
@@ -58,9 +61,11 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
             <div className={classes.quotaRowHeader}>
               <span className={classes.quotaModel}>{rowLabel}</span>
               <div className={classes.quotaMeta}>
-                <span className={classes.quotaPercent}>{percentLabel}</span>
+                <QuotaObservedPercent className={classes.quotaPercent}>
+                  {percentLabel}
+                </QuotaObservedPercent>
                 {resetDisplay && (
-                  <QuotaResetLabel display={resetDisplay} classes={classes} soon={soon} />
+                  <QuotaResetLabel group display={resetDisplay} classes={classes} soon={soon} />
                 )}
               </div>
             </div>

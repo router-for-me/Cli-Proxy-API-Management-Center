@@ -29,7 +29,14 @@ export async function enrichQuotaInBackground(
       const setQuota = useQuotaStore.getState()[adapter.storeSetter] as QuotaMapUpdater;
       setQuota((prev) => {
         if (prev[cacheKey] !== expectedState) return prev;
-        return { ...prev, [cacheKey]: adapter.buildSuccessState(enriched) };
+        return {
+          ...prev,
+          [cacheKey]: {
+            ...adapter.buildSuccessState(enriched),
+            capturedAt: expectedState.capturedAt,
+            source: expectedState.source,
+          },
+        };
       });
     });
   } catch {

@@ -1,0 +1,49 @@
+.remaining {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+.age {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  svg {
+    flex-shrink: 0;
+    stroke-width: 1.6;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  &[data-stale] {
+    color: var(--warning-text);
+  }
+}
+.tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: 280px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: 12px/1.5 var(--font-family, sans-serif);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  box-shadow: 0 4px 20px #0003;
+  pointer-events: none;
+}

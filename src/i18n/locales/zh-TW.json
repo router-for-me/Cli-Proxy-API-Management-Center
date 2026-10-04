@@ -431,7 +431,13 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "account_refresh_button": "重新整理帳號資料",
+    "account_refresh_hint": "重新整理方案、續期、餘額、額度與重設時間，不重設額度。",
+    "account_refresh_failed": "帳號資料重新整理失敗：{{message}}",
+    "credential_refresh_button": "重新整理憑證",
+    "credential_refresh_hint": "更新 OAuth 憑證，不重新整理帳號或額度資料。",
+    "account_refresh_success": "已重新整理「{{name}}」的帳號資料"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -2250,5 +2256,11 @@
     "unavailable": "重置暫不可用。",
     "rate_limited": "請求過於頻繁。",
     "auth_error": "授權遭拒。"
+  },
+  "quota_updated": {
+    "updated": "最後更新",
+    "source": "來源",
+    "provider_query": "服務商額度查詢",
+    "stale": "資料已過期"
   }
 }

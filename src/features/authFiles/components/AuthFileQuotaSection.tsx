@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { AuthFileObservation } from '@/features/quota/authFileObservation';
+import { withQuotaObservation } from '@/features/quota/observationFormat';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   captureQuotaCacheGeneration,
@@ -31,14 +33,18 @@ export type AuthFileQuotaSectionProps = {
   file: AuthFileItem;
   quotaType: QuotaProviderType;
   disableControls: boolean;
+  onRefreshingChange?: (refreshing: boolean) => void;
 };
 
 export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
-  const { file, quotaType, disableControls } = props;
+  const { file, quotaType, disableControls, onRefreshingChange } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const [resettingQuota, setResettingQuota] = useState(false);
+  const [refreshingQuota, setRefreshingQuota] = useState(false);
+  const [refreshError, setRefreshError] = useState('');
+  const pendingRefresh = useRef(false);
   const adapter = QUOTA_ADAPTERS[quotaType];
   const cacheKey = getQuotaCacheKey(file);
 
@@ -63,37 +69,53 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (disableControls) return;
     if (isRuntimeOnlyAuthFile(file)) return;
     if (file.disabled) return;
+    if (resettingQuota || pendingRefresh.current) return;
     if (quota?.status === 'loading') return;
 
     const cacheGeneration = captureQuotaCacheGeneration(file.name);
+    pendingRefresh.current = true;
+    setRefreshingQuota(true);
+    onRefreshingChange?.(true);
+    setRefreshError('');
 
-    updateQuotaState((prev) => ({
-      ...prev,
-      [cacheKey]: adapter.buildLoadingState(),
-    }));
+    if (quota?.status !== 'success')
+      updateQuotaState((prev) => ({
+        ...prev,
+        [cacheKey]: adapter.buildLoadingState(),
+      }));
 
     try {
       const data = await adapter.fetchQuota(file, t);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
         updateQuotaState((prev) => ({
           ...prev,
-          [cacheKey]: adapter.buildSuccessState(data),
+          [cacheKey]: withQuotaObservation(
+            adapter.buildSuccessState(data),
+            new Date().toISOString()
+          ),
         }));
-        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+        showNotification(t('auth_files.account_refresh_success', { name: file.name }), 'success');
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');
       const status = getStatusFromError(err);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
-        updateQuotaState((prev) => ({
-          ...prev,
-          [cacheKey]: adapter.buildErrorState(message, status),
-        }));
+        setRefreshError(message);
+        if (quota?.status !== 'success') {
+          updateQuotaState((prev) => ({
+            ...prev,
+            [cacheKey]: adapter.buildErrorState(message, status),
+          }));
+        }
         showNotification(
-          t('auth_files.quota_refresh_failed', { name: file.name, message }),
+          t('auth_files.account_refresh_failed', { name: file.name, message }),
           'error'
         );
       });
+    } finally {
+      pendingRefresh.current = false;
+      setRefreshingQuota(false);
+      onRefreshingChange?.(false);
     }
   }, [
     adapter,
@@ -101,6 +123,8 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     disableControls,
     file,
     quota?.status,
+    resettingQuota,
+    onRefreshingChange,
     showNotification,
     t,
     updateQuotaState,
@@ -112,6 +136,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (file.disabled) return;
     if (quota?.status === 'loading') return;
     if (resettingQuota) return;
+    if (pendingRefresh.current) return;
 
     const resetQuota = adapter.resetQuota;
     if (!resetQuota) return;
@@ -122,14 +147,20 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       confirmText: t('codex_quota.reset_confirm_button'),
       variant: 'primary',
       onConfirm: async () => {
+        if (pendingRefresh.current) return;
+        pendingRefresh.current = true;
         const cacheGeneration = captureQuotaCacheGeneration(file.name);
         setResettingQuota(true);
+        onRefreshingChange?.(true);
         try {
           const data = await resetQuota(file, t);
           commitIfQuotaCacheCurrent(cacheGeneration, () => {
             updateQuotaState((prev) => ({
               ...prev,
-              [cacheKey]: adapter.buildSuccessState(data),
+              [cacheKey]: withQuotaObservation(
+                adapter.buildSuccessState(data),
+                new Date().toISOString()
+              ),
             }));
             showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
           });
@@ -139,7 +170,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
             showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
           });
         } finally {
+          pendingRefresh.current = false;
           setResettingQuota(false);
+          onRefreshingChange?.(false);
         }
       },
     });
@@ -150,6 +183,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     file,
     quota?.status,
     resettingQuota,
+    onRefreshingChange,
     showConfirmation,
     showNotification,
     t,
@@ -157,7 +191,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   ]);
 
   const quotaStatus = quota?.status ?? 'idle';
-  const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
+  const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota && !refreshingQuota;
   const canUseResetQuota = canRefreshQuota && quotaStatus !== 'loading';
   const showResetQuotaAction = quota !== undefined && Boolean(adapter.canResetQuota?.(quota));
   const resetQuotaAction =
@@ -203,28 +237,35 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           })}
         </div>
       ) : quota ? (
-        <adapter.Body quota={quota} classes={compactQuotaClasses} />
+        <AuthFileObservation.Provider value={quota}>
+          <div className={styles.nativeQuotaBody}>
+            <adapter.Body quota={quota} classes={compactQuotaClasses} />
+          </div>
+        </AuthFileObservation.Provider>
       ) : (
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
       )}
-      {quotaStatus !== 'idle' && (resetQuotaAction || quotaType === 'devin') && (
+      {
         <div className={styles.quotaCardActions}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className={styles.quotaResetCreditButton}
+            onClick={() => void refreshQuotaForFile()}
+            disabled={!canRefreshQuota || quotaStatus === 'loading' || isRuntimeOnlyAuthFile(file)}
+            loading={refreshingQuota || quotaStatus === 'loading'}
+            title={t('auth_files.account_refresh_hint')}
+          >
+            {!refreshingQuota && quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
+            {t('auth_files.account_refresh_button')}
+          </Button>
           {resetQuotaAction}
-          {quotaType === 'devin' && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className={styles.quotaResetCreditButton}
-              onClick={() => void refreshQuotaForFile()}
-              disabled={!canRefreshQuota || quotaStatus === 'loading'}
-              loading={quotaStatus === 'loading'}
-              title={t('auth_files.quota_refresh_hint')}
-            >
-              {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
-              {t('auth_files.quota_refresh_single')}
-            </Button>
-          )}
+        </div>
+      }
+      {refreshError && quotaStatus === 'success' && (
+        <div className={styles.quotaError} role="alert">
+          {t('auth_files.account_refresh_failed', { message: refreshError })}
         </div>
       )}
     </div>

@@ -50,6 +50,7 @@ type CodexResetCreditsData = {
 };
 
 export type CodexQuotaData = {
+  capturedAt?: string;
   planType: string | null;
   subscriptionActiveUntil: string | number | null;
   creditBalance: string | null;
@@ -63,7 +64,8 @@ export type CodexQuotaData = {
 
 export const buildCodexQuotaWindows = (
   payload: CodexUsagePayload,
-  t: TFunction
+  t: TFunction,
+  observedAtMs = Date.now()
 ): CodexQuotaWindow[] => {
   const FIVE_HOUR_SECONDS = 18000;
   const WEEK_SECONDS = 604800;
@@ -103,14 +105,14 @@ export const buildCodexQuotaWindows = (
     allowed?: boolean
   ) => {
     if (!window) return;
-    const resetLabel = formatCodexResetLabel(window);
+    const resetLabel = formatCodexResetLabel(window, observedAtMs);
     const usedPercentRaw = normalizeNumberValue(window.used_percent ?? window.usedPercent);
     const isLimitReached = Boolean(limitReached) || allowed === false;
     const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
     // Keep the raw instant beside the label — see utils/quota/resetInstants.
     const resetAtMs =
       resolveResetMs([window.reset_at, window.resetAt]) ??
-      parseOffsetSecondsToMs(window.reset_after_seconds ?? window.resetAfterSeconds, Date.now());
+      parseOffsetSecondsToMs(window.reset_after_seconds ?? window.resetAfterSeconds, observedAtMs);
     const periodHours = periodHoursFromSeconds(
       window.limit_window_seconds ?? window.limitWindowSeconds
     );
@@ -425,13 +427,19 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   const accountId = resolveCodexChatgptAccountId(file);
   const requestHeader = buildCodexRequestHeader(file);
 
+  let capturedAt: string | undefined;
   const [result, liveSubscriptionActiveUntil] = await Promise.all([
-    apiCallApi.request({
-      authIndex,
-      method: 'GET',
-      url: CODEX_USAGE_URL,
-      header: requestHeader,
-    }),
+    apiCallApi
+      .request({
+        authIndex,
+        method: 'GET',
+        url: CODEX_USAGE_URL,
+        header: requestHeader,
+      })
+      .then((result) => {
+        capturedAt = new Date().toISOString();
+        return result;
+      }),
     fetchCodexSubscriptionActiveUntil(authIndex, accountId, requestHeader),
   ]);
 
@@ -461,8 +469,9 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     rateLimitResetCreditsAvailableCount;
   const planType = planTypeFromUsage ?? planTypeFromFile;
   const subscriptionActiveUntil = liveSubscriptionActiveUntil ?? subscriptionActiveUntilFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
+  const windows = buildCodexQuotaWindows(payload, t, Date.parse(capturedAt!));
   return {
+    capturedAt,
     planType,
     subscriptionActiveUntil,
     creditBalance: accountCredits.balance,
@@ -536,6 +545,7 @@ export const CODEX_CONFIG: QuotaProviderData<CodexQuotaState, CodexQuotaData> = 
   }),
   buildSuccessState: (data) => ({
     status: 'success',
+    capturedAt: data.capturedAt,
     windows: data.windows,
     planType: data.planType,
     subscriptionActiveUntil: data.subscriptionActiveUntil,

@@ -433,7 +433,13 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "account_refresh_button": "Refresh account data",
+    "account_refresh_hint": "Reload plan, renewal, credits, limits and reset times without resetting quota.",
+    "account_refresh_failed": "Account data refresh failed: {{message}}",
+    "credential_refresh_button": "Refresh credentials",
+    "credential_refresh_hint": "Renew OAuth credentials without reloading account or quota data.",
+    "account_refresh_success": "Account data refreshed for \"{{name}}\""
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -2226,5 +2232,11 @@
     "unavailable": "Resets are currently unavailable.",
     "rate_limited": "Request rate limited.",
     "auth_error": "Authorization was refused."
+  },
+  "quota_updated": {
+    "updated": "Last updated",
+    "source": "Source",
+    "provider_query": "Provider quota query",
+    "stale": "Stale observation"
   }
 }

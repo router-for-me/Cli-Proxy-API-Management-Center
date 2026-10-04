@@ -8,16 +8,25 @@
 
 import type { ResetDisplay } from '@/utils/quota';
 import type { QuotaClassMap } from '../types';
+import { useContext } from 'react';
+import { AuthFileObservation } from '../authFileObservation';
 
 export interface QuotaResetLabelProps {
   display: ResetDisplay;
   classes: QuotaClassMap;
   /** True on the row that recovers first for this credential. */
   soon?: boolean;
+  group?: boolean;
 }
 
-export function QuotaResetLabel({ display, classes, soon = false }: QuotaResetLabelProps) {
-  return (
+export function QuotaResetLabel({
+  display,
+  classes,
+  soon = false,
+  group = false,
+}: QuotaResetLabelProps) {
+  const observation = useContext(AuthFileObservation);
+  const label = (
     <>
       <span className={classes.quotaReset}>{display.absolute}</span>
       {display.relative && (
@@ -33,4 +42,5 @@ export function QuotaResetLabel({ display, classes, soon = false }: QuotaResetLa
       )}
     </>
   );
+  return observation && group ? <span data-quota-reset>{label}</span> : label;
 }

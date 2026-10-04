@@ -365,7 +365,13 @@
     "quota_refresh_single": "Làm mới quota",
     "quota_refresh_hint": "Chỉ làm mới quota cho credential này",
     "quota_refresh_success": "Đã làm mới quota cho \"{{name}}\"",
-    "quota_refresh_failed": "Không thể làm mới quota cho \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Không thể làm mới quota cho \"{{name}}\": {{message}}",
+    "account_refresh_button": "Làm mới dữ liệu tài khoản",
+    "account_refresh_hint": "Truy vấn hạn mức, gói và số dư của nhà cung cấp; không làm mới thông tin đăng nhập OAuth.",
+    "account_refresh_success": "Đã làm mới dữ liệu tài khoản cho {{name}}",
+    "account_refresh_failed": "Không thể làm mới dữ liệu tài khoản: {{message}}",
+    "credential_refresh_button": "Làm mới thông tin đăng nhập",
+    "credential_refresh_hint": "Làm mới thông tin đăng nhập OAuth; không truy vấn hạn mức."
   },
   "antigravity_subscription": {
     "plan_unknown": "Không rõ",
@@ -1721,5 +1727,11 @@
     "modelCatalog": {
       "notLoaded": "Chưa tải"
     }
+  },
+  "quota_updated": {
+    "updated": "Cập nhật lần cuối",
+    "source": "Nguồn",
+    "provider_query": "Truy vấn hạn mức nhà cung cấp",
+    "stale": "Dữ liệu đã cũ"
   }
 }

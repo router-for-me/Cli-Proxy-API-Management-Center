@@ -1,7 +1,8 @@
+import { QuotaObservedPercent } from '../../QuotaObservedPercent';
+import { useAuthFileResetDisplay } from '../../authFileObservation';
 import { useTranslation } from 'react-i18next';
 import type { DevinQuotaState } from '@/types';
 import { useNow } from '@/hooks/useNow';
-import { buildResetDisplay } from '@/utils/quota';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
@@ -9,6 +10,7 @@ import type { QuotaBodyProps } from '../../types';
 
 export function DevinQuotaBody({ quota, classes }: QuotaBodyProps<DevinQuotaState>) {
   const { t, i18n } = useTranslation();
+  const buildResetDisplay = useAuthFileResetDisplay();
   const now = useNow();
   const locale = i18n.resolvedLanguage;
   const urgentRow = pickUrgentRowId(collectQuotaRowInstants('devin', quota), now);
@@ -41,13 +43,13 @@ export function DevinQuotaBody({ quota, classes }: QuotaBodyProps<DevinQuotaStat
             <div className={classes.quotaRowHeader}>
               <span className={classes.quotaModel}>{label}</span>
               <div className={classes.quotaMeta}>
-                <span className={classes.quotaPercent}>
+                <QuotaObservedPercent className={classes.quotaPercent}>
                   {window.remainingPercent === null
                     ? t('devin_quota.unavailable')
                     : `${window.remainingPercent}%`}
-                </span>
+                </QuotaObservedPercent>
                 {reset ? (
-                  <QuotaResetLabel display={reset} classes={classes} soon={soon} />
+                  <QuotaResetLabel group display={reset} classes={classes} soon={soon} />
                 ) : (
                   <span className={classes.quotaReset}>{t('devin_quota.reset_unknown')}</span>
                 )}

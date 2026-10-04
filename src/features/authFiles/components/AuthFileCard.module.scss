@@ -395,9 +395,7 @@
 }
 
 .utilityActions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: contents;
 }
 
 /* Button 会用 span 包裹 children；将包裹层也设为 flex，避免 SVG 按文本基线偏移。 */

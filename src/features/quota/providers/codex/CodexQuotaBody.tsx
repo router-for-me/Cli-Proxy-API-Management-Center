@@ -1,3 +1,5 @@
+import { QuotaObservedPercent } from '../../QuotaObservedPercent';
+import { useAuthFileResetDisplay, useAuthFileTimeZone } from '../../authFileObservation';
 /**
  * Codex 额度渲染体：套餐 chip 行（elite=Pro 20x 液态铂金 / premium=金卡）、
  * 重置积分明细、用量窗口水位条。
@@ -10,7 +12,6 @@ import {
   normalizePlanType,
   resolvePlanTier,
   PREMIUM_CODEX_PLAN_TYPES,
-  buildResetDisplay,
   formatInstantShort,
   parseIsoToMs,
   resolveResetMs,
@@ -33,6 +34,8 @@ const getPlanValueClass = (planType: string | null, classes: QuotaClassMap): str
 
 export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaState>) {
   const { t, i18n } = useTranslation();
+  const buildResetDisplay = useAuthFileResetDisplay();
+  const browserTimeZone = useAuthFileTimeZone(quota.rateLimitResetCredits?.[0]?.expiresAt);
   const now = useNow();
   const locale = i18n.resolvedLanguage;
   // Windows and reset credits compete for the same emphasis, but only during
@@ -128,7 +131,9 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
       {rateLimitResetCredits.length > 0 ? (
         <div className={classes.codexResetCredits}>
           <div className={classes.codexResetCreditsTitle}>
-            {t('codex_quota.reset_credits_expiry_label', { timezone: resolveTimeZoneLabel() })}
+            {t('codex_quota.reset_credits_expiry_label', {
+              timezone: browserTimeZone ?? resolveTimeZoneLabel(),
+            })}
           </div>
           {rateLimitResetCredits.map((credit, index) => {
             const expiresAtMs = parseIsoToMs(credit.expiresAt);
@@ -196,9 +201,11 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
               <div className={classes.quotaRowHeader}>
                 <span className={classes.quotaModel}>{windowLabel}</span>
                 <div className={classes.quotaMeta}>
-                  <span className={classes.quotaPercent}>{percentLabel}</span>
+                  <QuotaObservedPercent className={classes.quotaPercent}>
+                    {percentLabel}
+                  </QuotaObservedPercent>
                   {resetDisplay && (
-                    <QuotaResetLabel display={resetDisplay} classes={classes} soon={soon} />
+                    <QuotaResetLabel group display={resetDisplay} classes={classes} soon={soon} />
                   )}
                 </div>
               </div>

@@ -436,7 +436,13 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "account_refresh_button": "Обновить данные аккаунта",
+    "account_refresh_hint": "Обновить тариф, подписку, кредиты, лимиты и время сброса без сброса квоты.",
+    "account_refresh_failed": "Не удалось обновить данные аккаунта: {{message}}",
+    "credential_refresh_button": "Обновить учётные данные",
+    "credential_refresh_hint": "Обновить учётные данные OAuth без загрузки данных аккаунта или квоты.",
+    "account_refresh_success": "Данные аккаунта «{{name}}» обновлены"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -2220,5 +2226,11 @@
     "unavailable": "Сбросы временно недоступны.",
     "rate_limited": "Слишком много запросов.",
     "auth_error": "Авторизация отклонена."
+  },
+  "quota_updated": {
+    "updated": "Последнее обновление",
+    "source": "Источник",
+    "provider_query": "Запрос квоты провайдера",
+    "stale": "Устаревшие данные"
   }
 }

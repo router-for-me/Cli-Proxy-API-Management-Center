@@ -240,6 +240,8 @@ export interface CodexQuotaWindow {
 }
 
 export interface CodexQuotaState {
+  capturedAt?: string;
+  source?: string;
   status: 'idle' | 'loading' | 'success' | 'error';
   windows: CodexQuotaWindow[];
   planType?: string | null;

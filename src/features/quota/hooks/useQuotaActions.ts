@@ -1,3 +1,4 @@
+import { withQuotaObservation } from '../observationFormat';
 /**
  * 单卡额度操作：刷新 + Codex 重置积分。
  * 流程 1:1 移植旧 QuotaSection（confirm modal、resetting 再入守卫、
@@ -43,7 +44,10 @@ export function useQuotaActions(disableControls: boolean) {
       try {
         const data = await adapter.fetchQuota(file, t);
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
-          const successState = adapter.buildSuccessState(data);
+          const successState = withQuotaObservation(
+            adapter.buildSuccessState(data),
+            new Date().toISOString()
+          );
           setQuota((prev) => ({
             ...prev,
             [cacheKey]: successState,
@@ -92,7 +96,10 @@ export function useQuotaActions(disableControls: boolean) {
             commitIfQuotaCacheCurrent(cacheGeneration, () => {
               setQuota((prev) => ({
                 ...prev,
-                [cacheKey]: adapter.buildSuccessState(data),
+                [cacheKey]: withQuotaObservation(
+                  adapter.buildSuccessState(data),
+                  new Date().toISOString()
+                ),
               }));
               showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
             });

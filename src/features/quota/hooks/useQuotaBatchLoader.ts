@@ -1,3 +1,4 @@
+import { withQuotaObservation } from '../observationFormat';
 /**
  * 混合提供商批量额度加载（原 useQuotaLoader 的跨分区泛化）。
  *
@@ -23,6 +24,7 @@ interface BatchFetchResult {
   cacheKey: string;
   status: 'success' | 'error';
   data?: unknown;
+  capturedAt?: string;
   error?: string;
   errorStatus?: number;
 }
@@ -70,7 +72,13 @@ export function useQuotaBatchLoader() {
                 const cacheKey = getQuotaCacheKey(file);
                 try {
                   const data = await adapter.fetchQuota(file, t);
-                  return { name: file.name, cacheKey, status: 'success', data };
+                  return {
+                    name: file.name,
+                    cacheKey,
+                    status: 'success',
+                    data,
+                    capturedAt: new Date().toISOString(),
+                  };
                 } catch (err: unknown) {
                   const message = err instanceof Error ? err.message : t('common.unknown_error');
                   return {
@@ -95,7 +103,10 @@ export function useQuotaBatchLoader() {
                   () => {
                     nextState[result.cacheKey] =
                       result.status === 'success'
-                        ? adapter.buildSuccessState(result.data)
+                        ? withQuotaObservation(
+                            adapter.buildSuccessState(result.data),
+                            result.capturedAt!
+                          )
                         : adapter.buildErrorState(
                             result.error || t('common.unknown_error'),
                             result.errorStatus
