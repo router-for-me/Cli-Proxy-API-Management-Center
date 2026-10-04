@@ -60,6 +60,22 @@
   transform: none;
 }
 
+.apiKeyHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  :global(.pill) {
+    flex-shrink: 0;
+  }
+
+  :global(.item-title) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* ---------- 通用块布局 ---------- */
 
 .blockHeaderRow {

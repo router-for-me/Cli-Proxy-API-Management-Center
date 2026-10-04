@@ -1445,8 +1445,8 @@
         "input_placeholder": "Paste your API key",
         "name_label": "Name / description (optional)",
         "name_placeholder": "For example: Alice's laptop",
-        "name_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
-        "name_save_error": "Could not save the name in browser storage. Check your browser storage settings.",
+        "name_hint": "Saved immediately on the server and shared across dashboards. Existing browser names are imported once; server names take priority. Clear to remove the name.",
+        "name_save_error": "Could not load or save the shared key names. Check the management connection and try again.",
         "input_hint": "Changes take effect after saving the configuration. Upstream provider keys are managed separately.",
         "error_empty": "Please enter an API key",
         "error_invalid": "API key contains invalid characters",
@@ -1457,7 +1457,8 @@
           "fair": "Fair",
           "good": "Good",
           "strong": "Strong"
-        }
+        },
+        "name_local_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name."
       },
       "payload_rules": {
         "rule": "Rule",

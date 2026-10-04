@@ -1085,7 +1085,12 @@
           "fair": "Khá",
           "good": "Tốt",
           "strong": "Mạnh"
-        }
+        },
+        "name_hint": "Lưu ngay trên máy chủ và chia sẻ với các bảng điều khiển. Tên trong trình duyệt được nhập một lần; tên trên máy chủ được ưu tiên. Để trống để xóa tên.",
+        "name_save_error": "Không thể tải hoặc lưu tên khóa dùng chung. Kiểm tra kết nối quản trị và thử lại.",
+        "name_local_hint": "Tên được lưu ngay trong trình duyệt này, riêng cho từng máy chủ. Để trống để xóa tên.",
+        "name_label": "Tên / mô tả (tùy chọn)",
+        "name_placeholder": "Ví dụ: máy tính của An"
       },
       "payload_rules": {
         "rule": "Quy tắc",
