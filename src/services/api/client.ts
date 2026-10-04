@@ -16,11 +16,14 @@ import {
 import { computeApiUrl } from '@/utils/connection';
 import { parseApiErrorResponse } from './apiError';
 
+type RevisionConfig = AxiosRequestConfig & { connectionRevision?: number };
+
 class ApiClient {
   private instance: AxiosInstance;
   private apiBase: string = '';
   private managementKey: string = '';
   private connectionRevision = 0;
+  private reportedUnauthorizedRevision = -1;
 
   constructor() {
     this.instance = axios.create({
@@ -116,6 +119,7 @@ class ApiClient {
       (config) => {
         // 设置 baseURL
         config.baseURL = this.apiBase;
+        (config as RevisionConfig).connectionRevision = this.connectionRevision;
 
         // 添加认证头
         if (this.managementKey) {
@@ -175,7 +179,39 @@ class ApiClient {
       apiError.data = responseData;
 
       // 401 未授权 - 触发登出事件
-      if (error.response?.status === 401) {
+      const requestRevision = (error.config as RevisionConfig | undefined)?.connectionRevision;
+      if (error.response?.status === 401 && requestRevision === this.connectionRevision) {
+        if (this.reportedUnauthorizedRevision !== requestRevision) {
+          this.reportedUnauthorizedRevision = requestRevision;
+          // Static route names only: never log headers, bodies, query strings or credential names.
+          const url = error.config?.url?.split(/[?#]/)[0];
+          const route = [
+            '/credentials',
+            '/credentials/refresh',
+            '/credentials/download',
+            '/quota/observations',
+            '/access/api-key-names',
+            '/config',
+            '/models',
+          ].includes(url ?? '')
+            ? url
+            : 'other-management-route';
+          console.warn('CPAMC management authentication rejected', {
+            timestamp: new Date().toISOString(),
+            status: 401,
+            method: ['get', 'post', 'put', 'patch', 'delete'].includes(error.config?.method ?? '')
+              ? error.config?.method
+              : 'unknown',
+            route,
+            connectionRevision: requestRevision,
+            reason:
+              parsedError.message === 'missing management key'
+                ? 'missing_management_key'
+                : parsedError.message === 'invalid management key'
+                  ? 'invalid_management_key'
+                  : 'unspecified_unauthorized',
+          });
+        }
         window.dispatchEvent(new Event('unauthorized'));
       }
 
