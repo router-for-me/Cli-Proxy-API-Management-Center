@@ -1455,7 +1455,8 @@
           "fair": "一般",
           "good": "良好",
           "strong": "很强"
-        }
+        },
+        "name_retry": "重试"
       },
       "payload_rules": {
         "rule": "规则",

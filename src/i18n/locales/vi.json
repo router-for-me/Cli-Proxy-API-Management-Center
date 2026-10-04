@@ -1090,7 +1090,8 @@
         "name_save_error": "Không thể tải hoặc lưu tên khóa dùng chung. Kiểm tra kết nối quản trị và thử lại.",
         "name_local_hint": "Tên được lưu ngay trong trình duyệt này, riêng cho từng máy chủ. Để trống để xóa tên.",
         "name_label": "Tên / mô tả (tùy chọn)",
-        "name_placeholder": "Ví dụ: máy tính của An"
+        "name_placeholder": "Ví dụ: máy tính của An",
+        "name_retry": "Thử lại"
       },
       "payload_rules": {
         "rule": "Quy tắc",

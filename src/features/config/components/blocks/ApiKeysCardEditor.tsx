@@ -219,7 +219,7 @@ function ScopedApiKeysCardEditor({
       )}
 
       <div className="hint">{t('config_management.visual.api_keys.hint')}</div>
-      {namesError && <div className="error-box" role="alert">{namesError} <Button size="sm" onClick={() => setReloadNames(count => count + 1)}>{t('common.retry')}</Button></div>}
+      {namesError && <div className="error-box" role="alert">{namesError} <Button size="sm" onClick={() => setReloadNames(count => count + 1)}>{t('config_management.visual.api_keys.name_retry')}</Button></div>}
 
       <Modal
         open={modalOpen}

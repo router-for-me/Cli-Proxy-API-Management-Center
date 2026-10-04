@@ -1458,7 +1458,8 @@
           "good": "Good",
           "strong": "Strong"
         },
-        "name_local_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name."
+        "name_local_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
+        "name_retry": "Retry"
       },
       "payload_rules": {
         "rule": "Rule",
