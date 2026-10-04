@@ -59,7 +59,10 @@ const assertRevision = (revision: number) => {
   if (revision !== apiClient.getConnectionRevision()) throw new Error('Connection changed');
 };
 
-export async function loadApiKeyNameState(apiBase: string, apiKeys: string[]): Promise<ApiKeyNameState> {
+export async function loadApiKeyNameState(
+  apiBase: string,
+  apiKeys: string[]
+): Promise<ApiKeyNameState> {
   const revision = apiClient.getConnectionRevision();
   let names: Record<string, string>;
   try {
@@ -70,7 +73,12 @@ export async function loadApiKeyNameState(apiBase: string, apiKeys: string[]): P
     const local = readApiKeyNames(apiBase);
     return {
       shared: false,
-      names: Object.fromEntries(apiKeys.map(key => [sharedApiKeyFingerprint(key), local[apiKeyNameFingerprint(apiBase, key)] ?? ''])),
+      names: Object.fromEntries(
+        apiKeys.map((key) => [
+          sharedApiKeyFingerprint(key),
+          local[apiKeyNameFingerprint(apiBase, key)] ?? '',
+        ])
+      ),
     };
   }
   assertRevision(revision);
@@ -79,7 +87,8 @@ export async function loadApiKeyNameState(apiBase: string, apiKeys: string[]): P
   for (const key of apiKeys) {
     const fingerprint = sharedApiKeyFingerprint(key);
     const name = local[apiKeyNameFingerprint(apiBase, key)];
-    if (name && !Object.prototype.hasOwnProperty.call(names, fingerprint)) imports[fingerprint] = name;
+    if (name && !Object.prototype.hasOwnProperty.call(names, fingerprint))
+      imports[fingerprint] = name;
   }
   if (Object.keys(imports).length) {
     names = await sharedApiKeyNamesApi.update(imports, true);
@@ -88,13 +97,21 @@ export async function loadApiKeyNameState(apiBase: string, apiKeys: string[]): P
   return { names, shared: true };
 }
 
-export async function loadSharedApiKeyNames(apiBase: string, apiKeys: string[]): Promise<Record<string, string>> {
+export async function loadSharedApiKeyNames(
+  apiBase: string,
+  apiKeys: string[]
+): Promise<Record<string, string>> {
   return (await loadApiKeyNameState(apiBase, apiKeys)).names;
 }
 
-export async function saveSharedApiKeyName(apiKey: string, name: string): Promise<Record<string, string>> {
+export async function saveSharedApiKeyName(
+  apiKey: string,
+  name: string
+): Promise<Record<string, string>> {
   const revision = apiClient.getConnectionRevision();
-  const names = await sharedApiKeyNamesApi.update({ [sharedApiKeyFingerprint(apiKey)]: name.trim() });
+  const names = await sharedApiKeyNamesApi.update({
+    [sharedApiKeyFingerprint(apiKey)]: name.trim(),
+  });
   assertRevision(revision);
   return names;
 }

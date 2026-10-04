@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useNotificationStore } from '@/stores';
-import { sharedApiKeyFingerprint, loadApiKeyNameState, saveApiKeyName, saveSharedApiKeyName } from '../../apiKeyNames';
+import {
+  sharedApiKeyFingerprint,
+  loadApiKeyNameState,
+  saveApiKeyName,
+  saveSharedApiKeyName,
+} from '../../apiKeyNames';
 import { copyToClipboard } from '@/utils/clipboard';
 import { makeClientId } from '@/types/visualConfig';
 import { generateSecureApiKey } from '@/utils/apiKey';
@@ -53,10 +58,21 @@ function ScopedApiKeysCardEditor({
   useEffect(() => {
     let active = true;
     setNamesReady(false);
-    loadApiKeyNameState(apiBase, apiKeys).then((shared) => {
-      if (active) { setNames(shared.names); setSharedNames(shared.shared); setNamesReady(true); setNamesError(''); }
-    }).catch(() => { if (active) setNamesError(t('config_management.visual.api_keys.name_save_error')); });
-    return () => { active = false; };
+    loadApiKeyNameState(apiBase, apiKeys)
+      .then((shared) => {
+        if (active) {
+          setNames(shared.names);
+          setSharedNames(shared.shared);
+          setNamesReady(true);
+          setNamesError('');
+        }
+      })
+      .catch(() => {
+        if (active) setNamesError(t('config_management.visual.api_keys.name_save_error'));
+      });
+    return () => {
+      active = false;
+    };
   }, [apiBase, apiKeys, t, reloadNames]);
   const [apiKeyIds, setApiKeyIds] = useState(() => apiKeys.map(() => makeClientId()));
   const renderApiKeyIds = useMemo(() => {
@@ -135,11 +151,15 @@ function ScopedApiKeysCardEditor({
     try {
       if (sharedNames) setNames(await saveSharedApiKeyName(trimmed, nameValue));
       else {
-        if (!saveApiKeyName(apiBase, trimmed, nameValue)) throw new Error('Browser storage unavailable');
-        setNames(prev => ({ ...prev, [sharedApiKeyFingerprint(trimmed)]: nameValue.trim() }));
+        if (!saveApiKeyName(apiBase, trimmed, nameValue))
+          throw new Error('Browser storage unavailable');
+        setNames((prev) => ({ ...prev, [sharedApiKeyFingerprint(trimmed)]: nameValue.trim() }));
       }
+    } catch {
+      setFormError(t('config_management.visual.api_keys.name_save_error'));
+      setSavingName(false);
+      return;
     }
-    catch { setFormError(t('config_management.visual.api_keys.name_save_error')); setSavingName(false); return; }
     setSavingName(false);
     // Retain old fingerprints: configuration edits can still be discarded or fail to save.
     if (editingApiKeyId === null) {
@@ -219,11 +239,20 @@ function ScopedApiKeysCardEditor({
       )}
 
       <div className="hint">{t('config_management.visual.api_keys.hint')}</div>
-      {namesError && <div className="error-box" role="alert">{namesError} <Button size="sm" onClick={() => setReloadNames(count => count + 1)}>{t('config_management.visual.api_keys.name_retry')}</Button></div>}
+      {namesError && (
+        <div className="error-box" role="alert">
+          {namesError}{' '}
+          <Button size="sm" onClick={() => setReloadNames((count) => count + 1)}>
+            {t('config_management.visual.api_keys.name_retry')}
+          </Button>
+        </div>
+      )}
 
       <Modal
         open={modalOpen}
-        onClose={() => { if (!savingName) closeModal(); }}
+        onClose={() => {
+          if (!savingName) closeModal();
+        }}
         title={
           editingApiKeyId !== null
             ? t('config_management.visual.api_keys.edit_title')
@@ -231,7 +260,11 @@ function ScopedApiKeysCardEditor({
         }
         footer={
           <>
-            <Button variant="secondary" onClick={closeModal} disabled={disabled || savingName || !namesReady}>
+            <Button
+              variant="secondary"
+              onClick={closeModal}
+              disabled={disabled || savingName || !namesReady}
+            >
               {t('config_management.visual.common.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={disabled || savingName || !namesReady}>
@@ -255,7 +288,11 @@ function ScopedApiKeysCardEditor({
             disabled={disabled || savingName || !namesReady}
           />
           <div id={nameHintId} className="hint">
-            {t(sharedNames ? 'config_management.visual.api_keys.name_hint' : 'config_management.visual.api_keys.name_local_hint')}
+            {t(
+              sharedNames
+                ? 'config_management.visual.api_keys.name_hint'
+                : 'config_management.visual.api_keys.name_local_hint'
+            )}
           </div>
         </div>
         <div className="form-group">
