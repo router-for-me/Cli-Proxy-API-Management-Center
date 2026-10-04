@@ -1482,7 +1482,8 @@
           "good": "良好",
           "strong": "很強"
         },
-        "name_retry": "重試"
+        "name_retry": "重試",
+        "name_local_hint": "名稱立即儲存在目前瀏覽器中，並依伺服器分別儲存，不會寫入伺服器設定。清空此欄位可移除名稱。"
       },
       "payload_rules": {
         "rule": "規則",

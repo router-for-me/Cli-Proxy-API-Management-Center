@@ -1456,7 +1456,8 @@
           "good": "良好",
           "strong": "很强"
         },
-        "name_retry": "重试"
+        "name_retry": "重试",
+        "name_local_hint": "名称立即保存在当前浏览器中，并按服务器分别保存，不会写入服务器配置。清空此字段可移除名称。"
       },
       "payload_rules": {
         "rule": "规则",
