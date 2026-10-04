@@ -21,7 +21,10 @@ export function formatUnixSeconds(value: number | null): string {
   return formatInstantShort(ms);
 }
 
-export function formatCodexResetLabel(window?: CodexUsageWindow | null, observedAtMs = Date.now()): string {
+export function formatCodexResetLabel(
+  window?: CodexUsageWindow | null,
+  observedAtMs = Date.now()
+): string {
   if (!window) return '-';
   const resetAt = normalizeNumberValue(window.reset_at ?? window.resetAt);
   if (resetAt !== null && resetAt > 0) {
