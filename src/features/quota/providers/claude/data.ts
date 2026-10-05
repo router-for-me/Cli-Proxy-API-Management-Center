@@ -55,7 +55,8 @@ const findFableUsageLimit = (payload: ClaudeUsagePayload) => {
 
 const isDollarDenominatedWindow = (window: ClaudeUsageWindow) =>
   normalizeNumberValue(window.limit_dollars) !== null ||
-  normalizeNumberValue(window.used_dollars) !== null;
+  normalizeNumberValue(window.used_dollars) !== null ||
+  normalizeNumberValue(window.remaining_dollars) !== null;
 
 export const buildClaudeQuotaWindows = (
   payload: ClaudeUsagePayload,

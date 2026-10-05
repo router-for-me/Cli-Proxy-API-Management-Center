@@ -99,6 +99,33 @@ describe('Claude Fable quota', () => {
     ]);
   });
 
+  test('treats a legacy field with only remaining_dollars as cloud session credits', () => {
+    const windows = buildClaudeQuotaWindows(
+      {
+        iguana_necktie: {
+          utilization: 5,
+          resets_at: '2026-11-05T07:59:00+00:00',
+          remaining_dollars: 95,
+        },
+        limits: [
+          {
+            kind: 'weekly_scoped',
+            percent: 64,
+            resets_at: modernReset,
+            is_active: true,
+            scope: { model: { id: null, display_name: 'Fable' } },
+          },
+        ],
+      },
+      t
+    );
+
+    expect(windows.map((window) => [window.id, window.usedPercent])).toEqual([
+      ['cloud-session-credits', 5],
+      ['seven-day-fable', 64],
+    ]);
+  });
+
   test('falls back to the legacy Fable field', () => {
     const windows = buildClaudeQuotaWindows(
       {
