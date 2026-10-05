@@ -8,7 +8,17 @@ import {
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { apiClient } from '@/services/api/client';
-import { isCodexResetPending } from '@/features/quota/providers/codex/reset';
+import { getCodexResetView } from '@/features/quota/providers/codex/reset';
+import { useCodexResetView } from '@/features/quota/hooks/useCodexResetView';
+import {
+  canRunCodexResetAction,
+  codexResetSuccessKey,
+  commitIfCodexResetCurrent,
+  getCodexResetPresentation,
+  getDefaultResetPresentation,
+  isCodexResetActionCurrent,
+  performCodexResetAction,
+} from '@/features/quota/providers/codex/resetUi';
 import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
@@ -56,9 +66,13 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     return assertNever(quotaType);
   });
   const quota = storedQuota;
-  const pendingReset = useQuotaStore((state) => state.codexPendingResets[file.name]);
-  const retryReset = quotaType === 'codex' && isCodexResetPending(file, pendingReset);
-  const resetButtonKey = retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_button';
+  const resetView = useCodexResetView(file, adapter.type === 'codex');
+  const canStartReset = quota?.status === 'success' && Boolean(adapter.canResetQuota?.(quota));
+  const resetUi = resetView
+    ? getCodexResetPresentation(resetView, canStartReset)
+    : getDefaultResetPresentation(canStartReset);
+  const codexBusy = resetView?.busy ?? false;
+  const resetButtonKey = resetUi.buttonKey;
 
   const updateQuotaState = useQuotaStore(
     (state) => state[adapter.storeSetter] as unknown as QuotaMapUpdater
@@ -69,6 +83,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (isRuntimeOnlyAuthFile(file)) return;
     if (file.disabled) return;
     if (quota?.status === 'loading') return;
+    if (quotaType === 'codex' && getCodexResetView(file).busy) return;
 
     const cacheGeneration = captureQuotaCacheGeneration(file.name);
 
@@ -106,6 +121,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     disableControls,
     file,
     quota?.status,
+    quotaType,
     showNotification,
     t,
     updateQuotaState,
@@ -114,7 +130,6 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const resetQuotaForFile = useCallback(() => {
     if (disableControls) return;
     if (isRuntimeOnlyAuthFile(file)) return;
-    if (file.disabled) return;
     if (quota?.status === 'loading') return;
     if (resettingQuota) return;
 
@@ -123,37 +138,48 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
 
     const cacheGeneration = captureQuotaCacheGeneration(file.name);
     const connectionRevision = apiClient.getConnectionRevision();
+    const currentResetView = adapter.type === 'codex' ? getCodexResetView(file) : undefined;
+    if (currentResetView ? !canRunCodexResetAction(file, currentResetView) : file.disabled) return;
+    const canStart = quota?.status === 'success' && Boolean(adapter.canResetQuota?.(quota));
+    const currentResetUi = currentResetView
+      ? getCodexResetPresentation(currentResetView, canStart)
+      : getDefaultResetPresentation(canStart);
+    if (currentResetUi.disabled || !currentResetUi.show) return;
     showConfirmation({
-      title: t(retryReset ? 'codex_quota.reset_retry_title' : 'codex_quota.reset_confirm_title'),
-      message: t(
-        retryReset ? 'codex_quota.reset_retry_message' : 'codex_quota.reset_confirm_message',
-        {
-          name: file.name,
-        }
-      ),
-      confirmText: t(
-        retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_confirm_button'
-      ),
+      title: t(currentResetUi.titleKey),
+      message: t(currentResetUi.confirmationKey, { name: file.name }),
+      confirmText: t(currentResetUi.confirmButtonKey),
       variant: 'primary',
       onConfirm: async () => {
         if (
           connectionRevision !== apiClient.getConnectionRevision() ||
-          !commitIfQuotaCacheCurrent(cacheGeneration, () => {})
+          !commitIfQuotaCacheCurrent(cacheGeneration, () => {}) ||
+          (currentResetView && !isCodexResetActionCurrent(file, currentResetView))
         )
           return;
         setResettingQuota(true);
         try {
-          const data = await resetQuota(file, t);
-          commitIfQuotaCacheCurrent(cacheGeneration, () => {
-            updateQuotaState((prev) => ({
-              ...prev,
-              [cacheKey]: adapter.buildSuccessState(data),
-            }));
-            showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+          const result = currentResetView
+            ? await performCodexResetAction(currentResetView, file, t, () => resetQuota(file, t))
+            : { kind: 'quota' as const, data: await resetQuota(file, t) };
+          if (!result) return;
+          commitIfCodexResetCurrent(connectionRevision, cacheGeneration, () => {
+            if (result.kind === 'quota') {
+              updateQuotaState((prev) => ({
+                ...prev,
+                [cacheKey]: adapter.buildSuccessState(result.data),
+              }));
+            }
+            showNotification(
+              t(codexResetSuccessKey[result.kind], {
+                name: file.name,
+              }),
+              'success'
+            );
           });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : t('common.unknown_error');
-          commitIfQuotaCacheCurrent(cacheGeneration, () => {
+          commitIfCodexResetCurrent(connectionRevision, cacheGeneration, () => {
             showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
           });
         } finally {
@@ -166,9 +192,8 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     cacheKey,
     disableControls,
     file,
-    quota?.status,
+    quota,
     resettingQuota,
-    retryReset,
     showConfirmation,
     showNotification,
     t,
@@ -176,10 +201,17 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   ]);
 
   const quotaStatus = quota?.status ?? 'idle';
-  const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
-  const canUseResetQuota = canRefreshQuota && quotaStatus !== 'loading';
+  const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota && !codexBusy;
+  const canUseResetQuota =
+    !disableControls &&
+    !resettingQuota &&
+    !codexBusy &&
+    quotaStatus !== 'loading' &&
+    (resetView ? canRunCodexResetAction(file, resetView) : !file.disabled);
   const showResetQuotaAction =
-    retryReset || (quota !== undefined && Boolean(adapter.canResetQuota?.(quota)));
+    quotaType === 'codex'
+      ? resetUi.show
+      : quota !== undefined && Boolean(adapter.canResetQuota?.(quota));
   const resetQuotaAction =
     adapter.resetQuota && showResetQuotaAction ? (
       <Button
@@ -188,12 +220,12 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         size="sm"
         className={styles.quotaResetCreditButton}
         onClick={() => resetQuotaForFile()}
-        disabled={!canUseResetQuota}
-        loading={resettingQuota}
+        disabled={!canUseResetQuota || resetUi.disabled}
+        loading={resettingQuota || codexBusy}
         title={t(resetButtonKey)}
         aria-label={t(resetButtonKey)}
       >
-        {!resettingQuota && <IconRefreshCw size={14} />}
+        {!resettingQuota && !codexBusy && <IconRefreshCw size={14} />}
         {t(resetButtonKey)}
       </Button>
     ) : undefined;
@@ -227,7 +259,13 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
       ) : (
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
       )}
-      {(quotaStatus !== 'idle' || retryReset) && (resetQuotaAction || quotaType === 'devin') && (
+      {quotaType === 'codex' && resetUi.show && (resetUi.descriptionKey || resetUi.reasonKey) && (
+        <div className={styles.quotaMessage} role="status">
+          {resetUi.descriptionKey && <div>{t(resetUi.descriptionKey)}</div>}
+          {resetUi.reasonKey && <div>{t(resetUi.reasonKey, resetUi.reasonParams)}</div>}
+        </div>
+      )}
+      {(resetQuotaAction || (quotaStatus !== 'idle' && quotaType === 'devin')) && (
         <div className={styles.quotaCardActions}>
           {resetQuotaAction}
           {quotaType === 'devin' && (

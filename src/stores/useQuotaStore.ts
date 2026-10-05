@@ -16,15 +16,7 @@ import type {
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-export interface CodexPendingReset {
-  identity: string;
-  connectionRevision: number;
-  phase: 'cooldown_pending' | 'refresh_pending';
-}
-
 interface QuotaStoreState {
-  codexPendingResets: Record<string, CodexPendingReset>;
-  setCodexPendingReset: (name: string, pending?: CodexPendingReset) => void;
   cacheGeneration: number;
   fileGenerations: Record<string, number>;
   antigravityQuota: Record<string, AntigravityQuotaState>;
@@ -52,14 +44,6 @@ const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
 };
 
 export const useQuotaStore = create<QuotaStoreState>((set) => ({
-  codexPendingResets: {},
-  setCodexPendingReset: (name, pending) =>
-    set((state) => {
-      const codexPendingResets = { ...state.codexPendingResets };
-      if (pending) codexPendingResets[name] = pending;
-      else delete codexPendingResets[name];
-      return { codexPendingResets };
-    }),
   cacheGeneration: 0,
   fileGenerations: {},
   antigravityQuota: {},
@@ -115,7 +99,6 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
         };
         return {
           fileGenerations,
-          codexPendingResets: omitNames(state.codexPendingResets),
           antigravityQuota: omitNames(state.antigravityQuota),
           claudeQuota: omitNames(state.claudeQuota),
           codexQuota: omitNames(state.codexQuota),
@@ -126,7 +109,6 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
         };
       }
       return {
-        codexPendingResets: {},
         cacheGeneration: state.cacheGeneration + 1,
         fileGenerations: {},
         antigravityQuota: {},

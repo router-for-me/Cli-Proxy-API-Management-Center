@@ -4,6 +4,7 @@
  */
 
 import type { TFunction } from 'i18next';
+import type { AxiosRequestConfig } from 'axios';
 import type {
   AuthFileItem,
   CodexAccountCredits,
@@ -14,10 +15,11 @@ import type {
   CodexQuotaWindow,
   CodexUsagePayload,
 } from '@/types';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, getApiCallErrorMessage, RequestNotSentError } from '@/services/api';
+import { isRecord } from '@/utils/helpers';
+import type { CodexResetConsumeIntent, CodexResetConsumeResult } from './resetContract';
 import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
-  CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
   CODEX_SUBSCRIPTION_URL,
   CODEX_USAGE_URL,
   CODEX_REQUEST_HEADERS,
@@ -337,7 +339,8 @@ const parseCodexSubscriptionActiveUntil = (payload: unknown): string | number | 
 const fetchCodexSubscriptionActiveUntil = async (
   authIndex: string,
   accountId: string | null,
-  requestHeader: Record<string, string>
+  requestHeader: Record<string, string>,
+  config?: AxiosRequestConfig
 ): Promise<string | number | null> => {
   if (!accountId) return null;
 
@@ -349,7 +352,7 @@ const fetchCodexSubscriptionActiveUntil = async (
         url: `${CODEX_SUBSCRIPTION_URL}?account_id=${encodeURIComponent(accountId)}`,
         header: requestHeader,
       },
-      { timeout: CODEX_OPTIONAL_REQUEST_TIMEOUT_MS }
+      { ...config, timeout: CODEX_OPTIONAL_REQUEST_TIMEOUT_MS }
     );
     if (result.statusCode < 200 || result.statusCode >= 300) return null;
     return parseCodexSubscriptionActiveUntil(result.body ?? result.bodyText);
@@ -361,7 +364,8 @@ const fetchCodexSubscriptionActiveUntil = async (
 const fetchCodexResetCredits = async (
   authIndex: string,
   requestHeader: Record<string, string>,
-  t: TFunction
+  t: TFunction,
+  config?: AxiosRequestConfig
 ): Promise<CodexResetCreditsData> => {
   try {
     const result = await apiCallApi.request(
@@ -376,7 +380,7 @@ const fetchCodexResetCredits = async (
           Originator: 'Codex Desktop',
         },
       },
-      { timeout: CODEX_OPTIONAL_REQUEST_TIMEOUT_MS }
+      { ...config, timeout: CODEX_OPTIONAL_REQUEST_TIMEOUT_MS }
     );
 
     if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -414,7 +418,11 @@ const fetchCodexResetCredits = async (
   }
 };
 
-const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
+export const fetchCodexQuota = async (
+  file: AuthFileItem,
+  t: TFunction,
+  config?: AxiosRequestConfig
+): Promise<CodexQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -427,13 +435,11 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   const requestHeader = buildCodexRequestHeader(file);
 
   const [result, liveSubscriptionActiveUntil] = await Promise.all([
-    apiCallApi.request({
-      authIndex,
-      method: 'GET',
-      url: CODEX_USAGE_URL,
-      header: requestHeader,
-    }),
-    fetchCodexSubscriptionActiveUntil(authIndex, accountId, requestHeader),
+    apiCallApi.request(
+      { authIndex, method: 'GET', url: CODEX_USAGE_URL, header: requestHeader },
+      config
+    ),
+    fetchCodexSubscriptionActiveUntil(authIndex, accountId, requestHeader, config),
   ]);
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -449,7 +455,7 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   const accountCredits = normalizeCodexAccountCredits(payload.credits);
   const resetCredits = payload.rate_limit_reset_credits ?? payload.rateLimitResetCredits ?? null;
   const usageResetCreditsData = normalizeCodexResetCreditsPayload(resetCredits);
-  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t);
+  const resetCreditsData = await fetchCodexResetCredits(authIndex, requestHeader, t, config);
   const resetCreditsCountFromDetails =
     resetCreditsData.credits.length > 0 ? resetCreditsData.credits.length : null;
   const rateLimitResetCreditsAvailableCount =
@@ -476,51 +482,37 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   };
 };
 
-const createCodexRedeemRequestId = (): string => {
-  if (typeof globalThis.crypto?.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID();
-  }
-
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
-    const value = Math.floor(Math.random() * 16);
-    const segment = char === 'x' ? value : (value & 0x3) | 0x8;
-    return segment.toString(16);
-  });
-};
-
-const consumeCodexRateLimitResetCredit = async (
-  file: AuthFileItem,
-  t: TFunction
-): Promise<void> => {
-  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
-  const authIndex = normalizeAuthIndex(rawAuthIndex);
-  if (!authIndex) {
-    throw new Error(t('codex_quota.missing_auth_index'));
-  }
-
-  const requestHeader = buildCodexRequestHeader(file);
-
-  const result = await apiCallApi.request({
-    authIndex,
-    method: 'POST',
-    url: CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
-    header: requestHeader,
-    data: JSON.stringify({
-      redeem_request_id: createCodexRedeemRequestId(),
-    }),
-  });
-
-  if (result.statusCode < 200 || result.statusCode >= 300) {
-    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+/** Sent requests are ambiguous unless their business code explicitly classifies them. */
+export const consumeCodexRateLimitResetCredit = async (
+  intent: CodexResetConsumeIntent,
+  expectedConnectionRevision: number
+): Promise<CodexResetConsumeResult> => {
+  try {
+    const result = await apiCallApi.request(intent, { expectedConnectionRevision });
+    if (
+      !Number.isInteger(result.statusCode) ||
+      result.statusCode < 200 ||
+      result.statusCode >= 300
+    ) {
+      return { outcome: 'unknown', message: getApiCallErrorMessage(result) };
+    }
+    const body = result.body;
+    const code = isRecord(body) ? body.code : undefined;
+    if (code === 'reset' || code === 'already_redeemed') return { outcome: 'success', code };
+    if (code === 'no_credit' || code === 'nothing_to_reset') return { outcome: 'terminal', code };
+    return { outcome: 'unknown', message: 'Unrecognized redemption response' };
+  } catch (error) {
+    if (error instanceof RequestNotSentError) throw error;
+    return {
+      outcome: 'unknown',
+      message: error instanceof Error ? error.message : 'Redemption result could not be confirmed',
+    };
   }
 };
 
 const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
-  return runCodexQuotaReset(
-    file,
-    t,
-    () => consumeCodexRateLimitResetCredit(file, t),
-    () => fetchCodexQuota(file, t)
+  return runCodexQuotaReset(file, t, consumeCodexRateLimitResetCredit, (revision) =>
+    fetchCodexQuota(file, t, { expectedConnectionRevision: revision })
   );
 };
 

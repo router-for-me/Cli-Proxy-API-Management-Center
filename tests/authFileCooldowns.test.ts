@@ -51,9 +51,11 @@ describe('cooldown API normalization', () => {
         auth_index: 'auth-index-1',
         models: ['model-a'],
       });
-      expect(post).toHaveBeenCalledWith('/routing/cooldown/reset', {
-        auth_index: 'auth-index-1',
-      });
+      expect(post).toHaveBeenCalledWith(
+        '/routing/cooldown/reset',
+        { auth_index: 'auth-index-1' },
+        undefined
+      );
     } finally {
       post.mockRestore();
     }

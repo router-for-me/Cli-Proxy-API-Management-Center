@@ -10,11 +10,19 @@ import {
   captureQuotaCacheGeneration,
   commitIfQuotaCacheCurrent,
   useNotificationStore,
-  useQuotaStore,
 } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { apiClient } from '@/services/api/client';
-import { isCodexResetPending } from '../providers/codex/reset';
+import { getCodexResetView } from '../providers/codex/reset';
+import {
+  canRunCodexResetAction,
+  codexResetSuccessKey,
+  commitIfCodexResetCurrent,
+  getCodexResetPresentation,
+  getDefaultResetPresentation,
+  isCodexResetActionCurrent,
+  performCodexResetAction,
+} from '../providers/codex/resetUi';
 import { getStatusFromError } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { enrichQuotaInBackground } from '../quotaEnrichment';
@@ -34,6 +42,7 @@ export function useQuotaActions(disableControls: boolean) {
       if (disableControls || file.disabled) return;
       const cacheKey = getQuotaCacheKey(file);
       if (resettingQuotaName === cacheKey) return;
+      if (adapter.type === 'codex' && getCodexResetView(file).busy) return;
       if (getQuotaState(adapter, file)?.status === 'loading') return;
       const cacheGeneration = captureQuotaCacheGeneration(file.name);
       const setQuota = getQuotaSetter(adapter);
@@ -76,48 +85,57 @@ export function useQuotaActions(disableControls: boolean) {
     (file: AuthFileItem, adapter: QuotaAdapter) => {
       const resetQuotaFn = adapter.resetQuota;
       if (!resetQuotaFn) return;
-      if (disableControls || file.disabled) return;
+      if (disableControls) return;
       const cacheKey = getQuotaCacheKey(file);
       if (getQuotaState(adapter, file)?.status === 'loading') return;
       if (resettingQuotaName === cacheKey) return;
 
       const cacheGeneration = captureQuotaCacheGeneration(file.name);
       const connectionRevision = apiClient.getConnectionRevision();
-      const retryReset =
-        adapter.type === 'codex' &&
-        isCodexResetPending(file, useQuotaStore.getState().codexPendingResets[file.name]);
+      const resetView = adapter.type === 'codex' ? getCodexResetView(file) : undefined;
+      if (resetView ? !canRunCodexResetAction(file, resetView) : file.disabled) return;
+      const quota = getQuotaState(adapter, file);
+      const canStart = quota?.status === 'success' && Boolean(adapter.canResetQuota?.(quota));
+      const resetUi = resetView
+        ? getCodexResetPresentation(resetView, canStart)
+        : getDefaultResetPresentation(canStart);
+      if (resetUi.disabled || !resetUi.show) return;
       showConfirmation({
-        title: t(retryReset ? 'codex_quota.reset_retry_title' : 'codex_quota.reset_confirm_title'),
-        message: t(
-          retryReset ? 'codex_quota.reset_retry_message' : 'codex_quota.reset_confirm_message',
-          {
-            name: file.name,
-          }
-        ),
-        confirmText: t(
-          retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_confirm_button'
-        ),
+        title: t(resetUi.titleKey),
+        message: t(resetUi.confirmationKey, { name: file.name }),
+        confirmText: t(resetUi.confirmButtonKey),
         variant: 'primary',
         onConfirm: async () => {
           if (
             connectionRevision !== apiClient.getConnectionRevision() ||
-            !commitIfQuotaCacheCurrent(cacheGeneration, () => {})
+            !commitIfQuotaCacheCurrent(cacheGeneration, () => {}) ||
+            (resetView && !isCodexResetActionCurrent(file, resetView))
           )
             return;
           const setQuota = getQuotaSetter(adapter);
           setResettingQuotaName(cacheKey);
           try {
-            const data = await resetQuotaFn(file, t);
-            commitIfQuotaCacheCurrent(cacheGeneration, () => {
-              setQuota((prev) => ({
-                ...prev,
-                [cacheKey]: adapter.buildSuccessState(data),
-              }));
-              showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            const result = resetView
+              ? await performCodexResetAction(resetView, file, t, () => resetQuotaFn(file, t))
+              : { kind: 'quota' as const, data: await resetQuotaFn(file, t) };
+            if (!result) return;
+            commitIfCodexResetCurrent(connectionRevision, cacheGeneration, () => {
+              if (result.kind === 'quota') {
+                setQuota((prev) => ({
+                  ...prev,
+                  [cacheKey]: adapter.buildSuccessState(result.data),
+                }));
+              }
+              showNotification(
+                t(codexResetSuccessKey[result.kind], {
+                  name: file.name,
+                }),
+                'success'
+              );
             });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('common.unknown_error');
-            commitIfQuotaCacheCurrent(cacheGeneration, () => {
+            commitIfCodexResetCurrent(connectionRevision, cacheGeneration, () => {
               showNotification(
                 t('codex_quota.reset_failed', { name: file.name, message }),
                 'error'

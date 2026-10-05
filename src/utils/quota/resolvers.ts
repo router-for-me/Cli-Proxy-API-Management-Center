@@ -22,13 +22,27 @@ const resolveCodexAuthInfo = (value: unknown): Record<string, unknown> | null =>
   return nested ?? payload;
 };
 
-export function extractCodexChatgptAccountId(value: unknown): string | null {
-  const payload = parseIdTokenPayload(value);
-  if (!payload) return null;
-  return normalizeStringValue(payload.chatgpt_account_id ?? payload.chatgptAccountId);
+export interface CodexAccountIdOptions {
+  /** Mutating workflows require an explicit string identity; reads retain legacy numeric IDs. */
+  stringsOnly?: boolean;
 }
 
-export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null {
+const normalizeCodexAccountId = (value: unknown, options?: CodexAccountIdOptions): string | null =>
+  options?.stringsOnly && typeof value !== 'string' ? null : normalizeStringValue(value);
+
+export function extractCodexChatgptAccountId(
+  value: unknown,
+  options?: CodexAccountIdOptions
+): string | null {
+  const payload = parseIdTokenPayload(value);
+  if (!payload) return null;
+  return normalizeCodexAccountId(payload.chatgpt_account_id ?? payload.chatgptAccountId, options);
+}
+
+export function resolveCodexChatgptAccountId(
+  file: AuthFileItem,
+  options?: CodexAccountIdOptions
+): string | null {
   const metadata =
     file && typeof file.metadata === 'object' && file.metadata !== null
       ? (file.metadata as Record<string, unknown>)
@@ -48,13 +62,13 @@ export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null 
   ];
 
   for (const candidate of directCandidates) {
-    const id = normalizeStringValue(candidate);
+    const id = normalizeCodexAccountId(candidate, options);
     if (id) return id;
   }
 
   const tokenCandidates = [file.id_token, metadata?.id_token, attributes?.id_token];
   for (const candidate of tokenCandidates) {
-    const id = extractCodexChatgptAccountId(candidate);
+    const id = extractCodexChatgptAccountId(candidate, options);
     if (id) return id;
   }
 

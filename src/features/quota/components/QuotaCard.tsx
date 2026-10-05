@@ -9,8 +9,13 @@
 
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuotaStore } from '@/stores/useQuotaStore';
-import { isCodexResetPending } from '../providers/codex/reset';
+import { useCodexResetView } from '../hooks/useCodexResetView';
+import {
+  canRunCodexResetAction,
+  getCodexResetPresentation,
+  getDefaultResetPresentation,
+  isCodexResetReadOnlyRecovery,
+} from '../providers/codex/resetUi';
 import { IconRefreshCw } from '@/components/ui/icons';
 import type { ResolvedTheme } from '@/types';
 import { resolveQuotaErrorMessage } from '@/utils/quota';
@@ -36,6 +41,8 @@ export type QuotaCardProps = {
   quota?: QuotaCardState;
   resolvedTheme: ResolvedTheme;
   canRefresh: boolean;
+  /** Connection permits recovery checks and local cleanup, including disabled credentials. */
+  canRecover?: boolean;
   resetting: boolean;
   /** 首屏级联入场延迟；null = 不入场（切 tab / 翻页 / 刷新新挂载的卡片）。 */
   entranceDelayMs?: number | null;
@@ -49,6 +56,7 @@ export function QuotaCard(props: QuotaCardProps) {
     quota,
     resolvedTheme,
     canRefresh,
+    canRecover = canRefresh,
     resetting,
     entranceDelayMs,
     onRefresh,
@@ -66,9 +74,17 @@ export function QuotaCard(props: QuotaCardProps) {
       ? undefined
       : ({ '--card-delay': `${mountEntranceDelayMs}ms` } as CSSProperties);
 
-  const pendingReset = useQuotaStore((state) => state.codexPendingResets[file.name]);
-  const retryReset = entry.type === 'codex' && isCodexResetPending(file, pendingReset);
-  const resetButtonKey = retryReset ? 'codex_quota.reset_retry_button' : 'codex_quota.reset_button';
+  const resetView = useCodexResetView(file, adapter.type === 'codex');
+  const canStartReset = quota?.status === 'success' && Boolean(adapter.canResetQuota?.(quota));
+  const resetUi = resetView
+    ? getCodexResetPresentation(resetView, canStartReset)
+    : getDefaultResetPresentation(canStartReset);
+  const codexBusy = resetView?.busy ?? false;
+  const canUseResetAction = resetView
+    ? (isCodexResetReadOnlyRecovery(resetView) ? canRecover : canRefresh) &&
+      canRunCodexResetAction(file, resetView)
+    : canRefresh && !file.disabled;
+  const resetButtonKey = resetUi.buttonKey;
   const status = quota?.status ?? 'idle';
   const loading = status === 'loading';
   const claudeReset = useClaudeResetGrants(
@@ -87,8 +103,9 @@ export function QuotaCard(props: QuotaCardProps) {
   );
   const showReset =
     Boolean(adapter.resetQuota) &&
-    (retryReset ||
-      (status === 'success' && quota !== undefined && Boolean(adapter.canResetQuota?.(quota))));
+    (entry.type === 'codex'
+      ? resetUi.show
+      : status === 'success' && quota !== undefined && Boolean(adapter.canResetQuota?.(quota)));
 
   return (
     <article
@@ -163,7 +180,14 @@ export function QuotaCard(props: QuotaCardProps) {
         )}
       </div>
 
-      {(status !== 'idle' || retryReset) && (
+      {entry.type === 'codex' && resetUi.show && (resetUi.descriptionKey || resetUi.reasonKey) && (
+        <div className={styles.idleHint} role="status">
+          {resetUi.descriptionKey && <div>{t(resetUi.descriptionKey)}</div>}
+          {resetUi.reasonKey && <div>{t(resetUi.reasonKey, resetUi.reasonParams)}</div>}
+        </div>
+      )}
+
+      {(status !== 'idle' || showReset) && (
         <footer className={styles.actionRow}>
           {entry.type === 'claude' && (
             <button
@@ -182,10 +206,13 @@ export function QuotaCard(props: QuotaCardProps) {
               type="button"
               className={styles.actionPill}
               onClick={onReset}
-              disabled={!canRefresh || loading || resetting}
+              disabled={!canUseResetAction || loading || resetting || resetUi.disabled}
               title={t(resetButtonKey)}
             >
-              <IconRefreshCw size={13} className={resetting ? styles.spinning : undefined} />
+              <IconRefreshCw
+                size={13}
+                className={resetting || codexBusy ? styles.spinning : undefined}
+              />
               {t(resetButtonKey)}
             </button>
           )}
@@ -193,7 +220,11 @@ export function QuotaCard(props: QuotaCardProps) {
             type="button"
             className={styles.actionPill}
             onClick={onRefresh}
-            disabled={isQuotaRefreshDisabled(canRefresh, loading, resetting || claudeReset.busy)}
+            disabled={isQuotaRefreshDisabled(
+              canRefresh,
+              loading,
+              resetting || codexBusy || claudeReset.busy
+            )}
             title={t('auth_files.quota_refresh_hint')}
           >
             <IconRefreshCw size={13} className={loading ? styles.spinning : undefined} />

@@ -4,6 +4,8 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import type { ApiClientConfig, ApiError } from '@/types';
 import {
   BUILD_DATE_HEADER_KEYS,
@@ -16,11 +18,27 @@ import {
 import { computeApiUrl } from '@/utils/connection';
 import { parseApiErrorResponse } from './apiError';
 
-class ApiClient {
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    /** Only guarded workflows opt into connection isolation. */
+    expectedConnectionRevision?: number;
+  }
+}
+
+/** A local preflight rejection: no adapter was invoked for this request. */
+export class RequestNotSentError extends Error {
+  constructor(message = 'Connection changed before the request was sent') {
+    super(message);
+    this.name = 'RequestNotSentError';
+  }
+}
+
+export class ApiClient {
   private instance: AxiosInstance;
   private apiBase: string = '';
   private managementKey: string = '';
   private connectionRevision = 0;
+  private connectionScope: string | undefined;
 
   constructor() {
     this.instance = axios.create({
@@ -40,6 +58,7 @@ class ApiClient {
     const apiBase = computeApiUrl(config.apiBase);
     if (apiBase !== this.apiBase || config.managementKey !== this.managementKey) {
       this.connectionRevision += 1;
+      this.connectionScope = undefined;
     }
     this.apiBase = apiBase;
     this.managementKey = config.managementKey;
@@ -54,6 +73,21 @@ class ApiClient {
   /** Guards read/modify/write operations across connection changes, including ABA switches. */
   getConnectionRevision(): number {
     return this.connectionRevision;
+  }
+
+  /** Reload-stable namespace without persisting the management credential. */
+  getConnectionScope(): string {
+    this.connectionScope ??= bytesToHex(
+      sha256(new TextEncoder().encode(JSON.stringify([this.apiBase, this.managementKey])))
+    );
+    return this.connectionScope;
+  }
+
+  private isStaleRequest(config: AxiosRequestConfig | undefined): boolean {
+    return (
+      config?.expectedConnectionRevision !== undefined &&
+      config.expectedConnectionRevision !== this.connectionRevision
+    );
   }
 
   private readHeader(headers: Record<string, unknown> | undefined, keys: string[]): string | null {
@@ -114,6 +148,9 @@ class ApiClient {
     // 请求拦截器
     this.instance.interceptors.request.use(
       (config) => {
+        // Check and bind the destination in this same synchronous callback. A request
+        // queued on the previous connection must never inherit the new destination.
+        if (this.isStaleRequest(config)) throw new RequestNotSentError();
         // 设置 baseURL
         config.baseURL = this.apiBase;
 
@@ -130,6 +167,7 @@ class ApiClient {
     // 响应拦截器
     this.instance.interceptors.response.use(
       (response) => {
+        if (this.isStaleRequest(response.config)) return response;
         const headers = response.headers as Record<string, string | undefined>;
         const cpaVersion = this.readHeader(headers, CPA_VERSION_HEADER_KEYS);
         const cpaBuildDate = this.readHeader(headers, CPA_BUILD_DATE_HEADER_KEYS);
@@ -163,6 +201,7 @@ class ApiClient {
    * 错误处理
    */
   private handleError(error: unknown): ApiError {
+    if (error instanceof RequestNotSentError) return error;
     if (axios.isAxiosError(error)) {
       const responseData: unknown = error.response?.data;
       const parsedError = parseApiErrorResponse(responseData, error.message);
@@ -175,7 +214,10 @@ class ApiClient {
       apiError.data = responseData;
 
       // 401 未授权 - 触发登出事件
-      if (error.response?.status === 401) {
+      if (
+        error.response?.status === 401 &&
+        !this.isStaleRequest(error.config ?? error.response.config)
+      ) {
         window.dispatchEvent(new Event('unauthorized'));
       }
 

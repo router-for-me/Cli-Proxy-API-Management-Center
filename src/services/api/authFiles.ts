@@ -2,6 +2,7 @@
  * 认证文件与 OAuth 排除模型相关 API
  */
 
+import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from './client';
 import { getConfigValue, guardConfigConnection } from './configValue';
 import { isRecord } from '@/utils/helpers';
@@ -521,11 +522,16 @@ export interface AuthFileCooldownResetResponse {
 }
 
 export const authFilesApi = {
-  list: async (lookup?: AuthFileLookup) =>
+  list: async (lookup?: AuthFileLookup, config?: AxiosRequestConfig) =>
     normalizeAuthFilesResponse(
       await apiClient.get<AuthFilesResponse>(
         '/credentials',
-        lookup ? { params: { name: lookup.name, auth_index: lookup.authIndex } } : undefined
+        lookup
+          ? {
+              ...config,
+              params: { ...config?.params, name: lookup.name, auth_index: lookup.authIndex },
+            }
+          : config
       )
     ),
 
@@ -556,10 +562,12 @@ export const authFilesApi = {
     return normalizeAuthFileRefreshResults(response);
   },
 
-  resetCooldown: (authIndex: string) =>
-    apiClient.post<AuthFileCooldownResetResponse>('/routing/cooldown/reset', {
-      auth_index: authIndex,
-    }),
+  resetCooldown: (authIndex: string, config?: AxiosRequestConfig) =>
+    apiClient.post<AuthFileCooldownResetResponse>(
+      '/routing/cooldown/reset',
+      { auth_index: authIndex },
+      config
+    ),
 
   uploadFiles: async (files: File[]): Promise<AuthFileBatchUploadResult> => {
     const requestedNames = files.map((file) => file.name);

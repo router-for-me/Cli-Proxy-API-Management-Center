@@ -312,9 +312,11 @@ describe('v8 management API contracts', () => {
     await apiKeyUsageApi.getUsage();
     expect(get.mock.calls.at(-1)?.[0]).toBe('/observability/usage/api-keys');
     await authFilesApi.resetCooldown('auth-index-1');
-    expect(post).toHaveBeenLastCalledWith('/routing/cooldown/reset', {
-      auth_index: 'auth-index-1',
-    });
+    expect(post).toHaveBeenLastCalledWith(
+      '/routing/cooldown/reset',
+      { auth_index: 'auth-index-1' },
+      undefined
+    );
     await vertexApi.importCredential(new File(['{}'], 'fixture.json'));
     expect(form.mock.calls.at(-1)?.[0]).toBe('/oauth/import?provider=vertex');
     expect(await configFileApi.fetchConfigYaml()).toBe('config: yaml');
