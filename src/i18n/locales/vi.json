@@ -87,7 +87,7 @@
     "error_server": "Backend gặp lỗi khi xử lý yêu cầu quản lý, hãy kiểm tra log máy chủ",
     "error_cors": "Yêu cầu cross-origin bị chặn, vui lòng kiểm tra cấu hình máy chủ",
     "error_ssl": "Xác minh chứng chỉ SSL/TLS thất bại",
-    "error_legacy_backend": "This backend accepts v0 Management API but does not provide v8. Upgrade CLIProxyAPI to v8 or later to use this management page."
+    "error_legacy_backend": "Backend này chấp nhận Management API v0 nhưng không cung cấp v8. Vui lòng nâng cấp CLIProxyAPI lên v8 hoặc mới hơn để sử dụng trang quản lý này."
   },
   "header": {
     "refresh_all": "Làm mới tất cả",
@@ -367,73 +367,73 @@
     "quota_refresh_hint": "Chỉ làm mới quota cho credential này",
     "quota_refresh_success": "Đã làm mới quota cho \"{{name}}\"",
     "quota_refresh_failed": "Không thể làm mới quota cho \"{{name}}\": {{message}}",
-    "card_select": "Select credential {{name}}",
-    "card_toggle": "Enable credential {{name}}",
-    "card_requests": "Requests",
-    "cooldown_unknown": "Cooldown state unknown",
-    "cooldown_models_one": "{{count}} model cooling down",
-    "cooldown_models_other": "{{count}} models cooling down",
-    "cooldown_credential": "Credential-wide cooldown",
-    "cooldown_credential_and_models_one": "Credential + {{count}} model cooling down",
-    "cooldown_credential_and_models_other": "Credential + {{count}} models cooling down",
-    "cooldown_scope_credential": "Entire credential",
-    "cooldown_earliest": "Earliest end in ~{{time}}",
-    "cooldown_elapsed": "Cooldown timers elapsed",
-    "cooldown_timer_elapsed": "Timer elapsed",
-    "cooldown_refresh_hint": "Refresh list to confirm",
-    "cooldown_seconds": "{{count}}s",
-    "cooldown_minutes": "{{count}}m",
-    "cooldown_hours": "{{count}}h",
-    "cooldown_http_status": "Upstream HTTP {{status}}",
-    "cooldown_backoff": "Backoff level {{level}}",
-    "cooldown_deadline": "Timer deadline",
-    "cooldown_observed": "Snapshot at",
-    "cooldown_note": "Local scheduling snapshot; remaining times are estimates. Expiry does not guarantee availability, quota recovery, or an automatic retry. Model names are internal state keys; backoff levels are not failure counts.",
-    "cooldown_reset_button": "Clear cooldown",
-    "cooldown_reset_hint": "Clear this credential's local routing cooldown",
-    "cooldown_reset_title": "Clear credential cooldown?",
-    "cooldown_reset_confirm": "Clear the local routing cooldown for “{{name}}”? This may make the credential eligible for another request immediately. It does not restore upstream quota.",
-    "cooldown_reset_success": "Cooldown cleared for {{name}}.",
-    "cooldown_reset_failed": "Could not clear cooldown for {{name}}: {{message}}",
-    "cooldown_reason_quota": "Quota restriction",
-    "cooldown_reason_credential_quota": "Credential quota restriction",
-    "cooldown_reason_cloudflare_challenge": "Cloudflare challenge",
-    "cooldown_reason_invalid_grant": "Invalid grant",
-    "cooldown_reason_unauthorized": "Unauthorized",
-    "cooldown_reason_payment_required": "Access restricted (402/403; not a billing diagnosis)",
-    "cooldown_reason_not_found": "Resource not found",
-    "cooldown_reason_model_not_supported": "Model not supported",
-    "cooldown_reason_transient_error": "Transient upstream error",
-    "cooldown_reason_unknown": "Other or unknown reason",
-    "refresh_all_button": "Refresh all credentials",
-    "refresh_all_confirm": "Refresh all eligible credentials on the server, not just the current filtered results. The backend skips disabled or ineligible credentials. This does not reload the list or reset quotas and may take several minutes. Continue?",
-    "refresh_all_results": "Credential refresh results",
-    "refresh_all_summary": "{{success}} refreshed, {{failed}} failed.",
-    "refresh_all_empty": "No credentials were eligible for refresh.",
-    "refresh_all_failed": "Could not obtain complete refresh results: {{message}}. Some credentials may already have refreshed. Check the list before retrying.",
-    "refresh_result_success": "Refreshed",
-    "refresh_result_failed": "Refresh failed",
+    "card_select": "Chọn credential {{name}}",
+    "card_toggle": "Bật credential {{name}}",
+    "card_requests": "Yêu cầu",
+    "cooldown_unknown": "Trạng thái cooldown không xác định",
+    "cooldown_models_one": "{{count}} model đang cooldown",
+    "cooldown_models_other": "{{count}} model đang cooldown",
+    "cooldown_credential": "Cooldown toàn bộ credential",
+    "cooldown_credential_and_models_one": "Credential + {{count}} model đang cooldown",
+    "cooldown_credential_and_models_other": "Credential + {{count}} model đang cooldown",
+    "cooldown_scope_credential": "Toàn bộ credential",
+    "cooldown_earliest": "Sớm nhất kết thúc sau ~{{time}}",
+    "cooldown_elapsed": "Bộ đếm cooldown đã hết hạn",
+    "cooldown_timer_elapsed": "Bộ đếm thời gian đã hết hạn",
+    "cooldown_refresh_hint": "Làm mới danh sách để xác nhận",
+    "cooldown_seconds": "{{count}} giây",
+    "cooldown_minutes": "{{count}} phút",
+    "cooldown_hours": "{{count}} giờ",
+    "cooldown_http_status": "HTTP upstream {{status}}",
+    "cooldown_backoff": "Mức độ backoff {{level}}",
+    "cooldown_deadline": "Hạn chót đếm giờ",
+    "cooldown_observed": "Ảnh chụp nhanh lúc",
+    "cooldown_note": "Ảnh chụp nhanh điều phối cục bộ; thời gian còn lại chỉ là ước tính. Việc hết hạn không đảm bảo credential khả dụng, phục hồi quota hay tự động thử lại. Tên model là key trạng thái nội bộ; mức độ backoff không phải số lần thất bại.",
+    "cooldown_reset_button": "Xóa cooldown",
+    "cooldown_reset_hint": "Xóa cooldown định tuyến cục bộ của credential này",
+    "cooldown_reset_title": "Xóa cooldown của credential?",
+    "cooldown_reset_confirm": "Xóa cooldown định tuyến cục bộ cho “{{name}}”? Điều này có thể khiến credential đủ điều kiện nhận yêu cầu tiếp theo ngay lập tức, nhưng không khôi phục quota ở upstream.",
+    "cooldown_reset_success": "Đã xóa cooldown cho {{name}}.",
+    "cooldown_reset_failed": "Không thể xóa cooldown cho {{name}}: {{message}}",
+    "cooldown_reason_quota": "Hạn chế quota",
+    "cooldown_reason_credential_quota": "Hạn chế quota của credential",
+    "cooldown_reason_cloudflare_challenge": "Thử thách Cloudflare",
+    "cooldown_reason_invalid_grant": "Cấp quyền không hợp lệ",
+    "cooldown_reason_unauthorized": "Chưa được ủy quyền (Unauthorized)",
+    "cooldown_reason_payment_required": "Truy cập bị hạn chế (402/403; không phải chẩn đoán thanh toán)",
+    "cooldown_reason_not_found": "Không tìm thấy tài nguyên",
+    "cooldown_reason_model_not_supported": "Model không được hỗ trợ",
+    "cooldown_reason_transient_error": "Lỗi tạm thời từ upstream",
+    "cooldown_reason_unknown": "Lý do khác hoặc không xác định",
+    "refresh_all_button": "Làm mới tất cả credential",
+    "refresh_all_confirm": "Làm mới tất cả credential đủ điều kiện trên máy chủ (không chỉ các kết quả lọc hiện tại). Backend sẽ bỏ qua các credential bị tắt hoặc không đủ điều kiện. Thao tác này không tải lại danh sách hay đặt lại quota và có thể mất vài phút. Tiếp tục?",
+    "refresh_all_results": "Kết quả làm mới credential",
+    "refresh_all_summary": "Đã làm mới {{success}} mục, thất bại {{failed}} mục.",
+    "refresh_all_empty": "Không có credential nào đủ điều kiện để làm mới.",
+    "refresh_all_failed": "Không thể lấy kết quả làm mới hoàn chỉnh: {{message}}. Một số credential có thể đã được làm mới. Vui lòng kiểm tra danh sách trước khi thử lại.",
+    "refresh_result_success": "Làm mới thành công",
+    "refresh_result_failed": "Làm mới thất bại",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
-    "weight_tooltip": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable weighted round robin for it to take effect.",
-    "policy_alias_name": "Alias",
-    "policy_alias_display_name": "Display name",
-    "policy_alias_fork": "Keep the original model in listings",
-    "policy_alias_force_mapping": "Rewrite response model to the alias",
-    "policy_unsupported": "Existing data cannot be edited with this form and will be preserved. Select Inherit to clear it, or replace it to start a new list.",
-    "policy_replace": "Replace existing data",
-    "policy_retry_label": "Credential request retries",
-    "policy_inherit": "Inherit",
-    "policy_custom": "Custom",
-    "policy_retry_count": "Retry count",
-    "policy_retry_hint": "Inherit uses the global request-retry setting. Custom 0 explicitly disables request retries for this credential.",
-    "policy_aliases_label": "Account model aliases",
-    "policy_aliases_hint": "Account aliases are checked first; unmatched aliases fall back to channel aliases. Inherit or an empty list clears only account aliases.",
-    "policy_rules_label": "Account error rules",
-    "policy_rules_hint": "Custom rules take precedence in list order. Inherit or an empty list uses inherited rules; it does not disable them. Regex patterns use Go syntax.",
-    "policy_retry_invalid": "Enter a non-negative safe integer, or select Inherit.",
-    "policy_aliases_invalid": "Enter a non-empty model name and alias for each new or edited row.",
-    "policy_rules_invalid": "Complete each edited rule with a positive status, an action and at least one non-empty match condition."
+    "weight_tooltip": "Mặc định là 1. Giá trị nhỏ hơn hoặc bằng 0 sẽ loại trừ credential này khỏi điều phối theo trọng số; tối đa 1.000.000. Sau khi nhập giá trị, hãy bật round robin có trọng số để có hiệu lực.",
+    "policy_alias_name": "Bí danh",
+    "policy_alias_display_name": "Tên hiển thị",
+    "policy_alias_fork": "Giữ lại model gốc trong danh sách",
+    "policy_alias_force_mapping": "Viết lại tên model trong phản hồi thành bí danh",
+    "policy_unsupported": "Dữ liệu hiện tại không thể chỉnh sửa bằng biểu mẫu này và sẽ được giữ nguyên. Chọn Kế thừa để xóa dữ liệu, hoặc Thay thế để bắt đầu danh sách mới.",
+    "policy_replace": "Thay thế dữ liệu hiện có",
+    "policy_retry_label": "Số lần thử lại yêu cầu của credential",
+    "policy_inherit": "Kế thừa",
+    "policy_custom": "Tùy chỉnh",
+    "policy_retry_count": "Số lần thử lại",
+    "policy_retry_hint": "Kế thừa sẽ sử dụng cài đặt thử lại yêu cầu toàn cục. Tùy chỉnh bằng 0 sẽ vô hiệu hóa rõ ràng việc thử lại yêu cầu cho credential này.",
+    "policy_aliases_label": "Bí danh model của tài khoản",
+    "policy_aliases_hint": "Bí danh của tài khoản được kiểm tra trước; bí danh không khớp sẽ chuyển về bí danh kênh. Kế thừa hoặc danh sách trống chỉ xóa bí danh của tài khoản.",
+    "policy_rules_label": "Quy tắc lỗi của tài khoản",
+    "policy_rules_hint": "Các quy tắc tùy chỉnh được ưu tiên theo thứ tự danh sách. Kế thừa hoặc danh sách trống sẽ sử dụng quy tắc kế thừa; điều này không vô hiệu hóa chúng. Mẫu biểu thức chính quy (Regex) dùng cú pháp của Go.",
+    "policy_retry_invalid": "Nhập một số nguyên an toàn không âm, hoặc chọn Kế thừa.",
+    "policy_aliases_invalid": "Nhập tên model và bí danh không để trống cho mỗi hàng mới hoặc đã chỉnh sửa.",
+    "policy_rules_invalid": "Hoàn thành mỗi quy tắc đã chỉnh sửa với mã trạng thái dương, một hành động và ít nhất một điều kiện khớp không để trống."
   },
   "antigravity_subscription": {
     "plan_unknown": "Không rõ",
@@ -540,8 +540,8 @@
     "plan_free": "Miễn phí",
     "plan_pro": "Pro 20x",
     "plan_prolite": "Pro 5x",
-    "credit_balance_label": "Credit balance",
-    "credit_unlimited": "Unlimited",
+    "credit_balance_label": "Số dư Credit",
+    "credit_unlimited": "Không giới hạn",
     "plan_business_premium": "Business Premium"
   },
   "kimi_quota": {
@@ -559,9 +559,9 @@
     "limit_window": "Giới hạn {{duration}}",
     "limit_index": "Giới hạn #{{index}}",
     "reset_hint": "đặt lại sau {{hint}}",
-    "domain_unavailable": "Could not read the Kimi credential's domain. A downloadable, valid authentication file is required.",
-    "stale_request": "The connection or credential changed. Please retry.",
-    "monthly_limit": "Monthly limit"
+    "domain_unavailable": "Không thể đọc miền của credential Kimi. Cần có file xác thực hợp lệ và có thể tải xuống.",
+    "stale_request": "Kết nối hoặc credential đã thay đổi. Vui lòng thử lại.",
+    "monthly_limit": "Giới hạn tháng"
   },
   "xai_quota": {
     "title": "Quota Grok",
@@ -587,9 +587,9 @@
     "pay_as_you_go_label": "Trả theo mức sử dụng",
     "pay_as_you_go_enabled": "Đang bật, giới hạn {{cap}}",
     "pay_as_you_go_disabled": "Đã tắt",
-    "usage_unavailable": "Usage unavailable from xAI",
-    "resets_label": "Resets",
-    "prepaid": "Prepaid"
+    "usage_unavailable": "Dữ liệu mức sử dụng từ xAI hiện không khả dụng",
+    "resets_label": "Đặt lại",
+    "prepaid": "Trả trước"
   },
   "vertex_import": {
     "title": "Đăng nhập Vertex bằng JSON",
@@ -634,8 +634,8 @@
     "upgrade_required": "Phiên bản CPA hiện tại không hỗ trợ vô hiệu hóa model OAuth. Vui lòng nâng cấp.",
     "upgrade_required_title": "Vui lòng nâng cấp CLI Proxy API",
     "upgrade_required_desc": "Phiên bản máy chủ hiện tại không hỗ trợ lấy danh sách vô hiệu hóa model OAuth. Vui lòng nâng cấp lên phiên bản CPA (CLI Proxy API) mới nhất và thử lại.",
-    "editor_description": "Choose which models a provider exposes using individual selections or wildcard rules.",
-    "models_hint": "Expand the list to select models, or enter wildcard rules below."
+    "editor_description": "Chọn các model mà provider hiển thị bằng cách chọn riêng lẻ hoặc dùng quy tắc ký tự đại diện (wildcard).",
+    "models_hint": "Mở rộng danh sách để chọn model hoặc nhập quy tắc ký tự đại diện bên dưới."
   },
   "excluded_models": {
     "trigger_summary": "{{excluded}} bị loại trừ · {{available}} khả dụng",
@@ -730,11 +730,11 @@
     "upgrade_required": "Tính năng này yêu cầu phiên bản CLI Proxy API (CPA) mới hơn. Vui lòng nâng cấp.",
     "upgrade_required_title": "Vui lòng nâng cấp CLI Proxy API",
     "upgrade_required_desc": "Máy chủ hiện tại không hỗ trợ API bí danh model OAuth. Vui lòng nâng cấp lên phiên bản CLI Proxy API (CPA) mới nhất.",
-    "editor_description": "Give provider models consistent names for use in your clients.",
-    "edit_title": "Edit model aliases for {{provider}}",
-    "mapping_hint": "Choose a source model, then enter the alias your clients will use.",
-    "mapping_row": "Alias mapping {{number}}",
-    "remove_mapping": "Delete alias mapping {{number}}"
+    "editor_description": "Đặt tên gọi nhất quán cho các model của provider để sử dụng trong client của bạn.",
+    "edit_title": "Chỉnh sửa bí danh model cho {{provider}}",
+    "mapping_hint": "Chọn model gốc, sau đó nhập bí danh mà client của bạn sẽ dùng.",
+    "mapping_row": "Ánh xạ bí danh {{number}}",
+    "remove_mapping": "Xóa ánh xạ bí danh {{number}}"
   },
   "auth_login": {
     "recommended_provider_section": "Provider đề xuất",
@@ -837,48 +837,48 @@
     "iflow_oauth_start_error": "Không thể bắt đầu iFlow OAuth:",
     "iflow_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
     "remote_access_disabled": "Phương thức đăng nhập này không khả dụng cho truy cập từ xa. Vui lòng truy cập từ localhost.",
-    "devin_oauth_cancel": "Cancel Devin Login",
-    "devin_oauth_cancelled": "Devin login cancelled.",
-    "devin_oauth_cancel_error": "Failed to cancel Devin login:",
-    "devin_oauth_retry_hint": "The server may still be waiting for authorization. Cancel this login before starting again.",
+    "devin_oauth_cancel": "Hủy đăng nhập Devin",
+    "devin_oauth_cancelled": "Đã hủy đăng nhập Devin.",
+    "devin_oauth_cancel_error": "Hủy đăng nhập Devin thất bại:",
+    "devin_oauth_retry_hint": "Máy chủ có thể vẫn đang chờ ủy quyền. Hãy hủy lượt đăng nhập này trước khi bắt đầu lại.",
     "devin_oauth_title": "Devin OAuth",
-    "devin_oauth_button": "Start Devin Login",
-    "devin_oauth_hint": "Sign in to Devin / Cognition through browser OAuth to save an authentication file. Requires CLI Proxy API v7.3.1 or later; complete authorization within five minutes.",
-    "devin_oauth_url_label": "Authorization URL:",
-    "devin_copy_link": "Copy Link",
-    "devin_open_link": "Open Link",
-    "devin_oauth_status_waiting": "Waiting for Devin authentication...",
-    "devin_oauth_status_success": "Devin authentication successful!",
-    "devin_oauth_status_error": "Devin authentication failed:",
-    "devin_oauth_start_error": "Failed to start Devin OAuth:",
-    "devin_callback_hint": "Remote server: copy the complete final URL ending in /devin/callback?… from the browser address bar, even if the loopback page cannot be reached. Keep its port, http/https, code and state unchanged. Submit the URL here, then wait for authentication to finish.",
-    "devin_callback_placeholder": "http://127.0.0.1:<server-port>/devin/callback?code=...&state=...",
-    "devin_callback_invalid": "Paste the complete http/https callback URL containing state and an authorization code or error.",
-    "devin_callback_state_mismatch": "This callback does not belong to the current Devin login. Use the final URL from this attempt; do not reuse an old callback.",
+    "devin_oauth_button": "Bắt đầu đăng nhập Devin",
+    "devin_oauth_hint": "Đăng nhập Devin / Cognition qua trình duyệt OAuth để tự động lưu file xác thực. Yêu cầu CLI Proxy API v7.3.1 trở lên; vui lòng hoàn tất ủy quyền trong vòng năm phút.",
+    "devin_oauth_url_label": "URL ủy quyền:",
+    "devin_copy_link": "Sao chép liên kết",
+    "devin_open_link": "Mở liên kết",
+    "devin_oauth_status_waiting": "Đang chờ xác thực Devin...",
+    "devin_oauth_status_success": "Xác thực Devin thành công!",
+    "devin_oauth_status_error": "Xác thực Devin thất bại:",
+    "devin_oauth_start_error": "Không thể bắt đầu Devin OAuth:",
+    "devin_callback_hint": "Máy chủ từ xa: sao chép URL cuối cùng kết thúc bằng /devin/callback?… từ thanh địa chỉ trình duyệt, ngay cả khi không thể truy cập trang loopback. Giữ nguyên cổng, http/https, code và state. Gửi URL vào đây, sau đó tiếp tục chờ xác thực hoàn tất.",
+    "devin_callback_placeholder": "http://127.0.0.1:<cổng-máy-chủ>/devin/callback?code=...&state=...",
+    "devin_callback_invalid": "Dán URL callback http/https hoàn chỉnh chứa state và mã ủy quyền hoặc thông báo lỗi.",
+    "devin_callback_state_mismatch": "Callback này không thuộc về lượt đăng nhập Devin hiện tại. Vui lòng dùng URL cuối cùng từ lần thử này; không tái sử dụng callback cũ.",
     "meta_oauth_title": "Muse (Meta) OAuth",
-    "meta_oauth_button": "Log in with Muse",
-    "meta_oauth_hint": "Open the authorization link and enter the device code if requested. Authentication files are saved automatically after authorization.",
-    "meta_oauth_url_label": "Authorization URL:",
-    "meta_open_link": "Open Link",
-    "meta_copy_link": "Copy Link",
-    "meta_oauth_status_waiting": "Waiting for authentication...",
-    "meta_oauth_status_success": "Authentication successful!",
-    "meta_oauth_status_error": "Authentication failed:",
-    "meta_oauth_start_error": "Failed to start Muse OAuth:",
-    "meta_oauth_polling_error": "Failed to check authentication status:",
-    "device_code_label": "Device code:",
-    "device_code_copy": "Copy device code",
-    "kimi_ai_oauth_title": "Kimi International (kimi.ai)",
-    "kimi_ai_oauth_button": "Log in to Kimi International",
-    "kimi_ai_oauth_hint": "Authorize your kimi.ai international account via device login. A separate kimi-ai authentication file is saved automatically. China and international accounts are not interchangeable.",
-    "kimi_ai_oauth_url_label": "Authorization URL:",
-    "kimi_ai_open_link": "Open link",
-    "kimi_ai_copy_link": "Copy link",
-    "kimi_ai_oauth_status_waiting": "Waiting for authentication...",
-    "kimi_ai_oauth_status_success": "Authentication successful!",
-    "kimi_ai_oauth_status_error": "Authentication failed:",
-    "kimi_ai_oauth_start_error": "Failed to start Kimi International login:",
-    "kimi_ai_oauth_polling_error": "Failed to check authentication status:"
+    "meta_oauth_button": "Đăng nhập bằng Muse",
+    "meta_oauth_hint": "Mở liên kết ủy quyền và nhập mã thiết bị nếu được yêu cầu. File xác thực sẽ tự động được lưu sau khi ủy quyền.",
+    "meta_oauth_url_label": "URL ủy quyền:",
+    "meta_open_link": "Mở liên kết",
+    "meta_copy_link": "Sao chép liên kết",
+    "meta_oauth_status_waiting": "Đang chờ xác thực...",
+    "meta_oauth_status_success": "Xác thực thành công!",
+    "meta_oauth_status_error": "Xác thực thất bại:",
+    "meta_oauth_start_error": "Không thể bắt đầu Muse OAuth:",
+    "meta_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
+    "device_code_label": "Mã thiết bị:",
+    "device_code_copy": "Sao chép mã thiết bị",
+    "kimi_ai_oauth_title": "Kimi quốc tế (kimi.ai)",
+    "kimi_ai_oauth_button": "Đăng nhập Kimi quốc tế",
+    "kimi_ai_oauth_hint": "Ủy quyền tài khoản kimi.ai quốc tế qua đăng nhập thiết bị. File xác thực kimi-ai độc lập sẽ được lưu tự động. Tài khoản nội địa Trung Quốc và quốc tế không thể dùng thay thế cho nhau.",
+    "kimi_ai_oauth_url_label": "URL ủy quyền:",
+    "kimi_ai_open_link": "Mở liên kết",
+    "kimi_ai_copy_link": "Sao chép liên kết",
+    "kimi_ai_oauth_status_waiting": "Đang chờ xác thực...",
+    "kimi_ai_oauth_status_success": "Xác thực thành công!",
+    "kimi_ai_oauth_status_error": "Xác thực thất bại:",
+    "kimi_ai_oauth_start_error": "Không thể bắt đầu đăng nhập Kimi quốc tế:",
+    "kimi_ai_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:"
   },
   "stats": {
     "success": "Thành công",
@@ -954,27 +954,27 @@
     "double_click_copy_hint": "Nhấp đúp để sao chép dòng log thô",
     "copy_success": "Đã sao chép log vào clipboard",
     "copy_failed": "Sao chép thất bại",
-    "preview_too_large": "This request log exceeds the 2 MiB preview limit. Download it to view.",
-    "read_status_live": "Reading continuously",
-    "read_status_paused": "Reading paused",
-    "read_status_catching_up": "Catching up on queued logs",
-    "last_updated": "Last successful update: {{time}}",
-    "buffer_scope": "Searching loaded logs only: {{count}} lines cached, {{matched}} lines matched",
-    "buffer_evicted": "Older logs have been removed from the cache and cannot be searched here",
-    "cursor_reset_notice": "Logs were rotated or reset. The latest content has been reloaded.",
-    "history_evicted": "Your reading position is no longer cached. Please choose a new position.",
-    "resume_following": "Back to latest · New lines: {{count}}",
-    "level_filter": "Log level",
-    "all_levels": "All levels",
-    "view_request": "View log for request {{id}}",
-    "copy_line": "Copy this line",
-    "request_log_missing": "Request log not found: it may not have been recorded or may have been cleaned up. When request logging is disabled, only error request logs are usually retained.",
-    "download_cached": "Download cached logs",
-    "clear_application_confirm": "Clear application logs on the server? Request log files will not be deleted. This action cannot be undone.",
-    "clear_search": "Clear search",
-    "reading_enabled": "Continuous reading",
-    "filter_load_more": "Show more matching logs",
-    "wrap_lines": "Wrap long lines"
+    "preview_too_large": "Bản ghi yêu cầu này vượt quá giới hạn xem trước 2 MiB. Vui lòng tải xuống để xem.",
+    "read_status_live": "Đang đọc liên tục",
+    "read_status_paused": "Đã tạm dừng đọc",
+    "read_status_catching_up": "Đang đuổi kịp các bản ghi log tồn đọng",
+    "last_updated": "Cập nhật thành công lần cuối: {{time}}",
+    "buffer_scope": "Chỉ tìm kiếm trong các bản ghi đã tải: {{count}} dòng trong bộ nhớ cache, khớp {{matched}} dòng",
+    "buffer_evicted": "Các bản ghi log cũ hơn đã bị xóa khỏi cache và không thể tìm kiếm tại đây",
+    "cursor_reset_notice": "Bản ghi log đã được xoay vòng hoặc đặt lại. Nội dung mới nhất đã được tải lại.",
+    "history_evicted": "Vị trí đọc của bạn không còn trong cache. Vui lòng chọn vị trí mới.",
+    "resume_following": "Về mới nhất · Dòng mới: {{count}}",
+    "level_filter": "Cấp độ log",
+    "all_levels": "Tất cả cấp độ",
+    "view_request": "Xem log cho yêu cầu {{id}}",
+    "copy_line": "Sao chép dòng này",
+    "request_log_missing": "Không tìm thấy log yêu cầu: có thể chưa được ghi hoặc đã được dọn dẹp. Khi tính năng ghi log yêu cầu bị tắt, thường chỉ các log yêu cầu lỗi mới được giữ lại.",
+    "download_cached": "Tải xuống log trong cache",
+    "clear_application_confirm": "Xóa log ứng dụng trên máy chủ? Các file log yêu cầu sẽ không bị xóa. Hành động này không thể hoàn tác.",
+    "clear_search": "Xóa tìm kiếm",
+    "reading_enabled": "Đọc liên tục",
+    "filter_load_more": "Hiển thị thêm log phù hợp",
+    "wrap_lines": "Tự động xuống dòng dài"
   },
   "config_management": {
     "title": "Bảng cấu hình",
@@ -1129,16 +1129,16 @@
           "antigravity_signature_cache_desc": "Ưu tiên và xác thực chữ ký thinking-block đã cache",
           "antigravity_signature_strict": "Bỏ qua xác thực chữ ký nghiêm ngặt",
           "antigravity_signature_strict_desc": "Chỉ áp dụng khi cache chữ ký bị tắt; xác thực toàn bộ cây protobuf Claude",
-          "antigravity_sensitive_words": "Sensitive Word Obfuscation",
-          "antigravity_sensitive_words_desc": "Insert zero-width characters into matching words in Antigravity system instructions to reduce exact keyword matching upstream",
-          "antigravity_sensitive_words_label": "OAuth sensitive words (oauth.providers.antigravity.sensitive-words)",
+          "antigravity_sensitive_words": "Làm rối từ nhạy cảm",
+          "antigravity_sensitive_words_desc": "Chèn ký tự có độ rộng bằng 0 (zero-width) vào các từ khớp trong hướng dẫn hệ thống Antigravity để giảm khả năng so khớp từ khóa chính xác ở upstream",
+          "antigravity_sensitive_words_label": "Từ nhạy cảm OAuth (oauth.providers.antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
-          "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
-          "devin_sensitive_words": "Devin System Prompt Sensitive Words",
-          "devin_sensitive_words_desc": "In Devin system prompts only, a line containing a configured word is removed in full; the remaining system prompt is then obfuscated. Regular messages and tool arguments are not changed",
-          "devin_sensitive_words_label": "OAuth sensitive words (oauth.providers.devin.sensitive-words)",
-          "devin_sensitive_words_placeholder": "sensitive phrase",
-          "devin_sensitive_words_hint": "One word or phrase per row. Configure carefully: matching content causes the entire system-prompt line to be deleted; empty entries are removed when saved"
+          "antigravity_sensitive_words_hint": "Mỗi hàng một từ hoặc cụm từ. Không phân biệt chữ hoa chữ thường; các mục trống sẽ bị xóa và các mục ngắn hơn 2 ký tự sẽ bị backend bỏ qua",
+          "devin_sensitive_words": "Từ nhạy cảm trong System Prompt Devin",
+          "devin_sensitive_words_desc": "Chỉ áp dụng trong system prompt Devin: dòng chứa từ đã cấu hình sẽ bị xóa hoàn toàn; phần system prompt còn lại sau đó sẽ được làm rối. Tin nhắn thông thường và tham số công cụ không bị thay đổi",
+          "devin_sensitive_words_label": "Từ nhạy cảm OAuth (oauth.providers.devin.sensitive-words)",
+          "devin_sensitive_words_placeholder": "cụm từ nhạy cảm",
+          "devin_sensitive_words_hint": "Mỗi hàng một từ hoặc cụm từ. Cấu hình cẩn thận: nội dung khớp sẽ khiến toàn bộ dòng system prompt bị xóa; các mục trống sẽ bị xóa khi lưu"
         },
         "headers": {
           "title": "Header mặc định",
@@ -1188,8 +1188,8 @@
           "session_affinity": "Định tuyến Session Affinity",
           "ws_auth": "Xác thực WebSocket",
           "ws_auth_desc": "Bật xác thực WebSocket (/v1/ws)",
-          "proxy_url_sponsor_hint": "No suitable proxy?",
-          "max_retry_interval_hint": "Set to 0 or a negative integer to skip cooldown waits between retry rounds."
+          "proxy_url_sponsor_hint": "Chưa có proxy phù hợp?",
+          "max_retry_interval_hint": "Đặt thành 0 hoặc số nguyên âm để bỏ qua thời gian chờ cooldown giữa các lượt thử lại."
         },
         "quota": {
           "title": "Quota dự phòng",
@@ -1247,10 +1247,10 @@
           "good": "Tốt",
           "strong": "Mạnh"
         },
-        "name_label": "Name / description (optional)",
-        "name_placeholder": "For example: Alice's laptop",
-        "name_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
-        "name_save_error": "Could not save the name in browser storage. Check your browser storage settings."
+        "name_label": "Tên / mô tả (tùy chọn)",
+        "name_placeholder": "Ví dụ: Laptop của Alice",
+        "name_hint": "Được lưu ngay trong trình duyệt này, riêng cho từng máy chủ. Không bao gồm trong cấu hình máy chủ. Xóa trường này để xóa tên.",
+        "name_save_error": "Không thể lưu tên vào bộ lưu trữ trình duyệt. Vui lòng kiểm tra cài đặt lưu trữ của trình duyệt."
       },
       "payload_rules": {
         "rule": "Quy tắc",
@@ -1310,17 +1310,17 @@
         "payload_invalid_number": "Nhập số hợp lệ",
         "payload_invalid_boolean": "Chọn true hoặc false",
         "payload_invalid_json": "Nhập JSON hợp lệ",
-        "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
-        "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
-        "invalid_duration": "Enter a valid duration, such as 30s or 3h",
-        "positive_duration": "Enter a duration greater than zero",
-        "invalid_timezone": "Enter a valid IANA timezone, such as Asia/Singapore",
-        "invalid_ip": "Enter a valid IPv4 or IPv6 address",
-        "udp_port_pair": "Set both UDP ports to 0, or set both with the minimum not exceeding the maximum",
-        "udp_port_capacity": "The UDP range must contain at least twice the effective maximum session count in ports (0 sessions uses 32)",
-        "invalid_ice_servers": "Each ICE server needs at least one valid stun:, stuns:, turn:, or turns: URL",
-        "integer_range_0_65535": "Enter a whole number between 0 and 65535",
-        "integer": "Enter a whole number"
+        "invalid_trusted_proxies": "Mỗi proxy đáng tin cậy phải là một địa chỉ IP hoặc CIDR hợp lệ.",
+        "invalid_discovery_service_type": "Sử dụng định dạng _tên._tcp: tên phải gồm 1–15 chữ cái, chữ số hoặc dấu gạch nối, không bắt đầu hoặc kết thúc bằng dấu gạch nối.",
+        "invalid_duration": "Nhập khoảng thời gian hợp lệ, chẳng hạn như 30s hoặc 3h",
+        "positive_duration": "Nhập khoảng thời gian lớn hơn 0",
+        "invalid_timezone": "Nhập múi giờ IANA hợp lệ, chẳng hạn như Asia/Ho_Chi_Minh hoặc Asia/Singapore",
+        "invalid_ip": "Nhập địa chỉ IPv4 hoặc IPv6 hợp lệ",
+        "udp_port_pair": "Đặt cả hai cổng UDP thành 0, hoặc đặt cả hai với giá trị tối thiểu không vượt quá tối đa",
+        "udp_port_capacity": "Phạm vi UDP phải chứa số cổng tối thiểu bằng hai lần số lượng phiên tối đa hiệu dụng (0 phiên sẽ tính là 32)",
+        "invalid_ice_servers": "Mỗi máy chủ ICE cần ít nhất một URL stun:, stuns:, turn:, hoặc turns: hợp lệ",
+        "integer_range_0_65535": "Nhập số nguyên từ 0 đến 65535",
+        "integer": "Nhập một số nguyên"
       },
       "common": {
         "edit": "Chỉnh sửa",
@@ -1331,169 +1331,169 @@
       },
       "serverExtras": {
         "trustedProxies": {
-          "label": "Trusted proxies",
-          "hint": "IP addresses or CIDRs; empty means forwarded headers are not trusted. Trusting all-address ranges risks client IP spoofing. Requires a backend restart."
+          "label": "Proxy đáng tin cậy",
+          "hint": "Địa chỉ IP hoặc CIDR; để trống nghĩa là các header chuyển tiếp không được tin cậy. Tin cậy dải mạng chứa tất cả địa chỉ có nguy cơ giả mạo IP client. Yêu cầu khởi động lại backend."
         },
         "discoveryEnabled": {
-          "label": "Enable discovery",
-          "hint": "Broadcast via mDNS / DNS-SD on the LAN. Off by default; changes apply without a restart."
+          "label": "Bật khám phá dịch vụ",
+          "hint": "Phát quảng bá qua mDNS / DNS-SD trong mạng cục bộ (LAN). Mặc định tắt; thay đổi có hiệu lực mà không cần khởi động lại."
         },
         "discoveryServiceName": {
-          "label": "Service name prefix",
-          "hint": "The backend appends a short ID. Empty uses CPA-<ShortID>."
+          "label": "Tiền tố tên dịch vụ",
+          "hint": "Backend sẽ nối thêm một ID ngắn. Để trống sẽ dùng CPA-<ShortID>."
         },
         "discoveryServiceType": {
-          "label": "Service type",
-          "hint": "Empty uses _ai-gateway._tcp."
+          "label": "Loại dịch vụ",
+          "hint": "Để trống sẽ dùng _ai-gateway._tcp."
         },
         "discoverySubtypes": {
-          "label": "Protocol subtypes",
-          "hint": "Empty uses the five default protocols. Missing leading _ is added; invalid entries are ignored."
+          "label": "Phân loại giao thức con",
+          "hint": "Để trống sẽ dùng năm giao thức mặc định. Thiếu tiền tố _ sẽ tự động được thêm; các mục không hợp lệ sẽ bị bỏ qua."
         },
         "discoveryInterfacesInclude": {
-          "label": "Include interfaces",
-          "hint": "Empty auto-selects physical LAN interfaces. Use names or prefix patterns ending in *."
+          "label": "Bao gồm giao diện mạng",
+          "hint": "Để trống sẽ tự động chọn giao diện mạng LAN vật lý. Dùng tên hoặc mẫu tiền tố kết thúc bằng *."
         },
         "discoveryInterfacesExclude": {
-          "label": "Exclude interfaces",
-          "hint": "Use names or prefix patterns ending in *. Exclusions take priority over inclusions."
+          "label": "Loại trừ giao diện mạng",
+          "hint": "Dùng tên hoặc mẫu tiền tố kết thúc bằng *. Quy tắc loại trừ được ưu tiên hơn quy tắc bao gồm."
         },
         "discoveryAuthRequired": {
-          "label": "Advertise authentication requirement",
-          "hint": "On by default. Broadcast metadata only; does not change actual API authentication."
+          "label": "Quảng bá yêu cầu xác thực",
+          "hint": "Mặc định bật. Chỉ quảng bá siêu dữ liệu (metadata); không thay đổi quy trình xác thực API thực tế."
         },
         "discoveryAdvertiseManagement": {
-          "label": "Advertise management service",
-          "hint": "Off by default. Only announces the management service exists; does not change remote access permissions."
+          "label": "Quảng bá dịch vụ quản lý",
+          "hint": "Mặc định tắt. Chỉ thông báo dịch vụ quản lý tồn tại; không thay đổi quyền truy cập từ xa."
         },
-        "discoveryTitle": "LAN discovery",
-        "discoveryHint": "Requires multicast-capable physical interfaces and a non-loopback listener. Docker usually needs host networking; reachability is not guaranteed."
+        "discoveryTitle": "Khám phá mạng cục bộ (LAN)",
+        "discoveryHint": "Yêu cầu giao diện mạng vật lý hỗ trợ multicast và địa chỉ lắng nghe non-loopback. Docker thường cần host networking; không đảm bảo khả năng tiếp cận."
       },
       "additions": {
-        "oauthTitle": "OAuth provider behavior",
-        "oauthHint": "These provider settings apply only to OAuth/file-backed credentials, not API-key credentials.",
+        "oauthTitle": "Hành vi của provider OAuth",
+        "oauthHint": "Các cài đặt provider này chỉ áp dụng cho credential OAuth / file xác thực, không áp dụng cho credential API key.",
         "claudeTitle": "Claude",
         "codexTitle": "Codex",
         "antigravityTitle": "Antigravity",
         "xaiTitle": "xAI",
         "liveRelayTitle": "Codex Live media relay",
-        "liveRelayHint": "Relay WebRTC audio and DataChannel traffic in the proxy process. Inbound UDP must be reachable. Keep ICE credentials out of screenshots and logs.",
-        "iceAdd": "Add ICE server",
-        "iceRemove": "Remove ICE server {{index}}",
-        "iceURLs": "STUN/TURN URLs",
-        "iceUsername": "TURN username",
-        "iceCredential": "TURN password",
-        "iceServer": "ICE server {{index}}",
+        "liveRelayHint": "Chuyển tiếp âm thanh WebRTC và lưu lượng DataChannel trong tiến trình proxy. UDP chiều đến phải truy cập được. Không để lộ thông tin xác thực ICE trong ảnh chụp màn hình hoặc log.",
+        "iceAdd": "Thêm máy chủ ICE",
+        "iceRemove": "Xóa máy chủ ICE {{index}}",
+        "iceURLs": "URL STUN/TURN",
+        "iceUsername": "Tên người dùng TURN",
+        "iceCredential": "Mật khẩu TURN",
+        "iceServer": "Máy chủ ICE {{index}}",
         "routingSessionAffinitySubagents": {
-          "label": "Subagent session affinity",
-          "hint": "Enabled by default; only effective when session affinity is enabled. Subagents inherit their parent's credential to reuse caches. Disable to distribute subagents across the credential pool for greater concurrency."
+          "label": "Session affinity cho subagent",
+          "hint": "Mặc định bật; chỉ có hiệu lực khi session affinity được bật. Subagent kế thừa credential của cha để tái sử dụng cache. Tắt để phân bổ subagent trên toàn bộ pool credential nhằm tăng tính đồng thời."
         },
         "saveCooldownStatus": {
-          "label": "Persist cooldown status",
-          "hint": "Save per-credential cooldown status in .cds files beside auth files. Disabled by default; otherwise status is kept only in memory."
+          "label": "Lưu trữ bền vững trạng thái cooldown",
+          "hint": "Lưu trạng thái cooldown của từng credential vào các file .cds cạnh file xác thực. Mặc định tắt; nếu tắt trạng thái chỉ được giữ trong bộ nhớ."
         },
         "transientErrorCooldownSeconds": {
-          "label": "Transient error cooldown (seconds)",
-          "hint": "Cooldown for upstream 408/500/502/503/504/520–526 errors. 0 uses the default 60 seconds; a negative value disables this cooldown."
+          "label": "Thời gian cooldown lỗi tạm thời (giây)",
+          "hint": "Thời gian cooldown cho các lỗi 408/500/502/503/504/520–526 từ upstream. 0 sử dụng mặc định 60 giây; giá trị âm sẽ tắt cooldown này."
         },
         "videoResultAuthCacheTTL": {
-          "label": "Video result credential cache TTL",
-          "hint": "How long video IDs remain bound to the credential that created them. Use a duration such as 30m or 3h; default: 3h."
+          "label": "TTL cache credential của kết quả video",
+          "hint": "Thời gian ID video duy trì liên kết với credential đã tạo ra nó. Nhập khoảng thời gian như 30m hoặc 3h; mặc định: 3h."
         },
         "claudeHeaderTimezone": {
-          "label": "Fallback timezone",
-          "hint": "IANA timezone for the cloaked currentDate, e.g. Asia/Singapore, or Local for the backend host's timezone. The credential JSON's timezone takes priority."
+          "label": "Múi giờ dự phòng",
+          "hint": "Múi giờ IANA cho currentDate được ngụy trang, ví dụ: Asia/Ho_Chi_Minh, Asia/Singapore, hoặc Local cho múi giờ của máy chủ backend. Múi giờ trong JSON của credential được ưu tiên."
         },
         "claudeModelLevelCooling": {
-          "label": "Model-level cooldown",
-          "hint": "Apply Claude quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+          "label": "Cooldown theo cấp độ model",
+          "hint": "Chỉ áp dụng cooldown quota Claude cho model được yêu cầu, thay vì tất cả các model dùng chung credential. Mặc định tắt."
         },
         "claudeDisableCloakMode": {
-          "label": "Disable request cloaking",
-          "hint": "Disable the Claude Code CLI disguise and system prompt replacement; pass through the original system prompt. Credential files can override this with cloak_mode. Default: false (automatic cloaking for non-Claude-Code clients)."
+          "label": "Tắt ngụy trang yêu cầu",
+          "hint": "Tắt ngụy trang danh tính Claude Code CLI và thay thế system prompt; truyền qua system prompt gốc. File credential có thể ghi đè bằng cloak_mode. Mặc định: false (tự động ngụy trang cho client không phải Claude Code)."
         },
         "claudeCodeDisableCloakingModelList": {
-          "label": "Disable model ID cloaking",
-          "hint": "Return original model IDs in Anthropic model list responses instead of cloaked IDs. Disabled by default."
+          "label": "Tắt ngụy trang ID model",
+          "hint": "Trả về ID model gốc trong phản hồi danh sách model Anthropic thay vì ID đã ngụy trang. Mặc định tắt."
         },
         "codexDisableCloaking": {
-          "label": "Disable request cloaking",
-          "hint": "Stop forcing official Codex User-Agent and Originator headers on HTTP/SSE and WebSocket requests. Disabled by default."
+          "label": "Tắt ngụy trang yêu cầu",
+          "hint": "Dừng ép buộc header User-Agent và Originator chính thức của Codex trên các yêu cầu HTTP/SSE và WebSocket. Mặc định tắt."
         },
         "codexModelLevelCooling": {
-          "label": "Model-level cooldown",
-          "hint": "Apply usage_limit_reached quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+          "label": "Cooldown theo cấp độ model",
+          "hint": "Chỉ áp dụng cooldown quota usage_limit_reached cho model được yêu cầu, thay vì tất cả các model dùng chung credential. Mặc định tắt."
         },
         "codexStreamBootstrapBuffering": {
-          "label": "Buffer stream bootstrap",
-          "hint": "Hold initial empty events and heartbeats to allow credential failover on early overload or rate-limit rejections. Disabled by default. Delays response headers and may trigger client or reverse-proxy timeouts; buffering has frame and byte budgets."
+          "label": "Đệm khởi động stream",
+          "hint": "Tạm giữ các sự kiện rỗng và heartbeat ban đầu để cho phép chuyển đổi credential (failover) khi gặp quá tải sớm hoặc bị từ chối do giới hạn tốc độ. Mặc định tắt. Làm trễ header phản hồi và có thể kích hoạt timeout ở client hoặc reverse proxy; việc đệm có hạn mức frame và byte."
         },
         "codexStreamBootstrapTimeout": {
-          "label": "Stream bootstrap timeout",
-          "hint": "Optional buffering time limit, e.g. 20s. Default: 0 (unlimited time; frame and byte budgets still apply). Checked as upstream frames arrive; not a hard deadline for every network stall. Headers may still wait for translated output."
+          "label": "Timeout đệm khởi động stream",
+          "hint": "Giới hạn thời gian đệm tùy chọn, ví dụ: 20s. Mặc định: 0 (không giới hạn thời gian; hạn mức frame và byte vẫn áp dụng). Được kiểm tra khi các frame từ upstream đến; không phải hạn chót cứng cho mọi trường hợp treo mạng. Header vẫn có thể phải chờ đầu ra đã được dịch."
         },
         "codexOptimizeMultiAgentV2": {
-          "label": "Optimize multi-agent v2",
-          "hint": "Optimize official Codex multi-agent requests: refresh spawn_agent model details, remove message parameter encryption, normalize agent_message content, and convert it to user messages for non-Codex protocols. Disabled by default."
+          "label": "Tối ưu hóa multi-agent v2",
+          "hint": "Tối ưu hóa các yêu cầu multi-agent chính thức của Codex: làm mới chi tiết model spawn_agent, loại bỏ mã hóa tham số thông điệp, chuẩn hóa nội dung agent_message và chuyển đổi thành tin nhắn người dùng cho các giao thức không phải Codex. Mặc định tắt."
         },
         "codexOrphanDelegationCompatibility": {
-          "label": "Orphan delegation compatibility",
-          "hint": "For X-Openai-Subagent: collab_spawn requests, convert orphan codex_app/create_thread and codex_app/send_message_to_thread outputs without a valid matching call into user messages. Disabled by default."
+          "label": "Tương thích ủy quyền mồ côi (orphan delegation)",
+          "hint": "Đối với yêu cầu X-Openai-Subagent: collab_spawn, chuyển đổi đầu ra mồ côi của codex_app/create_thread và codex_app/send_message_to_thread không có lệnh gọi khớp hợp lệ thành tin nhắn người dùng. Mặc định tắt."
         },
         "codexResponseSteering": {
-          "label": "Response steering",
-          "hint": "Experimental full-duplex Codex Responses WebSockets. Each socket stays bound to one upstream account and model; accepted input is never replayed. Disabled by default."
+          "label": "Điều hướng phản hồi (Response steering)",
+          "hint": "Tính năng thử nghiệm WebSocket Codex Responses song công toàn phần (full-duplex). Mỗi socket luôn gắn chặt với một tài khoản và model upstream; đầu vào đã được chấp nhận sẽ không bao giờ phát lại. Mặc định tắt."
         },
         "antigravityConnectionPoolEnabled": {
-          "label": "Enable connection pooling",
-          "hint": "Reuse upstream HTTP/1.1 connections. Default: false (short-lived connections)."
+          "label": "Bật connection pool",
+          "hint": "Tái sử dụng các kết nối HTTP/1.1 upstream. Mặc định: false (kết nối ngắn hạn)."
         },
         "antigravityConnectionPoolIdleTimeout": {
-          "label": "Idle connection timeout",
-          "hint": "How long idle connections remain in the pool. Default: 30s; capped at 210s. Zero or a negative duration switches to short-lived connections."
+          "label": "Timeout kết nối nhàn rỗi",
+          "hint": "Thời gian kết nối nhàn rỗi tồn tại trong pool. Mặc định: 30s; giới hạn tối đa 210s. Bằng 0 hoặc thời lượng âm sẽ chuyển sang kết nối ngắn hạn."
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
-          "label": "Maximum idle connections per host",
-          "hint": "Maximum idle connections retained per upstream host per credential. Default: 2; capped at 100. Zero uses Go's default of 2; a negative value switches to short-lived connections."
+          "label": "Số kết nối nhàn rỗi tối đa trên mỗi host",
+          "hint": "Số kết nối nhàn rỗi tối đa được duy trì cho mỗi host upstream trên mỗi credential. Mặc định: 2; giới hạn tối đa 100. Bằng 0 sẽ dùng mặc định của Go là 2; giá trị âm sẽ chuyển sang kết nối ngắn hạn."
         },
         "xaiInjectXSearch": {
-          "label": "Inject x_search",
-          "hint": "Add xAI's native x_search tool when absent from the request, including tool_choice.allowed_tools when applicable. Disabled by default."
+          "label": "Chèn x_search",
+          "hint": "Tự động thêm công cụ x_search gốc của xAI khi thiếu trong yêu cầu, bao gồm tool_choice.allowed_tools khi áp dụng. Mặc định tắt."
         },
         "codexLiveMediaRelayEnabled": {
-          "label": "Enable media relay",
-          "hint": "Terminate and relay Codex Live WebRTC media in this process. Requires inbound UDP reachability. Disabled by default to preserve direct media connections."
+          "label": "Bật media relay",
+          "hint": "Chấm dứt và chuyển tiếp phương tiện Codex Live WebRTC trong tiến trình này. Yêu cầu UDP chiều đến phải truy cập được. Mặc định tắt để giữ kết nối phương tiện trực tiếp."
         },
         "codexLiveMediaRelayMaxSessions": {
-          "label": "Maximum concurrent media sessions",
-          "hint": "Blank or 0 uses the default of 32 sessions. A custom UDP range must provide at least two ports per session."
+          "label": "Số phiên phương tiện đồng thời tối đa",
+          "hint": "Để trống hoặc 0 sẽ dùng mặc định 32 phiên. Dải cổng UDP tùy chỉnh phải cung cấp ít nhất hai cổng cho mỗi phiên."
         },
         "codexLiveMediaRelayDisablePrivateRemoteIPs": {
-          "label": "Block private remote IP candidates",
-          "hint": "Default: false, allowing private candidates for local or trusted-network clients. Enable to reject downstream SDP candidates targeting private, loopback, link-local, or unspecified IPs and reduce internal-network exposure; local connections may fail."
+          "label": "Chặn ứng viên IP từ xa riêng tư",
+          "hint": "Mặc định: false, cho phép ứng viên địa chỉ riêng tư cho các client mạng cục bộ hoặc đáng tin cậy. Bật để từ chối các ứng viên SDP hạ lưu trỏ tới IP riêng tư, loopback, link-local hoặc chưa chỉ định nhằm giảm nguy cơ lộ mạng nội bộ; các kết nối cục bộ có thể thất bại."
         },
         "codexLiveMediaRelayPublicIP": {
-          "label": "Advertised public IP",
-          "hint": "Optional public IPv4 or IPv6 address to advertise when the proxy is behind 1:1 NAT. Enter an IP address, not a hostname."
+          "label": "IP công khai được thông báo",
+          "hint": "Địa chỉ IPv4 hoặc IPv6 công khai tùy chọn để thông báo khi proxy nằm sau 1:1 NAT. Nhập địa chỉ IP, không phải hostname."
         },
         "codexLiveMediaRelayUDPPortMin": {
-          "label": "Minimum UDP port",
-          "hint": "Set both UDP bounds to 0 for system allocation, or specify an inclusive continuous range with at least twice the effective session limit in ports."
+          "label": "Cổng UDP tối thiểu",
+          "hint": "Đặt cả hai giới hạn UDP thành 0 để hệ thống tự phân bổ, hoặc chỉ định một dải liên tục bao gồm cả hai đầu với số cổng ít nhất gấp đôi giới hạn phiên hiệu dụng."
         },
         "codexLiveMediaRelayUDPPortMax": {
-          "label": "Maximum UDP port",
-          "hint": "Must be at least the minimum port. Both bounds must be 0 or both nonzero; a custom range needs at least two ports per session (64 with the default 32 sessions)."
+          "label": "Cổng UDP tối đa",
+          "hint": "Phải lớn hơn hoặc bằng cổng tối thiểu. Cả hai giới hạn phải cùng bằng 0 hoặc cùng khác 0; dải tùy chỉnh cần ít nhất hai cổng cho mỗi phiên (64 cổng với mặc định 32 phiên)."
         },
         "codexLiveMediaRelayICEServers": {
-          "label": "ICE servers",
-          "hint": "Optional STUN/TURN servers using stun:, stuns:, turn:, or turns: URLs. TURN credentials are omitted from the JSON config API. Enter the credential as a password and keep secrets out of screenshots and logs."
+          "label": "Máy chủ ICE",
+          "hint": "Các máy chủ STUN/TURN tùy chọn dùng URL stun:, stuns:, turn:, hoặc turns:. Thông tin xác thực TURN được bỏ qua trong API cấu hình JSON. Nhập thông tin xác thực dưới dạng mật khẩu và không để lộ bí mật trong ảnh chụp màn hình hay log."
         }
       }
     },
-    "source_changes_before_visual": "Save or discard your unsaved source edits before switching to visual mode.",
-    "precise_save_incomplete": "The precise save did not finish; some changes may already be applied. Your draft is retained. Save again to review the remaining server differences.",
-    "concurrent_list_conflict": "The server list {{path}} changed after your draft baseline. Saving was blocked to avoid overwriting those changes. Your draft is retained; note your edits, then reload the configuration and reconcile them.",
-    "precise_save_recovery_required": "Could not read back the save result. Editing is paused. Save again to recover the draft baseline, or reload the configuration."
+    "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",
+    "precise_save_incomplete": "Quá trình lưu chính xác chưa hoàn tất; một số thay đổi có thể đã được áp dụng. Bản nháp của bạn được giữ lại. Hãy lưu lại để xem xét các khác biệt còn lại trên máy chủ.",
+    "concurrent_list_conflict": "Danh sách trên máy chủ {{path}} đã thay đổi sau mốc cơ sở bản nháp của bạn. Thao tác lưu bị chặn để tránh ghi đè các thay đổi đó. Bản nháp của bạn được giữ lại; hãy ghi lại các chỉnh sửa, sau đó tải lại cấu hình và hợp nhất.",
+    "precise_save_recovery_required": "Không thể đọc lại kết quả lưu. Đã tạm dừng chỉnh sửa. Lưu lại để khôi phục mốc cơ sở của bản nháp, hoặc tải lại cấu hình."
   },
   "quota_management": {
     "title": "Quản lý Quota",
@@ -1536,11 +1536,11 @@
     "weekday_thu": "T5",
     "weekday_fri": "T6",
     "weekday_sat": "T7",
-    "search_label": "Search accounts",
-    "search_placeholder": "Search by filename or email",
-    "search_empty_title": "No matching accounts",
-    "search_empty_desc": "Try another filename or email, or clear the search.",
-    "search_clear": "Clear search"
+    "search_label": "Tìm kiếm tài khoản",
+    "search_placeholder": "Tìm theo tên file hoặc email",
+    "search_empty_title": "Không có tài khoản phù hợp",
+    "search_empty_desc": "Hãy thử tên file hoặc email khác, hoặc xóa tìm kiếm.",
+    "search_clear": "Xóa tìm kiếm"
   },
   "plugin_management": {
     "title": "Quản lý Plugin",
@@ -1750,12 +1750,12 @@
     "commercial_mode_restart_required": "Đã đổi cài đặt chế độ thương mại. Vui lòng khởi động lại dịch vụ để có hiệu lực",
     "copy_failed": "Sao chép thất bại",
     "link_copied": "Đã sao chép liên kết vào clipboard",
-    "trusted_proxies_restart_required": "Trusted proxy settings saved. Restart the backend to apply them.",
-    "region_label": "Notifications",
-    "type_success": "Success",
-    "type_info": "Information",
-    "type_warning": "Warning",
-    "type_error": "Error"
+    "trusted_proxies_restart_required": "Đã lưu cài đặt proxy đáng tin cậy. Hãy khởi động lại backend để áp dụng.",
+    "region_label": "Thông báo",
+    "type_success": "Thành công",
+    "type_info": "Thông tin",
+    "type_warning": "Cảnh báo",
+    "type_error": "Lỗi"
   },
   "language": {
     "switch": "Ngôn ngữ",
@@ -1845,7 +1845,7 @@
       "empty": "Chưa có tài nguyên nào, nhấn \"Mới\" để thêm.",
       "filterPlaceholder": "Tìm key, URL, tiền tố…",
       "description": "Quản lý tài nguyên trong {{route}}",
-      "cliProfileTag": "CLI Profile"
+      "cliProfileTag": "Hồ sơ CLI"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -1917,7 +1917,7 @@
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
       },
-      "kimiPromo": "New users get API credit worth 10% of their first successful top-up, up to ¥1000. Offer ends September 30."
+      "kimiPromo": "Người dùng mới nạp tiền lần đầu thành công sẽ được tặng hạn mức API trị giá 10% số tiền nạp, tối đa ¥1000. Ưu đãi kết thúc vào ngày 30 tháng 9."
     },
     "status": {
       "active": "Đang hoạt động",
@@ -2011,10 +2011,10 @@
         "weightInteger": "Trọng số điều phối phải là số nguyên",
         "weightMax": "Trọng số điều phối không được vượt quá {{max}}"
       },
-      "fingerprintProfile": "Request fingerprint",
-      "fingerprintProfileDefault": "Default (caller-owned)",
+      "fingerprintProfile": "Dấu vân tay yêu cầu",
+      "fingerprintProfileDefault": "Mặc định (do phía gọi kiểm soát)",
       "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
-      "fingerprintProfileHint": "Keep the caller's prompt and headers by default, or opt in to the Claude Code CLI request fingerprint."
+      "fingerprintProfileHint": "Mặc định giữ nguyên prompt và header của phía gọi, hoặc chọn sử dụng dấu vân tay yêu cầu của Claude Code CLI."
     },
     "delete": {
       "title": "Xóa tài nguyên",
@@ -2080,157 +2080,157 @@
       "notLoaded": "Chưa tải"
     },
     "behavior": {
-      "title": "Provider-specific behavior",
-      "alphaSearch": "Enable Alpha Search",
-      "alphaSearchHint": "Allow this Codex key to serve Alpha Search. The upstream must support it.",
-      "codexCloaking": "Codex request cloaking",
-      "codexCloakingHint": "Override official Codex identity headers for this API key. Default removes the credential override; OAuth-only settings do not apply here.",
-      "useDefault": "Use backend default",
-      "cloakingEnabled": "Enable cloaking",
-      "cloakingDisabled": "Disable cloaking",
-      "rebuildMidSystemMessage": "Rebuild system messages",
-      "rebuildMidSystemMessageHint": "Move Claude messages with role system into the top-level system field.",
-      "supportPromptCacheKey": "Inject prompt cache key",
-      "supportPromptCacheKeyHint": "Derive and inject prompt_cache_key for compatible requests. Enable only when the upstream supports this field."
+      "title": "Hành vi dành riêng cho provider",
+      "alphaSearch": "Bật Alpha Search",
+      "alphaSearchHint": "Cho phép key Codex này phục vụ Alpha Search. Upstream phải hỗ trợ tính năng này.",
+      "codexCloaking": "Ngụy trang yêu cầu Codex",
+      "codexCloakingHint": "Ghi đè các header định danh Codex chính thức cho API key này. Mặc định sẽ xóa ghi đè của credential; các cài đặt chỉ dành cho OAuth không áp dụng ở đây.",
+      "useDefault": "Dùng mặc định của backend",
+      "cloakingEnabled": "Bật ngụy trang",
+      "cloakingDisabled": "Tắt ngụy trang",
+      "rebuildMidSystemMessage": "Tái cấu trúc thông điệp hệ thống",
+      "rebuildMidSystemMessageHint": "Chuyển các tin nhắn Claude có role là system vào trường system ở cấp cao nhất.",
+      "supportPromptCacheKey": "Chèn prompt cache key",
+      "supportPromptCacheKeyHint": "Tạo và chèn prompt_cache_key cho các yêu cầu tương thích. Chỉ bật khi upstream hỗ trợ trường này."
     },
     "modelOptions": {
-      "displayName": "Display name",
-      "maxContextLength": "Context length",
-      "contextHint": "Non-negative integer; leave empty to use the default.",
-      "forceMapping": "Rewrite response model to alias",
-      "isCompat": "Compatibility mode",
-      "supportConfigurationUpdate": "Allow configuration updates",
-      "inputModalitiesText": "Input modalities",
-      "outputModalitiesText": "Output modalities",
-      "modalitiesHint": "Separate values with commas or whitespace. Custom modality names are preserved.",
-      "useMaxCompletionTokens": "Use max_completion_tokens",
-      "thinkingMode": "Thinking override",
-      "useDefault": "Use default",
-      "custom": "Custom",
-      "thinkingHint": "Default inherits backend behavior; an empty custom override is an explicit {}. Budgets and effort levels can coexist. Only when both budgets are 0 or blank is the numeric range unspecified. Set a maximum at least as large as a positive minimum.",
-      "thinkingMin": "Minimum thinking budget",
-      "thinkingMax": "Maximum thinking budget",
-      "thinkingZeroAllowed": "Allow zero budget",
-      "thinkingDynamicAllowed": "Allow dynamic budget",
-      "invalidContext": "Context length must be a non-negative safe integer.",
-      "invalidThinking": "Thinking must be a valid JSON object.",
-      "invalidBudget": "Thinking budgets must be non-negative safe integers.",
-      "invalidRange": "Minimum thinking budget must not exceed the maximum. Blank bounds count as 0.",
-      "removeModel": "Remove model",
-      "modelName": "Model name",
-      "modelAlias": "Alias (optional)"
+      "displayName": "Tên hiển thị",
+      "maxContextLength": "Độ dài ngữ cảnh",
+      "contextHint": "Số nguyên không âm; để trống để dùng giá trị mặc định.",
+      "forceMapping": "Viết lại model trong phản hồi thành bí danh",
+      "isCompat": "Chế độ tương thích",
+      "supportConfigurationUpdate": "Cho phép cập nhật cấu hình",
+      "inputModalitiesText": "Phương thức đầu vào (Modalities)",
+      "outputModalitiesText": "Phương thức đầu ra (Modalities)",
+      "modalitiesHint": "Phân tách các giá trị bằng dấu phẩy hoặc khoảng trắng. Tên phương thức tùy chỉnh được giữ nguyên.",
+      "useMaxCompletionTokens": "Sử dụng max_completion_tokens",
+      "thinkingMode": "Ghi đè cấu hình suy nghĩ (Thinking)",
+      "useDefault": "Dùng mặc định",
+      "custom": "Tùy chỉnh",
+      "thinkingHint": "Mặc định kế thừa hành vi backend; ghi đè tùy chỉnh trống là một đối tượng {} rõ ràng. Ngân sách và mức độ nỗ lực có thể cùng tồn tại. Chỉ khi cả hai ngân sách đều là 0 hoặc để trống thì dải số mới không được chỉ định. Đặt giá trị tối đa ít nhất bằng giá trị tối thiểu dương.",
+      "thinkingMin": "Ngân sách suy nghĩ tối thiểu",
+      "thinkingMax": "Ngân sách suy nghĩ tối đa",
+      "thinkingZeroAllowed": "Cho phép ngân sách bằng 0",
+      "thinkingDynamicAllowed": "Cho phép ngân sách động",
+      "invalidContext": "Độ dài ngữ cảnh phải là một số nguyên an toàn không âm.",
+      "invalidThinking": "Cấu hình suy nghĩ phải là một đối tượng JSON hợp lệ.",
+      "invalidBudget": "Ngân sách suy nghĩ phải là số nguyên an toàn không âm.",
+      "invalidRange": "Ngân sách suy nghĩ tối thiểu không được vượt quá mức tối đa. Giới hạn để trống được tính là 0.",
+      "removeModel": "Xóa model",
+      "modelName": "Tên model",
+      "modelAlias": "Bí danh (tùy chọn)"
     },
     "runtimePolicy": {
-      "title": "Advanced runtime policy",
-      "description": "Inherit uses the parent group policy, then backend defaults. Overrides apply only to this entry.",
-      "cooling": "Cooling",
-      "inherit": "Inherit",
-      "coolingEnabled": "Enable cooling",
-      "coolingDisabled": "Disable cooling",
-      "retry": "Request retries",
-      "retryHint": "Blank inherits the group setting. Use an integer: 0 disables retries; a negative value uses the global retry policy instead of the group policy.",
-      "errorsMode": "Request error rules",
-      "override": "Override",
-      "errorsHint": "Inherit follows the parent policy. Override replaces the entire list, which may be empty. Switching modes keeps your rule draft.",
-      "invalidRetry": "Retries must be a safe integer, or blank to inherit."
+      "title": "Chính sách thực thi nâng cao",
+      "description": "Kế thừa sẽ dùng chính sách nhóm cha, sau đó là mặc định của backend. Ghi đè chỉ áp dụng cho mục này.",
+      "cooling": "Chiến lược Cooling",
+      "inherit": "Kế thừa",
+      "coolingEnabled": "Bật cooling",
+      "coolingDisabled": "Tắt cooling",
+      "retry": "Số lần thử lại yêu cầu",
+      "retryHint": "Để trống sẽ kế thừa cài đặt nhóm. Dùng số nguyên: 0 để tắt thử lại; giá trị âm sẽ dùng chính sách thử lại toàn cục thay vì chính sách nhóm.",
+      "errorsMode": "Quy tắc lỗi yêu cầu",
+      "override": "Ghi đè",
+      "errorsHint": "Kế thừa sẽ tuân theo chính sách cấp trên. Ghi đè sẽ thay thế toàn bộ danh sách, có thể để trống. Chuyển đổi chế độ vẫn giữ lại bản nháp quy tắc của bạn.",
+      "invalidRetry": "Số lần thử lại phải là số nguyên an toàn, hoặc để trống để kế thừa."
     },
     "errorRules": {
-      "hint": "Use the first matching rule in order; for the same status code, any condition may match.",
-      "empty": "No rules. You can save an empty list.",
-      "rule": "Rule {{number}}",
-      "status": "Status code",
-      "action": "Action",
-      "selectAction": "Select an action",
-      "moveUp": "Move rule up",
-      "moveDown": "Move rule down",
-      "removeRule": "Delete rule",
-      "matchType": "Match type",
-      "text": "Contains text",
-      "regex": "Regular expression",
-      "matchValue": "Condition",
-      "regexHint": "Go regular expression",
-      "removeMatch": "Delete condition",
-      "addMatch": "Add condition",
-      "addRule": "Add rule",
-      "invalidStatus": "Status code must be a positive safe integer.",
-      "invalidAction": "Select a valid action.",
-      "invalidMatch": "Match conditions cannot be empty.",
-      "missingMatch": "Add at least one match condition.",
+      "hint": "Áp dụng quy tắc khớp đầu tiên theo thứ tự; với cùng một mã trạng thái, bất kỳ điều kiện nào cũng có thể khớp.",
+      "empty": "Chưa có quy tắc nào. Bạn có thể lưu một danh sách trống.",
+      "rule": "Quy tắc {{number}}",
+      "status": "Mã trạng thái",
+      "action": "Hành động",
+      "selectAction": "Chọn một hành động",
+      "moveUp": "Di chuyển quy tắc lên",
+      "moveDown": "Di chuyển quy tắc xuống",
+      "removeRule": "Xóa quy tắc",
+      "matchType": "Loại khớp",
+      "text": "Chứa văn bản",
+      "regex": "Biểu thức chính quy",
+      "matchValue": "Điều kiện",
+      "regexHint": "Biểu thức chính quy Go",
+      "removeMatch": "Xóa điều kiện",
+      "addMatch": "Thêm điều kiện",
+      "addRule": "Thêm quy tắc",
+      "invalidStatus": "Mã trạng thái phải là một số nguyên an toàn dương.",
+      "invalidAction": "Chọn một hành động hợp lệ.",
+      "invalidMatch": "Điều kiện khớp không được để trống.",
+      "missingMatch": "Thêm ít nhất một điều kiện khớp.",
       "actions": {
-        "stop": "Stop",
-        "stop-and-cooldown": "Stop and cool down",
-        "continue": "Continue",
-        "continue-and-cooldown": "Continue and cool down"
+        "stop": "Dừng",
+        "stop-and-cooldown": "Dừng và cooldown",
+        "continue": "Tiếp tục",
+        "continue-and-cooldown": "Tiếp tục và cooldown"
       }
     }
   },
   "devin_quota": {
-    "daily": "Daily remaining",
-    "weekly": "Weekly remaining",
-    "plan_label": "Plan",
-    "plan_end": "Subscription ends",
-    "unavailable": "Unavailable",
-    "reset_unknown": "Reset time unavailable",
-    "observed_at": "Quota observed: {{time}}",
-    "observed_unknown": "Quota observation time unavailable",
-    "missing_identity": "The credential name or auth index is missing. Reload the credential list.",
-    "stale_request": "The connection or credential changed. Please retry.",
-    "empty_data": "Devin returned no usable quota data.",
-    "loading": "Querying Devin quota…",
-    "idle": "Click to query Devin quota",
-    "load_failed": "Failed to query quota: {{message}}",
-    "empty_title": "No Devin credentials",
-    "empty_desc": "Upload a Devin credential file or sign in using the backend CLI to query quota."
+    "daily": "Còn lại hàng ngày",
+    "weekly": "Còn lại hàng tuần",
+    "plan_label": "Gói cước",
+    "plan_end": "Hết hạn đăng ký",
+    "unavailable": "Không có sẵn dữ liệu",
+    "reset_unknown": "Không có thời gian đặt lại",
+    "observed_at": "Quan sát quota lúc: {{time}}",
+    "observed_unknown": "Không có thời gian quan sát quota",
+    "missing_identity": "Thiếu tên credential hoặc chỉ số xác thực. Vui lòng tải lại danh sách credential.",
+    "stale_request": "Kết nối hoặc credential đã thay đổi. Vui lòng thử lại.",
+    "empty_data": "Devin không trả về dữ liệu quota khả dụng nào.",
+    "loading": "Đang truy vấn quota Devin…",
+    "idle": "Nhấn để truy vấn quota Devin",
+    "load_failed": "Truy vấn quota thất bại: {{message}}",
+    "empty_title": "Không có credential Devin",
+    "empty_desc": "Tải lên file credential Devin hoặc đăng nhập bằng CLI backend để truy vấn quota."
   },
   "meta_quota": {
-    "title": "Muse (Meta) Quota",
-    "empty_title": "No Muse credentials",
-    "empty_desc": "Sign in with Muse OAuth or upload a Meta credential file to query quota.",
-    "idle": "Click to query Muse quota",
-    "loading": "Querying Muse quota…",
-    "load_failed": "Failed to query quota: {{message}}",
-    "missing_auth_index": "Auth file missing auth_index",
-    "empty_data": "Quota unknown. You may not have made a model request yet.",
-    "invalid_response": "Muse returned an invalid quota response.",
-    "request_failed": "Muse quota request failed. Check that the DCA credential is valid.",
-    "missing_file": "Quota requires a downloadable Meta authentication file.",
-    "missing_dca_token": "The authentication file has no valid dca_token. Sign in with Muse OAuth again.",
-    "invalid_auth_file": "The downloaded authentication file is not valid JSON.",
-    "download_failed": "Could not download the authentication file for quota lookup.",
-    "stale_request": "The connection or credential changed. Please retry.",
-    "plan": "Plan",
-    "active": "Subscription active",
-    "inactive": "Subscription inactive",
-    "window": "Usage window",
-    "window_duration": "{{minutes}}-minute window",
-    "weekly": "Weekly quota",
-    "unknown": "Unknown",
-    "remaining": "{{percent}}% remaining"
+    "title": "Quota Muse (Meta)",
+    "empty_title": "Không có credential Muse",
+    "empty_desc": "Đăng nhập bằng Muse OAuth hoặc tải lên file credential Meta để truy vấn quota.",
+    "idle": "Nhấn để truy vấn quota Muse",
+    "loading": "Đang truy vấn quota Muse…",
+    "load_failed": "Truy vấn quota thất bại: {{message}}",
+    "missing_auth_index": "File xác thực thiếu auth_index",
+    "empty_data": "Quota không xác định. Có thể bạn chưa thực hiện yêu cầu model nào.",
+    "invalid_response": "Muse trả về phản hồi quota không hợp lệ.",
+    "request_failed": "Yêu cầu quota Muse thất bại. Hãy kiểm tra xem credential DCA có hợp lệ không.",
+    "missing_file": "Tra cứu quota yêu cầu file xác thực Meta có thể tải xuống.",
+    "missing_dca_token": "File xác thực không có dca_token hợp lệ. Vui lòng đăng nhập lại bằng Muse OAuth.",
+    "invalid_auth_file": "File xác thực đã tải xuống không phải là JSON hợp lệ.",
+    "download_failed": "Không thể tải xuống file xác thực để tra cứu quota.",
+    "stale_request": "Kết nối hoặc credential đã thay đổi. Vui lòng thử lại.",
+    "plan": "Gói cước",
+    "active": "Đăng ký đang hoạt động",
+    "inactive": "Đăng ký không hoạt động",
+    "window": "Chu kỳ sử dụng",
+    "window_duration": "Chu kỳ {{minutes}} phút",
+    "weekly": "Quota hàng tuần",
+    "unknown": "Không rõ",
+    "remaining": "Còn lại {{percent}}%"
   },
   "claude_reset": {
-    "retry_confirm": "Retry the unknown reset for “{{name}}” with its original request ID? A reset may already have been spent. Retry within 10 minutes; do not reload or start another claim in another tab.",
-    "remaining": "Resets remaining",
-    "title": "Banked resets",
-    "scope": "Uses a limited reset grant to clear eligible Claude usage windows. Only confirm when you want to spend a reset. Recovery is limited to this tab/session; do not reload or use another tab while an outcome is unknown.",
-    "loading": "Loading…",
-    "read_error": "Reset grants could not be read. Nothing was submitted.",
-    "blocked": "Reset not submitted: eligibility, account identity, or session could not be verified. Refresh and check again.",
-    "unknown": "The outcome is unknown. A reset may have been spent. Retry within 10 minutes using the same request ID; do not start another claim elsewhere.",
-    "expired": "The retry window has expired. Further claims are blocked in this session. Check your Claude account before taking any further action.",
-    "retry": "Retry the same claim",
-    "empty": "No banked reset grants.",
-    "count": "{{left}} / {{total}} resets remaining",
-    "ends": "Expires: {{date}}",
-    "use": "Reset limits",
-    "confirm": "Confirm reset",
-    "confirm_text": "Spend one reset to clear eligible usage limits for “{{name}}”? This uses a limited reset grant.",
-    "reset": "Usage limits reset.",
-    "already_used": "This grant was already used.",
-    "not_limited": "No reset: the account is not currently limited.",
-    "cooldown": "No reset: cooldown is active.",
-    "ineligible": "This account is not eligible.",
-    "unavailable": "Resets are currently unavailable.",
-    "rate_limited": "Request rate limited.",
-    "auth_error": "Authorization was refused."
+    "retry_confirm": "Thử lại lượt đặt lại chưa rõ kết quả cho “{{name}}” với ID yêu cầu ban đầu? Một lượt đặt lại có thể đã được tiêu tốn. Hãy thử lại trong vòng 10 phút; không tải lại trang hoặc bắt đầu nhận ở tab khác.",
+    "remaining": "Lượt đặt lại còn lại",
+    "title": "Lượt đặt lại dự trữ",
+    "scope": "Sử dụng một quyền đặt lại có hạn để xóa chu kỳ sử dụng Claude đủ điều kiện. Chỉ xác nhận khi bạn muốn tiêu tốn một lượt đặt lại. Việc khôi phục chỉ giới hạn trong tab/phiên này; không tải lại hoặc dùng tab khác trong khi kết quả chưa rõ.",
+    "loading": "Đang tải…",
+    "read_error": "Không thể đọc quyền đặt lại. Chưa gửi yêu cầu nào.",
+    "blocked": "Chưa gửi yêu cầu đặt lại: không thể xác minh tính đủ điều kiện, danh tính tài khoản hoặc phiên. Hãy làm mới và kiểm tra lại.",
+    "unknown": "Kết quả chưa xác định. Một lượt đặt lại có thể đã được sử dụng. Thử lại trong vòng 10 phút bằng cùng ID yêu cầu; không bắt đầu yêu cầu khác ở nơi khác.",
+    "expired": "Khoảng thời gian thử lại đã hết hạn. Các yêu cầu tiếp theo bị chặn trong phiên này. Hãy kiểm tra tài khoản Claude của bạn trước khi thực hiện thêm hành động.",
+    "retry": "Thử lại cùng yêu cầu",
+    "empty": "Không có quyền đặt lại dự trữ nào.",
+    "count": "Còn {{left}} / {{total}} lượt đặt lại",
+    "ends": "Hết hạn: {{date}}",
+    "use": "Đặt lại giới hạn",
+    "confirm": "Xác nhận đặt lại",
+    "confirm_text": "Tiêu tốn một lượt đặt lại để xóa giới hạn sử dụng đủ điều kiện cho “{{name}}”? Thao tác này sẽ dùng một quyền đặt lại có hạn.",
+    "reset": "Đã đặt lại giới hạn sử dụng.",
+    "already_used": "Quyền này đã được sử dụng.",
+    "not_limited": "Không đặt lại: tài khoản hiện không bị giới hạn.",
+    "cooldown": "Không đặt lại: đang trong thời gian cooldown.",
+    "ineligible": "Tài khoản này không đủ điều kiện.",
+    "unavailable": "Tính năng đặt lại hiện không khả dụng.",
+    "rate_limited": "Yêu cầu bị giới hạn tốc độ.",
+    "auth_error": "Ủy quyền đã bị từ chối."
   }
 }
