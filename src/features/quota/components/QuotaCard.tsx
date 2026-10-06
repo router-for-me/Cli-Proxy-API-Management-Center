@@ -23,6 +23,7 @@ import { bindQuotaClasses } from '../types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
+import { formatDateTimeValue } from '@/utils/format';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -120,6 +121,13 @@ export function QuotaCard(props: QuotaCardProps) {
                 <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
                 <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
               </span>
+              {claudeReset.endsAt && (
+                <span className={quotaClasses.codexPlanItem}>
+                  <span className={quotaClasses.codexPlanLabel}>
+                    {t('claude_reset.ends', { date: formatDateTimeValue(claudeReset.endsAt) })}
+                  </span>
+                </span>
+              )}
             </div>
             {claudeReset.message && (
               <div role="status" className={quotaClasses.codexResetCreditsError}>

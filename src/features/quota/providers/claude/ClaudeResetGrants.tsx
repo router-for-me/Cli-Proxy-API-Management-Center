@@ -110,8 +110,15 @@ export function useClaudeResetGrants(
       },
     });
   };
+  // Unspent resets are lost when their grant ends, so show the soonest such deadline.
+  const endsAt =
+    status?.grants
+      .filter((grant) => grant.resetsLeft > 0 && grant.endsAt)
+      .map((grant) => grant.endsAt as string)
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null;
   return {
     count: status?.grants.reduce((sum, grant) => sum + grant.resetsLeft, 0) ?? null,
+    endsAt,
     busy,
     blocked,
     confirm,
