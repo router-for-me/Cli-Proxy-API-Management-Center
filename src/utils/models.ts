@@ -9,10 +9,12 @@ export interface ModelInfo {
   name: string;
   alias?: string;
   description?: string;
+  ownedBy?: string;
 }
 
 const MODEL_CATEGORIES = [
   { id: 'devin', label: 'Devin', patterns: [] },
+  { id: 'antigravity', label: 'Antigravity', patterns: [] },
   { id: 'meta', label: 'Muse', patterns: [/\bmuse(?:[-/\s]|$)/i] },
   { id: 'gpt', label: 'GPT', patterns: [/gpt/i, /\bo\d\b/i, /\bo\d+\.?/i, /\bchatgpt/i] },
   { id: 'claude', label: 'Claude', patterns: [/claude/i] },
@@ -24,6 +26,12 @@ const MODEL_CATEGORIES = [
   { id: 'deepseek', label: 'DeepSeek', patterns: [/deepseek/i] },
   { id: 'minimax', label: 'MiniMax', patterns: [/minimax/i, /abab/i] },
 ];
+
+// Channel providers whose models should be grouped by the serving provider (`owned_by`)
+// rather than by the model family inferred from the name.
+const OWNER_CATEGORIES: Record<string, string> = {
+  antigravity: 'antigravity',
+};
 
 const matchCategory = (text: string) => {
   for (const category of MODEL_CATEGORIES) {
@@ -47,12 +55,16 @@ export function normalizeModelList(payload: unknown, { dedupe = false } = {}): M
 
     const alias = entry.alias || entry.display_name || entry.displayName;
     const description = entry.description || entry.note || entry.comment;
+    const ownedBy = entry.owned_by || entry.ownedBy;
     const model: ModelInfo = { name: String(name) };
     if (alias && alias !== name) {
       model.alias = String(alias);
     }
     if (description) {
       model.description = String(description);
+    }
+    if (ownedBy) {
+      model.ownedBy = String(ownedBy);
     }
     return model;
   };
@@ -107,7 +119,12 @@ export function classifyModels(
     const name = (model?.name || '').toString();
     const alias = (model?.alias || '').toString();
     const haystack = `${name} ${alias}`.toLowerCase();
-    const matchedId = /^devin\//i.test(name) ? 'devin' : matchCategory(haystack);
+    const owner = (model?.ownedBy || '').toString().trim().toLowerCase();
+    const matchedId = /^devin\//i.test(name)
+      ? 'devin'
+      : Object.prototype.hasOwnProperty.call(OWNER_CATEGORIES, owner)
+        ? OWNER_CATEGORIES[owner]
+        : matchCategory(haystack);
     const target = matchedId ? groups.find((group) => group.id === matchedId) : null;
 
     if (target) {

@@ -20,6 +20,7 @@ import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
 import iconClaude from '@/assets/icons/claude.svg';
+import iconAntigravity from '@/assets/icons/antigravity.svg';
 import iconMeta from '@/assets/icons/meta.svg';
 import iconDevinLight from '@/assets/icons/devin.svg';
 import iconDevinDark from '@/assets/icons/devin-dark.svg';
@@ -37,6 +38,7 @@ import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
   devin: { light: iconDevinLight, dark: iconDevinDark },
+  antigravity: iconAntigravity,
   gpt: { light: iconOpenaiLight, dark: iconOpenaiDark },
   claude: iconClaude,
   meta: iconMeta,
