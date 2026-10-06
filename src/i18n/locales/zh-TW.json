@@ -431,7 +431,13 @@
     "quota_refresh_single": "重新整理配額",
     "quota_refresh_hint": "僅重新整理該驗證檔案的配額",
     "quota_refresh_success": "已重新整理「{{name}}」的配額",
-    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}"
+    "quota_refresh_failed": "重新整理「{{name}}」的配額失敗：{{message}}",
+    "minimax_total": "{{count}} 個憑證",
+    "minimax_active": "{{count}} 個啟用",
+    "minimax_problem": "{{count}} 個異常",
+    "minimax_filter": "MiniMax",
+    "minimax_fields": "{{count}} 項設定",
+    "minimax_dirty": "{{count}} 項未儲存"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -945,7 +951,16 @@
     "iflow_cookie_result_expired": "到期時間",
     "iflow_cookie_result_path": "儲存路徑",
     "iflow_cookie_result_type": "類型",
-    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取"
+    "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
+    "minimax_oauth_title": "MiniMax OAuth",
+    "minimax_oauth_button": "使用 MiniMax 登入",
+    "minimax_oauth_hint": "開啟授權連結並輸入裝置碼。提示時可在全球版與中國版之間選擇。授權完成後認證檔案會自動儲存。",
+    "minimax_oauth_url_label": "授權連結：",
+    "minimax_oauth_status_waiting": "正在等待授權…",
+    "minimax_oauth_status_success": "認證成功！",
+    "minimax_oauth_status_error": "認證失敗：",
+    "minimax_oauth_start_error": "啟動 MiniMax OAuth 失敗：",
+    "minimax_oauth_polling_error": "檢查認證狀態失敗："
   },
   "stats": {
     "success": "成功",
@@ -1560,7 +1575,9 @@
         "update": "更新",
         "add": "新增"
       }
-    }
+    },
+    "minimax_fields": "{{count}} 項設定",
+    "minimax_dirty": "{{count}} 項未儲存"
   },
   "quota_management": {
     "search_label": "搜尋帳號",
@@ -2249,5 +2266,21 @@
     "unavailable": "重置暫不可用。",
     "rate_limited": "請求過於頻繁。",
     "auth_error": "授權遭拒。"
+  },
+  "minimax_quota": {
+    "title": "MiniMax 額度",
+    "empty_title": "尚無 MiniMax 憑證",
+    "empty_desc": "使用 MiniMax OAuth 登入或上傳憑證檔案後即可查詢額度。",
+    "idle": "點擊查詢 MiniMax 額度",
+    "loading": "正在查詢 MiniMax 額度…",
+    "load_failed": "查詢額度失敗：{{message}}",
+    "empty_data": "額度未知，你可能尚未發起過模型請求。",
+    "invalid_response": "MiniMax 回傳了無效的額度回應。",
+    "request_failed": "MiniMax 額度請求失敗，請檢查憑證是否有效。",
+    "missing_file": "查詢額度需要可下載的 MiniMax 認證檔案。",
+    "stale_request": "連線或憑證已變更，請重試。",
+    "interval": "使用視窗",
+    "weekly": "每週額度",
+    "remaining": "剩餘 {{percent}}%"
   }
 }

@@ -22,6 +22,7 @@ import {
   geminiToResource,
   interactionsToResource,
   metaToResource,
+  minimaxToResource,
   openaiToResource,
   qiniuCloudToResource,
   kimiToResource,
@@ -148,7 +149,7 @@ const buildModelAliases = (
     .filter((m) => m.name);
 
 const buildProviderKeyConfig = (
-  brand: 'gemini' | 'interactions' | 'codex' | 'meta' | 'xai' | 'claude' | 'vertex',
+  brand: 'gemini' | 'interactions' | 'codex' | 'meta' | 'minimax' | 'xai' | 'claude' | 'vertex',
   input: ProviderEntryFormInput,
   existing?: ProviderKeyConfig | GeminiKeyConfig | null
 ): ProviderKeyConfig | GeminiKeyConfig => {
@@ -396,6 +397,11 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
         break;
       case 'meta':
         resources = (config.metaApiKeys ?? []).map((item, index) => metaToResource(item, index));
+        break;
+      case 'minimax':
+        resources = (config.minimaxApiKeys ?? []).map((item, index) =>
+          minimaxToResource(item, index)
+        );
         break;
       case 'xai':
         resources = (config.xaiApiKeys ?? []).map((item, index) => xaiToResource(item, index));
@@ -676,6 +682,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           await providersApi.createMetaConfig(
             buildProviderKeyConfig('meta', input) as ProviderKeyConfig
           );
+        } else if (brand === 'minimax') {
+          await providersApi.createMinimaxConfig(
+            buildProviderKeyConfig('minimax', input) as ProviderKeyConfig
+          );
         } else if (brand === 'xai') {
           await providersApi.createXAIConfig(
             buildProviderKeyConfig('xai', input) as ProviderKeyConfig
@@ -739,6 +749,13 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             selector.apiKey,
             selector.baseUrl,
             buildProviderKeyConfig('meta', input, existing) as ProviderKeyConfig
+          );
+        } else if (brand === 'minimax' && selector.brand === 'minimax') {
+          const existing = resource.raw as ProviderKeyConfig;
+          await providersApi.updateMinimaxConfig(
+            selector.apiKey,
+            selector.baseUrl,
+            buildProviderKeyConfig('minimax', input, existing) as ProviderKeyConfig
           );
         } else if (brand === 'xai' && selector.brand === 'xai') {
           const existing = resource.raw as ProviderKeyConfig;
@@ -820,6 +837,14 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           );
           const next = (config?.metaApiKeys ?? []).filter((_, i) => i !== sel.index);
           updateConfigValue('meta-api-key', next);
+        } else if (sel.brand === 'minimax') {
+          await providersApi.deleteMinimaxConfig(
+            sel.apiKey,
+            sel.baseUrl,
+            (resource.raw as ProviderKeyConfig).source
+          );
+          const next = (config?.minimaxApiKeys ?? []).filter((_, i) => i !== sel.index);
+          updateConfigValue('minimax-api-key', next);
         } else if (sel.brand === 'xai') {
           await providersApi.deleteXAIConfig(
             sel.apiKey,

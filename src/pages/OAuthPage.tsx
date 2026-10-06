@@ -21,6 +21,7 @@ import { createOAuthAttempts, type OAuthAttempt } from './oauthAttempts';
 import { validateDevinCallback } from './devinOAuth';
 import styles from './OAuthPage.module.scss';
 import iconMeta from '@/assets/icons/meta.svg';
+import iconMinimax from '@/assets/icons/minimax.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
@@ -90,6 +91,12 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'meta',
     titleKey: 'auth_login.meta_oauth_title',
     icon: iconMeta,
+  },
+  {
+    kind: 'builtin',
+    id: 'minimax',
+    titleKey: 'auth_login.minimax_oauth_title',
+    icon: iconMinimax,
   },
   {
     kind: 'builtin',

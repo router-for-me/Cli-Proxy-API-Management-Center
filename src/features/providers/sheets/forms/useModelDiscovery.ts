@@ -10,6 +10,7 @@ export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'interactions',
   'codex',
   'meta',
+  'minimax',
   'xai',
   'claude',
   'openaiCompatibility',
@@ -74,7 +75,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
           resolvedAuthIndex,
           proxyUrl
         );
-      } else if (brand === 'codex' || brand === 'meta' || brand === 'xai') {
+      } else if (brand === 'codex' || brand === 'meta' || brand === 'minimax' || brand === 'xai') {
         const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchV1ModelsViaApiCall(
           baseUrl,

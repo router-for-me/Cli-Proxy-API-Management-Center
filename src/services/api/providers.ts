@@ -216,6 +216,7 @@ export type ProviderFamily =
   | 'interactions'
   | 'codex'
   | 'meta'
+  | 'minimax'
   | 'xai'
   | 'claude'
   | 'vertex'
@@ -534,6 +535,14 @@ export const providersApi = {
     deleteKey('vertex', apiKey, baseUrl, source),
   async getMetaConfigs() {
     return normalizeProviderGroups(await getGroups('meta')) as ProviderKeyConfig[];
+  },
+  createMinimaxConfig: (config: ProviderKeyConfig) => createKey('minimax', config),
+  updateMinimaxConfig: (apiKey: string, baseUrl: string | undefined, config: ProviderKeyConfig) =>
+    updateKey('minimax', apiKey, baseUrl, config),
+  deleteMinimaxConfig: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
+    deleteKey('minimax', apiKey, baseUrl, source),
+  async getMinimaxConfigs() {
+    return normalizeProviderGroups(await getGroups('minimax')) as ProviderKeyConfig[];
   },
   async getVertexConfigs() {
     return normalizeProviderGroups(await getGroups('vertex')) as ProviderKeyConfig[];

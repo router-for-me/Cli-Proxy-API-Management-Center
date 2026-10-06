@@ -300,6 +300,29 @@ export interface MetaQuotaState {
   errorStatus?: number;
 }
 
+// MiniMax Token Plan quota types
+export interface MinimaxQuotaWindow {
+  /** 'interval' is the rolling 5-hour window, 'weekly' the billing week. */
+  id: 'interval' | 'weekly';
+  /** Remaining share of the window, 0-100. */
+  remainingPercent: number;
+  /** Epoch milliseconds at which the window resets. */
+  resetAt?: number;
+  /** Model label the window applies to, as reported by the upstream. */
+  modelName?: string;
+}
+
+export interface MinimaxQuotaData {
+  windows: MinimaxQuotaWindow[];
+}
+
+export interface MinimaxQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  data?: MinimaxQuotaData;
+  error?: string;
+  errorStatus?: number;
+}
+
 // Kimi API payload types
 export interface KimiUsageDetail {
   used?: number | string;

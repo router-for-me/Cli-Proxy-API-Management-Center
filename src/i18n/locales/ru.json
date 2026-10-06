@@ -436,7 +436,13 @@
     "quota_refresh_single": "Обновить квоту",
     "quota_refresh_hint": "Обновить квоту только для этих учётных данных",
     "quota_refresh_success": "Квота для \"{{name}}\" обновлена",
-    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Не удалось обновить квоту для \"{{name}}\": {{message}}",
+    "minimax_total": "Учётных данных: {{count}}",
+    "minimax_active": "Активных: {{count}}",
+    "minimax_problem": "Проблемных: {{count}}",
+    "minimax_filter": "MiniMax",
+    "minimax_fields": "Настроек: {{count}}",
+    "minimax_dirty": "Не сохранено: {{count}}"
   },
   "antigravity_subscription": {
     "plan_unknown": "Неизвестно",
@@ -924,7 +930,16 @@
     "iflow_oauth_status_error": "Ошибка аутентификации:",
     "iflow_oauth_start_error": "Не удалось запустить iFlow OAuth:",
     "iflow_oauth_polling_error": "Не удалось проверить статус аутентификации:",
-    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost."
+    "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost.",
+    "minimax_oauth_title": "MiniMax OAuth",
+    "minimax_oauth_button": "Войти через MiniMax",
+    "minimax_oauth_hint": "Откройте ссылку авторизации и введите код устройства. При запросе выберите глобальный или китайский регион. Файлы аутентификации сохраняются автоматически после авторизации.",
+    "minimax_oauth_url_label": "Ссылка авторизации:",
+    "minimax_oauth_status_waiting": "Ожидание аутентификации…",
+    "minimax_oauth_status_success": "Аутентификация успешна!",
+    "minimax_oauth_status_error": "Аутентификация не удалась:",
+    "minimax_oauth_start_error": "Не удалось запустить MiniMax OAuth:",
+    "minimax_oauth_polling_error": "Не удалось проверить состояние аутентификации:"
   },
   "stats": {
     "success": "Успех",
@@ -1539,7 +1554,9 @@
         "update": "Обновить",
         "add": "Добавить"
       }
-    }
+    },
+    "minimax_fields": "Настроек: {{count}}",
+    "minimax_dirty": "Не сохранено: {{count}}"
   },
   "quota_management": {
     "search_label": "Поиск аккаунтов",
@@ -2219,5 +2236,21 @@
     "unavailable": "Сбросы временно недоступны.",
     "rate_limited": "Слишком много запросов.",
     "auth_error": "Авторизация отклонена."
+  },
+  "minimax_quota": {
+    "title": "Квота MiniMax",
+    "empty_title": "Нет учётных данных MiniMax",
+    "empty_desc": "Войдите через MiniMax OAuth или загрузите файл учётных данных, чтобы запросить квоту.",
+    "idle": "Нажмите, чтобы запросить квоту MiniMax",
+    "loading": "Запрос квоты MiniMax…",
+    "load_failed": "Не удалось запросить квоту: {{message}}",
+    "empty_data": "Квота неизвестна. Возможно, запросы к модели ещё не выполнялись.",
+    "invalid_response": "MiniMax вернул некорректный ответ о квоте.",
+    "request_failed": "Запрос квоты MiniMax не удался. Проверьте учётные данные.",
+    "missing_file": "Для запроса квоты нужен загружаемый файл аутентификации MiniMax.",
+    "stale_request": "Соединение или учётные данные изменились. Повторите попытку.",
+    "interval": "Окно использования",
+    "weekly": "Недельная квота",
+    "remaining": "Осталось {{percent}}%"
   }
 }

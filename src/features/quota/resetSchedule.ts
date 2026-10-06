@@ -162,6 +162,37 @@ export function collectQuotaRowInstants(
       }));
   }
 
+  if (provider === 'minimax') {
+    const windows =
+      (
+        quota as {
+          data?: {
+            windows?: {
+              id: 'interval' | 'weekly';
+              remainingPercent: number;
+              resetAt?: number;
+            }[];
+          };
+        }
+      ).data?.windows ?? [];
+
+    // MiniMax reports the remaining share, so a reset matters only once the
+    // window is actually constrained. A full window must not be treated as
+    // recovering soonest.
+    return windows
+      .filter(
+        (window) =>
+          Number.isFinite(window.remainingPercent) &&
+          window.remainingPercent < 100 &&
+          isUsableMs(window.resetAt)
+      )
+      .map((window) => ({
+        rowId: window.id,
+        atMs: window.resetAt as number,
+        kind: 'window' as const,
+      }));
+  }
+
   return [];
 }
 

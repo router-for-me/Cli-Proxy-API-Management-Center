@@ -64,6 +64,7 @@ const emptyApiKeyEntry = (): ApiKeyEntryInput => ({
   weight: undefined,
 });
 const META_API_BASE_URL = 'https://api.meta.ai/v1';
+const MINIMAX_API_BASE_URL = 'https://api.minimax.io';
 const XAI_API_BASE_URL = 'https://api.x.ai/v1';
 
 const stripDisableAllRule = (list?: string[]): string[] =>
@@ -85,7 +86,14 @@ function buildInitialForm(
     return {
       apiKey: '',
       name: '',
-      baseUrl: brand === 'meta' ? META_API_BASE_URL : brand === 'xai' ? XAI_API_BASE_URL : '',
+      baseUrl:
+        brand === 'meta'
+          ? META_API_BASE_URL
+          : brand === 'minimax'
+            ? MINIMAX_API_BASE_URL
+            : brand === 'xai'
+              ? XAI_API_BASE_URL
+              : '',
       proxyUrl: '',
       prefix: '',
       disabled: false,
@@ -105,6 +113,7 @@ function buildInitialForm(
         brand === 'openaiCompatibility' ||
         brand === 'codex' ||
         brand === 'meta' ||
+        brand === 'minimax' ||
         brand === 'xai' ||
         isClaudeLikeBrand(brand) ||
         brand === 'gemini' ||
@@ -211,6 +220,7 @@ function buildInitialForm(
     testModel:
       brand === 'codex' ||
       brand === 'meta' ||
+      brand === 'minimax' ||
       brand === 'xai' ||
       isClaudeLikeBrand(brand) ||
       brand === 'gemini' ||

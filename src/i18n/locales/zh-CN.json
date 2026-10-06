@@ -431,7 +431,13 @@
     "quota_refresh_single": "刷新额度",
     "quota_refresh_hint": "仅刷新该认证文件的额度",
     "quota_refresh_success": "已刷新 \"{{name}}\" 的额度",
-    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}"
+    "quota_refresh_failed": "刷新 \"{{name}}\" 的额度失败：{{message}}",
+    "minimax_total": "{{count}} 个凭据",
+    "minimax_active": "{{count}} 个启用",
+    "minimax_problem": "{{count}} 个异常",
+    "minimax_filter": "MiniMax",
+    "minimax_fields": "{{count}} 项设置",
+    "minimax_dirty": "{{count}} 项未保存"
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
@@ -919,7 +925,16 @@
     "iflow_oauth_status_error": "认证失败:",
     "iflow_oauth_start_error": "启动 iFlow OAuth 失败:",
     "iflow_oauth_polling_error": "检查认证状态失败:",
-    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问"
+    "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
+    "minimax_oauth_title": "MiniMax OAuth",
+    "minimax_oauth_button": "使用 MiniMax 登录",
+    "minimax_oauth_hint": "打开授权链接并输入设备码。提示时可在全球版与中国版之间选择。授权完成后认证文件会自动保存。",
+    "minimax_oauth_url_label": "授权链接：",
+    "minimax_oauth_status_waiting": "正在等待授权…",
+    "minimax_oauth_status_success": "认证成功！",
+    "minimax_oauth_status_error": "认证失败：",
+    "minimax_oauth_start_error": "启动 MiniMax OAuth 失败：",
+    "minimax_oauth_polling_error": "检查认证状态失败："
   },
   "stats": {
     "success": "成功",
@@ -1534,7 +1549,9 @@
         "update": "更新",
         "add": "添加"
       }
-    }
+    },
+    "minimax_fields": "{{count}} 项设置",
+    "minimax_dirty": "{{count}} 项未保存"
   },
   "quota_management": {
     "search_label": "搜索账号",
@@ -2223,5 +2240,21 @@
     "unavailable": "重置暂不可用。",
     "rate_limited": "请求过于频繁。",
     "auth_error": "授权被拒绝。"
+  },
+  "minimax_quota": {
+    "title": "MiniMax 额度",
+    "empty_title": "暂无 MiniMax 凭据",
+    "empty_desc": "使用 MiniMax OAuth 登录或上传凭据文件后即可查询额度。",
+    "idle": "点击查询 MiniMax 额度",
+    "loading": "正在查询 MiniMax 额度…",
+    "load_failed": "查询额度失败：{{message}}",
+    "empty_data": "额度未知，你可能还没有发起过模型请求。",
+    "invalid_response": "MiniMax 返回了无效的额度响应。",
+    "request_failed": "MiniMax 额度请求失败，请检查凭据是否有效。",
+    "missing_file": "查询额度需要可下载的 MiniMax 认证文件。",
+    "stale_request": "连接或凭据已变更，请重试。",
+    "interval": "使用窗口",
+    "weekly": "每周额度",
+    "remaining": "剩余 {{percent}}%"
   }
 }

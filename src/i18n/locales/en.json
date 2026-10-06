@@ -433,7 +433,13 @@
     "quota_refresh_single": "Refresh quota",
     "quota_refresh_hint": "Refresh quota only for this credential",
     "quota_refresh_success": "Quota refreshed for \"{{name}}\"",
-    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}"
+    "quota_refresh_failed": "Failed to refresh quota for \"{{name}}\": {{message}}",
+    "minimax_total": "{{count}} credentials",
+    "minimax_active": "{{count}} active",
+    "minimax_problem": "{{count}} problem",
+    "minimax_filter": "MiniMax",
+    "minimax_fields": "{{count}} settings",
+    "minimax_dirty": "{{count}} unsaved"
   },
   "antigravity_subscription": {
     "plan_unknown": "Unknown",
@@ -921,7 +927,16 @@
     "iflow_oauth_status_error": "Authentication failed:",
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
-    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost."
+    "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
+    "minimax_oauth_title": "MiniMax OAuth",
+    "minimax_oauth_button": "Log in with MiniMax",
+    "minimax_oauth_hint": "Open the authorization link and enter the device code. Choose the Global or China region when prompted. Authentication files are saved automatically after authorization.",
+    "minimax_oauth_url_label": "Authorization URL:",
+    "minimax_oauth_status_waiting": "Waiting for authentication...",
+    "minimax_oauth_status_success": "Authentication successful!",
+    "minimax_oauth_status_error": "Authentication failed:",
+    "minimax_oauth_start_error": "Failed to start MiniMax OAuth:",
+    "minimax_oauth_polling_error": "Failed to check authentication status:"
   },
   "stats": {
     "success": "Success",
@@ -1536,7 +1551,9 @@
         "update": "Update",
         "add": "Add"
       }
-    }
+    },
+    "minimax_fields": "{{count}} settings",
+    "minimax_dirty": "{{count}} unsaved"
   },
   "quota_management": {
     "search_label": "Search accounts",
@@ -2225,5 +2242,21 @@
     "unavailable": "Resets are currently unavailable.",
     "rate_limited": "Request rate limited.",
     "auth_error": "Authorization was refused."
+  },
+  "minimax_quota": {
+    "title": "MiniMax Quota",
+    "empty_title": "No MiniMax credentials",
+    "empty_desc": "Sign in with MiniMax OAuth or upload a credential file to query quota.",
+    "idle": "Click to query MiniMax quota",
+    "loading": "Querying MiniMax quota…",
+    "load_failed": "Failed to query quota: {{message}}",
+    "empty_data": "Quota unknown. You may not have made a model request yet.",
+    "invalid_response": "MiniMax returned an invalid quota response.",
+    "request_failed": "MiniMax quota request failed. Check that the credential is valid.",
+    "missing_file": "Quota requires a downloadable MiniMax authentication file.",
+    "stale_request": "The connection or credential changed. Please retry.",
+    "interval": "Usage window",
+    "weekly": "Weekly quota",
+    "remaining": "{{percent}}% remaining"
   }
 }
