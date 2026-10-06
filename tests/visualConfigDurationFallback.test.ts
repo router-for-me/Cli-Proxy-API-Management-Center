@@ -16,7 +16,7 @@ const cases = [
   },
   {
     key: 'codexStreamBootstrapTimeout',
-    path: ['oauth', 'providers', 'codex', 'stream-bootstrap-timeout'],
+    path: ['upstream', 'codex', 'stream-bootstrap-timeout'],
     existing: '-1s',
     edited: '-2s',
     error: 'invalid_duration',

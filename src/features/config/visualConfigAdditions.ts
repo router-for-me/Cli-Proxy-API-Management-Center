@@ -8,7 +8,8 @@ import type {
 import { assertConfigListsUnchanged } from '@/services/api/configPatch';
 import { readConfigBoolean } from './visualConfigBoolean';
 
-// Source: backend config_v8.go/config_types.go; provider paths are OAuth-only.
+// Source: backend config_v8.go/config_types.go. Shared upstream behavior lives
+// under upstream.*/client.codex; only OAuth-only provider paths keep oauth.providers.*.
 export const ADDITION_FIELDS = [
   {
     key: 'routingSessionAffinitySubagents',
@@ -32,42 +33,42 @@ export const ADDITION_FIELDS = [
   },
   {
     key: 'claudeHeaderTimezone',
-    path: 'oauth.providers.claude.header-defaults.timezone'.split('.'),
+    path: 'upstream.claude.header-defaults.timezone'.split('.'),
     kind: 'string',
   },
   {
     key: 'claudeModelLevelCooling',
-    path: 'oauth.providers.claude.model-level-cooling'.split('.'),
+    path: 'upstream.claude.model-level-cooling'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'claudeDisableCloakMode',
-    path: 'oauth.providers.claude.disable-claude-cloak-mode'.split('.'),
+    path: 'upstream.claude.disable-claude-cloak-mode'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'claudeCodeDisableCloakingModelList',
-    path: 'oauth.providers.claude.claude-code.disable-cloaking-model-list'.split('.'),
+    path: 'upstream.claude.disable-cloaking-model-list'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'codexDisableCloaking',
-    path: 'oauth.providers.codex.disable-codex-cloaking'.split('.'),
+    path: 'upstream.codex.disable-codex-cloaking'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'codexModelLevelCooling',
-    path: 'oauth.providers.codex.model-level-cooling'.split('.'),
+    path: 'upstream.codex.model-level-cooling'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'codexStreamBootstrapBuffering',
-    path: 'oauth.providers.codex.stream-bootstrap-buffering'.split('.'),
+    path: 'upstream.codex.stream-bootstrap-buffering'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'codexStreamBootstrapTimeout',
-    path: 'oauth.providers.codex.stream-bootstrap-timeout'.split('.'),
+    path: 'upstream.codex.stream-bootstrap-timeout'.split('.'),
     kind: 'string',
   },
   {
@@ -77,12 +78,12 @@ export const ADDITION_FIELDS = [
   },
   {
     key: 'codexOrphanDelegationCompatibility',
-    path: 'oauth.providers.codex.orphan-delegation-compatibility'.split('.'),
+    path: 'upstream.codex.orphan-delegation-compatibility'.split('.'),
     kind: 'boolean',
   },
   {
     key: 'codexResponseSteering',
-    path: 'oauth.providers.codex.response-steering'.split('.'),
+    path: 'upstream.codex.response-steering'.split('.'),
     kind: 'boolean',
   },
   {
@@ -102,7 +103,7 @@ export const ADDITION_FIELDS = [
   },
   {
     key: 'xaiInjectXSearch',
-    path: 'oauth.providers.xai.inject-x-search'.split('.'),
+    path: 'upstream.xai.inject-x-search'.split('.'),
     kind: 'boolean',
   },
   {
