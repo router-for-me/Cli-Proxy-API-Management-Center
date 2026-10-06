@@ -148,6 +148,7 @@ describe('v8 YAML search paths', () => {
     ['quotaAntigravityCredits', 'oauth.providers.antigravity.antigravity-credits'],
     ['wsAuth', 'oauth.providers.aistudio.ws-auth'],
     ['codexHeaderUserAgent', 'oauth.providers.codex.header-defaults.user-agent'],
+    ['codexOptimizeMultiAgentV2', 'client.codex.optimize-multi-agent-v2'],
     ['streamingNonstreamKeepalive', 'requests.nonstream-keepalive-interval'],
     ['payloadDefaultRules', 'requests.payload.default'],
     ['pluginStoreAuth', 'plugins.store-auth'],

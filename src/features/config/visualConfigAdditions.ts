@@ -72,7 +72,7 @@ export const ADDITION_FIELDS = [
   },
   {
     key: 'codexOptimizeMultiAgentV2',
-    path: 'oauth.providers.codex.optimize-multi-agent-v2'.split('.'),
+    path: 'client.codex.optimize-multi-agent-v2'.split('.'),
     kind: 'boolean',
   },
   {

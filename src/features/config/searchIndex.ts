@@ -126,7 +126,7 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     sectionId: 'advanced',
     labelKey: L('additions.codexOptimizeMultiAgentV2.label'),
     hintKey: L('additions.codexOptimizeMultiAgentV2.hint'),
-    yamlKeys: ['oauth', 'providers', 'codex', 'optimize-multi-agent-v2'],
+    yamlKeys: ['client', 'codex', 'optimize-multi-agent-v2'],
   },
   {
     fieldId: 'codexOrphanDelegationCompatibility',
