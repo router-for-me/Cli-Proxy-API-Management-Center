@@ -17,7 +17,10 @@ const fetchMinimaxQuota = createMinimaxQuotaFetcher({
 export const MINIMAX_CONFIG: QuotaProviderData<MinimaxQuotaState, MinimaxQuotaData> = {
   type: 'minimax',
   i18nPrefix: 'minimax_quota',
-  filterFn: (file) => resolveAuthProvider(file) === 'minimax' && !isDisabledAuthFile(file),
+  filterFn: (file) => {
+    const provider = resolveAuthProvider(file);
+    return (provider === 'minimax' || provider === 'minimax-cn') && !isDisabledAuthFile(file);
+  },
   fetchQuota: async (file, t: TFunction) => {
     try {
       return await fetchMinimaxQuota(file);

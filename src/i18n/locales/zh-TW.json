@@ -952,15 +952,28 @@
     "iflow_cookie_result_path": "儲存路徑",
     "iflow_cookie_result_type": "類型",
     "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
-    "minimax_oauth_title": "MiniMax OAuth",
-    "minimax_oauth_button": "使用 MiniMax 登入",
-    "minimax_oauth_hint": "開啟授權連結並輸入裝置碼。提示時可在全球版與中國版之間選擇。授權完成後認證檔案會自動儲存。",
+    "minimax_oauth_title": "MiniMax 國際站（minimax.io）",
+    "minimax_oauth_button": "使用 MiniMax 國際站登入",
+    "minimax_oauth_hint": "透過裝置授權登入 MiniMax 國際站（minimax.io），自動取得並保存認證檔案。國內站與國際站帳號不互通，中國站帳號請使用下方獨立的 minimaxi.com 登入入口。",
     "minimax_oauth_url_label": "授權連結：",
     "minimax_oauth_status_waiting": "正在等待授權…",
     "minimax_oauth_status_success": "認證成功！",
     "minimax_oauth_status_error": "認證失敗：",
     "minimax_oauth_start_error": "啟動 MiniMax OAuth 失敗：",
-    "minimax_oauth_polling_error": "檢查認證狀態失敗："
+    "minimax_oauth_polling_error": "檢查認證狀態失敗：",
+    "minimax_copy_link": "複製連結",
+    "minimax_open_link": "開啟連結",
+    "minimax_device_code_copy": "複製裝置碼",
+    "minimax_cn_oauth_title": "MiniMax 國內站（minimaxi.com）",
+    "minimax_cn_oauth_button": "使用 MiniMax 國內站登入",
+    "minimax_cn_oauth_hint": "透過裝置授權登入 MiniMax 國內站（minimaxi.com），自動取得並保存認證檔案。國內站與國際站帳號不互通，國際站帳號請使用上方獨立的 minimax.io 登入入口。",
+    "minimax_cn_copy_link": "複製連結",
+    "minimax_cn_open_link": "開啟連結",
+    "minimax_cn_oauth_url_label": "授權連結：",
+    "minimax_cn_oauth_status_waiting": "正在等待授權…",
+    "minimax_cn_oauth_status_success": "認證成功！",
+    "minimax_cn_oauth_status_error": "認證失敗：",
+    "minimax_cn_oauth_start_error": "啟動 MiniMax OAuth 失敗："
   },
   "stats": {
     "success": "成功",
@@ -2279,8 +2292,8 @@
     "request_failed": "MiniMax 額度請求失敗，請檢查憑證是否有效。",
     "missing_file": "查詢額度需要可下載的 MiniMax 認證檔案。",
     "stale_request": "連線或憑證已變更，請重試。",
-    "interval": "使用視窗",
-    "weekly": "每週額度",
+    "interval": "5 小時限額",
+    "weekly": "週限額",
     "remaining": "剩餘 {{percent}}%"
   }
 }

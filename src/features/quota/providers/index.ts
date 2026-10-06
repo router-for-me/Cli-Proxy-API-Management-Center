@@ -62,6 +62,7 @@ export const QUOTA_ADAPTERS: Record<QuotaProviderType, QuotaAdapter> = {
   kimi: { ...KIMI_CONFIG, Body: KimiQuotaBody } as unknown as QuotaAdapter,
   meta: { ...META_CONFIG, Body: MetaQuotaBody } as unknown as QuotaAdapter,
   minimax: { ...MINIMAX_CONFIG, Body: MinimaxQuotaBody } as unknown as QuotaAdapter,
+  'minimax-cn': { ...MINIMAX_CONFIG, Body: MinimaxQuotaBody } as unknown as QuotaAdapter,
   xai: { ...XAI_CONFIG, Body: XaiQuotaBody } as unknown as QuotaAdapter,
 };
 

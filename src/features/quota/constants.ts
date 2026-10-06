@@ -10,6 +10,7 @@ export const QUOTA_TAB_ORDER: readonly QuotaProviderType[] = [
   'devin',
   'meta',
   'minimax',
+  'minimax-cn',
 ];
 
 export type QuotaTabId = 'all' | QuotaProviderType;

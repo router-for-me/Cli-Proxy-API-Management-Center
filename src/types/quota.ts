@@ -308,6 +308,8 @@ export interface MinimaxQuotaWindow {
   remainingPercent: number;
   /** Epoch milliseconds at which the window resets. */
   resetAt?: number;
+  /** Window length in minutes, derived from the upstream start/end bounds. */
+  durationMinutes?: number;
   /** Model label the window applies to, as reported by the upstream. */
   modelName?: string;
 }

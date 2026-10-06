@@ -100,6 +100,12 @@ const PROVIDERS: BuiltInOAuthProviderCard[] = [
   },
   {
     kind: 'builtin',
+    id: 'minimax-cn',
+    titleKey: 'auth_login.minimax_cn_oauth_title',
+    icon: iconMinimax,
+  },
+  {
+    kind: 'builtin',
     id: 'kimi',
     titleKey: 'auth_login.kimi_oauth_title',
     icon: { light: iconKimiDark, dark: iconKimiLight },

@@ -926,15 +926,28 @@
     "iflow_oauth_start_error": "启动 iFlow OAuth 失败:",
     "iflow_oauth_polling_error": "检查认证状态失败:",
     "remote_access_disabled": "远程访问不支持此登录方式，请从本地 (localhost) 访问",
-    "minimax_oauth_title": "MiniMax OAuth",
-    "minimax_oauth_button": "使用 MiniMax 登录",
-    "minimax_oauth_hint": "打开授权链接并输入设备码。提示时可在全球版与中国版之间选择。授权完成后认证文件会自动保存。",
+    "minimax_oauth_title": "MiniMax 国际站（minimax.io）",
+    "minimax_oauth_button": "使用 MiniMax 国际站登录",
+    "minimax_oauth_hint": "通过设备授权登录 MiniMax 国际站（minimax.io），自动获取并保存认证文件。国内站与国际站账号不互通，中国站账号请使用下方独立的 minimaxi.com 登录入口。",
     "minimax_oauth_url_label": "授权链接：",
     "minimax_oauth_status_waiting": "正在等待授权…",
     "minimax_oauth_status_success": "认证成功！",
     "minimax_oauth_status_error": "认证失败：",
     "minimax_oauth_start_error": "启动 MiniMax OAuth 失败：",
-    "minimax_oauth_polling_error": "检查认证状态失败："
+    "minimax_oauth_polling_error": "检查认证状态失败：",
+    "minimax_copy_link": "复制链接",
+    "minimax_open_link": "打开链接",
+    "minimax_device_code_copy": "复制设备码",
+    "minimax_cn_oauth_title": "MiniMax 国内站（minimaxi.com）",
+    "minimax_cn_oauth_button": "使用 MiniMax 国内站登录",
+    "minimax_cn_oauth_hint": "通过设备授权登录 MiniMax 国内站（minimaxi.com），自动获取并保存认证文件。国内站与国际站账号不互通，国际站账号请使用上方独立的 minimax.io 登录入口。",
+    "minimax_cn_copy_link": "复制链接",
+    "minimax_cn_open_link": "打开链接",
+    "minimax_cn_oauth_url_label": "授权链接：",
+    "minimax_cn_oauth_status_waiting": "正在等待授权…",
+    "minimax_cn_oauth_status_success": "认证成功！",
+    "minimax_cn_oauth_status_error": "认证失败：",
+    "minimax_cn_oauth_start_error": "启动 MiniMax OAuth 失败："
   },
   "stats": {
     "success": "成功",
@@ -2253,8 +2266,8 @@
     "request_failed": "MiniMax 额度请求失败，请检查凭据是否有效。",
     "missing_file": "查询额度需要可下载的 MiniMax 认证文件。",
     "stale_request": "连接或凭据已变更，请重试。",
-    "interval": "使用窗口",
-    "weekly": "每周额度",
+    "interval": "5 小时限额",
+    "weekly": "周限额",
     "remaining": "剩余 {{percent}}%"
   }
 }

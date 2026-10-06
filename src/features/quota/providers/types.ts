@@ -21,7 +21,7 @@ import type {
 export type QuotaUpdater<T> = T | ((prev: T) => T);
 
 export type QuotaProviderType =
-  'antigravity' | 'claude' | 'codex' | 'devin' | 'kimi' | 'xai' | 'meta' | 'minimax';
+  'antigravity' | 'claude' | 'codex' | 'devin' | 'kimi' | 'xai' | 'meta' | 'minimax' | 'minimax-cn';
 
 /** useQuotaStore 的结构契约（storeSelector/storeSetter 依赖）。 */
 export interface QuotaStore {

@@ -15,6 +15,7 @@ export type AuthFileType =
   | 'devin'
   | 'meta'
   | 'minimax'
+  | 'minimax-cn'
   | 'antigravity'
   | 'xai'
   | 'iflow'
@@ -45,6 +46,8 @@ export interface AuthFileItem {
   name: string;
   type?: AuthFileType | string;
   provider?: string;
+  /** Region reported by the backend for providers that serve multiple origins. */
+  region?: string;
   /**
    * 凭证账号邮箱（后端 auth_files 两条分支都会填：磁盘扫描读 JSON 的 email 字段，
    * 注册表读 Metadata/Attributes）。卡片主行用它领衔。

@@ -101,3 +101,22 @@ describe('MiniMax quota parsing', () => {
     expect(result!.windows.find((w) => w.id === 'weekly')?.remainingPercent).toBe(70);
   });
 });
+
+describe('MiniMax base_resp handling', () => {
+  test('a zero status code leaves the payload parseable', () => {
+    const result = parseMinimaxQuotaPayload({
+      model_remains: [{ current_interval_remaining_percent: 50 }],
+      base_resp: { status_code: 0, status_msg: 'success' },
+    });
+    expect(result).not.toBeNull();
+  });
+
+  test('a non-zero status code yields no windows, so the caller reports a request failure', () => {
+    // MiniMax returns HTTP 200 for a rejected token and signals it here.
+    const result = parseMinimaxQuotaPayload({
+      model_remains: null,
+      base_resp: { status_code: 1004, status_msg: 'login fail' },
+    });
+    expect(result).toBeNull();
+  });
+});

@@ -31,10 +31,9 @@ export function MinimaxQuotaBody({ quota, classes }: QuotaBodyProps<MinimaxQuota
           i18n.resolvedLanguage
         );
         const soon = window.id === soonestRowId;
-        const label =
-          window.modelName && window.id === 'interval'
-            ? `${t('minimax_quota.interval')} · ${window.modelName}`
-            : t(`minimax_quota.${window.id}`);
+        // The label already carries the window length, matching how the other
+        // providers name their windows ("5-hour limit", "Weekly limit").
+        const label = t(`minimax_quota.${window.id}`);
         return (
           <div key={window.id} className={classes.quotaRow}>
             <div className={classes.quotaRowHeader}>

@@ -23,6 +23,7 @@ const QUOTA_FILTER_MAP: Record<QuotaProviderType, (file: AuthFileItem) => boolea
   kimi: KIMI_CONFIG.filterFn,
   meta: META_CONFIG.filterFn,
   minimax: MINIMAX_CONFIG.filterFn,
+  'minimax-cn': MINIMAX_CONFIG.filterFn,
   xai: XAI_CONFIG.filterFn,
 };
 

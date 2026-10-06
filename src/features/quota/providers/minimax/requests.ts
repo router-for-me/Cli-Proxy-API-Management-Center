@@ -4,23 +4,27 @@ import { parseMinimaxQuotaPayload } from '@/services/api/minimaxQuota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 
 /**
- * MiniMax serves two regions from different origins. The base URL is taken from
- * the credential when present so a China-region login is not sent to the global
- * host, which would reject the token.
+ * MiniMax serves two regions from different origins, and a token issued by one
+ * host is rejected by the other. The backend reports the credential's region so
+ * the request is sent to the matching host.
  */
 const GLOBAL_QUOTA_URL = 'https://api.minimax.io/v1/token_plan/remains';
 const CN_QUOTA_URL = 'https://api.minimaxi.com/v1/token_plan/remains';
 
 const resolveQuotaUrl = (file: AuthFileItem): string => {
-  const raw =
-    (typeof file.provider === 'string' ? file.provider : '') +
-    ' ' +
-    (typeof file.provider_name === 'string' ? file.provider_name : '');
-  return /minimaxi?\.com/i.test(raw) ? CN_QUOTA_URL : GLOBAL_QUOTA_URL;
+  // The provider key is authoritative; the region field mirrors it for
+  // credentials that predate the split.
+  if (file.provider === 'minimax-cn') return CN_QUOTA_URL;
+  if (file.provider === 'minimax') return GLOBAL_QUOTA_URL;
+  return file.region === 'cn' ? CN_QUOTA_URL : GLOBAL_QUOTA_URL;
 };
 
 export type MinimaxQuotaErrorCode =
-  'missing_auth_index' | 'missing_file' | 'request_failed' | 'invalid_response' | 'stale_request';
+  | 'missing_auth_index'
+  | 'missing_file'
+  | 'request_failed'
+  | 'invalid_response'
+  | 'stale_request';
 
 export class MinimaxQuotaError extends Error {
   readonly status?: number;
@@ -94,10 +98,28 @@ export function createMinimaxQuotaFetcher(deps: MinimaxQuotaDependencies) {
     }
 
     const parsed = parseBody(response);
+    // MiniMax answers with HTTP 200 even when the token is rejected, signalling
+    // the failure in base_resp.status_code. A non-zero code means the response
+    // carries no usable windows, which would otherwise surface as a confusing
+    // "invalid response" message.
+    const statusCode = readBaseRespStatusCode(parsed);
+    if (statusCode !== null && statusCode !== 0) {
+      throw new MinimaxQuotaError('request_failed', response.statusCode);
+    }
+
     const quota = parseMinimaxQuotaPayload(parsed);
     if (!quota) throw new MinimaxQuotaError('invalid_response');
     return quota;
   };
+}
+
+/** Reads base_resp.status_code without surfacing its message, which can echo credentials. */
+function readBaseRespStatusCode(parsed: unknown): number | null {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const baseResp = (parsed as Record<string, unknown>).base_resp;
+  if (!baseResp || typeof baseResp !== 'object' || Array.isArray(baseResp)) return null;
+  const code = (baseResp as Record<string, unknown>).status_code;
+  return typeof code === 'number' && Number.isFinite(code) ? code : null;
 }
 
 function parseBody(response: ApiCallResult): unknown {

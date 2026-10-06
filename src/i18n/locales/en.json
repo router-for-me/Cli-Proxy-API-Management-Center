@@ -928,15 +928,28 @@
     "iflow_oauth_start_error": "Failed to start iFlow OAuth:",
     "iflow_oauth_polling_error": "Failed to check authentication status:",
     "remote_access_disabled": "This login method is not available for remote access. Please access from localhost.",
-    "minimax_oauth_title": "MiniMax OAuth",
-    "minimax_oauth_button": "Log in with MiniMax",
-    "minimax_oauth_hint": "Open the authorization link and enter the device code. Choose the Global or China region when prompted. Authentication files are saved automatically after authorization.",
+    "minimax_oauth_title": "MiniMax Global (minimax.io)",
+    "minimax_oauth_button": "Log in with MiniMax (Global)",
+    "minimax_oauth_hint": "Sign in to the global MiniMax platform (minimax.io) to get a credential. Accounts are not shared between regions, so use the China login for a minimaxi.com account.",
     "minimax_oauth_url_label": "Authorization URL:",
     "minimax_oauth_status_waiting": "Waiting for authentication...",
     "minimax_oauth_status_success": "Authentication successful!",
     "minimax_oauth_status_error": "Authentication failed:",
     "minimax_oauth_start_error": "Failed to start MiniMax OAuth:",
-    "minimax_oauth_polling_error": "Failed to check authentication status:"
+    "minimax_oauth_polling_error": "Failed to check authentication status:",
+    "minimax_copy_link": "Copy Link",
+    "minimax_open_link": "Open Link",
+    "minimax_device_code_copy": "Copy device code",
+    "minimax_cn_oauth_title": "MiniMax China (minimaxi.com)",
+    "minimax_cn_oauth_button": "Log in with MiniMax (China)",
+    "minimax_cn_oauth_hint": "Sign in to the MiniMax China platform (minimaxi.com) to get a credential. Accounts are not shared between regions, so use the global login for a minimax.io account.",
+    "minimax_cn_copy_link": "Copy Link",
+    "minimax_cn_open_link": "Open Link",
+    "minimax_cn_oauth_url_label": "Authorization URL:",
+    "minimax_cn_oauth_status_waiting": "Waiting for authentication...",
+    "minimax_cn_oauth_status_success": "Authentication successful!",
+    "minimax_cn_oauth_status_error": "Authentication failed:",
+    "minimax_cn_oauth_start_error": "Failed to start MiniMax OAuth:"
   },
   "stats": {
     "success": "Success",
@@ -2255,8 +2268,8 @@
     "request_failed": "MiniMax quota request failed. Check that the credential is valid.",
     "missing_file": "Quota requires a downloadable MiniMax authentication file.",
     "stale_request": "The connection or credential changed. Please retry.",
-    "interval": "Usage window",
-    "weekly": "Weekly quota",
+    "interval": "5-hour limit",
+    "weekly": "Weekly limit",
     "remaining": "{{percent}}% remaining"
   }
 }

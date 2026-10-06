@@ -931,15 +931,28 @@
     "iflow_oauth_start_error": "Не удалось запустить iFlow OAuth:",
     "iflow_oauth_polling_error": "Не удалось проверить статус аутентификации:",
     "remote_access_disabled": "Этот способ входа недоступен при удалённом доступе. Подключитесь с localhost.",
-    "minimax_oauth_title": "MiniMax OAuth",
-    "minimax_oauth_button": "Войти через MiniMax",
-    "minimax_oauth_hint": "Откройте ссылку авторизации и введите код устройства. При запросе выберите глобальный или китайский регион. Файлы аутентификации сохраняются автоматически после авторизации.",
+    "minimax_oauth_title": "MiniMax Global (minimax.io)",
+    "minimax_oauth_button": "Войти через MiniMax (Global)",
+    "minimax_oauth_hint": "Войдите на международную платформу MiniMax (minimax.io), чтобы получить учётные данные. Аккаунты не общие между регионами: для minimaxi.com используйте отдельный вход для Китая.",
     "minimax_oauth_url_label": "Ссылка авторизации:",
     "minimax_oauth_status_waiting": "Ожидание аутентификации…",
     "minimax_oauth_status_success": "Аутентификация успешна!",
     "minimax_oauth_status_error": "Аутентификация не удалась:",
     "minimax_oauth_start_error": "Не удалось запустить MiniMax OAuth:",
-    "minimax_oauth_polling_error": "Не удалось проверить состояние аутентификации:"
+    "minimax_oauth_polling_error": "Не удалось проверить состояние аутентификации:",
+    "minimax_copy_link": "Копировать ссылку",
+    "minimax_open_link": "Открыть ссылку",
+    "minimax_device_code_copy": "Скопировать код устройства",
+    "minimax_cn_oauth_title": "MiniMax China (minimaxi.com)",
+    "minimax_cn_oauth_button": "Войти через MiniMax (Китай)",
+    "minimax_cn_oauth_hint": "Войдите на платформу MiniMax China (minimaxi.com), чтобы получить учётные данные. Аккаунты не общие между регионами, для minimax.io используйте международный вход.",
+    "minimax_cn_copy_link": "Копировать ссылку",
+    "minimax_cn_open_link": "Открыть ссылку",
+    "minimax_cn_oauth_url_label": "Ссылка авторизации:",
+    "minimax_cn_oauth_status_waiting": "Ожидание аутентификации...",
+    "minimax_cn_oauth_status_success": "Аутентификация успешна!",
+    "minimax_cn_oauth_status_error": "Аутентификация не удалась:",
+    "minimax_cn_oauth_start_error": "Не удалось запустить MiniMax OAuth:"
   },
   "stats": {
     "success": "Успех",
@@ -2249,8 +2262,8 @@
     "request_failed": "Запрос квоты MiniMax не удался. Проверьте учётные данные.",
     "missing_file": "Для запроса квоты нужен загружаемый файл аутентификации MiniMax.",
     "stale_request": "Соединение или учётные данные изменились. Повторите попытку.",
-    "interval": "Окно использования",
-    "weekly": "Недельная квота",
+    "interval": "Лимит 5 часов",
+    "weekly": "Недельный лимит",
     "remaining": "Осталось {{percent}}%"
   }
 }

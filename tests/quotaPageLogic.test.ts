@@ -73,6 +73,7 @@ describe('buildTabCounts', () => {
       devin: 0,
       meta: 0,
       minimax: 0,
+      'minimax-cn': 0,
     });
   });
 });
