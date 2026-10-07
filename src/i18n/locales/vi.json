@@ -2210,6 +2210,9 @@
     "remaining": "Còn lại {{percent}}%"
   },
   "claude_reset": {
+    "expiry_title": "Hết hạn đặt lại thủ công ({{timezone}})",
+    "grant_number": "Gói {{index}}",
+    "expiry_unknown": "Chưa rõ thời gian hết hạn",
     "retry_confirm": "Thử lại lượt đặt lại chưa rõ kết quả cho “{{name}}” với ID yêu cầu ban đầu? Một lượt đặt lại có thể đã được tiêu tốn. Hãy thử lại trong vòng 10 phút; không tải lại trang hoặc bắt đầu nhận ở tab khác.",
     "remaining": "Lượt đặt lại còn lại",
     "title": "Lượt đặt lại dự trữ",

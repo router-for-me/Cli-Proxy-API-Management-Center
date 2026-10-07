@@ -2204,6 +2204,9 @@
     }
   },
   "claude_reset": {
+    "expiry_title": "主动重置过期时间（{{timezone}}）",
+    "grant_number": "第 {{index}} 批",
+    "expiry_unknown": "到期时间未知",
     "retry_confirm": "使用原请求 ID 重试“{{name}}”结果未知的重置？可能已消耗一次重置。请在 10 分钟内重试；请勿重新加载页面或在其他标签页发起新请求。",
     "remaining": "剩余重置次数",
     "title": "储备重置次数",

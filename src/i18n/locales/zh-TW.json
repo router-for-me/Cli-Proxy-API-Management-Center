@@ -2230,6 +2230,9 @@
     }
   },
   "claude_reset": {
+    "expiry_title": "主動重置過期時間（{{timezone}}）",
+    "grant_number": "第 {{index}} 批",
+    "expiry_unknown": "到期時間未知",
     "retry_confirm": "使用原請求 ID 重試「{{name}}」結果未知的重置？可能已消耗一次重置。請在 10 分鐘內重試；請勿重新載入頁面或在其他分頁發起新請求。",
     "remaining": "剩餘重置次數",
     "title": "儲備重置次數",
