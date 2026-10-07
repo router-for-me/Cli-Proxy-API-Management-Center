@@ -533,6 +533,8 @@
     "reset_confirm_title": "Đặt lại quota Codex",
     "reset_confirm_message": "Thao tác này sẽ dùng 1 lượt đặt lại thủ công để đặt lại quota Codex cho \"{{name}}\". Tiếp tục?",
     "reset_confirm_button": "Đặt lại quota",
+    "reset_not_confirmed": "Chưa xác nhận đặt lại quota thành công. Hãy làm mới quota trước khi thử lại.",
+    "reset_cooldown_failed": "Quota đã được đặt lại nhưng không thể xóa thời gian chờ của gateway. Trên kết nối ban đầu, hãy dùng chức năng xóa thời gian chờ ở trang tệp xác thực; không sử dụng thêm lượt đặt lại.",
     "reset_success": "Đã đặt lại quota Codex cho \"{{name}}\"",
     "reset_failed": "Không thể đặt lại quota Codex cho \"{{name}}\": {{message}}",
     "plan_plus": "Plus",

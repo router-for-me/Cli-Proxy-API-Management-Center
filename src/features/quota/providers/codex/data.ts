@@ -14,7 +14,9 @@ import type {
   CodexQuotaWindow,
   CodexUsagePayload,
 } from '@/types';
-import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
+import { apiCallApi, authFilesApi, getApiCallErrorMessage } from '@/services/api';
+import { guardConfigConnection } from '@/services/api/configValue';
+import { isRecord } from '@/utils/helpers';
 import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
   CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
@@ -490,7 +492,7 @@ const createCodexRedeemRequestId = (): string => {
 const consumeCodexRateLimitResetCredit = async (
   file: AuthFileItem,
   t: TFunction
-): Promise<void> => {
+): Promise<string> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -512,10 +514,28 @@ const consumeCodexRateLimitResetCredit = async (
   if (result.statusCode < 200 || result.statusCode >= 300) {
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
+  const code = isRecord(result.body) ? result.body.code : undefined;
+  if (code !== 'reset' && code !== 'already_redeemed') {
+    throw new Error(t('codex_quota.reset_not_confirmed'));
+  }
+  return authIndex;
 };
 
 const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
-  await consumeCodexRateLimitResetCredit(file, t);
+  const assertConnection = guardConfigConnection();
+  const authIndex = await consumeCodexRateLimitResetCredit(file, t);
+  try {
+    // Never clear a different connection's cooldown after awaiting redemption.
+    assertConnection();
+    const result = await authFilesApi.resetCooldown(authIndex);
+    assertConnection();
+    if (result.status !== 'ok' || result.auth_index !== authIndex) {
+      throw new Error('Invalid cooldown reset response');
+    }
+  } catch {
+    // Redemption already succeeded: direct the operator to the existing clear action.
+    throw new Error(t('codex_quota.reset_cooldown_failed'));
+  }
   return fetchCodexQuota(file, t);
 };
 

@@ -533,6 +533,9 @@
     "reset_confirm_title": "重置 Codex 额度",
     "reset_confirm_message": "将消耗 1 次主动重置次数来重置 \"{{name}}\" 的 Codex 额度。是否继续？",
     "reset_confirm_button": "确认重置",
+    "reset_not_confirmed": "未确认额度重置成功，请刷新额度后再决定是否重试。",
+    "reset_cooldown_failed": "额度已重置，但代理冷却清除失败。请在原连接的认证文件页面使用“清除冷却”，不要再次消耗重置卡。",
+
     "reset_success": "已重置 \"{{name}}\" 的 Codex 额度",
     "reset_failed": "重置 \"{{name}}\" 的 Codex 额度失败：{{message}}",
     "plan_plus": "Plus",
