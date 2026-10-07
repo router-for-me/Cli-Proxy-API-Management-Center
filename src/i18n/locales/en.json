@@ -2083,7 +2083,7 @@
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
       "testModel": "Test model",
-      "testModelClaudeHint": "Used for connectivity testing only; not saved",
+      "testModelHint": "Used for connectivity testing only; not saved",
       "testModelAutoWith": "Auto · {{name}}",
       "testModelAutoEmpty": "Auto (no models added yet)",
       "testModelCustom": "{{name}} (custom)",

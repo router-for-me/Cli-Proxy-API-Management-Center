@@ -2077,7 +2077,7 @@
       "disabledHint": "Отключённые записи не используются шлюзом",
       "websockets": "Включить WebSockets",
       "testModel": "Тестовая модель",
-      "testModelClaudeHint": "Используется только для проверки соединения; не сохраняется",
+      "testModelHint": "Используется только для проверки соединения; не сохраняется",
       "testModelAutoWith": "Авто · {{name}}",
       "testModelAutoEmpty": "Авто (модели ещё не добавлены)",
       "testModelCustom": "{{name}} (своя)",

@@ -1960,7 +1960,7 @@
       "disabledHint": "Gateway sẽ không dùng mục đã tắt",
       "websockets": "Bật WebSocket",
       "testModel": "Model kiểm thử",
-      "testModelClaudeHint": "Chỉ dùng để kiểm thử kết nối; không được lưu",
+      "testModelHint": "Chỉ dùng để kiểm thử kết nối; không được lưu",
       "testModelAutoWith": "Tự động · {{name}}",
       "testModelAutoEmpty": "Tự động (chưa thêm model nào)",
       "testModelCustom": "{{name}} (tùy chỉnh)",
