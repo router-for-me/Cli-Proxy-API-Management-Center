@@ -100,6 +100,9 @@ export interface CodexUsagePayload {
 export interface ClaudeUsageWindow {
   utilization: number;
   resets_at: string | null;
+  limit_dollars?: number | null;
+  used_dollars?: number | null;
+  remaining_dollars?: number | null;
 }
 
 export interface ClaudeUsageLimit {
