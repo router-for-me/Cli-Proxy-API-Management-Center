@@ -1288,6 +1288,8 @@
           "signature_title": "簽章驗證"
         },
         "server": {
+          "github_token": "全域 GitHub 權杖",
+          "github_token_hint": "用於面板更新、外掛下載等伺服器端 GitHub 請求。優先於 GITHUB_TOKEN；留空時使用環境變數憑證，未設定憑證則匿名請求。外掛商店符合的驗證規則優先。",
           "host": "主機位址",
           "port": "連接埠"
         },

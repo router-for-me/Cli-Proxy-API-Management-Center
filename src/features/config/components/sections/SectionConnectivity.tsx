@@ -61,6 +61,18 @@ export function SectionConnectivity({
 
         <ApiKeysField values={values} disabled={disabled} onChange={onChange} />
 
+        <FieldAnchor fieldId="githubToken">
+          <Input
+            label={t('config_management.visual.sections.server.github_token')}
+            type="password"
+            autoComplete="new-password"
+            value={values.githubToken}
+            onChange={(e) => onChange({ githubToken: e.target.value })}
+            disabled={disabled}
+            hint={t('config_management.visual.sections.server.github_token_hint')}
+          />
+        </FieldAnchor>
+
         <FieldAnchor fieldId="trustedProxies">
           <FieldShell
             label={t('config_management.visual.serverExtras.trustedProxies.label')}

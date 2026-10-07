@@ -1263,6 +1263,8 @@
           "signature_title": "Signature Validation"
         },
         "server": {
+          "github_token": "Global GitHub Token",
+          "github_token_hint": "Used for server-side GitHub requests, such as panel updates and plugin downloads. Takes precedence over GITHUB_TOKEN; leave empty to use environment credentials, or unauthenticated requests if none are set. Matching plugin store authentication rules take precedence.",
           "host": "Host Address",
           "port": "Port"
         },

@@ -135,6 +135,7 @@ export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
   codexLiveMediaRelayICEServers: ['codexLiveMediaRelayICEServers'],
 
   // ── connectivity ──────────────────────────────────────────────────────────
+  githubToken: ['githubToken'],
   trustedProxies: ['trustedProxies'],
   discoveryEnabled: ['discoveryEnabled'],
   discoveryServiceName: ['discoveryServiceName'],

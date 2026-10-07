@@ -223,6 +223,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
 
   // ── connectivity ──────────────────────────────────────────────────────────
   {
+    fieldId: 'githubToken',
+    sectionId: 'connectivity',
+    labelKey: L('sections.server.github_token'),
+    hintKey: L('sections.server.github_token_hint'),
+    yamlKeys: ['server', 'github-token'],
+    keywords: ['GITHUB_TOKEN', 'GitHub', 'token'],
+  },
+  {
     fieldId: 'trustedProxies',
     sectionId: 'connectivity',
     labelKey: L('serverExtras.trustedProxies.label'),

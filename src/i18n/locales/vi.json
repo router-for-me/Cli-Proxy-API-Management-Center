@@ -1055,6 +1055,8 @@
           "devin_title": "Devin"
         },
         "server": {
+          "github_token": "Token GitHub toàn cục",
+          "github_token_hint": "Dùng cho các yêu cầu GitHub từ máy chủ, như cập nhật bảng điều khiển và tải plugin. Ưu tiên hơn GITHUB_TOKEN; để trống để dùng thông tin xác thực từ biến môi trường, hoặc gửi yêu cầu ẩn danh nếu chưa thiết lập. Các quy tắc xác thực phù hợp của kho plugin được ưu tiên.",
           "host": "Địa chỉ Host",
           "port": "Cổng"
         },

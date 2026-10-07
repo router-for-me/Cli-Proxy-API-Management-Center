@@ -6,6 +6,7 @@ import { readConfigBoolean } from './visualConfigBoolean';
 
 // Backend: config_v8.go, trusted_proxies.go and discovery/service.go.
 export const SERVER_FIELDS = [
+  { key: 'githubToken', path: ['server', 'github-token'], kind: 'string' },
   { key: 'trustedProxies', path: ['server', 'trusted-proxies'], kind: 'list' },
   { key: 'discoveryEnabled', path: ['server', 'discovery', 'enabled'], kind: 'boolean' },
   { key: 'discoveryServiceName', path: ['server', 'discovery', 'service-name'], kind: 'string' },

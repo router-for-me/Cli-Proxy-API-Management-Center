@@ -1262,6 +1262,8 @@
           "signature_title": "签名校验"
         },
         "server": {
+          "github_token": "全局 GitHub 令牌",
+          "github_token_hint": "用于面板更新、插件下载等服务端 GitHub 请求。优先于 GITHUB_TOKEN；留空时使用环境变量凭据，未设置凭据则匿名请求。插件商店匹配的认证规则优先。",
           "host": "主机地址",
           "port": "端口"
         },
