@@ -5,8 +5,25 @@ export interface ParsedApiErrorResponse {
   apiCode?: string;
 }
 
-const readString = (value: unknown): string =>
-  typeof value === 'string' ? value.trim() : '';
+const readString = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+
+/**
+ * Reverse proxies such as nginx answer with their own HTML error page when the
+ * backend is unreachable. Use the page title (or first heading) instead of the
+ * markup; an empty result lets the caller fall back to the transport message.
+ */
+const readHtmlErrorPage = (text: string): string | undefined => {
+  if (!/^<(?:!doctype\s+html|html|head|body)\b/i.test(text)) return undefined;
+  for (const tag of ['title', 'h1']) {
+    const match = text.match(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
+    const content = match?.[1]
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (content) return content;
+  }
+  return '';
+};
 
 /**
  * Parse the Management API's error envelope.
@@ -20,8 +37,9 @@ export const parseApiErrorResponse = (
   fallbackMessage: string
 ): ParsedApiErrorResponse => {
   if (!isRecord(responseData)) {
+    const text = readString(responseData);
     return {
-      message: readString(responseData) || readString(fallbackMessage) || 'Request failed',
+      message: (readHtmlErrorPage(text) ?? text) || readString(fallbackMessage) || 'Request failed',
     };
   }
 
