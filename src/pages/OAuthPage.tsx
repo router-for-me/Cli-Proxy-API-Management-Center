@@ -580,6 +580,13 @@ export function OAuthPage() {
       if (!attempt.isCurrent()) return;
       updateProviderState(provider, { callbackSubmitting: false, callbackStatus: 'success' });
       showNotification(t('auth_login.oauth_callback_success'), 'success');
+      // The backend only accepts callbacks for pending logins. If a failed status
+      // request stopped polling, resume it so the card can report the outcome.
+      const loginState = states[provider]?.state;
+      if (loginState && !attempt.isPolling()) {
+        updateProviderState(provider, { status: 'waiting', error: undefined, polling: true });
+        startPolling(provider, loginState, attempt);
+      }
     } catch (err: unknown) {
       if (!attempt.isCurrent()) return;
       const status = getErrorStatus(err);
