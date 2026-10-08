@@ -18,6 +18,7 @@ import {
 } from '@/features/providers/kimi';
 import type { PluginListEntry } from '@/types';
 import { createOAuthAttempts, type OAuthAttempt } from './oauthAttempts';
+import { scheduleSuccessReset } from './oauthSuccessReset';
 import { validateDevinCallback } from './devinOAuth';
 import styles from './OAuthPage.module.scss';
 import iconMeta from '@/assets/icons/meta.svg';
@@ -388,9 +389,11 @@ export function OAuthPage() {
       callbackStatus: undefined,
       callbackError: undefined,
     });
-    resetAttempt.schedule(() => {
-      resetProviderAttempt(provider);
-    }, SUCCESS_RESET_DELAY_MS);
+    scheduleSuccessReset(
+      resetAttempt,
+      () => resetProviderAttempt(provider),
+      SUCCESS_RESET_DELAY_MS
+    );
   };
 
   const startPolling = (provider: string, state: string, attempt: OAuthAttempt) => {

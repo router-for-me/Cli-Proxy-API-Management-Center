@@ -1,4 +1,4 @@
-interface TimerClock {
+export interface TimerClock {
   now: () => number;
   schedule: (callback: () => void, delay: number) => unknown;
   cancel: (timer: unknown) => void;
