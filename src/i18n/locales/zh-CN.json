@@ -625,6 +625,7 @@
     "usage_unavailable": "xAI 用量暂不可用",
     "reset_at": "重置 {{time}}",
     "product_usage": "{{product}} 使用",
+    "usage_breakdown": "用量明细（共享配额）",
     "plan_label": "套餐",
     "resets_label": "重置",
     "prepaid": "预付",

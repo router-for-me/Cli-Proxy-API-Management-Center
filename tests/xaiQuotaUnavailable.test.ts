@@ -201,6 +201,49 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(markup).toContain('$0.00 / $0.00');
   });
 
+  test('renders product contributions as text with only one shared weekly meter', () => {
+    const markup = render(
+      quotaFor(
+        weeklyConfig({
+          creditUsagePercent: 16,
+          productUsage: [
+            { product: 'GrokBuild', usagePercent: 14 },
+            { product: 'GrokChat', usagePercent: 2 },
+          ],
+        }),
+        monthlyConfig()
+      )
+    );
+
+    expect(markup).toContain('Used 16%');
+    expect(markup).toContain('Usage breakdown (shared quota)');
+    expect(markup).toContain('GrokBuild usage: 14%');
+    expect(markup).toContain('GrokChat usage: 2%');
+    expect(markup).toContain('width:84%');
+    expect(markup.match(/class="quotaRow"/g)).toHaveLength(1);
+    expect(markup).not.toContain('width:86%');
+    expect(markup).not.toContain('width:98%');
+  });
+
+  test('does not derive a weekly total or product remainder from partial usage', () => {
+    const markup = render(
+      quotaFor(
+        weeklyConfig({
+          productUsage: [
+            { product: 'GrokBuild', usagePercent: 14 },
+            { product: 'GrokChat', usagePercent: null },
+          ],
+        }),
+        monthlyConfig()
+      )
+    );
+
+    expect(markup).toContain('GrokBuild usage: 14%');
+    expect(markup).toContain('GrokChat usage: Usage unavailable from xAI');
+    expect(markup).not.toContain('width:');
+    expect(markup).not.toContain('Used 14%');
+  });
+
   test('keeps monthly amount, percentage, and meter in the remaining direction', () => {
     const markup = render(
       quotaFor(

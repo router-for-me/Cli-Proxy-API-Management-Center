@@ -626,6 +626,7 @@
     "usage_unavailable": "Usage unavailable from xAI",
     "reset_at": "Resets {{time}}",
     "product_usage": "{{product}} usage",
+    "usage_breakdown": "Usage breakdown (shared quota)",
     "plan_label": "Plan",
     "resets_label": "Resets",
     "prepaid": "Prepaid",

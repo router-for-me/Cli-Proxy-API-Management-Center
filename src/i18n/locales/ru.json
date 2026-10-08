@@ -629,6 +629,7 @@
     "usage_unavailable": "Данные об использовании недоступны от xAI",
     "reset_at": "Сброс {{time}}",
     "product_usage": "Использование {{product}}",
+    "usage_breakdown": "Распределение использования (общая квота)",
     "plan_label": "План",
     "resets_label": "Сброс",
     "prepaid": "Предоплата",

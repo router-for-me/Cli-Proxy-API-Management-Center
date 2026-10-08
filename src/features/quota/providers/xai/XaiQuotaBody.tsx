@@ -220,28 +220,20 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           )}
         </div>
       )}
-      {billing.productUsage.map((item, index) => {
-        const used =
-          item.usagePercent === null ? null : Math.max(0, Math.min(100, item.usagePercent));
-        const remainingPercent = used === null ? null : Math.max(0, Math.min(100, 100 - used));
-        return (
-          <div key={`product-${item.product}`} className={classes.quotaRow}>
-            <div className={classes.quotaRowHeader}>
-              <span className={classes.quotaModel}>
-                {t('xai_quota.product_usage', { product: item.product })}
-              </span>
-              <div className={classes.quotaMeta}>
-                <span className={classes.quotaPercent}>
-                  {t('xai_quota.used_percent', {
-                    percent: formatXaiPercent(used),
-                  })}
-                </span>
-              </div>
+      {billing.productUsage.length > 0 && (
+        <div className={classes.quotaMessage}>
+          <div>{t('xai_quota.usage_breakdown')}</div>
+          {billing.productUsage.map((item) => (
+            <div key={`product-${item.product}`}>
+              {t('xai_quota.product_usage', { product: item.product })}
+              {': '}
+              {item.usagePercent === null
+                ? t('xai_quota.usage_unavailable')
+                : formatXaiPercent(Math.max(0, Math.min(100, item.usagePercent)))}
             </div>
-            <QuotaMeter percent={remainingPercent} classes={classes} index={index + 1} />
-          </div>
-        );
-      })}
+          ))}
+        </div>
+      )}
       {onDemandCap > 0 ? (
         <div className={classes.quotaRow}>
           <div className={classes.quotaRowHeader}>
@@ -254,7 +246,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           <QuotaMeter
             percent={onDemandRemaining}
             classes={classes}
-            index={billing.productUsage.length + 1}
+            index={1}
           />
         </div>
       ) : (
@@ -278,7 +270,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           <QuotaMeter
             percent={remaining}
             classes={classes}
-            index={billing.productUsage.length + 2}
+            index={2}
           />
         </div>
       )}
