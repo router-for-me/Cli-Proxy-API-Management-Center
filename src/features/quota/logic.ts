@@ -45,7 +45,9 @@ export function canRefreshQuotaAfterList(
 }
 
 export const resolveQuotaProviderType = (file: AuthFileItem): QuotaProviderType | null =>
-  QUOTA_TAB_ORDER.find((type) => QUOTA_FILTER_MAP[type](file)) ?? null;
+  PLUGIN_CONFIG.filterFn(file)
+    ? 'plugin'
+    : (QUOTA_TAB_ORDER.find((type) => QUOTA_FILTER_MAP[type](file)) ?? null);
 
 /**
  * 把文件列表归类为额度条目：不支持额度或已停用的文件被过滤，

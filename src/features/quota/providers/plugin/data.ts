@@ -8,7 +8,7 @@ import type {
 } from '@/types';
 import { apiClient } from '@/services/api/client';
 import { normalizeAuthIndex } from '@/utils/authIndex';
-import { buildAntigravityQuotaGroups, isDisabledAuthFile } from '@/utils/quota';
+import { buildAntigravityQuotaGroups, isDisabledAuthFile, isPluginQuotaFile } from '@/utils/quota';
 import type { QuotaProviderData } from '../types';
 
 type PluginQuotaPayload = AntigravityQuotaSummaryPayload & {
@@ -36,12 +36,6 @@ export const normalizePluginQuotaSummary = (summary: PluginQuotaPayload['summary
         : undefined;
     return [{ key, label, value: metric.value, unit, format, currency }];
   });
-};
-
-export const isPluginQuotaFile = (file: AuthFileItem): boolean => {
-  const rawSupported = file.supportsQuota ?? file['supports_quota'];
-  const supported = rawSupported === true || rawSupported === 'true' || rawSupported === '1';
-  return supported;
 };
 
 const normalizeSubscription = (

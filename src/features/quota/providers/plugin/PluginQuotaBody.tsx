@@ -39,7 +39,7 @@ export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaSt
           ))}
         </div>
       )}
-      {quota.groups.length === 0 ? (
+      {!plan && quota.summary.length === 0 && quota.groups.length === 0 ? (
         <div className={classes.quotaMessage}>{t('plugin_quota.empty_data')}</div>
       ) : (
         quota.groups.map((group) => (

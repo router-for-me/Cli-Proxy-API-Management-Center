@@ -37,6 +37,12 @@ export function isXaiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'xai';
 }
 
+/** Advertised backend quota capabilities take precedence over provider-name adapters. */
+export function isPluginQuotaFile(file: AuthFileItem): boolean {
+  const supported = file.supportsQuota ?? file['supports_quota'];
+  return supported === true || supported === 'true' || supported === '1';
+}
+
 export function isDisabledAuthFile(file: AuthFileItem): boolean {
   const raw = (file as { disabled?: unknown }).disabled;
   if (typeof raw === 'boolean') return raw;
