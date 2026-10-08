@@ -1836,7 +1836,8 @@
     "chinese_tw": "繁體中文（台灣）",
     "english": "英文",
     "russian": "俄文",
-    "vietnamese": "Tiếng Việt"
+    "vietnamese": "Tiếng Việt",
+    "korean": "한국어"
   },
   "theme": {
     "switch": "主題",
