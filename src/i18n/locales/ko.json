@@ -626,6 +626,7 @@
     "usage_unavailable": "xAI에서 사용량 정보를 제공하지 않음",
     "reset_at": "{{time}} 초기화",
     "product_usage": "{{product}} 사용량",
+    "usage_breakdown": "사용량 상세 내역 (공유 할당량)",
     "plan_label": "플랜",
     "resets_label": "초기화",
     "prepaid": "선불",
