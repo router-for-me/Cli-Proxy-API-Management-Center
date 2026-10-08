@@ -15,7 +15,7 @@ describe('Devin auth-file quota API boundaries', () => {
 
       expect(result).toBeUndefined();
       expect(post).toHaveBeenCalledTimes(1);
-      expect(post).toHaveBeenCalledWith('/auth-files/refresh', {
+      expect(post).toHaveBeenCalledWith('/credentials/refresh', {
         name: 'devin.json',
         auth_index: 'auth-7',
       });
@@ -29,7 +29,7 @@ describe('Devin auth-file quota API boundaries', () => {
     const post = spyOn(apiClient, 'post').mockResolvedValue({ access_token: 'secret' });
     try {
       await expect(authFilesApi.requestManualRefresh('devin.json')).resolves.toBeUndefined();
-      expect(post).toHaveBeenCalledWith('/auth-files/refresh', { name: 'devin.json' });
+      expect(post).toHaveBeenCalledWith('/credentials/refresh', { name: 'devin.json' });
     } finally {
       post.mockRestore();
     }
@@ -42,7 +42,7 @@ describe('Devin auth-file quota API boundaries', () => {
     try {
       const result = await authFilesApi.list({ name: 'devin.json', authIndex: '12' });
 
-      expect(get).toHaveBeenCalledWith('/auth-files', {
+      expect(get).toHaveBeenCalledWith('/credentials', {
         params: { name: 'devin.json', auth_index: '12' },
       });
       expect(result.files[0]?.authIndex).toBe('12');
@@ -55,7 +55,7 @@ describe('Devin auth-file quota API boundaries', () => {
     const get = spyOn(apiClient, 'get').mockResolvedValue({ files: [] });
     try {
       await authFilesApi.list();
-      expect(get).toHaveBeenCalledWith('/auth-files', undefined);
+      expect(get).toHaveBeenCalledWith('/credentials', undefined);
     } finally {
       get.mockRestore();
     }

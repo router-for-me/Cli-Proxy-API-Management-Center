@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { errorLogViewerReducer, type ErrorLogViewerState } from '../src/pages/hooks/errorLogViewer';
-import { createLogRequestGuard } from '../src/pages/hooks/logRequests';
+import {
+  errorLogViewerReducer,
+  type ErrorLogViewerState,
+} from '../src/features/logs/model/errorLogViewer';
+import { createLogRequestGuard } from '../src/features/logs/model/logRequests';
 
 const item = { name: 'example-error.log', size: 32, modified: 1700000000 };
 const closed: ErrorLogViewerState = { status: 'closed' };
@@ -89,7 +92,10 @@ describe('error log viewer state machine', () => {
 });
 
 test('viewer UI derives controls and content from a single discriminated state', () => {
-  const source = readFileSync(new URL('../src/pages/LogsPage.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(
+    new URL('../src/features/logs/LogsPage.tsx', import.meta.url),
+    'utf8'
+  );
   expect(source).toContain('useReducer(errorLogViewerReducer');
   expect(source).not.toContain('setSelectedErrorLog');
   expect(source).toContain("open={errorLogViewer.status !== 'closed'}");

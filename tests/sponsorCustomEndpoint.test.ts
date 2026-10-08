@@ -63,24 +63,26 @@ describe('sponsor custom endpoint isolation', () => {
 
   test('keeps backend indexes when normalization filters an unnamed item', () => {
     const config = normalizeConfigResponse({
-      'openai-compatibility': [
-        { 'base-url': 'https://invalid.example.com/v1' },
-        {
-          name: APIKEY_FUN_PROVIDER_NAME,
-          'base-url': APIKEY_FUN_OPENAI_BASE_URL,
-          'api-key-entries': [{ 'api-key': 'official-a' }],
-        },
-        {
-          name: APIKEY_FUN_PROVIDER_NAME,
-          'base-url': 'https://gateway.example.com/v1',
-          'api-key-entries': [{ 'api-key': 'custom-key' }],
-        },
-        {
-          name: APIKEY_FUN_PROVIDER_NAME,
-          'base-url': APIKEY_FUN_OPENAI_BASE_URL,
-          'api-key-entries': [{ 'api-key': 'official-b' }],
-        },
-      ],
+      'api-keys': {
+        'openai-compatibility': [
+          { 'base-url': 'https://invalid.example.com/v1', keys: [] },
+          {
+            name: APIKEY_FUN_PROVIDER_NAME,
+            'base-url': APIKEY_FUN_OPENAI_BASE_URL,
+            keys: [{ 'api-key': 'official-a' }],
+          },
+          {
+            name: APIKEY_FUN_PROVIDER_NAME,
+            'base-url': 'https://gateway.example.com/v1',
+            keys: [{ 'api-key': 'custom-key' }],
+          },
+          {
+            name: APIKEY_FUN_PROVIDER_NAME,
+            'base-url': APIKEY_FUN_OPENAI_BASE_URL,
+            keys: [{ 'api-key': 'official-b' }],
+          },
+        ],
+      },
     });
 
     expect(config.openaiCompatibility?.map((item) => item.sourceIndex)).toEqual([1, 2, 3]);

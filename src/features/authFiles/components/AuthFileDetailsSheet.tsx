@@ -18,6 +18,8 @@ import {
 } from '@/features/authFiles/constants';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { AuthFileExcludedModelsField } from './AuthFileExcludedModelsField';
+import { AuthFilePolicyFields } from './AuthFilePolicyFields';
+import { credentialPolicyError, readCredentialPolicy } from '../credentialPolicy';
 import styles from './AuthFileDetailsSheet.module.scss';
 
 /** API 边界归一化补写的派生字段——INFO 视图里只展示后端原始形状，避免重复噪音。 */
@@ -153,7 +155,8 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               !dirty ||
               !editor?.json ||
               Boolean(editor?.headersTouched && editor.headersError) ||
-              Boolean(editor?.weightError)
+              Boolean(editor?.weightError) ||
+              Boolean(credentialPolicyError(editor?.policy))
             }
           >
             {t('common.save')}
@@ -289,6 +292,11 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
                     {editor.headersError && <div className="error-box">{editor.headersError}</div>}
                     <div className="hint">{t('auth_files.headers_hint')}</div>
                   </div>
+                  <AuthFilePolicyFields
+                    draft={editor.policy ?? readCredentialPolicy(editor.json)}
+                    disabled={disableControls || editor.saving}
+                    onChange={onChange}
+                  />
                   <Input
                     label={t('auth_files.note_label')}
                     value={editor.note}

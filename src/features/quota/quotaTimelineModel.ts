@@ -465,15 +465,8 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       // length; weekly is what `periodType` already told us.
       periodHours: billing.periodHours ?? 24 * 7,
       remaining,
-      // Per-product usage is the closest analogue to the other providers'
-      // per-window breakdown.
-      limits: (billing.productUsage ?? [])
-        .map((entry) => ({
-          label: entry.product ?? '',
-          remaining:
-            typeof entry.usagePercent === 'number' ? clampPercent(100 - entry.usagePercent) : null,
-        }))
-        .filter((limit): limit is TimelineLimit => limit.remaining !== null),
+      // Products contribute to the shared weekly usage, not independent limits.
+      limits: [],
     };
   }
 

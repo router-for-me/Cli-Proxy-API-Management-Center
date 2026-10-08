@@ -12,7 +12,7 @@ describe('visual config concurrency', () => {
 
       if (phase === 0) {
         visualConfig.loadVisualValuesFromYaml(
-          'debug: false\nproxy-url: http://old-proxy.example\n'
+          'requests:\n  proxy-url: http://old-proxy.example\nobservability:\n  logs:\n    debug: false\n'
         );
         setPhase(1);
       } else if (phase === 1) {
@@ -23,7 +23,7 @@ describe('visual config concurrency', () => {
           'pre',
           null,
           visualConfig.applyVisualChangesToYaml(
-            'debug: true\nproxy-url: http://old-proxy.example\n'
+            'requests:\n  proxy-url: http://old-proxy.example\nobservability:\n  logs:\n    debug: true\n'
           )
         );
       }
@@ -35,8 +35,8 @@ describe('visual config concurrency', () => {
     const merged = markup.slice('<pre>'.length, -'</pre>'.length);
 
     expect(parseYaml(merged)).toEqual({
-      debug: true,
-      'proxy-url': 'http://localhost:8080',
+      observability: { logs: { debug: true } },
+      requests: { 'proxy-url': 'http://localhost:8080' },
     });
   });
 });

@@ -65,7 +65,7 @@
     "subtitle": "Management Center"
   },
   "login": {
-    "subtitle": "Please enter connection information to access the management interface",
+    "subtitle": "Connect to CLI Proxy API v8 or later",
     "connection_current": "Current URL",
     "connection_auto_hint": "The system will automatically use the current URL for connection",
     "custom_connection_label": "Custom Connection URL:",
@@ -83,7 +83,8 @@
     "error_timeout": "Connection timed out, server not responding",
     "error_unauthorized": "Authentication failed, management key is missing or invalid",
     "error_forbidden": "Access denied, remote management is disabled, the management key is not configured, or this IP is temporarily banned",
-    "error_not_found": "Management API not found, confirm the server address points to the CLIProxyAPI backend",
+    "error_not_found": "v8 Management API not found. Check the server address and upgrade CLIProxyAPI to v8 or later; v0 is not supported.",
+    "error_legacy_backend": "This backend accepts v0 Management API but does not provide v8. Upgrade CLIProxyAPI to v8 or later to use this management page.",
     "error_server": "Backend failed while handling the management request, check the server logs",
     "error_cors": "Cross-origin request blocked, please check server configuration",
     "error_ssl": "SSL/TLS certificate verification failed"
@@ -253,6 +254,12 @@
     "cooldown_deadline": "Timer deadline",
     "cooldown_observed": "Snapshot at",
     "cooldown_note": "Local scheduling snapshot; remaining times are estimates. Expiry does not guarantee availability, quota recovery, or an automatic retry. Model names are internal state keys; backoff levels are not failure counts.",
+    "cooldown_reset_button": "Clear cooldown",
+    "cooldown_reset_hint": "Clear this credential's local routing cooldown",
+    "cooldown_reset_title": "Clear credential cooldown?",
+    "cooldown_reset_confirm": "Clear the local routing cooldown for “{{name}}”? This may make the credential eligible for another request immediately. It does not restore upstream quota.",
+    "cooldown_reset_success": "Cooldown cleared for {{name}}.",
+    "cooldown_reset_failed": "Could not clear cooldown for {{name}}: {{message}}",
     "cooldown_reason_quota": "Quota restriction",
     "cooldown_reason_credential_quota": "Credential quota restriction",
     "cooldown_reason_cloudflare_challenge": "Cloudflare challenge",
@@ -268,6 +275,14 @@
     "health_status_warning": "Warning",
     "health_status_disabled": "Disabled",
     "download_button": "Download",
+    "refresh_all_button": "Refresh all credentials",
+    "refresh_all_confirm": "Refresh all eligible credentials on the server, not just the current filtered results. The backend skips disabled or ineligible credentials. This does not reload the list or reset quotas and may take several minutes. Continue?",
+    "refresh_all_results": "Credential refresh results",
+    "refresh_all_summary": "{{success}} refreshed, {{failed}} failed.",
+    "refresh_all_empty": "No credentials were eligible for refresh.",
+    "refresh_all_failed": "Could not obtain complete refresh results: {{message}}. Some credentials may already have refreshed. Check the list before retrying.",
+    "refresh_result_success": "Refreshed",
+    "refresh_result_failed": "Refresh failed",
     "manual_refresh_button": "Refresh OAuth credential",
     "manual_refresh_requested": "Credential refresh requested for \"{{name}}\"",
     "manual_refresh_failed": "Failed to request credential refresh for \"{{name}}\": {{message}}",
@@ -302,8 +317,8 @@
     "pagination_prev": "Previous",
     "pagination_next": "Next",
     "pagination_info": "Page {{current}} / {{total}} · {{count}} files",
-    "search_label": "Search configs",
-    "search_placeholder": "Filter by name, account, type, or provider. Use * as a wildcard",
+    "search_label": "Search credentials by name, account, type, provider, or error message",
+    "search_placeholder": "Search name, account, type, provider, or error (403, 429, invalid). Use * as a wildcard",
     "problem_filter_label": "Status Filter",
     "problem_filter_all": "All",
     "problem_filter_enabled": "Enabled",
@@ -374,6 +389,7 @@
     "priority_placeholder": "e.g. 10 or -1",
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
     "weight_label": "Scheduling weight (weight)",
+    "weight_tooltip": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable weighted round robin for it to take effect.",
     "weight_hint": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable <settingsLink>weighted round robin</settingsLink> for it to take effect.",
     "weight_invalid_integer": "Weight must be an integer.",
     "weight_invalid_max": "Weight cannot exceed 1,000,000.",
@@ -383,6 +399,24 @@
     "websockets_hint": "Enable Responses API websocket transport for this credential.",
     "using_api_label": "Use official API (using_api)",
     "using_api_hint": "Use the official xAI API when enabled; use Grok CLI chat-proxy when disabled.",
+    "policy_alias_name": "Alias",
+    "policy_alias_display_name": "Display name",
+    "policy_alias_fork": "Keep the original model in listings",
+    "policy_alias_force_mapping": "Rewrite response model to the alias",
+    "policy_unsupported": "Existing data cannot be edited with this form and will be preserved. Select Inherit to clear it, or replace it to start a new list.",
+    "policy_replace": "Replace existing data",
+    "policy_retry_label": "Credential request retries",
+    "policy_inherit": "Inherit",
+    "policy_custom": "Custom",
+    "policy_retry_count": "Retry count",
+    "policy_retry_hint": "Inherit uses the global request-retry setting. Custom 0 explicitly disables request retries for this credential.",
+    "policy_aliases_label": "Account model aliases",
+    "policy_aliases_hint": "Account aliases are checked first; unmatched aliases fall back to channel aliases. Inherit or an empty list clears only account aliases.",
+    "policy_rules_label": "Account error rules",
+    "policy_rules_hint": "Custom rules take precedence in list order. Inherit or an empty list uses inherited rules; it does not disable them. Regex patterns use Go syntax.",
+    "policy_retry_invalid": "Enter a non-negative safe integer, or select Inherit.",
+    "policy_aliases_invalid": "Enter a non-empty model name and alias for each new or edited row.",
+    "policy_rules_invalid": "Complete each edited rule with a positive status, an action and at least one non-empty match condition.",
     "note_label": "Note",
     "note_placeholder": "Enter a note, e.g.: John's account",
     "note_hint": "Optional. Used to describe the purpose or owner of this credential; leave empty to omit.",
@@ -467,6 +501,7 @@
     "seven_day_cowork": "7-day Cowork",
     "iguana_necktie": "Iguana Necktie",
     "seven_day_fable": "7-day Fable 5",
+    "cloud_session_credits": "Cloud session credits",
     "extra_usage_label": "Extra Usage",
     "plan_label": "Plan",
     "plan_unknown": "Unknown",
@@ -501,6 +536,8 @@
     "additional_team_secondary_window": "{{name}} monthly limit",
     "plan_label": "Plan",
     "expires_label": "Renewal time",
+    "credit_balance_label": "Credit balance",
+    "credit_unlimited": "Unlimited",
     "reset_credits_label": "Manual resets",
     "reset_credits_expiry_label": "Manual reset expiry ({{timezone}})",
     "reset_credit_number": "Reset {{index}}",
@@ -510,13 +547,16 @@
     "reset_confirm_title": "Reset Codex quota",
     "reset_confirm_message": "This will consume 1 manual reset to reset the Codex quota for \"{{name}}\". Continue?",
     "reset_confirm_button": "Reset quota",
+    "reset_not_confirmed": "Quota reset was not confirmed. Refresh the quota before trying again.",
+    "reset_cooldown_failed": "Quota was reset, but the gateway cooldown could not be cleared. On the original connection, use Clear cooldown on the credential page; do not redeem another reset.",
     "reset_success": "Reset Codex quota for \"{{name}}\"",
     "reset_failed": "Failed to reset Codex quota for \"{{name}}\": {{message}}",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",
-    "plan_pro": "Pro 20x",
-    "plan_prolite": "Pro 5x"
+    "plan_pro": "Pro 200",
+    "plan_prolite": "Pro 100",
+    "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
     "daily": "Daily remaining",
@@ -565,6 +605,8 @@
     "title": "Kimi Quota",
     "empty_title": "No Kimi Auth Files",
     "empty_desc": "Upload a Kimi credential to view remaining quota.",
+    "domain_unavailable": "Could not read the Kimi credential's domain. A downloadable, valid authentication file is required.",
+    "stale_request": "The connection or credential changed. Please retry.",
     "idle": "Click here to refresh quota",
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
@@ -573,6 +615,7 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
     "weekly_limit": "Weekly limit",
+    "monthly_limit": "Monthly limit",
     "limit_window": "{{duration}} limit",
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
@@ -591,9 +634,13 @@
     "weekly_limit": "Weekly limit",
     "monthly_credits": "Monthly credits",
     "used_percent": "Used {{percent}}",
+    "usage_unavailable": "Usage unavailable from xAI",
     "reset_at": "Resets {{time}}",
     "product_usage": "{{product}} usage",
+    "usage_breakdown": "Usage breakdown (shared quota)",
     "plan_label": "Plan",
+    "resets_label": "Resets",
+    "prepaid": "Prepaid",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
     "plan_paid": "Paid",
@@ -816,10 +863,21 @@
     "meta_oauth_polling_error": "Failed to check authentication status:",
     "device_code_label": "Device code:",
     "device_code_copy": "Copy device code",
-    "kimi_oauth_title": "Kimi OAuth",
-    "kimi_oauth_button": "Log in with Kimi",
+    "kimi_ai_oauth_title": "Kimi International (kimi.ai)",
+    "kimi_ai_oauth_button": "Log in to Kimi International",
+    "kimi_ai_oauth_hint": "Authorize your kimi.ai international account via device login. A separate kimi-ai authentication file is saved automatically. China and international accounts are not interchangeable.",
+    "kimi_ai_oauth_url_label": "Authorization URL:",
+    "kimi_ai_open_link": "Open link",
+    "kimi_ai_copy_link": "Copy link",
+    "kimi_ai_oauth_status_waiting": "Waiting for authentication...",
+    "kimi_ai_oauth_status_success": "Authentication successful!",
+    "kimi_ai_oauth_status_error": "Authentication failed:",
+    "kimi_ai_oauth_start_error": "Failed to start Kimi International login:",
+    "kimi_ai_oauth_polling_error": "Failed to check authentication status:",
+    "kimi_oauth_title": "Kimi China (kimi.com)",
+    "kimi_oauth_button": "Log in to Kimi China",
     "kimi_sign_up_button": "Sign Up Now",
-    "kimi_oauth_hint": "Quickly log in to Kimi through device authorization. Authentication files are obtained and saved automatically.",
+    "kimi_oauth_hint": "Authorize your kimi.com China account via device login. Authentication files are saved automatically. International accounts must use the separate kimi.ai login.",
     "kimi_oauth_url_label": "Authorization URL:",
     "kimi_open_link": "Open Link",
     "kimi_copy_link": "Copy Link",
@@ -890,6 +948,26 @@
     "no_requests": "No requests"
   },
   "logs": {
+    "preview_too_large": "This request log exceeds the 2 MiB preview limit. Download it to view.",
+    "read_status_live": "Reading continuously",
+    "read_status_paused": "Reading paused",
+    "read_status_catching_up": "Catching up on queued logs",
+    "last_updated": "Last successful update: {{time}}",
+    "buffer_scope": "Searching loaded logs only: {{count}} lines cached, {{matched}} lines matched",
+    "buffer_evicted": "Older logs have been removed from the cache and cannot be searched here",
+    "cursor_reset_notice": "Logs were rotated or reset. The latest content has been reloaded.",
+    "history_evicted": "Your reading position is no longer cached. Please choose a new position.",
+    "resume_following": "Back to latest · New lines: {{count}}",
+    "level_filter": "Log level",
+    "all_levels": "All levels",
+    "view_request": "View log for request {{id}}",
+    "copy_line": "Copy this line",
+    "request_log_missing": "Request log not found: it may not have been recorded or may have been cleaned up. When request logging is disabled, only error request logs are usually retained.",
+    "download_cached": "Download cached logs",
+    "clear_application_confirm": "Clear application logs on the server? Request log files will not be deleted. This action cannot be undone.",
+    "clear_search": "Clear search",
+    "reading_enabled": "Continuous reading",
+    "filter_load_more": "Show more matching logs",
     "title": "Logs Viewer",
     "refresh_button": "Refresh Logs",
     "clear_button": "Clear Logs",
@@ -936,7 +1014,8 @@
     "show_raw_logs": "Show Raw Logs",
     "show_raw_logs_hint": "Show original log text for easier multi-line copy",
     "search_placeholder": "Search logs by content or keyword",
-    "filter_panel_title": "Structured Filters",
+    "filter_panel_title": "Filters & display",
+    "wrap_lines": "Wrap long lines",
     "filter_panel_expand": "Expand structured filters",
     "filter_panel_collapse": "Collapse structured filters",
     "filter_panel_active_count": "{{count}} active",
@@ -993,6 +1072,10 @@
     "validation_blocked_short": "Fix errors",
     "visual_mode_unavailable_detail": "Visual editor is unavailable because the configuration contains invalid YAML: {{message}}",
     "visual_mode_save_blocked": "Cannot save from visual mode until the YAML syntax is fixed",
+    "source_changes_before_visual": "Save or discard your unsaved source edits before switching to visual mode.",
+    "precise_save_incomplete": "The precise save did not finish; some changes may already be applied. Your draft is retained. Save again to review the remaining server differences.",
+    "concurrent_list_conflict": "The server list {{path}} changed after your draft baseline. Saving was blocked to avoid overwriting those changes. Your draft is retained; note your edits, then reload the configuration and reconcile them.",
+    "precise_save_recovery_required": "Could not read back the save result. Editing is paused. Save again to recover the draft baseline, or reload the configuration.",
     "visual_mode_latest_yaml_invalid": "The latest server configuration contains invalid YAML. Review it in source mode before saving visual changes: {{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "Search config...",
@@ -1006,6 +1089,166 @@
       "no_changes": "No changes detected"
     },
     "visual": {
+      "serverExtras": {
+        "trustedProxies": {
+          "label": "Trusted proxies",
+          "hint": "IP addresses or CIDRs; empty means forwarded headers are not trusted. Trusting all-address ranges risks client IP spoofing. Requires a backend restart."
+        },
+        "discoveryEnabled": {
+          "label": "Enable discovery",
+          "hint": "Broadcast via mDNS / DNS-SD on the LAN. Off by default; changes apply without a restart."
+        },
+        "discoveryServiceName": {
+          "label": "Service name prefix",
+          "hint": "The backend appends a short ID. Empty uses CPA-<ShortID>."
+        },
+        "discoveryServiceType": {
+          "label": "Service type",
+          "hint": "Empty uses _ai-gateway._tcp."
+        },
+        "discoverySubtypes": {
+          "label": "Protocol subtypes",
+          "hint": "Empty uses the five default protocols. Missing leading _ is added; invalid entries are ignored."
+        },
+        "discoveryInterfacesInclude": {
+          "label": "Include interfaces",
+          "hint": "Empty auto-selects physical LAN interfaces. Use names or prefix patterns ending in *."
+        },
+        "discoveryInterfacesExclude": {
+          "label": "Exclude interfaces",
+          "hint": "Use names or prefix patterns ending in *. Exclusions take priority over inclusions."
+        },
+        "discoveryAuthRequired": {
+          "label": "Advertise authentication requirement",
+          "hint": "On by default. Broadcast metadata only; does not change actual API authentication."
+        },
+        "discoveryAdvertiseManagement": {
+          "label": "Advertise management service",
+          "hint": "Off by default. Only announces the management service exists; does not change remote access permissions."
+        },
+        "discoveryTitle": "LAN discovery",
+        "discoveryHint": "Requires multicast-capable physical interfaces and a non-loopback listener. Docker usually needs host networking; reachability is not guaranteed."
+      },
+      "additions": {
+        "oauthTitle": "OAuth provider behavior",
+        "oauthHint": "These provider settings apply only to OAuth/file-backed credentials, not API-key credentials.",
+        "claudeTitle": "Claude",
+        "codexTitle": "Codex",
+        "antigravityTitle": "Antigravity",
+        "xaiTitle": "xAI",
+        "liveRelayTitle": "Codex Live media relay",
+        "liveRelayHint": "Relay WebRTC audio and DataChannel traffic in the proxy process. Inbound UDP must be reachable. Keep ICE credentials out of screenshots and logs.",
+        "iceAdd": "Add ICE server",
+        "iceRemove": "Remove ICE server {{index}}",
+        "iceURLs": "STUN/TURN URLs",
+        "iceUsername": "TURN username",
+        "iceCredential": "TURN password",
+        "iceServer": "ICE server {{index}}",
+        "routingSessionAffinitySubagents": {
+          "label": "Subagent session affinity",
+          "hint": "Enabled by default; only effective when session affinity is enabled. Subagents inherit their parent's credential to reuse caches. Disable to distribute subagents across the credential pool for greater concurrency."
+        },
+        "saveCooldownStatus": {
+          "label": "Persist cooldown status",
+          "hint": "Save per-credential cooldown status in .cds files beside auth files. Disabled by default; otherwise status is kept only in memory."
+        },
+        "transientErrorCooldownSeconds": {
+          "label": "Transient error cooldown (seconds)",
+          "hint": "Cooldown for upstream 408/500/502/503/504/520–526 errors. 0 uses the default 60 seconds; a negative value disables this cooldown."
+        },
+        "videoResultAuthCacheTTL": {
+          "label": "Video result credential cache TTL",
+          "hint": "How long video IDs remain bound to the credential that created them. Use a duration such as 30m or 3h; default: 3h."
+        },
+        "claudeHeaderTimezone": {
+          "label": "Fallback timezone",
+          "hint": "IANA timezone for the cloaked currentDate, e.g. Asia/Singapore, or Local for the backend host's timezone. The credential JSON's timezone takes priority."
+        },
+        "claudeModelLevelCooling": {
+          "label": "Model-level cooldown",
+          "hint": "Apply Claude quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+        },
+        "claudeDisableCloakMode": {
+          "label": "Disable request cloaking",
+          "hint": "Disable the Claude Code CLI disguise and system prompt replacement; pass through the original system prompt. Credential files can override this with cloak_mode. Default: false (automatic cloaking for non-Claude-Code clients)."
+        },
+        "claudeCodeDisableCloakingModelList": {
+          "label": "Disable model ID cloaking",
+          "hint": "Return original model IDs in Anthropic model list responses instead of cloaked IDs. Disabled by default."
+        },
+        "codexDisableCloaking": {
+          "label": "Disable request cloaking",
+          "hint": "Stop forcing official Codex User-Agent and Originator headers on HTTP/SSE and WebSocket requests. Disabled by default."
+        },
+        "codexModelLevelCooling": {
+          "label": "Model-level cooldown",
+          "hint": "Apply usage_limit_reached quota cooldowns only to the requested model, rather than all models sharing the credential. Disabled by default."
+        },
+        "codexStreamBootstrapBuffering": {
+          "label": "Buffer stream bootstrap",
+          "hint": "Hold initial empty events and heartbeats to allow credential failover on early overload or rate-limit rejections. Disabled by default. Delays response headers and may trigger client or reverse-proxy timeouts; buffering has frame and byte budgets."
+        },
+        "codexStreamBootstrapTimeout": {
+          "label": "Stream bootstrap timeout",
+          "hint": "Optional buffering time limit, e.g. 20s. Default: 0 (unlimited time; frame and byte budgets still apply). Checked as upstream frames arrive; not a hard deadline for every network stall. Headers may still wait for translated output."
+        },
+        "codexOptimizeMultiAgentV2": {
+          "label": "Optimize multi-agent v2",
+          "hint": "Optimize official Codex multi-agent requests: refresh spawn_agent model details, remove message parameter encryption, normalize agent_message content, and convert it to user messages for non-Codex protocols. Disabled by default."
+        },
+        "codexOrphanDelegationCompatibility": {
+          "label": "Orphan delegation compatibility",
+          "hint": "For X-Openai-Subagent: collab_spawn requests, convert orphan codex_app/create_thread and codex_app/send_message_to_thread outputs without a valid matching call into user messages. Disabled by default."
+        },
+        "codexResponseSteering": {
+          "label": "Response steering",
+          "hint": "Experimental full-duplex Codex Responses WebSockets. Each socket stays bound to one upstream account and model; accepted input is never replayed. Disabled by default."
+        },
+        "antigravityConnectionPoolEnabled": {
+          "label": "Enable connection pooling",
+          "hint": "Reuse upstream HTTP/1.1 connections. Default: false (short-lived connections)."
+        },
+        "antigravityConnectionPoolIdleTimeout": {
+          "label": "Idle connection timeout",
+          "hint": "How long idle connections remain in the pool. Default: 30s; capped at 210s. Zero or a negative duration switches to short-lived connections."
+        },
+        "antigravityConnectionPoolMaxIdleConnsPerHost": {
+          "label": "Maximum idle connections per host",
+          "hint": "Maximum idle connections retained per upstream host per credential. Default: 2; capped at 100. Zero uses Go's default of 2; a negative value switches to short-lived connections."
+        },
+        "xaiInjectXSearch": {
+          "label": "Inject x_search",
+          "hint": "Add xAI's native x_search tool when absent from the request, including tool_choice.allowed_tools when applicable. Disabled by default."
+        },
+        "codexLiveMediaRelayEnabled": {
+          "label": "Enable media relay",
+          "hint": "Terminate and relay Codex Live WebRTC media in this process. Requires inbound UDP reachability. Disabled by default to preserve direct media connections."
+        },
+        "codexLiveMediaRelayMaxSessions": {
+          "label": "Maximum concurrent media sessions",
+          "hint": "Blank or 0 uses the default of 32 sessions. A custom UDP range must provide at least two ports per session."
+        },
+        "codexLiveMediaRelayDisablePrivateRemoteIPs": {
+          "label": "Block private remote IP candidates",
+          "hint": "Default: false, allowing private candidates for local or trusted-network clients. Enable to reject downstream SDP candidates targeting private, loopback, link-local, or unspecified IPs and reduce internal-network exposure; local connections may fail."
+        },
+        "codexLiveMediaRelayPublicIP": {
+          "label": "Advertised public IP",
+          "hint": "Optional public IPv4 or IPv6 address to advertise when the proxy is behind 1:1 NAT. Enter an IP address, not a hostname."
+        },
+        "codexLiveMediaRelayUDPPortMin": {
+          "label": "Minimum UDP port",
+          "hint": "Set both UDP bounds to 0 for system allocation, or specify an inclusive continuous range with at least twice the effective session limit in ports."
+        },
+        "codexLiveMediaRelayUDPPortMax": {
+          "label": "Maximum UDP port",
+          "hint": "Must be at least the minimum port. Both bounds must be 0 or both nonzero; a custom range needs at least two ports per session (64 with the default 32 sessions)."
+        },
+        "codexLiveMediaRelayICEServers": {
+          "label": "ICE servers",
+          "hint": "Optional STUN/TURN servers using stun:, stuns:, turn:, or turns: URLs. TURN credentials are omitted from the JSON config API. Enter the credential as a password and keep secrets out of screenshots and logs."
+        }
+      },
       "search": {
         "placeholder": "Search settings (label or YAML key)",
         "no_results": "No matching settings"
@@ -1032,6 +1275,8 @@
           "signature_title": "Signature Validation"
         },
         "server": {
+          "github_token": "Global GitHub Token",
+          "github_token_hint": "Used for server-side GitHub requests, such as panel updates and plugin downloads. Takes precedence over GITHUB_TOKEN; leave empty to use environment credentials, or unauthenticated requests if none are set. Matching plugin store authentication rules take precedence.",
           "host": "Host Address",
           "port": "Port"
         },
@@ -1057,7 +1302,7 @@
           "panel_repo": "Panel Repository"
         },
         "auth": {
-          "auth_dir": "Auth Directory (auth-dir)",
+          "auth_dir": "OAuth Credential Directory (oauth.auth-dir)",
           "auth_dir_hint": "Directory path for authentication files (supports ~)"
         },
         "system": {
@@ -1106,12 +1351,12 @@
           "redis_usage_retention_hint": "In-memory retention for RESP LPOP/RPOP usage output, max 3600 seconds",
           "antigravity_sensitive_words": "Sensitive Word Obfuscation",
           "antigravity_sensitive_words_desc": "Insert zero-width characters into matching words in Antigravity system instructions to reduce exact keyword matching upstream",
-          "antigravity_sensitive_words_label": "Sensitive words (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_label": "OAuth sensitive words (oauth.providers.antigravity.sensitive-words)",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
           "devin_sensitive_words": "Devin System Prompt Sensitive Words",
           "devin_sensitive_words_desc": "In Devin system prompts only, a line containing a configured word is removed in full; the remaining system prompt is then obfuscated. Regular messages and tool arguments are not changed",
-          "devin_sensitive_words_label": "Sensitive words (devin.sensitive-words)",
+          "devin_sensitive_words_label": "OAuth sensitive words (oauth.providers.devin.sensitive-words)",
           "devin_sensitive_words_placeholder": "sensitive phrase",
           "devin_sensitive_words_hint": "One word or phrase per row. Configure carefully: matching content causes the entire system-prompt line to be deleted; empty entries are removed when saved",
           "antigravity_signature_cache": "Enable Antigravity Signature Cache",
@@ -1122,8 +1367,8 @@
         "headers": {
           "title": "Header Defaults",
           "description": "Default headers for Claude and Codex OAuth requests when the client omits them",
-          "claude_title": "Claude Header Defaults",
-          "codex_title": "Codex Header Defaults",
+          "claude_title": "Claude OAuth Header Defaults",
+          "codex_title": "Codex OAuth Header Defaults",
           "user_agent": "User-Agent",
           "package_version": "Package Version",
           "runtime_version": "Runtime Version",
@@ -1168,7 +1413,7 @@
           "disable_cooling_desc": "Globally disable auth/model cooldown windows after failures",
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
-          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+          "ws_auth_desc": "Require authentication for AI Studio WebSocket connections (oauth.providers.aistudio.ws-auth)"
         },
         "quota": {
           "title": "Quota Fallback",
@@ -1206,7 +1451,7 @@
         }
       },
       "api_keys": {
-        "label": "API Keys List (api-keys)",
+        "label": "Client API Keys (access.api-keys)",
         "add": "Add API Key",
         "generate": "Generate",
         "empty": "No API keys",
@@ -1215,7 +1460,11 @@
         "add_title": "Add API Key",
         "input_label": "API Key",
         "input_placeholder": "Paste your API key",
-        "input_hint": "This only modifies the local config file content, it will not sync to the API Key Management interface",
+        "name_label": "Name / description (optional)",
+        "name_placeholder": "For example: Alice's laptop",
+        "name_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
+        "name_save_error": "Could not save the name in browser storage. Check your browser storage settings.",
+        "input_hint": "Changes take effect after saving the configuration. Upstream provider keys are managed separately.",
         "error_empty": "Please enter an API key",
         "error_invalid": "API key contains invalid characters",
         "strength": {
@@ -1278,7 +1527,17 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
+        "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
         "validation_blocked": "Fix validation errors before saving",
+        "invalid_duration": "Enter a valid duration, such as 30s or 3h",
+        "positive_duration": "Enter a duration greater than zero",
+        "invalid_timezone": "Enter a valid IANA timezone, such as Asia/Singapore",
+        "invalid_ip": "Enter a valid IPv4 or IPv6 address",
+        "udp_port_pair": "Set both UDP ports to 0, or set both with the minimum not exceeding the maximum",
+        "udp_port_capacity": "The UDP range must contain at least twice the effective maximum session count in ports (0 sessions uses 32)",
+        "invalid_ice_servers": "Each ICE server needs at least one valid stun:, stuns:, turn:, or turns: URL",
+        "integer_range_0_65535": "Enter a whole number between 0 and 65535",
         "port_range": "Enter a valid port between 1 and 65535",
         "integer": "Enter a whole number",
         "non_negative_integer": "Enter a non-negative whole number",
@@ -1297,6 +1556,11 @@
     }
   },
   "quota_management": {
+    "search_label": "Search accounts",
+    "search_placeholder": "Search by filename or email",
+    "search_empty_title": "No matching accounts",
+    "search_empty_desc": "Try another filename or email, or clear the search.",
+    "search_clear": "Clear search",
     "title": "Quota Management",
     "description": "Monitor OAuth quota status for Antigravity, Codex, Claude, Kimi, and xAI credentials.",
     "refresh_all_credentials": "Refresh all credentials",
@@ -1532,6 +1796,7 @@
     "clear_login_confirm": "Clear local login data and sign out now?"
   },
   "notification": {
+    "trusted_proxies_restart_required": "Trusted proxy settings saved. Restart the backend to apply them.",
     "region_label": "Notifications",
     "type_success": "Success",
     "type_info": "Information",
@@ -1557,7 +1822,9 @@
     "chinese": "中文",
     "chinese_tw": "Traditional Chinese (Taiwan)",
     "english": "English",
-    "russian": "Русский"
+    "russian": "Русский",
+    "vietnamese": "Tiếng Việt",
+    "korean": "한국어"
   },
   "theme": {
     "switch": "Theme",
@@ -1580,6 +1847,90 @@
     "version": "Management UI Version"
   },
   "providersPage": {
+    "behavior": {
+      "title": "Provider-specific behavior",
+      "alphaSearch": "Enable Alpha Search",
+      "alphaSearchHint": "Allow this Codex key to serve Alpha Search. The upstream must support it.",
+      "codexCloaking": "Codex request cloaking",
+      "codexCloakingHint": "Override official Codex identity headers for this API key. Default removes the credential override; OAuth-only settings do not apply here.",
+      "useDefault": "Use backend default",
+      "cloakingEnabled": "Enable cloaking",
+      "cloakingDisabled": "Disable cloaking",
+      "rebuildMidSystemMessage": "Rebuild system messages",
+      "rebuildMidSystemMessageHint": "Move Claude messages with role system into the top-level system field.",
+      "supportPromptCacheKey": "Inject prompt cache key",
+      "supportPromptCacheKeyHint": "Derive and inject prompt_cache_key for compatible requests. Enable only when the upstream supports this field."
+    },
+    "modelOptions": {
+      "displayName": "Display name",
+      "maxContextLength": "Context length",
+      "contextHint": "Non-negative integer; leave empty to use the default.",
+      "forceMapping": "Rewrite response model to alias",
+      "isCompat": "Compatibility mode",
+      "supportConfigurationUpdate": "Allow configuration updates",
+      "inputModalitiesText": "Input modalities",
+      "outputModalitiesText": "Output modalities",
+      "modalitiesHint": "Separate values with commas or whitespace. Custom modality names are preserved.",
+      "useMaxCompletionTokens": "Use max_completion_tokens",
+      "thinkingMode": "Thinking override",
+      "useDefault": "Use default",
+      "custom": "Custom",
+      "thinkingHint": "Default inherits backend behavior; an empty custom override is an explicit {}. Budgets and effort levels can coexist. Only when both budgets are 0 or blank is the numeric range unspecified. Set a maximum at least as large as a positive minimum.",
+      "thinkingMin": "Minimum thinking budget",
+      "thinkingMax": "Maximum thinking budget",
+      "thinkingZeroAllowed": "Allow zero budget",
+      "thinkingDynamicAllowed": "Allow dynamic budget",
+      "invalidContext": "Context length must be a non-negative safe integer.",
+      "invalidThinking": "Thinking must be a valid JSON object.",
+      "invalidBudget": "Thinking budgets must be non-negative safe integers.",
+      "invalidRange": "Minimum thinking budget must not exceed the maximum. Blank bounds count as 0.",
+      "removeModel": "Remove model",
+      "modelName": "Model name",
+      "modelAlias": "Alias (optional)"
+    },
+    "runtimePolicy": {
+      "title": "Advanced runtime policy",
+      "description": "Inherit uses the parent group policy, then backend defaults. Overrides apply only to this entry.",
+      "cooling": "Cooling",
+      "inherit": "Inherit",
+      "coolingEnabled": "Enable cooling",
+      "coolingDisabled": "Disable cooling",
+      "retry": "Request retries",
+      "retryHint": "Blank inherits the group setting. Use an integer: 0 disables retries; a negative value uses the global retry policy instead of the group policy.",
+      "errorsMode": "Request error rules",
+      "override": "Override",
+      "errorsHint": "Inherit follows the parent policy. Override replaces the entire list, which may be empty. Switching modes keeps your rule draft.",
+      "invalidRetry": "Retries must be a safe integer, or blank to inherit."
+    },
+    "errorRules": {
+      "hint": "Use the first matching rule in order; for the same status code, any condition may match.",
+      "empty": "No rules. You can save an empty list.",
+      "rule": "Rule {{number}}",
+      "status": "Status code",
+      "action": "Action",
+      "selectAction": "Select an action",
+      "moveUp": "Move rule up",
+      "moveDown": "Move rule down",
+      "removeRule": "Delete rule",
+      "matchType": "Match type",
+      "text": "Contains text",
+      "regex": "Regular expression",
+      "matchValue": "Condition",
+      "regexHint": "Go regular expression",
+      "removeMatch": "Delete condition",
+      "addMatch": "Add condition",
+      "addRule": "Add rule",
+      "invalidStatus": "Status code must be a positive safe integer.",
+      "invalidAction": "Select a valid action.",
+      "invalidMatch": "Match conditions cannot be empty.",
+      "missingMatch": "Add at least one match condition.",
+      "actions": {
+        "stop": "Stop",
+        "stop-and-cooldown": "Stop and cool down",
+        "continue": "Continue",
+        "continue-and-cooldown": "Continue and cool down"
+      }
+    },
     "header": {
       "title": "AI Providers",
       "activeResources": "{{active}}/{{total}} active resources",
@@ -1750,7 +2101,7 @@
       "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
       "testModel": "Test model",
-      "testModelClaudeHint": "Used for connectivity testing only; not saved",
+      "testModelHint": "Used for connectivity testing only; not saved",
       "testModelAutoWith": "Auto · {{name}}",
       "testModelAutoEmpty": "Auto (no models added yet)",
       "testModelCustom": "{{name}} (custom)",
@@ -1778,8 +2129,8 @@
       "proxyBadge": "Proxy",
       "modelBadgeImage": "Image",
       "modelBadgeThinking": "Thinking",
-      "thinkingConfig": "Allowed thinking levels",
-      "thinkingExistingHint": "The current backend config remains unchanged until you change a selection; then it will be replaced by the selected standard levels.",
+      "thinkingConfig": "Thinking capabilities",
+      "thinkingExistingHint": "Changes to effort levels preserve budgets and other untouched settings.",
       "thinkingLevels": {
         "none": "Disable thinking",
         "minimal": "Minimal",
@@ -1867,5 +2218,34 @@
     "modelCatalog": {
       "notLoaded": "Not loaded"
     }
+  },
+  "claude_reset": {
+    "expiry_title": "Manual reset expiry ({{timezone}})",
+    "grant_number": "Grant {{index}}",
+    "expiry_unknown": "Expiry unknown",
+    "retry_confirm": "Retry the unknown reset for “{{name}}” with its original request ID? A reset may already have been spent. Retry within 10 minutes; do not reload or start another claim in another tab.",
+    "remaining": "Resets remaining",
+    "title": "Banked resets",
+    "scope": "Uses a limited reset grant to clear eligible Claude usage windows. Only confirm when you want to spend a reset. Recovery is limited to this tab/session; do not reload or use another tab while an outcome is unknown.",
+    "loading": "Loading…",
+    "read_error": "Reset grants could not be read. Nothing was submitted.",
+    "blocked": "Reset not submitted: eligibility, account identity, or session could not be verified. Refresh and check again.",
+    "unknown": "The outcome is unknown. A reset may have been spent. Retry within 10 minutes using the same request ID; do not start another claim elsewhere.",
+    "expired": "The retry window has expired. Further claims are blocked in this session. Check your Claude account before taking any further action.",
+    "retry": "Retry the same claim",
+    "empty": "No banked reset grants.",
+    "count": "{{left}} / {{total}} resets remaining",
+    "ends": "Expires: {{date}}",
+    "use": "Reset limits",
+    "confirm": "Confirm reset",
+    "confirm_text": "Spend one reset to clear eligible usage limits for “{{name}}”? This uses a limited reset grant.",
+    "reset": "Usage limits reset.",
+    "already_used": "This grant was already used.",
+    "not_limited": "No reset: the account is not currently limited.",
+    "cooldown": "No reset: cooldown is active.",
+    "ineligible": "This account is not eligible.",
+    "unavailable": "Resets are currently unavailable.",
+    "rate_limited": "Request rate limited.",
+    "auth_error": "Authorization was refused."
   }
 }

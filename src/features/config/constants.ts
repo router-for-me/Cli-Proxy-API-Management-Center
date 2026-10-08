@@ -71,8 +71,15 @@ export const COMMON_FIELD_IDS = [
  */
 export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualConfigFieldPath[]> =
   {
-    connectivity: ['port'],
-    network: ['requestRetry', 'maxRetryCredentials', 'maxRetryInterval', 'authAutoRefreshWorkers'],
+    connectivity: ['port', 'trustedProxies', 'discoveryServiceType'],
+    network: [
+      'requestRetry',
+      'maxRetryCredentials',
+      'maxRetryInterval',
+      'authAutoRefreshWorkers',
+      'transientErrorCooldownSeconds',
+      'videoResultAuthCacheTTL',
+    ],
     logging: ['errorLogsMaxFiles', 'logsMaxTotalSizeMb', 'redisUsageQueueRetentionSeconds'],
     quota: [],
     streaming: [
@@ -80,17 +87,64 @@ export const SECTION_VALIDATION_FIELDS: Record<VisualSectionId, readonly VisualC
       'streaming.bootstrapRetries',
       'streaming.nonstreamKeepaliveInterval',
     ],
-    advanced: [],
+    advanced: [
+      'claudeHeaderTimezone',
+      'codexStreamBootstrapTimeout',
+      'antigravityConnectionPoolIdleTimeout',
+      'antigravityConnectionPoolMaxIdleConnsPerHost',
+      'codexLiveMediaRelayMaxSessions',
+      'codexLiveMediaRelayPublicIP',
+      'codexLiveMediaRelayUDPPortMin',
+      'codexLiveMediaRelayUDPPortMax',
+      'codexLiveMediaRelayICEServers',
+    ],
     payload: [],
   };
 
 /**
  * fieldId → useVisualConfig dirtyFields 的键（= VisualConfigValues 叶值键，streaming 用点号叶）。
- * 与搜索索引 59 条一一对应；三方对账由 tests/configFieldParity.test.ts 守护 ——
+ * 与搜索索引一一对应；三方对账由 tests/configFieldParity.test.ts 守护 ——
  * 增删字段时漏改任何一边（索引 / 本表 / 分区 JSX）都会红。
  */
 export const FIELD_VALUE_KEYS: Record<string, readonly string[]> = {
+  routingSessionAffinitySubagents: ['routingSessionAffinitySubagents'],
+  saveCooldownStatus: ['saveCooldownStatus'],
+  transientErrorCooldownSeconds: ['transientErrorCooldownSeconds'],
+  videoResultAuthCacheTTL: ['videoResultAuthCacheTTL'],
+  claudeHeaderTimezone: ['claudeHeaderTimezone'],
+  claudeModelLevelCooling: ['claudeModelLevelCooling'],
+  claudeDisableCloakMode: ['claudeDisableCloakMode'],
+  claudeCodeDisableCloakingModelList: ['claudeCodeDisableCloakingModelList'],
+  codexDisableCloaking: ['codexDisableCloaking'],
+  codexModelLevelCooling: ['codexModelLevelCooling'],
+  codexStreamBootstrapBuffering: ['codexStreamBootstrapBuffering'],
+  codexStreamBootstrapTimeout: ['codexStreamBootstrapTimeout'],
+  codexOptimizeMultiAgentV2: ['codexOptimizeMultiAgentV2'],
+  codexOrphanDelegationCompatibility: ['codexOrphanDelegationCompatibility'],
+  codexResponseSteering: ['codexResponseSteering'],
+  antigravityConnectionPoolEnabled: ['antigravityConnectionPoolEnabled'],
+  antigravityConnectionPoolIdleTimeout: ['antigravityConnectionPoolIdleTimeout'],
+  antigravityConnectionPoolMaxIdleConnsPerHost: ['antigravityConnectionPoolMaxIdleConnsPerHost'],
+  xaiInjectXSearch: ['xaiInjectXSearch'],
+  codexLiveMediaRelayEnabled: ['codexLiveMediaRelayEnabled'],
+  codexLiveMediaRelayMaxSessions: ['codexLiveMediaRelayMaxSessions'],
+  codexLiveMediaRelayDisablePrivateRemoteIPs: ['codexLiveMediaRelayDisablePrivateRemoteIPs'],
+  codexLiveMediaRelayPublicIP: ['codexLiveMediaRelayPublicIP'],
+  codexLiveMediaRelayUDPPortMin: ['codexLiveMediaRelayUDPPortMin'],
+  codexLiveMediaRelayUDPPortMax: ['codexLiveMediaRelayUDPPortMax'],
+  codexLiveMediaRelayICEServers: ['codexLiveMediaRelayICEServers'],
+
   // ── connectivity ──────────────────────────────────────────────────────────
+  githubToken: ['githubToken'],
+  trustedProxies: ['trustedProxies'],
+  discoveryEnabled: ['discoveryEnabled'],
+  discoveryServiceName: ['discoveryServiceName'],
+  discoveryServiceType: ['discoveryServiceType'],
+  discoverySubtypes: ['discoverySubtypes'],
+  discoveryInterfacesInclude: ['discoveryInterfacesInclude'],
+  discoveryInterfacesExclude: ['discoveryInterfacesExclude'],
+  discoveryAuthRequired: ['discoveryAuthRequired'],
+  discoveryAdvertiseManagement: ['discoveryAdvertiseManagement'],
   host: ['host'],
   port: ['port'],
   authDir: ['authDir'],

@@ -7,24 +7,23 @@ import type {
   ProviderKeyConfig,
 } from '@/types';
 import type { Config } from '@/types/config';
+import type { ProviderRuntimePolicy, RequestScopedErrorRule } from '@/types/provider';
 import { buildHeaderObject } from '@/utils/headers';
 import { isRecord } from '@/utils/helpers';
 import { readCredentialWeight } from '@/utils/credentialWeight';
+import { normalizeModelOptions, normalizeModelThinking } from './providerModels';
 
 const normalizeBoolean = (value: unknown): boolean | undefined =>
   typeof value === 'boolean' ? value : undefined;
 
-const normalizeRecord = (value: unknown): Record<string, unknown> | undefined =>
-  isRecord(value) ? value : undefined;
-
 const normalizeModelAliases = (models: unknown): ModelAlias[] => {
   if (!Array.isArray(models)) return [];
   return models
-    .map((item) => {
+    .map((item, sourceIndex) => {
       if (item === undefined || item === null) return null;
       if (typeof item === 'string') {
         const trimmed = item.trim();
-        return trimmed ? ({ name: trimmed } satisfies ModelAlias) : null;
+        return trimmed ? ({ name: trimmed, sourceIndex } satisfies ModelAlias) : null;
       }
       if (!isRecord(item)) return null;
 
@@ -32,11 +31,10 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (!name) return null;
       const alias = item.alias;
       const priority = item.priority;
-      const testModel = item['test-model'];
       const image = normalizeBoolean(item.image);
-      const thinking = normalizeRecord(item.thinking);
-      const entry: ModelAlias = { name: String(name) };
-      if (alias && alias !== name) {
+      const thinking = normalizeModelThinking(item.thinking);
+      const entry: ModelAlias = { name: String(name), sourceIndex, ...normalizeModelOptions(item) };
+      if (alias) {
         entry.alias = String(alias);
       }
       if (priority !== undefined) {
@@ -44,9 +42,6 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
         if (Number.isFinite(parsed)) {
           entry.priority = parsed;
         }
-      }
-      if (testModel) {
-        entry.testModel = String(testModel);
       }
       if (image !== undefined) {
         entry.image = image;
@@ -122,6 +117,28 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
   return result;
 };
 
+const normalizeRuntimePolicy = (record: Record<string, unknown> | null): ProviderRuntimePolicy => {
+  const policy: ProviderRuntimePolicy = {};
+  const retry = record?.['request-retry'];
+  if (typeof retry === 'number' && Number.isSafeInteger(retry)) policy.requestRetry = retry;
+  const rules = record?.['request-scoped-errors'];
+  if (Array.isArray(rules)) {
+    policy.requestScopedErrors = rules.filter(isRecord).map((rule) => ({
+      ...(typeof rule.status === 'number' ? { status: rule.status } : {}),
+      ...(Array.isArray(rule.match)
+        ? { match: rule.match.filter((v): v is string => typeof v === 'string') }
+        : {}),
+      ...(Array.isArray(rule['match-regexr'])
+        ? { matchRegex: rule['match-regexr'].filter((v): v is string => typeof v === 'string') }
+        : {}),
+      ...(typeof rule.action === 'string'
+        ? { action: rule.action as RequestScopedErrorRule['action'] }
+        : {}),
+    }));
+  }
+  return policy;
+};
+
 const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => {
   if (item === undefined || item === null) return null;
   const record = isRecord(item) ? item : null;
@@ -129,7 +146,15 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const config: ProviderKeyConfig = { apiKey: trimmed };
+  const config: ProviderKeyConfig = { apiKey: trimmed, ...normalizeRuntimePolicy(record) };
+  for (const [key, wire] of [
+    ['alphaSearch', 'alpha-search'],
+    ['disableCodexCloaking', 'disable-codex-cloaking'],
+    ['rebuildMidSystemMessage', 'rebuild-mid-system-message'],
+  ] as const) {
+    const value = normalizeBoolean(record?.[wire]);
+    if (value !== undefined) config[key] = value;
+  }
   const weight = readCredentialWeight(record?.weight);
   if (weight !== undefined) config.weight = weight;
   const priority = record?.priority;
@@ -199,7 +224,7 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   const trimmed = String(apiKey || '').trim();
   if (!trimmed) return null;
 
-  const config: GeminiKeyConfig = { apiKey: trimmed };
+  const config: GeminiKeyConfig = { apiKey: trimmed, ...normalizeRuntimePolicy(record) };
   const weight = readCredentialWeight(record?.weight);
   if (weight !== undefined) config.weight = weight;
   const priority = record?.priority;
@@ -237,23 +262,28 @@ const normalizeOpenAIProvider = (
   const baseUrl = provider['base-url'];
   if (!name || !baseUrl) return null;
 
-  const apiKeyEntries = Array.isArray(provider['api-key-entries'])
-    ? (provider['api-key-entries']
-        .map((entry) => normalizeApiKeyEntry(entry))
+  const apiKeyEntries = Array.isArray(provider.keys)
+    ? (provider.keys
+        .map((entry, sourceIndex) => {
+          const normalized = normalizeApiKeyEntry(entry);
+          return normalized ? { ...normalized, sourceIndex } : null;
+        })
         .filter(Boolean) as ApiKeyEntry[])
     : [];
 
   const headers = normalizeHeaders(provider.headers);
   const models = normalizeModelAliases(provider.models);
   const priority = provider.priority;
-  const testModel = provider['test-model'];
 
   const result: OpenAIProviderConfig = {
     name: String(name),
     baseUrl: String(baseUrl),
     apiKeyEntries,
+    ...normalizeRuntimePolicy(provider),
   };
 
+  const supportPromptCacheKey = normalizeBoolean(provider['support-prompt-cache-key']);
+  if (supportPromptCacheKey !== undefined) result.supportPromptCacheKey = supportPromptCacheKey;
   const disabled = normalizeBoolean(provider.disabled);
   if (disabled !== undefined) result.disabled = disabled;
   const disableCooling = normalizeBoolean(provider['disable-cooling']);
@@ -263,7 +293,6 @@ const normalizeOpenAIProvider = (
   if (headers) result.headers = headers;
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
-  if (testModel) result.testModel = String(testModel);
   const authIndex = normalizeAuthIndex(provider['auth-index']);
   if (authIndex) result.authIndex = authIndex;
   if (sourceIndex !== undefined) result.sourceIndex = sourceIndex;
@@ -272,7 +301,7 @@ const normalizeOpenAIProvider = (
 
 const normalizeOauthExcluded = (payload: unknown): Record<string, string[]> | undefined => {
   if (!isRecord(payload)) return undefined;
-  const source = payload['oauth-excluded-models'] ?? payload.items ?? payload;
+  const source = payload;
   if (!isRecord(source)) return undefined;
   const map: Record<string, string[]> = {};
   Object.entries(source).forEach(([provider, models]) => {
@@ -284,126 +313,75 @@ const normalizeOauthExcluded = (payload: unknown): Record<string, string[]> | un
   return map;
 };
 
-/**
- * 规范化 /config 返回值
- */
+/** Resolve effective values for display only; retain the complete persisted group for writes. */
+export const normalizeProviderGroups = (groups: unknown, openai = false) => {
+  if (!Array.isArray(groups)) return [];
+  return groups.flatMap<ProviderKeyConfig | OpenAIProviderConfig>((group, groupIndex) => {
+    if (!isRecord(group) || !Array.isArray(group.keys)) return [];
+    if (openai) {
+      const config = normalizeOpenAIProvider(group, groupIndex);
+      return config ? [{ ...config, source: { groupIndex, group, groups } }] : [];
+    }
+    return group.keys.flatMap((key, keyIndex) => {
+      if (!isRecord(key)) return [];
+      const effective = { ...group };
+      delete effective.keys;
+      delete effective.name;
+      Object.entries(key).forEach(([field, value]) => {
+        if (value !== null) effective[field] = value;
+      });
+      const config = normalizeProviderKeyConfig(effective);
+      return config ? [{ ...config, source: { groupIndex, keyIndex, group, groups } }] : [];
+    });
+  });
+};
+
 export const normalizeConfigResponse = (raw: unknown): Config => {
   const config: Config = { raw: isRecord(raw) ? raw : {} };
-  if (!isRecord(raw)) {
-    return config;
-  }
-
-  config.debug = normalizeBoolean(raw.debug);
-  const proxyUrl = raw['proxy-url'];
-  config.proxyUrl =
-    typeof proxyUrl === 'string'
-      ? proxyUrl
-      : proxyUrl === undefined || proxyUrl === null
-        ? undefined
-        : String(proxyUrl);
-  const requestRetry = raw['request-retry'];
-  if (typeof requestRetry === 'number' && Number.isFinite(requestRetry)) {
-    config.requestRetry = requestRetry;
-  } else if (typeof requestRetry === 'string' && requestRetry.trim() !== '') {
-    const parsed = Number(requestRetry);
-    if (Number.isFinite(parsed)) {
-      config.requestRetry = parsed;
-    }
-  }
-
-  const quota = raw['quota-exceeded'];
-  if (isRecord(quota)) {
-    config.quotaExceeded = {
-      switchProject: normalizeBoolean(quota['switch-project']),
-      switchPreviewModel: normalizeBoolean(quota['switch-preview-model']),
-      antigravityCredits: normalizeBoolean(quota['antigravity-credits']),
-    };
-  }
-
-  config.requestLog = normalizeBoolean(raw['request-log']);
-  config.loggingToFile = normalizeBoolean(raw['logging-to-file']);
-  const logsMaxTotalSizeMb = raw['logs-max-total-size-mb'];
-  if (typeof logsMaxTotalSizeMb === 'number' && Number.isFinite(logsMaxTotalSizeMb)) {
-    config.logsMaxTotalSizeMb = logsMaxTotalSizeMb;
-  } else if (typeof logsMaxTotalSizeMb === 'string' && logsMaxTotalSizeMb.trim() !== '') {
-    const parsed = Number(logsMaxTotalSizeMb);
-    if (Number.isFinite(parsed)) {
-      config.logsMaxTotalSizeMb = parsed;
-    }
-  }
-  config.wsAuth = normalizeBoolean(raw['ws-auth']);
-  config.forceModelPrefix = normalizeBoolean(raw['force-model-prefix']);
-  const routing = raw.routing;
-  const strategyRaw = isRecord(routing) ? routing.strategy : undefined;
-  if (strategyRaw !== undefined && strategyRaw !== null) {
-    config.routingStrategy = String(strategyRaw);
-  }
-  const apiKeysRaw = raw['api-keys'];
-  if (Array.isArray(apiKeysRaw)) {
-    config.apiKeys = apiKeysRaw.map((key) => String(key)).filter((key) => key.trim() !== '');
-  }
-
-  const geminiList = raw['gemini-api-key'];
-  if (Array.isArray(geminiList)) {
-    config.geminiApiKeys = geminiList
-      .map((item) => normalizeGeminiKeyConfig(item))
-      .filter(Boolean) as GeminiKeyConfig[];
-  }
-
-  const interactionsList = raw['interactions-api-key'];
-  if (Array.isArray(interactionsList)) {
-    config.interactionsApiKeys = interactionsList
-      .map((item) => normalizeGeminiKeyConfig(item))
-      .filter(Boolean) as GeminiKeyConfig[];
-  }
-
-  const codexList = raw['codex-api-key'];
-  if (Array.isArray(codexList)) {
-    config.codexApiKeys = codexList
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  }
-
-  const metaList = raw['meta-api-key'];
-  if (Array.isArray(metaList)) {
-    config.metaApiKeys = metaList
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  }
-
-  const xaiList = raw['xai-api-key'];
-  if (Array.isArray(xaiList)) {
-    config.xaiApiKeys = xaiList
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  }
-
-  const claudeList = raw['claude-api-key'];
-  if (Array.isArray(claudeList)) {
-    config.claudeApiKeys = claudeList
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  }
-
-  const vertexList = raw['vertex-api-key'];
-  if (Array.isArray(vertexList)) {
-    config.vertexApiKeys = vertexList
-      .map((item) => normalizeProviderKeyConfig(item))
-      .filter(Boolean) as ProviderKeyConfig[];
-  }
-
-  const openaiList = raw['openai-compatibility'];
-  if (Array.isArray(openaiList)) {
-    config.openaiCompatibility = openaiList
-      .map((item, index) => normalizeOpenAIProvider(item, index))
-      .filter(Boolean) as OpenAIProviderConfig[];
-  }
-
-  const oauthExcluded = normalizeOauthExcluded(raw['oauth-excluded-models']);
-  if (oauthExcluded) {
-    config.oauthExcludedModels = oauthExcluded;
-  }
-
+  if (!isRecord(raw)) return config;
+  const at = (path: string): unknown =>
+    path
+      .split('.')
+      .reduce<unknown>((value, key) => (isRecord(value) ? value[key] : undefined), raw);
+  config.debug = normalizeBoolean(at('observability.logs.debug'));
+  config.requestLog = normalizeBoolean(at('observability.logs.request-log'));
+  config.loggingToFile = normalizeBoolean(at('observability.logs.logging-to-file'));
+  const size = at('observability.logs.logs-max-total-size-mb');
+  if (typeof size === 'number') config.logsMaxTotalSizeMb = size;
+  const proxy = at('requests.proxy-url');
+  if (typeof proxy === 'string') config.proxyUrl = proxy;
+  const retry = at('routing.retry.request-retry');
+  if (typeof retry === 'number') config.requestRetry = retry;
+  config.wsAuth = normalizeBoolean(at('oauth.providers.aistudio.ws-auth')) ?? true;
+  config.forceModelPrefix = normalizeBoolean(at('routing.force-model-prefix'));
+  const strategy = at('routing.strategy');
+  if (typeof strategy === 'string') config.routingStrategy = strategy;
+  const keys = at('access.api-keys');
+  config.apiKeys = Array.isArray(keys)
+    ? keys.filter((key): key is string => typeof key === 'string')
+    : [];
+  const quota = at('quota-exceeded');
+  config.quotaExceeded = {
+    switchProject: isRecord(quota) ? normalizeBoolean(quota['switch-project']) : false,
+    switchPreviewModel: isRecord(quota) ? normalizeBoolean(quota['switch-preview-model']) : false,
+    antigravityCredits:
+      normalizeBoolean(at('oauth.providers.antigravity.antigravity-credits')) ?? false,
+  };
+  config.providerGroups = isRecord(raw['api-keys']) ? raw['api-keys'] : {};
+  config.geminiApiKeys = normalizeProviderGroups(at('api-keys.gemini')) as ProviderKeyConfig[];
+  config.interactionsApiKeys = normalizeProviderGroups(
+    at('api-keys.interactions')
+  ) as ProviderKeyConfig[];
+  config.codexApiKeys = normalizeProviderGroups(at('api-keys.codex')) as ProviderKeyConfig[];
+  config.metaApiKeys = normalizeProviderGroups(at('api-keys.meta')) as ProviderKeyConfig[];
+  config.xaiApiKeys = normalizeProviderGroups(at('api-keys.xai')) as ProviderKeyConfig[];
+  config.claudeApiKeys = normalizeProviderGroups(at('api-keys.claude')) as ProviderKeyConfig[];
+  config.vertexApiKeys = normalizeProviderGroups(at('api-keys.vertex')) as ProviderKeyConfig[];
+  config.openaiCompatibility = normalizeProviderGroups(
+    at('api-keys.openai-compatibility'),
+    true
+  ) as OpenAIProviderConfig[];
+  config.oauthExcludedModels = normalizeOauthExcluded(at('oauth.excluded-models'));
   return config;
 };
 

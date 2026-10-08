@@ -65,7 +65,7 @@
     "subtitle": "管理中心"
   },
   "login": {
-    "subtitle": "請輸入連線資訊以存取管理介面",
+    "subtitle": "連線至 CLI Proxy API v8 或更新版本",
     "connection_current": "目前位址",
     "connection_auto_hint": "系統將自動使用目前存取位址進行連線",
     "custom_connection_label": "自訂連線位址:",
@@ -83,7 +83,8 @@
     "error_timeout": "連線逾時，伺服器無回應",
     "error_unauthorized": "驗證失敗，管理金鑰缺失或無效",
     "error_forbidden": "存取被拒絕，遠端管理未啟用、管理金鑰未設定或 IP 被暫時封鎖",
-    "error_not_found": "找不到 Management API，請確認服務位址指向 CLIProxyAPI 後端",
+    "error_not_found": "找不到 v8 Management API，請檢查服務位址並將 CLIProxyAPI 升級至 v8 或更新版本；不再支援 v0 介面。",
+    "error_legacy_backend": "目前後端可使用 v0 管理介面，但不支援 v8。請將 CLIProxyAPI 升級至 v8 或更新版本後再使用此管理頁面。",
     "error_server": "後端處理管理介面時發生錯誤，請查看服務日誌",
     "error_cors": "跨域請求被阻擋，請檢查伺服器設定",
     "error_ssl": "SSL/TLS 憑證驗證失敗"
@@ -251,6 +252,12 @@
     "cooldown_deadline": "計時截止",
     "cooldown_observed": "快照時間",
     "cooldown_note": "本機排程快照，剩餘時間為估算；到期不代表憑證可用、額度恢復或自動重試。模型名稱為內部狀態鍵，退避等級不是失敗次數。",
+    "cooldown_reset_button": "清除冷卻",
+    "cooldown_reset_hint": "清除此憑證的本機路由冷卻狀態",
+    "cooldown_reset_title": "清除憑證冷卻？",
+    "cooldown_reset_confirm": "確定清除「{{name}}」的本機路由冷卻狀態嗎？清除後此憑證可能立即再次參與請求，但不會恢復上游額度。",
+    "cooldown_reset_success": "已清除 {{name}} 的冷卻狀態。",
+    "cooldown_reset_failed": "無法清除 {{name}} 的冷卻狀態：{{message}}",
     "cooldown_reason_quota": "額度限制",
     "cooldown_reason_credential_quota": "憑證額度限制",
     "cooldown_reason_cloudflare_challenge": "Cloudflare 驗證",
@@ -266,6 +273,14 @@
     "health_status_warning": "警告",
     "health_status_disabled": "已停用",
     "download_button": "下載",
+    "refresh_all_button": "重新整理全部憑證",
+    "refresh_all_confirm": "重新整理伺服器上所有符合條件的憑證（不限於目前篩選結果）。後端會略過已停用或不符合重新整理條件的憑證；此操作不是重新整理清單或重設配額，可能需要幾分鐘。是否繼續？",
+    "refresh_all_results": "憑證重新整理結果",
+    "refresh_all_summary": "重新整理成功 {{success}} 項，失敗 {{failed}} 項。",
+    "refresh_all_empty": "沒有符合重新整理條件的憑證。",
+    "refresh_all_failed": "無法取得完整重新整理結果：{{message}}。部分憑證可能已重新整理，請檢查清單後再重試。",
+    "refresh_result_success": "重新整理成功",
+    "refresh_result_failed": "重新整理失敗",
     "manual_refresh_button": "重新整理 OAuth 憑證",
     "manual_refresh_requested": "已提交「{{name}}」的憑證重新整理請求",
     "manual_refresh_failed": "提交「{{name}}」的憑證重新整理請求失敗：{{message}}",
@@ -300,8 +315,8 @@
     "pagination_prev": "上一頁",
     "pagination_next": "下一頁",
     "pagination_info": "第 {{current}} / {{total}} 頁 · 共 {{count}} 個檔案",
-    "search_label": "搜尋設定檔",
-    "search_placeholder": "輸入名稱、帳號、類型或供應方關鍵字，支援 * 萬用字元",
+    "search_label": "依名稱、帳號、類型、供應方或錯誤訊息搜尋憑證",
+    "search_placeholder": "搜尋名稱、帳號、類型、供應方或錯誤訊息（403、429、invalid），支援 * 萬用字元",
     "problem_filter_label": "狀態篩選",
     "problem_filter_all": "全部",
     "problem_filter_enabled": "啟用",
@@ -372,6 +387,7 @@
     "priority_placeholder": "例如: 10 或 -1",
     "priority_hint": "僅支援整數；無效值會被忽略。數值越大優先順序越高。",
     "weight_label": "調度權重（weight）",
+    "weight_tooltip": "預設值為 1；小於或等於 0 時不參與加權調度；最大值為 1,000,000。填入後開啟加權輪詢設定即可生效。",
     "weight_hint": "預設值為 1；小於或等於 0 時不參與加權調度；最大值為 1,000,000。填入後開啟<settingsLink>加權輪詢設定</settingsLink>即可生效。",
     "weight_invalid_integer": "權重必須是整數。",
     "weight_invalid_max": "權重不能超過 1,000,000。",
@@ -381,6 +397,24 @@
     "websockets_hint": "為該憑證開啟 Responses API 的 websocket 傳輸。",
     "using_api_label": "使用官方 API（using_api）",
     "using_api_hint": "開啟後使用 xAI 官方 API；關閉時使用 Grok CLI chat-proxy。",
+    "policy_alias_name": "模型別名",
+    "policy_alias_display_name": "顯示名稱",
+    "policy_alias_fork": "在模型清單中保留原始模型",
+    "policy_alias_force_mapping": "將回應模型名稱改寫為別名",
+    "policy_unsupported": "現有資料無法透過此表單編輯，將保持原樣。選擇繼承可清除資料，也可取代後重新填寫清單。",
+    "policy_replace": "取代現有資料",
+    "policy_retry_label": "單憑證請求重試",
+    "policy_inherit": "繼承",
+    "policy_custom": "自訂",
+    "policy_retry_count": "重試次數",
+    "policy_retry_hint": "繼承使用全域 request-retry 設定。自訂為 0 表示此憑證明確不重試請求。",
+    "policy_aliases_label": "單憑證模型別名",
+    "policy_aliases_hint": "優先比對單憑證別名，未符合時回退至通道別名。選擇繼承或清空清單只會清除單憑證別名。",
+    "policy_rules_label": "單憑證錯誤規則",
+    "policy_rules_hint": "自訂規則按清單順序優先生效。選擇繼承或清空清單將使用繼承的規則，不會停用它們。正規表示式使用 Go 語法。",
+    "policy_retry_invalid": "請輸入非負安全整數，或選擇繼承。",
+    "policy_aliases_invalid": "請為每個新增或修改的列填寫非空模型名稱和別名。",
+    "policy_rules_invalid": "請為每條修改的規則填寫正整數狀態碼、動作和至少一個非空比對條件。",
     "note_label": "備註（note）",
     "note_placeholder": "輸入備註資訊，例如：張三的帳號",
     "note_hint": "選填，用於標記憑證用途或歸屬；留空則不寫入。",
@@ -401,7 +435,7 @@
   },
   "antigravity_subscription": {
     "plan_unknown": "未知",
-    "plan_free": "免費版",
+    "plan_free": "Free",
     "plan_pro": "Pro",
     "plan_ultra": "Ultra",
     "plan_ultra_lite": "Ultra Lite"
@@ -454,15 +488,16 @@
     "seven_day_cowork": "7 天 Cowork",
     "iguana_necktie": "Iguana Necktie",
     "seven_day_fable": "7 天 Fable 5",
+    "cloud_session_credits": "雲端工作階段額度",
     "extra_usage_label": "額外用量",
     "plan_label": "方案",
     "plan_unknown": "未知",
-    "plan_free": "免費版",
-    "plan_pro": "專業版",
+    "plan_free": "Free",
+    "plan_pro": "Pro",
     "plan_max": "Max",
     "plan_max5": "Max 5x",
     "plan_max20": "Max 20x",
-    "plan_team": "團隊版"
+    "plan_team": "Team"
   },
   "codex_quota": {
     "title": "Codex 配額",
@@ -488,6 +523,8 @@
     "additional_team_secondary_window": "{{name}} 月度限額",
     "plan_label": "方案",
     "expires_label": "續期時間",
+    "credit_balance_label": "Credit 餘額",
+    "credit_unlimited": "無限額",
     "reset_credits_label": "主動重置次數",
     "reset_credits_expiry_label": "主動重置過期時間（{{timezone}}）",
     "reset_credit_number": "第 {{index}} 次",
@@ -497,13 +534,17 @@
     "reset_confirm_title": "重置 Codex 配額",
     "reset_confirm_message": "將消耗 1 次主動重置次數來重置「{{name}}」的 Codex 配額。是否繼續？",
     "reset_confirm_button": "確認重置",
+    "reset_not_confirmed": "尚未確認額度重置成功，請重新整理額度後再決定是否重試。",
+    "reset_cooldown_failed": "額度已重置，但代理冷卻清除失敗。請在原連線的認證檔案頁面使用「清除冷卻」，不要再次消耗重置卡。",
+
     "reset_success": "已重置「{{name}}」的 Codex 配額",
     "reset_failed": "重置「{{name}}」的 Codex 配額失敗：{{message}}",
     "plan_plus": "Plus",
     "plan_team": "Team",
     "plan_free": "Free",
-    "plan_pro": "Pro 20x",
-    "plan_prolite": "Pro 5x"
+    "plan_pro": "Pro 200",
+    "plan_prolite": "Pro 100",
+    "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
     "daily": "每日剩餘額度",
@@ -563,6 +604,8 @@
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",
     "empty_desc": "上傳 Kimi 驗證檔案後即可查看配額。",
+    "domain_unavailable": "無法讀取 Kimi 憑證的網域，需要可下載且有效的驗證檔案。",
+    "stale_request": "連線或憑證已變更，請重試。",
     "idle": "點擊此處重新整理配額",
     "loading": "正在載入配額...",
     "load_failed": "配額取得失敗：{{message}}",
@@ -571,6 +614,7 @@
     "refresh_button": "重新整理配額",
     "fetch_all": "取得全部",
     "weekly_limit": "週限額",
+    "monthly_limit": "月限額",
     "limit_window": "{{duration}} 限額",
     "limit_index": "限額 #{{index}}",
     "reset_hint": "{{hint}} 後重置"
@@ -589,9 +633,13 @@
     "weekly_limit": "週限額",
     "monthly_credits": "月度點數",
     "used_percent": "已用 {{percent}}",
+    "usage_unavailable": "xAI 用量暫不可用",
     "reset_at": "重置 {{time}}",
     "product_usage": "{{product}} 使用",
+    "usage_breakdown": "用量明細（共用配額）",
     "plan_label": "方案",
+    "resets_label": "重置",
+    "prepaid": "預付",
     "plan_supergrok": "SuperGrok",
     "plan_supergrok_heavy": "SuperGrok Heavy",
     "plan_paid": "付費",
@@ -814,10 +862,21 @@
     "meta_oauth_polling_error": "檢查驗證狀態失敗:",
     "device_code_label": "裝置碼:",
     "device_code_copy": "複製裝置碼",
-    "kimi_oauth_title": "Kimi OAuth",
-    "kimi_oauth_button": "使用 Kimi 登入",
+    "kimi_ai_oauth_title": "Kimi 國際站（kimi.ai）",
+    "kimi_ai_oauth_button": "登入 Kimi 國際站",
+    "kimi_ai_oauth_hint": "透過裝置授權登入 kimi.ai 國際站，自動儲存獨立的 kimi-ai 驗證檔案。中國站與國際站帳號不互通。",
+    "kimi_ai_oauth_url_label": "授權連結:",
+    "kimi_ai_open_link": "開啟連結",
+    "kimi_ai_copy_link": "複製連結",
+    "kimi_ai_oauth_status_waiting": "等待驗證中...",
+    "kimi_ai_oauth_status_success": "驗證成功！",
+    "kimi_ai_oauth_status_error": "驗證失敗:",
+    "kimi_ai_oauth_start_error": "啟動 Kimi 國際站登入失敗:",
+    "kimi_ai_oauth_polling_error": "檢查驗證狀態失敗:",
+    "kimi_oauth_title": "Kimi 中國站（kimi.com）",
+    "kimi_oauth_button": "登入 Kimi 中國站",
     "kimi_sign_up_button": "立即註冊",
-    "kimi_oauth_hint": "透過裝置授權快速登入 Kimi，完成後將自動取得並儲存驗證檔案。",
+    "kimi_oauth_hint": "透過裝置授權登入 kimi.com 中國站，自動取得並儲存驗證檔案。國際站帳號請使用獨立的 kimi.ai 登入入口。",
     "kimi_oauth_url_label": "授權連結:",
     "kimi_open_link": "開啟連結",
     "kimi_copy_link": "複製連結",
@@ -914,6 +973,26 @@
     "no_requests": "無請求"
   },
   "logs": {
+    "preview_too_large": "封包超過 2 MiB 預覽限制，請下載查看",
+    "read_status_live": "持續讀取",
+    "read_status_paused": "讀取已暫停",
+    "read_status_catching_up": "正在追趕積壓記錄",
+    "last_updated": "最後成功更新：{{time}}",
+    "buffer_scope": "僅搜尋已載入記錄：快取 {{count}} 行，符合 {{matched}} 行",
+    "buffer_evicted": "較早記錄已移出快取，無法在此檢索",
+    "cursor_reset_notice": "記錄已輪替或重設，已重新載入最新內容",
+    "history_evicted": "閱讀位置已移出快取，請重新定位",
+    "resume_following": "回到最新 · 新增 {{count}} 行",
+    "level_filter": "記錄等級",
+    "all_levels": "全部等級",
+    "view_request": "查看請求 {{id}} 的封包",
+    "copy_line": "複製此行",
+    "request_log_missing": "未找到封包：可能未記錄或已被清理。關閉請求記錄時通常僅保留錯誤封包。",
+    "download_cached": "下載已快取記錄",
+    "clear_application_confirm": "清空伺服器上的應用程式記錄？請求封包檔案不會被刪除，此操作無法復原。",
+    "clear_search": "清除搜尋",
+    "reading_enabled": "持續讀取",
+    "filter_load_more": "展開更多符合的記錄",
     "title": "記錄檢視",
     "refresh_button": "重新整理記錄",
     "clear_button": "清空記錄",
@@ -960,7 +1039,8 @@
     "show_raw_logs": "顯示原始記錄",
     "show_raw_logs_hint": "直接顯示原始記錄文字，方便多行複製",
     "search_placeholder": "搜尋記錄內容或關鍵字",
-    "filter_panel_title": "結構化篩選",
+    "filter_panel_title": "篩選與顯示",
+    "wrap_lines": "長日誌自動換行",
     "filter_panel_expand": "展開結構化篩選",
     "filter_panel_collapse": "收起結構化篩選",
     "filter_panel_active_count": "已選 {{count}} 項",
@@ -1017,6 +1097,10 @@
     "validation_blocked_short": "待修復",
     "visual_mode_unavailable_detail": "目前設定存在無效 YAML，暫時無法使用視覺化編輯：{{message}}",
     "visual_mode_save_blocked": "請先修復 YAML 語法錯誤，再從視覺化模式儲存",
+    "source_changes_before_visual": "原始碼有未儲存的修改，請先儲存或放棄修改，再切換到視覺化模式。",
+    "precise_save_incomplete": "精準儲存未完成，部分修改可能已生效。草稿已保留，請再次儲存以重新核對伺服器差異。",
+    "concurrent_list_conflict": "伺服器清單 {{path}} 已在草稿基準之後發生變更。為避免覆蓋這些修改，已阻止儲存。草稿仍保留；請記下本機修改，再重新載入設定並核對合併。",
+    "precise_save_recovery_required": "無法回讀儲存結果，已暫停編輯。請再次儲存以恢復草稿基準，或重新載入設定。",
     "visual_mode_latest_yaml_invalid": "伺服器最新設定包含無效 YAML，請先切回原始碼模式檢查後再儲存視覺化修改：{{message}}",
     "editor_placeholder": "key: value",
     "search_placeholder": "搜尋設定內容...",
@@ -1030,6 +1114,166 @@
       "no_changes": "未偵測到變更"
     },
     "visual": {
+      "serverExtras": {
+        "trustedProxies": {
+          "label": "可信任代理",
+          "hint": "填寫 IP 位址或 CIDR；留空不信任轉送標頭。信任涵蓋所有位址的網段有用戶端 IP 偽造風險。重新啟動後端後生效。"
+        },
+        "discoveryEnabled": {
+          "label": "啟用服務探索",
+          "hint": "透過 mDNS / DNS-SD 在區域網路廣播。預設關閉，支援熱更新。"
+        },
+        "discoveryServiceName": {
+          "label": "服務名稱前綴",
+          "hint": "後端自動附加短 ID，留空使用 CPA-<ShortID>。"
+        },
+        "discoveryServiceType": {
+          "label": "服務類型",
+          "hint": "留空使用 _ai-gateway._tcp。"
+        },
+        "discoverySubtypes": {
+          "label": "協定子類型",
+          "hint": "留空使用預設的五種協定。缺少開頭的 _ 時自動補齊，無效項目會被忽略。"
+        },
+        "discoveryInterfacesInclude": {
+          "label": "包含網卡",
+          "hint": "留空自動選擇實體區域網路網卡。支援網卡名稱或以 * 結尾的前綴比對。"
+        },
+        "discoveryInterfacesExclude": {
+          "label": "排除網卡",
+          "hint": "支援網卡名稱或以 * 結尾的前綴比對。排除規則優先於包含規則。"
+        },
+        "discoveryAuthRequired": {
+          "label": "廣播驗證要求",
+          "hint": "預設開啟。僅廣播中繼資料，不改變實際 API 身分驗證。"
+        },
+        "discoveryAdvertiseManagement": {
+          "label": "廣播管理服務",
+          "hint": "預設關閉。僅廣播管理服務存在，不修改遠端存取權限。"
+        },
+        "discoveryTitle": "區域網路探索",
+        "discoveryHint": "需要支援多播的實體網卡及非回環監聽位址。Docker 通常需使用 host 網路；不保證服務可連線。"
+      },
+      "additions": {
+        "oauthTitle": "OAuth 供應商行為",
+        "oauthHint": "本組供應商設定僅適用於 OAuth/驗證檔案憑證，不影響 API Key 憑證。",
+        "claudeTitle": "Claude",
+        "codexTitle": "Codex",
+        "antigravityTitle": "Antigravity",
+        "xaiTitle": "xAI",
+        "liveRelayTitle": "Codex Live 媒體中繼",
+        "liveRelayHint": "在代理程序內中繼 WebRTC 音訊與 DataChannel 流量，需要可接收傳入的 UDP 流量。請勿在螢幕截圖或日誌中暴露 ICE 憑證。",
+        "iceAdd": "新增 ICE 伺服器",
+        "iceRemove": "移除 ICE 伺服器 {{index}}",
+        "iceURLs": "STUN/TURN URL",
+        "iceUsername": "TURN 使用者名稱",
+        "iceCredential": "TURN 密碼",
+        "iceServer": "ICE 伺服器 {{index}}",
+        "routingSessionAffinitySubagents": {
+          "label": "子代理工作階段親和性",
+          "hint": "預設開啟，僅在啟用工作階段親和性時生效。子代理繼承父工作階段的憑證以重用快取；關閉後透過憑證池分散子代理請求，提高並行能力。"
+        },
+        "saveCooldownStatus": {
+          "label": "持久保存冷卻狀態",
+          "hint": "將各憑證的冷卻狀態儲存至驗證檔案旁的 .cds 檔案。預設關閉，關閉時僅在記憶體中保存狀態。"
+        },
+        "transientErrorCooldownSeconds": {
+          "label": "暫時性錯誤冷卻時間（秒）",
+          "hint": "適用於上游 408/500/502/503/504/520–526 錯誤。0 使用預設的 60 秒冷卻時間，負數停用此類冷卻。"
+        },
+        "videoResultAuthCacheTTL": {
+          "label": "影片結果憑證快取有效期",
+          "hint": "影片 ID 與建立它的憑證保持綁定的時間。使用 30m、3h 等時間長度格式，預設 3h。"
+        },
+        "claudeHeaderTimezone": {
+          "label": "備援時區",
+          "hint": "用於偽裝請求中 currentDate 的 IANA 時區，例如 Asia/Singapore；Local 表示後端主機時區。憑證 JSON 中的 timezone 優先。"
+        },
+        "claudeModelLevelCooling": {
+          "label": "依模型冷卻",
+          "hint": "僅對請求的模型套用 Claude 配額冷卻，而非冷卻該憑證下的所有模型。預設關閉。"
+        },
+        "claudeDisableCloakMode": {
+          "label": "停用請求偽裝",
+          "hint": "停用 Claude Code CLI 身分偽裝與系統提示詞替換，原樣傳遞系統提示詞。憑證檔案可透過 cloak_mode 覆寫。預設 false，即僅對非 Claude Code 用戶端自動偽裝。"
+        },
+        "claudeCodeDisableCloakingModelList": {
+          "label": "停用模型 ID 偽裝",
+          "hint": "在 Anthropic 模型清單回應中傳回原始模型 ID，而非偽裝後的 ID。預設關閉。"
+        },
+        "codexDisableCloaking": {
+          "label": "停用請求偽裝",
+          "hint": "不再為 HTTP/SSE 與 WebSocket 請求強制設定官方 Codex User-Agent 與 Originator 標頭。預設關閉。"
+        },
+        "codexModelLevelCooling": {
+          "label": "依模型冷卻",
+          "hint": "僅對請求的模型套用 usage_limit_reached 配額冷卻，而非冷卻該憑證下的所有模型。預設關閉。"
+        },
+        "codexStreamBootstrapBuffering": {
+          "label": "串流啟動緩衝",
+          "hint": "暫存初始空事件與心跳，以便在早期過載或限流拒絕時切換憑證重試。預設關閉。會延遲回應標頭，可能觸發用戶端或反向代理逾時；緩衝受影格數與位元組數預算限制。"
+        },
+        "codexStreamBootstrapTimeout": {
+          "label": "串流啟動緩衝逾時",
+          "hint": "可選的緩衝時間上限，例如 20s。預設 0，表示不限制時間，但仍受影格數與位元組數預算限制。僅在收到上游影格時檢查，並非所有網路停滯情況的硬性截止時間；回應標頭仍可能等待轉換後的輸出。"
+        },
+        "codexOptimizeMultiAgentV2": {
+          "label": "多代理 v2 最佳化",
+          "hint": "最佳化官方 Codex 多代理請求：更新 spawn_agent 模型資訊、移除訊息參數加密、正規化 agent_message 內容，並為非 Codex 協定轉換為使用者訊息。預設關閉。"
+        },
+        "codexOrphanDelegationCompatibility": {
+          "label": "孤立委派輸出相容性",
+          "hint": "對帶有 X-Openai-Subagent: collab_spawn 的請求，將缺少有效對應呼叫的 codex_app/create_thread 與 codex_app/send_message_to_thread 孤立輸出轉換為使用者訊息。預設關閉。"
+        },
+        "codexResponseSteering": {
+          "label": "回應引導",
+          "hint": "實驗性全雙工 Codex Responses WebSocket。每條連線始終綁定同一上游帳號與模型，已接受的輸入不會重播。預設關閉。"
+        },
+        "antigravityConnectionPoolEnabled": {
+          "label": "啟用連線池",
+          "hint": "重用上游 HTTP/1.1 連線。預設 false，使用短連線。"
+        },
+        "antigravityConnectionPoolIdleTimeout": {
+          "label": "閒置連線逾時",
+          "hint": "閒置連線在池中保留的時間，預設 30s，上限 210s。設為 0 或負時長時切換為短連線。"
+        },
+        "antigravityConnectionPoolMaxIdleConnsPerHost": {
+          "label": "每主機最大閒置連線數",
+          "hint": "每個憑證為每個上游主機保留的最大閒置連線數，預設 2，上限 100。0 使用 Go 預設值 2，負數切換為短連線。"
+        },
+        "xaiInjectXSearch": {
+          "label": "注入 x_search",
+          "hint": "請求未宣告 xAI 原生 x_search 工具時自動新增，並在適用時加入 tool_choice.allowed_tools。預設關閉。"
+        },
+        "codexLiveMediaRelayEnabled": {
+          "label": "啟用媒體中繼",
+          "hint": "在目前程序內終止並中繼 Codex Live WebRTC 媒體連線，需要可接收傳入的 UDP 流量。預設關閉，以保持媒體直連。"
+        },
+        "codexLiveMediaRelayMaxSessions": {
+          "label": "最大並行媒體工作階段數",
+          "hint": "留空或設為 0 使用預設的 32 個工作階段。自訂 UDP 連接埠範圍必須為每個工作階段提供至少兩個連接埠。"
+        },
+        "codexLiveMediaRelayDisablePrivateRemoteIPs": {
+          "label": "封鎖私有遠端 IP 候選",
+          "hint": "預設 false，允許私有位址候選，適合本機或可信網路用戶端。開啟後拒絕指向私有、回送、鏈路本地或未指定位址的下游 SDP 候選，減少內網暴露風險，但可能導致本機連線失敗。"
+        },
+        "codexLiveMediaRelayPublicIP": {
+          "label": "通告的公用 IP",
+          "hint": "代理位於 1:1 NAT 後方時，可填寫向對端通告的公用 IPv4 或 IPv6 位址。請填寫 IP 位址而非主機名稱。"
+        },
+        "codexLiveMediaRelayUDPPortMin": {
+          "label": "UDP 連接埠下限",
+          "hint": "上下限皆為 0 時由系統分配；否則須提供包含兩端的連續連接埠範圍，連接埠數量至少為實際工作階段上限的兩倍。"
+        },
+        "codexLiveMediaRelayUDPPortMax": {
+          "label": "UDP 連接埠上限",
+          "hint": "不得小於下限。上下限須同時為 0 或同時非零；自訂範圍每個工作階段至少需要兩個連接埠，預設 32 個工作階段需要至少 64 個連接埠。"
+        },
+        "codexLiveMediaRelayICEServers": {
+          "label": "ICE 伺服器",
+          "hint": "可選的 STUN/TURN 伺服器，URL 支援 stun:、stuns:、turn: 或 turns:。JSON 設定 API 不會傳回 TURN 憑證。請透過密碼欄位填寫憑證，勿將機密暴露在螢幕截圖或日誌中。"
+        }
+      },
       "search": {
         "placeholder": "搜尋設定項（標籤或 YAML 鍵名）",
         "no_results": "沒有符合的設定項"
@@ -1056,6 +1300,8 @@
           "signature_title": "簽章驗證"
         },
         "server": {
+          "github_token": "全域 GitHub 權杖",
+          "github_token_hint": "用於面板更新、外掛下載等伺服器端 GitHub 請求。優先於 GITHUB_TOKEN；留空時使用環境變數憑證，未設定憑證則匿名請求。外掛商店符合的驗證規則優先。",
           "host": "主機位址",
           "port": "連接埠"
         },
@@ -1081,7 +1327,7 @@
           "panel_repo": "面板儲存庫"
         },
         "auth": {
-          "auth_dir": "驗證檔案目錄（auth-dir）",
+          "auth_dir": "OAuth 驗證檔案目錄（oauth.auth-dir）",
           "auth_dir_hint": "存放驗證檔案的目錄路徑（支援 ~）"
         },
         "system": {
@@ -1130,12 +1376,12 @@
           "redis_usage_retention_hint": "RESP 介面 LPOP/RPOP 用量佇列的記憶體保留時間，最大 3600 秒",
           "antigravity_sensitive_words": "敏感詞混淆",
           "antigravity_sensitive_words_desc": "在 Antigravity 系統提示詞的匹配項中插入零寬字元，降低上游精確關鍵詞匹配",
-          "antigravity_sensitive_words_label": "敏感詞（antigravity.sensitive-words）",
+          "antigravity_sensitive_words_label": "OAuth 敏感詞（oauth.providers.antigravity.sensitive-words）",
           "antigravity_sensitive_words_placeholder": "proxy",
           "antigravity_sensitive_words_hint": "每項填寫一個詞或短語；匹配不分大小寫，儲存時移除空項，少於 2 個字元的項目會被後端忽略",
           "devin_sensitive_words": "Devin 系統提示詞敏感詞",
           "devin_sensitive_words_desc": "僅處理 Devin 系統提示詞：含設定詞的整行會被刪除，剩餘系統提示詞再進行混淆；一般訊息和工具參數不會被修改",
-          "devin_sensitive_words_label": "敏感詞（devin.sensitive-words）",
+          "devin_sensitive_words_label": "OAuth 敏感詞（oauth.providers.devin.sensitive-words）",
           "devin_sensitive_words_placeholder": "敏感短語",
           "devin_sensitive_words_hint": "每項填寫一個詞或短語。請謹慎設定：命中內容會導致整行系統提示詞被刪除；儲存時移除空項",
           "antigravity_signature_cache": "啟用 Antigravity 簽名快取",
@@ -1146,8 +1392,8 @@
         "headers": {
           "title": "Header 預設值",
           "description": "Claude 與 Codex OAuth 請求在客戶端缺少 Header 時使用的預設值",
-          "claude_title": "Claude Header Defaults",
-          "codex_title": "Codex Header Defaults",
+          "claude_title": "Claude OAuth 預設請求標頭",
+          "codex_title": "Codex OAuth 預設請求標頭",
           "user_agent": "User-Agent",
           "package_version": "Package Version",
           "runtime_version": "Runtime Version",
@@ -1192,7 +1438,7 @@
           "disable_cooling_desc": "全域停用驗證/模型失敗後的冷卻視窗",
           "session_affinity": "會話黏性路由",
           "ws_auth": "WebSocket 驗證",
-          "ws_auth_desc": "啟用 WebSocket 連線驗證（/v1/ws）"
+          "ws_auth_desc": "啟用 AI Studio WebSocket 連線驗證（oauth.providers.aistudio.ws-auth）"
         },
         "quota": {
           "title": "配額回退",
@@ -1230,7 +1476,7 @@
         }
       },
       "api_keys": {
-        "label": "API 金鑰清單（api-keys）",
+        "label": "用戶端 API 金鑰（access.api-keys）",
         "add": "新增 API 金鑰",
         "generate": "產生",
         "empty": "暫無 API 金鑰",
@@ -1239,7 +1485,11 @@
         "add_title": "新增 API 金鑰",
         "input_label": "API 金鑰",
         "input_placeholder": "貼上你的 API 金鑰",
-        "input_hint": "此處僅修改本地設定檔內容，不會自動同步到 API 金鑰管理介面",
+        "name_label": "名稱 / 說明（選填）",
+        "name_placeholder": "例如：小明的筆記型電腦",
+        "name_hint": "名稱立即儲存在目前瀏覽器中，依伺服器隔離，不寫入伺服器設定。清空此欄位可移除名稱。",
+        "name_save_error": "無法將名稱儲存至瀏覽器儲存空間，請檢查瀏覽器儲存設定。",
+        "input_hint": "儲存設定後生效。上游提供商金鑰獨立管理，不受此處修改影響。",
         "error_empty": "請輸入 API 金鑰",
         "error_invalid": "API 金鑰包含無效字元",
         "strength": {
@@ -1302,7 +1552,17 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_trusted_proxies": "每個可信任代理必須是有效的 IP 位址或 CIDR。",
+        "invalid_discovery_service_type": "請使用 _名稱._tcp 格式：名稱為 1–15 位英文字母、數字或連字號，首尾不能是連字號。",
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
+        "invalid_duration": "請輸入有效的時間長度，例如 30s 或 3h",
+        "positive_duration": "請輸入大於零的時間長度",
+        "invalid_timezone": "請輸入有效的 IANA 時區，例如 Asia/Singapore",
+        "invalid_ip": "請輸入有效的 IPv4 或 IPv6 位址",
+        "udp_port_pair": "UDP 連接埠上下限須同時為 0，或同時設定且下限不大於上限",
+        "udp_port_capacity": "UDP 連接埠數量須至少為實際最大工作階段數的兩倍（工作階段數為 0 時以 32 計算）",
+        "invalid_ice_servers": "每個 ICE 伺服器須至少包含一個有效的 stun:、stuns:、turn: 或 turns: URL",
+        "integer_range_0_65535": "請輸入 0 到 65535 之間的整數",
         "port_range": "請輸入 1 到 65535 之間的有效連接埠",
         "integer": "請輸入整數",
         "non_negative_integer": "請輸入非負整數",
@@ -1321,6 +1581,11 @@
     }
   },
   "quota_management": {
+    "search_label": "搜尋帳號",
+    "search_placeholder": "依檔案名稱或電子郵件搜尋",
+    "search_empty_title": "沒有符合的帳號",
+    "search_empty_desc": "請嘗試其他檔案名稱或電子郵件，或清除搜尋。",
+    "search_clear": "清除搜尋",
     "title": "配額管理",
     "description": "集中查看 OAuth 配額與剩餘情況",
     "refresh_all_credentials": "重新整理全部憑證",
@@ -1556,6 +1821,7 @@
     "clear_login_confirm": "確認清理本地登入資訊並登出？"
   },
   "notification": {
+    "trusted_proxies_restart_required": "可信任代理設定已儲存，重新啟動後端後生效。",
     "region_label": "通知",
     "type_success": "成功",
     "type_info": "提示",
@@ -1581,7 +1847,9 @@
     "chinese": "簡體中文",
     "chinese_tw": "繁體中文（台灣）",
     "english": "英文",
-    "russian": "俄文"
+    "russian": "俄文",
+    "vietnamese": "Tiếng Việt",
+    "korean": "한국어"
   },
   "theme": {
     "switch": "主題",
@@ -1604,6 +1872,90 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "behavior": {
+      "title": "提供商專屬行為",
+      "alphaSearch": "啟用 Alpha Search",
+      "alphaSearchHint": "允許此 Codex 金鑰用於 Alpha Search。上游必須支援此功能。",
+      "codexCloaking": "Codex 請求偽裝",
+      "codexCloakingHint": "為此 API 金鑰覆寫官方 Codex 身分請求標頭設定。選擇預設值會移除此憑證的覆寫設定；僅適用於 OAuth 的設定在此不生效。",
+      "useDefault": "使用後端預設值",
+      "cloakingEnabled": "啟用偽裝",
+      "cloakingDisabled": "停用偽裝",
+      "rebuildMidSystemMessage": "重建系統訊息",
+      "rebuildMidSystemMessageHint": "將 Claude 中 role 為 system 的訊息移至頂層 system 欄位。",
+      "supportPromptCacheKey": "注入提示詞快取鍵",
+      "supportPromptCacheKeyHint": "為相容的請求衍生並注入 prompt_cache_key。僅在上游支援此欄位時啟用。"
+    },
+    "modelOptions": {
+      "displayName": "顯示名稱",
+      "maxContextLength": "上下文長度",
+      "contextHint": "非負安全整數；留空使用預設值。",
+      "forceMapping": "將回應模型名稱改寫為別名",
+      "isCompat": "相容模式",
+      "supportConfigurationUpdate": "允許設定更新",
+      "inputModalitiesText": "輸入模態",
+      "outputModalitiesText": "輸出模態",
+      "modalitiesHint": "使用逗號或空白分隔；保留自訂模態名稱。",
+      "useMaxCompletionTokens": "使用 max_completion_tokens",
+      "thinkingMode": "思考設定覆寫",
+      "useDefault": "使用預設",
+      "custom": "自訂",
+      "thinkingHint": "預設繼承後端行為；空的自訂覆寫是明確的 {}。預算和思考等級可以同時設定。僅當最小值和最大值均為 0 或留空時，才不指定數值範圍。最小值大於 0 時須設定不小於它的最大值。",
+      "thinkingMin": "最小思考預算",
+      "thinkingMax": "最大思考預算",
+      "thinkingZeroAllowed": "允許零預算",
+      "thinkingDynamicAllowed": "允許動態預算",
+      "invalidContext": "上下文長度必須是非負安全整數。",
+      "invalidThinking": "思考設定必須是有效的 JSON 物件。",
+      "invalidBudget": "思考預算必須是非負安全整數。",
+      "invalidRange": "最小思考預算不能大於最大值，留空的邊界按 0 處理。",
+      "removeModel": "移除模型",
+      "modelName": "模型名稱",
+      "modelAlias": "別名（選填）"
+    },
+    "runtimePolicy": {
+      "title": "進階執行策略",
+      "description": "繼承使用所屬群組策略，再回退至後端預設值。覆寫僅套用於目前項目。",
+      "cooling": "冷卻策略",
+      "inherit": "繼承",
+      "coolingEnabled": "啟用冷卻",
+      "coolingDisabled": "停用冷卻",
+      "retry": "請求重試次數",
+      "retryHint": "留空繼承群組設定。請輸入整數：0 表示不重試；負數使用全域重試策略，而非群組策略。",
+      "errorsMode": "請求錯誤規則",
+      "override": "覆寫",
+      "errorsHint": "繼承使用上層策略。覆寫會取代整個清單，可儲存為空。切換模式會保留規則草稿。",
+      "invalidRetry": "重試次數必須是安全範圍內的整數，或留空以繼承。"
+    },
+    "errorRules": {
+      "hint": "依序採用首個命中規則；狀態碼相同，任一條件命中即可。",
+      "empty": "尚無規則，可儲存為空清單。",
+      "rule": "規則 {{number}}",
+      "status": "狀態碼",
+      "action": "動作",
+      "selectAction": "選擇動作",
+      "moveUp": "上移規則",
+      "moveDown": "下移規則",
+      "removeRule": "刪除規則",
+      "matchType": "比對類型",
+      "text": "包含文字",
+      "regex": "正規表示式",
+      "matchValue": "比對條件",
+      "regexHint": "Go 正規表示式",
+      "removeMatch": "刪除條件",
+      "addMatch": "新增條件",
+      "addRule": "新增規則",
+      "invalidStatus": "狀態碼必須是安全範圍內的正整數。",
+      "invalidAction": "請選擇有效動作。",
+      "invalidMatch": "比對條件不可為空。",
+      "missingMatch": "至少需要一個比對條件。",
+      "actions": {
+        "stop": "停止",
+        "stop-and-cooldown": "停止並冷卻",
+        "continue": "繼續",
+        "continue-and-cooldown": "繼續並冷卻"
+      }
+    },
     "header": {
       "title": "AI 提供商",
       "activeResources": "{{active}}/{{total}} 個活躍資源",
@@ -1774,7 +2126,7 @@
       "disabledHint": "停用後不會被閘道使用",
       "websockets": "啟用 WebSockets",
       "testModel": "測試模型",
-      "testModelClaudeHint": "僅用於連通性測試,不會被儲存",
+      "testModelHint": "僅用於連通性測試,不會被儲存",
       "testModelAutoWith": "自動 · {{name}}",
       "testModelAutoEmpty": "自動(尚未新增模型)",
       "testModelCustom": "{{name}}(自訂)",
@@ -1802,8 +2154,8 @@
       "proxyBadge": "代理",
       "modelBadgeImage": "圖片",
       "modelBadgeThinking": "Thinking",
-      "thinkingConfig": "允許的思考檔位",
-      "thinkingExistingHint": "目前後端設定會保持不變；修改選項後將替換為所選標準檔位。",
+      "thinkingConfig": "思考能力",
+      "thinkingExistingHint": "修改思考等級會保留預算及其他未修改的設定。",
       "thinkingLevels": {
         "none": "關閉思考",
         "minimal": "最少",
@@ -1891,5 +2243,34 @@
     "modelCatalog": {
       "notLoaded": "未載入"
     }
+  },
+  "claude_reset": {
+    "expiry_title": "主動重置過期時間（{{timezone}}）",
+    "grant_number": "第 {{index}} 批",
+    "expiry_unknown": "到期時間未知",
+    "retry_confirm": "使用原請求 ID 重試「{{name}}」結果未知的重置？可能已消耗一次重置。請在 10 分鐘內重試；請勿重新載入頁面或在其他分頁發起新請求。",
+    "remaining": "剩餘重置次數",
+    "title": "儲備重置次數",
+    "scope": "使用有限的重置權益清除符合條件的 Claude 用量視窗。僅在確定要消耗一次重置時確認。復原僅限目前分頁和工作階段；結果未知時，請勿重新載入頁面或使用其他分頁。",
+    "loading": "載入中…",
+    "read_error": "無法讀取重置權益，未提交重置。",
+    "blocked": "未提交重置：無法驗證資格、帳戶身分或工作階段。請重新整理後檢查。",
+    "unknown": "結果未知，可能已消耗一次重置。請在 10 分鐘內使用相同請求 ID 重試，不要在其他位置發起新的重置。",
+    "expired": "重試視窗已過期，目前工作階段已阻止進一步重置。請先檢查 Claude 帳戶狀態。",
+    "retry": "重試同一請求",
+    "empty": "沒有儲備重置權益。",
+    "count": "剩餘 {{left}} / {{total}} 次重置",
+    "ends": "到期：{{date}}",
+    "use": "重置額度",
+    "confirm": "確認重置",
+    "confirm_text": "確定消耗一次重置，清除「{{name}}」符合條件的用量限制？重置次數有限。",
+    "reset": "已重置用量限制。",
+    "already_used": "該權益已使用。",
+    "not_limited": "未重置：帳戶目前未達到限制。",
+    "cooldown": "未重置：仍在冷卻期。",
+    "ineligible": "此帳戶不符合資格。",
+    "unavailable": "重置暫不可用。",
+    "rate_limited": "請求過於頻繁。",
+    "auth_error": "授權遭拒。"
   }
 }

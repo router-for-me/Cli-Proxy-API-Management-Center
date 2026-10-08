@@ -14,7 +14,7 @@ export const CACHE_EXPIRY_MS = 30 * 1000; // 与基线保持一致，减少管�
 
 // 网络与版本信息
 export const DEFAULT_API_PORT = 8317;
-export const MANAGEMENT_API_PREFIX = '/v0/management';
+export const MANAGEMENT_API_PREFIX = '/v8/management';
 export const REQUEST_TIMEOUT_MS = 30 * 1000;
 export const CPA_VERSION_HEADER_KEYS = ['x-cpa-version'];
 export const CPA_BUILD_DATE_HEADER_KEYS = ['x-cpa-build-date'];
@@ -34,12 +34,21 @@ export const STORAGE_KEY_THEME = 'cli-proxy-theme';
 export const STORAGE_KEY_LANGUAGE = 'cli-proxy-language';
 
 // 语言配置
-export const LANGUAGE_ORDER = defineLanguageOrder(['zh-CN', 'zh-TW', 'en', 'ru'] as const);
+export const LANGUAGE_ORDER = defineLanguageOrder([
+  'zh-CN',
+  'zh-TW',
+  'en',
+  'ru',
+  'vi',
+  'ko',
+] as const);
 export const LANGUAGE_LABEL_KEYS: Record<Language, string> = {
   'zh-CN': 'language.chinese',
   'zh-TW': 'language.chinese_tw',
   en: 'language.english',
   ru: 'language.russian',
+  vi: 'language.vietnamese',
+  ko: 'language.korean',
 };
 export const SUPPORTED_LANGUAGES = LANGUAGE_ORDER;
 

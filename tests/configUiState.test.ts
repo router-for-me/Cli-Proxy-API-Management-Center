@@ -10,6 +10,7 @@ import {
   type ConfigStatusInput,
 } from '@/features/config/uiState';
 import type { VisualConfigValidationErrors } from '@/types/visualConfig';
+import { LANGUAGE_ORDER } from '@/utils/constants';
 
 const statusInput = (overrides: Partial<ConfigStatusInput> = {}): ConfigStatusInput => ({
   disconnected: false,
@@ -50,8 +51,8 @@ describe('resolveStatus', () => {
     expect(status.tone).toBe('error');
   });
 
-  test('every status resolves label keys that exist in all four locales', async () => {
-    const locales = ['en', 'zh-CN', 'zh-TW', 'ru'];
+  test('every status resolves label keys that exist in all supported locales', async () => {
+    const locales = LANGUAGE_ORDER;
     const inputs: Partial<ConfigStatusInput>[] = [
       { disconnected: true },
       { loading: true },

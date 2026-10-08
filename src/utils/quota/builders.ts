@@ -368,6 +368,18 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
     }
   }
 
+  const monthly = payload.usages?.limit_month_total;
+  const monthlyRatio = Number(monthly?.used_ratio);
+  if (monthly && monthly.used_ratio !== undefined && Number.isFinite(monthlyRatio)) {
+    const row = toKimiUsageRow(
+      { used: Math.round(monthlyRatio * 100), limit: 100, reset_time: monthly.reset_time },
+      { labelKey: 'kimi_quota.monthly_limit' }
+    );
+    if (row) {
+      rows.push({ id: 'monthly', ...row });
+    }
+  }
+
   return rows;
 }
 
@@ -414,6 +426,7 @@ const emptyXaiBillingSummary = (): XaiBillingSummary => ({
   onDemandCapCents: null,
   onDemandUsedCents: null,
   onDemandUsedPercent: null,
+  prepaidBalanceCents: null,
   usedPercent: null,
 });
 
@@ -436,6 +449,22 @@ function xaiPeriodInstants(
       ? (resetAtMs - startMs) / 3_600_000
       : null;
   return { resetAtMs, periodHours };
+}
+
+export function resolveXaiSubscriptionPlan(
+  tier: string | null | undefined,
+  display: string | null | undefined
+): { label: string; tier: 'elite' | 'premium' | 'standard' } | null {
+  const label = normalizeStringValue(display) ?? normalizeStringValue(tier);
+  if (!label) return null;
+  const key = `${display ?? ''} ${tier ?? ''}`.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const planTier =
+    key.includes('heavy')
+      ? 'elite'
+      : key.includes('supergrok') || key.includes('premium')
+        ? 'premium'
+        : 'standard';
+  return { label, tier: planTier };
 }
 
 export function buildXaiBillingSummary(
@@ -484,6 +513,9 @@ export function buildXaiBillingSummary(
       ? Math.max(0, usedCents - monthlyLimitCents)
       : null;
   const onDemandUsedCents = explicitOnDemandUsedCents ?? derivedOnDemandUsedCents;
+  const prepaidBalanceCents = normalizeXaiCentValue(
+    config.prepaidBalance ?? config.prepaid_balance
+  );
   const usedPercent =
     monthlyLimitCents !== null && monthlyLimitCents > 0 && includedUsedCents !== null
       ? (includedUsedCents / monthlyLimitCents) * 100
@@ -517,6 +549,7 @@ export function buildXaiBillingSummary(
   summary.onDemandCapCents = onDemandCapCents;
   summary.onDemandUsedCents = onDemandUsedCents;
   summary.onDemandUsedPercent = onDemandUsedPercent;
+  summary.prepaidBalanceCents = prepaidBalanceCents;
   summary.billingPeriodStart = hasMonthlyData ? billingPeriodStart : undefined;
   summary.billingPeriodEnd = hasMonthlyData ? billingPeriodEnd : undefined;
   summary.usedPercent = usedPercent;
@@ -538,7 +571,8 @@ export function mergeXaiBillingSummaries(
   // Keep the active period atomic. The primary (weekly endpoint) and fallback
   // (monthly endpoint) describe different clocks, so borrowing one endpoint's
   // dates for the other's period type would turn a billing rollover into a
-  // quota reset.
+  // quota reset. Keep usage with that same period too: monthly spending must
+  // not replace an unavailable weekly percentage.
   const periodSummary =
     primary.periodType !== 'unknown'
       ? primary
@@ -553,7 +587,7 @@ export function mergeXaiBillingSummaries(
     mode: 'billing',
     source: 'cli-chat-proxy',
     periodType: periodSummary.periodType,
-    usagePercent: primary.usagePercent ?? fallback.usagePercent,
+    usagePercent: periodSummary.usagePercent,
     periodStart,
     periodEnd,
     resetAtMs: periodInstants.resetAtMs,
@@ -565,6 +599,9 @@ export function mergeXaiBillingSummaries(
     onDemandCapCents: primary.onDemandCapCents ?? fallback.onDemandCapCents,
     onDemandUsedCents: primary.onDemandUsedCents ?? fallback.onDemandUsedCents,
     onDemandUsedPercent: primary.onDemandUsedPercent ?? fallback.onDemandUsedPercent,
+    prepaidBalanceCents: primary.prepaidBalanceCents ?? fallback.prepaidBalanceCents,
+    planLabel: primary.planLabel ?? fallback.planLabel,
+    planTier: primary.planTier ?? fallback.planTier,
     billingPeriodStart: primary.billingPeriodStart ?? fallback.billingPeriodStart,
     billingPeriodEnd: primary.billingPeriodEnd ?? fallback.billingPeriodEnd,
     usedPercent: primary.usedPercent ?? fallback.usedPercent,

@@ -20,6 +20,7 @@ class ApiClient {
   private instance: AxiosInstance;
   private apiBase: string = '';
   private managementKey: string = '';
+  private connectionRevision = 0;
 
   constructor() {
     this.instance = axios.create({
@@ -36,7 +37,11 @@ class ApiClient {
    * 设置 API 配置
    */
   setConfig(config: ApiClientConfig): void {
-    this.apiBase = computeApiUrl(config.apiBase);
+    const apiBase = computeApiUrl(config.apiBase);
+    if (apiBase !== this.apiBase || config.managementKey !== this.managementKey) {
+      this.connectionRevision += 1;
+    }
+    this.apiBase = apiBase;
     this.managementKey = config.managementKey;
 
     if (config.timeout) {
@@ -44,6 +49,11 @@ class ApiClient {
     } else {
       this.instance.defaults.timeout = REQUEST_TIMEOUT_MS;
     }
+  }
+
+  /** Guards read/modify/write operations across connection changes, including ABA switches. */
+  getConnectionRevision(): number {
+    return this.connectionRevision;
   }
 
   private readHeader(headers: Record<string, unknown> | undefined, keys: string[]): string | null {

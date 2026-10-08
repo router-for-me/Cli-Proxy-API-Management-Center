@@ -78,7 +78,8 @@ describe('xAI paid OAuth quota fallback', () => {
     );
 
     expect(requests.map((request) => request.url)).toEqual([XAI_API_ME_URL, XAI_API_CHAT_URL]);
-    expect(JSON.parse(requests[1]?.data ?? '{}')).toMatchObject({
+    const chatRequest = requests.find((request) => request.url === XAI_API_CHAT_URL);
+    expect(JSON.parse(chatRequest?.data ?? '{}')).toMatchObject({
       model: 'grok-4.5',
       max_tokens: 1,
       stream: false,

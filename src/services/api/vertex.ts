@@ -20,6 +20,6 @@ export const vertexApi = {
     if (location) {
       formData.append('location', location);
     }
-    return apiClient.postForm<VertexImportResponse>('/vertex/import', formData);
+    return apiClient.postForm<VertexImportResponse>('/oauth/import?provider=vertex', formData);
   },
 };

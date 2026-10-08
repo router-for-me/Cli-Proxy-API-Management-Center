@@ -28,9 +28,12 @@ describe('Muse (Meta) provider and device OAuth', () => {
     const get = spyOn(apiClient, 'get').mockResolvedValue(response);
     try {
       expect(await oauthApi.startAuth(provider, signal)).toEqual(response);
-      expect(get).toHaveBeenLastCalledWith('/meta-auth-url', { params: undefined, signal });
+      expect(get).toHaveBeenLastCalledWith('/oauth/auth-url', {
+        params: { provider: 'meta' },
+        signal,
+      });
       await oauthApi.startAuth('Muse');
-      expect(get).toHaveBeenLastCalledWith('/meta-auth-url', { params: undefined });
+      expect(get).toHaveBeenLastCalledWith('/oauth/auth-url', { params: { provider: 'meta' } });
     } finally {
       get.mockRestore();
     }

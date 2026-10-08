@@ -17,30 +17,26 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
+import {
+  ADDITION_FIELDS,
+  ICE_KEY,
+  readVisualAdditions,
+  writeVisualAdditions,
+  writeICEServers,
+  validateVisualAdditions,
+} from '@/features/config/visualConfigAdditions';
+
+import {
+  SERVER_FIELDS,
+  readVisualServer,
+  writeVisualServer,
+  validateVisualServer,
+} from '@/features/config/visualConfigServer';
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
-}
-
-function extractApiKeyValue(raw: unknown): string | null {
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    return trimmed ? trimmed : null;
-  }
-
-  const record = asRecord(raw);
-  if (!record) return null;
-
-  const candidates = [record['api-key'], record.apiKey, record.key, record.Key];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string') {
-      const trimmed = candidate.trim();
-      if (trimmed) return trimmed;
-    }
-  }
-
-  return null;
 }
 
 function parseApiKeysText(raw: unknown): string {
@@ -48,27 +44,10 @@ function parseApiKeysText(raw: unknown): string {
 
   const keys: string[] = [];
   for (const item of raw) {
-    const key = extractApiKeyValue(item);
+    const key = typeof item === 'string' ? item.trim() : '';
     if (key) keys.push(key);
   }
   return keys.join('\n');
-}
-
-function resolveApiKeysText(parsed: Record<string, unknown>): string {
-  if (Object.prototype.hasOwnProperty.call(parsed, 'api-keys')) {
-    return parseApiKeysText(parsed['api-keys']);
-  }
-
-  const auth = asRecord(parsed.auth);
-  const providers = asRecord(auth?.providers);
-  const configApiKeyProvider = asRecord(providers?.['config-api-key']);
-  if (!configApiKeyProvider) return '';
-
-  if (Object.prototype.hasOwnProperty.call(configApiKeyProvider, 'api-key-entries')) {
-    return parseApiKeysText(configApiKeyProvider['api-key-entries']);
-  }
-
-  return parseApiKeysText(configApiKeyProvider['api-keys']);
 }
 
 type YamlDocument = ReturnType<typeof parseDocument>;
@@ -88,7 +67,13 @@ function ensureMapInDoc(doc: YamlDocument, path: YamlPath): void {
 function deleteIfMapEmpty(doc: YamlDocument, path: YamlPath): void {
   const value = doc.getIn(path, true);
   if (!isMap(value)) return;
-  if (value.items.length === 0) doc.deleteIn(path);
+  if (value.items.length === 0) deletePathInDoc(doc, path);
+}
+
+/** Prune only ancestors made empty by this deletion; keep unknown sibling nodes. */
+function deletePathInDoc(doc: YamlDocument, path: YamlPath): void {
+  doc.deleteIn(path);
+  if (path.length > 1) deleteIfMapEmpty(doc, path.slice(0, -1));
 }
 
 function setBooleanInDoc(doc: YamlDocument, path: YamlPath, value: boolean): void {
@@ -117,14 +102,14 @@ function setStringListInDoc(doc: YamlDocument, path: YamlPath, values: string[])
     doc.setIn(path, nextValues);
     return;
   }
-  if (docHas(doc, path)) doc.deleteIn(path);
+  if (docHas(doc, path)) deletePathInDoc(doc, path);
 }
 
 function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
   const safe = typeof value === 'string' ? value : '';
   const trimmed = safe.trim();
   if (trimmed === '') {
-    if (docHas(doc, path)) doc.deleteIn(path);
+    if (docHas(doc, path)) deletePathInDoc(doc, path);
     return;
   }
 
@@ -165,6 +150,8 @@ const PAYLOAD_DIRTY_FIELDS = [
   'payloadFilterRules',
 ] as const;
 
+const PAYLOAD_SECTIONS = ['default', 'default-raw', 'override', 'override-raw', 'filter'] as const;
+
 function hasPayloadDirtyFields(dirtyFields: Set<string>): boolean {
   return PAYLOAD_DIRTY_FIELDS.some((field) => dirtyFields.has(field));
 }
@@ -197,9 +184,12 @@ function getRedisRetentionError(value: string): 'integer_range_1_3600' | undefin
 }
 
 export function getVisualConfigValidationErrors(
-  values: VisualConfigValues
+  values: VisualConfigValues,
+  dirtyFields?: ReadonlySet<string>
 ): VisualConfigValidationErrors {
   return {
+    ...validateVisualAdditions(values, dirtyFields),
+    ...validateVisualServer(values),
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -566,18 +556,6 @@ function parsePluginStoreAuthRules(raw: unknown): PluginStoreAuthRule[] {
     .filter((rule): rule is PluginStoreAuthRule => Boolean(rule));
 }
 
-function deleteLegacyApiKeysProvider(doc: YamlDocument): void {
-  if (docHas(doc, ['auth', 'providers', 'config-api-key', 'api-key-entries'])) {
-    doc.deleteIn(['auth', 'providers', 'config-api-key', 'api-key-entries']);
-  }
-  if (docHas(doc, ['auth', 'providers', 'config-api-key', 'api-keys'])) {
-    doc.deleteIn(['auth', 'providers', 'config-api-key', 'api-keys']);
-  }
-  deleteIfMapEmpty(doc, ['auth', 'providers', 'config-api-key']);
-  deleteIfMapEmpty(doc, ['auth', 'providers']);
-  deleteIfMapEmpty(doc, ['auth']);
-}
-
 function parsePayloadModelEntries(raw: unknown, idPrefix: string): PayloadRule['models'] {
   if (!Array.isArray(raw)) return [];
 
@@ -879,28 +857,64 @@ function syncConditionSequence(
   baseline: PayloadParamEntry[] | undefined,
   desired: PayloadParamEntry[] | undefined
 ): void {
+  // Unedited conditions retain their original grouping and nested value comments.
+  if (JSON.stringify(baseline ?? []) === JSON.stringify(desired ?? [])) return;
+
   const entries = (desired ?? []).filter((entry) => entry.path.trim());
   if (entries.length === 0) {
     deleteMapValue(modelMap, key);
     return;
   }
   const seq = ensureSeqValue(doc, modelMap, key);
-  const nodesById = new Map((baseline ?? []).map((entry, index) => [entry.id, seq.items[index]]));
+  const flattened: YAMLMap[] = [];
+  seq.items.forEach((node, itemIndex) => {
+    if (isMap(node)) {
+      // Match parsePayloadConditions' Object.entries order, including numeric keys.
+      // Every map field is a condition, not an unknown extension field. The backend
+      // ANDs all fields across all maps, so singleton maps preserve its semantics.
+      Object.keys(node.toJSON()).forEach((path) => {
+        const pair = mapPair(node, path);
+        if (!pair) return;
+        const item = doc.createNode({}) as YAMLMap;
+        item.flow = node.flow;
+        item.items = [pair];
+        if (pair === node.items[0]) {
+          item.commentBefore = itemIndex === 0 ? seq.commentBefore : node.commentBefore;
+          item.spaceBefore = node.spaceBefore;
+        }
+        if (pair === node.items[node.items.length - 1]) item.comment = node.comment;
+        flattened.push(item);
+      });
+    } else if (isScalar(node) && typeof node.value === 'string') {
+      // Keep the parser's compatibility with scalar entries without shifting IDs.
+      const item = doc.createNode({ [node.value]: '' }) as YAMLMap;
+      preserveNodeComments(node, item);
+      if (itemIndex === 0) item.commentBefore = seq.commentBefore;
+      flattened.push(item);
+    }
+  });
+  const nodesById = new Map((baseline ?? []).map((entry, index) => [entry.id, flattened[index]]));
+  const priorById = new Map((baseline ?? []).map((entry) => [entry.id, entry]));
   const items = entries.map((entry) => {
-    const existing = nodesById.get(entry.id);
-    const item = isMap(existing) ? existing : (doc.createNode({}) as YAMLMap);
-    const prior = baseline?.find((candidate) => candidate.id === entry.id);
-    syncEntryMap(
-      doc,
-      item,
-      prior ? [prior] : [],
-      [entry],
-      (value) => value.path,
-      (value) => serializePayloadParamEntryValue(value)
-    );
+    const item = nodesById.get(entry.id) ?? (doc.createNode({}) as YAMLMap);
+    const prior = priorById.get(entry.id);
+    const pair = item.items[0];
+    if (pair) {
+      if (isScalar(pair.key)) pair.key.value = entry.path.trim();
+      else pair.key = doc.createNode(entry.path.trim());
+      if (prior?.value !== entry.value || prior?.valueType !== entry.valueType) {
+        updatePairValue(doc, pair, serializePayloadParamEntryValue(entry));
+      }
+    } else {
+      item.items.push(doc.createPair(entry.path.trim(), serializePayloadParamEntryValue(entry)));
+    }
     return item;
   });
-  replaceSequenceItems(seq, items);
+  // These are new singleton wrappers; replaceSequenceItems would discard their
+  // comments because they are not members of the original sequence.
+  seq.items = items;
+  seq.commentBefore = items[0]?.commentBefore;
+  if (items[0]) items[0].commentBefore = undefined;
 }
 
 function syncPayloadModels(
@@ -951,7 +965,7 @@ function syncPayloadRuleSequence(
   desired: PayloadRule[],
   rawValues: boolean
 ): void {
-  const payload = doc.getIn(['payload'], true);
+  const payload = doc.getIn(['requests', 'payload'], true);
   if (!isMap(payload)) throw new Error('Expected payload map');
   const rules = desired.filter((rule) => rule.models.some((model) => model.name.trim()));
   if (rules.length === 0) {
@@ -985,7 +999,7 @@ function syncPayloadFilterSequence(
   baseline: PayloadFilterRule[],
   desired: PayloadFilterRule[]
 ): void {
-  const payload = doc.getIn(['payload'], true);
+  const payload = doc.getIn(['requests', 'payload'], true);
   if (!isMap(payload)) throw new Error('Expected payload map');
   const rules = desired.filter((rule) => rule.models.some((model) => model.name.trim()));
   if (rules.length === 0) {
@@ -1006,17 +1020,126 @@ function syncPayloadFilterSequence(
   replaceSequenceItems(seq, items);
 }
 
+/** IDs are editor identity, not YAML data. Reserve exact matches before matching edited
+ * entries, so a deletion/reorder cannot steal another entry's AST node. New entries
+ * use a separate namespace rather than their parsed positional IDs.
+ */
+function withoutEditorIds(value: unknown): string {
+  return JSON.stringify(value, (key, item: unknown) => (key === 'id' ? undefined : item));
+}
+
+function alignRebasedEntries<T extends { id: string }>(
+  baseline: T[],
+  draft: T[],
+  identity: (entry: T) => string,
+  alignChildren: (entry: T, prior: T | undefined) => T = (entry) => entry
+): T[] {
+  const available = new Set(baseline.map((_, index) => index));
+  const matches = new Map<number, number>();
+  for (const key of [withoutEditorIds, identity]) {
+    draft.forEach((entry, index) => {
+      if (matches.has(index)) return;
+      const signature = key(entry);
+      const match = [...available].find((candidate) => key(baseline[candidate]) === signature);
+      if (match !== undefined) {
+        matches.set(index, match);
+        available.delete(match);
+      }
+    });
+  }
+  return draft.map((entry, index) => {
+    const match = matches.get(index);
+    const prior = match === undefined ? undefined : baseline[match];
+    return alignChildren({ ...entry, id: prior?.id ?? `rebase-new-${entry.id}` }, prior);
+  });
+}
+
+function alignRebasedModels(
+  draft: PayloadRule['models'],
+  baseline: PayloadRule['models']
+): PayloadRule['models'] {
+  const alignParams = (entries: PayloadParamEntry[], prior: PayloadParamEntry[]) =>
+    alignRebasedEntries(prior, entries, (entry) => entry.path);
+  return alignRebasedEntries(
+    baseline,
+    draft,
+    (model) => JSON.stringify([model.name, model.protocol, model.fromProtocol]),
+    (model, prior) => ({
+      ...model,
+      headers: alignRebasedEntries(
+        prior?.headers ?? [],
+        model.headers ?? [],
+        (entry) => entry.name
+      ),
+      match: alignParams(model.match ?? [], prior?.match ?? []),
+      notMatch: alignParams(model.notMatch ?? [], prior?.notMatch ?? []),
+    })
+  );
+}
+
+function alignRebasedValues(
+  baseline: VisualConfigValues,
+  draft: VisualConfigValues
+): VisualConfigValues {
+  const ruleIdentity = (rule: PayloadRule | PayloadFilterRule) =>
+    JSON.stringify(rule.models.map((model) => [model.name, model.protocol, model.fromProtocol]));
+  const alignRules = (prior: PayloadRule[], rules: PayloadRule[]) =>
+    alignRebasedEntries(prior, rules, ruleIdentity, (rule, original) => ({
+      ...rule,
+      models: alignRebasedModels(rule.models, original?.models ?? []),
+      params: alignRebasedEntries(original?.params ?? [], rule.params, (param) => param.path),
+    }));
+  return {
+    ...draft,
+    [ICE_KEY]: alignRebasedEntries(baseline[ICE_KEY], draft[ICE_KEY], (row) => row.urlsText),
+    payloadDefaultRules: alignRules(baseline.payloadDefaultRules, draft.payloadDefaultRules),
+    payloadDefaultRawRules: alignRules(
+      baseline.payloadDefaultRawRules,
+      draft.payloadDefaultRawRules
+    ),
+    payloadOverrideRules: alignRules(baseline.payloadOverrideRules, draft.payloadOverrideRules),
+    payloadOverrideRawRules: alignRules(
+      baseline.payloadOverrideRawRules,
+      draft.payloadOverrideRawRules
+    ),
+    payloadFilterRules: alignRebasedEntries(
+      baseline.payloadFilterRules,
+      draft.payloadFilterRules,
+      ruleIdentity,
+      (rule, original) => ({
+        ...rule,
+        models: alignRebasedModels(rule.models, original?.models ?? []),
+      })
+    ),
+    pluginStoreAuth: alignRebasedEntries(
+      baseline.pluginStoreAuth,
+      draft.pluginStoreAuth,
+      (rule) => rule.match
+    ),
+  };
+}
+
 type VisualConfigState = {
+  baselineYaml: string;
   visualValues: VisualConfigValues;
   baselineValues: VisualConfigValues;
   dirtyFields: Set<string>;
   visualParseError: string | null;
+  rebasedPayload: { yaml: string; serverYaml: string; values: VisualConfigValues } | null;
 };
 
 type VisualConfigAction =
   | {
       type: 'load_success';
+      yaml: string;
       values: VisualConfigValues;
+    }
+  | {
+      type: 'rebase_success';
+      baseline: VisualConfigValues;
+      draft: VisualConfigValues;
+      draftYaml: string;
+      serverYaml: string;
     }
   | {
       type: 'load_error';
@@ -1030,10 +1153,12 @@ type VisualConfigAction =
 function createInitialVisualConfigState(): VisualConfigState {
   const initialValues = deepClone(DEFAULT_VISUAL_VALUES);
   return {
+    baselineYaml: '{}',
     visualValues: initialValues,
     baselineValues: deepClone(initialValues),
     dirtyFields: new Set(),
     visualParseError: null,
+    rebasedPayload: null,
   };
 }
 
@@ -1067,6 +1192,19 @@ function getNextDirtyFields(
       updateDirty(key, nextValues[key] === baselineValues[key]);
     }
   };
+
+  SERVER_FIELDS.forEach(({ key }) => {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      updateDirty(key, JSON.stringify(nextValues[key]) === JSON.stringify(baselineValues[key]));
+    }
+  });
+  ADDITION_FIELDS.forEach(({ key }) => updateScalarDirty(key));
+  if (Object.prototype.hasOwnProperty.call(patch, ICE_KEY)) {
+    updateDirty(
+      ICE_KEY,
+      withoutEditorIds(nextValues[ICE_KEY]) === withoutEditorIds(baselineValues[ICE_KEY])
+    );
+  }
 
   (
     [
@@ -1215,11 +1353,28 @@ function visualConfigReducer(
   switch (action.type) {
     case 'load_success':
       return {
+        baselineYaml: action.yaml,
         visualValues: action.values,
         baselineValues: deepClone(action.values),
+        rebasedPayload: null,
         dirtyFields: new Set(),
         visualParseError: null,
       };
+    case 'rebase_success': {
+      const values = alignRebasedValues(action.baseline, action.draft);
+      return {
+        baselineYaml: action.serverYaml,
+        visualValues: values,
+        baselineValues: action.baseline,
+        rebasedPayload: {
+          yaml: action.draftYaml,
+          serverYaml: action.serverYaml,
+          values: deepClone(values),
+        },
+        dirtyFields: getNextDirtyFields(new Set(), values, values, action.baseline),
+        visualParseError: null,
+      };
+    }
     case 'load_error':
       return {
         ...state,
@@ -1245,17 +1400,177 @@ function visualConfigReducer(
   }
 }
 
+function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
+  const document = parseDocument(yamlContent);
+  if (document.errors.length > 0) {
+    throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
+  }
+
+  const parsedRaw: unknown = parseYaml(yamlContent) || {};
+  const parsed = asRecord(parsedRaw) ?? {};
+  const v8Server = asRecord(parsed?.['server']);
+  const v8Routing = asRecord(parsed?.['routing']);
+  const v8RoutingRetry = asRecord(v8Routing?.['retry']);
+  const v8RoutingCooldown = asRecord(v8Routing?.['cooldown']);
+  const v8Requests = asRecord(parsed?.['requests']);
+  const v8Oauth = asRecord(parsed?.['oauth']);
+  const v8OauthProviders = asRecord(v8Oauth?.['providers']);
+  const v8OauthProvidersAistudio = asRecord(v8OauthProviders?.['aistudio']);
+  const v8OauthProvidersCodex = asRecord(v8OauthProviders?.['codex']);
+  const v8Upstream = asRecord(parsed?.['upstream']);
+  const v8UpstreamClaude = asRecord(v8Upstream?.['claude']);
+  const v8OauthProvidersAntigravity = asRecord(v8OauthProviders?.['antigravity']);
+  const v8Multimedia = asRecord(parsed?.['multimedia']);
+  const v8Observability = asRecord(parsed?.['observability']);
+  const v8ObservabilityLogs = asRecord(v8Observability?.['logs']);
+  const v8ObservabilityUsage = asRecord(v8Observability?.['usage']);
+  const tls = asRecord(v8Server?.['tls']);
+  const remoteManagement = asRecord(parsed['management']);
+  const quotaExceeded = asRecord(parsed['quota-exceeded']);
+  const routing = asRecord(parsed.routing);
+  const payload = asRecord(v8Requests?.['payload']);
+  const streaming = asRecord(v8Requests?.['streaming']);
+  const plugins = asRecord(parsed.plugins);
+  const antigravity = asRecord(v8OauthProviders?.['antigravity']);
+  const devin = asRecord(v8OauthProviders?.['devin']);
+  const claudeHeaderDefaults = asRecord(v8UpstreamClaude?.['header-defaults']);
+  const codexHeaderDefaults = asRecord(v8OauthProvidersCodex?.['header-defaults']);
+
+  const newValues: VisualConfigValues = {
+    ...readVisualAdditions(document),
+    ...readVisualServer(document),
+    host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
+    port: String(v8Server?.['port'] ?? ''),
+
+    tlsEnable: Boolean(tls?.enable),
+    tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
+    tlsKey: typeof tls?.key === 'string' ? tls.key : '',
+
+    rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
+    rmSecretKey:
+      typeof remoteManagement?.['secret-key'] === 'string' ? remoteManagement['secret-key'] : '',
+    rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
+    rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
+    rmPanelRepo:
+      typeof remoteManagement?.['panel-github-repository'] === 'string'
+        ? remoteManagement['panel-github-repository']
+        : '',
+
+    authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
+    apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
+    pluginsEnabled: Boolean(plugins?.enabled),
+    pluginStoreSources: parseStringList(plugins?.['store-sources']),
+    pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
+
+    debug: Boolean(v8ObservabilityLogs?.['debug']),
+    commercialMode: Boolean(v8Server?.['commercial-mode']),
+    loggingToFile: Boolean(v8ObservabilityLogs?.['logging-to-file']),
+    logsMaxTotalSizeMb: String(v8ObservabilityLogs?.['logs-max-total-size-mb'] ?? ''),
+    errorLogsMaxFiles: String(v8ObservabilityLogs?.['error-logs-max-files'] ?? ''),
+    usageStatisticsEnabled: Boolean(v8ObservabilityUsage?.['usage-statistics-enabled']),
+    redisUsageQueueRetentionSeconds: String(
+      v8ObservabilityUsage?.['redis-usage-queue-retention-seconds'] ?? ''
+    ),
+
+    proxyUrl: typeof v8Requests?.['proxy-url'] === 'string' ? v8Requests?.['proxy-url'] : '',
+    forceModelPrefix: Boolean(v8Routing?.['force-model-prefix']),
+    passthroughHeaders: Boolean(v8Requests?.['passthrough-headers']),
+    requestRetry: String(v8RoutingRetry?.['request-retry'] ?? ''),
+    maxRetryCredentials: String(v8RoutingRetry?.['max-retry-credentials'] ?? ''),
+    maxRetryInterval: String(v8RoutingRetry?.['max-retry-interval'] ?? ''),
+    disableCooling: Boolean(v8RoutingCooldown?.['disable-cooling']),
+    disableImageGeneration: parseDisableImageGenerationMode(
+      v8Multimedia?.['disable-image-generation']
+    ),
+    gptImage2BaseModel:
+      typeof v8Multimedia?.['gpt-image-2-base-model'] === 'string'
+        ? v8Multimedia?.['gpt-image-2-base-model']
+        : '',
+    authAutoRefreshWorkers: String(v8Oauth?.['auth-auto-refresh-workers'] ?? ''),
+    wsAuth: Boolean(v8OauthProvidersAistudio?.['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
+    antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
+    devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
+    antigravitySignatureCacheEnabled: Boolean(
+      v8OauthProvidersAntigravity?.['signature-cache-enabled'] ?? true
+    ),
+    antigravitySignatureBypassStrict: Boolean(
+      v8OauthProvidersAntigravity?.['signature-bypass-strict']
+    ),
+
+    claudeHeaderUserAgent:
+      typeof claudeHeaderDefaults?.['user-agent'] === 'string'
+        ? claudeHeaderDefaults['user-agent']
+        : '',
+    claudeHeaderPackageVersion:
+      typeof claudeHeaderDefaults?.['package-version'] === 'string'
+        ? claudeHeaderDefaults['package-version']
+        : '',
+    claudeHeaderRuntimeVersion:
+      typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
+        ? claudeHeaderDefaults['runtime-version']
+        : '',
+    claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
+    claudeHeaderArch:
+      typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
+    claudeHeaderTimeout:
+      typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
+    claudeHeaderStabilizeDeviceProfile: Boolean(claudeHeaderDefaults?.['stabilize-device-profile']),
+    codexHeaderUserAgent:
+      typeof codexHeaderDefaults?.['user-agent'] === 'string'
+        ? codexHeaderDefaults['user-agent']
+        : '',
+    codexHeaderBetaFeatures:
+      typeof codexHeaderDefaults?.['beta-features'] === 'string'
+        ? codexHeaderDefaults['beta-features']
+        : '',
+
+    quotaSwitchProject: Boolean(
+      quotaExceeded?.['switch-project'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchProject
+    ),
+    quotaSwitchPreviewModel: Boolean(
+      quotaExceeded?.['switch-preview-model'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchPreviewModel
+    ),
+    quotaAntigravityCredits: Boolean(antigravity?.['antigravity-credits'] ?? false),
+
+    routingStrategy: parseRoutingStrategy(routing?.strategy),
+    routingSessionAffinity: Boolean(routing?.['session-affinity']),
+    routingSessionAffinityTTL:
+      typeof routing?.['session-affinity-ttl'] === 'string' ? routing['session-affinity-ttl'] : '',
+
+    payloadDefaultRules: parsePayloadRules(payload?.default),
+    payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
+    payloadOverrideRules: parsePayloadRules(payload?.override),
+    payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
+    payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+
+    streaming: {
+      keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
+      bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
+      nonstreamKeepaliveInterval: String(v8Requests?.['nonstream-keepalive-interval'] ?? ''),
+    },
+  };
+
+  return newValues;
+}
+
 export function useVisualConfig() {
   const [state, dispatch] = useReducer(
     visualConfigReducer,
     undefined,
     createInitialVisualConfigState
   );
-  const { visualValues, baselineValues, visualParseError, dirtyFields } = state;
+  const {
+    visualValues,
+    baselineValues,
+    baselineYaml,
+    visualParseError,
+    dirtyFields,
+    rebasedPayload,
+  } = state;
   const visualDirty = dirtyFields.size > 0;
   const visualValidationErrors = useMemo(
-    () => getVisualConfigValidationErrors(visualValues),
-    [visualValues]
+    () => getVisualConfigValidationErrors(visualValues, dirtyFields),
+    [visualValues, dirtyFields]
   );
   const visualHasPayloadValidationErrors = useMemo(
     () =>
@@ -1273,148 +1588,8 @@ export function useVisualConfig() {
 
   const loadVisualValuesFromYaml = useCallback((yamlContent: string) => {
     try {
-      const document = parseDocument(yamlContent);
-      if (document.errors.length > 0) {
-        throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
-      }
-
-      const parsedRaw: unknown = parseYaml(yamlContent) || {};
-      const parsed = asRecord(parsedRaw) ?? {};
-      const tls = asRecord(parsed.tls);
-      const remoteManagement = asRecord(parsed['remote-management']);
-      const quotaExceeded = asRecord(parsed['quota-exceeded']);
-      const routing = asRecord(parsed.routing);
-      const payload = asRecord(parsed.payload);
-      const streaming = asRecord(parsed.streaming);
-      const plugins = asRecord(parsed.plugins);
-      const antigravity = asRecord(parsed.antigravity);
-      const devin = asRecord(parsed.devin);
-      const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
-      const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
-
-      const newValues: VisualConfigValues = {
-        host: typeof parsed.host === 'string' ? parsed.host : '',
-        port: String(parsed.port ?? ''),
-
-        tlsEnable: Boolean(tls?.enable),
-        tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
-        tlsKey: typeof tls?.key === 'string' ? tls.key : '',
-
-        rmAllowRemote: Boolean(remoteManagement?.['allow-remote']),
-        rmSecretKey:
-          typeof remoteManagement?.['secret-key'] === 'string'
-            ? remoteManagement['secret-key']
-            : '',
-        rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
-        rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
-        rmPanelRepo:
-          typeof remoteManagement?.['panel-github-repository'] === 'string'
-            ? remoteManagement['panel-github-repository']
-            : typeof remoteManagement?.['panel-repo'] === 'string'
-              ? remoteManagement['panel-repo']
-              : '',
-
-        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
-        pluginsEnabled: Boolean(plugins?.enabled),
-        pluginStoreSources: parseStringList(plugins?.['store-sources']),
-        pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
-
-        debug: Boolean(parsed.debug),
-        commercialMode: Boolean(parsed['commercial-mode']),
-        loggingToFile: Boolean(parsed['logging-to-file']),
-        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
-        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
-        usageStatisticsEnabled: Boolean(parsed['usage-statistics-enabled']),
-        redisUsageQueueRetentionSeconds: String(
-          parsed['redis-usage-queue-retention-seconds'] ?? ''
-        ),
-
-        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
-        forceModelPrefix: Boolean(parsed['force-model-prefix']),
-        passthroughHeaders: Boolean(parsed['passthrough-headers']),
-        requestRetry: String(parsed['request-retry'] ?? ''),
-        maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
-        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
-        disableCooling: Boolean(parsed['disable-cooling']),
-        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
-        gptImage2BaseModel:
-          typeof parsed['gpt-image-2-base-model'] === 'string'
-            ? parsed['gpt-image-2-base-model']
-            : '',
-        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
-        wsAuth: Boolean(parsed['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
-        antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
-        devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
-        antigravitySignatureCacheEnabled: Boolean(
-          parsed['antigravity-signature-cache-enabled'] ?? true
-        ),
-        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
-
-        claudeHeaderUserAgent:
-          typeof claudeHeaderDefaults?.['user-agent'] === 'string'
-            ? claudeHeaderDefaults['user-agent']
-            : '',
-        claudeHeaderPackageVersion:
-          typeof claudeHeaderDefaults?.['package-version'] === 'string'
-            ? claudeHeaderDefaults['package-version']
-            : '',
-        claudeHeaderRuntimeVersion:
-          typeof claudeHeaderDefaults?.['runtime-version'] === 'string'
-            ? claudeHeaderDefaults['runtime-version']
-            : '',
-        claudeHeaderOs: typeof claudeHeaderDefaults?.os === 'string' ? claudeHeaderDefaults.os : '',
-        claudeHeaderArch:
-          typeof claudeHeaderDefaults?.arch === 'string' ? claudeHeaderDefaults.arch : '',
-        claudeHeaderTimeout:
-          typeof claudeHeaderDefaults?.timeout === 'string' ? claudeHeaderDefaults.timeout : '',
-        claudeHeaderStabilizeDeviceProfile: Boolean(
-          claudeHeaderDefaults?.['stabilize-device-profile']
-        ),
-        codexHeaderUserAgent:
-          typeof codexHeaderDefaults?.['user-agent'] === 'string'
-            ? codexHeaderDefaults['user-agent']
-            : '',
-        codexHeaderBetaFeatures:
-          typeof codexHeaderDefaults?.['beta-features'] === 'string'
-            ? codexHeaderDefaults['beta-features']
-            : '',
-
-        quotaSwitchProject: Boolean(
-          quotaExceeded?.['switch-project'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchProject
-        ),
-        quotaSwitchPreviewModel: Boolean(
-          quotaExceeded?.['switch-preview-model'] ?? DEFAULT_VISUAL_VALUES.quotaSwitchPreviewModel
-        ),
-        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
-
-        routingStrategy: parseRoutingStrategy(routing?.strategy),
-        routingSessionAffinity: Boolean(
-          routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
-        ),
-        routingSessionAffinityTTL:
-          typeof routing?.['session-affinity-ttl'] === 'string'
-            ? routing['session-affinity-ttl']
-            : typeof routing?.sessionAffinityTTL === 'string'
-              ? routing.sessionAffinityTTL
-              : typeof routing?.['sessionAffinityTTL'] === 'string'
-                ? routing['sessionAffinityTTL']
-                : '',
-
-        payloadDefaultRules: parsePayloadRules(payload?.default),
-        payloadDefaultRawRules: parseRawPayloadRules(payload?.['default-raw']),
-        payloadOverrideRules: parsePayloadRules(payload?.override),
-        payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
-        payloadFilterRules: parsePayloadFilterRules(payload?.filter),
-
-        streaming: {
-          keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
-          bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
-          nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
-        },
-      };
-
-      dispatch({ type: 'load_success', values: newValues });
+      const newValues = parseVisualValuesFromYaml(yamlContent);
+      dispatch({ type: 'load_success', values: newValues, yaml: yamlContent });
       return { ok: true as const };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Invalid YAML';
@@ -1423,30 +1598,106 @@ export function useVisualConfig() {
     }
   }, []);
 
+  // Both documents are parsed before dispatch so a malformed draft cannot advance the baseline.
+  const rebaseVisualValuesFromYaml = useCallback((serverYaml: string, draftYaml: string) => {
+    try {
+      const baseline = parseVisualValuesFromYaml(serverYaml);
+      const draft = parseVisualValuesFromYaml(draftYaml);
+      dispatch({ type: 'rebase_success', baseline, draft, draftYaml, serverYaml });
+      return { ok: true as const };
+    } catch (error: unknown) {
+      // A failed readback is not a parse failure of the user's retained draft. Keep
+      // the whole editor state intact; the document hook blocks editing until recovery.
+      const message = error instanceof Error ? error.message : 'Invalid YAML';
+      return { ok: false as const, error: message };
+    }
+  }, []);
+
   const applyVisualChangesToYaml = useCallback(
-    (currentYaml: string): string => {
+    (currentYaml: string, target: 'server' | 'draft' = 'server'): string => {
       try {
         const doc = parseDocument(currentYaml);
         if (doc.errors.length > 0) return currentYaml;
         if (!isMap(doc.contents)) {
           doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
         }
+        // YAML has no stable rule IDs. For rebased payload edits, retain the already
+        // merged draft's AST as well as its ID snapshot. Inferring lineage solely
+        // from server/draft contents is ambiguous (e.g. delete + rename + append),
+        // and could otherwise attach unknown fields to the wrong rule/model.
+        const payloadBaseline = rebasedPayload?.values ?? baselineValues;
+        if (rebasedPayload && hasPayloadDirtyFields(dirtyFields)) {
+          const draftDoc = parseDocument(rebasedPayload.yaml);
+          PAYLOAD_DIRTY_FIELDS.forEach((field, index) => {
+            if (!dirtyFields.has(field)) return;
+            const path = ['requests', 'payload', PAYLOAD_SECTIONS[index]];
+            const node = draftDoc.getIn(path, true);
+            if (node) {
+              ensureMapInDoc(doc, ['requests']);
+              ensureMapInDoc(doc, ['requests', 'payload']);
+              doc.setIn(path, node);
+            } else if (doc.hasIn(path)) {
+              deletePathInDoc(doc, path);
+            }
+          });
+        }
         const values = visualValues;
+        writeVisualAdditions(doc, values, dirtyFields);
+        writeVisualServer(
+          doc,
+          values,
+          dirtyFields,
+          rebasedPayload?.yaml ?? baselineYaml,
+          rebasedPayload?.serverYaml ?? baselineYaml,
+          target === 'server'
+        );
+        if (dirtyFields.has(ICE_KEY)) {
+          writeICEServers(
+            doc,
+            rebasedPayload?.yaml ?? baselineYaml,
+            rebasedPayload?.serverYaml ?? baselineYaml,
+            payloadBaseline[ICE_KEY],
+            values[ICE_KEY],
+            target === 'server'
+          );
+        }
         const shouldWritePluginStoreAuth = dirtyFields.has('pluginStoreAuth');
 
-        if (dirtyFields.has('host')) setStringInDoc(doc, ['host'], values.host);
-        if (dirtyFields.has('port')) setIntFromStringInDoc(doc, ['port'], values.port);
+        // The backend accepts null routing as defaults, but YAML setIn cannot traverse it.
+        // Normalize only this legal null section, and only when routing is being edited.
+        const routingNode = doc.getIn(['routing'], true);
+        if (
+          isScalar(routingNode) &&
+          routingNode.value === null &&
+          [
+            'forceModelPrefix',
+            'requestRetry',
+            'maxRetryCredentials',
+            'maxRetryInterval',
+            'disableCooling',
+            'routingStrategy',
+            'routingSessionAffinity',
+            'routingSessionAffinityTTL',
+          ].some((field) => dirtyFields.has(field as keyof VisualConfigValues))
+        ) {
+          ensureMapInDoc(doc, ['routing']);
+        }
+
+        if (dirtyFields.has('host')) setStringInDoc(doc, ['server', 'host'], values.host);
+        if (dirtyFields.has('port')) setIntFromStringInDoc(doc, ['server', 'port'], values.port);
 
         const tlsDirty =
           dirtyFields.has('tlsEnable') || dirtyFields.has('tlsCert') || dirtyFields.has('tlsKey');
         if (tlsDirty) {
-          ensureMapInDoc(doc, ['tls']);
+          ensureMapInDoc(doc, ['server', 'tls']);
           if (dirtyFields.has('tlsEnable')) {
-            setBooleanInDoc(doc, ['tls', 'enable'], values.tlsEnable);
+            setBooleanInDoc(doc, ['server', 'tls', 'enable'], values.tlsEnable);
           }
-          if (dirtyFields.has('tlsCert')) setStringInDoc(doc, ['tls', 'cert'], values.tlsCert);
-          if (dirtyFields.has('tlsKey')) setStringInDoc(doc, ['tls', 'key'], values.tlsKey);
-          deleteIfMapEmpty(doc, ['tls']);
+          if (dirtyFields.has('tlsCert'))
+            setStringInDoc(doc, ['server', 'tls', 'cert'], values.tlsCert);
+          if (dirtyFields.has('tlsKey'))
+            setStringInDoc(doc, ['server', 'tls', 'key'], values.tlsKey);
+          deleteIfMapEmpty(doc, ['server', 'tls']);
         }
 
         const remoteManagementDirty =
@@ -1456,52 +1707,44 @@ export function useVisualConfig() {
           dirtyFields.has('rmDisableAutoUpdatePanel') ||
           dirtyFields.has('rmPanelRepo');
         if (remoteManagementDirty) {
-          ensureMapInDoc(doc, ['remote-management']);
+          ensureMapInDoc(doc, ['management']);
           if (dirtyFields.has('rmAllowRemote')) {
-            setBooleanInDoc(doc, ['remote-management', 'allow-remote'], values.rmAllowRemote);
+            setBooleanInDoc(doc, ['management', 'allow-remote'], values.rmAllowRemote);
           }
           if (dirtyFields.has('rmSecretKey')) {
-            setStringInDoc(doc, ['remote-management', 'secret-key'], values.rmSecretKey);
+            setStringInDoc(doc, ['management', 'secret-key'], values.rmSecretKey);
           }
           if (dirtyFields.has('rmDisableControlPanel')) {
             setBooleanInDoc(
               doc,
-              ['remote-management', 'disable-control-panel'],
+              ['management', 'disable-control-panel'],
               values.rmDisableControlPanel
             );
           }
           if (dirtyFields.has('rmDisableAutoUpdatePanel')) {
             setBooleanInDoc(
               doc,
-              ['remote-management', 'disable-auto-update-panel'],
+              ['management', 'disable-auto-update-panel'],
               values.rmDisableAutoUpdatePanel
             );
           }
           if (dirtyFields.has('rmPanelRepo')) {
-            setStringInDoc(
-              doc,
-              ['remote-management', 'panel-github-repository'],
-              values.rmPanelRepo
-            );
+            setStringInDoc(doc, ['management', 'panel-github-repository'], values.rmPanelRepo);
           }
-          if (dirtyFields.has('rmPanelRepo') && docHas(doc, ['remote-management', 'panel-repo'])) {
-            doc.deleteIn(['remote-management', 'panel-repo']);
-          }
-          deleteIfMapEmpty(doc, ['remote-management']);
+          deleteIfMapEmpty(doc, ['management']);
         }
 
-        if (dirtyFields.has('authDir')) setStringInDoc(doc, ['auth-dir'], values.authDir);
+        if (dirtyFields.has('authDir')) setStringInDoc(doc, ['oauth', 'auth-dir'], values.authDir);
         if (dirtyFields.has('apiKeysText')) {
           const apiKeys = values.apiKeysText
             .split('\n')
             .map((key) => key.trim())
             .filter(Boolean);
           if (apiKeys.length > 0) {
-            doc.setIn(['api-keys'], apiKeys);
-          } else if (docHas(doc, ['api-keys'])) {
-            doc.deleteIn(['api-keys']);
+            doc.setIn(['access', 'api-keys'], apiKeys);
+          } else if (docHas(doc, ['access', 'api-keys'])) {
+            doc.deleteIn(['access', 'api-keys']);
           }
-          deleteLegacyApiKeysProvider(doc);
         }
 
         const pluginsDirty =
@@ -1527,75 +1770,102 @@ export function useVisualConfig() {
           deleteIfMapEmpty(doc, ['plugins']);
         }
 
-        if (dirtyFields.has('debug')) setBooleanInDoc(doc, ['debug'], values.debug);
+        if (dirtyFields.has('debug'))
+          setBooleanInDoc(doc, ['observability', 'logs', 'debug'], values.debug);
         if (dirtyFields.has('commercialMode')) {
-          setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
+          setBooleanInDoc(doc, ['server', 'commercial-mode'], values.commercialMode);
         }
         if (dirtyFields.has('loggingToFile')) {
-          setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
+          setBooleanInDoc(doc, ['observability', 'logs', 'logging-to-file'], values.loggingToFile);
         }
         if (dirtyFields.has('logsMaxTotalSizeMb')) {
-          setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
+          setIntFromStringInDoc(
+            doc,
+            ['observability', 'logs', 'logs-max-total-size-mb'],
+            values.logsMaxTotalSizeMb
+          );
         }
         if (dirtyFields.has('errorLogsMaxFiles')) {
-          setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
+          setIntFromStringInDoc(
+            doc,
+            ['observability', 'logs', 'error-logs-max-files'],
+            values.errorLogsMaxFiles
+          );
         }
         if (dirtyFields.has('usageStatisticsEnabled')) {
-          setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
+          setBooleanInDoc(
+            doc,
+            ['observability', 'usage', 'usage-statistics-enabled'],
+            values.usageStatisticsEnabled
+          );
         }
         if (dirtyFields.has('redisUsageQueueRetentionSeconds')) {
           setIntFromStringInDoc(
             doc,
-            ['redis-usage-queue-retention-seconds'],
+            ['observability', 'usage', 'redis-usage-queue-retention-seconds'],
             values.redisUsageQueueRetentionSeconds
           );
         }
 
-        if (dirtyFields.has('proxyUrl')) setStringInDoc(doc, ['proxy-url'], values.proxyUrl);
+        if (dirtyFields.has('proxyUrl'))
+          setStringInDoc(doc, ['requests', 'proxy-url'], values.proxyUrl);
         if (dirtyFields.has('forceModelPrefix')) {
-          setBooleanInDoc(doc, ['force-model-prefix'], values.forceModelPrefix);
+          setBooleanInDoc(doc, ['routing', 'force-model-prefix'], values.forceModelPrefix);
         }
         if (dirtyFields.has('passthroughHeaders')) {
-          setBooleanInDoc(doc, ['passthrough-headers'], values.passthroughHeaders);
+          setBooleanInDoc(doc, ['requests', 'passthrough-headers'], values.passthroughHeaders);
         }
         if (dirtyFields.has('requestRetry')) {
-          setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
+          setIntFromStringInDoc(doc, ['routing', 'retry', 'request-retry'], values.requestRetry);
         }
         if (dirtyFields.has('maxRetryCredentials')) {
-          setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
+          setIntFromStringInDoc(
+            doc,
+            ['routing', 'retry', 'max-retry-credentials'],
+            values.maxRetryCredentials
+          );
         }
         if (dirtyFields.has('maxRetryInterval')) {
-          setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+          setIntFromStringInDoc(
+            doc,
+            ['routing', 'retry', 'max-retry-interval'],
+            values.maxRetryInterval
+          );
         }
         if (dirtyFields.has('disableCooling')) {
-          setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
+          setBooleanInDoc(doc, ['routing', 'cooldown', 'disable-cooling'], values.disableCooling);
         }
         if (dirtyFields.has('disableImageGeneration')) {
           setDisableImageGenerationInDoc(
             doc,
-            ['disable-image-generation'],
+            ['multimedia', 'disable-image-generation'],
             values.disableImageGeneration
           );
         }
         if (dirtyFields.has('gptImage2BaseModel')) {
-          setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
+          setStringInDoc(doc, ['multimedia', 'gpt-image-2-base-model'], values.gptImage2BaseModel);
         }
         if (dirtyFields.has('authAutoRefreshWorkers')) {
-          setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
+          setIntFromStringInDoc(
+            doc,
+            ['oauth', 'auth-auto-refresh-workers'],
+            values.authAutoRefreshWorkers
+          );
         }
-        if (dirtyFields.has('wsAuth')) setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
+        if (dirtyFields.has('wsAuth'))
+          setBooleanInDoc(doc, ['oauth', 'providers', 'aistudio', 'ws-auth'], values.wsAuth);
         if (dirtyFields.has('antigravitySensitiveWords')) {
-          ensureMapInDoc(doc, ['antigravity']);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'antigravity']);
           setStringListInDoc(
             doc,
-            ['antigravity', 'sensitive-words'],
+            ['oauth', 'providers', 'antigravity', 'sensitive-words'],
             values.antigravitySensitiveWords
           );
-          deleteIfMapEmpty(doc, ['antigravity']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'antigravity']);
         }
         if (dirtyFields.has('devinSensitiveWords')) {
-          ensureMapInDoc(doc, ['devin']);
-          const devin = doc.getIn(['devin'], true);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'devin']);
+          const devin = doc.getIn(['oauth', 'providers', 'devin'], true);
           if (isMap(devin)) {
             syncStringSequence(
               doc,
@@ -1605,15 +1875,15 @@ export function useVisualConfig() {
               values.devinSensitiveWords
             );
           }
-          deleteIfMapEmpty(doc, ['devin']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'devin']);
         }
         if (dirtyFields.has('antigravitySignatureCacheEnabled')) {
           if (
-            docHas(doc, ['antigravity-signature-cache-enabled']) ||
+            docHas(doc, ['oauth', 'providers', 'antigravity', 'signature-cache-enabled']) ||
             !values.antigravitySignatureCacheEnabled
           ) {
             doc.setIn(
-              ['antigravity-signature-cache-enabled'],
+              ['oauth', 'providers', 'antigravity', 'signature-cache-enabled'],
               values.antigravitySignatureCacheEnabled
             );
           }
@@ -1621,7 +1891,7 @@ export function useVisualConfig() {
         if (dirtyFields.has('antigravitySignatureBypassStrict')) {
           setBooleanInDoc(
             doc,
-            ['antigravity-signature-bypass-strict'],
+            ['oauth', 'providers', 'antigravity', 'signature-bypass-strict'],
             values.antigravitySignatureBypassStrict
           );
         }
@@ -1635,66 +1905,78 @@ export function useVisualConfig() {
           dirtyFields.has('claudeHeaderTimeout') ||
           dirtyFields.has('claudeHeaderStabilizeDeviceProfile');
         if (claudeHeadersDirty) {
-          ensureMapInDoc(doc, ['claude-header-defaults']);
+          ensureMapInDoc(doc, ['upstream', 'claude', 'header-defaults']);
           if (dirtyFields.has('claudeHeaderUserAgent')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'user-agent'],
+              ['upstream', 'claude', 'header-defaults', 'user-agent'],
               values.claudeHeaderUserAgent
             );
           }
           if (dirtyFields.has('claudeHeaderPackageVersion')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'package-version'],
+              ['upstream', 'claude', 'header-defaults', 'package-version'],
               values.claudeHeaderPackageVersion
             );
           }
           if (dirtyFields.has('claudeHeaderRuntimeVersion')) {
             setStringInDoc(
               doc,
-              ['claude-header-defaults', 'runtime-version'],
+              ['upstream', 'claude', 'header-defaults', 'runtime-version'],
               values.claudeHeaderRuntimeVersion
             );
           }
           if (dirtyFields.has('claudeHeaderOs')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'os'], values.claudeHeaderOs);
+            setStringInDoc(
+              doc,
+              ['upstream', 'claude', 'header-defaults', 'os'],
+              values.claudeHeaderOs
+            );
           }
           if (dirtyFields.has('claudeHeaderArch')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'arch'], values.claudeHeaderArch);
+            setStringInDoc(
+              doc,
+              ['upstream', 'claude', 'header-defaults', 'arch'],
+              values.claudeHeaderArch
+            );
           }
           if (dirtyFields.has('claudeHeaderTimeout')) {
-            setStringInDoc(doc, ['claude-header-defaults', 'timeout'], values.claudeHeaderTimeout);
+            setStringInDoc(
+              doc,
+              ['upstream', 'claude', 'header-defaults', 'timeout'],
+              values.claudeHeaderTimeout
+            );
           }
           if (dirtyFields.has('claudeHeaderStabilizeDeviceProfile')) {
             setBooleanInDoc(
               doc,
-              ['claude-header-defaults', 'stabilize-device-profile'],
+              ['upstream', 'claude', 'header-defaults', 'stabilize-device-profile'],
               values.claudeHeaderStabilizeDeviceProfile
             );
           }
-          deleteIfMapEmpty(doc, ['claude-header-defaults']);
+          deleteIfMapEmpty(doc, ['upstream', 'claude', 'header-defaults']);
         }
 
         const codexHeadersDirty =
           dirtyFields.has('codexHeaderUserAgent') || dirtyFields.has('codexHeaderBetaFeatures');
         if (codexHeadersDirty) {
-          ensureMapInDoc(doc, ['codex-header-defaults']);
+          ensureMapInDoc(doc, ['oauth', 'providers', 'codex', 'header-defaults']);
           if (dirtyFields.has('codexHeaderUserAgent')) {
             setStringInDoc(
               doc,
-              ['codex-header-defaults', 'user-agent'],
+              ['oauth', 'providers', 'codex', 'header-defaults', 'user-agent'],
               values.codexHeaderUserAgent
             );
           }
           if (dirtyFields.has('codexHeaderBetaFeatures')) {
             setStringInDoc(
               doc,
-              ['codex-header-defaults', 'beta-features'],
+              ['oauth', 'providers', 'codex', 'header-defaults', 'beta-features'],
               values.codexHeaderBetaFeatures
             );
           }
-          deleteIfMapEmpty(doc, ['codex-header-defaults']);
+          deleteIfMapEmpty(doc, ['oauth', 'providers', 'codex', 'header-defaults']);
         }
 
         const quotaDirty =
@@ -1710,7 +1992,10 @@ export function useVisualConfig() {
             doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
           }
           if (dirtyFields.has('quotaAntigravityCredits')) {
-            doc.setIn(['quota-exceeded', 'antigravity-credits'], values.quotaAntigravityCredits);
+            doc.setIn(
+              ['oauth', 'providers', 'antigravity', 'antigravity-credits'],
+              values.quotaAntigravityCredits
+            );
           }
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }
@@ -1754,27 +2039,39 @@ export function useVisualConfig() {
           dirtyFields.has('streaming.keepaliveSeconds') ||
           dirtyFields.has('streaming.bootstrapRetries');
         if (streamingDirty) {
-          ensureMapInDoc(doc, ['streaming']);
+          ensureMapInDoc(doc, ['requests', 'streaming']);
           if (dirtyFields.has('streaming.keepaliveSeconds')) {
-            setIntFromStringInDoc(doc, ['streaming', 'keepalive-seconds'], keepaliveSeconds);
+            setIntFromStringInDoc(
+              doc,
+              ['requests', 'streaming', 'keepalive-seconds'],
+              keepaliveSeconds
+            );
           }
           if (dirtyFields.has('streaming.bootstrapRetries')) {
-            setIntFromStringInDoc(doc, ['streaming', 'bootstrap-retries'], bootstrapRetries);
+            setIntFromStringInDoc(
+              doc,
+              ['requests', 'streaming', 'bootstrap-retries'],
+              bootstrapRetries
+            );
           }
-          deleteIfMapEmpty(doc, ['streaming']);
+          deleteIfMapEmpty(doc, ['requests', 'streaming']);
         }
 
         if (dirtyFields.has('streaming.nonstreamKeepaliveInterval')) {
-          setIntFromStringInDoc(doc, ['nonstream-keepalive-interval'], nonstreamKeepaliveInterval);
+          setIntFromStringInDoc(
+            doc,
+            ['requests', 'nonstream-keepalive-interval'],
+            nonstreamKeepaliveInterval
+          );
         }
 
         if (hasPayloadDirtyFields(dirtyFields)) {
-          ensureMapInDoc(doc, ['payload']);
+          ensureMapInDoc(doc, ['requests', 'payload']);
           if (dirtyFields.has('payloadDefaultRules')) {
             syncPayloadRuleSequence(
               doc,
               'default',
-              baselineValues.payloadDefaultRules,
+              payloadBaseline.payloadDefaultRules,
               values.payloadDefaultRules,
               false
             );
@@ -1783,7 +2080,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'default-raw',
-              baselineValues.payloadDefaultRawRules,
+              payloadBaseline.payloadDefaultRawRules,
               values.payloadDefaultRawRules,
               true
             );
@@ -1792,7 +2089,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'override',
-              baselineValues.payloadOverrideRules,
+              payloadBaseline.payloadOverrideRules,
               values.payloadOverrideRules,
               false
             );
@@ -1801,7 +2098,7 @@ export function useVisualConfig() {
             syncPayloadRuleSequence(
               doc,
               'override-raw',
-              baselineValues.payloadOverrideRawRules,
+              payloadBaseline.payloadOverrideRawRules,
               values.payloadOverrideRawRules,
               true
             );
@@ -1809,19 +2106,29 @@ export function useVisualConfig() {
           if (dirtyFields.has('payloadFilterRules')) {
             syncPayloadFilterSequence(
               doc,
-              baselineValues.payloadFilterRules,
+              payloadBaseline.payloadFilterRules,
               values.payloadFilterRules
             );
           }
-          deleteIfMapEmpty(doc, ['payload']);
+          deleteIfMapEmpty(doc, ['requests', 'payload']);
         }
 
-        return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
-      } catch {
+        const draftYaml = doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
+        if (target === 'server' && rebasedPayload && hasPayloadDirtyFields(dirtyFields)) {
+          // The retained AST preserves local lineage, but must never silently replace a
+          // list another client changed after recovery (including unknown model fields).
+          const paths = PAYLOAD_DIRTY_FIELDS.flatMap((field, index) =>
+            dirtyFields.has(field) ? [['requests', 'payload', PAYLOAD_SECTIONS[index]]] : []
+          );
+          assertConfigListsUnchanged(rebasedPayload.serverYaml, draftYaml, currentYaml, paths);
+        }
+        return draftYaml;
+      } catch (error) {
+        if (error instanceof ConfigDraftConflictError) throw error;
         return currentYaml;
       }
     },
-    [baselineValues, dirtyFields, visualValues]
+    [baselineValues, baselineYaml, dirtyFields, visualValues, rebasedPayload]
   );
 
   const setVisualValues = useCallback((newValues: Partial<VisualConfigValues>) => {
@@ -1837,6 +2144,7 @@ export function useVisualConfig() {
     visualValidationErrors,
     visualHasPayloadValidationErrors,
     loadVisualValuesFromYaml,
+    rebaseVisualValuesFromYaml,
     applyVisualChangesToYaml,
     setVisualValues,
   };

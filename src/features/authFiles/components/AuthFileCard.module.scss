@@ -2,7 +2,7 @@
 
 /* ============================================================
  * 凭证卡片 — statTile 配方（14px 圆角 / 1px 边框 / 82% 透感纸面）
- * 身份优先；启停仅由底部开关表达，停用不降低内容对比度。
+ * 身份优先；停用时弱化内容，操作区保持清晰以便重新启用。
  * ============================================================ */
 
 .card {
@@ -21,6 +21,14 @@
   .card:hover {
     border-color: var(--border-hover);
   }
+}
+
+.cardDisabled {
+  background: color-mix(in srgb, var(--bg-primary) 55%, var(--bg-tertiary));
+}
+
+.cardDisabled > :not(.actions) {
+  opacity: 0.68;
 }
 
 .cardCompact {

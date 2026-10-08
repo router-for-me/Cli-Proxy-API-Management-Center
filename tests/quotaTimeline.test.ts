@@ -414,7 +414,7 @@ describe('buildTimelineLane', () => {
     expect(lane.limits).toEqual([]);
   });
 
-  test('xai anchors on the weekly limit, with per-product limits', () => {
+  test('xai anchors on the shared weekly limit without independent product limits', () => {
     const lane = buildTimelineLane({
       ...base,
       provider: 'xai',
@@ -436,8 +436,8 @@ describe('buildTimelineLane', () => {
     expect(lane.anchorMs).toBe(9000);
     expect(lane.periodHours).toBe(168);
     expect(lane.remaining).toBe(95);
-    // GrokChat has no percentage, so it is not summarized.
-    expect(lane.limits).toEqual([{ label: 'GrokBuild', remaining: 95 }]);
+    // Product usage is a contribution to the total, not a separate quota pool.
+    expect(lane.limits).toEqual([]);
   });
 
   test('xai without a weekly limit produces no window at all', () => {

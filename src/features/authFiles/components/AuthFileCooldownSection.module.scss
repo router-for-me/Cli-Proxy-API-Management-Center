@@ -125,6 +125,14 @@
   margin-top: 6px;
 }
 
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--border-color);
+}
+
 .elapsed {
   color: var(--text-secondary);
 }

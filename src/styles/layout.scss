@@ -795,6 +795,7 @@
 
   &.content-logs {
     overflow: hidden;
+    scrollbar-gutter: auto;
   }
 
   &.content-plugin-resource {
@@ -815,6 +816,7 @@
   &.main-content-logs {
     flex: 1 1 auto;
     min-height: 0;
+    padding: 70px clamp(20px, 3vw, 48px) 24px;
     overflow: hidden;
   }
 
@@ -824,13 +826,13 @@
     padding: 0;
     gap: 0;
     overflow: hidden;
-    background: #ffffff;
+    background: var(--bg-secondary);
 
     .page-transition,
     .page-transition__layer {
       height: 100%;
       gap: 0;
-      background: #ffffff;
+      background: var(--bg-secondary);
     }
   }
 }
@@ -980,9 +982,9 @@
     overflow-y: auto;
 
     &.content-logs {
-      overflow: visible;
-      overflow-y: auto;
-      height: auto;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
     }
 
     &.content-plugin-resource {
@@ -1007,9 +1009,10 @@
     }
 
     &.main-content-logs {
-      flex: 0 0 auto;
-      min-height: auto;
-      overflow: visible;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: calc(var(--header-height) + 8px) 8px max(8px, env(safe-area-inset-bottom));
+      overflow: hidden;
     }
   }
 }

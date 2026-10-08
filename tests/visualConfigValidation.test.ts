@@ -85,13 +85,13 @@ describe('visual config validation', () => {
   test.each(['-9007199254740993', '9007199254740993', '-9999999999999999999'])(
     'does not serialize unsafe integers even if validation is bypassed: %s',
     (value) => {
-      const yaml = 'max-retry-interval: 10\n';
+      const yaml = 'routing:\n  retry:\n    max-retry-interval: 10\n';
       const config = runVisualConfig(yaml, [withSignedValues(value)]);
       for (const field of signedFields) {
         expect(config.visualValidationErrors[field]).toBe('integer');
       }
       expect(parseYaml(config.applyVisualChangesToYaml(yaml))).toEqual({
-        'max-retry-interval': 10,
+        routing: { retry: { 'max-retry-interval': 10 } },
       });
     }
   );
@@ -102,7 +102,7 @@ describe('visual config validation', () => {
       const config = runVisualConfig('{}', [{ maxRetryInterval: String(value) }]);
       expect(config.visualValidationErrors.maxRetryInterval).toBeUndefined();
       expect(parseYaml(config.applyVisualChangesToYaml('{}'))).toEqual({
-        'max-retry-interval': value,
+        routing: { retry: { 'max-retry-interval': value } },
       });
     }
   );
@@ -120,30 +120,35 @@ describe('visual config validation', () => {
   });
 
   test('loading negative sentinels does not block an unrelated visual edit', () => {
-    const yaml = `max-retry-credentials: -1
-max-retry-interval: -1
-auth-auto-refresh-workers: -1
-nonstream-keepalive-interval: -1
-streaming:
-  keepalive-seconds: -1
-  bootstrap-retries: -1
+    const yaml = `routing:
+  retry:
+    max-retry-credentials: -1
+    max-retry-interval: -1
+requests:
+  nonstream-keepalive-interval: -1
+  streaming:
+    keepalive-seconds: -1
+    bootstrap-retries: -1
+oauth:
+  auth-auto-refresh-workers: -1
 `;
     const config = runVisualConfig(yaml, [{ debug: true }]);
     expect(Object.values(config.visualValidationErrors).some(Boolean)).toBe(false);
     expect(parseYaml(config.applyVisualChangesToYaml(yaml))).toEqual({
       ...parseYaml(yaml),
-      debug: true,
+      observability: { logs: { debug: true } },
     });
   });
 
   test('writes user-entered negative sentinels as YAML integers', () => {
     const config = runVisualConfig('{}', [withSignedValues('-1')]);
     expect(parseYaml(config.applyVisualChangesToYaml('{}'))).toEqual({
-      'max-retry-credentials': -1,
-      'max-retry-interval': -1,
-      'auth-auto-refresh-workers': -1,
-      'nonstream-keepalive-interval': -1,
-      streaming: { 'keepalive-seconds': -1, 'bootstrap-retries': -1 },
+      routing: { retry: { 'max-retry-credentials': -1, 'max-retry-interval': -1 } },
+      oauth: { 'auth-auto-refresh-workers': -1 },
+      requests: {
+        'nonstream-keepalive-interval': -1,
+        streaming: { 'keepalive-seconds': -1, 'bootstrap-retries': -1 },
+      },
     });
   });
 

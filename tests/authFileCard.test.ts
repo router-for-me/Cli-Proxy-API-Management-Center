@@ -7,6 +7,10 @@ const source = readFileSync(
   new URL('../src/features/authFiles/components/AuthFileCard.tsx', import.meta.url),
   'utf8'
 );
+const styles = readFileSync(
+  new URL('../src/features/authFiles/components/AuthFileCard.module.scss', import.meta.url),
+  'utf8'
+);
 
 describe('auth file card presentation contract', () => {
   test('uses identity rather than logos or duplicate status badges', () => {
@@ -28,8 +32,36 @@ describe('auth file card presentation contract', () => {
     expect(footer).toContain('<ToggleSwitch');
     expect(footer).toContain("t('auth_files.card_toggle', { name: file.name })");
     expect(footer).toContain('checked={!file.disabled}');
-    expect(footer).toContain('statusUpdating[file.name] === true || isManualRefreshing');
+    expect(footer).toContain('statusUpdating[getAuthFileRefreshKey(file)] === true ||');
+    expect(footer).toContain('isManualRefreshing');
     expect(footer).toContain('!isRuntimeOnly &&');
+  });
+
+  test('dims disabled card content but keeps the re-enable controls clear', () => {
+    expect(source).toContain("file.disabled === true ? styles.cardDisabled : ''");
+    expect(styles).toMatch(/\.cardDisabled\s*>\s*:not\(\.actions\)\s*\{\s*opacity:\s*0\.68;/);
+    expect(styles).not.toMatch(/\.cardDisabled\s*\{[^}]*opacity:/);
+  });
+
+  test('uses a plain-text weight tooltip while preserving the details link', () => {
+    expect(source).toContain("title={t('auth_files.weight_tooltip')}");
+    expect(source).not.toContain("title={t('auth_files.weight_hint')}");
+    const detailsSource = readFileSync(
+      new URL('../src/features/authFiles/components/AuthFileDetailsSheet.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(detailsSource).toContain('i18nKey="auth_files.weight_hint"');
+
+    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
+      const { auth_files: messages } = JSON.parse(
+        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
+      ) as { auth_files: Record<string, string> };
+      expect(messages.weight_tooltip).toBeTruthy();
+      expect(messages.weight_tooltip).not.toMatch(/<[^>]+>/);
+      expect(messages.weight_hint).toContain('<settingsLink>');
+      expect(messages.weight_hint).toContain('</settingsLink>');
+      expect(messages.weight_tooltip).toBe(messages.weight_hint.replace(/<\/?settingsLink>/g, ''));
+    }
   });
 
   test('retains individual management actions and warning detail', () => {
@@ -37,6 +69,7 @@ describe('auth file card presentation contract', () => {
       'onShowModels(file)',
       'onDownload(file.name)',
       'onManualRefresh(file)',
+      'onCooldownReset(file)',
       'onOpenPrefixProxyEditor(file)',
       'onDelete(file.name)',
     ]) {

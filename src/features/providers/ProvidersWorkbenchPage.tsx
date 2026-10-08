@@ -271,8 +271,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     [groups]
   );
   const quickStartResource = useMemo(
-    () =>
-      fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null,
+    () => (fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null),
     [activeGroup, fixedBrand]
   );
 

@@ -19,11 +19,19 @@ import {
 } from '../fields/FieldPrimitives';
 import { PluginStoreAuthEditor } from '../blocks/PluginStoreAuthEditor';
 import { StringListEditor } from '../blocks/StringListEditor';
+import { getValidationMessage } from '../blocks/shared';
+import { SectionOAuthBehavior } from './SectionOAuthBehavior';
 
 const Icon = CONFIG_TAB_ICONS.advanced;
 
 /** 06 高级与实验：插件源、供应商敏感词、签名缓存与请求头默认值。 */
-export function SectionAdvanced({ values, disabled, animateIn, onChange }: ConfigSectionProps) {
+export function SectionAdvanced({
+  values,
+  validationErrors,
+  disabled,
+  animateIn,
+  onChange,
+}: ConfigSectionProps) {
   const { t } = useTranslation();
 
   const handlePluginStoreSourcesChange = useCallback(
@@ -52,6 +60,12 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
       animateIn={animateIn}
     >
       <FieldStack>
+        <SectionOAuthBehavior
+          values={values}
+          validationErrors={validationErrors}
+          disabled={disabled}
+          onChange={onChange}
+        />
         <Collapsible
           label={t('config_management.visual.sections.advanced.plugins_title')}
           defaultOpen={false}
@@ -269,6 +283,17 @@ export function SectionAdvanced({ values, disabled, animateIn, onChange }: Confi
                   value={values.claudeHeaderArch}
                   onChange={(e) => onChange({ claudeHeaderArch: e.target.value })}
                   disabled={disabled}
+                />
+              </FieldAnchor>
+              <FieldAnchor fieldId="claudeHeaderTimezone">
+                <Input
+                  label={t('config_management.visual.additions.claudeHeaderTimezone.label')}
+                  hint={t('config_management.visual.additions.claudeHeaderTimezone.hint')}
+                  type="text"
+                  value={values.claudeHeaderTimezone}
+                  onChange={(e) => onChange({ claudeHeaderTimezone: e.target.value })}
+                  disabled={disabled}
+                  error={getValidationMessage(t, validationErrors?.claudeHeaderTimezone)}
                 />
               </FieldAnchor>
               <FieldAnchor fieldId="claudeHeaderTimeout">
