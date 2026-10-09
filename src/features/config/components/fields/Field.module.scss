@@ -61,33 +61,6 @@
   :global(.error-box) {
     border-radius: 8px;
   }
-
-  :global(.item-list) {
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  :global(.item-row) {
-    border-radius: 10px;
-    padding: 12px;
-    background: transparent;
-    border-color: var(--border-color);
-  }
-
-  :global(.item-row .item-meta) {
-    gap: 4px;
-  }
-
-  :global(.item-row .item-actions) {
-    flex-wrap: wrap;
-  }
-
-  :global(.pill) {
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-  }
 }
 
 /* ---------- 设置组：组标题 + 圆角列表容器 ---------- */
