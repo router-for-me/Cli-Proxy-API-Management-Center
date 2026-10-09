@@ -290,8 +290,9 @@ button.quotaMessageAction {
 .codexResetCreditRow {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 8px;
+  gap: 2px 8px;
   font-size: $quota-font-size;
   font-weight: 400;
 }
@@ -314,6 +315,8 @@ button.quotaMessageAction {
 
 .codexResetCreditTime {
   flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
   font-family: $font-mono;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
