@@ -1,21 +1,17 @@
-import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
-import { Input } from '@/components/ui/Input';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
 import { SectionCard } from '../SectionCard';
 import {
-  Divider,
-  FieldAnchor,
-  FieldGrid,
-  FieldShell,
+  BlockSetting,
   FieldStack,
-  ToggleRow,
+  SettingList,
+  TextSetting,
+  ToggleSetting,
 } from '../fields/FieldPrimitives';
 import { ApiKeysField, HostField, PortField } from '../fields/sharedFields';
 import { getValidationMessage } from '../blocks/shared';
-
 import { StringListEditor } from '../blocks/StringListEditor';
 import { SectionDiscovery } from './SectionDiscovery';
 
@@ -30,9 +26,7 @@ export function SectionConnectivity({
   onChange,
 }: ConfigSectionProps) {
   const { t } = useTranslation();
-  const id = useId();
-  const trustedProxiesError = getValidationMessage(t, validationErrors?.trustedProxies);
-  const portError = getValidationMessage(t, validationErrors?.port);
+  const fieldProps = { values, disabled, onChange };
 
   return (
     <SectionCard
@@ -42,174 +36,153 @@ export function SectionConnectivity({
       description={t('config_management.visual.sections.connectivity.description')}
       animateIn={animateIn}
     >
-      <FieldStack>
-        <FieldGrid>
-          <HostField values={values} disabled={disabled} onChange={onChange} />
-          <PortField values={values} disabled={disabled} onChange={onChange} error={portError} />
-        </FieldGrid>
-
-        <FieldAnchor fieldId="authDir">
-          <Input
-            label={t('config_management.visual.sections.auth.auth_dir')}
-            placeholder="~/.cli-proxy-api"
-            value={values.authDir}
-            onChange={(e) => onChange({ authDir: e.target.value })}
-            disabled={disabled}
-            hint={t('config_management.visual.sections.auth.auth_dir_hint')}
-          />
-        </FieldAnchor>
-
-        <ApiKeysField values={values} disabled={disabled} onChange={onChange} />
-
-        <FieldAnchor fieldId="githubToken">
-          <Input
-            label={t('config_management.visual.sections.server.github_token')}
-            type="password"
-            autoComplete="new-password"
-            value={values.githubToken}
-            onChange={(e) => onChange({ githubToken: e.target.value })}
-            disabled={disabled}
-            hint={t('config_management.visual.sections.server.github_token_hint')}
-          />
-        </FieldAnchor>
-
-        <FieldAnchor fieldId="trustedProxies">
-          <FieldShell
-            label={t('config_management.visual.serverExtras.trustedProxies.label')}
-            labelId={`${id}-trustedProxies-label`}
-            hint={t('config_management.visual.serverExtras.trustedProxies.hint')}
-            hintId={`${id}-trustedProxies-hint`}
-            error={trustedProxiesError}
-            errorId={`${id}-trustedProxies-error`}
-          >
-            <div
-              role="group"
-              aria-labelledby={`${id}-trustedProxies-label`}
-              aria-describedby={`${id}-trustedProxies-hint${trustedProxiesError ? ` ${id}-trustedProxies-error` : ''}`}
-              aria-invalid={Boolean(trustedProxiesError)}
-            >
-              <StringListEditor
-                value={values.trustedProxies}
-                disabled={disabled}
-                placeholder="192.168.0.0/24"
-                inputAriaLabel={t('config_management.visual.serverExtras.trustedProxies.label')}
-                onChange={(trustedProxies) => onChange({ trustedProxies })}
-              />
-            </div>
-          </FieldShell>
-        </FieldAnchor>
-
-        <Collapsible
-          label={t('config_management.visual.sections.tls.title')}
-          hint={t('config_management.visual.sections.tls.description')}
-          defaultOpen={false}
-        >
-          <FieldStack>
-            <FieldAnchor fieldId="tlsEnable">
-              <ToggleRow
-                title={t('config_management.visual.sections.tls.enable')}
-                description={t('config_management.visual.sections.tls.enable_desc')}
-                checked={values.tlsEnable}
-                disabled={disabled}
-                onChange={(tlsEnable) => onChange({ tlsEnable })}
-              />
-            </FieldAnchor>
-
-            {values.tlsEnable ? (
-              <>
-                <Divider />
-                <FieldGrid>
-                  <FieldAnchor fieldId="tlsCert">
-                    <Input
-                      label={t('config_management.visual.sections.tls.cert')}
-                      placeholder="/path/to/cert.pem"
-                      value={values.tlsCert}
-                      onChange={(e) => onChange({ tlsCert: e.target.value })}
-                      disabled={disabled}
-                    />
-                  </FieldAnchor>
-                  <FieldAnchor fieldId="tlsKey">
-                    <Input
-                      label={t('config_management.visual.sections.tls.key')}
-                      placeholder="/path/to/key.pem"
-                      value={values.tlsKey}
-                      onChange={(e) => onChange({ tlsKey: e.target.value })}
-                      disabled={disabled}
-                    />
-                  </FieldAnchor>
-                </FieldGrid>
-              </>
-            ) : null}
-          </FieldStack>
-        </Collapsible>
-
-        <Collapsible
-          label={t('config_management.visual.sections.remote.title')}
-          hint={t('config_management.visual.sections.remote.description')}
-          defaultOpen={false}
-        >
-          <FieldStack>
-            <FieldGrid>
-              <FieldAnchor fieldId="rmAllowRemote">
-                <ToggleRow
-                  title={t('config_management.visual.sections.remote.allow_remote')}
-                  description={t('config_management.visual.sections.remote.allow_remote_desc')}
-                  checked={values.rmAllowRemote}
-                  disabled={disabled}
-                  onChange={(rmAllowRemote) => onChange({ rmAllowRemote })}
-                />
-              </FieldAnchor>
-              <FieldAnchor fieldId="rmDisableControlPanel">
-                <ToggleRow
-                  title={t('config_management.visual.sections.remote.disable_panel')}
-                  description={t('config_management.visual.sections.remote.disable_panel_desc')}
-                  checked={values.rmDisableControlPanel}
-                  disabled={disabled}
-                  onChange={(rmDisableControlPanel) => onChange({ rmDisableControlPanel })}
-                />
-              </FieldAnchor>
-              <FieldAnchor fieldId="rmDisableAutoUpdatePanel">
-                <ToggleRow
-                  title={t('config_management.visual.sections.remote.disable_auto_update_panel')}
-                  description={t(
-                    'config_management.visual.sections.remote.disable_auto_update_panel_desc'
-                  )}
-                  checked={values.rmDisableAutoUpdatePanel}
-                  disabled={disabled}
-                  onChange={(rmDisableAutoUpdatePanel) => onChange({ rmDisableAutoUpdatePanel })}
-                />
-              </FieldAnchor>
-            </FieldGrid>
-            <FieldGrid>
-              <FieldAnchor fieldId="rmSecretKey">
-                <Input
-                  label={t('config_management.visual.sections.remote.secret_key')}
-                  type="password"
-                  placeholder={t('config_management.visual.sections.remote.secret_key_placeholder')}
-                  value={values.rmSecretKey}
-                  onChange={(e) => onChange({ rmSecretKey: e.target.value })}
-                  disabled={disabled}
-                />
-              </FieldAnchor>
-              <FieldAnchor fieldId="rmPanelRepo">
-                <Input
-                  label={t('config_management.visual.sections.remote.panel_repo')}
-                  placeholder="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
-                  value={values.rmPanelRepo}
-                  onChange={(e) => onChange({ rmPanelRepo: e.target.value })}
-                  disabled={disabled}
-                />
-              </FieldAnchor>
-            </FieldGrid>
-          </FieldStack>
-        </Collapsible>
-        <SectionDiscovery
-          values={values}
-          validationErrors={validationErrors}
+      <SettingList>
+        <HostField {...fieldProps} />
+        <PortField {...fieldProps} error={getValidationMessage(t, validationErrors?.port)} />
+        <TextSetting
+          fieldId="authDir"
+          size="lg"
+          label={t('config_management.visual.sections.auth.auth_dir')}
+          description={t('config_management.visual.sections.auth.auth_dir_hint')}
+          placeholder="~/.cli-proxy-api"
+          value={values.authDir}
+          onChange={(authDir) => onChange({ authDir })}
           disabled={disabled}
-          onChange={onChange}
         />
-      </FieldStack>
+      </SettingList>
+
+      <ApiKeysField {...fieldProps} />
+
+      <SettingList>
+        <TextSetting
+          fieldId="githubToken"
+          label={t('config_management.visual.sections.server.github_token')}
+          description={t('config_management.visual.sections.server.github_token_hint')}
+          type="password"
+          autoComplete="new-password"
+          value={values.githubToken}
+          onChange={(githubToken) => onChange({ githubToken })}
+          disabled={disabled}
+        />
+        <BlockSetting
+          fieldId="trustedProxies"
+          label={t('config_management.visual.serverExtras.trustedProxies.label')}
+          description={t('config_management.visual.serverExtras.trustedProxies.hint')}
+          error={getValidationMessage(t, validationErrors?.trustedProxies)}
+        >
+          <StringListEditor
+            value={values.trustedProxies}
+            disabled={disabled}
+            placeholder="192.168.0.0/24"
+            inputAriaLabel={t('config_management.visual.serverExtras.trustedProxies.label')}
+            onChange={(trustedProxies) => onChange({ trustedProxies })}
+          />
+        </BlockSetting>
+      </SettingList>
+
+      <Collapsible
+        label={t('config_management.visual.sections.tls.title')}
+        hint={t('config_management.visual.sections.tls.description')}
+        defaultOpen={false}
+      >
+        <SettingList>
+          <ToggleSetting
+            fieldId="tlsEnable"
+            wide
+            label={t('config_management.visual.sections.tls.enable')}
+            description={t('config_management.visual.sections.tls.enable_desc')}
+            checked={values.tlsEnable}
+            disabled={disabled}
+            onChange={(tlsEnable) => onChange({ tlsEnable })}
+          />
+          {values.tlsEnable ? (
+            <>
+              <TextSetting
+                fieldId="tlsCert"
+                size="lg"
+                label={t('config_management.visual.sections.tls.cert')}
+                placeholder="/path/to/cert.pem"
+                value={values.tlsCert}
+                onChange={(tlsCert) => onChange({ tlsCert })}
+                disabled={disabled}
+              />
+              <TextSetting
+                fieldId="tlsKey"
+                size="lg"
+                label={t('config_management.visual.sections.tls.key')}
+                placeholder="/path/to/key.pem"
+                value={values.tlsKey}
+                onChange={(tlsKey) => onChange({ tlsKey })}
+                disabled={disabled}
+              />
+            </>
+          ) : null}
+        </SettingList>
+      </Collapsible>
+
+      <Collapsible
+        label={t('config_management.visual.sections.remote.title')}
+        hint={t('config_management.visual.sections.remote.description')}
+        defaultOpen={false}
+      >
+        <FieldStack>
+          <SettingList>
+            <ToggleSetting
+              fieldId="rmAllowRemote"
+              label={t('config_management.visual.sections.remote.allow_remote')}
+              description={t('config_management.visual.sections.remote.allow_remote_desc')}
+              checked={values.rmAllowRemote}
+              disabled={disabled}
+              onChange={(rmAllowRemote) => onChange({ rmAllowRemote })}
+            />
+            <ToggleSetting
+              fieldId="rmDisableControlPanel"
+              label={t('config_management.visual.sections.remote.disable_panel')}
+              description={t('config_management.visual.sections.remote.disable_panel_desc')}
+              checked={values.rmDisableControlPanel}
+              disabled={disabled}
+              onChange={(rmDisableControlPanel) => onChange({ rmDisableControlPanel })}
+            />
+            <ToggleSetting
+              fieldId="rmDisableAutoUpdatePanel"
+              label={t('config_management.visual.sections.remote.disable_auto_update_panel')}
+              description={t(
+                'config_management.visual.sections.remote.disable_auto_update_panel_desc'
+              )}
+              checked={values.rmDisableAutoUpdatePanel}
+              disabled={disabled}
+              onChange={(rmDisableAutoUpdatePanel) => onChange({ rmDisableAutoUpdatePanel })}
+            />
+          </SettingList>
+          <SettingList>
+            <TextSetting
+              fieldId="rmSecretKey"
+              label={t('config_management.visual.sections.remote.secret_key')}
+              type="password"
+              placeholder={t('config_management.visual.sections.remote.secret_key_placeholder')}
+              value={values.rmSecretKey}
+              onChange={(rmSecretKey) => onChange({ rmSecretKey })}
+              disabled={disabled}
+            />
+            <TextSetting
+              fieldId="rmPanelRepo"
+              size="lg"
+              label={t('config_management.visual.sections.remote.panel_repo')}
+              placeholder="https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
+              value={values.rmPanelRepo}
+              onChange={(rmPanelRepo) => onChange({ rmPanelRepo })}
+              disabled={disabled}
+            />
+          </SettingList>
+        </FieldStack>
+      </Collapsible>
+
+      <SectionDiscovery
+        values={values}
+        validationErrors={validationErrors}
+        disabled={disabled}
+        onChange={onChange}
+      />
     </SectionCard>
   );
 }

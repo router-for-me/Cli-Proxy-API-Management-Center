@@ -3,7 +3,7 @@ import { CONFIG_TAB_ICONS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
 import { getValidationMessage } from '../blocks/shared';
 import { SectionCard } from '../SectionCard';
-import { FieldGrid, FieldStack } from '../fields/FieldPrimitives';
+import { SettingList } from '../fields/FieldPrimitives';
 import {
   ApiKeysField,
   DebugToggle,
@@ -13,7 +13,6 @@ import {
   ProxyUrlField,
   QuotaSwitchPreviewModelToggle,
   QuotaSwitchProjectToggle,
-  SponsorHintSpacer,
 } from '../fields/sharedFields';
 
 const Icon = CONFIG_TAB_ICONS.common;
@@ -31,6 +30,7 @@ export function SectionCommon({
 }: ConfigSectionProps) {
   const { t } = useTranslation();
   const portError = getValidationMessage(t, validationErrors?.port);
+  const fieldProps = { values, disabled, onChange };
 
   return (
     <SectionCard
@@ -39,33 +39,20 @@ export function SectionCommon({
       description={t('config_management.visual.sections.common.description')}
       animateIn={animateIn}
     >
-      <FieldStack>
-        <FieldGrid>
-          <HostField
-            values={values}
-            disabled={disabled}
-            onChange={onChange}
-            topExtra={<SponsorHintSpacer />}
-          />
-          <PortField
-            values={values}
-            disabled={disabled}
-            onChange={onChange}
-            error={portError}
-            topExtra={<SponsorHintSpacer />}
-          />
-          <ProxyUrlField values={values} disabled={disabled} onChange={onChange} />
-        </FieldGrid>
+      <SettingList>
+        <HostField {...fieldProps} />
+        <PortField {...fieldProps} error={portError} />
+        <ProxyUrlField {...fieldProps} wide />
+      </SettingList>
 
-        <ApiKeysField values={values} disabled={disabled} onChange={onChange} />
+      <ApiKeysField {...fieldProps} />
 
-        <FieldGrid>
-          <DebugToggle values={values} disabled={disabled} onChange={onChange} />
-          <LoggingToFileToggle values={values} disabled={disabled} onChange={onChange} />
-          <QuotaSwitchProjectToggle values={values} disabled={disabled} onChange={onChange} />
-          <QuotaSwitchPreviewModelToggle values={values} disabled={disabled} onChange={onChange} />
-        </FieldGrid>
-      </FieldStack>
+      <SettingList>
+        <DebugToggle {...fieldProps} />
+        <LoggingToFileToggle {...fieldProps} />
+        <QuotaSwitchProjectToggle {...fieldProps} />
+        <QuotaSwitchPreviewModelToggle {...fieldProps} />
+      </SettingList>
     </SectionCard>
   );
 }
