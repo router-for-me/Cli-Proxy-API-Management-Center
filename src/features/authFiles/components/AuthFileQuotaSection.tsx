@@ -6,7 +6,7 @@ import {
   useNotificationStore,
   useQuotaStore,
 } from '@/stores';
-import type { AuthFileItem } from '@/types';
+import type { AuthFileItem, ClaudeQuotaState } from '@/types';
 import { getStatusFromError, resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { isRuntimeOnlyAuthFile, type QuotaProviderType } from '@/features/authFiles/constants';
@@ -14,9 +14,10 @@ import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import { bindQuotaClasses } from '@/features/quota/types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '@/features/quota/providers';
+import { hasClaudeUsageData, resolveClaudeQuota } from '@/features/quota/providers/claude/data';
 import styles from './AuthFileQuota.module.scss';
 
-/** 认证文件卡片外衣：紧凑额度样式绑定成类型化契约（缺键在模块初始化即抛）。 */
+/** Bind the auth-file host's compact styles to the quota rendering contract. */
 const compactQuotaClasses = bindQuotaClasses(styles, 'AuthFileQuota.module.scss');
 
 const assertNever = (value: never): never => {
@@ -54,7 +55,12 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'xai') return state.xaiQuota[cacheKey] as QuotaCardState | undefined;
     return assertNever(quotaType);
   });
-  const quota = storedQuota;
+  const quota =
+    quotaType === 'claude'
+      ? resolveClaudeQuota(file, storedQuota as ClaudeQuotaState | undefined, t)
+      : storedQuota;
+  const retainedClaudeUsage =
+    quotaType === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
 
   const updateQuotaState = useQuotaStore(
     (state) => state[adapter.storeSetter] as unknown as QuotaMapUpdater
@@ -76,11 +82,22 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     try {
       const data = await adapter.fetchQuota(file, t);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
+        const nextQuota = adapter.buildSuccessState(data);
         updateQuotaState((prev) => ({
           ...prev,
-          [cacheKey]: adapter.buildSuccessState(data),
+          [cacheKey]: nextQuota,
         }));
-        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+        if (nextQuota.status === 'error') {
+          showNotification(
+            t('auth_files.quota_refresh_failed', {
+              name: file.name,
+              message: nextQuota.error || t('common.unknown_error'),
+            }),
+            'error'
+          );
+        } else {
+          showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
+        }
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');
@@ -160,6 +177,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const quotaStatus = quota?.status ?? 'idle';
   const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
   const canUseResetQuota = canRefreshQuota && quotaStatus !== 'loading';
+  const showRefreshQuotaAction = quotaType === 'devin' || quotaType === 'claude';
   const showResetQuotaAction = quota !== undefined && Boolean(adapter.canResetQuota?.(quota));
   const resetQuotaAction =
     adapter.resetQuota && showResetQuotaAction ? (
@@ -203,15 +221,16 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
             message: quotaErrorMessage,
           })}
         </div>
-      ) : quota ? (
+      ) : quota && !retainedClaudeUsage ? (
         <adapter.Body quota={quota} classes={compactQuotaClasses} />
-      ) : (
+      ) : !retainedClaudeUsage ? (
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
-      )}
-      {quotaStatus !== 'idle' && (resetQuotaAction || quotaType === 'devin') && (
+      ) : null}
+      {retainedClaudeUsage && quota && <adapter.Body quota={quota} classes={compactQuotaClasses} />}
+      {quotaStatus !== 'idle' && (resetQuotaAction || showRefreshQuotaAction) && (
         <div className={styles.quotaCardActions}>
           {resetQuotaAction}
-          {quotaType === 'devin' && (
+          {showRefreshQuotaAction && (
             <Button
               type="button"
               variant="secondary"

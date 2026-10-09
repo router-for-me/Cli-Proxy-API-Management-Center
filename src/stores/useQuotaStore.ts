@@ -62,9 +62,35 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       antigravityQuota: resolveUpdater(updater, state.antigravityQuota),
     })),
   setClaudeQuota: (updater) =>
-    set((state) => ({
-      claudeQuota: resolveUpdater(updater, state.claudeQuota),
-    })),
+    set((state) => {
+      const next = resolveUpdater(updater, state.claudeQuota);
+      let retained = next;
+      for (const [key, quota] of Object.entries(next)) {
+        const previous = state.claudeQuota[key];
+        if (
+          previous &&
+          quota !== previous &&
+          (quota.status === 'loading' || quota.status === 'error') &&
+          !quota.observedAt &&
+          (previous.observedAt ||
+            previous.windows.length ||
+            previous.extraUsage ||
+            previous.dollarWindows?.length)
+        ) {
+          if (retained === next) retained = { ...next };
+          retained[key] = {
+            ...quota,
+            windows: previous.windows,
+            extraUsage: previous.extraUsage,
+            dollarWindows: previous.dollarWindows,
+            observedAt: previous.observedAt,
+            planType: previous.planType,
+            stale: quota.status === 'error' || previous.stale,
+          };
+        }
+      }
+      return { claudeQuota: retained };
+    }),
   setCodexQuota: (updater) =>
     set((state) => ({
       codexQuota: resolveUpdater(updater, state.codexQuota),

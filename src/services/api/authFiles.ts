@@ -1,5 +1,5 @@
 /**
- * 认证文件与 OAuth 排除模型相关 API
+ * Auth-file and OAuth excluded-model APIs.
  */
 
 import { apiClient } from './client';
@@ -16,6 +16,7 @@ import {
 } from '@/utils/recentRequests';
 import { parseTimestampMs } from '@/utils/timestamp';
 import { normalizeAuthFileCooldowns, normalizeCooldownTimestamp } from './authFileCooldowns';
+import { normalizeClaudeUsageSnapshot } from './claudeUsage';
 
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 export type AuthFileLookup = { name: string; authIndex?: string };
@@ -260,9 +261,9 @@ const readBooleanField = (value: unknown): boolean | undefined => {
 };
 
 /**
- * 契约边界归一化：把后端 kebab/snake_case 生字段填充到 AuthFileItem 声明的
- * camelCase 字段上。原始字段全部透传——quota resolvers 仍直接读
- * plan_type / id_token / metadata / attributes 等生字段。
+ * Normalize backend fields into declared camelCase fields at the API boundary.
+ * Preserve raw fields for quota resolvers that read plan_type, id_token,
+ * metadata, and attributes.
  */
 const normalizeAuthFileEntry = (
   entry: AuthFileEntry,
@@ -274,18 +275,21 @@ const normalizeAuthFileEntry = (
   const statusMessage = readTextField(entry, 'status_message') || declaredStatusMessage;
   const note = readTextField(entry, 'note');
   const email = readTextField(entry, 'email');
-  // account / account_type 故意不归一化：api-key 类凭证的 account 就是 API key 本身
-  // （sdk/cliproxy/auth/types.go AccountInfo），不能进入展示与搜索路径。
+  // Do not normalize account/account_type: AccountInfo exposes the API key for
+  // API-key credentials, so these fields must never enter display or search.
   const projectId = readTextField(entry, 'project_id');
   const modified = readDateField(entry);
   const priority = readIntegerField(entry['priority']);
   const weight = readIntegerField(entry['weight']);
   const supportsQuota = readBooleanField(entry['supports_quota'] ?? entry.supportsQuota);
-  const quotaProvider = readTextField(entry, 'quota_provider') || readTextField(entry, 'quotaProvider');
+  const quotaProvider =
+    readTextField(entry, 'quota_provider') || readTextField(entry, 'quotaProvider');
 
   return {
     ...entry,
     cooldownSnapshot: normalizeAuthFileCooldowns(entry.cooldowns, observedAt, receivedAtMs),
+    claudeUsage: normalizeClaudeUsageSnapshot(entry.claude_usage),
+    claudeUsageStale: entry.claude_usage_stale === true,
     runtimeOnly: readRuntimeOnlyField(entry),
     authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
     ...(supportsQuota !== undefined ? { supportsQuota } : {}),
@@ -620,7 +624,7 @@ export const authFilesApi = {
     return blob.text();
   },
 
-  // OAuth 排除模型
+  // OAuth excluded models
   async getOauthExcludedModels(): Promise<Record<string, string[]>> {
     const data = await getConfigValue(OAUTH_EXCLUDED_MODELS_ENDPOINT, {});
     return normalizeOauthExcludedModels(data);
@@ -637,7 +641,7 @@ export const authFilesApi = {
       await apiClient.put(OAUTH_EXCLUDED_MODELS_ENDPOINT, normalizeOauthExcludedModels(map));
     }),
 
-  // OAuth 模型别名
+  // OAuth model aliases
   async getOauthModelAlias(): Promise<Record<string, OAuthModelAliasEntry[]>> {
     const data = await getConfigValue(OAUTH_MODEL_ALIAS_ENDPOINT, {});
     return normalizeOauthModelAlias(data);
@@ -657,7 +661,7 @@ export const authFilesApi = {
   deleteOauthModelAlias: (channel: string) =>
     updateOauthProviderMap(OAUTH_MODEL_ALIAS_ENDPOINT, channel),
 
-  // 获取认证凭证支持的模型
+  // Models supported by a credential
   async getModelsForAuthFile(
     name: string
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
@@ -670,7 +674,7 @@ export const authFilesApi = {
       : [];
   },
 
-  // 获取指定 channel 的模型定义
+  // Model definitions for the specified channel
   async getModelDefinitions(
     channel: string
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
