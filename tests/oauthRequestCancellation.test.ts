@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, type AxiosResponse } from 'axios';
 import { apiClient } from '@/services/api/client';
-import { createOAuthAttempts } from '@/pages/oauthAttempts';
+import { createOAuthAttempts } from '@/features/oauth/oauthAttempts';
 
 // Use the real Axios interceptor chain with a deferred transport response.
 // Abandoned requests must not emit old server metadata or log out a new session.

@@ -2,7 +2,8 @@ import { describe, expect, spyOn, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { apiClient } from '@/services/api/client';
 import { oauthApi } from '@/services/api/oauth';
-import { createOAuthAttempts } from '@/pages/oauthAttempts';
+import { createOAuthAttempts } from '@/features/oauth/oauthAttempts';
+import { OAUTH_PROVIDERS } from '@/features/oauth/providers';
 import {
   KIMI_CHINESE_AFFILIATE_URL,
   KIMI_INTERNATIONAL_AFFILIATE_URL,
@@ -41,13 +42,15 @@ describe('Kimi regional login', () => {
     }
   });
 
-  test('offers both cards with site-specific registration links', () => {
-    const source = readFileSync('src/pages/OAuthPage.tsx', 'utf8');
-    expect(source).toContain("id: 'kimi-ai'");
-    expect(source).toContain("id: 'kimi'");
-    expect(source).toMatch(
-      /provider.id === 'kimi-ai'\s*\? KIMI_INTERNATIONAL_AFFILIATE_URL\s*: KIMI_CHINESE_AFFILIATE_URL/
-    );
+  test('offers both tiles with site-specific registration links', () => {
+    const kimi = OAUTH_PROVIDERS.find((provider) => provider.id === 'kimi');
+    const kimiAi = OAUTH_PROVIDERS.find((provider) => provider.id === 'kimi-ai');
+    expect(kimi).toMatchObject({ flow: 'device', domain: 'kimi.com' });
+    expect(kimiAi).toMatchObject({ flow: 'device', domain: 'kimi.ai' });
+    expect(kimi?.signUpUrl).toBe(KIMI_CHINESE_AFFILIATE_URL);
+    expect(kimiAi?.signUpUrl).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
+    // 推广位：两站排在画廊最前
+    expect(OAUTH_PROVIDERS.slice(0, 2).map((provider) => provider.id)).toEqual(['kimi', 'kimi-ai']);
     expect(new URL(KIMI_CHINESE_AFFILIATE_URL).hostname).toBe('platform.kimi.com');
     expect(new URL(KIMI_INTERNATIONAL_AFFILIATE_URL).hostname).toBe('platform.kimi.ai');
   });

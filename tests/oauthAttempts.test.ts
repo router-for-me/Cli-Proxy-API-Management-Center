@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createOAuthAttempts } from '../src/pages/oauthAttempts';
+import { createOAuthAttempts } from '@/features/oauth/oauthAttempts';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
