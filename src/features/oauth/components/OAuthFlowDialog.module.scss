@@ -639,8 +639,16 @@
   background:
     radial-gradient(90% 60% at 100% 0%, sponsor-tint(12%), transparent 60%), var(--bg-primary);
 
+  /* 与赞助卡一致：图标自带圆角方块，直接铺满，不再套一层描边容器 */
   .headingGlyph {
-    border-color: sponsor-tint(30%);
+    border: 0;
+    background: none;
+    overflow: hidden;
+  }
+
+  .headingImage {
+    width: 44px;
+    height: 44px;
   }
 
   .primary {

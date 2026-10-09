@@ -216,12 +216,12 @@
     );
   box-shadow: 0 16px 34px -28px sponsor-tint(95%);
 
+  /* 图标自带圆角方块：容器不再加底色和投影，边缘保持锐利 */
   .glyph {
     width: 40px;
     height: 40px;
     border-radius: 10px;
     background: none;
-    box-shadow: 0 6px 14px -8px rgb(0 0 0 / 0.35);
   }
 
   .glyphImage {
@@ -317,10 +317,6 @@
       color-mix(in srgb, #{$sponsor-blue} 10%, var(--bg-primary)),
       var(--bg-primary) 72%
     );
-
-  .glyph {
-    box-shadow: none;
-  }
 }
 
 /* 窄屏：注册药丸落到第二行，标题不被挤压 */

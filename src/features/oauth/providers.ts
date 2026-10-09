@@ -9,8 +9,9 @@ import iconMeta from '@/assets/icons/meta.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
-import iconKimiLight from '@/assets/icons/kimi-light.svg';
-import iconKimiDark from '@/assets/icons/kimi-dark.svg';
+// 赞助卡用的 App 图标版：K 与蓝点等比内缩进方块，蓝点不再顶出圆角
+import iconKimiTileBlack from '@/assets/icons/kimi-tile-black.svg';
+import iconKimiTileWhite from '@/assets/icons/kimi-tile-white.svg';
 import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconDevin from '@/assets/icons/devin.svg';
@@ -52,7 +53,7 @@ export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'kimi',
     label: { key: 'auth_login.kimi_oauth_name' },
     titleKey: 'auth_login.kimi_oauth_title',
-    icon: { light: iconKimiDark, dark: iconKimiLight },
+    icon: { light: iconKimiTileBlack, dark: iconKimiTileWhite },
     flow: 'device',
     domain: 'kimi.com',
     sponsor: { signUpUrl: KIMI_CHINESE_AFFILIATE_URL },
@@ -62,7 +63,7 @@ export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
     id: 'kimi-ai',
     label: { key: 'auth_login.kimi_ai_oauth_name' },
     titleKey: 'auth_login.kimi_ai_oauth_title',
-    icon: { light: iconKimiDark, dark: iconKimiLight },
+    icon: { light: iconKimiTileBlack, dark: iconKimiTileWhite },
     flow: 'device',
     domain: 'kimi.ai',
     sponsor: { signUpUrl: KIMI_INTERNATIONAL_AFFILIATE_URL },
