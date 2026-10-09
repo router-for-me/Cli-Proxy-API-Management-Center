@@ -471,6 +471,17 @@
     "refresh_button": "Làm mới Quota",
     "fetch_all": "Lấy tất cả"
   },
+  "plugin_quota": {
+    "empty_title": "Không có File xác thực Plugin",
+    "empty_desc": "Kết nối tài khoản plugin để xem quota còn lại.",
+    "idle": "Nhấn vào đây để làm mới quota",
+    "loading": "Đang tải quota...",
+    "load_failed": "Không thể tải quota: {{message}}",
+    "missing_auth_index": "File xác thực thiếu auth_index",
+    "empty_data": "Chưa có dữ liệu quota",
+    "plan_label": "Gói",
+    "remaining_percent": "Còn lại {{percent}}%"
+  },
   "claude_quota": {
     "title": "Quota Claude",
     "empty_title": "Không có File OAuth Claude",

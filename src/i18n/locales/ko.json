@@ -471,6 +471,17 @@
     "refresh_button": "할당량 새로 고침",
     "fetch_all": "전체 가져오기"
   },
+  "plugin_quota": {
+    "empty_title": "플러그인 인증 파일 없음",
+    "empty_desc": "남은 할당량을 확인하려면 플러그인 계정을 연결하세요.",
+    "idle": "할당량을 새로 고치려면 여기를 클릭하세요",
+    "loading": "할당량 불러오는 중...",
+    "load_failed": "할당량 불러오기 실패: {{message}}",
+    "missing_auth_index": "인증 파일에 auth_index가 없습니다",
+    "empty_data": "사용 가능한 할당량 데이터가 없습니다",
+    "plan_label": "플랜",
+    "remaining_percent": "{{percent}}% 남음"
+  },
   "claude_quota": {
     "title": "Claude 할당량",
     "empty_title": "Claude OAuth 인증 파일 없음",
