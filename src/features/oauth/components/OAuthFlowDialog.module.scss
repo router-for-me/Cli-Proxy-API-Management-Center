@@ -1,4 +1,5 @@
 @use '../../../styles/mixins' as *;
+@use '../sponsor' as *;
 
 /* ============================================================
  * 授权对话框：品牌头 → 步骤（打开授权页 / 设备码 / 回调）→ 底部实时状态条。
@@ -630,6 +631,39 @@
   justify-content: center;
   gap: 8px;
   margin-top: 14px;
+}
+
+/* ---------- 赞助商对话框（Kimi）：延续卡片的品牌蓝 ---------- */
+
+:global(.modal).sponsorDialog {
+  background:
+    radial-gradient(90% 60% at 100% 0%, sponsor-tint(12%), transparent 60%), var(--bg-primary);
+
+  .headingGlyph {
+    border-color: sponsor-tint(30%);
+  }
+
+  .primary {
+    background: #{$sponsor-blue-strong};
+    color: #fff;
+  }
+
+  .primary:focus-visible,
+  .inlineLink:focus-visible {
+    outline-color: #{$sponsor-blue};
+  }
+
+  .inlineLink {
+    color: sponsor-ink();
+    text-decoration-color: sponsor-tint(40%);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :global(.modal).sponsorDialog .primary:hover:not(:disabled) {
+    background: #{$sponsor-blue-strong-hover};
+    box-shadow: 0 10px 22px -10px sponsor-tint(70%);
+  }
 }
 
 /* ---------- 窄屏 ---------- */

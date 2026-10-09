@@ -15,6 +15,7 @@ import {
 } from './hooks/useOAuthFlows';
 import { useVertexImport } from './hooks/useVertexImport';
 import {
+  isSponsor,
   OAUTH_PROVIDERS,
   resolveThemedIcon,
   supportsManualCallback,
@@ -88,9 +89,9 @@ export function OAuthPage() {
     icon: iconOf(card),
   });
 
-  const signUpOf = (card: OAuthProviderCard) =>
-    card.kind === 'builtin' && card.signUpUrl
-      ? { url: card.signUpUrl, label: t('auth_login.kimi_sign_up_button') }
+  const sponsorOf = (card: OAuthProviderCard) =>
+    isSponsor(card)
+      ? { url: card.sponsor.signUpUrl, label: t('auth_login.kimi_sign_up_button') }
       : undefined;
 
   const tileStatusLabel = (status: ProviderFlowState['status']) =>
@@ -128,6 +129,25 @@ export function OAuthPage() {
   const dialogCard =
     dialog?.kind === 'oauth' ? providerCards.find((card) => card.id === dialog.id) : undefined;
   const providerCount = providerCards.length;
+  const sponsorCards = providerCards.filter(isSponsor);
+  const regularCards = providerCards.filter((card) => !isSponsor(card));
+
+  const renderTile = (card: OAuthProviderCard) => {
+    const status = flows.states[card.id]?.status;
+    return (
+      <ProviderTile
+        key={card.id}
+        label={labelOf(card)}
+        caption={captionOf(card)}
+        icon={iconOf(card)}
+        index={providerCards.indexOf(card)}
+        status={status}
+        statusLabel={tileStatusLabel(status)}
+        sponsor={sponsorOf(card)}
+        onOpen={() => openProvider(card)}
+      />
+    );
+  };
   const waitingCount = Object.values(flows.states).filter(
     (state) => state.status === 'waiting'
   ).length;
@@ -140,28 +160,11 @@ export function OAuthPage() {
         addedCount={flows.addedCount}
       />
 
-      <div className={styles.grid}>
-        {providerCards.map((card, index) => {
-          const status = flows.states[card.id]?.status;
-          return (
-            <ProviderTile
-              key={card.id}
-              label={labelOf(card)}
-              caption={
-                card.kind === 'builtin' && card.signUpUrl && card.domain
-                  ? card.domain
-                  : captionOf(card)
-              }
-              icon={iconOf(card)}
-              index={index}
-              status={status}
-              statusLabel={tileStatusLabel(status)}
-              signUp={signUpOf(card)}
-              onOpen={() => openProvider(card)}
-            />
-          );
-        })}
-      </div>
+      {/* 赞助商独占首行（大卡 + 品牌蓝），其余提供商在下方紧凑网格 */}
+      {sponsorCards.length > 0 && (
+        <div className={styles.sponsorGrid}>{sponsorCards.map(renderTile)}</div>
+      )}
+      <div className={styles.grid}>{regularCards.map(renderTile)}</div>
 
       <section className={styles.section} aria-labelledby={otherMethodsId}>
         <h2 className={styles.sectionLabel} id={otherMethodsId} data-reveal>
@@ -186,7 +189,7 @@ export function OAuthPage() {
           state={flows.states[dialogCard.id] ?? {}}
           text={(suffix) => flows.providerText(dialogCard.id, suffix)}
           supportsCallback={supportsManualCallback(dialogCard)}
-          signUp={signUpOf(dialogCard)}
+          sponsor={sponsorOf(dialogCard)}
           onStart={() => void flows.startAuth(dialogCard.id)}
           onCancel={() => void flows.cancelAuth(dialogCard.id)}
           onCallbackChange={(value) => flows.setCallbackInput(dialogCard.id, value)}

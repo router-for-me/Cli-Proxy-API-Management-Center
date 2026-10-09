@@ -36,7 +36,8 @@ export interface OAuthFlowDialogProps {
   /** 提供商专属文案：`auth_login.<id>_<suffix>` 或插件模板。 */
   text: (suffix: string) => string;
   supportsCallback: boolean;
-  signUp?: { url: string; label: string };
+  /** 赞助商：品牌蓝主按钮 + 提示行里的注册链接。 */
+  sponsor?: { url: string; label: string };
   onStart: () => void;
   onCancel: () => void;
   onCallbackChange: (value: string) => void;
@@ -54,7 +55,7 @@ export function OAuthFlowDialog(props: OAuthFlowDialogProps) {
       open={open}
       onClose={onClose}
       width={500}
-      className={styles.dialog}
+      className={props.sponsor ? `${styles.dialog} ${styles.sponsorDialog}` : styles.dialog}
       title={<DialogTitle {...heading} />}
       footer={view === 'flow' ? <FlowStatusBar {...props} /> : undefined}
     >
@@ -65,22 +66,22 @@ export function OAuthFlowDialog(props: OAuthFlowDialogProps) {
   );
 }
 
-function ProviderHint({ text, signUp }: Pick<OAuthFlowDialogProps, 'text' | 'signUp'>) {
+function ProviderHint({ text, sponsor }: Pick<OAuthFlowDialogProps, 'text' | 'sponsor'>) {
   const { t } = useTranslation();
   return (
     <p className={styles.hint}>
       {text('oauth_hint')}
-      {signUp && (
+      {sponsor && (
         <>
           {' '}
           <span className={styles.signUpPrompt}>{t('auth_login.sign_up_prompt')}</span>
           <a
             className={styles.inlineLink}
-            href={signUp.url}
+            href={sponsor.url}
             target="_blank"
             rel="noopener noreferrer"
           >
-            {signUp.label}
+            {sponsor.label}
             <IconExternalLink size={11} aria-hidden="true" />
           </a>
         </>
@@ -97,7 +98,7 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
   if (view !== 'flow') {
     return (
       <div className={styles.stack}>
-        <ProviderHint text={text} signUp={props.signUp} />
+        <ProviderHint text={text} sponsor={props.sponsor} />
         {view === 'failed' && (
           <div className={styles.alert} role="alert">
             {text('oauth_status_error')} {state.error || ''}
@@ -114,7 +115,7 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
 
   return (
     <div className={styles.stack}>
-      <ProviderHint text={text} signUp={props.signUp} />
+      <ProviderHint text={text} sponsor={props.sponsor} />
       {isDevin && state.state && state.status === 'error' && (
         <div className={styles.alert} role="alert">
           {t('auth_login.devin_oauth_retry_hint')}

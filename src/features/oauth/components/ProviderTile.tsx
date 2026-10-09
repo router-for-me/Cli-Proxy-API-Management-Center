@@ -16,14 +16,15 @@ export interface ProviderTileProps {
   index: number;
   status?: ProviderFlowState['status'];
   statusLabel?: string;
-  signUp?: { url: string; label: string };
+  /** 赞助商变体：更大的卡、品牌蓝强调、常驻「立即注册」药丸。 */
+  sponsor?: { url: string; label: string };
   onOpen: () => void;
 }
 
 /**
  * 提供商磁贴：整块可点（stretched button），点击即开始登录并打开授权对话框。
  * 副行平时说明登录方式，登录进行中改为实时状态 —— 对话框关着也能看到后台进度。
- * 注册链接是独立的第二个可聚焦目标，浮在 stretched 层之上。
+ * 赞助商变体的注册药丸是独立的第二个可聚焦目标，浮在 stretched 层之上。
  */
 export function ProviderTile({
   label,
@@ -32,7 +33,7 @@ export function ProviderTile({
   index,
   status,
   statusLabel,
-  signUp,
+  sponsor,
   onOpen,
 }: ProviderTileProps) {
   const captionId = useId();
@@ -43,12 +44,12 @@ export function ProviderTile({
 
   return (
     <div
-      className={styles.tile}
+      className={sponsor ? `${styles.tile} ${styles.sponsor}` : styles.tile}
       data-status={status ?? 'idle'}
       style={{ '--tile-delay': enterDelay } as CSSProperties}
     >
       <span className={styles.glyph}>
-        <BrandGlyph src={icon} size={20} className={styles.glyphImage} />
+        <BrandGlyph src={icon} size={sponsor ? 40 : 20} className={styles.glyphImage} />
       </span>
       <span className={styles.text}>
         <button
@@ -69,24 +70,19 @@ export function ProviderTile({
           ) : (
             <span className={styles.captionText}>{caption}</span>
           )}
-          {signUp && !status && (
-            <>
-              <span className={styles.sep} aria-hidden="true">
-                ·
-              </span>
-              <a
-                className={styles.signUp}
-                href={signUp.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {signUp.label}
-                <IconExternalLink size={11} aria-hidden="true" />
-              </a>
-            </>
-          )}
         </span>
       </span>
+      {sponsor && (
+        <a
+          className={styles.sponsorLink}
+          href={sponsor.url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {sponsor.label}
+          <IconExternalLink size={12} aria-hidden="true" />
+        </a>
+      )}
       <span className={styles.trail} aria-hidden="true">
         <IconPlus size={15} />
       </span>

@@ -32,8 +32,8 @@ export interface BuiltInOAuthProviderCard {
   flow: OAuthFlowKind;
   /** 区分同品牌的不同站点，磁贴副行展示。 */
   domain?: string;
-  /** 注册入口（推广链接），只有 Kimi 两站有。 */
-  signUpUrl?: string;
+  /** 赞助商：画廊首行大卡 + 品牌蓝强调，带注册推广链接（目前是 Kimi 两站）。 */
+  sponsor?: { signUpUrl: string };
 }
 
 export interface PluginOAuthProviderCard {
@@ -45,7 +45,7 @@ export interface PluginOAuthProviderCard {
 
 export type OAuthProviderCard = BuiltInOAuthProviderCard | PluginOAuthProviderCard;
 
-/** 展示顺序即数组顺序：Kimi 两站置首（推广位），其余沿用原有次序。 */
+/** 展示顺序即数组顺序：赞助商（Kimi 两站）置首，其余沿用原有次序。 */
 export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
   {
     kind: 'builtin',
@@ -55,7 +55,7 @@ export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
     icon: { light: iconKimiDark, dark: iconKimiLight },
     flow: 'device',
     domain: 'kimi.com',
-    signUpUrl: KIMI_CHINESE_AFFILIATE_URL,
+    sponsor: { signUpUrl: KIMI_CHINESE_AFFILIATE_URL },
   },
   {
     kind: 'builtin',
@@ -65,7 +65,7 @@ export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
     icon: { light: iconKimiDark, dark: iconKimiLight },
     flow: 'device',
     domain: 'kimi.ai',
-    signUpUrl: KIMI_INTERNATIONAL_AFFILIATE_URL,
+    sponsor: { signUpUrl: KIMI_INTERNATIONAL_AFFILIATE_URL },
   },
   {
     kind: 'builtin',
@@ -130,6 +130,11 @@ export const CALLBACK_SUPPORTED = new Set<string>([
 
 export const supportsManualCallback = (provider: OAuthProviderCard): boolean =>
   provider.kind === 'plugin' || CALLBACK_SUPPORTED.has(provider.id);
+
+export const isSponsor = (
+  provider: OAuthProviderCard
+): provider is BuiltInOAuthProviderCard & { sponsor: { signUpUrl: string } } =>
+  provider.kind === 'builtin' && Boolean(provider.sponsor);
 
 export const resolveThemedIcon = (icon: ThemedIcon, theme: 'light' | 'dark'): string =>
   typeof icon === 'string' ? icon : icon[theme];

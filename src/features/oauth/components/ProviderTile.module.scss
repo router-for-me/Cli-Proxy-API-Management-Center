@@ -1,4 +1,5 @@
 @use '../../../styles/mixins' as *;
+@use '../sponsor' as *;
 
 /* ============================================================
  * 提供商磁贴 — 凭证卡/额度卡同一配方（14px 圆角 / 1px 边框 / 82% 透感纸面）。
@@ -120,30 +121,6 @@
   min-width: 0;
 }
 
-.sep {
-  color: var(--text-quaternary);
-  user-select: none;
-}
-
-/* 注册链接：浮在 stretched 层之上，是磁贴里唯一的第二目标 */
-.signUp {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 4px;
-  transition: color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
-
-  &:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
-}
-
 /* ---------- 状态 ---------- */
 
 .status {
@@ -217,11 +194,161 @@
   .tile:active {
     transform: scale(0.985);
   }
+}
 
-  .signUp:hover {
-    color: var(--text-primary);
-    text-decoration: underline;
-    text-underline-offset: 2px;
+/* ============================================================
+ * 赞助商卡（Kimi）：首行大卡 + 品牌蓝。蓝色只出现在这里与其对话框，
+ * 用光晕底 / 蓝描边 / 蓝投影 / 实心蓝「+」形成强调，文字层级不变。
+ * ============================================================ */
+
+.sponsor {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 14px;
+  min-height: 84px;
+  padding: 16px 16px 16px 18px;
+  border-color: color-mix(in srgb, #{$sponsor-blue} 36%, var(--border-color));
+  background:
+    radial-gradient(120% 150% at 100% 0%, sponsor-tint(17%), transparent 58%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, #{$sponsor-blue} 7%, var(--bg-primary)),
+      var(--bg-primary) 72%
+    );
+  box-shadow: 0 16px 34px -28px sponsor-tint(95%);
+
+  .glyph {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: none;
+    box-shadow: 0 6px 14px -8px rgb(0 0 0 / 0.35);
+  }
+
+  .glyphImage {
+    width: 40px;
+    height: 40px;
+  }
+
+  .text {
+    gap: 4px;
+  }
+
+  .main {
+    font-size: 16px;
+    letter-spacing: -0.015em;
+  }
+
+  .main::after {
+    border-radius: 14px;
+  }
+
+  .trail {
+    width: 32px;
+    height: 32px;
+    border-color: #{$sponsor-blue};
+    background: #{$sponsor-blue};
+    color: #fff;
+    box-shadow: 0 8px 18px -10px sponsor-tint(90%);
+  }
+}
+
+.sponsor[data-status='waiting'] {
+  border-color: color-mix(in srgb, #{$sponsor-blue} 55%, var(--border-color));
+}
+
+/* 注册药丸：推广链接是可见按钮，而不是一行小字 */
+.sponsorLink {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid sponsor-tint(38%);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  color: sponsor-ink();
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
+    background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #{$sponsor-blue};
+    outline-offset: 2px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sponsor:hover {
+    border-color: color-mix(in srgb, #{$sponsor-blue} 58%, var(--border-color));
+    box-shadow: 0 20px 38px -24px sponsor-tint(85%);
+  }
+
+  .sponsor:hover .trail {
+    border-color: #{$sponsor-blue-strong};
+    background: #{$sponsor-blue-strong};
+    color: #fff;
+  }
+
+  .sponsorLink:hover {
+    border-color: sponsor-tint(60%);
+    background: sponsor-tint(10%);
+  }
+}
+
+/* 深色主题：光晕略加强，图标投影收敛 */
+:global([data-theme='dark']) .sponsor {
+  background:
+    radial-gradient(120% 150% at 100% 0%, sponsor-tint(24%), transparent 58%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, #{$sponsor-blue} 10%, var(--bg-primary)),
+      var(--bg-primary) 72%
+    );
+
+  .glyph {
+    box-shadow: none;
+  }
+}
+
+/* 窄屏：注册药丸落到第二行，标题不被挤压 */
+@include mobile {
+  .sponsor {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'glyph text trail'
+      'glyph link link';
+    row-gap: 10px;
+
+    .glyph {
+      grid-area: glyph;
+      align-self: start;
+    }
+
+    .text {
+      grid-area: text;
+    }
+
+    .trail {
+      grid-area: trail;
+    }
+  }
+
+  .sponsorLink {
+    grid-area: link;
+    justify-self: start;
   }
 }
 
@@ -234,8 +361,13 @@
   }
 
   .tile:active,
-  .tile:hover {
+  .tile:hover,
+  .sponsorLink:active {
     transform: none;
+  }
+
+  .sponsorLink {
+    transition: none;
   }
 
   .tile[data-status='waiting'] .statusDot {
