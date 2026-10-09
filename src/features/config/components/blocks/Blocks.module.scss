@@ -75,9 +75,10 @@
   line-height: 1.4;
 }
 
+/* 列表的「添加」统一落在列表下方左侧：新条目会出现在这里。 */
 .actionRow {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .emptyState {
