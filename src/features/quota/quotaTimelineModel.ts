@@ -485,50 +485,49 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
       .flatMap((group) => group.buckets ?? [])
       .filter((bucket) => typeof bucket.resetAtMs === 'number');
 
-    // Antigravity reports separate model groups (primary "Gemini Models" and
-    // secondary "Claude and GPT models") that share the same periods (such as
-    // weekly or 5-hour). A reset-time tie-break would make the lane silently
-    // switch to third-party quota if it resets sooner. Keep the lane anchored
-    // to the primary Gemini bucket whenever it fits this view.
-    const preferredAntigravityBucket =
-      provider === 'antigravity'
-        ? (() => {
-            const isGeminiGroup = (g: AntigravityGroupLike) => {
-              const text = `${g.id ?? ''} ${g.label ?? ''}`.toLowerCase();
-              return text.includes('gemini') && !text.includes('claude') && !text.includes('gpt');
-            };
-            const isGeminiBucket = (b: AntigravityBucketLike) => {
-              const text = `${b.id ?? ''} ${b.label ?? ''}`.toLowerCase();
-              return (
-                text.includes('gemini') &&
-                !text.includes('3p') &&
-                !text.includes('claude') &&
-                !text.includes('gpt')
-              );
-            };
-            const groupBuckets = rawGroups
-              .filter(isGeminiGroup)
-              .flatMap((g) => g.buckets ?? [])
-              .filter((b) => typeof b.resetAtMs === 'number');
-            const candidatePool =
-              groupBuckets.length > 0 ? groupBuckets : buckets.filter(isGeminiBucket);
-            const fittingGemini =
-              maxPeriodHours === undefined
-                ? candidatePool
-                : candidatePool.filter(
-                    (b) =>
-                      typeof b.periodHours === 'number' &&
-                      b.periodHours > 0 &&
-                      b.periodHours <= maxPeriodHours
-                  );
-            return fittingGemini.length > 0
-              ? pickLaneWindow(fittingGemini, maxPeriodHours)
-              : undefined;
-          })()
-        : undefined;
+    const chosenOverall = pickLaneWindow(buckets, maxPeriodHours);
+    if (!chosenOverall) return empty;
 
-    const chosen = preferredAntigravityBucket ?? pickLaneWindow(buckets, maxPeriodHours);
-    if (!chosen) return empty;
+    // Antigravity reports separate model groups (primary "Gemini Models" and
+    // secondary "Claude and GPT models") that often share the same period length
+    // (such as weekly or 5-hour). A reset-time tie-break would make the lane
+    // silently switch to third-party quota if it resets sooner.
+    //
+    // Preserve span-appropriate period selection across all buckets first so
+    // mixed configurations (e.g. Gemini weekly only + Claude 5h) never produce
+    // oversized windows in session mode or slivers in weekly mode. Then, among
+    // candidates for that chosen period, prefer the primary Gemini bucket.
+    let chosen = chosenOverall;
+    if (provider === 'antigravity') {
+      const isGeminiGroup = (g: AntigravityGroupLike) => {
+        const text = `${g.id ?? ''} ${g.label ?? ''}`.toLowerCase();
+        return text.includes('gemini') && !text.includes('claude') && !text.includes('gpt');
+      };
+      const isGeminiBucket = (b: AntigravityBucketLike) => {
+        const text = `${b.id ?? ''} ${b.label ?? ''}`.toLowerCase();
+        return (
+          text.includes('gemini') &&
+          !text.includes('3p') &&
+          !text.includes('claude') &&
+          !text.includes('gpt')
+        );
+      };
+      const groupBuckets = rawGroups
+        .filter(isGeminiGroup)
+        .flatMap((g) => g.buckets ?? [])
+        .filter((b) => typeof b.resetAtMs === 'number');
+      const candidatePool =
+        groupBuckets.length > 0 ? groupBuckets : buckets.filter(isGeminiBucket);
+      const matchingGemini = candidatePool.filter(
+        (b) => b.periodHours === chosenOverall.periodHours
+      );
+      if (matchingGemini.length > 0) {
+        const preferred = pickLaneWindow(matchingGemini, maxPeriodHours);
+        if (preferred) {
+          chosen = preferred;
+        }
+      }
+    }
 
     // Antigravity reports the fraction REMAINING, not percent used.
     const remainingOf = (bucket: AntigravityBucketLike) =>

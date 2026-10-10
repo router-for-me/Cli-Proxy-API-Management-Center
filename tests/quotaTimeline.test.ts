@@ -559,6 +559,38 @@ describe('buildTimelineLane', () => {
     expect(lane.remaining).toBe(35);
   });
 
+  test('antigravity: preserves weekly span over 5-hour Gemini bucket in weekly view', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'gemini-models',
+            label: 'Gemini Models',
+            buckets: [
+              { id: 'gemini-5h', label: '5h Limit', remainingFraction: 0.95, resetAtMs: 8000, periodHours: 5 },
+            ],
+          },
+          {
+            id: 'claude-and-gpt-models',
+            label: 'Claude and GPT models',
+            buckets: [
+              { id: '3p-weekly', label: 'Weekly Limit', remainingFraction: 0.2, resetAtMs: 4000, periodHours: 168 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 336,
+    });
+
+    // Fortnight view prefers the longest fitting period (168h) across all buckets rather than producing 5h slivers.
+    expect(lane.anchorMs).toBe(4000);
+    expect(lane.periodHours).toBe(168);
+    expect(lane.remaining).toBe(20);
+  });
+
   test('plugin: preserves standard soonest-reset tie-break across groups', () => {
     const lane = buildTimelineLane({
       ...base,
