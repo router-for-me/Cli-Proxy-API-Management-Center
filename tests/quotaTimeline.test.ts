@@ -414,6 +414,182 @@ describe('buildTimelineLane', () => {
     expect(lane.limits).toEqual([]);
   });
 
+  test('antigravity: keeps the weekly lane on primary Gemini quota instead of 3P Claude quota', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'gemini-models',
+            label: 'Gemini Models',
+            buckets: [
+              { id: 'gemini-5h', label: '5h Limit', remainingFraction: 0.95, resetAtMs: 8000, periodHours: 5 },
+              { id: 'gemini-weekly', label: 'Weekly Limit', remainingFraction: 0.88, resetAtMs: 9000, periodHours: 168 },
+            ],
+          },
+          {
+            id: 'claude-and-gpt-models',
+            label: 'Claude and GPT models',
+            buckets: [
+              // Even though Claude resets sooner (3000 < 9000), Gemini weekly must anchor the lane.
+              { id: '3p-weekly', label: 'Weekly Limit', remainingFraction: 0.07, resetAtMs: 3000, periodHours: 168 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 336,
+    });
+
+    expect(lane.anchorMs).toBe(9000);
+    expect(lane.periodHours).toBe(168);
+    expect(lane.remaining).toBe(88);
+  });
+
+  test('antigravity: session mode anchors on primary Gemini 5-hour window', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'gemini-models',
+            label: 'Gemini Models',
+            buckets: [
+              { id: 'gemini-5h', label: '5h Limit', remainingFraction: 0.95, resetAtMs: 8000, periodHours: 5 },
+              { id: 'gemini-weekly', label: 'Weekly Limit', remainingFraction: 0.88, resetAtMs: 9000, periodHours: 168 },
+            ],
+          },
+          {
+            id: 'claude-and-gpt-models',
+            label: 'Claude and GPT models',
+            buckets: [
+              { id: '3p-5h', label: '5h Limit', remainingFraction: 0.12, resetAtMs: 2000, periodHours: 5 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 5,
+    });
+
+    expect(lane.anchorMs).toBe(8000);
+    expect(lane.periodHours).toBe(5);
+    expect(lane.remaining).toBe(95);
+  });
+
+  test('antigravity: falls back to available buckets when no Gemini group is present', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'claude-and-gpt-models',
+            label: 'Claude and GPT models',
+            buckets: [
+              { id: '3p-weekly', label: 'Weekly Limit', remainingFraction: 0.07, resetAtMs: 3000, periodHours: 168 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 336,
+    });
+
+    expect(lane.anchorMs).toBe(3000);
+    expect(lane.periodHours).toBe(168);
+    expect(lane.remaining).toBe(7);
+  });
+
+  test('antigravity: matches Gemini bucket when group id and label are generic', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'group-1',
+            label: 'Group 1',
+            buckets: [
+              { id: '3p-weekly', label: 'Claude Weekly', remainingFraction: 0.1, resetAtMs: 2000, periodHours: 168 },
+              { id: 'gemini-weekly', label: 'Gemini Weekly', remainingFraction: 0.9, resetAtMs: 5000, periodHours: 168 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 336,
+    });
+
+    expect(lane.anchorMs).toBe(5000);
+    expect(lane.remaining).toBe(90);
+  });
+
+  test('antigravity: falls back to available 5-hour bucket when Gemini has only weekly quota', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'antigravity',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'gemini-models',
+            label: 'Gemini Models',
+            buckets: [
+              { id: 'gemini-weekly', label: 'Weekly Limit', remainingFraction: 0.88, resetAtMs: 9000, periodHours: 168 },
+            ],
+          },
+          {
+            id: 'claude-and-gpt-models',
+            label: 'Claude and GPT models',
+            buckets: [
+              { id: '3p-5h', label: '5h Limit', remainingFraction: 0.35, resetAtMs: 2000, periodHours: 5 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 5,
+    });
+
+    // When Gemini has no 5h bucket, session view picks the available 5h bucket rather than an oversized Gemini weekly bucket.
+    expect(lane.anchorMs).toBe(2000);
+    expect(lane.periodHours).toBe(5);
+    expect(lane.remaining).toBe(35);
+  });
+
+  test('plugin: preserves standard soonest-reset tie-break across groups', () => {
+    const lane = buildTimelineLane({
+      ...base,
+      provider: 'plugin',
+      quota: {
+        status: 'success',
+        groups: [
+          {
+            id: 'group-1',
+            label: 'Gemini Models',
+            buckets: [
+              { id: 'gemini-weekly', label: 'Weekly Limit', remainingFraction: 0.9, resetAtMs: 6000, periodHours: 168 },
+            ],
+          },
+          {
+            id: 'group-2',
+            label: 'Claude and GPT models',
+            buckets: [
+              { id: '3p-weekly', label: 'Weekly Limit', remainingFraction: 0.1, resetAtMs: 2000, periodHours: 168 },
+            ],
+          },
+        ],
+      },
+      maxPeriodHours: 336,
+    });
+
+    // Plugin is not subject to Antigravity Gemini preference; soonest reset wins.
+    expect(lane.anchorMs).toBe(2000);
+    expect(lane.remaining).toBe(10);
+  });
+
   test('xai anchors on the shared weekly limit without independent product limits', () => {
     const lane = buildTimelineLane({
       ...base,

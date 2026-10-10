@@ -300,11 +300,19 @@ interface XaiBillingLike {
 }
 
 interface AntigravityBucketLike {
+  id?: string;
   label?: string;
   /** Fraction 0..1 of quota REMAINING — the inverse of the percent-used providers. */
   remainingFraction?: number | null;
   resetAtMs?: number | null;
   periodHours?: number | null;
+}
+
+interface AntigravityGroupLike {
+  id?: string;
+  label?: string;
+  description?: string;
+  buckets?: AntigravityBucketLike[];
 }
 
 interface MetaWindowLike {
@@ -471,12 +479,55 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
   }
 
   if (provider === 'antigravity' || provider === 'plugin') {
-    // Buckets live one level down, inside groups, and the groups are a display
-    // concern the chart doesn't care about — flatten them.
-    const buckets = ((quota as { groups?: { buckets?: AntigravityBucketLike[] }[] }).groups ?? [])
+    const rawGroups =
+      (quota as { groups?: AntigravityGroupLike[] }).groups ?? [];
+    const buckets = rawGroups
       .flatMap((group) => group.buckets ?? [])
       .filter((bucket) => typeof bucket.resetAtMs === 'number');
-    const chosen = pickLaneWindow(buckets, maxPeriodHours);
+
+    // Antigravity reports separate model groups (primary "Gemini Models" and
+    // secondary "Claude and GPT models") that share the same periods (such as
+    // weekly or 5-hour). A reset-time tie-break would make the lane silently
+    // switch to third-party quota if it resets sooner. Keep the lane anchored
+    // to the primary Gemini bucket whenever it fits this view.
+    const preferredAntigravityBucket =
+      provider === 'antigravity'
+        ? (() => {
+            const isGeminiGroup = (g: AntigravityGroupLike) => {
+              const text = `${g.id ?? ''} ${g.label ?? ''}`.toLowerCase();
+              return text.includes('gemini') && !text.includes('claude') && !text.includes('gpt');
+            };
+            const isGeminiBucket = (b: AntigravityBucketLike) => {
+              const text = `${b.id ?? ''} ${b.label ?? ''}`.toLowerCase();
+              return (
+                text.includes('gemini') &&
+                !text.includes('3p') &&
+                !text.includes('claude') &&
+                !text.includes('gpt')
+              );
+            };
+            const groupBuckets = rawGroups
+              .filter(isGeminiGroup)
+              .flatMap((g) => g.buckets ?? [])
+              .filter((b) => typeof b.resetAtMs === 'number');
+            const candidatePool =
+              groupBuckets.length > 0 ? groupBuckets : buckets.filter(isGeminiBucket);
+            const fittingGemini =
+              maxPeriodHours === undefined
+                ? candidatePool
+                : candidatePool.filter(
+                    (b) =>
+                      typeof b.periodHours === 'number' &&
+                      b.periodHours > 0 &&
+                      b.periodHours <= maxPeriodHours
+                  );
+            return fittingGemini.length > 0
+              ? pickLaneWindow(fittingGemini, maxPeriodHours)
+              : undefined;
+          })()
+        : undefined;
+
+    const chosen = preferredAntigravityBucket ?? pickLaneWindow(buckets, maxPeriodHours);
     if (!chosen) return empty;
 
     // Antigravity reports the fraction REMAINING, not percent used.
