@@ -1,4 +1,4 @@
-// 8 个高频字段的唯一渲染源：SectionCommon（常用 tab）与各正典分区共用这些组件，
+// 6 个高频字段的唯一渲染源：SectionCommon（常用 tab）与各正典分区共用这些组件，
 // 两处渲染结构性不可能漂移（旧简单模式靠共享 JSX 常量达成同一目的）。
 // 注意：只挂载激活 tab，所以设置行的 DOM id 不会重复。
 
@@ -135,41 +135,6 @@ export function LoggingToFileToggle({ values, disabled, onChange, wide }: Shared
       checked={values.loggingToFile}
       disabled={disabled}
       onChange={(loggingToFile) => onChange({ loggingToFile })}
-    />
-  );
-}
-
-export function QuotaSwitchProjectToggle({ values, disabled, onChange, wide }: SharedFieldProps) {
-  const { t } = useTranslation();
-  return (
-    <ToggleSetting
-      fieldId="quotaSwitchProject"
-      wide={wide}
-      label={t('config_management.visual.sections.quota.switch_project')}
-      description={t('config_management.visual.sections.quota.switch_project_desc')}
-      checked={values.quotaSwitchProject}
-      disabled={disabled}
-      onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
-    />
-  );
-}
-
-export function QuotaSwitchPreviewModelToggle({
-  values,
-  disabled,
-  onChange,
-  wide,
-}: SharedFieldProps) {
-  const { t } = useTranslation();
-  return (
-    <ToggleSetting
-      fieldId="quotaSwitchPreviewModel"
-      wide={wide}
-      label={t('config_management.visual.sections.quota.switch_preview_model')}
-      description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
-      checked={values.quotaSwitchPreviewModel}
-      disabled={disabled}
-      onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
     />
   );
 }

@@ -9,7 +9,7 @@
 // extra entry anywhere fails CI.
 
 export type VisualSectionId =
-  'connectivity' | 'network' | 'logging' | 'quota' | 'streaming' | 'advanced' | 'payload';
+  'connectivity' | 'network' | 'logging' | 'streaming' | 'advanced' | 'payload';
 
 export interface ConfigFieldSearchEntry {
   /** Stable anchor id; matches FieldAnchor's `fieldId` and the rendered DOM id. */
@@ -518,27 +518,6 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     hintKey: L('sections.system.usage_statistics_enabled_desc'),
     yamlKeys: ['observability', 'usage', 'usage-statistics-enabled'],
   },
-  // ── quota ─────────────────────────────────────────────────────────────────
-  {
-    fieldId: 'quotaSwitchProject',
-    sectionId: 'quota',
-    labelKey: L('sections.quota.switch_project'),
-    hintKey: L('sections.quota.switch_project_desc'),
-    yamlKeys: ['quota-exceeded', 'switch-project'],
-  },
-  {
-    fieldId: 'quotaSwitchPreviewModel',
-    sectionId: 'quota',
-    labelKey: L('sections.quota.switch_preview_model'),
-    hintKey: L('sections.quota.switch_preview_model_desc'),
-    yamlKeys: ['quota-exceeded', 'switch-preview-model'],
-  },
-  {
-    fieldId: 'quotaAntigravityCredits',
-    sectionId: 'quota',
-    labelKey: L('sections.quota.antigravity_credits'),
-    yamlKeys: ['oauth', 'providers', 'antigravity', 'antigravity-credits'],
-  },
   // ── streaming ─────────────────────────────────────────────────────────────
   {
     fieldId: 'streamingKeepaliveSeconds',
@@ -562,6 +541,12 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['requests', 'nonstream-keepalive-interval'],
   },
   // ── advanced ──────────────────────────────────────────────────────────────
+  {
+    fieldId: 'quotaAntigravityCredits',
+    sectionId: 'advanced',
+    labelKey: L('sections.advanced.antigravity_credits'),
+    yamlKeys: ['oauth', 'providers', 'antigravity', 'antigravity-credits'],
+  },
   {
     fieldId: 'pluginsEnabled',
     sectionId: 'advanced',

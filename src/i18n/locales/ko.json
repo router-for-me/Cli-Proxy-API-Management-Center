@@ -1279,6 +1279,7 @@
           "description": "디버그, 로그 출력 및 사용량 통계"
         },
         "advanced": {
+          "antigravity_credits": "Antigravity 크레딧 사용",
           "title": "고급 및 실험",
           "description": "헤더 위장, 서명 캐시, 플러그인 소스 및 거의 변경되지 않는 기타 설정",
           "plugins_title": "플러그인",
@@ -1426,15 +1427,6 @@
           "session_affinity": "세션 어피니티 라우팅",
           "ws_auth": "WebSocket 인증",
           "ws_auth_desc": "AI Studio WebSocket 연결에 인증을 요구합니다 (oauth.providers.aistudio.ws-auth)"
-        },
-        "quota": {
-          "title": "할당량 폴백",
-          "description": "할당량이 초과되었을 때의 폴백 전략",
-          "switch_project": "프로젝트 전환",
-          "switch_project_desc": "할당량이 초과되면 다른 프로젝트로 자동 전환합니다.",
-          "switch_preview_model": "프리뷰 모델로 전환",
-          "switch_preview_model_desc": "할당량이 초과되면 프리뷰 모델 버전으로 전환합니다.",
-          "antigravity_credits": "Antigravity 크레딧 사용"
         },
         "streaming": {
           "title": "스트리밍 설정",

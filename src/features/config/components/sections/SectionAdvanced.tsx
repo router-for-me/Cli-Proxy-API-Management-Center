@@ -21,7 +21,7 @@ import { SectionOAuthBehavior } from './SectionOAuthBehavior';
 
 const Icon = CONFIG_TAB_ICONS.advanced;
 
-/** 06 高级与实验：插件源、供应商敏感词、签名缓存与请求头默认值。 */
+/** 05 高级与实验：插件源、供应商敏感词、签名缓存与请求头默认值。 */
 export function SectionAdvanced({
   values,
   validationErrors,
@@ -127,6 +127,15 @@ export function SectionAdvanced({
         defaultOpen={false}
       >
         <FieldStack>
+          <SettingList>
+            <ToggleSetting
+              fieldId="quotaAntigravityCredits"
+              label={t('config_management.visual.sections.advanced.antigravity_credits')}
+              checked={values.quotaAntigravityCredits}
+              disabled={disabled}
+              onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}
+            />
+          </SettingList>
           <SettingList
             title={t('config_management.visual.sections.system.antigravity_sensitive_words')}
             description={t(

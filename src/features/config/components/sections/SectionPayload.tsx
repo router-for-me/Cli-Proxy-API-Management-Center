@@ -16,7 +16,7 @@ export type SectionPayloadProps = ConfigSectionProps & {
   hasPayloadValidationErrors: boolean;
 };
 
-/** 07 Payload 配置：默认值 / 原始 JSON / 覆盖 / 过滤 五个规则组。 */
+/** 06 Payload 配置：默认值 / 原始 JSON / 覆盖 / 过滤 五个规则组。 */
 export function SectionPayload({
   values,
   disabled,

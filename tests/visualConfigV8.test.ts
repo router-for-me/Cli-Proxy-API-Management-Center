@@ -29,6 +29,9 @@ describe('v8 visual config contract', () => {
       codexHeaderUserAgent: 'fixture-oauth-agent',
       streaming: { keepaliveSeconds: '0', bootstrapRetries: '0', nonstreamKeepaliveInterval: '0' },
     });
+    expect(config.visualValues).not.toHaveProperty('quotaSwitchProject');
+    expect(config.visualValues).not.toHaveProperty('quotaSwitchPreviewModel');
+    expect(parseYaml(fixture)).not.toHaveProperty('quota-exceeded');
     expect(config.visualDirty).toBe(false);
     expect(parseYaml(config.applyVisualChangesToYaml(fixture))).toEqual(parseYaml(fixture));
   });
@@ -43,13 +46,12 @@ describe('v8 visual config contract', () => {
     expect(runVisualConfig('api-keys:\n  codex: []\n').visualValues.apiKeysText).toBe('');
   });
 
-  test('OAuth edits stay OAuth-only and preserve unmoved routing, quota, and plugin fields', () => {
+  test('OAuth edits stay OAuth-only and preserve unmoved routing and plugin fields', () => {
     const config = runVisualConfig(fixture, [
       {
         codexHeaderUserAgent: 'new-oauth-agent',
         antigravitySensitiveWords: [],
         quotaAntigravityCredits: true,
-        quotaSwitchProject: true,
       },
     ]);
     const original = parseYaml(fixture);
@@ -57,10 +59,7 @@ describe('v8 visual config contract', () => {
     expect(output['api-keys']).toEqual(original['api-keys']);
     expect(output.routing).toEqual(original.routing);
     expect(output.plugins).toEqual(original.plugins);
-    expect(output['quota-exceeded']).toEqual({
-      'switch-project': true,
-      'switch-preview-model': false,
-    });
+    expect(output).not.toHaveProperty('quota-exceeded');
     expect(output.oauth.providers.codex['header-defaults']['user-agent']).toBe('new-oauth-agent');
     expect(output.oauth.providers.antigravity['sensitive-words']).toBeUndefined();
     expect(output.oauth.providers.antigravity['antigravity-credits']).toBe(true);

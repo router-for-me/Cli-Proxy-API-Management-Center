@@ -1306,6 +1306,7 @@
           "description": "除錯、日誌輸出與使用統計"
         },
         "advanced": {
+          "antigravity_credits": "使用Antigravity Credits",
           "title": "進階與實驗",
           "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定",
           "plugins_title": "外掛",
@@ -1453,15 +1454,6 @@
           "session_affinity": "會話黏性路由",
           "ws_auth": "WebSocket 驗證",
           "ws_auth_desc": "啟用 AI Studio WebSocket 連線驗證（oauth.providers.aistudio.ws-auth）"
-        },
-        "quota": {
-          "title": "配額回退",
-          "description": "配額耗盡時的回退策略",
-          "switch_project": "切換專案",
-          "switch_project_desc": "配額耗盡時自動切換到其他專案",
-          "switch_preview_model": "切換預覽模型",
-          "switch_preview_model_desc": "配額耗盡時切換到預覽版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
         },
         "streaming": {
           "title": "串流傳輸設定",

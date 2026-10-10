@@ -113,7 +113,7 @@ describe('JSX anchor parity (source scan)', () => {
 });
 
 describe('registry consistency', () => {
-  test('tab id registry is common + the seven canonical sections', () => {
+  test('tab id registry is common + the canonical sections', () => {
     expect([...CONFIG_TAB_IDS]).toEqual(['common', ...CONFIG_SECTION_IDS]);
   });
 
@@ -138,13 +138,19 @@ describe('registry consistency', () => {
 });
 
 describe('v8 YAML search paths', () => {
+  test('deprecated quota switches are absent from values and search metadata', () => {
+    for (const fieldId of ['quotaSwitchProject', 'quotaSwitchPreviewModel']) {
+      expect(LEAF_VALUE_KEYS.has(fieldId)).toBe(false);
+      expect(findConfigFieldById(fieldId)).toBeUndefined();
+      expect(FIELD_VALUE_KEYS).not.toHaveProperty(fieldId);
+    }
+  });
+
   for (const [fieldId, path] of [
     ['apiKeys', 'access.api-keys'],
     ['commercialMode', 'server.commercial-mode'],
     ['requestRetry', 'routing.retry.request-retry'],
     ['routingStrategy', 'routing.strategy'],
-    ['quotaSwitchProject', 'quota-exceeded.switch-project'],
-    ['quotaSwitchPreviewModel', 'quota-exceeded.switch-preview-model'],
     ['quotaAntigravityCredits', 'oauth.providers.antigravity.antigravity-credits'],
     ['wsAuth', 'oauth.providers.aistudio.ws-auth'],
     ['codexHeaderUserAgent', 'oauth.providers.codex.header-defaults.user-agent'],

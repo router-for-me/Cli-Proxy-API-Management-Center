@@ -1072,6 +1072,7 @@
           "description": "Debug, xuất log và thống kê sử dụng"
         },
         "advanced": {
+          "antigravity_credits": "Dùng credit Antigravity",
           "title": "Nâng cao & Thử nghiệm",
           "description": "Giả mạo header, cache chữ ký, nguồn plugin và các cài đặt ít thay đổi khác",
           "plugins_title": "Plugin",
@@ -1219,15 +1220,6 @@
           "ws_auth_desc": "Bật xác thực WebSocket (/v1/ws)",
           "proxy_url_sponsor_hint": "Chưa có proxy phù hợp?",
           "max_retry_interval_hint": "Đặt thành 0 hoặc số nguyên âm để bỏ qua thời gian chờ cooldown giữa các lượt thử lại."
-        },
-        "quota": {
-          "title": "Quota dự phòng",
-          "description": "Chiến lược dự phòng khi vượt quota",
-          "switch_project": "Chuyển Project",
-          "switch_project_desc": "Tự động chuyển sang project khác khi vượt quota",
-          "switch_preview_model": "Chuyển sang model Preview",
-          "switch_preview_model_desc": "Chuyển sang phiên bản model preview khi vượt quota",
-          "antigravity_credits": "Dùng credit Antigravity"
         },
         "streaming": {
           "title": "Cấu hình Streaming",

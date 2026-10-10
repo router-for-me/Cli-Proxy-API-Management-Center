@@ -61,9 +61,6 @@ oauth:
       sensitive-words: [fixture-word]
     devin:
       sensitive-words: [fixture-devin]
-quota-exceeded:
-  switch-project: false
-  switch-preview-model: false
 multimedia:
   disable-image-generation: false
   gpt-image-2-base-model: fixture-base

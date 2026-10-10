@@ -25,7 +25,6 @@ const sections = {
     .SectionConnectivity,
   network: (await import('@/features/config/components/sections/SectionNetwork')).SectionNetwork,
   logging: (await import('@/features/config/components/sections/SectionLogging')).SectionLogging,
-  quota: (await import('@/features/config/components/sections/SectionQuota')).SectionQuota,
   streaming: (await import('@/features/config/components/sections/SectionStreaming'))
     .SectionStreaming,
   advanced: (await import('@/features/config/components/sections/SectionAdvanced')).SectionAdvanced,

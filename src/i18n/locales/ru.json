@@ -1282,6 +1282,7 @@
           "description": "Отладка, вывод логов и статистика использования"
         },
         "advanced": {
+          "antigravity_credits": "Использовать Antigravity Credits",
           "title": "Дополнительно и эксперименты",
           "description": "Подмена заголовков, кэш подписей, источники плагинов и другие редко изменяемые настройки",
           "plugins_title": "Плагины",
@@ -1429,15 +1430,6 @@
           "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
           "ws_auth_desc": "Аутентификация WebSocket AI Studio (oauth.providers.aistudio.ws-auth)"
-        },
-        "quota": {
-          "title": "Резерв по квоте",
-          "description": "Стратегия при превышении квоты",
-          "switch_project": "Переключить проект",
-          "switch_project_desc": "Автоматически переходить на другой проект при превышении квоты",
-          "switch_preview_model": "Переключить на preview-модель",
-          "switch_preview_model_desc": "Переключаться на preview-версию модели при превышении квоты",
-          "antigravity_credits": "Использовать Antigravity Credits"
         },
         "streaming": {
           "title": "Настройки стриминга",

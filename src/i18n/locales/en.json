@@ -1279,6 +1279,7 @@
           "description": "Debug, log output, and usage statistics"
         },
         "advanced": {
+          "antigravity_credits": "Use Antigravity Credits",
           "title": "Advanced & Experimental",
           "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
           "plugins_title": "Plugins",
@@ -1426,15 +1427,6 @@
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
           "ws_auth_desc": "Require authentication for AI Studio WebSocket connections (oauth.providers.aistudio.ws-auth)"
-        },
-        "quota": {
-          "title": "Quota Fallback",
-          "description": "Fallback strategy when quota is exceeded",
-          "switch_project": "Switch Project",
-          "switch_project_desc": "Automatically switch to another project when quota is exceeded",
-          "switch_preview_model": "Switch to Preview Model",
-          "switch_preview_model_desc": "Switch to preview model version when quota is exceeded",
-          "antigravity_credits": "Use Antigravity Credits"
         },
         "streaming": {
           "title": "Streaming Configuration",

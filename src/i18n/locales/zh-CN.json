@@ -1278,6 +1278,7 @@
           "description": "调试、日志输出与使用统计"
         },
         "advanced": {
+          "antigravity_credits": "使用Antigravity Credits",
           "title": "高级与实验",
           "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
           "plugins_title": "插件",
@@ -1425,15 +1426,6 @@
           "session_affinity": "会话粘性路由",
           "ws_auth": "WebSocket 认证",
           "ws_auth_desc": "启用 AI Studio WebSocket 连接认证（oauth.providers.aistudio.ws-auth）"
-        },
-        "quota": {
-          "title": "配额回退",
-          "description": "配额耗尽时的回退策略",
-          "switch_project": "切换项目",
-          "switch_project_desc": "配额耗尽时自动切换到其他项目",
-          "switch_preview_model": "切换预览模型",
-          "switch_preview_model_desc": "配额耗尽时切换到预览版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
         },
         "streaming": {
           "title": "流式传输配置",

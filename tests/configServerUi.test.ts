@@ -32,7 +32,7 @@ const populated = {
 
 describe('server configuration UI', () => {
   test('keeps nine searchable anchors in connectivity without adding a tab', () => {
-    expect(CONFIG_SECTION_IDS).toHaveLength(7);
+    expect(CONFIG_SECTION_IDS).toHaveLength(6);
     expect(extras).toHaveLength(9);
     const markup = render(createElement(SectionConnectivity, props));
     for (const entry of extras) {
