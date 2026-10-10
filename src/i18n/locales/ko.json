@@ -478,6 +478,8 @@
     "loading": "할당량 불러오는 중...",
     "load_failed": "할당량 불러오기 실패: {{message}}",
     "missing_auth_index": "인증 파일에 auth_index가 없습니다",
+    "probe_unsupported": "v8 관리 API에서는 선언형 할당량 프로브(quota_probe)를 지원하지 않습니다",
+    "plugin_not_found": "{{provider}}의 할당량을 제공하는 활성 플러그인을 찾을 수 없습니다",
     "empty_data": "사용 가능한 할당량 데이터가 없습니다",
     "plan_label": "플랜",
     "remaining_percent": "{{percent}}% 남음"

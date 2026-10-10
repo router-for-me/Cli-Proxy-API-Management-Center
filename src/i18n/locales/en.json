@@ -478,6 +478,8 @@
     "loading": "Loading quota...",
     "load_failed": "Failed to load quota: {{message}}",
     "missing_auth_index": "Auth file missing auth_index",
+    "probe_unsupported": "Declarative quota probes are not available through the v8 management API",
+    "plugin_not_found": "No enabled plugin provides quota for {{provider}}",
     "empty_data": "No quota data available",
     "plan_label": "Plan",
     "remaining_percent": "{{percent}}% remaining"

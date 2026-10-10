@@ -596,6 +596,8 @@
     "loading": "正在載入配額…",
     "load_failed": "配額取得失敗：{{message}}",
     "missing_auth_index": "驗證檔案缺少 auth_index",
+    "probe_unsupported": "v8 管理介面暫不支援宣告式配額探測（quota_probe）",
+    "plugin_not_found": "找不到為 {{provider}} 提供配額查詢的已啟用插件",
     "empty_data": "暫無可用配額資料",
     "plan_label": "方案",
     "remaining_percent": "剩餘 {{percent}}%"

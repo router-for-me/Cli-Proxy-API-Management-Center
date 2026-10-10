@@ -478,6 +478,8 @@
     "loading": "Đang tải quota...",
     "load_failed": "Không thể tải quota: {{message}}",
     "missing_auth_index": "File xác thực thiếu auth_index",
+    "probe_unsupported": "API quản lý v8 chưa hỗ trợ thăm dò quota khai báo (quota_probe)",
+    "plugin_not_found": "Không tìm thấy plugin đang bật cung cấp quota cho {{provider}}",
     "empty_data": "Chưa có dữ liệu quota",
     "plan_label": "Gói",
     "remaining_percent": "Còn lại {{percent}}%"

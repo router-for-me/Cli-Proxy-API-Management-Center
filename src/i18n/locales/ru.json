@@ -600,6 +600,8 @@
     "loading": "Загрузка квоты…",
     "load_failed": "Не удалось загрузить квоту: {{message}}",
     "missing_auth_index": "В файле авторизации отсутствует auth_index",
+    "probe_unsupported": "Декларативные проверки квоты недоступны через API управления v8",
+    "plugin_not_found": "Не найден активный плагин, предоставляющий квоту для {{provider}}",
     "empty_data": "Нет доступных данных о квоте",
     "plan_label": "План",
     "remaining_percent": "Осталось {{percent}}%"

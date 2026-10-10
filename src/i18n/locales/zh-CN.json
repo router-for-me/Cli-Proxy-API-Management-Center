@@ -596,6 +596,8 @@
     "loading": "正在加载额度…",
     "load_failed": "额度加载失败：{{message}}",
     "missing_auth_index": "认证文件缺少 auth_index",
+    "probe_unsupported": "v8 管理接口暂不支持声明式额度探测（quota_probe）",
+    "plugin_not_found": "未找到为 {{provider}} 提供额度查询的已启用插件",
     "empty_data": "暂无可用额度数据",
     "plan_label": "方案",
     "remaining_percent": "剩余 {{percent}}%"

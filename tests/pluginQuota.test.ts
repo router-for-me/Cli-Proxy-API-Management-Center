@@ -1,4 +1,5 @@
-import { describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import type { Mock } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
@@ -8,7 +9,8 @@ import { classifyQuotaFiles, resolveQuotaProviderType } from '@/features/quota/l
 import { QUOTA_ADAPTERS } from '@/features/quota/providers';
 import { PluginQuotaBody } from '@/features/quota/providers/plugin/PluginQuotaBody';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
-import type { PluginQuotaState } from '@/types';
+import type { PluginListEntry, PluginListResponse, PluginQuotaState } from '@/types';
+import { pluginsApi } from '@/services/api/plugins';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { apiClient } from '@/services/api/client';
 import {
@@ -20,7 +22,32 @@ import { QUOTA_TAB_ORDER } from '@/features/quota/constants';
 import {
   fetchPluginQuota,
   normalizePluginQuotaSummary,
+  resetPluginQuotaRouteCache,
+  resolveQuotaPluginId,
 } from '@/features/quota/providers/plugin/data';
+
+const quotaPlugin = (overrides: Partial<PluginListEntry> = {}): PluginListEntry => ({
+  id: 'kiro-quota',
+  path: '/plugins/kiro-quota',
+  configured: true,
+  registered: true,
+  enabled: true,
+  effectiveEnabled: true,
+  supportsOAuth: false,
+  supportsQuota: true,
+  quotaProvider: 'kiro',
+  logo: '',
+  configFields: [],
+  menus: [],
+  metadata: null,
+  ...overrides,
+});
+
+const pluginList = (plugins: PluginListEntry[]): PluginListResponse => ({
+  pluginsEnabled: true,
+  pluginsDir: 'plugins',
+  plugins,
+});
 
 const classes = bindQuotaClasses(
   Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, key])),
@@ -30,6 +57,16 @@ const renderQuota = (quota: PluginQuotaState) =>
   renderToStaticMarkup(createElement(PluginQuotaBody, { quota, classes }));
 
 describe('generic plugin quota', () => {
+  let list: Mock<typeof pluginsApi.list>;
+  beforeEach(() => {
+    resetPluginQuotaRouteCache();
+    list = spyOn(pluginsApi, 'list').mockResolvedValue(pluginList([quotaPlugin()]));
+  });
+  afterEach(() => {
+    list.mockRestore();
+    resetPluginQuotaRouteCache();
+  });
+
   test('keeps built-in quota cards when a plugin also advertises quota', () => {
     const builtIns = QUOTA_TAB_ORDER.filter((type) => type !== 'plugin');
     expect([...BUILT_IN_QUOTA_PROVIDERS].sort()).toEqual([...builtIns].sort());
@@ -69,6 +106,7 @@ describe('generic plugin quota', () => {
         { quota_probe: { url: 'https://quota.example.test/usage' } },
         { quota_provider: 'kiro' },
       ]) {
+        post.mockClear();
         const raw = {
           name: 'kiro.json',
           type: 'kiro',
@@ -87,11 +125,14 @@ describe('generic plugin quota', () => {
           expect(classifyQuotaFiles([{ ...candidate, disabled: true }])).toEqual([]);
         }
         const [entry] = classifyQuotaFiles([file]);
-        await QUOTA_ADAPTERS[entry.type].fetchQuota(file, i18n.t);
-        expect(post.mock.calls.at(-1)).toEqual([
-          '/quota/fetch',
-          { auth_index: '7', ...(capability.quota_provider ? { provider: 'kiro' } : {}) },
-        ]);
+        const fetched = QUOTA_ADAPTERS[entry.type].fetchQuota(file, i18n.t);
+        if (capability.quota_provider) {
+          await fetched;
+          expect(post.mock.calls).toEqual([['/plugins/kiro-quota/quota', { auth_index: '7' }]]);
+        } else {
+          await expect(fetched).rejects.toThrow(i18n.t('plugin_quota.probe_unsupported'));
+          expect(post).not.toHaveBeenCalled();
+        }
       }
       for (const supportsQuota of [undefined, false]) {
         const file = { name: 'kiro.json', type: 'kiro', supportsQuota };
@@ -120,7 +161,10 @@ describe('generic plugin quota', () => {
         { subscription: { plan: '  ' }, summary: [{ key: '', label: 'Invalid', value: 42 }] },
       ]) {
         post.mockResolvedValue(payload);
-        const data = await fetchPluginQuota({ name: 'quota.json', authIndex: '7' }, i18n.t);
+        const data = await fetchPluginQuota(
+          { name: 'quota.json', authIndex: '7', quotaProvider: 'kiro' },
+          i18n.t
+        );
         const markup = renderQuota({ status: 'success', ...data });
         const hasData =
           data.summary.length > 0 || Object.values(data.subscription ?? {}).some(Boolean);
@@ -155,7 +199,10 @@ describe('generic plugin quota', () => {
       ],
     });
     try {
-      const data = await fetchPluginQuota({ name: 'kiro.json', authIndex: '7' }, i18n.t);
+      const data = await fetchPluginQuota(
+        { name: 'kiro.json', authIndex: '7', quotaProvider: 'kiro' },
+        i18n.t
+      );
       const buckets = data.groups[0].buckets;
       expect(buckets.find((bucket) => bucket.id === 'kiro-credits-monthly-1')?.label).toBe(
         'Base credits'
@@ -231,15 +278,97 @@ describe('generic plugin quota', () => {
     ]);
   });
 
-  test('omits provider for probe-only quota requests', async () => {
+  test('reports probe-only quotas as unsupported without calling removed v0 routes', async () => {
     const post = spyOn(apiClient, 'post').mockResolvedValue({});
     try {
-      await fetchPluginQuota(
-        { name: 'kiro-a.json', supportsQuota: true, authIndex: '7' },
-        ((key: string) => key) as never
+      await expect(
+        fetchPluginQuota({ name: 'kiro-a.json', supportsQuota: true, authIndex: '7' }, i18n.t)
+      ).rejects.toThrow(i18n.t('plugin_quota.probe_unsupported'));
+      expect(post).not.toHaveBeenCalled();
+      expect(list).not.toHaveBeenCalled();
+    } finally {
+      post.mockRestore();
+    }
+  });
+
+  test('resolves the quota plugin like the backend first pass, then a sole provider', () => {
+    const plugins = [
+      quotaPlugin({ id: 'unregistered', quotaProvider: 'kiro', registered: false }),
+      quotaPlugin({ id: 'oauth-match', quotaProvider: 'other', oauthProvider: 'kiro' }),
+      quotaPlugin({ id: 'kiro', quotaProvider: 'other-2' }),
+      quotaPlugin({ id: 'quota-match', quotaProvider: 'kiro' }),
+      quotaPlugin({ id: 'no-quota', quotaProvider: 'kiro', supportsQuota: false }),
+    ];
+    expect(resolveQuotaPluginId(plugins, ' Kiro ')).toBe('quota-match');
+    expect(resolveQuotaPluginId(plugins.slice(0, 3), 'kiro')).toBe('kiro');
+    expect(resolveQuotaPluginId(plugins.slice(0, 2), 'kiro')).toBe('oauth-match');
+    expect(resolveQuotaPluginId(plugins, 'unknown')).toBeNull();
+    expect(resolveQuotaPluginId([quotaPlugin({ id: 'only', quotaProvider: 'x' })], 'y')).toBe(
+      'only'
+    );
+    expect(resolveQuotaPluginId(plugins, '')).toBeNull();
+  });
+
+  test('shares the plugin list across credentials and reports a missing plugin', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({});
+    try {
+      await Promise.all(
+        ['1', '2', '3'].map((authIndex) =>
+          fetchPluginQuota(
+            { name: `kiro-${authIndex}.json`, authIndex, quotaProvider: 'kiro' },
+            i18n.t
+          )
+        )
       );
-      expect(post.mock.calls[0]?.[0]).toBe('/quota/fetch');
-      expect(post.mock.calls[0]?.[1]).toEqual({ auth_index: '7' });
+      expect(list).toHaveBeenCalledTimes(1);
+      expect(post.mock.calls.map((call) => call[0])).toEqual(
+        Array(3).fill('/plugins/kiro-quota/quota')
+      );
+
+      resetPluginQuotaRouteCache();
+      list.mockResolvedValue(
+        pluginList([quotaPlugin({ id: 'a', quotaProvider: 'a' }), quotaPlugin({ id: 'b' })])
+      );
+      post.mockClear();
+      await expect(
+        fetchPluginQuota({ name: 'z.json', authIndex: '9', quotaProvider: 'zed' }, i18n.t)
+      ).rejects.toThrow(i18n.t('plugin_quota.plugin_not_found', { provider: 'zed' }));
+      expect(post).not.toHaveBeenCalled();
+    } finally {
+      post.mockRestore();
+    }
+  });
+
+  test('normalizes plugin quota capabilities from the plugin list', async () => {
+    list.mockRestore();
+    const get = spyOn(apiClient, 'get').mockResolvedValue({
+      plugins: [
+        { id: 'a', registered: true, supports_quota: true, quota_provider: ' Kiro ' },
+        { id: 'b', registered: true },
+      ],
+    });
+    try {
+      const { plugins } = await pluginsApi.list();
+      expect(
+        plugins.map(({ supportsQuota, quotaProvider }) => ({ supportsQuota, quotaProvider }))
+      ).toEqual([
+        { supportsQuota: true, quotaProvider: 'kiro' },
+        { supportsQuota: false, quotaProvider: undefined },
+      ]);
+    } finally {
+      get.mockRestore();
+    }
+  });
+
+  test('drops a failed plugin list so the next refresh retries', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({});
+    try {
+      list.mockRejectedValueOnce(new Error('offline'));
+      const file = { name: 'kiro.json', authIndex: '7', quotaProvider: 'kiro' };
+      await expect(fetchPluginQuota(file, i18n.t)).rejects.toThrow('offline');
+      await fetchPluginQuota(file, i18n.t);
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(post).toHaveBeenCalledTimes(1);
     } finally {
       post.mockRestore();
     }
