@@ -479,9 +479,8 @@ export function buildXaiBillingSummary(
   const summary = emptyXaiBillingSummary();
   const currentPeriod = config.currentPeriod ?? config.current_period ?? null;
   const periodType = resolveXaiPeriodType(currentPeriod);
-  const creditUsagePercent = normalizeNumberValue(
-    config.creditUsagePercent ?? config.credit_usage_percent
-  );
+  const rawCreditUsage = config.creditUsagePercent ?? config.credit_usage_percent;
+  let creditUsagePercent = normalizeNumberValue(rawCreditUsage);
   const periodStart =
     normalizeStringValue(currentPeriod?.start) ??
     normalizeStringValue(config.billingPeriodStart ?? config.billing_period_start) ??
@@ -490,10 +489,23 @@ export function buildXaiBillingSummary(
     normalizeStringValue(currentPeriod?.end) ??
     normalizeStringValue(config.billingPeriodEnd ?? config.billing_period_end) ??
     undefined;
-  const productUsage = normalizeXaiProductUsage(
-    config.productUsage ?? config.product_usage,
-    'Product'
-  );
+  const rawProductUsage = config.productUsage ?? config.product_usage;
+  const productUsage = normalizeXaiProductUsage(rawProductUsage, 'Product');
+
+  // In the observed zero-usage weekly billing response, xAI reports a weekly currentPeriod
+  // but omits creditUsagePercent and productUsage. Treat an omitted percentage as 0% when a
+  // valid weekly period with a parseable reset timestamp exists and no product breakdown is present.
+  const hasNoProductUsage =
+    rawProductUsage == null || (Array.isArray(rawProductUsage) && rawProductUsage.length === 0);
+  if (
+    creditUsagePercent === null &&
+    rawCreditUsage == null &&
+    periodType === 'weekly' &&
+    resolveResetMs([periodEnd]) !== null &&
+    hasNoProductUsage
+  ) {
+    creditUsagePercent = 0;
+  }
 
   const monthlyLimitCents = normalizeXaiCentValue(config.monthlyLimit ?? config.monthly_limit);
   const usedCents = normalizeXaiCentValue(config.used);
