@@ -11,7 +11,12 @@ import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import type { PluginQuotaState } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { apiClient } from '@/services/api/client';
-import { buildAntigravityQuotaGroups, isPluginQuotaFile } from '@/utils/quota';
+import {
+  BUILT_IN_QUOTA_PROVIDERS,
+  buildAntigravityQuotaGroups,
+  isPluginQuotaFile,
+} from '@/utils/quota';
+import { QUOTA_TAB_ORDER } from '@/features/quota/constants';
 import {
   fetchPluginQuota,
   normalizePluginQuotaSummary,
@@ -25,43 +30,73 @@ const renderQuota = (quota: PluginQuotaState) =>
   renderToStaticMarkup(createElement(PluginQuotaBody, { quota, classes }));
 
 describe('generic plugin quota', () => {
-  test('routes advertised backend quotas ahead of built-ins on both pages', async () => {
+  test('keeps built-in quota cards when a plugin also advertises quota', () => {
+    const builtIns = QUOTA_TAB_ORDER.filter((type) => type !== 'plugin');
+    expect([...BUILT_IN_QUOTA_PROVIDERS].sort()).toEqual([...builtIns].sort());
+    for (const type of builtIns) {
+      for (const capability of [
+        { quota_probe: { url: 'https://quota.example.test/usage' } },
+        { quota_provider: type },
+        {},
+      ]) {
+        const raw = {
+          name: `${type}.json`,
+          type,
+          supports_quota: true,
+          auth_index: '7',
+          ...capability,
+        };
+        const file = normalizeAuthFilesResponse({ files: [raw] }).files[0];
+        for (const candidate of [raw, file]) {
+          expect(isPluginQuotaFile(candidate)).toBe(false);
+          expect(resolveQuotaProviderType(candidate)).toBe(type);
+          expect(resolveAuthFileQuotaType(candidate, 'all')).toBe(type);
+          expect(resolveAuthFileQuotaType(candidate, type)).toBe(type);
+          expect(resolveAuthFileQuotaType(candidate, 'plugin')).toBeNull();
+        }
+        expect(getQuotaCacheKey(file)).toBe(
+          type === 'devin' ? `${type}.json${String.fromCharCode(0)}7` : `${type}.json`
+        );
+        expect(classifyQuotaFiles([file]).map((entry) => entry.type)).toEqual([type]);
+      }
+    }
+  });
+
+  test('routes advertised quotas for providers without a built-in card', async () => {
     const post = spyOn(apiClient, 'post').mockResolvedValue({});
     try {
-      for (const type of ['claude', 'codex', 'antigravity', 'devin', 'kimi', 'meta', 'xai']) {
-        for (const capability of [
-          { quota_probe: { url: 'https://quota.example.test/usage' } },
-          { quota_provider: type },
-        ]) {
-          const raw = {
-            name: `${type}.json`,
-            type,
-            supports_quota: true,
-            auth_index: '7',
-            ...capability,
-          };
-          const file = normalizeAuthFilesResponse({ files: [raw] }).files[0];
-          for (const candidate of [raw, file]) {
-            expect(resolveQuotaProviderType(candidate)).toBe('plugin');
-            expect(resolveAuthFileQuotaType(candidate, 'all')).toBe('plugin');
-            expect(resolveAuthFileQuotaType(candidate, type)).toBe('plugin');
-            expect(resolveAuthFileQuotaType(candidate, 'plugin')).toBe('plugin');
-            expect(resolveAuthFileQuotaType(candidate, 'unrelated')).toBeNull();
-            expect(resolveAuthFileQuotaType(candidate, null)).toBeNull();
-            expect(classifyQuotaFiles([{ ...candidate, disabled: true }])).toEqual([]);
-          }
-          const [entry] = classifyQuotaFiles([file]);
-          await QUOTA_ADAPTERS[entry.type].fetchQuota(file, i18n.t);
-          expect(post.mock.calls.at(-1)).toEqual([
-            '/quota/fetch',
-            { auth_index: '7', ...(capability.quota_provider ? { provider: type } : {}) },
-          ]);
+      for (const capability of [
+        { quota_probe: { url: 'https://quota.example.test/usage' } },
+        { quota_provider: 'kiro' },
+      ]) {
+        const raw = {
+          name: 'kiro.json',
+          type: 'kiro',
+          supports_quota: true,
+          auth_index: '7',
+          ...capability,
+        };
+        const file = normalizeAuthFilesResponse({ files: [raw] }).files[0];
+        for (const candidate of [raw, file]) {
+          expect(resolveQuotaProviderType(candidate)).toBe('plugin');
+          expect(resolveAuthFileQuotaType(candidate, 'all')).toBe('plugin');
+          expect(resolveAuthFileQuotaType(candidate, 'kiro')).toBe('plugin');
+          expect(resolveAuthFileQuotaType(candidate, 'plugin')).toBe('plugin');
+          expect(resolveAuthFileQuotaType(candidate, 'unrelated')).toBeNull();
+          expect(resolveAuthFileQuotaType(candidate, null)).toBeNull();
+          expect(classifyQuotaFiles([{ ...candidate, disabled: true }])).toEqual([]);
         }
-        for (const supportsQuota of [undefined, false]) {
-          const file = { name: `${type}.json`, type, supportsQuota };
-          expect(resolveQuotaProviderType(file)).toBe(type);
-          expect(resolveAuthFileQuotaType(file, 'all')).toBe(type);
-        }
+        const [entry] = classifyQuotaFiles([file]);
+        await QUOTA_ADAPTERS[entry.type].fetchQuota(file, i18n.t);
+        expect(post.mock.calls.at(-1)).toEqual([
+          '/quota/fetch',
+          { auth_index: '7', ...(capability.quota_provider ? { provider: 'kiro' } : {}) },
+        ]);
+      }
+      for (const supportsQuota of [undefined, false]) {
+        const file = { name: 'kiro.json', type: 'kiro', supportsQuota };
+        expect(resolveQuotaProviderType(file)).toBeNull();
+        expect(resolveAuthFileQuotaType(file, 'all')).toBeNull();
       }
     } finally {
       post.mockRestore();
