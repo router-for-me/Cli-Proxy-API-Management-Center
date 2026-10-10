@@ -1,5 +1,5 @@
 /**
- * Read-only Claude usage normalization, shared by quota reads and credential listings.
+ * Read-only normalization of the raw Claude OAuth usage response.
  */
 import type { ClaudeDollarWindow, ClaudeUsageSnapshot } from '@/types/quota';
 import { isRecord } from '@/utils/helpers';
@@ -19,9 +19,7 @@ const normalizePlanWindow = (value: unknown): ClaudeUsageSnapshot['fiveHour'] =>
 export const normalizeClaudeUsageSnapshot = (value: unknown): ClaudeUsageSnapshot | null => {
   if (!isRecord(value)) return null;
   const fields = ['limit_dollars', 'used_dollars', 'remaining_dollars', 'utilization', 'resets_at'];
-  // The backend snapshot groups balances; older servers return the raw upstream body.
-  const balances = isRecord(value.dollar_windows) ? value.dollar_windows : value;
-  const dollarWindows: ClaudeDollarWindow[] = Object.entries(balances)
+  const dollarWindows: ClaudeDollarWindow[] = Object.entries(value)
     .filter(
       ([key, window]) =>
         !['five_hour', 'seven_day', 'extra_usage'].includes(key) &&
@@ -48,7 +46,6 @@ export const normalizeClaudeUsageSnapshot = (value: unknown): ClaudeUsageSnapsho
   }
   const extra = isRecord(value.extra_usage) ? value.extra_usage : null;
   return {
-    observedAt: normalizeStringValue(value.observed_at),
     fiveHour: normalizePlanWindow(value.five_hour),
     sevenDay: normalizePlanWindow(value.seven_day),
     extraUsage: extra

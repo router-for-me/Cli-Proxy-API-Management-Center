@@ -5,8 +5,6 @@
 import type { AxiosRequestConfig } from 'axios';
 import { apiClient } from './client';
 import { isRecord } from '@/utils/helpers';
-import type { ClaudeUsageSnapshot } from '@/types/quota';
-import { normalizeClaudeUsageSnapshot } from './claudeUsage';
 
 export interface ApiCallRequest {
   authIndex?: string;
@@ -22,9 +20,6 @@ export interface ApiCallResult<T = unknown> {
   header: Record<string, string[]>;
   bodyText: string;
   body: T | null;
-  claudeUsage?: ClaudeUsageSnapshot | null;
-  stale?: boolean;
-  error?: string;
 }
 
 const normalizeBody = (input: unknown): { bodyText: string; body: unknown | null } => {
@@ -56,9 +51,9 @@ export const getApiCallErrorMessage = (result: ApiCallResult): string => {
   const status = result.statusCode;
   const body = result.body;
   const bodyText = result.bodyText;
-  let message = result.error ?? '';
+  let message = '';
 
-  if (!message && isRecord(body)) {
+  if (isRecord(body)) {
     const errorValue = body.error;
     if (isRecord(errorValue) && typeof errorValue.message === 'string') {
       message = errorValue.message;
@@ -68,7 +63,7 @@ export const getApiCallErrorMessage = (result: ApiCallResult): string => {
     if (!message && typeof body.message === 'string') {
       message = body.message;
     }
-  } else if (!message && typeof body === 'string') {
+  } else if (typeof body === 'string') {
     message = body;
   }
 
@@ -97,9 +92,6 @@ export const apiCallApi = {
       header,
       bodyText,
       body,
-      claudeUsage: normalizeClaudeUsageSnapshot(response?.claude_usage),
-      stale: response?.stale === true,
-      error: typeof response?.error === 'string' ? response.error : undefined,
     };
   },
 };

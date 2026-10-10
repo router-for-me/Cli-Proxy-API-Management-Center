@@ -153,7 +153,6 @@ export interface ClaudeDollarWindow {
 }
 
 export interface ClaudeUsageSnapshot {
-  observedAt: string | null;
   fiveHour: { utilization: number | null; resetsAt: string | null } | null;
   sevenDay: { utilization: number | null; resetsAt: string | null } | null;
   extraUsage: ClaudeExtraUsage | null;

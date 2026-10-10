@@ -1,9 +1,9 @@
 /**
- * Auth-file types, based on the original src/modules/auth-files.js.
+ * 认证文件相关类型
+ * 基于原项目 src/modules/auth-files.js
  */
 
 import type { RecentRequestBucket } from '@/utils/recentRequests';
-import type { ClaudeUsageSnapshot } from './quota';
 
 export type AuthFileType =
   | 'qwen'
@@ -45,12 +45,13 @@ export interface AuthFileItem {
   type?: AuthFileType | string;
   provider?: string;
   /**
-   * Credential email from disk JSON or registered metadata/attributes.
-   * Never use account/account_type for display or search: API-key credentials
-   * expose the secret itself through AccountInfo().
+   * 凭证账号邮箱（后端 auth_files 两条分支都会填：磁盘扫描读 JSON 的 email 字段，
+   * 注册表读 Metadata/Attributes）。卡片主行用它领衔。
+   * 注意：后端还会下发 account/account_type，但 api-key 类凭证的 account 就是
+   * API key 本身（AccountInfo() → return "api_key", apiKey），**绝不可用于展示或搜索**。
    */
   email?: string;
-  /** GCP / Vertex project ID, used as identity when the email is missing. */
+  /** GCP / Vertex 项目 ID，账号邮箱缺失时作为身份回落。 */
   projectId?: string;
   size?: number;
   authIndex?: string | number | null;
@@ -69,16 +70,13 @@ export interface AuthFileItem {
   note?: string;
   success?: unknown;
   failed?: unknown;
-  /** Cumulative counts normalized from success/failed at the API boundary. */
+  /** 归一化后的累计成功/失败计数（由 API 边界从 success/failed 生字段填充）。 */
   successCount?: number;
   failureCount?: number;
   recent_requests?: RecentRequestBucket[];
   recentRequests?: RecentRequestBucket[];
   /** Absent on older servers. Never interpreted as credential health. */
   cooldownSnapshot?: AuthFileCooldownSnapshot;
-  /** Read-only upstream usage observation; never used to determine credential health. */
-  claudeUsage?: ClaudeUsageSnapshot | null;
-  claudeUsageStale?: boolean;
   [key: string]: unknown;
 }
 

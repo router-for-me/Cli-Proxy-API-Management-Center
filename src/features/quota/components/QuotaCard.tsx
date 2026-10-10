@@ -20,7 +20,7 @@ import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
-import { hasClaudeUsageData, resolveClaudeQuota } from '../providers/claude/data';
+import { hasClaudeUsageData } from '../providers/claude/data';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -42,7 +42,7 @@ export type QuotaCardProps = {
 export function QuotaCard(props: QuotaCardProps) {
   const {
     entry,
-    quota: storedQuota,
+    quota,
     resolvedTheme,
     canRefresh,
     resetting,
@@ -53,10 +53,6 @@ export function QuotaCard(props: QuotaCardProps) {
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
-  const quota =
-    entry.type === 'claude'
-      ? resolveClaudeQuota(file, storedQuota as ClaudeQuotaState | undefined, t)
-      : storedQuota;
   const retainedClaudeUsage =
     entry.type === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
   const displayName = getQuotaDisplayName(file);

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { IconRefreshCw } from '@/components/ui/icons';
 import { bindQuotaClasses } from '@/features/quota/types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '@/features/quota/providers';
-import { hasClaudeUsageData, resolveClaudeQuota } from '@/features/quota/providers/claude/data';
+import { hasClaudeUsageData } from '@/features/quota/providers/claude/data';
 import styles from './AuthFileQuota.module.scss';
 
 /** Bind the auth-file host's compact styles to the quota rendering contract. */
@@ -43,7 +43,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const adapter = QUOTA_ADAPTERS[quotaType];
   const cacheKey = getQuotaCacheKey(file);
 
-  const storedQuota = useQuotaStore((state) => {
+  const quota = useQuotaStore((state) => {
     if (quotaType === 'antigravity')
       return state.antigravityQuota[cacheKey] as QuotaCardState | undefined;
     if (quotaType === 'claude') return state.claudeQuota[cacheKey] as QuotaCardState | undefined;
@@ -55,10 +55,6 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     if (quotaType === 'xai') return state.xaiQuota[cacheKey] as QuotaCardState | undefined;
     return assertNever(quotaType);
   });
-  const quota =
-    quotaType === 'claude'
-      ? resolveClaudeQuota(file, storedQuota as ClaudeQuotaState | undefined, t)
-      : storedQuota;
   const retainedClaudeUsage =
     quotaType === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
 
@@ -82,22 +78,11 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     try {
       const data = await adapter.fetchQuota(file, t);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
-        const nextQuota = adapter.buildSuccessState(data);
         updateQuotaState((prev) => ({
           ...prev,
-          [cacheKey]: nextQuota,
+          [cacheKey]: adapter.buildSuccessState(data),
         }));
-        if (nextQuota.status === 'error') {
-          showNotification(
-            t('auth_files.quota_refresh_failed', {
-              name: file.name,
-              message: nextQuota.error || t('common.unknown_error'),
-            }),
-            'error'
-          );
-        } else {
-          showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
-        }
+        showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t('common.unknown_error');

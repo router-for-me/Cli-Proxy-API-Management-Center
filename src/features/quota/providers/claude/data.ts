@@ -39,51 +39,13 @@ export type ClaudeQuotaData = {
   extraUsage?: ClaudeExtraUsage | null;
   planType?: string | null;
   dollarWindows: ClaudeDollarWindow[];
-  observedAt?: string | null;
-  stale?: boolean;
-  error?: string;
-  errorStatus?: number;
+  observedAt: string;
 };
 
 export const hasClaudeUsageData = (quota?: ClaudeQuotaState): boolean =>
   Boolean(
     quota?.observedAt || quota?.windows?.length || quota?.extraUsage || quota?.dollarWindows?.length
   );
-
-/** Listings seed the display without adding another upstream read or polling loop. */
-export const resolveClaudeQuota = (
-  file: AuthFileItem,
-  quota: ClaudeQuotaState | undefined,
-  t: TFunction
-): ClaudeQuotaState | undefined => {
-  const snapshot = file.claudeUsage;
-  if (!snapshot || hasClaudeUsageData(quota)) return quota;
-  const windows: ClaudeQuotaWindow[] = [];
-  for (const [key, window] of [
-    ['five_hour', snapshot.fiveHour],
-    ['seven_day', snapshot.sevenDay],
-  ] as const) {
-    if (!window) continue;
-    windows.push({
-      id: key === 'five_hour' ? 'five-hour' : 'seven-day',
-      label: t(`claude_quota.${key}`),
-      labelKey: `claude_quota.${key}`,
-      usedPercent: window.utilization,
-      resetLabel: formatQuotaResetTime(window.resetsAt ?? undefined),
-      resetAtMs: resolveResetMs([window.resetsAt]),
-      periodHours: claudePeriodHours(key),
-    });
-  }
-  return {
-    ...quota,
-    status: quota?.status === 'loading' || quota?.status === 'error' ? quota.status : 'success',
-    windows,
-    extraUsage: snapshot.extraUsage,
-    dollarWindows: snapshot.dollarWindows,
-    observedAt: snapshot.observedAt,
-    stale: file.claudeUsageStale === true || quota?.status === 'error',
-  };
-};
 
 const findFableUsageLimit = (payload: ClaudeUsagePayload) => {
   if (!Array.isArray(payload.limits)) return null;
@@ -248,8 +210,7 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
 
   const result = usageResult.value;
 
-  const failed = result.statusCode < 200 || result.statusCode >= 300;
-  if (failed && !(result.stale && result.claudeUsage)) {
+  if (result.statusCode < 200 || result.statusCode >= 300) {
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
   }
 
@@ -258,7 +219,7 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
     throw new Error(t('claude_quota.empty_windows'));
   }
 
-  const snapshot = result.claudeUsage ?? normalizeClaudeUsageSnapshot(payload);
+  const snapshot = normalizeClaudeUsageSnapshot(payload);
   if (!snapshot) {
     throw new Error(t('claude_quota.empty_windows'));
   }
@@ -282,11 +243,8 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
     windows,
     extraUsage: snapshot.extraUsage,
     dollarWindows,
-    observedAt: snapshot.observedAt ?? new Date().toISOString(),
+    observedAt: new Date().toISOString(),
     planType,
-    stale: result.stale === true,
-    error: failed ? getApiCallErrorMessage(result) : undefined,
-    errorStatus: failed ? result.statusCode : undefined,
   };
 };
 
@@ -299,15 +257,13 @@ export const CLAUDE_CONFIG: QuotaProviderData<ClaudeQuotaState, ClaudeQuotaData>
   storeSetter: 'setClaudeQuota',
   buildLoadingState: () => ({ status: 'loading', windows: [] }),
   buildSuccessState: (data) => ({
-    status: data.stale ? 'error' : 'success',
+    status: 'success',
     windows: data.windows,
     extraUsage: data.extraUsage,
     planType: data.planType,
     dollarWindows: data.dollarWindows,
     observedAt: data.observedAt,
-    stale: data.stale,
-    error: data.error,
-    errorStatus: data.errorStatus,
+    stale: false,
   }),
   buildErrorState: (message, status) => ({
     status: 'error',

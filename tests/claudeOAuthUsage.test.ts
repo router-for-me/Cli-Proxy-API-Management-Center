@@ -4,53 +4,41 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
 import { normalizeClaudeUsageSnapshot } from '@/services/api/claudeUsage';
-import { normalizeAuthFilesResponse } from '@/services/api/authFiles';
 import { apiCallApi, getApiCallErrorMessage, type ApiCallResult } from '@/services/api/apiCall';
 import { apiClient } from '@/services/api/client';
-import {
-  CLAUDE_CONFIG,
-  hasClaudeUsageData,
-  resolveClaudeQuota,
-} from '@/features/quota/providers/claude/data';
+import { CLAUDE_CONFIG, hasClaudeUsageData } from '@/features/quota/providers/claude/data';
 import { ClaudeQuotaBody } from '@/features/quota/providers/claude/ClaudeQuotaBody';
+import { buildTimelineLane } from '@/features/quota/quotaTimelineModel';
+import { nextRecoveryMs } from '@/features/quota/resetSchedule';
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import {
   captureQuotaCacheGeneration,
   commitIfQuotaCacheCurrent,
   useQuotaStore,
 } from '@/stores/useQuotaStore';
-import { CLAUDE_PROFILE_URL, CLAUDE_USAGE_URL, formatQuotaResetTime } from '@/utils/quota';
-import type { AuthFilesResponse, ClaudeQuotaState } from '@/types';
+import {
+  CLAUDE_PROFILE_URL,
+  CLAUDE_USAGE_URL,
+  formatQuotaResetTime,
+  getStatusFromError,
+} from '@/utils/quota';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
+import type { ClaudeQuotaState } from '@/types';
 import fixture from './fixtures/claude-oauth-usage.json';
 
 const observedAt = '2026-10-10T00:00:00Z';
-const groupedSnapshot = {
-  observed_at: observedAt,
-  five_hour: fixture.five_hour,
-  seven_day: fixture.seven_day,
-  extra_usage: fixture.extra_usage,
-  dollar_windows: {
-    iguana_necktie: fixture.iguana_necktie,
-    additional_credit_balance: fixture.additional_credit_balance,
-  },
-};
 const file = { name: 'claude-fixture.json', type: 'claude', authIndex: 'synthetic-index' };
 const classes = bindQuotaClasses(
   Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, key])),
   'claude-usage-test'
 );
-const result = (
-  statusCode: number,
-  body: unknown,
-  extra: Partial<ApiCallResult> = {}
-): ApiCallResult => ({
+const result = (statusCode: number, body: unknown): ApiCallResult => ({
   statusCode,
   header: {},
   body,
   bodyText: JSON.stringify(body),
-  ...extra,
 });
-const snapshot = normalizeClaudeUsageSnapshot(groupedSnapshot)!;
+const snapshot = normalizeClaudeUsageSnapshot(fixture)!;
 const quota: ClaudeQuotaState = {
   status: 'success',
   windows: [],
@@ -99,14 +87,7 @@ describe('Claude OAuth usage API normalization', () => {
       utilization: 0,
       resetsAt: null,
     });
-    expect(normalized.observedAt).toBeNull();
-  });
-
-  test('normalizes the grouped backend snapshot to the same data', () => {
-    expect(snapshot).toEqual({
-      ...normalizeClaudeUsageSnapshot(fixture),
-      observedAt,
-    });
+    expect(normalized).not.toHaveProperty('observedAt');
   });
 
   test('retains null, false, and zero without fabricating values', () => {
@@ -161,31 +142,32 @@ describe('Claude OAuth usage API normalization', () => {
     ).toMatchObject({ fiveHour: null, dollarWindows: [] });
   });
 
-  test('surfaces cached usage on credential listings', () => {
-    const files = normalizeAuthFilesResponse({
-      files: [{ ...file, claude_usage: groupedSnapshot, claude_usage_stale: true }],
-    } as AuthFilesResponse);
-    expect(files.files[0].claudeUsage).toEqual(snapshot);
-    expect(files.files[0].claudeUsageStale).toBe(true);
+  test('keeps every complete top-level dollar window even when its key is dollar_windows', () => {
+    const normalized = normalizeClaudeUsageSnapshot({
+      ...fixture,
+      dollar_windows: { ...fixture.additional_credit_balance, remaining_dollars: 15 },
+    })!;
+    expect(normalized.dollarWindows.map((balance) => balance.key)).toEqual([
+      'iguana_necktie',
+      'additional_credit_balance',
+      'dollar_windows',
+    ]);
+    expect(normalized.dollarWindows[2].remainingDollars).toBe(15);
   });
 
-  test('uses the authenticated API client and a safe error outside the retained body', async () => {
+  test('uses only the existing authenticated raw API-call response contract', async () => {
+    const body = { error: { message: 'usage unavailable' } };
     const post = spyOn(apiClient, 'post').mockResolvedValue({
       status_code: 429,
       header: {},
-      body: JSON.stringify(fixture),
-      claude_usage: groupedSnapshot,
-      stale: true,
-      error: 'Claude usage upstream request failed',
+      body: JSON.stringify(body),
     });
     try {
       const request = { authIndex: file.authIndex, method: 'GET', url: CLAUDE_USAGE_URL };
       const response = await apiCallApi.request(request);
       expect(post).toHaveBeenCalledWith('/requests/api-call', request, undefined);
-      expect(response.claudeUsage).toEqual(snapshot);
-      expect(response.body).toEqual(fixture);
-      expect(response.stale).toBe(true);
-      expect(getApiCallErrorMessage(response)).toBe('429 Claude usage upstream request failed');
+      expect(response).toEqual(result(429, body));
+      expect(getApiCallErrorMessage(response)).toBe('429 usage unavailable');
     } finally {
       post.mockRestore();
     }
@@ -203,7 +185,7 @@ describe('Claude quota usage reads', () => {
     apiCallApi.request = async (request) => {
       requests.push(request);
       return request.url === CLAUDE_USAGE_URL
-        ? result(200, fixture, { claudeUsage: snapshot })
+        ? result(200, fixture)
         : result(200, { account: { has_claude_max: true } });
     };
     const data = await CLAUDE_CONFIG.fetchQuota(file, i18n.t);
@@ -225,26 +207,26 @@ describe('Claude quota usage reads', () => {
     expect(data.dollarWindows).toEqual(snapshot.dollarWindows);
     expect(data.extraUsage?.usedCredits).toBe(1250);
     expect(data.planType).toBe('plan_max');
-    expect(data.observedAt).toBe(observedAt);
+    expect(Number.isFinite(Date.parse(data.observedAt))).toBe(true);
+    expect(CLAUDE_CONFIG.buildSuccessState(data)).toMatchObject({
+      status: 'success',
+      stale: false,
+    });
   });
 
-  test('retains the upstream last-good snapshot on a failed read', async () => {
-    apiCallApi.request = async (request) =>
-      request.url === CLAUDE_USAGE_URL
-        ? result(429, fixture, {
-            claudeUsage: snapshot,
-            stale: true,
-            error: 'Claude usage upstream request failed',
-          })
-        : result(503, { error: 'profile unavailable' });
-    const data = await CLAUDE_CONFIG.fetchQuota(file, i18n.t);
-    const state = CLAUDE_CONFIG.buildSuccessState(data);
-    expect(state.status).toBe('error');
-    expect(state.stale).toBe(true);
-    expect(state.observedAt).toBe(observedAt);
-    expect(state.extraUsage).toEqual(snapshot.extraUsage);
-    expect(state.dollarWindows).toEqual(snapshot.dollarWindows);
-    expect(state.error).toBe('429 Claude usage upstream request failed');
+  test('rejects every upstream failure even when its body contains usage values', async () => {
+    for (const status of [0, 199, 302, 401, 403, 429, 500]) {
+      apiCallApi.request = async (request) =>
+        request.url === CLAUDE_USAGE_URL
+          ? result(status, fixture)
+          : result(200, { account: { has_claude_max: true } });
+      try {
+        await CLAUDE_CONFIG.fetchQuota(file, i18n.t);
+        throw new Error('A failed read must not reach the success notification path');
+      } catch (error) {
+        expect(getStatusFromError(error)).toBe(status);
+      }
+    }
   });
 
   test('does not fabricate a snapshot when a read fails without cached data', async () => {
@@ -270,16 +252,124 @@ describe('Claude quota usage reads', () => {
     }
   });
 
-  test('seeds the display from a listing without issuing another upstream read', () => {
-    const listedFile = { ...file, claudeUsage: snapshot, claudeUsageStale: true };
-    const state = resolveClaudeQuota(listedFile, undefined, i18n.t)!;
-    expect(state.windows.map((window) => window.id)).toEqual(['five-hour', 'seven-day']);
-    expect(state.extraUsage).toEqual(snapshot.extraUsage);
-    expect(state.dollarWindows).toEqual(snapshot.dollarWindows);
-    expect(state.stale).toBe(true);
-    expect(hasClaudeUsageData(state)).toBe(true);
-    expect(resolveClaudeQuota(listedFile, quota, i18n.t)).toBe(quota);
-    expect(resolveClaudeQuota(file, undefined, i18n.t)).toBeUndefined();
+  test('rejects malformed successful responses rather than erasing the last-good values', async () => {
+    for (const body of [null, '', 'not-json', [], { error: 'no usage' }]) {
+      apiCallApi.request = async () => result(200, body);
+      await expect(CLAUDE_CONFIG.fetchQuota(file, i18n.t)).rejects.toThrow(
+        i18n.t('claude_quota.empty_windows')
+      );
+    }
+  });
+
+  test.each(['upstream', 'management'] as const)(
+    'retains frontend last-good values after a rejected %s read and replaces them on recovery',
+    async (failure) => {
+      let failing = false;
+      const post = spyOn(apiClient, 'post').mockImplementation(async (_path, request) => {
+        const usage = (request as { url: string }).url === CLAUDE_USAGE_URL;
+        if (usage && failing && failure === 'management') {
+          throw Object.assign(new Error('request failed'), { status: 502 });
+        }
+        return {
+          status_code: usage && failing ? 429 : 200,
+          header: {},
+          body: JSON.stringify(
+            !usage
+              ? { account: { has_claude_max: true } }
+              : failing
+                ? { error: { message: 'usage unavailable' } }
+                : fixture
+          ),
+        };
+      });
+      const store = useQuotaStore.getState();
+      const key = getQuotaCacheKey(file);
+      store.clearQuotaCache();
+      try {
+        const good = CLAUDE_CONFIG.buildSuccessState(await CLAUDE_CONFIG.fetchQuota(file, i18n.t));
+        store.setClaudeQuota({ [key]: good });
+        failing = true;
+        store.setClaudeQuota({ [key]: CLAUDE_CONFIG.buildLoadingState() });
+        expect(useQuotaStore.getState().claudeQuota[key].windows).toBe(good.windows);
+        let failureHandled = false;
+        try {
+          await CLAUDE_CONFIG.fetchQuota(file, i18n.t);
+        } catch (error) {
+          failureHandled = true;
+          store.setClaudeQuota({
+            [key]: CLAUDE_CONFIG.buildErrorState(
+              (error as Error).message,
+              getStatusFromError(error)
+            ),
+          });
+        }
+        expect(failureHandled).toBe(true);
+        const retained = useQuotaStore.getState().claudeQuota[key];
+        expect(retained.status).toBe('error');
+        expect(retained.errorStatus).toBe(failure === 'management' ? 502 : 429);
+        expect(retained.stale).toBe(true);
+        expect(retained.observedAt).toBe(good.observedAt);
+        expect(retained.windows).toBe(good.windows);
+        expect(retained.extraUsage).toBe(good.extraUsage);
+        expect(retained.dollarWindows).toBe(good.dollarWindows);
+        failing = false;
+        const recovered = CLAUDE_CONFIG.buildSuccessState(
+          await CLAUDE_CONFIG.fetchQuota(file, i18n.t)
+        );
+        store.setClaudeQuota({ [key]: recovered });
+        expect(useQuotaStore.getState().claudeQuota[key]).toBe(recovered);
+        expect(recovered).toMatchObject({ status: 'success', stale: false });
+        expect(recovered.error).toBeUndefined();
+      } finally {
+        post.mockRestore();
+        store.clearQuotaCache();
+      }
+    }
+  );
+
+  test('stores raw API-call data once for cards, page counters, recovery sorting, and timeline', async () => {
+    const post = spyOn(apiClient, 'post').mockImplementation(async (_path, request) => ({
+      status_code: 200,
+      header: {},
+      body: JSON.stringify(
+        (request as { url: string }).url === CLAUDE_USAGE_URL
+          ? fixture
+          : { account: { has_claude_max: true } }
+      ),
+    }));
+    const store = useQuotaStore.getState();
+    store.clearQuotaCache();
+    try {
+      expect(CLAUDE_CONFIG.storeSelector(useQuotaStore.getState())[file.name]).toBeUndefined();
+      const data = await CLAUDE_CONFIG.fetchQuota(file, i18n.t);
+      const state = CLAUDE_CONFIG.buildSuccessState(data);
+      store.setClaudeQuota({ [getQuotaCacheKey(file)]: state });
+      const stored = CLAUDE_CONFIG.storeSelector(useQuotaStore.getState())[file.name];
+      expect(stored).toBe(state);
+      expect(
+        Object.values(useQuotaStore.getState().claudeQuota).filter(
+          (entry) => entry.status === 'success'
+        )
+      ).toHaveLength(1);
+      expect(nextRecoveryMs('claude', stored, Date.parse(observedAt))).toBe(
+        Date.parse('2026-10-15T09:00:00Z')
+      );
+      expect(
+        buildTimelineLane({
+          provider: 'claude',
+          name: file.name,
+          displayName: file.name,
+          quota: stored,
+          maxPeriodHours: 14 * 24,
+        }).anchorMs
+      ).toBe(Date.parse('2026-10-15T09:00:00Z'));
+      expect(post).toHaveBeenCalledTimes(2);
+      store.setClaudeQuota((previous) => previous);
+      expect(CLAUDE_CONFIG.storeSelector(useQuotaStore.getState())[file.name]).toBe(state);
+    } finally {
+      post.mockRestore();
+      store.clearQuotaCache();
+    }
   });
 });
 
@@ -288,7 +378,7 @@ describe('Claude usage snapshot rendering and retention', () => {
     useQuotaStore.getState().clearQuotaCache();
   });
 
-  test('keeps a read-only quota refresh action for seeded auth-file snapshots', () => {
+  test('keeps a read-only quota refresh action for Claude auth-file observations', () => {
     // This host imports SCSS modules, so cover the action wiring here and
     // verify its interaction with the production build in the browser.
     const source = readFileSync(
@@ -302,6 +392,7 @@ describe('Claude usage snapshot rendering and retention', () => {
     expect(source).toContain('{showRefreshQuotaAction && (');
     expect(source).toContain('onClick={() => void refreshQuotaForFile()}');
     expect(source).toContain("disabled={!canRefreshQuota || quotaStatus === 'loading'}");
+    expect(CLAUDE_CONFIG).not.toHaveProperty('resetQuota');
   });
 
   test('renders enabled extra usage in minor units and each balance in dollars', () => {
