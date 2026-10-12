@@ -25,13 +25,6 @@
   color: var(--text-secondary);
 }
 
-/* 赞助商首行：两张大卡并排，窄屏堆叠 */
-.sponsorGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
-  gap: 12px;
-}
-
 /* 磁贴网格：一屏看全所有提供商（窄屏自动单列）；280 让常见宽度下 6 家排成 3+3 */
 .grid {
   display: grid;

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
@@ -143,6 +144,56 @@ describe('OAuth provider gallery', () => {
       expect(markup.match(/aria-haspopup="dialog"/g)?.length).toBe(OAUTH_PROVIDERS.length + 1);
     });
   }
+
+  test('merges both Kimi sites into one sponsor card with per-site entries', async () => {
+    const i18n = createInstance();
+    await i18n.init({ lng: 'zh-CN', resources: { 'zh-CN': { translation: zhCN } } });
+    const markup = renderToStaticMarkup(
+      createElement(
+        I18nextProvider,
+        { i18n },
+        createElement(MemoryRouter, null, createElement(OAuthPage))
+      )
+    );
+    // 一张品牌卡（role=group），卡内两个站点登录入口 + 两个开放平台注册链接
+    expect(markup.match(/role="group"/g)?.length).toBe(1);
+    const card = markup.slice(markup.indexOf('role="group"'));
+    expect(card).toContain('aria-label="Kimi 国内站"');
+    expect(card).toContain('aria-label="Kimi 国际站"');
+    expect(card).toContain('>国内站</button>');
+    expect(card).toContain('>国际站</button>');
+    expect(card.match(/aria-label="注册开放平台 · Kimi /g)?.length).toBe(2);
+  });
+
+  test('keeps each visible Kimi site name inside its accessible name', () => {
+    const sponsors = OAUTH_PROVIDERS.filter((provider) => provider.sponsor);
+    expect(sponsors.map((provider) => provider.id)).toEqual(['kimi', 'kimi-ai']);
+    for (const translation of Object.values(locales)) {
+      const messages = translation.auth_login as Record<string, string>;
+      for (const provider of sponsors) {
+        const nameKey = typeof provider.label === 'string' ? '' : provider.label.key;
+        const name = messages[nameKey.replace('auth_login.', '')];
+        const region = messages[provider.sponsor!.siteKey.replace('auth_login.', '')];
+        expect(region).toBeTruthy();
+        // label-in-name：语音控制说出可见文字就能命中按钮
+        expect(name.toLowerCase()).toContain(region.toLowerCase());
+      }
+      expect(messages.sponsor_kimi_caption).toBeTruthy();
+      expect(messages.sponsor_sign_up).toBeTruthy();
+    }
+  });
+
+  test('overrides per-pool animations with equal specificity under reduced motion', () => {
+    const styles = readFileSync('src/features/oauth/components/SponsorCard.module.scss', 'utf8');
+    const reducedMotionStart = styles.indexOf('@media (prefers-reduced-motion: reduce)');
+    const poolAnimationStart = styles.indexOf(".pool[data-pool='#{$name}']");
+    expect(poolAnimationStart).toBeGreaterThanOrEqual(0);
+    expect(reducedMotionStart).toBeGreaterThan(poolAnimationStart);
+    // 属性选择器与每个光池的动画规则保持同等优先级；仅 .pool 无法覆盖动画。
+    expect(styles.slice(reducedMotionStart)).toMatch(
+      /\.pool\[data-pool\]\s*,[^{}]*\{\s*animation:\s*none;/
+    );
+  });
 
   test('keeps both Kimi registration links as safe external links', async () => {
     const i18n = createInstance();
