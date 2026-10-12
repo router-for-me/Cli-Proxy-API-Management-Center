@@ -35,6 +35,14 @@ const getFieldDraftValue = (field: PluginConfigField, value: unknown): PluginDra
   return String(value);
 };
 
+const getCurrentOrDefaultValue = (
+  field: PluginConfigField,
+  currentConfig: PluginConfigObject
+): unknown =>
+  Object.prototype.hasOwnProperty.call(currentConfig, field.name)
+    ? currentConfig[field.name]
+    : field.default;
+
 export function buildPluginConfigDraft(
   plugin: Pick<PluginListEntry, 'enabled' | 'configFields'>,
   currentConfig: PluginConfigObject
@@ -48,7 +56,7 @@ export function buildPluginConfigDraft(
   const values: PluginConfigDraft['values'] = {};
 
   plugin.configFields.forEach((field) => {
-    values[field.name] = getFieldDraftValue(field, currentConfig[field.name]);
+    values[field.name] = getFieldDraftValue(field, getCurrentOrDefaultValue(field, currentConfig));
   });
 
   return {

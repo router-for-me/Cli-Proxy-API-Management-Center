@@ -9,6 +9,7 @@ const fields: PluginConfigField[] = [
   { name: 'mixed', type: 'array', enumValues: [], description: '' },
   { name: 'optional', type: 'boolean', enumValues: [], description: '' },
   { name: 'label', type: 'string', enumValues: [], description: '' },
+  { name: 'automatic', type: 'boolean', enumValues: [], description: '', default: true },
 ];
 
 const t = (key: string) => key;
@@ -61,6 +62,13 @@ describe('plugin config draft', () => {
       patch: { optional: false },
       errors: {},
     });
+  });
+
+  test('renders a field default without marking it as touched', () => {
+    const draft = buildPluginConfigDraft({ enabled: true, configFields: fields }, {});
+
+    expect(draft.values.automatic).toBe(true);
+    expect(draft.touchedFields).toEqual({});
   });
 
   test('deletes a cleared touched field with null', () => {

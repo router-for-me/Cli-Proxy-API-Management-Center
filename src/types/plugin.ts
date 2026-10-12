@@ -12,6 +12,7 @@ export interface PluginConfigField {
   type: PluginConfigFieldType | string;
   enumValues: string[];
   description: string;
+  default?: unknown;
 }
 
 export type PluginConfigObject = Record<string, unknown>;
