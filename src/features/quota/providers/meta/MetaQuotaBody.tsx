@@ -20,19 +20,12 @@ export function MetaQuotaBody({ quota, classes }: QuotaBodyProps<MetaQuotaState>
 
   return (
     <>
-      {(data.planName || data.isSubscriptionActive !== undefined) && (
+      {data.planName && (
         <div className={classes.codexPlan}>
-          {data.planName && (
-            <span className={classes.codexPlanItem}>
-              <span className={classes.codexPlanLabel}>{t('meta_quota.plan')}</span>
-              <span className={classes.codexPlanValue}>{data.planName}</span>
-            </span>
-          )}
-          {data.isSubscriptionActive !== undefined && (
-            <span className={classes.codexPlanValue}>
-              {t(data.isSubscriptionActive ? 'meta_quota.active' : 'meta_quota.inactive')}
-            </span>
-          )}
+          <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanLabel}>{t('meta_quota.plan')}</span>
+            <span className={classes.codexPlanValue}>{data.planName}</span>
+          </span>
         </div>
       )}
       {data.windows.every((window) => window.usedPercent === null) && (

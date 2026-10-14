@@ -83,7 +83,7 @@ describe('Muse quota UI integration', () => {
       createElement(MetaQuotaBody, { quota: snapshot(), classes })
     );
     expect(markup).toContain('Muse fixture plan');
-    expect(markup).toContain(i18n.t('meta_quota.active'));
+    expect(markup).not.toContain(i18n.t('meta_quota.active'));
     expect(markup).toContain(i18n.t('meta_quota.window_duration_hours', { hours: 5 }));
     expect(markup).not.toContain(i18n.t('meta_quota.window_duration', { minutes: 300 }));
     expect(markup).toContain(i18n.t('meta_quota.weekly'));
@@ -92,6 +92,16 @@ describe('Muse quota UI integration', () => {
     expect(markup).toContain('aria-valuenow="99"');
     expect(markup).toContain('width:100%');
     expect(markup).toContain('width:99%');
+  });
+
+  test.each([true, false])('hides subscription status %s without an empty plan row', (active) => {
+    const quota = snapshot();
+    quota.data!.isSubscriptionActive = active;
+    quota.data!.planName = undefined;
+    const markup = renderToStaticMarkup(createElement(MetaQuotaBody, { quota, classes }));
+    expect(markup).not.toContain(i18n.t('meta_quota.active'));
+    expect(markup).not.toContain(i18n.t('meta_quota.inactive'));
+    expect(markup).not.toContain('class="codexPlan"');
   });
 
   test('keeps minutes for a window that is not a whole number of hours', () => {
