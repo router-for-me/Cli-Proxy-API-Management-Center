@@ -5,13 +5,14 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useNotificationStore } from '@/stores';
 import { apiClient } from '@/services/api/client';
 import {
-  readClaudeResetGrants,
+  AnthropicResetGrantError,
   type AnthropicResetGrantStatus,
 } from '@/services/api/claudeResetGrants';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/quota';
 import { resetGrantOperations, RETRY_WINDOW_MS } from './resetGrantOperations';
 import { selectResetGrant } from './selectResetGrant';
+import { readResetGrantsForCard, scheduleResetGrantRead } from './resetGrantReads';
 
 /** Card-owned reads; the session-scoped journal owns spending and ambiguous retries. */
 export function useClaudeResetGrants(
@@ -44,19 +45,28 @@ export function useClaudeResetGrants(
     let cancelled = false;
     const current = () =>
       !cancelled && version === generation.current && session === apiClient.getConnectionRevision();
-    void readClaudeResetGrants(authIndex).then(
-      (result) => {
-        if (current()) {
-          setStatus(result);
-          setMessage('');
+    const cancelRead = scheduleResetGrantRead(() => {
+      void readResetGrantsForCard(authIndex).then(
+        (result) => {
+          if (current()) {
+            setStatus(result);
+            setMessage('');
+          }
+        },
+        (error: unknown) => {
+          if (current()) {
+            setMessage(
+              error instanceof AnthropicResetGrantError && error.code === 'rate_limited'
+                ? 'rate_limited'
+                : 'read_error'
+            );
+          }
         }
-      },
-      () => {
-        if (current()) setMessage('read_error');
-      }
-    );
+      );
+    }, current);
     return () => {
       cancelled = true;
+      cancelRead();
       generation.current += 1;
     };
   }, [authIndex, key, enabled, disabled, sessionActive, session, refreshToken, reload]);

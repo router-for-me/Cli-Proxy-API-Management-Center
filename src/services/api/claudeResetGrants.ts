@@ -60,7 +60,7 @@ export interface AnthropicResetGrantStatus {
   cooldownUntil: string | null;
 }
 
-export type AnthropicResetGrantErrorCode = 'auth' | 'upstream' | 'malformed';
+export type AnthropicResetGrantErrorCode = 'auth' | 'upstream' | 'malformed' | 'rate_limited';
 
 /** A read failure. `message` is fixed text; upstream detail is never attached. */
 export class AnthropicResetGrantError extends Error {
@@ -245,6 +245,7 @@ async function readAccount(authIndex: string, path: string): Promise<Record<stri
     },
     { timeout: 12000 }
   );
+  if (response.statusCode === 429) throw new AnthropicResetGrantError('rate_limited');
   if (response.statusCode < 200 || response.statusCode >= 300 || !isRecord(response.body)) {
     throw new AnthropicResetGrantError('upstream');
   }
