@@ -49,7 +49,9 @@ export function MetaQuotaBody({ quota, classes }: QuotaBodyProps<MetaQuotaState>
         const soon = window.id === soonestRowId;
         const label =
           window.id === 'window' && window.durationMinutes
-            ? t('meta_quota.window_duration', { minutes: window.durationMinutes })
+            ? window.durationMinutes % 60 === 0
+              ? t('meta_quota.window_duration_hours', { hours: window.durationMinutes / 60 })
+              : t('meta_quota.window_duration', { minutes: window.durationMinutes })
             : t(`meta_quota.${window.id}`);
         return (
           <div key={window.id} className={classes.quotaRow}>

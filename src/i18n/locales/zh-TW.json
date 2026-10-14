@@ -596,6 +596,7 @@
     "inactive": "訂閱未啟用",
     "window": "週期額度",
     "window_duration": "{{minutes}} 分鐘週期",
+    "window_duration_hours": "{{hours}} 小時週期",
     "weekly": "每週額度",
     "unknown": "未知",
     "remaining": "剩餘 {{percent}}%"

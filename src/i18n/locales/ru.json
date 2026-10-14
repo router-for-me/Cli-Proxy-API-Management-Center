@@ -600,6 +600,7 @@
     "inactive": "Подписка неактивна",
     "window": "Квота за период",
     "window_duration": "Период: {{minutes}} мин.",
+    "window_duration_hours": "Период: {{hours}} ч.",
     "weekly": "Недельная квота",
     "unknown": "Неизвестно",
     "remaining": "Осталось {{percent}}%"

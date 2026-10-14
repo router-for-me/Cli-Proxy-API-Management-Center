@@ -2242,6 +2242,7 @@
     "inactive": "Đăng ký không hoạt động",
     "window": "Chu kỳ sử dụng",
     "window_duration": "Chu kỳ {{minutes}} phút",
+    "window_duration_hours": "Chu kỳ {{hours}} giờ",
     "weekly": "Quota hàng tuần",
     "unknown": "Không rõ",
     "remaining": "Còn lại {{percent}}%"

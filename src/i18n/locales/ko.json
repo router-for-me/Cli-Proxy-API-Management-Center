@@ -610,6 +610,7 @@
     "inactive": "구독 비활성",
     "window": "사용 주기",
     "window_duration": "{{minutes}}분 주기",
+    "window_duration_hours": "{{hours}}시간 주기",
     "weekly": "주간 할당량",
     "unknown": "알 수 없음",
     "remaining": "{{percent}}% 남음"
