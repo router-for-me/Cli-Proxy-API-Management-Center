@@ -78,6 +78,8 @@
 
 .quotaAmount {
   font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
