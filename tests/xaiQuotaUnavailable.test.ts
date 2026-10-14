@@ -115,18 +115,28 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(markup).not.toContain('Used 0%');
   });
 
-  test('renders an explicit zero percent as Used 0%', () => {
+  test('renders zero usage as 100% remaining', () => {
     const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: 0 }), monthlyConfig()));
 
-    expect(markup).toContain('Used 0%');
+    expect(markup).toContain('class="quotaPercent">100%</span>');
+    expect(markup).not.toContain('Used 0%');
     expect(markup).not.toContain('Usage unavailable from xAI');
   });
 
-  test('renders an explicit percent as Used 37%', () => {
+  test('renders 37% usage as 63% remaining', () => {
     const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: 37 }), monthlyConfig()));
 
-    expect(markup).toContain('Used 37%');
+    expect(markup).toContain('class="quotaPercent">63%</span>');
+    expect(markup).toContain('width:63%');
+    expect(markup).not.toContain('Used 37%');
     expect(markup).not.toContain('Usage unavailable from xAI');
+  });
+
+  test.each([100, 120])('renders exhausted usage %i as 0% remaining', (percent) => {
+    const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: percent }), monthlyConfig()));
+
+    expect(markup).toContain('class="quotaPercent">0%</span>');
+    expect(markup).toContain('width:0%');
   });
 
   test.each([0, 3000])('does not use monthly spending %i as weekly usage', (used) => {
@@ -153,7 +163,7 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
 
     expect(quota.billing?.usagePercent).toBe(percent);
     expect(quota.billing?.usedPercent).toBe(20);
-    expect(render(quota)).toContain(`Used ${percent}%`);
+    expect(render(quota)).toContain(`class="quotaPercent">${100 - percent}%</span>`);
   });
 
   test('preserves monthly-only usage', () => {
@@ -215,7 +225,7 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
       )
     );
 
-    expect(markup).toContain('Used 16%');
+    expect(markup).toContain('class="quotaPercent">84%</span>');
     expect(markup).toContain('Usage breakdown (shared quota)');
     expect(markup).toContain('GrokBuild usage: 14%');
     expect(markup).toContain('GrokChat usage: 2%');

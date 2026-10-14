@@ -398,15 +398,15 @@ describe('Claude usage snapshot rendering and retention', () => {
     useQuotaStore.getState().clearQuotaCache();
   });
 
-  test('offers read-only refresh for every non-idle auth-file quota, including Claude', () => {
+  test('offers read-only refresh even for idle auth-file quota, including Claude', () => {
     // This host imports SCSS modules, so cover the action wiring here and
     // verify its interaction with the production build in the browser.
     const source = readFileSync(
       new URL('../src/features/authFiles/components/AuthFileQuotaSection.tsx', import.meta.url),
       'utf8'
     );
-    expect(source).toContain("const showRefreshQuotaAction = quotaStatus !== 'idle';");
-    expect(source).toContain('{showRefreshQuotaAction && (');
+    expect(source).not.toContain('showRefreshQuotaAction');
+    expect(source).toContain('<div className={styles.quotaCardActions}>');
     expect(source).toContain('onClick={() => void refreshQuotaForFile()}');
     expect(source).toContain("disabled={!canRefreshQuota || quotaStatus === 'loading'}");
     expect(source).toContain("loading={quotaStatus === 'loading'}");
