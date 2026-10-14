@@ -270,6 +270,34 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(markup).toContain('width:90%');
   });
 
+  test('places disabled pay-as-you-go in the plan row above weekly quota', () => {
+    const markup = render(quotaFor(weeklyConfig({ creditUsagePercent: 37 }), monthlyConfig()));
+    const label = i18n.t('xai_quota.pay_as_you_go_label');
+    const disabled = i18n.t('xai_quota.pay_as_you_go_disabled');
+
+    expect(markup).toContain(
+      `<span class="codexPlanItem"><span class="codexPlanLabel">${label}</span><span class="codexPlanValue">${disabled}</span></span>`
+    );
+    expect(markup.indexOf(label)).toBeLessThan(markup.indexOf('class="quotaRow"'));
+    expect(markup.split(label)).toHaveLength(2);
+  });
+
+  test('keeps enabled pay-as-you-go below weekly quota with its meter', () => {
+    const markup = render(
+      quotaFor(
+        weeklyConfig({ creditUsagePercent: 37, onDemandCap: { val: 10000 } }),
+        monthlyConfig({ onDemandCap: { val: 10000 }, onDemandUsed: { val: 2500 } })
+      )
+    );
+    const label = i18n.t('xai_quota.pay_as_you_go_label');
+
+    expect(markup).toContain(`<span class="quotaModel">${label}</span>`);
+    expect(markup.indexOf(label)).toBeGreaterThan(markup.indexOf('class="quotaRow"'));
+    expect(markup).not.toContain(i18n.t('xai_quota.pay_as_you_go_disabled'));
+    expect(markup).toContain('width:75%');
+    expect(markup.split(label)).toHaveLength(2);
+  });
+
   test('keeps the monthly-only zero row when no weekly data exists', () => {
     const markup = render(quotaFor(null, monthlyConfig()));
 
