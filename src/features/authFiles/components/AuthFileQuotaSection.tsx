@@ -163,6 +163,9 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
   const quotaStatus = quota?.status ?? 'idle';
   const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;
   const canUseResetQuota = canRefreshQuota && quotaStatus !== 'loading';
+  // Idle state already renders a clickable "click to refresh" prompt; only offer the
+  // explicit refresh button once quota has been requested so it can be refreshed again.
+  const showRefreshQuotaAction = quotaStatus !== 'idle';
   const showResetQuotaAction = quota !== undefined && Boolean(adapter.canResetQuota?.(quota));
   const resetQuotaAction =
     adapter.resetQuota && showResetQuotaAction ? (
@@ -212,22 +215,26 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         <div className={styles.quotaMessage}>{t(`${adapter.i18nPrefix}.idle`)}</div>
       ) : null}
       {retainedClaudeUsage && quota && <adapter.Body quota={quota} classes={compactQuotaClasses} />}
-      <div className={styles.quotaCardActions}>
-        {resetQuotaAction}
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className={styles.quotaResetCreditButton}
-          onClick={() => void refreshQuotaForFile()}
-          disabled={!canRefreshQuota || quotaStatus === 'loading'}
-          loading={quotaStatus === 'loading'}
-          title={t('auth_files.quota_refresh_hint')}
-        >
-          {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
-          {t('auth_files.quota_refresh_single')}
-        </Button>
-      </div>
+      {(showRefreshQuotaAction || resetQuotaAction) && (
+        <div className={styles.quotaCardActions}>
+          {resetQuotaAction}
+          {showRefreshQuotaAction && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={styles.quotaResetCreditButton}
+              onClick={() => void refreshQuotaForFile()}
+              disabled={!canRefreshQuota || quotaStatus === 'loading'}
+              loading={quotaStatus === 'loading'}
+              title={t('auth_files.quota_refresh_hint')}
+            >
+              {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
+              {t('auth_files.quota_refresh_single')}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
