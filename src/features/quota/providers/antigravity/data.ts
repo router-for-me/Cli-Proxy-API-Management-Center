@@ -175,6 +175,57 @@ const fetchAntigravityQuota = async (
         continue;
       }
 
+      // If upstream response omits the Gemini group (e.g. client UA gating or upstream staging variation),
+      // attempt to replenish Gemini model quota from fetchAvailableModels so Gemini quota is never missing.
+      const hasGeminiGroup = groups.some((g) => /gemini/i.test(g.label));
+      if (!hasGeminiGroup) {
+        try {
+          const famUrl = url.replace(':retrieveUserQuotaSummary', ':fetchAvailableModels');
+          const famResult = await apiCallApi.request({
+            authIndex,
+            method: 'POST',
+            url: famUrl,
+            header: { ...ANTIGRAVITY_REQUEST_HEADERS },
+            data: requestBody,
+          });
+          if (famResult.statusCode >= 200 && famResult.statusCode < 300) {
+            const famPayload = parseAntigravityPayload(
+              famResult.body ?? famResult.bodyText
+            ) as Record<string, unknown> | null;
+            const models = (famPayload?.models as Record<string, Record<string, unknown>>) ?? {};
+            const geminiModel =
+              models['gemini-3.8-flash-high'] ??
+              models['gemini-2.5-flash'] ??
+              models['gemini-2.5-pro'] ??
+              models['gemini-3-flash'];
+            const quotaInfo = geminiModel?.quotaInfo as
+              | { remainingFraction?: number; resetTime?: string }
+              | undefined;
+            if (quotaInfo && typeof quotaInfo.remainingFraction === 'number') {
+              const resetTime = quotaInfo.resetTime;
+              groups.unshift({
+                id: 'gemini-models',
+                label: 'Gemini models',
+                description:
+                  'Models within this group: Gemini 2.5 Flash, Gemini 2.5 Pro, Gemini 3.8 Flash',
+                buckets: [
+                  {
+                    id: 'gemini-5h',
+                    label: 'Five Hour Limit Remaining',
+                    window: '5h',
+                    remainingFraction: quotaInfo.remainingFraction,
+                    resetTime,
+                    resetAtMs: resetTime ? new Date(resetTime).getTime() : undefined,
+                  },
+                ],
+              });
+            }
+          }
+        } catch {
+          // Non-blocking fallback
+        }
+      }
+
       return {
         groups,
         subscription: await subscriptionPromise,
