@@ -6,6 +6,7 @@ import {
   readClaudeResetGrants,
   type AnthropicResetSettledCode,
 } from '@/services/api/claudeResetGrants';
+import { generateResetGrantRequestId } from './resetGrantRequestId';
 
 export const RETRY_WINDOW_MS = 10 * 60 * 1000;
 type Operation = {
@@ -21,7 +22,7 @@ const defaultDependencies = {
   readOrganization: readClaudeOrganization,
   claim: claimClaudeResetGrant,
   now: () => Date.now(),
-  requestId: () => crypto.randomUUID() as string,
+  requestId: generateResetGrantRequestId,
 };
 
 /** Tab-memory journal: survives dialog/card unmounts, never crosses connections.
