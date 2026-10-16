@@ -88,3 +88,28 @@ export function resolveAntigravityBucketLabelKey(
   if (!window) return null;
   return BUCKET_WINDOW_KEYS.get(normalizeText(window)) ?? null;
 }
+
+interface AntigravityBucketLike {
+  label: string;
+  window?: string;
+  remainingFraction: number;
+}
+
+/**
+ * 满额桶是否显示「额度可用」。同组周限额已耗尽时，5 小时限额即使满额也不可用
+ * （上游会把它标为 disabled 且 remainingFraction 仍为 1），此时不显示「额度可用」。
+ */
+export function shouldShowAntigravityQuotaAvailable(
+  bucket: AntigravityBucketLike,
+  groupBuckets: readonly AntigravityBucketLike[]
+): boolean {
+  if (bucket.remainingFraction !== 1) return false;
+  if (resolveAntigravityBucketLabelKey(bucket.label, bucket.window) !== 'five_hour_limit') {
+    return true;
+  }
+  return !groupBuckets.some(
+    (item) =>
+      resolveAntigravityBucketLabelKey(item.label, item.window) === 'weekly_limit' &&
+      item.remainingFraction <= 0
+  );
+}
