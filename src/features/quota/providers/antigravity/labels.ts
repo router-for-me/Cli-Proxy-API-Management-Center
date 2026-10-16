@@ -32,6 +32,15 @@ const BUCKET_WINDOW_KEYS = new Map<string, string>([
   ['month', 'monthly_limit'],
 ]);
 
+/**
+ * 上游分组描述未列出、但实际共享该分组额度的模型，追加到「此分组包含」列表末尾。
+ */
+const GROUP_EXTRA_MODELS = new Map<string, readonly string[]>([
+  ['group_gemini_models', ['Gemini Argon']],
+]);
+
+const GROUP_MODELS_PATTERN = /^models within this group:\s*(.+)$/i;
+
 const normalizeText = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, ' ');
 
 /** 去掉上游常见的 "Remaining" 后缀，如 "Weekly Limit Remaining" → "weekly limit"。 */
@@ -40,6 +49,32 @@ const stripRemainingSuffix = (value: string): string =>
 
 export function resolveAntigravityGroupLabelKey(label: string): string | null {
   return GROUP_LABEL_KEYS.get(normalizeText(label)) ?? null;
+}
+
+/**
+ * 解析分组描述中的模型列表，并追加该分组的补充模型（大小写不敏感去重）。
+ * 描述不是「Models within this group: ...」格式时返回 null，由调用方显示原文。
+ */
+export function resolveAntigravityGroupModels(
+  label: string,
+  description: string | undefined
+): string[] | null {
+  const match = description?.trim().match(GROUP_MODELS_PATTERN);
+  if (!match) return null;
+
+  const models = match[1]
+    .split(',')
+    .map((model) => model.trim())
+    .filter(Boolean);
+  const groupKey = resolveAntigravityGroupLabelKey(label);
+  const extras = groupKey ? (GROUP_EXTRA_MODELS.get(groupKey) ?? []) : [];
+  const seen = new Set(models.map(normalizeText));
+  extras.forEach((model) => {
+    if (seen.has(normalizeText(model))) return;
+    seen.add(normalizeText(model));
+    models.push(model);
+  });
+  return models;
 }
 
 export function resolveAntigravityBucketLabelKey(

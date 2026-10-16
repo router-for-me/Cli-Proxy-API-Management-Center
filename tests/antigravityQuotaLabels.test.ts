@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   resolveAntigravityBucketLabelKey,
   resolveAntigravityGroupLabelKey,
+  resolveAntigravityGroupModels,
 } from '@/features/quota/providers/antigravity/labels';
 import { buildAntigravityQuotaGroups } from '@/utils/quota/builders';
 
@@ -12,6 +13,32 @@ describe('Antigravity quota label keys', () => {
       'group_claude_gpt_models'
     );
     expect(resolveAntigravityGroupLabelKey('Image Models')).toBeNull();
+  });
+
+  test('appends Gemini Argon to the Gemini group model list', () => {
+    expect(
+      resolveAntigravityGroupModels(
+        'Gemini Models',
+        'Models within this group: Gemini Flash, Gemini Pro'
+      )
+    ).toEqual(['Gemini Flash', 'Gemini Pro', 'Gemini Argon']);
+    expect(
+      resolveAntigravityGroupModels(
+        'Gemini Models',
+        'Models within this group: Gemini Flash, gemini argon'
+      )
+    ).toEqual(['Gemini Flash', 'gemini argon']);
+  });
+
+  test('leaves other groups and non-list descriptions untouched', () => {
+    expect(
+      resolveAntigravityGroupModels(
+        'Claude and GPT models',
+        'Models within this group: Claude Opus, Claude Sonnet, GPT-OSS'
+      )
+    ).toEqual(['Claude Opus', 'Claude Sonnet', 'GPT-OSS']);
+    expect(resolveAntigravityGroupModels('Gemini Models', 'Shared Gemini quota')).toBeNull();
+    expect(resolveAntigravityGroupModels('Gemini Models', undefined)).toBeNull();
   });
 
   test('ignores the upstream "Remaining" suffix on bucket names', () => {

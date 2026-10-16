@@ -10,7 +10,11 @@ import { QuotaMeter } from '../../components/QuotaMeter';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
 import { getNextAntigravityCountdownUpdateDelay } from './countdown';
-import { resolveAntigravityBucketLabelKey, resolveAntigravityGroupLabelKey } from './labels';
+import {
+  resolveAntigravityBucketLabelKey,
+  resolveAntigravityGroupLabelKey,
+  resolveAntigravityGroupModels,
+} from './labels';
 
 const formatAntigravityDuration = (t: TFunction, deltaMs: number): string => {
   const totalMinutes = Math.max(1, Math.ceil(deltaMs / 60000));
@@ -151,7 +155,12 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
             resolveAntigravityGroupLabelKey(group.label),
             t
           );
-          const groupDescription = translateAntigravityQuotaDescription(group.description, t);
+          const groupModels = resolveAntigravityGroupModels(group.label, group.description);
+          const groupDescription = groupModels
+            ? t('antigravity_quota.group_models_description', {
+                models: groupModels.join(', '),
+              })
+            : translateAntigravityQuotaDescription(group.description, t);
 
           return (
             <div key={group.id} className={classes.antigravityQuotaGroup}>
