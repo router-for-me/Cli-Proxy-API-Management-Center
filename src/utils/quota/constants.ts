@@ -74,27 +74,20 @@ export const ANTIGRAVITY_QUOTA_URLS = [
 export const ANTIGRAVITY_CODE_ASSIST_URL =
   'https://daily-cloudcode-pa.googleapis.com/v1internal:loadCodeAssist';
 
-export const ANTIGRAVITY_CLI_VERSION = '1.0.13';
-export const ANTIGRAVITY_CLIENT_NAME = 'aidev_client';
-export const ANTIGRAVITY_CLIENT_PLATFORM = {
-  osType: 'darwin',
-  arch: 'arm64',
-} as const;
+// Keep aligned with the backend Antigravity Hub UA (internal/misc/antigravity_version.go):
+// Cloud Code rejects newer models for clients below 2.23.0.
+export const ANTIGRAVITY_HUB_VERSION = '2.23.0';
+export const ANTIGRAVITY_HUB_PLATFORM = 'darwin/arm64';
 
 type AntigravityUserAgentOptions = {
   version?: string;
-  clientName?: string;
-  osType?: string;
-  arch?: string;
+  platform?: string;
 };
 
 export const buildAntigravityUserAgent = ({
-  version = ANTIGRAVITY_CLI_VERSION,
-  clientName = ANTIGRAVITY_CLIENT_NAME,
-  osType = ANTIGRAVITY_CLIENT_PLATFORM.osType,
-  arch = ANTIGRAVITY_CLIENT_PLATFORM.arch,
-}: AntigravityUserAgentOptions = {}) =>
-  `antigravity/cli/${version} (${clientName}; os_type=${osType}; arch=${arch})`;
+  version = ANTIGRAVITY_HUB_VERSION,
+  platform = ANTIGRAVITY_HUB_PLATFORM,
+}: AntigravityUserAgentOptions = {}) => `antigravity/hub/${version} ${platform}`;
 
 export const ANTIGRAVITY_USER_AGENT = buildAntigravityUserAgent();
 
