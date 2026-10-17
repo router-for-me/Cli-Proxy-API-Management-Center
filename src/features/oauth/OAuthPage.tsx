@@ -16,6 +16,7 @@ import {
   type ProviderFlowState,
 } from './hooks/useOAuthFlows';
 import { useVertexImport } from './hooks/useVertexImport';
+import { resolveEmbeddedLoginUrl } from './flowView';
 import {
   isSponsor,
   OAUTH_PROVIDERS,
@@ -128,6 +129,16 @@ export function OAuthPage() {
 
   const viewAuthFiles = () => navigate('/auth-files');
 
+  // 只有插件登录页可能由宿主同源提供；内置提供商的授权页都在第三方域名
+  const embedUrlOf = (card: OAuthProviderCard) =>
+    card.kind === 'plugin'
+      ? resolveEmbeddedLoginUrl(
+          flows.states[card.id]?.url,
+          apiBase,
+          typeof window === 'undefined' ? '' : window.location.origin
+        )
+      : '';
+
   const dialogCard =
     dialog?.kind === 'oauth' ? providerCards.find((card) => card.id === dialog.id) : undefined;
   const providerCount = providerCards.length;
@@ -215,6 +226,7 @@ export function OAuthPage() {
           state={flows.states[dialogCard.id] ?? {}}
           text={(suffix) => flows.providerText(dialogCard.id, suffix)}
           supportsCallback={supportsManualCallback(dialogCard)}
+          embedUrl={embedUrlOf(dialogCard)}
           sponsor={sponsorOf(dialogCard)}
           onStart={() => void flows.startAuth(dialogCard.id)}
           onCancel={() => void flows.cancelAuth(dialogCard.id)}
