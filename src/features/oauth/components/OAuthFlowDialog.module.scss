@@ -133,6 +133,15 @@
   gap: 18px;
 }
 
+.embed {
+  display: block;
+  width: 100%;
+  height: min(520px, 52vh);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
 .hint {
   margin: 0;
   font-size: 13px;

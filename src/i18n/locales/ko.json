@@ -909,6 +909,7 @@
     "plugin_oauth_hint": "플러그인 OAuth 흐름을 통해 {{name}}에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "plugin_open_link": "링크 열기",
     "plugin_copy_link": "링크 복사",
+    "plugin_open_in_new_tab": "새 탭에서 열기",
     "plugin_oauth_status_waiting": "인증 대기 중...",
     "plugin_oauth_status_success": "인증에 성공했습니다!",
     "plugin_oauth_status_error": "인증 실패:",

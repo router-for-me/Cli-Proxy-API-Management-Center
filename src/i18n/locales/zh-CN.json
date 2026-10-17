@@ -908,6 +908,7 @@
     "plugin_oauth_hint": "通过插件提供的 OAuth 流程登录 {{name}}，自动获取并保存认证文件。",
     "plugin_open_link": "打开链接",
     "plugin_copy_link": "复制链接",
+    "plugin_open_in_new_tab": "在新标签页中打开",
     "plugin_oauth_status_waiting": "等待认证中...",
     "plugin_oauth_status_success": "认证成功！",
     "plugin_oauth_status_error": "认证失败:",

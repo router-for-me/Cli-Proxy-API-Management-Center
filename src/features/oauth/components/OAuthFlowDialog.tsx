@@ -36,6 +36,8 @@ export interface OAuthFlowDialogProps {
   /** 提供商专属文案：`auth_login.<id>_<suffix>` 或插件模板。 */
   text: (suffix: string) => string;
   supportsCallback: boolean;
+  /** 插件同源登录页：非空时在对话框内嵌该页，新标签页降为备用入口。 */
+  embedUrl?: string;
   /** 赞助商：品牌蓝主按钮 + 提示行里的注册链接。 */
   sponsor?: { url: string; label: string };
   onStart: () => void;
@@ -49,12 +51,13 @@ export interface OAuthFlowDialogProps {
 export function OAuthFlowDialog(props: OAuthFlowDialogProps) {
   const { open, heading, state, onClose } = props;
   const view = resolveFlowView(state);
+  const embedded = view === 'flow' && Boolean(props.embedUrl);
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      width={500}
+      width={embedded ? 760 : 500}
       className={props.sponsor ? `${styles.dialog} ${styles.sponsorDialog}` : styles.dialog}
       title={<DialogTitle {...heading} />}
       footer={view === 'flow' ? <FlowStatusBar {...props} /> : undefined}
@@ -113,6 +116,8 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
     );
   }
 
+  if (props.embedUrl) return <EmbeddedLogin {...props} embedUrl={props.embedUrl} />;
+
   return (
     <div className={styles.stack}>
       <ProviderHint text={text} sponsor={props.sponsor} />
@@ -144,6 +149,41 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
         )}
         {props.supportsCallback && <CallbackStep {...props} />}
       </ol>
+    </div>
+  );
+}
+
+/**
+ * 内嵌插件登录页。登录在页内完成，面板继续轮询状态，成功后切到结果视图并卸载 iframe；
+ * 新标签页按钮保留，供被浏览器拦截或想在独立窗口操作时使用。
+ */
+function EmbeddedLogin({
+  heading,
+  state,
+  text,
+  embedUrl,
+}: OAuthFlowDialogProps & { embedUrl: string }) {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.stack}>
+      <ProviderHint text={text} />
+      <iframe
+        className={styles.embed}
+        src={embedUrl}
+        title={heading.title}
+        referrerPolicy="no-referrer"
+        allow="clipboard-read; clipboard-write"
+      />
+      <div>
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={() => window.open(state.url || embedUrl, '_blank', 'noopener,noreferrer')}
+        >
+          {t('auth_login.plugin_open_in_new_tab')}
+          <IconExternalLink size={14} aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 }
