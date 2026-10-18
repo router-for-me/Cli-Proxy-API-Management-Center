@@ -2268,6 +2268,7 @@
     "confirm": "Xác nhận đặt lại",
     "confirm_text": "Tiêu tốn một lượt đặt lại để xóa giới hạn sử dụng đủ điều kiện cho “{{name}}”? Thao tác này sẽ dùng một quyền đặt lại có hạn.",
     "reset": "Đã đặt lại giới hạn sử dụng.",
+    "cooldown_clear_failed": "Đã đặt lại giới hạn sử dụng nhưng chưa xóa được thời gian chờ của proxy. Mở Tệp xác thực và chọn Xóa thời gian chờ cho tài khoản này. Không dùng thêm lượt đặt lại.",
     "already_used": "Quyền này đã được sử dụng.",
     "not_limited": "Không đặt lại: tài khoản hiện không bị giới hạn.",
     "cooldown": "Không đặt lại: đang trong thời gian cooldown.",

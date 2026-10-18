@@ -2262,6 +2262,7 @@
     "confirm": "Confirm reset",
     "confirm_text": "Spend one reset to clear eligible usage limits for “{{name}}”? This uses a limited reset grant.",
     "reset": "Usage limits reset.",
+    "cooldown_clear_failed": "Usage limits reset, but the proxy cooldown could not be cleared. Open Auth Files and use Clear cooldown for this account. Do not spend another reset.",
     "already_used": "This grant was already used.",
     "not_limited": "No reset: the account is not currently limited.",
     "cooldown": "No reset: cooldown is active.",

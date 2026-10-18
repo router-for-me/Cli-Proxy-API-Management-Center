@@ -12,6 +12,7 @@ import {
   type AnthropicResetSettledCode,
 } from '../src/services/api/claudeResetGrants';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
+import type { AuthFileCooldownResetResponse } from '../src/services/api/authFiles';
 import {
   createResetGrantOperations,
   RETRY_WINDOW_MS,
@@ -144,12 +145,17 @@ function setup() {
   let now = 100;
   let count = 0;
   const ids: string[] = [];
+  const cleared: string[] = [];
   const deps = {
     revision: () => revision,
     now: () => now,
     requestId: () => `request-${++count}`,
     readStatus: async () => status(),
     readOrganization: async () => organization,
+    resetCooldown: async (authIndex: string): Promise<AuthFileCooldownResetResponse> => {
+      cleared.push(authIndex);
+      return { status: 'ok', auth_index: authIndex, models: [] };
+    },
     claim: async (
       _auth: string,
       _org: string,
@@ -163,6 +169,7 @@ function setup() {
   return {
     deps,
     ids,
+    cleared,
     nextSession: () => {
       revision++;
     },
@@ -171,6 +178,91 @@ function setup() {
     },
   };
 }
+
+test('confirmed Claude resets clear only the redeemed credential cooldown before returning', async () => {
+  for (const code of ['reset', 'already_used'] as const) {
+    const h = setup();
+    h.deps.claim = async (_auth, _org, _grant, id) => {
+      expect(h.cleared).toEqual([]);
+      h.ids.push(id);
+      return code;
+    };
+    const operations = createResetGrantOperations(h.deps);
+    expect(await operations.run('account', 'credential-a', grant.id)).toEqual({
+      code,
+      unresolved: false,
+    });
+    expect(h.cleared).toEqual(['credential-a']);
+    expect(h.ids).toEqual(['request-1']);
+    expect(operations.inspect('account')?.code).toBe(code);
+  }
+});
+
+test('refused or unknown reset outcomes never clear routing cooldowns', async () => {
+  const h = setup();
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toThrow();
+  expect(h.cleared).toEqual([]);
+  for (const code of [...ANTHROPIC_RESET_RESULTS, 'auth_error', 'rate_limited'] as const) {
+    if (code === 'reset' || code === 'already_used') continue;
+    h.deps.claim = async () => code;
+    await operations.run('account', 'a', grant.id);
+    expect(h.cleared).toEqual([]);
+  }
+});
+
+test('cooldown clear failures keep the reset settled and report manual recovery', async () => {
+  for (const failure of ['network', 'status', 'credential']) {
+    const h = setup();
+    h.deps.claim = async (_auth, _org, _grant, id) => {
+      h.ids.push(id);
+      return 'reset';
+    };
+    h.deps.resetCooldown = async (authIndex) => {
+      h.cleared.push(authIndex);
+      if (failure === 'network') throw new Error('unavailable');
+      return JSON.parse(
+        JSON.stringify({
+          status: failure === 'status' ? 'error' : 'ok',
+          auth_index: failure === 'credential' ? 'other' : authIndex,
+          models: [],
+        })
+      );
+    };
+    const operations = createResetGrantOperations(h.deps);
+    expect(await operations.run('account', 'a', grant.id)).toEqual({
+      code: 'cooldown_clear_failed',
+      unresolved: false,
+    });
+    expect(operations.inspect('account')?.code).toBe('reset');
+    expect(h.ids).toEqual(['request-1']);
+    expect(h.cleared).toEqual(['a']);
+  }
+});
+
+test('connection changes after a claim prevent cooldown clearing on the replacement connection', async () => {
+  const h = setup();
+  h.deps.claim = async () => {
+    h.nextSession();
+    return 'reset';
+  };
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toThrow('session');
+  expect(h.cleared).toEqual([]);
+  expect(operations.inspect('account')).toBeUndefined();
+});
+
+test('a connection change during cooldown clearing cannot report success for the new session', async () => {
+  const h = setup();
+  h.deps.claim = async () => 'reset';
+  h.deps.resetCooldown = async (authIndex) => {
+    h.nextSession();
+    return { status: 'ok', auth_index: authIndex, models: [] };
+  };
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toThrow('session');
+  expect(operations.inspect('account')).toBeUndefined();
+});
 
 test('unknown outcome retains request ID across retries; expiry blocks', async () => {
   const h = setup();
@@ -239,6 +331,7 @@ test('a retry refusal keeps the ambiguous original operation open', async () => 
     unresolved: false,
   });
   expect(h.ids).toEqual(['request-1', 'request-1', 'request-1']);
+  expect(h.cleared).toEqual(['a']);
 });
 
 test('no retry after the deadline expires during profile lookup', async () => {
@@ -293,9 +386,9 @@ test('a stale claim answer cannot settle the replacement session operation', asy
   expect(operations.inspect('account')).toBeUndefined();
 });
 
-test('all grant messages and confirmation are translated in four locales', async () => {
+test('all grant messages and confirmation are translated in all six locales', async () => {
   const locales = await Promise.all(
-    ['en', 'zh-CN', 'zh-TW', 'ru'].map(
+    ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko'].map(
       async (locale) => (await Bun.file(`src/i18n/locales/${locale}.json`).json()).claude_reset
     )
   );
@@ -311,6 +404,7 @@ test('all grant messages and confirmation are translated in four locales', async
       'rate_limited',
       'unknown',
       'expired',
+      'cooldown_clear_failed',
     ]) {
       expect(typeof locale[key]).toBe('string');
     }
