@@ -47,6 +47,7 @@ const getBrowserLanguage = (): Language => {
   if (lower.startsWith('ru')) return 'ru';
   if (lower.startsWith('vi')) return 'vi';
   if (lower.startsWith('ko')) return 'ko';
+  if (lower.startsWith('tr')) return 'tr';
   return 'en';
 };
 
