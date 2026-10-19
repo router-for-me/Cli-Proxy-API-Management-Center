@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "連線至 CLI Proxy API v8 或更新版本",
+    "sso_button": "使用單一登入",
+    "logout_failed": "登出失敗，請再試一次。",
     "connection_current": "目前位址",
     "connection_auto_hint": "系統將自動使用目前存取位址進行連線",
     "custom_connection_label": "自訂連線位址:",

@@ -166,8 +166,13 @@ export function SystemPage() {
       message: t('system_info.clear_login_confirm'),
       variant: 'danger',
       confirmText: t('common.confirm'),
-      onConfirm: () => {
-        auth.logout();
+      onConfirm: async () => {
+        try {
+          await auth.logout();
+        } catch {
+          showNotification(t('login.logout_failed'), 'error');
+          return;
+        }
         if (typeof localStorage === 'undefined') return;
         const keysToRemove = [STORAGE_KEY_AUTH, 'isLoggedIn', 'apiBase', 'apiUrl', 'managementKey'];
         keysToRemove.forEach((key) => localStorage.removeItem(key));

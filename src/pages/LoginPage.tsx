@@ -8,6 +8,7 @@ import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { IconEye, IconEyeOff } from '@/components/ui/icons';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+import { getManagementLoginUrl } from '@/services/api/managementSession';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
@@ -91,6 +92,7 @@ export function LoginPage() {
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const oidcEnabled = useAuthStore((state) => state.oidcEnabled);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const storedBase = useAuthStore((state) => state.apiBase);
@@ -204,6 +206,7 @@ export function LoginPage() {
 
   // 显示启动动画（自动登录中或自动登录成功）
   const showSplash = autoLoading || autoLoginSuccess;
+  const managementLoginUrl = getManagementLoginUrl(apiBase || detectedBase);
 
   return (
     <div className={styles.container}>
@@ -250,6 +253,16 @@ export function LoginPage() {
                 </div>
                 <div className={styles.subtitle}>{t('login.subtitle')}</div>
               </div>
+
+              {oidcEnabled && managementLoginUrl && (
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => window.location.assign(managementLoginUrl)}
+                >
+                  {t('login.sso_button')}
+                </Button>
+              )}
 
               <div className={styles.connectionBox}>
                 <div className={styles.label}>{t('login.connection_current')}</div>

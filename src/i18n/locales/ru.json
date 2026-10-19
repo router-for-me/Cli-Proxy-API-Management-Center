@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "Подключение к CLI Proxy API v8 или новее",
+    "sso_button": "Войти через SSO",
+    "logout_failed": "Не удалось выйти. Повторите попытку.",
     "connection_current": "Текущий URL",
     "connection_auto_hint": "Система автоматически использует текущий URL для подключения",
     "custom_connection_label": "Пользовательский URL подключения:",

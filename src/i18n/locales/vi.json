@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "Vui lòng nhập thông tin kết nối để truy cập giao diện quản lý",
+    "sso_button": "Đăng nhập bằng SSO",
+    "logout_failed": "Không thể đăng xuất. Vui lòng thử lại.",
     "connection_current": "URL hiện tại",
     "connection_auto_hint": "Hệ thống sẽ tự động dùng URL hiện tại để kết nối",
     "custom_connection_label": "URL kết nối tùy chỉnh:",

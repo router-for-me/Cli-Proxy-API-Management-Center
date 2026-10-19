@@ -8,6 +8,7 @@ export interface ApiClientConfig {
   apiBase: string;
   managementKey: string;
   timeout?: number;
+  sessionAuthenticated?: boolean;
 }
 
 // API 错误
