@@ -12,7 +12,8 @@ function managementSessionEndpoint(apiBase: string, endpoint: 'session' | 'login
   try {
     const url = new URL(apiUrl);
     if (url.origin !== window.location.origin) return null;
-    return `${apiUrl}/oidc/${endpoint}`;
+    const path = endpoint === 'login' ? 'oidc/login' : endpoint;
+    return `${apiUrl}/auth/${path}`;
   } catch {
     return null;
   }

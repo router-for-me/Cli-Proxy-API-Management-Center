@@ -35,7 +35,7 @@ describe('same-origin Management API sessions', () => {
   test('discovers OIDC and authenticated browser sessions without a management key', async () => {
     setWindowOrigin('https://admin.example');
     globalThis.fetch = async (url, init) => {
-      expect(url).toBe('https://admin.example/v8/management/oidc/session');
+      expect(url).toBe('https://admin.example/v8/management/auth/session');
       expect(init?.credentials).toBe('same-origin');
       expect(init?.cache).toBe('no-store');
       return Response.json({ oidcEnabled: true, authenticated: true });
@@ -66,7 +66,7 @@ describe('same-origin Management API sessions', () => {
     setWindowOrigin('https://admin.example');
     expect(canUseManagementSession('https://admin.example')).toBe(true);
     expect(getManagementLoginUrl('https://admin.example')).toBe(
-      'https://admin.example/v8/management/oidc/login'
+      'https://admin.example/v8/management/auth/oidc/login'
     );
     expect(canUseManagementSession('https://other.example')).toBe(false);
     expect(getManagementLoginUrl('https://other.example')).toBeNull();
@@ -83,7 +83,7 @@ describe('same-origin Management API sessions', () => {
   test('logout posts the CSRF header to the v8 endpoint', async () => {
     setWindowOrigin('https://admin.example');
     globalThis.fetch = async (url, init) => {
-      expect(url).toBe('https://admin.example/v8/management/oidc/logout');
+      expect(url).toBe('https://admin.example/v8/management/auth/logout');
       expect(init?.method).toBe('POST');
       expect(init?.credentials).toBe('same-origin');
       expect(init?.headers).toEqual({ 'X-Management-CSRF': '1' });
