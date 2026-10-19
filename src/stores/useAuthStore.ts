@@ -10,6 +10,7 @@ import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { LegacyBackendError, probeLegacyBackend } from '@/services/api/legacyBackendProbe';
+import { discoverManagementSession, endManagementSession } from '@/services/api/managementSession';
 import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { useQuotaStore } from './useQuotaStore';
@@ -17,10 +18,13 @@ import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection'
 
 interface AuthStoreState extends AuthState {
   connectionStatus: ConnectionStatus;
+  oidcEnabled: boolean;
+  sessionAuthenticated: boolean;
 
   // 操作
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  clearSession: () => void;
   checkAuth: () => Promise<boolean>;
   restoreSession: () => Promise<boolean>;
   updateServerVersion: (version: string | null, buildDate?: string | null) => void;
@@ -41,6 +45,8 @@ export const useAuthStore = create<AuthStoreState>()(
       serverBuildDate: null,
       supportsPlugin: false,
       connectionStatus: 'disconnected',
+      oidcEnabled: false,
+      sessionAuthenticated: false,
 
       // 恢复会话并自动登录
       restoreSession: () => {
@@ -63,12 +69,46 @@ export const useAuthStore = create<AuthStoreState>()(
           const resolvedRememberPassword =
             rememberPassword || Boolean(managementKey) || Boolean(legacyKey);
 
+          const session = await discoverManagementSession(resolvedBase);
+          set({ oidcEnabled: session?.oidcEnabled === true });
+          if (session?.authenticated) {
+            try {
+              apiClient.setConfig({
+                apiBase: resolvedBase,
+                managementKey: '',
+                sessionAuthenticated: true,
+              });
+              useConfigStore.getState().clearCache();
+              await useConfigStore.getState().fetchConfig(true);
+              useModelsStore.getState().clearCache();
+              useQuotaStore.getState().clearQuotaCache();
+              set({
+                isAuthenticated: true,
+                apiBase: resolvedBase,
+                managementKey: '',
+                rememberPassword: false,
+                sessionAuthenticated: true,
+                connectionStatus: 'connected',
+              });
+              localStorage.removeItem('isLoggedIn');
+              return true;
+            } catch (error) {
+              console.warn('Could not restore browser management session:', error);
+              apiClient.setConfig({ apiBase: '', managementKey: '' });
+              useConfigStore.getState().clearCache();
+            }
+          }
+
           set({
             apiBase: resolvedBase,
             managementKey: resolvedKey,
             rememberPassword: resolvedRememberPassword,
           });
-          apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
+          apiClient.setConfig({
+            apiBase: resolvedBase,
+            managementKey: resolvedKey,
+            sessionAuthenticated: false,
+          });
 
           if (wasLoggedIn && resolvedBase && resolvedKey) {
             try {
@@ -132,6 +172,7 @@ export const useAuthStore = create<AuthStoreState>()(
           // 登录成功
           set({
             isAuthenticated: true,
+            sessionAuthenticated: false,
             apiBase,
             managementKey,
             rememberPassword,
@@ -149,7 +190,13 @@ export const useAuthStore = create<AuthStoreState>()(
       },
 
       // 登出
-      logout: () => {
+      logout: async () => {
+        const { sessionAuthenticated, apiBase } = get();
+        if (sessionAuthenticated) await endManagementSession(apiBase);
+        get().clearSession();
+      },
+
+      clearSession: () => {
         restoreSessionPromise = null;
         apiClient.setConfig({ apiBase: '', managementKey: '' });
         useConfigStore.getState().clearCache();
@@ -157,6 +204,7 @@ export const useAuthStore = create<AuthStoreState>()(
         useQuotaStore.getState().clearQuotaCache();
         set({
           isAuthenticated: false,
+          sessionAuthenticated: false,
           apiBase: '',
           managementKey: '',
           serverVersion: null,
@@ -169,15 +217,15 @@ export const useAuthStore = create<AuthStoreState>()(
 
       // 检查认证状态
       checkAuth: async () => {
-        const { managementKey, apiBase } = get();
+        const { managementKey, apiBase, sessionAuthenticated } = get();
 
-        if (!managementKey || !apiBase) {
+        if ((!managementKey && !sessionAuthenticated) || !apiBase) {
           return false;
         }
 
         try {
           // 重新配置客户端
-          apiClient.setConfig({ apiBase, managementKey });
+          apiClient.setConfig({ apiBase, managementKey, sessionAuthenticated });
           set({ supportsPlugin: false });
 
           // 验证连接
@@ -239,7 +287,7 @@ export const useAuthStore = create<AuthStoreState>()(
 // 监听全局未授权事件
 if (typeof window !== 'undefined') {
   window.addEventListener('unauthorized', () => {
-    useAuthStore.getState().logout();
+    useAuthStore.getState().clearSession();
   });
 
   window.addEventListener('server-version-update', ((e: CustomEvent) => {

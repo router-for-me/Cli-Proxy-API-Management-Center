@@ -20,6 +20,7 @@ class ApiClient {
   private instance: AxiosInstance;
   private apiBase: string = '';
   private managementKey: string = '';
+  private sessionAuthenticated = false;
   private connectionRevision = 0;
 
   constructor() {
@@ -38,11 +39,26 @@ class ApiClient {
    */
   setConfig(config: ApiClientConfig): void {
     const apiBase = computeApiUrl(config.apiBase);
-    if (apiBase !== this.apiBase || config.managementKey !== this.managementKey) {
+    const sessionAuthenticated = config.sessionAuthenticated === true;
+    if (sessionAuthenticated) {
+      if (
+        !apiBase ||
+        typeof window === 'undefined' ||
+        new URL(apiBase).origin !== window.location.origin
+      ) {
+        throw new Error('Browser management sessions require a same-origin API');
+      }
+    }
+    if (
+      apiBase !== this.apiBase ||
+      config.managementKey !== this.managementKey ||
+      sessionAuthenticated !== this.sessionAuthenticated
+    ) {
       this.connectionRevision += 1;
     }
     this.apiBase = apiBase;
     this.managementKey = config.managementKey;
+    this.sessionAuthenticated = sessionAuthenticated;
 
     if (config.timeout) {
       this.instance.defaults.timeout = config.timeout;
@@ -116,9 +132,13 @@ class ApiClient {
       (config) => {
         // 设置 baseURL
         config.baseURL = this.apiBase;
+        config.withCredentials = this.sessionAuthenticated;
 
         // 添加认证头
-        if (this.managementKey) {
+        if (this.sessionAuthenticated) {
+          delete config.headers.Authorization;
+          config.headers['X-Management-CSRF'] = '1';
+        } else if (this.managementKey) {
           config.headers.Authorization = `Bearer ${this.managementKey}`;
         }
 

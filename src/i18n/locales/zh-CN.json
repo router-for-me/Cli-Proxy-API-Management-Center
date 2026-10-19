@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "连接 CLI Proxy API v8 或更高版本",
+    "sso_button": "使用单点登录",
+    "logout_failed": "退出登录失败，请重试。",
     "connection_current": "当前地址",
     "connection_auto_hint": "系统将自动使用当前访问地址进行连接",
     "custom_connection_label": "自定义连接地址:",

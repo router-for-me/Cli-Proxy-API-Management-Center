@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "Connect to CLI Proxy API v8 or later",
+    "sso_button": "Sign in with SSO",
+    "logout_failed": "Could not sign out. Please try again.",
     "connection_current": "Current URL",
     "connection_auto_hint": "The system will automatically use the current URL for connection",
     "custom_connection_label": "Custom Connection URL:",

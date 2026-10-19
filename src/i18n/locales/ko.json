@@ -66,6 +66,8 @@
   },
   "login": {
     "subtitle": "CLI Proxy API v8 이상 버전에 연결",
+    "sso_button": "SSO로 로그인",
+    "logout_failed": "로그아웃할 수 없습니다. 다시 시도해 주세요.",
     "connection_current": "현재 URL",
     "connection_auto_hint": "시스템이 자동으로 현재 URL을 사용하여 연결합니다",
     "custom_connection_label": "사용자 지정 연결 URL:",

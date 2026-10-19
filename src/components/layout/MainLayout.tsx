@@ -1131,7 +1131,14 @@ export function MainLayout() {
               </div>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={logout} title={t('header.logout')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              void logout().catch(() => showNotification(t('login.logout_failed'), 'error'));
+            }}
+            title={t('header.logout')}
+          >
             {headerIcons.logout}
           </Button>
         </div>
