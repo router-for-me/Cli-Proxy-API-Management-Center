@@ -34,6 +34,8 @@ import { resolveAuthFileQuotaType } from '@/features/authFiles/logic';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFileCooldownSection } from './AuthFileCooldownSection';
+import { supportsSiwcBinding } from '../siwcBinding';
+import { SiwcBindDialog } from './SiwcBindDialog';
 import styles from './AuthFileCard.module.scss';
 
 export type AuthFileCardProps = {
@@ -48,7 +50,7 @@ export type AuthFileCardProps = {
   cooldownResetting: Record<string, boolean>;
   quotaFilterType: AuthFileQuotaFilter;
   statusBarCache: Map<string, AuthFileStatusBarData>;
-  /** 首屏一次性级联入场的延迟；null/undefined 表示不做入场动画。 */
+  /** One-time entrance delay; null/undefined disables entrance motion. */
   entranceDelayMs?: number | null;
   onShowModels: (file: AuthFileItem) => void;
   onDownload: (name: string) => void;
@@ -62,6 +64,7 @@ export type AuthFileCardProps = {
 
 export function AuthFileCard(props: AuthFileCardProps) {
   const { t } = useTranslation();
+  const [siwcOpen, setSiwcOpen] = useState(false);
   const {
     file,
     compact,
@@ -111,10 +114,10 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const priorityValue = Number.isSafeInteger(file.priority) ? file.priority : undefined;
   const weightValue = Number.isSafeInteger(file.weight) ? file.weight : undefined;
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
-  // 主行显示账号（email/项目 ID），文件名降为满卡宽的 mono 副行
+  // Lead with account identity and use the file name as secondary text.
   const identity = deriveAuthFileIdentity(file);
 
-  // 挂载时捕获一次入场延迟：父级随后传 null 也不会中断已开始的动画
+  // Capture the entrance delay once so subsequent updates do not interrupt it.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
   const cardClasses = [
     styles.card,
@@ -250,8 +253,33 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />
       )}
 
+      {supportsSiwcBinding(file) && (
+        <p>
+          {t(
+            file.useSiwc && file.siwcBound
+              ? 'siwc.active'
+              : file.siwcBound
+                ? 'siwc.bound'
+                : 'siwc.unbound'
+          )}
+          {file.siwcExpiresAt && <> · {t('siwc.expires', { date: file.siwcExpiresAt })}</>}
+        </p>
+      )}
+      {siwcOpen && (
+        <SiwcBindDialog key={file.name} name={file.name} onClose={() => setSiwcOpen(false)} />
+      )}
       <footer className={styles.actions}>
         <div className={styles.actionsMain}>
+          {supportsSiwcBinding(file) && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={disableControls || deleting === file.name}
+              onClick={() => setSiwcOpen(true)}
+            >
+              {t(file.siwcBound ? 'siwc.rebind' : 'siwc.bind')}
+            </Button>
+          )}
           {showModelsButton && (
             <Button
               variant="secondary"
