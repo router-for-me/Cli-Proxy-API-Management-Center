@@ -1,5 +1,5 @@
 import type { AuthFileItem } from '@/types';
-import { isRuntimeOnlyAuthFile, normalizeProviderKey } from './constants';
+import { isRuntimeOnlyAuthFile, normalizeProviderKey } from '@/features/authFiles/constants';
 
 export function supportsSiwcBinding(file: AuthFileItem): boolean {
   return (
@@ -7,6 +7,19 @@ export function supportsSiwcBinding(file: AuthFileItem): boolean {
     !isRuntimeOnlyAuthFile(file) &&
     normalizeProviderKey(String(file.type ?? file.provider ?? '')) === 'codex'
   );
+}
+
+/** Credentials that can be picked as the SIWC binding target, sorted by name. */
+export function listSiwcTargets(files: readonly AuthFileItem[]): AuthFileItem[] {
+  return files
+    .filter(supportsSiwcBinding)
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
+export type SiwcBindingStatus = 'active' | 'bound' | 'unbound';
+
+export function getSiwcBindingStatus(file: AuthFileItem): SiwcBindingStatus {
+  return file.useSiwc && file.siwcBound ? 'active' : file.siwcBound ? 'bound' : 'unbound';
 }
 
 /** Validate the fixed redirect URI without rewriting the pasted callback. */

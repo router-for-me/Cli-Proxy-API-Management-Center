@@ -2,9 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import {
   createSiwcStart,
+  getSiwcBindingStatus,
   isSiwcCallbackValid,
+  listSiwcTargets,
   supportsSiwcBinding,
-} from '@/features/authFiles/siwcBinding';
+} from '@/features/oauth/siwcBinding';
 import { normalizeAuthFilesResponse } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
 import { oauthApi } from '@/services/api/oauth';
@@ -100,6 +102,37 @@ describe('SIWC binding', () => {
     }
   });
 
+  test('lists only bindable Codex credentials and derives status', () => {
+    const { files } = normalizeAuthFilesResponse({
+      files: [
+        { name: 'b.json', type: 'codex', siwc_bind_supported: true, siwc_bound: true },
+        { name: 'claude.json', type: 'claude', siwc_bind_supported: true },
+        { name: 'a.json', type: 'codex', siwc_bind_supported: true },
+        { name: 'c.json', type: 'codex' },
+        {
+          name: 'd.json',
+          type: 'codex',
+          siwc_bind_supported: true,
+          siwc_bound: true,
+          use_siwc: true,
+        },
+      ],
+    });
+    const targets = listSiwcTargets(files);
+    expect(targets.map((file) => file.name)).toEqual(['a.json', 'b.json', 'd.json']);
+    expect(targets.map(getSiwcBindingStatus)).toEqual(['unbound', 'bound', 'active']);
+  });
+
+  test('binding entry lives on the OAuth page, not on auth file cards', () => {
+    const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
+    const page = read('../src/features/oauth/OAuthPage.tsx');
+    expect(page).toContain('<SiwcBindDialog');
+    const card = read('../src/features/authFiles/components/AuthFileCard.tsx');
+    expect(card).not.toContain('SiwcBindDialog');
+    expect(card).not.toContain('siwc.rebind');
+    expect(card).toContain('<SiwcStatusBadge');
+  });
+
   test('target attempts are independent and invalidation suppresses stale completion', async () => {
     let tick: (() => void) | undefined;
     const attempts = createOAuthAttempts({
@@ -139,7 +172,7 @@ describe('SIWC binding', () => {
 
   test('dialog keeps cancellation, connection guards and completion refresh wired', () => {
     const source = readFileSync(
-      new URL('../src/features/authFiles/components/SiwcBindDialog.tsx', import.meta.url),
+      new URL('../src/features/oauth/components/SiwcBindDialog.tsx', import.meta.url),
       'utf8'
     );
     for (const contract of [
@@ -152,6 +185,11 @@ describe('SIWC binding', () => {
       'cancel: api.cancel',
       'startup.close()',
       'startRef.current?.start()',
+      'authFilesApi',
+      'listSiwcTargets(response.files)',
+      'setRun((value) => value + 1)',
+      '}, [name, run]);',
+      'type="radio"',
       'notifyAuthFilesChanged()',
       'error.status === 404',
       "'unsupported'",
@@ -164,7 +202,7 @@ describe('SIWC binding', () => {
       const messages = JSON.parse(
         readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
       ).siwc;
-      expect(Object.keys(messages)).toHaveLength(29);
+      expect(Object.keys(messages)).toHaveLength(32);
       expect(
         Object.values(messages).every((value) => typeof value === 'string' && value.length > 0)
       ).toBe(true);

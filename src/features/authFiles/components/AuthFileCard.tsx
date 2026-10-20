@@ -16,7 +16,7 @@ import {
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import type { AuthFileItem } from '@/types';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
-import { formatFileSize } from '@/utils/format';
+import { formatDateTimeValue, formatFileSize } from '@/utils/format';
 import {
   formatModified,
   getAuthFileStatusMessage,
@@ -34,8 +34,8 @@ import { resolveAuthFileQuotaType } from '@/features/authFiles/logic';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFileCooldownSection } from './AuthFileCooldownSection';
-import { supportsSiwcBinding } from '../siwcBinding';
-import { SiwcBindDialog } from './SiwcBindDialog';
+import { getSiwcBindingStatus, supportsSiwcBinding } from '@/features/oauth/siwcBinding';
+import { SiwcStatusBadge } from '@/features/oauth/components/SiwcStatusBadge';
 import styles from './AuthFileCard.module.scss';
 
 export type AuthFileCardProps = {
@@ -63,8 +63,7 @@ export type AuthFileCardProps = {
 };
 
 export function AuthFileCard(props: AuthFileCardProps) {
-  const { t } = useTranslation();
-  const [siwcOpen, setSiwcOpen] = useState(false);
+  const { t, i18n } = useTranslation();
   const {
     file,
     compact,
@@ -116,6 +115,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   // Lead with account identity and use the file name as secondary text.
   const identity = deriveAuthFileIdentity(file);
+  const siwcExpires = file.siwcExpiresAt
+    ? formatDateTimeValue(file.siwcExpiresAt, i18n.language)
+    : '';
 
   // Capture the entrance delay once so subsequent updates do not interrupt it.
   const [mountEntranceDelayMs] = useState<number | null>(entranceDelayMs ?? null);
@@ -249,37 +251,23 @@ export function AuthFileCard(props: AuthFileCardProps) {
         )}
       </div>
 
+      {supportsSiwcBinding(file) && (
+        <div className={styles.siwcRow}>
+          <SiwcStatusBadge status={getSiwcBindingStatus(file)} />
+          {siwcExpires && (
+            <span className={styles.siwcExpires} title={file.siwcExpiresAt}>
+              {t('siwc.expires', { date: siwcExpires })}
+            </span>
+          )}
+        </div>
+      )}
+
       {showQuotaLayout && quotaType && (
         <AuthFileQuotaSection file={file} quotaType={quotaType} disableControls={disableControls} />
       )}
 
-      {supportsSiwcBinding(file) && (
-        <p>
-          {t(
-            file.useSiwc && file.siwcBound
-              ? 'siwc.active'
-              : file.siwcBound
-                ? 'siwc.bound'
-                : 'siwc.unbound'
-          )}
-          {file.siwcExpiresAt && <> · {t('siwc.expires', { date: file.siwcExpiresAt })}</>}
-        </p>
-      )}
-      {siwcOpen && (
-        <SiwcBindDialog key={file.name} name={file.name} onClose={() => setSiwcOpen(false)} />
-      )}
       <footer className={styles.actions}>
         <div className={styles.actionsMain}>
-          {supportsSiwcBinding(file) && (
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={disableControls || deleting === file.name}
-              onClick={() => setSiwcOpen(true)}
-            >
-              {t(file.siwcBound ? 'siwc.rebind' : 'siwc.bind')}
-            </Button>
-          )}
           {showModelsButton && (
             <Button
               variant="secondary"
