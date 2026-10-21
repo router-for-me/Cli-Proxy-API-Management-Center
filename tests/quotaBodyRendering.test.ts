@@ -129,6 +129,74 @@ describe('CodexQuotaBody', () => {
     expect(markup).toMatch(/3 hours/);
   });
 
+  test('renders when a passive image reading was observed', () => {
+    // Mid-hour, so a frozen useNow() from an earlier module load still reads "2 hours".
+    const observedAtMs = now - 2.5 * HOUR_MS;
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, {
+        quota: {
+          ...quota,
+          windows: [
+            ...quota.windows,
+            {
+              id: 'image-imagegen-premium',
+              label: 'Image 24h limit',
+              labelKey: 'codex_quota.image_window',
+              labelParams: { hours: 24 },
+              usedPercent: 5,
+              resetLabel: formatInstantShort(now + 20 * HOUR_MS),
+              resetAtMs: now + 20 * HOUR_MS,
+              periodHours: 24,
+              observedAtMs,
+            },
+          ],
+        },
+        classes,
+      })
+    );
+
+    expect(markup).toContain('Image 24h limit');
+    expect(markup).toContain('95%');
+    expect(markup).toContain(`Observed ${formatInstantShort(observedAtMs)}`);
+    expect(markup).toMatch(/2 hours ago/);
+    // Live /wham/usage windows carry no observation time.
+    expect(markup.match(/Observed /g)).toHaveLength(1);
+  });
+
+  test('drops a passive reading once its window resets while the page stays open', () => {
+    const passive = {
+      id: 'image-imagegen-premium',
+      label: 'Image 24h limit',
+      labelKey: 'codex_quota.image_window',
+      labelParams: { hours: 24 },
+      usedPercent: 5,
+      resetLabel: formatInstantShort(now - HOUR_MS),
+      resetAtMs: now - HOUR_MS,
+      periodHours: 24,
+      observedAtMs: now - 3 * HOUR_MS,
+    };
+    const live = {
+      id: 'weekly',
+      label: 'Weekly limit',
+      usedPercent: 40,
+      resetLabel: formatInstantShort(now - HOUR_MS),
+      resetAtMs: now - HOUR_MS,
+      periodHours: 168,
+    };
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, {
+        quota: { ...quota, windows: [passive, live] },
+        classes,
+      })
+    );
+
+    expect(markup).not.toContain('95%');
+    expect(markup).toContain('--');
+    expect(markup).toContain(`Observed ${formatInstantShort(now - 3 * HOUR_MS)}`);
+    // Live /wham/usage windows keep their reading until the next fetch.
+    expect(markup).toContain('60%');
+  });
+
   test('renders reset-credit expiry in local time with a countdown', () => {
     const markup = renderToStaticMarkup(createElement(CodexQuotaBody, { quota, classes }));
 
