@@ -291,6 +291,8 @@ export interface CodexQuotaWindow {
   resetAtMs?: number | null;
   /** Window length in hours, from the payload's limit_window_seconds. */
   periodHours?: number | null;
+  /** When a passive reading was observed; absent for live /wham/usage windows. */
+  observedAtMs?: number | null;
 }
 
 export interface CodexQuotaState {

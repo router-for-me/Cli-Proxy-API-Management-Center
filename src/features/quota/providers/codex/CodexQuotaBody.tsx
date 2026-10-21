@@ -175,7 +175,12 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
         <div className={classes.quotaMessage}>{t('codex_quota.empty_windows')}</div>
       ) : (
         windows.map((window, index) => {
-          const used = window.usedPercent;
+          // A passive reading whose window reset after it was observed has unknown usage.
+          const expired =
+            typeof window.observedAtMs === 'number' &&
+            typeof window.resetAtMs === 'number' &&
+            window.resetAtMs <= now;
+          const used = expired ? null : window.usedPercent;
           const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
           const remaining =
             clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
@@ -183,7 +188,18 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
           const windowLabel = window.labelKey
             ? t(window.labelKey, window.labelParams as Record<string, string | number>)
             : window.label;
-          const resetDisplay = buildResetDisplay(window.resetLabel, window.resetAtMs, now, locale);
+          const resetDisplay = expired
+            ? null
+            : buildResetDisplay(window.resetLabel, window.resetAtMs, now, locale);
+          const observedDisplay =
+            typeof window.observedAtMs === 'number'
+              ? buildResetDisplay(
+                  t('codex_quota.observed_at', { time: formatInstantShort(window.observedAtMs) }),
+                  window.observedAtMs,
+                  now,
+                  locale
+                )
+              : null;
 
           const soon = window.id === soonestRowId;
 
@@ -203,6 +219,11 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
                 </div>
               </div>
               <QuotaMeter percent={remaining} classes={classes} index={index} />
+              {observedDisplay && (
+                <div className={classes.quotaMeta}>
+                  <QuotaResetLabel display={observedDisplay} classes={classes} />
+                </div>
+              )}
             </div>
           );
         })

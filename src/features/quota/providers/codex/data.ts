@@ -35,6 +35,8 @@ import {
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
   formatCodexResetLabel,
+  formatInstantShort,
+  parseIsoToMs,
   createStatusError,
   isCodexFile,
   isDisabledAuthFile,
@@ -289,6 +291,71 @@ export const buildCodexQuotaWindows = (
   return windows;
 };
 
+const CODEX_IMAGE_LIMIT_PREFIX = 'imagegen';
+
+/**
+ * Image generation draws its own limit (`X-Codex-Active-Limit: imagegen_*`), which
+ * /wham/usage never lists. The backend keeps the image response headers per model
+ * in `model_quotas`; the reading is passive and refreshes only when an image is
+ * generated, so each window carries its observation time.
+ */
+export const buildCodexImageQuotaWindows = (
+  file: AuthFileItem,
+  t: TFunction,
+  now: number = Date.now()
+): CodexQuotaWindow[] => {
+  const modelQuotas = file['model_quotas'];
+  if (!isRecord(modelQuotas)) return [];
+
+  type Reading = { signals: Map<string, string>; observedAtMs: number | null };
+  const latestByLimit = new Map<string, Reading>();
+  for (const observation of Object.values(modelQuotas)) {
+    if (!isRecord(observation) || !isRecord(observation.signals)) continue;
+    const signals = new Map<string, string>();
+    for (const [key, value] of Object.entries(observation.signals)) {
+      if (typeof value === 'string') signals.set(key.toLowerCase(), value.trim());
+    }
+    const limit = signals.get('x-codex-active-limit')?.toLowerCase() ?? '';
+    if (!limit.startsWith(CODEX_IMAGE_LIMIT_PREFIX)) continue;
+    const observedAtMs = parseIsoToMs(observation.observed_at);
+    const previous = latestByLimit.get(limit);
+    if (previous && (previous.observedAtMs ?? 0) >= (observedAtMs ?? 0)) continue;
+    latestByLimit.set(limit, { signals, observedAtMs });
+  }
+
+  return [...latestByLimit.entries()].map(([limit, { signals, observedAtMs }]) => {
+    const minutes = normalizeNumberValue(signals.get('x-codex-primary-window-minutes'));
+    const periodHours = minutes !== null && minutes > 0 ? minutes / 60 : null;
+    const hours = periodHours === null ? null : Math.round(periodHours * 10) / 10;
+    let usedPercent = normalizeNumberValue(signals.get('x-codex-primary-used-percent'));
+    // Reset-After counts from the observation, not from now.
+    let resetAtMs =
+      resolveResetMs([signals.get('x-codex-primary-reset-at')]) ??
+      (observedAtMs === null
+        ? null
+        : parseOffsetSecondsToMs(signals.get('x-codex-primary-reset-after-seconds'), observedAtMs));
+    // A window that reset after the reading has unknown usage, not the old usage.
+    if (resetAtMs !== null && resetAtMs <= now) {
+      usedPercent = null;
+      resetAtMs = null;
+    }
+    const labelKey =
+      hours === null ? 'codex_quota.image_window_untimed' : 'codex_quota.image_window';
+    const labelParams = hours === null ? undefined : { hours };
+    return {
+      id: `image-${limit.replace(/[^a-z0-9]+/g, '-')}`,
+      label: t(labelKey, labelParams),
+      labelKey,
+      labelParams,
+      usedPercent,
+      resetAtMs,
+      periodHours,
+      resetLabel: resetAtMs === null ? '-' : formatInstantShort(resetAtMs),
+      observedAtMs,
+    };
+  });
+};
+
 export const normalizeCodexAccountCredits = (
   credits: CodexAccountCredits | null | undefined
 ): { balance: string | null; unlimited: boolean } => {
@@ -463,7 +530,7 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     rateLimitResetCreditsAvailableCount;
   const planType = planTypeFromUsage ?? planTypeFromFile;
   const subscriptionActiveUntil = liveSubscriptionActiveUntil ?? subscriptionActiveUntilFromFile;
-  const windows = buildCodexQuotaWindows(payload, t);
+  const windows = [...buildCodexQuotaWindows(payload, t), ...buildCodexImageQuotaWindows(file, t)];
   return {
     planType,
     subscriptionActiveUntil,
