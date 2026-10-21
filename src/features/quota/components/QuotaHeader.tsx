@@ -10,6 +10,10 @@ export type QuotaHeaderProps = {
   refreshing: boolean;
   disableControls: boolean;
   onRefreshAll: () => void;
+  greetingCount: number;
+  greetingRunning: boolean;
+  greetingProgress: { done: number; total: number; success: number; failed: number } | null;
+  onSendGreetings: () => void;
 };
 
 /**
@@ -20,8 +24,18 @@ export type QuotaHeaderProps = {
  * （标题 0ms → meta 70ms → 动作 140ms → tabs 210ms）。
  */
 export function QuotaHeader(props: QuotaHeaderProps) {
-  const { totalCount, loadedCount, attentionCount, refreshing, disableControls, onRefreshAll } =
-    props;
+  const {
+    totalCount,
+    loadedCount,
+    attentionCount,
+    refreshing,
+    disableControls,
+    onRefreshAll,
+    greetingCount,
+    greetingRunning,
+    greetingProgress,
+    onSendGreetings,
+  } = props;
   const { t } = useTranslation();
   // 批量结果陆续落地时，「已加载」是页面上唯一滚动的数字
   const displayLoadedCount = useCountUp(loadedCount);
@@ -57,6 +71,19 @@ export function QuotaHeader(props: QuotaHeaderProps) {
       <div className={styles.actions} data-reveal>
         <button
           type="button"
+          className={styles.secondaryAction}
+          onClick={onSendGreetings}
+          disabled={disableControls || refreshing || greetingRunning || greetingCount === 0}
+        >
+          {greetingRunning && greetingProgress
+            ? t('quota_management.greeting_progress', {
+                done: greetingProgress.done,
+                total: greetingProgress.total,
+              })
+            : t('quota_management.greeting_action', { count: greetingCount })}
+        </button>
+        <button
+          type="button"
           className={styles.primaryAction}
           onClick={onRefreshAll}
           disabled={disableControls || refreshing}
@@ -65,6 +92,14 @@ export function QuotaHeader(props: QuotaHeaderProps) {
           {t('quota_management.refresh_all_credentials')}
         </button>
       </div>
+      {greetingProgress && !greetingRunning && (
+        <p className={styles.greetingStatus} role="status">
+          {t('quota_management.greeting_result', {
+            success: greetingProgress.success,
+            failed: greetingProgress.failed,
+          })}
+        </p>
+      )}
     </header>
   );
 }
