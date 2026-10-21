@@ -50,6 +50,7 @@ import type { QuotaProviderType } from './providers/types';
 import { useDevinQuotaAutoLoad } from './providers/devin/useDevinQuotaAutoLoad';
 import { useQuotaActions } from './hooks/useQuotaActions';
 import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
+import { useUsageWindowTrigger } from './hooks/useUsageWindowTrigger';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
 import styles from './QuotaPage.module.scss';
 
@@ -252,6 +253,12 @@ export function QuotaPage() {
 
   const { batchLoading, loadQuota } = useQuotaBatchLoader();
   const { resettingQuotaName, refreshQuota, resetQuota } = useQuotaActions(disableControls);
+  const {
+    trigger: sendGreetings,
+    targetCount: greetingCount,
+    progress: greetingProgress,
+    running: greetingRunning,
+  } = useUsageWindowTrigger(files, disableControls, sessionGeneration);
 
   const pendingRefreshRef = useRef<number | null>(null);
   const prevLoadingRef = useRef(loading);
@@ -332,6 +339,10 @@ export function QuotaPage() {
         refreshing={loading || batchLoading}
         disableControls={disableControls}
         onRefreshAll={handleRefreshAll}
+        greetingCount={greetingCount}
+        greetingRunning={greetingRunning}
+        greetingProgress={greetingProgress}
+        onSendGreetings={sendGreetings}
       />
 
       <section className={styles.workbench}>

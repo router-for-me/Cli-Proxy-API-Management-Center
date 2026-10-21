@@ -82,14 +82,12 @@
 }
 
 /* 墨色药丸主按钮（深色主题自动反相） */
-.primaryAction {
+.primaryAction,
+.secondaryAction {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  border: 0;
   cursor: pointer;
-  background: var(--text-primary);
-  color: var(--bg-secondary);
   border-radius: $radius-full;
   padding: 10px 18px;
   font-size: 13.5px;
@@ -115,12 +113,36 @@
   }
 }
 
+.primaryAction {
+  border: 0;
+  background: var(--text-primary);
+  color: var(--bg-secondary);
+}
+
+.secondaryAction {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .primaryAction:hover:not(:disabled) {
     transform: translateY(-1px);
     background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
     box-shadow: 0 12px 26px color-mix(in srgb, var(--text-primary) 22%, transparent);
   }
+
+  .secondaryAction:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: var(--bg-tertiary);
+  }
+}
+
+.greetingStatus {
+  width: 100%;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .spinning {
@@ -145,11 +167,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryAction {
+  .primaryAction,
+  .secondaryAction {
     transition: none;
   }
 
-  .primaryAction:active:not(:disabled) {
+  .primaryAction:active:not(:disabled),
+  .secondaryAction:active:not(:disabled) {
     transform: none;
   }
 
