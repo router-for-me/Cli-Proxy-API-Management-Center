@@ -395,6 +395,8 @@
     "weight_invalid_max": "Weight cannot exceed 1,000,000.",
     "disable_cooling_label": "Disable exponential cooldown (disable_cooling)",
     "disable_cooling_hint": "Skip failure cooldown and exponential backoff only for this credential; other credentials are unaffected.",
+    "use_siwc_label": "Use SIWC (use_siwc)",
+    "use_siwc_hint": "Use the bound SIWC credential when enabled. Turning this off only disables SIWC and preserves binding data. Complete binding before enabling.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Enable Responses API websocket transport for this credential.",
     "using_api_label": "Use official API (using_api)",

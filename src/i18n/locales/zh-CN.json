@@ -393,6 +393,8 @@
     "weight_invalid_max": "权重不能超过 1,000,000。",
     "disable_cooling_label": "禁用指数冷却（disable_cooling）",
     "disable_cooling_hint": "开启后，仅当前凭证跳过失败后的冷却与指数退避；其他凭证不受影响。",
+    "use_siwc_label": "使用 SIWC（use_siwc）",
+    "use_siwc_hint": "启用后使用已绑定的 SIWC 凭证。关闭仅停用 SIWC，不会删除绑定数据；启用前请先完成绑定。",
     "websockets_label": "WebSockets（websockets）",
     "websockets_hint": "为该凭证开启 Responses API 的 websocket 传输。",
     "using_api_label": "使用官方 API（using_api）",

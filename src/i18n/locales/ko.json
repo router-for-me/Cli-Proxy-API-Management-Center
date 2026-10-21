@@ -395,6 +395,8 @@
     "weight_invalid_max": "가중치는 1,000,000을 초과할 수 없습니다.",
     "disable_cooling_label": "지수 쿨다운 비활성화 (disable_cooling)",
     "disable_cooling_hint": "이 자격 증명에 대해서만 실패 쿨다운 및 지수 백오프를 건너뜁니다. 다른 자격 증명에는 영향을 주지 않습니다.",
+    "use_siwc_label": "SIWC 사용 (use_siwc)",
+    "use_siwc_hint": "활성화하면 연결된 SIWC 자격 증명을 사용합니다. 끄면 SIWC만 비활성화되며 연결 데이터는 유지됩니다. 활성화하기 전에 연결을 완료하세요.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "이 자격 증명에 대해 Responses API WebSocket 전송을 활성화합니다.",
     "using_api_label": "공식 API 사용 (using_api)",

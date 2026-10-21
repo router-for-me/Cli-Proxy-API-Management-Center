@@ -398,6 +398,8 @@
     "weight_invalid_max": "Вес не может превышать 1 000 000.",
     "disable_cooling_label": "Отключить экспоненциальный cooldown (disable_cooling)",
     "disable_cooling_hint": "Отключает cooldown после ошибок и экспоненциальную задержку только для этих учётных данных; остальные не затрагиваются.",
+    "use_siwc_label": "Использовать SIWC (use_siwc)",
+    "use_siwc_hint": "Использовать привязанные учётные данные SIWC. Выключение отключает SIWC, сохраняя данные привязки. Перед включением выполните привязку.",
     "websockets_label": "WebSockets (websockets)",
     "websockets_hint": "Включает websocket-транспорт Responses API для этих учётных данных.",
     "using_api_label": "Использовать официальный API (using_api)",

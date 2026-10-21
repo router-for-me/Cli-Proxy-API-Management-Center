@@ -346,6 +346,8 @@
     "weight_invalid_max": "Trọng số không được vượt quá 1.000.000.",
     "disable_cooling_label": "Tắt cooldown lũy thừa (disable_cooling)",
     "disable_cooling_hint": "Bỏ qua cooldown thất bại và backoff lũy thừa chỉ cho credential này; các credential khác không bị ảnh hưởng.",
+    "use_siwc_label": "Sử dụng SIWC (use_siwc)",
+    "use_siwc_hint": "Sử dụng thông tin xác thực SIWC đã liên kết khi bật. Tắt chỉ vô hiệu hóa SIWC và giữ nguyên dữ liệu liên kết. Hoàn tất liên kết trước khi bật.",
     "websockets_label": "WebSocket (websockets)",
     "websockets_hint": "Bật truyền tải websocket của Responses API cho credential này.",
     "using_api_label": "Dùng API chính thức (using_api)",
