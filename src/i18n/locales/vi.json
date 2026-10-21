@@ -828,6 +828,7 @@
     "plugin_oauth_hint": "Đăng nhập {{name}} qua luồng OAuth của plugin, tự động lấy và lưu file xác thực.",
     "plugin_open_link": "Mở liên kết",
     "plugin_copy_link": "Sao chép liên kết",
+    "plugin_open_in_new_tab": "Mở trong tab mới",
     "plugin_oauth_status_waiting": "Đang chờ xác thực...",
     "plugin_oauth_status_success": "Xác thực thành công!",
     "plugin_oauth_status_error": "Xác thực thất bại:",
