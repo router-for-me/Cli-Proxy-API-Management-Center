@@ -137,6 +137,20 @@ export const CODEX_REQUEST_HEADERS = {
   'User-Agent': 'codex-tui/0.149.1 (Mac OS 26.5.2; arm64) iTerm.app/3.6.11 (codex-tui; 0.149.1)',
 };
 
+// Subscriptions is a ChatGPT web endpoint; keep these headers separate from
+// the Codex WHAM usage and reset requests.
+export const CODEX_SUBSCRIPTION_REQUEST_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  Accept: '*/*',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'OAI-Language': 'en-US',
+  Referer: 'https://chatgpt.com/',
+  'X-OpenAI-Target-Path': '/backend-api/subscriptions',
+  'X-OpenAI-Target-Route': '/backend-api/subscriptions',
+};
+
 // Kimi API configuration
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 export const KIMI_AI_USAGE_URL = 'https://api.kimi.ai/coding/v1/usages';

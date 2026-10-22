@@ -21,6 +21,7 @@ import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
   CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL,
   CODEX_SUBSCRIPTION_URL,
+  CODEX_SUBSCRIPTION_REQUEST_HEADERS,
   CODEX_USAGE_URL,
   CODEX_REQUEST_HEADERS,
   normalizeNumberValue,
@@ -33,7 +34,6 @@ import {
   resolveResetMs,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
-  resolveCodexSubscriptionActiveUntil,
   formatCodexResetLabel,
   createStatusError,
   isCodexFile,
@@ -54,6 +54,7 @@ type CodexResetCreditsData = {
 export type CodexQuotaData = {
   planType: string | null;
   subscriptionActiveUntil: string | number | null;
+  subscriptionStatus: 'live' | 'unavailable';
   creditBalance: string | null;
   creditsUnlimited: boolean;
   rateLimitResetCreditsAvailableCount: number | null;
@@ -315,32 +316,45 @@ const buildCodexRequestHeader = (file: AuthFileItem): Record<string, string> => 
   return requestHeader;
 };
 
-const parseCodexSubscriptionActiveUntil = (payload: unknown): string | number | null => {
+// undefined means the current subscription could not be verified; null means
+// the live response explicitly has no renewal date. Neither can revive a date
+// embedded in an older credential: token refresh may retain old subscription claims.
+const parseCodexSubscriptionActiveUntil = (
+  payload: unknown
+): string | number | null | undefined => {
   if (typeof payload === 'string') {
     const trimmed = payload.trim();
-    if (!trimmed) return null;
+    if (!trimmed) return undefined;
     try {
       return parseCodexSubscriptionActiveUntil(JSON.parse(trimmed));
     } catch {
-      return null;
+      return undefined;
     }
   }
 
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
   const subscription = payload as Record<string, unknown>;
-  const value = subscription.active_until ?? subscription.activeUntil;
+  if (subscription.error || subscription.success === false) return undefined;
+  const value = Object.prototype.hasOwnProperty.call(subscription, 'active_until')
+    ? subscription.active_until
+    : subscription.activeUntil;
+  if (value === null || (typeof value === 'string' && value.trim() === '')) return null;
   const numberValue = normalizeNumberValue(value);
-  if (numberValue !== null && numberValue !== 0) return numberValue;
+  if (numberValue === 0) return null;
   const stringValue = normalizeStringValue(value);
-  return stringValue && stringValue !== '0' ? stringValue : null;
+  const normalizedValue = numberValue ?? stringValue;
+  const instant = resolveResetMs([normalizedValue]);
+  return instant !== null && Number.isFinite(new Date(instant).getTime())
+    ? (normalizedValue ?? undefined)
+    : undefined;
 };
 
 const fetchCodexSubscriptionActiveUntil = async (
   authIndex: string,
   accountId: string | null,
   requestHeader: Record<string, string>
-): Promise<string | number | null> => {
-  if (!accountId) return null;
+): Promise<string | number | null | undefined> => {
+  if (!accountId) return undefined;
 
   try {
     const result = await apiCallApi.request(
@@ -348,14 +362,14 @@ const fetchCodexSubscriptionActiveUntil = async (
         authIndex,
         method: 'GET',
         url: `${CODEX_SUBSCRIPTION_URL}?account_id=${encodeURIComponent(accountId)}`,
-        header: requestHeader,
+        header: { ...requestHeader, ...CODEX_SUBSCRIPTION_REQUEST_HEADERS },
       },
       { timeout: CODEX_OPTIONAL_REQUEST_TIMEOUT_MS }
     );
-    if (result.statusCode < 200 || result.statusCode >= 300) return null;
+    if (result.statusCode < 200 || result.statusCode >= 300) return undefined;
     return parseCodexSubscriptionActiveUntil(result.body ?? result.bodyText);
   } catch {
-    return null;
+    return undefined;
   }
 };
 
@@ -423,7 +437,6 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
   }
 
   const planTypeFromFile = resolveCodexPlanType(file);
-  const subscriptionActiveUntilFromFile = resolveCodexSubscriptionActiveUntil(file);
   const accountId = resolveCodexChatgptAccountId(file);
   const requestHeader = buildCodexRequestHeader(file);
 
@@ -462,11 +475,11 @@ const fetchCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     resetCreditsData.applicableAvailableCount ??
     rateLimitResetCreditsAvailableCount;
   const planType = planTypeFromUsage ?? planTypeFromFile;
-  const subscriptionActiveUntil = liveSubscriptionActiveUntil ?? subscriptionActiveUntilFromFile;
   const windows = buildCodexQuotaWindows(payload, t);
   return {
     planType,
-    subscriptionActiveUntil,
+    subscriptionActiveUntil: liveSubscriptionActiveUntil ?? null,
+    subscriptionStatus: liveSubscriptionActiveUntil === undefined ? 'unavailable' : 'live',
     creditBalance: accountCredits.balance,
     creditsUnlimited: accountCredits.unlimited,
     rateLimitResetCreditsAvailableCount,
@@ -559,6 +572,7 @@ export const CODEX_CONFIG: QuotaProviderData<CodexQuotaState, CodexQuotaData> = 
     windows: data.windows,
     planType: data.planType,
     subscriptionActiveUntil: data.subscriptionActiveUntil,
+    subscriptionStatus: data.subscriptionStatus,
     creditBalance: data.creditBalance,
     creditsUnlimited: data.creditsUnlimited,
     rateLimitResetCreditsAvailableCount: data.rateLimitResetCreditsAvailableCount,

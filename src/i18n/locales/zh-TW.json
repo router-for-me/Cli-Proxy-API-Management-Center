@@ -536,6 +536,7 @@
     "additional_team_secondary_window": "{{name}} 月度限額",
     "plan_label": "方案",
     "expires_label": "續期時間",
+    "subscription_unavailable": "暫時無法確認，請稍後重新整理",
     "credit_balance_label": "Credit 餘額",
     "credit_unlimited": "無限額",
     "reset_credits_label": "主動重置次數",

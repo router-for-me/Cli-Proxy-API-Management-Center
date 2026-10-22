@@ -551,6 +551,7 @@
     "additional_team_secondary_window": "{{name}} 월간 한도",
     "plan_label": "플랜",
     "expires_label": "갱신 시간",
+    "subscription_unavailable": "확인할 수 없습니다. 나중에 새로고침해 주세요",
     "credit_balance_label": "크레딧 잔액",
     "credit_unlimited": "무제한",
     "reset_credits_label": "수동 초기화 횟수",
