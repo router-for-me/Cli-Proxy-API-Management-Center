@@ -91,7 +91,7 @@ APIMart is a low-cost API platform for AI image & video generation — GPT-Image
 
 ## Deployment
 
-To build your own single-file UI, use **Bun 1.3.14**:
+To build your own single-file UI, use **Bun 1.4.3**:
 
 ```bash
 bun install --frozen-lockfile

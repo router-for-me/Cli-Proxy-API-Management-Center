@@ -91,7 +91,7 @@ APIMart 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低�
 
 ## 部署
 
-如需自行构建单文件界面，使用 **Bun 1.3.14**：
+如需自行构建单文件界面，使用 **Bun 1.4.3**：
 
 ```bash
 bun install --frozen-lockfile
