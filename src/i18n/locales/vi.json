@@ -551,6 +551,7 @@
     "additional_team_secondary_window": "Giới hạn tháng của {{name}}",
     "plan_label": "Gói",
     "expires_label": "Thời gian gia hạn",
+    "subscription_unavailable": "Chưa thể xác nhận; vui lòng làm mới sau",
     "reset_credits_label": "Lượt đặt lại thủ công",
     "reset_credits_expiry_label": "Hết hạn đặt lại thủ công ({{timezone}})",
     "reset_credit_number": "Lượt đặt lại {{index}}",

@@ -9,6 +9,8 @@ import type { CodexQuotaState, CodexUsagePayload } from '@/types';
 import { apiCallApi, type ApiCallRequest, type ApiCallResult } from '@/services/api';
 import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
+  CODEX_REQUEST_HEADERS,
+  CODEX_SUBSCRIPTION_REQUEST_HEADERS,
   CODEX_SUBSCRIPTION_URL,
   CODEX_USAGE_URL,
   normalizeCodexResetCreditsPayload,
@@ -163,7 +165,7 @@ describe('Codex account credits', () => {
 });
 
 describe('Codex live subscription renewal', () => {
-  test('prefers the live active_until and sends the encoded account ID', async () => {
+  test('prefers the live date and isolates subscription web headers from Codex requests', async () => {
     const requests: ApiCallRequest[] = [];
     apiCallApi.request = async (payload) => {
       requests.push(payload);
@@ -189,6 +191,8 @@ describe('Codex live subscription renewal', () => {
     );
 
     expect(quota.subscriptionActiveUntil).toBe('2026-10-03T13:27:01Z');
+    expect(quota.subscriptionStatus).toBe('live');
+    expect(CODEX_CONFIG.buildSuccessState(quota).subscriptionStatus).toBe('live');
     const subscriptionRequest = requests.find((request) =>
       request.url.startsWith(CODEX_SUBSCRIPTION_URL)
     );
@@ -198,16 +202,55 @@ describe('Codex live subscription renewal', () => {
     expect(subscriptionRequest?.authIndex).toBe('codex:1');
     expect(subscriptionRequest?.header?.Authorization).toBe('Bearer $TOKEN$');
     expect(subscriptionRequest?.header?.['Chatgpt-Account-Id']).toBe('account/id + space');
+    expect(subscriptionRequest?.header).toEqual({
+      ...CODEX_REQUEST_HEADERS,
+      ...CODEX_SUBSCRIPTION_REQUEST_HEADERS,
+      'Chatgpt-Account-Id': 'account/id + space',
+    });
+    expect(subscriptionRequest?.header?.['User-Agent']).toStartWith('Mozilla/5.0');
+    expect(subscriptionRequest?.header?.['X-OpenAI-Target-Path']).toBe(
+      '/backend-api/subscriptions'
+    );
+    expect(subscriptionRequest?.header?.['X-OpenAI-Target-Route']).toBe(
+      '/backend-api/subscriptions'
+    );
+    expect(subscriptionRequest?.header?.['Referer']).toBe('https://chatgpt.com/');
+    for (const url of [CODEX_USAGE_URL, CODEX_RATE_LIMIT_RESET_CREDITS_URL]) {
+      const request = requests.find((entry) => entry.url === url);
+      expect(request?.header?.['User-Agent']).toBe(CODEX_REQUEST_HEADERS['User-Agent']);
+      expect(request?.header?.Authorization).toBe('Bearer $TOKEN$');
+      expect(request?.header?.['Chatgpt-Account-Id']).toBe('account/id + space');
+      expect(request?.header?.Referer).toBeUndefined();
+      expect(request?.header?.['X-OpenAI-Target-Path']).toBeUndefined();
+    }
   });
 
-  test('falls back to the credential date when the subscription probe fails', async () => {
+  test.each([
+    ['HTTP error', () => result(503, { error: 'temporarily unavailable' })],
+    ['missing date', () => result(200, {})],
+    ['invalid date', () => result(200, { active_until: 'not-a-date' })],
+    ['invalid body', () => result(200, '<html>unavailable</html>')],
+    ['invalid timestamp', () => result(200, { active_until: -1 })],
+    [
+      'error response with a date',
+      () =>
+        result(200, { error: { message: 'unavailable' }, active_until: '2026-10-03T13:27:01Z' }),
+    ],
+    ['unsuccessful response', () => result(200, { success: false, active_until: null })],
+    [
+      'timeout',
+      () => {
+        throw new Error('timeout');
+      },
+    ],
+  ])('does not revive a credential date after a subscription %s', async (_name, probe) => {
     apiCallApi.request = async (payload) => {
       if (payload.url === CODEX_USAGE_URL) return result(200, CURRENT_CODEX_USAGE_PAYLOAD);
       if (payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_URL) {
         return result(200, { available_count: 0, credits: [] });
       }
       if (payload.url.startsWith(CODEX_SUBSCRIPTION_URL)) {
-        return result(503, { error: 'temporarily unavailable' });
+        return probe();
       }
       throw new Error(`Unexpected URL: ${payload.url}`);
     };
@@ -223,6 +266,98 @@ describe('Codex live subscription renewal', () => {
       t
     );
 
-    expect(quota.subscriptionActiveUntil).toBe('2026-09-03T13:27:01Z');
+    expect(quota.subscriptionActiveUntil).toBeNull();
+    expect(quota.subscriptionStatus).toBe('unavailable');
+    const state = CODEX_CONFIG.buildSuccessState(quota);
+    expect(state.subscriptionStatus).toBe('unavailable');
+    expect(state.status).toBe('success');
+    expect(state.windows.length).toBeGreaterThan(0);
+  });
+
+  test.each([null, 0, '0', ' 0 ', '0.0', '', '   '])(
+    'honors a live response without a renewal date: %p',
+    async (date) => {
+      apiCallApi.request = async (payload) => {
+        if (payload.url === CODEX_USAGE_URL) return result(200, CURRENT_CODEX_USAGE_PAYLOAD);
+        if (payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_URL) {
+          return result(200, { available_count: 0, credits: [] });
+        }
+        if (payload.url.startsWith(CODEX_SUBSCRIPTION_URL)) {
+          return result(200, { active_until: date });
+        }
+        throw new Error(`Unexpected URL: ${payload.url}`);
+      };
+
+      const quota = await CODEX_CONFIG.fetchQuota(
+        {
+          name: 'codex.json',
+          type: 'codex',
+          auth_index: 'codex:2',
+          chatgpt_account_id: 'account-2',
+          chatgpt_subscription_active_until: '2026-09-03T13:27:01Z',
+        },
+        t
+      );
+
+      expect(quota.subscriptionActiveUntil).toBeNull();
+      expect(quota.subscriptionStatus).toBe('live');
+    }
+  );
+
+  test.each([
+    [{ activeUntil: '2026-11-03T13:27:01Z' }, '2026-11-03T13:27:01Z'],
+    [{ active_until: 1793712421 }, 1793712421],
+    [{ active_until: 1793712421000 }, 1793712421000],
+    [{ active_until: '1793712421' }, 1793712421],
+    [JSON.stringify({ active_until: '2026-11-03T13:27:01Z' }), '2026-11-03T13:27:01Z'],
+    [{ active_until: null, activeUntil: '2026-09-03T13:27:01Z' }, null],
+  ])('accepts a live renewal response: %p', async (body, expected) => {
+    apiCallApi.request = async (payload) => {
+      if (payload.url === CODEX_USAGE_URL) return result(200, CURRENT_CODEX_USAGE_PAYLOAD);
+      if (payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_URL) {
+        return result(200, { available_count: 0, credits: [] });
+      }
+      if (payload.url.startsWith(CODEX_SUBSCRIPTION_URL)) return result(200, body);
+      throw new Error(`Unexpected URL: ${payload.url}`);
+    };
+
+    const quota = await CODEX_CONFIG.fetchQuota(
+      {
+        name: 'codex.json',
+        type: 'codex',
+        auth_index: 'codex:2',
+        chatgpt_account_id: 'account-2',
+        chatgpt_subscription_active_until: '2026-09-03T13:27:01Z',
+      },
+      t
+    );
+
+    expect(quota.subscriptionActiveUntil).toBe(expected);
+    expect(quota.subscriptionStatus).toBe('live');
+  });
+
+  test('reports an unknown renewal date when the account ID is missing', async () => {
+    const requests: ApiCallRequest[] = [];
+    apiCallApi.request = async (payload) => {
+      requests.push(payload);
+      if (payload.url === CODEX_USAGE_URL) return result(200, CURRENT_CODEX_USAGE_PAYLOAD);
+      if (payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_URL) {
+        return result(200, { available_count: 0, credits: [] });
+      }
+      throw new Error(`Unexpected URL: ${payload.url}`);
+    };
+    const quota = await CODEX_CONFIG.fetchQuota(
+      {
+        name: 'codex.json',
+        type: 'codex',
+        auth_index: 'codex:2',
+        chatgpt_subscription_active_until: '2026-09-03T13:27:01Z',
+      },
+      t
+    );
+
+    expect(quota.subscriptionActiveUntil).toBeNull();
+    expect(quota.subscriptionStatus).toBe('unavailable');
+    expect(requests.some((request) => request.url.startsWith(CODEX_SUBSCRIPTION_URL))).toBeFalse();
   });
 });

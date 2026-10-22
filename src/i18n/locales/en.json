@@ -551,6 +551,7 @@
     "additional_team_secondary_window": "{{name}} monthly limit",
     "plan_label": "Plan",
     "expires_label": "Renewal time",
+    "subscription_unavailable": "Unable to confirm; refresh again later",
     "credit_balance_label": "Credit balance",
     "credit_unlimited": "Unlimited",
     "reset_credits_label": "Manual resets",

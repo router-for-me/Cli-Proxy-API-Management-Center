@@ -36,6 +36,24 @@ beforeAll(async () => {
 });
 
 describe('CodexQuotaBody', () => {
+  test('shows an unavailable renewal instead of an old credential date', () => {
+    const markup = renderToStaticMarkup(
+      createElement(CodexQuotaBody, {
+        quota: {
+          status: 'success',
+          windows: [],
+          subscriptionStatus: 'unavailable',
+          subscriptionActiveUntil: '2026-09-03T13:27:01Z',
+        },
+        classes,
+      })
+    );
+    expect(markup).toContain('Renewal time');
+    expect(markup).toContain('Unable to confirm; refresh again later');
+    expect(markup).not.toContain('09/03');
+    expect(markup).not.toContain('ago');
+  });
+
   const quota: CodexQuotaState = {
     status: 'success',
     planType: 'pro',

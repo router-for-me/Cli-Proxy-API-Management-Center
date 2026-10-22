@@ -298,6 +298,7 @@ export interface CodexQuotaState {
   windows: CodexQuotaWindow[];
   planType?: string | null;
   subscriptionActiveUntil?: string | number | null;
+  subscriptionStatus?: 'live' | 'unavailable';
   creditBalance?: string | null;
   creditsUnlimited?: boolean;
   rateLimitResetCreditsAvailableCount?: number | null;

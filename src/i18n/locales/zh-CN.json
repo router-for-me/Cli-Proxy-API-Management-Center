@@ -536,6 +536,7 @@
     "additional_team_secondary_window": "{{name}} 月度限额",
     "plan_label": "套餐",
     "expires_label": "续期时间",
+    "subscription_unavailable": "暂时无法确认，请稍后刷新",
     "credit_balance_label": "Credit 余额",
     "credit_unlimited": "无限额",
     "reset_credits_label": "主动重置次数",

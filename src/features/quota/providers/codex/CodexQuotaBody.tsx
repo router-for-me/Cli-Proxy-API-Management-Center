@@ -43,7 +43,10 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
   );
   const windows = quota.windows ?? [];
   const planType = quota.planType ?? null;
-  const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
+  const subscriptionUnavailable = quota.subscriptionStatus === 'unavailable';
+  const subscriptionActiveUntil = subscriptionUnavailable
+    ? null
+    : (quota.subscriptionActiveUntil ?? null);
   const creditBalance = quota.creditBalance ?? null;
   const creditsUnlimited = quota.creditsUnlimited === true;
   const rateLimitResetCreditsAvailableCount = quota.rateLimitResetCreditsAvailableCount ?? null;
@@ -86,6 +89,7 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
     <>
       {(planLabel ||
         expiryDisplay ||
+        subscriptionUnavailable ||
         creditsUnlimited ||
         creditBalance !== null ||
         rateLimitResetCreditsAvailableCount !== null) && (
@@ -103,6 +107,14 @@ export function CodexQuotaBody({ quota, classes }: QuotaBodyProps<CodexQuotaStat
               {expiryDisplay.relative && (
                 <span className={classes.quotaResetRelative}>{expiryDisplay.relative}</span>
               )}
+            </span>
+          )}
+          {subscriptionUnavailable && (
+            <span className={classes.codexPlanItem}>
+              <span className={classes.codexPlanLabel}>{t('codex_quota.expires_label')}</span>
+              <span className={classes.codexPlanValue}>
+                {t('codex_quota.subscription_unavailable')}
+              </span>
             </span>
           )}
           {(creditsUnlimited || creditBalance !== null) && (

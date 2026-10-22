@@ -541,6 +541,7 @@
     "additional_team_secondary_window": "{{name}}: месячный лимит",
     "plan_label": "Тариф",
     "expires_label": "Истекает",
+    "subscription_unavailable": "Не удалось подтвердить; обновите позже",
     "credit_balance_label": "Остаток кредитов",
     "credit_unlimited": "Без ограничений",
     "reset_credits_label": "Ручные сбросы",
