@@ -7,6 +7,7 @@ import {
   readClaudeResetGrants,
   type AnthropicResetSettledCode,
 } from '@/services/api/claudeResetGrants';
+import { generateResetGrantRequestId } from './resetGrantRequestId';
 
 export type ResetGrantFailureStage =
   'organization' | 'status' | 'eligibility' | 'request_id' | 'operation';
@@ -52,7 +53,7 @@ const defaultDependencies = {
   readOrganization: readClaudeOrganization,
   claim: claimClaudeResetGrant,
   now: () => Date.now(),
-  requestId: () => crypto.randomUUID() as string,
+  requestId: generateResetGrantRequestId,
 };
 
 /** Tab-memory journal: survives dialog/card unmounts, never crosses connections.
