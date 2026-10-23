@@ -245,6 +245,8 @@ async function readAccount(authIndex: string, path: string): Promise<Record<stri
     },
     { timeout: 12000 }
   );
+  if (response.statusCode === 401 || response.statusCode === 403)
+    throw new AnthropicResetGrantError('auth');
   if (response.statusCode === 429) throw new AnthropicResetGrantError('rate_limited');
   if (response.statusCode < 200 || response.statusCode >= 300 || !isRecord(response.body)) {
     throw new AnthropicResetGrantError('upstream');

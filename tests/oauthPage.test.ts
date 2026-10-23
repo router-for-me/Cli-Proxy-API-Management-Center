@@ -139,9 +139,10 @@ describe('OAuth provider gallery', () => {
         expect(markup).toContain(label);
       }
       expect(markup).toContain('Vertex AI');
-      expect(markup).not.toMatch(/auth_login\.|vertex_import\./);
-      // 每个磁贴都是打开对话框的按钮
-      expect(markup.match(/aria-haspopup="dialog"/g)?.length).toBe(OAUTH_PROVIDERS.length + 1);
+      expect(markup).toContain(i18n.t('siwc.bind'));
+      expect(markup).not.toMatch(/auth_login\.|vertex_import\.|siwc\./);
+      // 每个磁贴都是打开对话框的按钮（提供商 + Vertex + SIWC 绑定）
+      expect(markup.match(/aria-haspopup="dialog"/g)?.length).toBe(OAUTH_PROVIDERS.length + 2);
     });
   }
 
