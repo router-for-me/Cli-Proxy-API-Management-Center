@@ -33,6 +33,9 @@ import iconGrok from '@/assets/icons/grok.svg';
 import iconGrokDark from '@/assets/icons/grok-dark.svg';
 import iconDeepseek from '@/assets/icons/deepseek.svg';
 import iconMinimax from '@/assets/icons/minimax.svg';
+import iconXiaomi from '@/assets/icons/xiaomi.svg';
+import iconStepfun from '@/assets/icons/stepfun.svg';
+import iconStepfunDark from '@/assets/icons/stepfun-dark.svg';
 import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
@@ -47,6 +50,8 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   grok: { light: iconGrok, dark: iconGrokDark },
   deepseek: iconDeepseek,
   minimax: iconMinimax,
+  xiaomi: iconXiaomi,
+  stepfun: { light: iconStepfun, dark: iconStepfunDark },
 };
 
 const parseVersionSegments = (version?: string | null) => {
