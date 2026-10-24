@@ -408,10 +408,10 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
               >
                 {/* Only the API-reported current window has meaningful usage;
                     projected windows intentionally have no fill. */}
-                {window.remaining !== null && (
+                {window.usedFillPercent !== null && window.usedFillPercent > 0 && (
                   <span
                     className={styles.windowFill}
-                    style={{ width: `${100 - window.remaining}%` }}
+                    style={{ width: `${window.usedFillPercent}%` }}
                   />
                 )}
                 {showLabel && (

@@ -135,6 +135,44 @@ describe('projectLane', () => {
     expect(live).toBeDefined();
     expect(live?.startMs).toBe(at(2026, 6, 29, 20));
     expect(live?.remaining).toBeNull();
+    expect(live?.usedFillPercent).toBeNull();
+  });
+
+  test('measures used fill on the full window after the week clips its start', () => {
+    // Sunday 2026-10-25 opens a new fortnight. A 7-day window that began
+    // Wednesday is cut off on the left; 76% remaining means only 24% was used,
+    // and that usage ended before Sunday.
+    const reset = at(2026, 9, 29, 16, 44);
+    const now = at(2026, 9, 25, 12);
+    const sunday = timelineSpan('weekly', 0, now);
+    const previous = timelineSpan('weekly', -1, now);
+    const current = lane({ anchorMs: reset, periodHours: 24 * 7, remaining: 76 });
+
+    const clipped = projectLane(current, sunday.startMs, sunday.endMs, now, 'weekly').find(
+      (window) => window.state === 'live'
+    );
+    const whole = projectLane(current, previous.startMs, previous.endMs, now, 'weekly').find(
+      (window) => window.state === 'live'
+    );
+
+    expect(clipped?.startMs).toBeLessThan(sunday.startMs);
+    expect(clipped?.usedFillPercent).toBe(0);
+    expect(whole?.startMs).toBeGreaterThanOrEqual(previous.startMs);
+    expect(whole?.usedFillPercent).toBe(24);
+
+    const partial = projectLane(
+      lane({ anchorMs: reset, periodHours: 24 * 7, remaining: 40 }),
+      sunday.startMs,
+      sunday.endMs,
+      now,
+      'weekly'
+    ).find((window) => window.state === 'live');
+    const start = reset - 7 * DAY_MS;
+    const usedEnd = start + 0.6 * (reset - start);
+    const expected = ((usedEnd - sunday.startMs) / (reset - sunday.startMs)) * 100;
+
+    expect(partial?.usedFillPercent).toBeCloseTo(expected, 5);
+    expect(partial?.usedFillPercent ?? 100).toBeLessThan(60);
   });
 
   test('clips bars to the visible span', () => {

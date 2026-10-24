@@ -70,6 +70,13 @@ export interface TimelineWindow {
   state: 'past' | 'live' | 'next';
   /** Remaining percent only when this is the API-reported current window. */
   remaining: number | null;
+  /**
+   * Used-quota width inside the already clipped bar, 0..100.
+   * Null when this window has no reported remaining percent.
+   * Measured from the full window, then clipped, so a start that falls
+   * before the span does not stretch the used segment into the future.
+   */
+  usedFillPercent: number | null;
 }
 
 /**
@@ -143,6 +150,34 @@ export function timelineSpan(
 }
 
 /**
+ * Width of the used-quota overlay inside the visible slice of one window.
+ *
+ * `remainingPercent` is the unused share of the whole window, not of the
+ * visible slice. A weekly span opens on Sunday, so a window that started
+ * earlier is clipped; applying the raw used percent to that leftover slice
+ * draws the overlay past "now".
+ */
+function usedFillWithinBar(
+  windowStartMs: number,
+  windowEndMs: number,
+  spanStartMs: number,
+  spanEndMs: number,
+  remainingPercent: number | null
+): number | null {
+  if (remainingPercent === null) return null;
+  const duration = windowEndMs - windowStartMs;
+  const visibleStart = Math.max(windowStartMs, spanStartMs);
+  const visibleEnd = Math.min(windowEndMs, spanEndMs);
+  if (duration <= 0 || visibleEnd <= visibleStart) return null;
+
+  const usedEnd = windowStartMs + ((100 - remainingPercent) / 100) * duration;
+  if (usedEnd <= visibleStart) return 0;
+  const width =
+    ((Math.min(usedEnd, visibleEnd) - visibleStart) / (visibleEnd - visibleStart)) * 100;
+  return Math.min(100, Math.max(0, width));
+}
+
+/**
  * Project one lane's windows onto a span, clipped and positioned.
  *
  * Windows falling entirely outside the span are dropped rather than returned
@@ -172,6 +207,9 @@ export function projectLane(
 
       const state: TimelineWindow['state'] =
         window.endMs <= now ? 'past' : window.startMs <= now ? 'live' : 'next';
+      // `lane.remaining` belongs to the current payload window ending at the
+      // anchor. Once that reset passes, projected windows must not reuse it.
+      const remaining = state === 'live' && window.endMs === lane.anchorMs ? lane.remaining : null;
 
       return {
         startMs: window.startMs,
@@ -179,9 +217,14 @@ export function projectLane(
         leftPercent: left,
         widthPercent: right - left,
         state,
-        // `lane.remaining` belongs to the current payload window ending at the
-        // anchor. Once that reset passes, projected windows must not reuse it.
-        remaining: state === 'live' && window.endMs === lane.anchorMs ? lane.remaining : null,
+        remaining,
+        usedFillPercent: usedFillWithinBar(
+          window.startMs,
+          window.endMs,
+          spanStartMs,
+          spanEndMs,
+          remaining
+        ),
       };
     })
     .filter((window): window is TimelineWindow => window !== null);
