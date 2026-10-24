@@ -314,6 +314,52 @@ describe('buildTimelineLane', () => {
     expect(lane.remaining).toBe(30);
   });
 
+  test('claude: keeps the weekly lane on the 7-day limit instead of a model limit', () => {
+    const accountReset = at(2026, 7, 1, 20);
+    // Same period, reset stamp a few seconds earlier: must not win the lane.
+    const fableReset = accountReset - 5_000;
+    const quota = {
+      status: 'success',
+      windows: [
+        {
+          id: 'five-hour',
+          label: '5-hour',
+          usedPercent: 10,
+          resetAtMs: at(2026, 6, 29, 20),
+          periodHours: 5,
+        },
+        {
+          id: 'seven-day',
+          label: '7-day',
+          usedPercent: 100,
+          resetAtMs: accountReset,
+          periodHours: 168,
+        },
+        {
+          id: 'seven-day-fable',
+          label: '7-day Fable',
+          usedPercent: 0,
+          resetAtMs: fableReset,
+          periodHours: 168,
+        },
+      ],
+    };
+
+    const weekly = buildTimelineLane({
+      ...base,
+      provider: 'claude',
+      quota,
+      maxPeriodHours: 14 * 24,
+    });
+    expect(weekly.anchorMs).toBe(accountReset);
+    expect(weekly.periodHours).toBe(168);
+    expect(weekly.remaining).toBe(0);
+
+    const session = buildTimelineLane({ ...base, provider: 'claude', quota, maxPeriodHours: 5 });
+    expect(session.periodHours).toBe(5);
+    expect(session.remaining).toBe(90);
+  });
+
   test('codex: includes available reset credits with parseable expiry dates', () => {
     const expiresAt = '2026-08-02T12:00:00Z';
     const lane = buildTimelineLane({
