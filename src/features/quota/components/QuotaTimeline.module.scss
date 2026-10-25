@@ -117,11 +117,11 @@ $lane-width: 210px;
 }
 
 .axisCells {
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--timeline-columns);
 }
 
 .axisCell {
-  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -233,10 +233,10 @@ $lane-width: 210px;
 .trackGrid {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--timeline-columns);
 
   > span {
-    flex: 1 1 0;
     border-left: 1px solid var(--border-color);
 
     &[data-weekend='1'] {
