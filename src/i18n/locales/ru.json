@@ -1590,6 +1590,7 @@
     "search_clear": "Очистить поиск",
     "title": "Управление квотами",
     "description": "Следите за статусом квот OAuth для учётных данных Antigravity, Codex, Claude, Kimi и xAI.",
+    "page_size_label": "На странице",
     "refresh_all_credentials": "Обновить все учётные данные",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",

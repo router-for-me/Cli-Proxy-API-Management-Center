@@ -150,3 +150,24 @@ export function paginate<T>(items: T[], page: number, pageSize: number): QuotaPa
     totalPages,
   };
 }
+
+/** 固定并发上限地映射异步任务；结果顺序与输入一致。 */
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  const runnerCount = Math.min(Math.max(1, limit), items.length);
+  await Promise.all(
+    Array.from({ length: runnerCount }, async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        results[index] = await worker(items[index], index);
+      }
+    })
+  );
+  return results;
+}

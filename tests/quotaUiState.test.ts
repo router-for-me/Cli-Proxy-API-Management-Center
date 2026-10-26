@@ -63,6 +63,20 @@ describe('quota ui state', () => {
     expect(readQuotaUiState()).toEqual({ tab: 'kimi', sortMode: 'soonest' });
   });
 
+  test('round-trips the page size and rejects values outside the contract', () => {
+    writeQuotaUiState({ pageSize: 50 });
+    expect(readQuotaUiState()?.pageSize).toBe(50);
+
+    storage.setItem(KEY, JSON.stringify({ pageSize: 999 }));
+    expect(readQuotaUiState()?.pageSize).toBeUndefined();
+  });
+
+  test('writing the page size preserves the other preferences', () => {
+    writeQuotaUiState({ tab: 'codex', sortMode: 'soonest' });
+    writeQuotaUiState({ pageSize: 100 });
+    expect(readQuotaUiState()).toEqual({ tab: 'codex', sortMode: 'soonest', pageSize: 100 });
+  });
+
   test('rejects values that are not part of the current contract', () => {
     storage.setItem(KEY, JSON.stringify({ tab: 'not-a-tab', sortMode: 'by-vibes' }));
     expect(readQuotaUiState()).toEqual({ tab: undefined, sortMode: undefined });

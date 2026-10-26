@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores';
 import { getStatusFromError } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
-import type { QuotaFileEntry } from '../logic';
+import { mapWithConcurrency, type QuotaFileEntry } from '../logic';
+import { QUOTA_REFRESH_CONCURRENCY } from '../constants';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from '../providers';
 import { enrichQuotaInBackground } from '../quotaEnrichment';
 import type { QuotaProviderType } from '../providers/types';
@@ -65,8 +66,10 @@ export function useQuotaBatchLoader() {
               });
             });
 
-            const results = await Promise.all(
-              entries.map(async ({ file }): Promise<BatchFetchResult> => {
+            const results = await mapWithConcurrency(
+              entries,
+              QUOTA_REFRESH_CONCURRENCY,
+              async ({ file }): Promise<BatchFetchResult> => {
                 const cacheKey = getQuotaCacheKey(file);
                 try {
                   const data = await adapter.fetchQuota(file, t);
@@ -81,7 +84,7 @@ export function useQuotaBatchLoader() {
                     errorStatus: getStatusFromError(err),
                   };
                 }
-              })
+              }
             );
 
             if (requestId !== requestIdRef.current) return;

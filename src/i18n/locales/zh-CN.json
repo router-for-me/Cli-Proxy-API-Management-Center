@@ -1586,6 +1586,7 @@
     "search_clear": "清空搜索",
     "title": "配额管理",
     "description": "集中查看 OAuth 额度与剩余情况",
+    "page_size_label": "每页显示",
     "refresh_all_credentials": "刷新全部凭证",
     "sort_label": "排序",
     "sort_default": "默认",

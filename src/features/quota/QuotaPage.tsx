@@ -29,6 +29,7 @@ import { QuotaTimeline } from './components/QuotaTimeline';
 import {
   CARD_ENTRANCE_BUDGET_MS,
   QUOTA_PAGE_SIZE,
+  QUOTA_PAGE_SIZE_OPTIONS,
   QUOTA_SORT_MODES,
   QUOTA_TAB_ORDER,
   type QuotaSortMode,
@@ -75,6 +76,7 @@ export function QuotaPage() {
     () => readQuotaUiState()?.sortMode ?? 'default'
   );
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(() => readQuotaUiState()?.pageSize ?? QUOTA_PAGE_SIZE);
   const [search, setSearch] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
@@ -183,6 +185,12 @@ export function QuotaPage() {
     setPage(1);
   }, []);
 
+  const handlePageSizeChange = useCallback((value: number) => {
+    setPageSize(value);
+    setPage(1);
+    writeQuotaUiState({ pageSize: value });
+  }, []);
+
   const resolveNextRecovery = useCallback(
     (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getQuota(entry), sortNow),
     [getQuota, sortNow]
@@ -194,8 +202,8 @@ export function QuotaPage() {
   );
 
   const { pageItems, currentPage, totalPages } = useMemo(
-    () => paginate(sortedEntries, page, QUOTA_PAGE_SIZE),
-    [sortedEntries, page]
+    () => paginate(sortedEntries, page, pageSize),
+    [sortedEntries, page, pageSize]
   );
 
   const handleTabChange = useCallback((next: string) => {
@@ -214,6 +222,11 @@ export function QuotaPage() {
     () =>
       QUOTA_SORT_MODES.map((mode) => ({ value: mode, label: t(`quota_management.sort_${mode}`) })),
     [t]
+  );
+
+  const pageSizeOptions = useMemo(
+    () => QUOTA_PAGE_SIZE_OPTIONS.map((size) => ({ value: String(size), label: String(size) })),
+    []
   );
 
   const { loadedCount, attentionCount } = useMemo(() => {
@@ -256,7 +269,7 @@ export function QuotaPage() {
   const pendingRefreshRef = useRef<number | null>(null);
   const prevLoadingRef = useRef(loading);
 
-  // 刷新全部：先重取文件列表，待其落定（loading 下降沿）再批量拉当前页额度
+  // 刷新全部：先重取文件列表，待其落定（loading 下降沿）再批量拉全部凭证额度
   const handleRefreshAll = useCallback(() => {
     if (disableControls) return;
     pendingRefreshRef.current = sessionGeneration;
@@ -285,9 +298,9 @@ export function QuotaPage() {
         disableControls
       )
     ) {
-      void loadQuota(pageItems);
+      void loadQuota(entries);
     }
-  }, [disableControls, error, filesGeneration, loading, loadQuota, pageItems, sessionGeneration]);
+  }, [disableControls, entries, error, filesGeneration, loading, loadQuota, sessionGeneration]);
 
   useDevinQuotaAutoLoad(
     pageItems,
@@ -442,31 +455,45 @@ export function QuotaPage() {
           </div>
         )}
 
-        {!loading && filteredEntries.length > QUOTA_PAGE_SIZE && (
+        {!loading && filteredEntries.length > 0 && (
           <div className={styles.pagination}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
-            >
-              {t('auth_files.pagination_prev')}
-            </Button>
-            <div className={styles.pageInfo}>
-              {t('auth_files.pagination_info', {
-                current: currentPage,
-                total: totalPages,
-                count: filteredEntries.length,
-              })}
+            <div className={styles.pageSize}>
+              <span>{t('quota_management.page_size_label')}</span>
+              <Select
+                value={String(pageSize)}
+                options={pageSizeOptions}
+                onChange={(value) => handlePageSizeChange(Number(value))}
+                ariaLabel={t('quota_management.page_size_label')}
+                size="sm"
+              />
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              {t('auth_files.pagination_next')}
-            </Button>
+            {filteredEntries.length > pageSize && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage <= 1}
+                >
+                  {t('auth_files.pagination_prev')}
+                </Button>
+                <div className={styles.pageInfo}>
+                  {t('auth_files.pagination_info', {
+                    current: currentPage,
+                    total: totalPages,
+                    count: filteredEntries.length,
+                  })}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage >= totalPages}
+                >
+                  {t('auth_files.pagination_next')}
+                </Button>
+              </>
+            )}
           </div>
         )}
 

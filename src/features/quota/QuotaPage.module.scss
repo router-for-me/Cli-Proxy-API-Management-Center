@@ -213,6 +213,15 @@
   white-space: nowrap;
 }
 
+.pageSize {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
 @include mobile {
   .page {
     gap: 16px;

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { QUOTA_PAGE_SIZE } from '@/features/quota/constants';
 import {
   buildTabCounts,
@@ -7,6 +8,7 @@ import {
   filterEntriesByTab,
   filterEntriesBySearch,
   isQuotaRefreshDisabled,
+  mapWithConcurrency,
   paginate,
   resolveQuotaProviderType,
   sortQuotaEntries,
@@ -258,5 +260,45 @@ describe('sortQuotaEntries', () => {
     const last = entries[entries.length - 1].file.name;
     const sorted = sortQuotaEntries(entries, 'soonest', resolver({ [last]: 1 }));
     expect(paginate(sorted, 1, 2).pageItems[0].file.name).toBe(last);
+  });
+});
+
+describe('mapWithConcurrency', () => {
+  test('preserves the input order', async () => {
+    const result = await mapWithConcurrency([1, 2, 3, 4, 5], 2, async (value) => value * 2);
+    expect(result).toEqual([2, 4, 6, 8, 10]);
+  });
+
+  test('caps in-flight work at the requested limit', async () => {
+    let active = 0;
+    let peak = 0;
+    const result = await mapWithConcurrency([1, 2, 3, 4, 5, 6, 7], 3, async (value) => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      active -= 1;
+      return value;
+    });
+    expect(result).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(peak).toBe(3);
+  });
+
+  test('handles empty input and non-positive limits', async () => {
+    expect(await mapWithConcurrency([], 4, async (value) => value)).toEqual([]);
+    expect(await mapWithConcurrency([1, 2], 0, async (value) => value)).toEqual([1, 2]);
+  });
+});
+
+describe('refresh-all scope', () => {
+  test('refreshes every eligible credential, not just the current page', () => {
+    const source = readFileSync('src/features/quota/QuotaPage.tsx', 'utf8');
+    expect(source).toContain('loadQuota(entries)');
+    expect(source).not.toContain('loadQuota(pageItems)');
+  });
+
+  test('bounds upstream concurrency independently of the page size', () => {
+    const source = readFileSync('src/features/quota/hooks/useQuotaBatchLoader.ts', 'utf8');
+    expect(source).toContain('QUOTA_REFRESH_CONCURRENCY');
+    expect(source).toContain('mapWithConcurrency');
   });
 });
