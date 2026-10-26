@@ -75,7 +75,8 @@ describe('auth file card presentation contract', () => {
     ]) {
       expect(source).toContain(handler);
     }
-    expect(source).toContain('rawStatusMessage && hasStatusWarning');
+    expect(source).toContain('<AccountStatusNotice');
+    expect(source).toContain('details={cooldownSection}');
     expect(source).toContain('showManualRefreshButton');
     expect(source).toContain('file.disabled ||');
   });

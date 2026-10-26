@@ -1578,7 +1578,40 @@
       }
     }
   },
+  "account_status": {
+    "available": "可用",
+    "disabled": "已停用",
+    "window_limit_reached": "已达{{window}}限额",
+    "limit_reached": "已达用量限额",
+    "window_five-hour": "5 小时",
+    "window_seven-day": "7 天",
+    "back_at": "{{time}} 恢复（{{relative}}）",
+    "retry_at": "{{time}} 重试（{{relative}}）",
+    "models_limited": "{{count}} 个模型已达限额",
+    "paused": "已暂停：{{reason}}",
+    "failing_rate_limited": "上次请求被限流",
+    "failing_auth": "登录状态需要处理",
+    "failing_overloaded": "上次请求时提供商过载",
+    "failing_unknown": "上次请求失败",
+    "details": "详情",
+    "raw_message": "上游原始消息"
+  },
+  "quota_pool": {
+    "title": "额度池",
+    "accounts": "{{count}} 个账号",
+    "all_available": "全部可用",
+    "available_of": "{{total}} 个中 {{available}} 个可用",
+    "used_of": "已用 {{used}}% / 共 {{capacity}}%",
+    "left": "剩余 {{left}}%",
+    "next_reset": "下次重置：{{name}} 于 {{time}}（{{relative}}）",
+    "no_reading": "暂无读数",
+    "unreported": "{{count}} 个账号尚无读数",
+    "source_note": "已加载实时用量的账号用实时数据，其余用该账号最近一次代理响应。受限账号按已用满计算。"
+  },
   "quota_management": {
+    "percent_used": "已用 {{percent}}%",
+    "observed_caption": "来自代理流量 · {{relative}}",
+    "load_live_usage": "加载实时用量",
     "search_label": "搜索账号",
     "search_placeholder": "按文件名或邮箱搜索",
     "search_empty_title": "没有匹配的账号",

@@ -95,3 +95,9 @@ export const sortAuthFiles = (files: AuthFileItem[], mode: AuthFilesSortMode): A
   }
   return copy;
 };
+
+/** A remembered provider filter whose credentials are all gone falls back to 'all'. */
+export const resolveVisibleFilter = <T extends string>(
+  active: T,
+  visible: readonly T[]
+): T | 'all' => (visible.includes(active) ? active : 'all');

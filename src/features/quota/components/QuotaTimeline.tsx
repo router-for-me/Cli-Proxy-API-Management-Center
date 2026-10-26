@@ -26,6 +26,7 @@ import {
   projectResetCredits,
   timelineSpan,
   DAY_MS,
+  usedFromRemaining,
 } from '../quotaTimelineModel';
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
@@ -358,7 +359,11 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
           {lane.limits.map((limit) => (
             <span key={limit.label} className={styles.laneLimit}>
               {lane.provider === 'meta' ? t(limit.label) : limit.label}{' '}
-              <b>{limit.remaining}%</b>
+              <b>
+                {t('quota_management.percent_used', {
+                  percent: usedFromRemaining(limit.remaining),
+                })}
+              </b>
             </span>
           ))}
         </div>
@@ -387,6 +392,12 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
           </span>
         ) : (
           windows.map((window) => {
+            const usedLabel =
+              window.remaining === null
+                ? null
+                : t('quota_management.percent_used', {
+                    percent: usedFromRemaining(window.remaining),
+                  });
             // A label needs room to read; below that the bar speaks for itself
             // and the detail lives in the tooltip.
             const showLabel = window.widthPercent > (mode === 'session' ? 4.5 : 9);
@@ -403,7 +414,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
                 title={`${lane.displayName}\n${formatDay(window.startMs)} ${formatTime(
                   window.startMs
                 )} → ${formatDay(window.endMs)} ${formatTime(window.endMs)}${
-                  window.remaining !== null ? `\n${window.remaining}% remaining` : ''
+                  usedLabel !== null ? `\n${usedLabel}` : ''
                 }`}
               >
                 {/* Only the API-reported current window has meaningful usage;
@@ -416,7 +427,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
                 )}
                 {showLabel && (
                   <span className={styles.windowLabel}>
-                    {window.remaining !== null ? `${window.remaining}% · ` : ''}
+                    {usedLabel !== null ? `${usedLabel} · ` : ''}
                     {endText}
                   </span>
                 )}

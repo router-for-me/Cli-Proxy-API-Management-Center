@@ -16,6 +16,7 @@ import {
 } from '@/utils/recentRequests';
 import { parseTimestampMs } from '@/utils/timestamp';
 import { normalizeAuthFileCooldowns, normalizeCooldownTimestamp } from './authFileCooldowns';
+import { normalizeObservedRateLimits } from './rateLimitSignals';
 
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 export type AuthFileLookup = { name: string; authIndex?: string };
@@ -285,6 +286,7 @@ const normalizeAuthFileEntry = (
     readTextField(entry, 'quota_provider') || readTextField(entry, 'quotaProvider');
   const quotaPluginId =
     readTextField(entry, 'quota_plugin_id') || readTextField(entry, 'quotaPluginId');
+  const rateLimits = normalizeObservedRateLimits(entry.quota, entry.model_quotas);
 
   return {
     ...entry,
@@ -302,6 +304,7 @@ const normalizeAuthFileEntry = (
     successCount: normalizeUsageTotal(entry.success),
     failureCount: normalizeUsageTotal(entry.failed),
     ...(statusMessage ? { statusMessage } : {}),
+    ...(rateLimits ? { rateLimits } : {}),
     ...(modified > 0 ? { modified } : {}),
     priority,
     weight,

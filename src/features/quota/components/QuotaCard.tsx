@@ -6,8 +6,9 @@
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
+import { useNow } from '@/hooks/useNow';
 import type { ClaudeQuotaState, ResolvedTheme } from '@/types';
-import { resolveQuotaErrorMessage } from '@/utils/quota';
+import { formatRelativeInstant, parseIsoToMs, resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaDisplayName } from '@/utils/quota/identity';
 import {
   getAuthFileIcon,
@@ -21,6 +22,8 @@ import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
 import { hasClaudeUsageData } from '../providers/claude/data';
+import { deriveAccountStatus } from '../accountStatus';
+import { AccountStatusNotice } from './AccountStatusNotice';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -30,6 +33,8 @@ const quotaClasses = bindQuotaClasses(bodyStyles, 'QuotaBody.module.scss');
 export type QuotaCardProps = {
   entry: QuotaFileEntry;
   quota?: QuotaCardState;
+  /** Passive reading from proxy traffic, shown while no live usage has been loaded. */
+  observedQuota?: QuotaCardState;
   resolvedTheme: ResolvedTheme;
   canRefresh: boolean;
   resetting: boolean;
@@ -43,6 +48,7 @@ export function QuotaCard(props: QuotaCardProps) {
   const {
     entry,
     quota,
+    observedQuota,
     resolvedTheme,
     canRefresh,
     resetting,
@@ -50,7 +56,8 @@ export function QuotaCard(props: QuotaCardProps) {
     onRefresh,
     onReset,
   } = props;
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const now = useNow();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
   const retainedClaudeUsage =
@@ -66,6 +73,9 @@ export function QuotaCard(props: QuotaCardProps) {
 
   const status = quota?.status ?? 'idle';
   const loading = status === 'loading';
+  const accountStatus = deriveAccountStatus(file, now);
+  const observed = status === 'idle' ? observedQuota : undefined;
+  const observedAtMs = parseIsoToMs((observed as ClaudeQuotaState | undefined)?.observedAt);
   const claudeReset = useClaudeResetGrants(
     file,
     entry.type === 'claude' && status !== 'idle',
@@ -136,8 +146,21 @@ export function QuotaCard(props: QuotaCardProps) {
         </span>
       </header>
 
+      <AccountStatusNotice file={file} status={accountStatus} now={now} />
+
       <div className={styles.body}>
-        {status === 'idle' ? (
+        {observed ? (
+          <>
+            <adapter.Body quota={observed} classes={quotaClasses} />
+            {observedAtMs !== null && (
+              <div className={quotaClasses.quotaMessage}>
+                {t('quota_management.observed_caption', {
+                  relative: formatRelativeInstant(observedAtMs, now, i18n.resolvedLanguage),
+                })}
+              </div>
+            )}
+          </>
+        ) : status === 'idle' ? (
           <button
             type="button"
             className={styles.idleBody}
@@ -186,6 +209,20 @@ export function QuotaCard(props: QuotaCardProps) {
         )}
       </div>
 
+      {observed && (
+        <footer className={styles.actionRow}>
+          <button
+            type="button"
+            className={styles.actionPill}
+            onClick={onRefresh}
+            disabled={!canRefresh}
+            title={t('auth_files.quota_refresh_hint')}
+          >
+            <IconRefreshCw size={13} />
+            {t('quota_management.load_live_usage')}
+          </button>
+        </footer>
+      )}
       {status !== 'idle' && (
         <footer className={styles.actionRow}>
           {entry.type === 'claude' && (

@@ -14,19 +14,22 @@ export const QUOTA_PROGRESS_MEDIUM_THRESHOLD = 30;
 
 export interface QuotaMeterProps {
   percent: number | null;
+  /** What `percent` measures: the bar fills with it either way; colour always tracks headroom. */
+  measure?: 'remaining' | 'used';
   classes: QuotaClassMap;
   index?: number;
 }
 
-export function QuotaMeter({ percent, classes, index }: QuotaMeterProps) {
+export function QuotaMeter({ percent, measure = 'remaining', classes, index }: QuotaMeterProps) {
   const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
   const normalized = percent === null ? null : clamp(percent, 0, 100);
+  const headroom = normalized === null || measure === 'remaining' ? normalized : 100 - normalized;
   const fillClass =
-    normalized === null
+    headroom === null
       ? classes.quotaBarFillMedium
-      : normalized >= QUOTA_PROGRESS_HIGH_THRESHOLD
+      : headroom >= QUOTA_PROGRESS_HIGH_THRESHOLD
         ? classes.quotaBarFillHigh
-        : normalized >= QUOTA_PROGRESS_MEDIUM_THRESHOLD
+        : headroom >= QUOTA_PROGRESS_MEDIUM_THRESHOLD
           ? classes.quotaBarFillMedium
           : classes.quotaBarFillLow;
   const widthPercent = Math.round((normalized ?? 0) * 100) / 100;

@@ -1606,7 +1606,40 @@
       }
     }
   },
+  "account_status": {
+    "available": "可用",
+    "disabled": "已停用",
+    "window_limit_reached": "已達{{window}}限額",
+    "limit_reached": "已達用量限額",
+    "window_five-hour": "5 小時",
+    "window_seven-day": "7 天",
+    "back_at": "{{time}} 恢復（{{relative}}）",
+    "retry_at": "{{time}} 重試（{{relative}}）",
+    "models_limited": "{{count}} 個模型已達限額",
+    "paused": "已暫停：{{reason}}",
+    "failing_rate_limited": "上次請求被限流",
+    "failing_auth": "登入狀態需要處理",
+    "failing_overloaded": "上次請求時供應商過載",
+    "failing_unknown": "上次請求失敗",
+    "details": "詳情",
+    "raw_message": "上游原始訊息"
+  },
+  "quota_pool": {
+    "title": "額度池",
+    "accounts": "{{count}} 個帳號",
+    "all_available": "全部可用",
+    "available_of": "{{total}} 個中 {{available}} 個可用",
+    "used_of": "已用 {{used}}% / 共 {{capacity}}%",
+    "left": "剩餘 {{left}}%",
+    "next_reset": "下次重置：{{name}} 於 {{time}}（{{relative}}）",
+    "no_reading": "尚無讀數",
+    "unreported": "{{count}} 個帳號尚無讀數",
+    "source_note": "已載入即時用量的帳號使用即時資料，其餘使用該帳號最近一次代理回應。受限帳號視為已用滿。"
+  },
   "quota_management": {
+    "percent_used": "已用 {{percent}}%",
+    "observed_caption": "來自代理流量 · {{relative}}",
+    "load_live_usage": "載入即時用量",
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",
     "search_empty_title": "沒有符合的帳號",

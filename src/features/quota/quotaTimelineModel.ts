@@ -15,6 +15,10 @@ import type { QuotaProviderType } from './providers/types';
 
 export { DAY_MS, HOUR_MS };
 
+/** Lanes store headroom; everything user-facing reads as percent used. */
+export const usedFromRemaining = (remaining: number): number =>
+  Math.round(100 - Math.min(100, Math.max(0, remaining)));
+
 /** Weekly view spans a fortnight; the session view zooms to three days. */
 export type TimelineMode = 'weekly' | 'session';
 
