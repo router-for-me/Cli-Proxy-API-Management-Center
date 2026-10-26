@@ -515,6 +515,7 @@
     "extra_usage_spend_limit_reached": "지출 한도에 도달함",
     "extra_usage_disabled_reason": "사유: {{reason}}",
     "dollar_balance_remaining": "{{amount}} 남음",
+    "percent_remaining": "{{percent}}% 남음",
     "balance_reset": "초기화",
     "balance_reset_unknown": "제공되지 않음",
     "stale_snapshot": "새로 고침에 실패했습니다. 마지막 성공 확인: {{time}}",

@@ -515,6 +515,7 @@
     "extra_usage_spend_limit_reached": "Đã đạt giới hạn chi tiêu",
     "extra_usage_disabled_reason": "Lý do: {{reason}}",
     "dollar_balance_remaining": "Còn lại {{amount}}",
+    "percent_remaining": "Còn lại {{percent}}%",
     "balance_reset": "Đặt lại",
     "balance_reset_unknown": "Không được cung cấp",
     "stale_snapshot": "Làm mới thất bại. Hiển thị lần kiểm tra thành công gần nhất: {{time}}",

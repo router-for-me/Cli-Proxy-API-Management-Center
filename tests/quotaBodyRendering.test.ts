@@ -257,4 +257,23 @@ describe('ClaudeQuotaBody', () => {
     expect(markup).toMatch(/2 hours/);
     expect(markup).toMatch(/4 days/);
   });
+
+  test('labels window percentages as remaining, not used', () => {
+    const quota: ClaudeQuotaState = {
+      status: 'success',
+      windows: [
+        {
+          id: 'five_hour',
+          label: '5-hour',
+          usedPercent: 16,
+          resetLabel: '08-02 17:00',
+          resetAtMs: now + 2 * HOUR_MS,
+          periodHours: 5,
+        },
+      ],
+    };
+    const markup = renderToStaticMarkup(createElement(ClaudeQuotaBody, { quota, classes }));
+
+    expect(markup).toContain('84% left');
+  });
 });

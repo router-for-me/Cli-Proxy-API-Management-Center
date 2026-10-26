@@ -500,6 +500,7 @@
     "extra_usage_spend_limit_reached": "已达到消费限额",
     "extra_usage_disabled_reason": "原因：{{reason}}",
     "dollar_balance_remaining": "剩余 {{amount}}",
+    "percent_remaining": "剩余 {{percent}}%",
     "balance_reset": "重置时间",
     "balance_reset_unknown": "未提供",
     "stale_snapshot": "刷新失败。显示上次成功检查的结果：{{time}}",

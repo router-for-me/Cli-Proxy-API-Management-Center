@@ -515,6 +515,7 @@
     "extra_usage_spend_limit_reached": "Spending limit reached",
     "extra_usage_disabled_reason": "Reason: {{reason}}",
     "dollar_balance_remaining": "{{amount}} remaining",
+    "percent_remaining": "{{percent}}% left",
     "balance_reset": "Resets",
     "balance_reset_unknown": "Not provided",
     "stale_snapshot": "Refresh failed. Showing last successful check: {{time}}",
