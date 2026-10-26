@@ -39,6 +39,23 @@ export interface AuthFileCooldownSnapshot {
   records: AuthFileCooldown[] | null;
 }
 
+export type RateLimitWindowId = 'five-hour' | 'seven-day';
+
+export interface ObservedRateLimitWindow {
+  id: RateLimitWindowId;
+  usedPercent: number;
+  resetAtMs: number | null;
+  rejected: boolean;
+}
+
+/** Rate-limit headers from the credential's most recent upstream response. */
+export interface ObservedRateLimits {
+  observedAt: string;
+  windows: ObservedRateLimitWindow[];
+  /** The window the provider reports as currently binding. */
+  binding: RateLimitWindowId | null;
+}
+
 export interface AuthFileItem {
   name: string;
   siwcBindSupported?: boolean;
@@ -81,6 +98,7 @@ export interface AuthFileItem {
   recentRequests?: RecentRequestBucket[];
   /** Absent on older servers. Never interpreted as credential health. */
   cooldownSnapshot?: AuthFileCooldownSnapshot;
+  rateLimits?: ObservedRateLimits;
   [key: string]: unknown;
 }
 

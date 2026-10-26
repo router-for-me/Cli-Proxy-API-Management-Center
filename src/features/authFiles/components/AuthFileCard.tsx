@@ -7,20 +7,18 @@ import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import {
   IconDownload,
-  IconInfo,
   IconModelCluster,
   IconRefreshCw,
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
+import { useNow } from '@/hooks/useNow';
 import type { AuthFileItem } from '@/types';
 import { statusBarDataFromRecentRequests } from '@/utils/recentRequests';
 import { formatDateTimeValue, formatFileSize } from '@/utils/format';
 import {
   formatModified,
-  getAuthFileStatusMessage,
-  hasAuthFileStatusWarning,
   getTypeColor,
   getTypeLabel,
   isRuntimeOnlyAuthFile,
@@ -34,6 +32,8 @@ import { resolveAuthFileQuotaType } from '@/features/authFiles/logic';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFileCooldownSection } from './AuthFileCooldownSection';
+import { deriveAccountStatus } from '@/features/quota/accountStatus';
+import { AccountStatusNotice } from '@/features/quota/components/AccountStatusNotice';
 import { getSiwcBindingStatus, supportsSiwcBinding } from '@/features/oauth/siwcBinding';
 import { SiwcStatusBadge } from '@/features/oauth/components/SiwcStatusBadge';
 import styles from './AuthFileCard.module.scss';
@@ -107,8 +107,9 @@ export function AuthFileCard(props: AuthFileCardProps) {
     (authIndexKey && statusBarCache.get(authIndexKey)) ||
     statusBarDataFromRecentRequests(file.recentRequests ?? []);
 
-  const rawStatusMessage = getAuthFileStatusMessage(file);
-  const hasStatusWarning = hasAuthFileStatusWarning(file);
+  const now = useNow();
+  const accountStatus = deriveAccountStatus(file, now);
+  const hasStatusNotice = accountStatus.kind !== 'available' && accountStatus.kind !== 'disabled';
 
   const priorityValue = Number.isSafeInteger(file.priority) ? file.priority : undefined;
   const weightValue = Number.isSafeInteger(file.weight) ? file.weight : undefined;
@@ -134,6 +135,19 @@ export function AuthFileCard(props: AuthFileCardProps) {
     mountEntranceDelayMs != null
       ? ({ '--card-delay': `${mountEntranceDelayMs}ms` } as CSSProperties)
       : undefined;
+
+  const cooldownSection = (
+    <AuthFileCooldownSection
+      snapshot={file.cooldownSnapshot}
+      resetting={isCooldownResetting}
+      resetDisabled={
+        disableControls ||
+        statusUpdating[getAuthFileRefreshKey(file)] === true ||
+        isManualRefreshing
+      }
+      onReset={authIndexKey ? () => onCooldownReset(file) : undefined}
+    />
+  );
 
   return (
     <article className={cardClasses} style={cardStyle}>
@@ -182,23 +196,16 @@ export function AuthFileCard(props: AuthFileCardProps) {
         </p>
       )}
 
-      {rawStatusMessage && hasStatusWarning && (
-        <div className={styles.warning} title={rawStatusMessage}>
-          <IconInfo className={styles.warningIcon} size={14} />
-          <span>{rawStatusMessage}</span>
-        </div>
+      {hasStatusNotice ? (
+        <AccountStatusNotice
+          file={file}
+          status={accountStatus}
+          now={now}
+          details={cooldownSection}
+        />
+      ) : (
+        cooldownSection
       )}
-
-      <AuthFileCooldownSection
-        snapshot={file.cooldownSnapshot}
-        resetting={isCooldownResetting}
-        resetDisabled={
-          disableControls ||
-          statusUpdating[getAuthFileRefreshKey(file)] === true ||
-          isManualRefreshing
-        }
-        onReset={authIndexKey ? () => onCooldownReset(file) : undefined}
-      />
 
       <div className={styles.health}>
         <div className={styles.healthHead}>

@@ -36,6 +36,7 @@ import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
 import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInvalidation';
 import {
   buildWildcardSearch,
+  resolveVisibleFilter,
   matchesAuthFileSearch,
   sortAuthFiles,
 } from '@/features/authFiles/logic';
@@ -188,7 +189,19 @@ export function AuthFilesPage() {
   });
 
   const disableControls = connectionStatus !== 'connected' || refreshingAllCredentials;
-  const normalizedFilter = normalizeProviderKey(String(filter));
+  const existingTypes = useMemo(() => {
+    const types = new Set<string>(['all']);
+    files.forEach((file) => {
+      const type = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+      if (type) types.add(type);
+    });
+    return Array.from(types);
+  }, [files]);
+  // While the list loads there are no types yet; keep the remembered filter until it settles.
+  const requestedFilter = normalizeProviderKey(String(filter));
+  const normalizedFilter = loading
+    ? requestedFilter
+    : resolveVisibleFilter(requestedFilter, existingTypes);
   const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
     normalizedFilter as QuotaProviderType
   )
@@ -387,15 +400,6 @@ export function AuthFilesPage() {
   );
 
   /* ---------- 过滤 / 排序 / 分页 memos ---------- */
-
-  const existingTypes = useMemo(() => {
-    const types = new Set<string>(['all']);
-    files.forEach((file) => {
-      const type = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
-      if (type) types.add(type);
-    });
-    return Array.from(types);
-  }, [files]);
 
   const filesMatchingStatusFilters = useMemo(
     () =>

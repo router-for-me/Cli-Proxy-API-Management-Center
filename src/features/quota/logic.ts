@@ -127,6 +127,11 @@ export function buildTabCounts(entries: QuotaFileEntry[]): Record<string, number
   return counts;
 }
 
+/** Provider tabs that have at least one credential, after 'all'. */
+export function visibleQuotaTabs(counts: Record<string, number>): QuotaTabId[] {
+  return ['all', ...QUOTA_TAB_ORDER.filter((type) => (counts[type] ?? 0) > 0)];
+}
+
 export const isQuotaRefreshDisabled = (
   canRefresh: boolean,
   loading: boolean,

@@ -161,9 +161,10 @@ export function ClaudeQuotaBody({
         windows.map((window, index) => {
           const used = window.usedPercent;
           const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
-          const remaining =
-            clampedUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedUsed));
-          const percentLabel = remaining === null ? '--' : `${Math.round(remaining)}%`;
+          const percentLabel =
+            clampedUsed === null
+              ? '--'
+              : t('quota_management.percent_used', { percent: Math.round(clampedUsed) });
           const windowLabel = window.labelKey ? t(window.labelKey) : window.label;
           const resetDisplay = buildResetDisplay(
             window.resetLabel,
@@ -189,7 +190,7 @@ export function ClaudeQuotaBody({
                   )}
                 </div>
               </div>
-              <QuotaMeter percent={remaining} classes={classes} index={index} />
+              <QuotaMeter percent={clampedUsed} measure="used" classes={classes} index={index} />
             </div>
           );
         })

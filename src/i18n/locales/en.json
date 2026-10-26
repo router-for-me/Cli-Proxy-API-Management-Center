@@ -1579,7 +1579,43 @@
       }
     }
   },
+  "account_status": {
+    "available": "Available",
+    "disabled": "Disabled",
+    "window_limit_reached": "{{window}} limit reached",
+    "limit_reached": "Usage limit reached",
+    "window_five-hour": "5-hour",
+    "window_seven-day": "7-day",
+    "back_at": "back at {{time}} ({{relative}})",
+    "retry_at": "retrying at {{time}} ({{relative}})",
+    "models_limited_one": "{{count}} model at its limit",
+    "models_limited_other": "{{count}} models at their limit",
+    "paused": "Paused: {{reason}}",
+    "failing_rate_limited": "Rate-limited on the last request",
+    "failing_auth": "Sign-in needs attention",
+    "failing_overloaded": "Provider overloaded on the last request",
+    "failing_unknown": "Last request failed",
+    "details": "Details",
+    "raw_message": "Upstream message"
+  },
+  "quota_pool": {
+    "title": "Pooled quota",
+    "accounts_one": "{{count}} account",
+    "accounts_other": "{{count}} accounts",
+    "all_available": "All available",
+    "available_of": "{{available}} of {{total}} available",
+    "used_of": "{{used}}% used of {{capacity}}%",
+    "left": "{{left}}% left",
+    "next_reset": "Next reset: {{name}} at {{time}} ({{relative}})",
+    "no_reading": "No reading yet",
+    "unreported_one": "{{count}} account not seen yet",
+    "unreported_other": "{{count}} accounts not seen yet",
+    "source_note": "Uses live usage where you loaded it, otherwise each account’s last proxy response. A limited account counts as fully used."
+  },
   "quota_management": {
+    "percent_used": "{{percent}}% used",
+    "observed_caption": "From proxy traffic · {{relative}}",
+    "load_live_usage": "Load live usage",
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",
     "search_empty_title": "No matching accounts",

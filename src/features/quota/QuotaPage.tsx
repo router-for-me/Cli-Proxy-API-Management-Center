@@ -23,9 +23,15 @@ import { useAuthStore, useQuotaStore, useThemeStore } from '@/stores';
 import type { AuthFileItem, ResolvedTheme } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
+import { deriveAuthFileIdentity } from '@/features/authFiles/identity';
+import { resolveVisibleFilter } from '@/features/authFiles/logic';
 import { QuotaHeader } from './components/QuotaHeader';
 import { QuotaCard } from './components/QuotaCard';
 import { QuotaTimeline } from './components/QuotaTimeline';
+import { QuotaPool } from './components/QuotaPool';
+import { deriveAccountStatus } from './accountStatus';
+import { summarizeProviderPools } from './pool';
+import { claudeQuotaFromObservation } from './providers/claude/observed';
 import {
   CARD_ENTRANCE_BUDGET_MS,
   QUOTA_PAGE_SIZE,
@@ -42,6 +48,7 @@ import {
   filterEntriesBySearch,
   paginate,
   sortQuotaEntries,
+  visibleQuotaTabs,
   type QuotaFileEntry,
 } from './logic';
 import { nextRecoveryMs } from './resetSchedule';
@@ -53,7 +60,6 @@ import { useQuotaBatchLoader } from './hooks/useQuotaBatchLoader';
 import { readQuotaUiState, writeQuotaUiState } from './uiState';
 import styles from './QuotaPage.module.scss';
 
-const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_CARD_COUNT = 6;
 
 /**
@@ -165,6 +171,57 @@ export function QuotaPage() {
     [quotaByType]
   );
 
+  const entries = useMemo(() => classifyQuotaFiles(files), [files]);
+
+  const poolNow = useNow();
+  const accountStatusByKey = useMemo(
+    () =>
+      new Map(
+        entries.map(({ file }) => [getQuotaCacheKey(file), deriveAccountStatus(file, poolNow)])
+      ),
+    [entries, poolNow]
+  );
+
+  const observedQuotaByKey = useMemo(() => {
+    const observed = new Map<string, QuotaCardState>();
+    entries.forEach(({ type, file }) => {
+      const key = getQuotaCacheKey(file);
+      const status = accountStatusByKey.get(key);
+      if (type === 'claude' && file.rateLimits && status) {
+        observed.set(key, claudeQuotaFromObservation({ observation: file.rateLimits, status, t }));
+      }
+    });
+    return observed;
+  }, [accountStatusByKey, entries, t]);
+
+  /** Live usage the user loaded wins; otherwise the proxy's last observed rate-limit headers. */
+  const getEffectiveQuota = useCallback(
+    (entry: QuotaFileEntry): QuotaCardState | undefined => {
+      const loaded = getQuota(entry);
+      if (loaded?.status === 'success') return loaded;
+      return observedQuotaByKey.get(getQuotaCacheKey(entry.file)) ?? loaded;
+    },
+    [getQuota, observedQuotaByKey]
+  );
+
+  const pools = useMemo(
+    () =>
+      summarizeProviderPools(
+        entries.map((entry) => {
+          const name = getQuotaCacheKey(entry.file);
+          return {
+            name,
+            displayName: deriveAuthFileIdentity(entry.file).primary,
+            provider: entry.type,
+            quota: getEffectiveQuota(entry),
+            status: accountStatusByKey.get(name) ?? { kind: 'available' },
+          };
+        }),
+        poolNow
+      ),
+    [accountStatusByKey, entries, getEffectiveQuota, poolNow]
+  );
+
   /* ---------- 归类 / 过滤 / 排序 / 分页 ---------- */
 
   // 只在「最快恢复优先」下订阅分钟时钟。默认序下不门控的话，pageItems 每分钟
@@ -172,11 +229,13 @@ export function QuotaPage() {
   const tick = useNow(sortMode !== 'default');
   const sortNow = sortMode === 'default' ? 0 : tick;
 
-  const entries = useMemo(() => classifyQuotaFiles(files), [files]);
   const tabCounts = useMemo(() => buildTabCounts(entries), [entries]);
+  const visibleTabs = useMemo(() => visibleQuotaTabs(tabCounts), [tabCounts]);
+  // While the list loads every count is zero; keep the remembered tab until it settles.
+  const activeTab = loading ? tab : resolveVisibleFilter(tab, visibleTabs);
   const filteredEntries = useMemo(
-    () => filterEntriesBySearch(filterEntriesByTab(entries, tab), search),
-    [entries, tab, search]
+    () => filterEntriesBySearch(filterEntriesByTab(entries, activeTab), search),
+    [entries, activeTab, search]
   );
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
@@ -184,8 +243,8 @@ export function QuotaPage() {
   }, []);
 
   const resolveNextRecovery = useCallback(
-    (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getQuota(entry), sortNow),
-    [getQuota, sortNow]
+    (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getEffectiveQuota(entry), sortNow),
+    [getEffectiveQuota, sortNow]
   );
   // 排序在分页之前：否则「最快恢复」只在当前页内成立。
   const sortedEntries = useMemo(
@@ -334,13 +393,15 @@ export function QuotaPage() {
         onRefreshAll={handleRefreshAll}
       />
 
+      {!loading && <QuotaPool pools={pools} now={poolNow} resolvedTheme={resolvedTheme} />}
+
       <section className={styles.workbench}>
         {/* 提供商导航与搜索工具栏分层，避免不同控件争夺视觉焦点。 */}
         <div className={styles.tabsRow} data-reveal>
           <ProviderTabs
-            types={TAB_IDS}
+            types={visibleTabs}
             counts={tabCounts}
-            active={tab}
+            active={activeTab}
             resolvedTheme={resolvedTheme}
             onChange={handleTabChange}
           />
@@ -401,23 +462,23 @@ export function QuotaPage() {
             title={
               search.trim()
                 ? t('quota_management.search_empty_title')
-                : tab === 'all'
+                : activeTab === 'all'
                   ? t('quota_management.empty_title')
-                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_title`)
+                  : t(`${QUOTA_ADAPTERS[activeTab].i18nPrefix}.empty_title`)
             }
             description={
               search.trim()
                 ? t('quota_management.search_empty_desc')
-                : tab === 'all'
+                : activeTab === 'all'
                   ? t('quota_management.empty_desc')
-                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_desc`)
+                  : t(`${QUOTA_ADAPTERS[activeTab].i18nPrefix}.empty_desc`)
             }
             action={
               search.trim() ? (
                 <Button variant="secondary" size="sm" onClick={() => handleSearchChange('')}>
                   {t('quota_management.search_clear')}
                 </Button>
-              ) : tab === 'all' ? undefined : (
+              ) : activeTab === 'all' ? undefined : (
                 <Button variant="secondary" size="sm" onClick={() => handleTabChange('all')}>
                   {t('auth_files.filter_all')}
                 </Button>
@@ -431,6 +492,7 @@ export function QuotaPage() {
                 key={`${entry.type}:${getQuotaCacheKey(entry.file)}`}
                 entry={entry}
                 quota={getQuota(entry)}
+                observedQuota={observedQuotaByKey.get(getQuotaCacheKey(entry.file))}
                 resolvedTheme={resolvedTheme}
                 canRefresh={canUseActions && !entry.file.disabled}
                 resetting={resettingQuotaName === getQuotaCacheKey(entry.file)}
@@ -473,7 +535,7 @@ export function QuotaPage() {
         {/* 时间线只比较当前页凭证，避免大量凭证一次性生成无界泳道。 */}
         <QuotaTimeline
           entries={pageItems}
-          quotaFor={getQuota}
+          quotaFor={getEffectiveQuota}
           displayNameFor={displayNameFor}
           resolvedTheme={resolvedTheme}
         />
