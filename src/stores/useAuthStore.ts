@@ -21,7 +21,6 @@ interface AuthStoreState extends AuthState {
   // 操作
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
-  checkAuth: () => Promise<boolean>;
   restoreSession: () => Promise<boolean>;
   updateServerVersion: (version: string | null, buildDate?: string | null) => void;
   updateServerPluginSupport: (supportsPlugin: boolean) => void;
@@ -165,38 +164,6 @@ export const useAuthStore = create<AuthStoreState>()(
           connectionStatus: 'disconnected',
         });
         localStorage.removeItem('isLoggedIn');
-      },
-
-      // 检查认证状态
-      checkAuth: async () => {
-        const { managementKey, apiBase } = get();
-
-        if (!managementKey || !apiBase) {
-          return false;
-        }
-
-        try {
-          // 重新配置客户端
-          apiClient.setConfig({ apiBase, managementKey });
-          set({ supportsPlugin: false });
-
-          // 验证连接
-          await useConfigStore.getState().fetchConfig();
-
-          set({
-            isAuthenticated: true,
-            connectionStatus: 'connected',
-          });
-
-          return true;
-        } catch {
-          set({
-            isAuthenticated: false,
-            connectionStatus: 'error',
-            supportsPlugin: false,
-          });
-          return false;
-        }
       },
 
       // 更新服务器版本
