@@ -160,7 +160,7 @@ describe('login dot-matrix intro', () => {
 });
 
 describe('DotMatrixHero', () => {
-  test('renders a decorative canvas and an English-only title in every language', async () => {
+  test('renders a decorative canvas without the tagline (fork) in every language', async () => {
     const original = i18n.language;
     try {
       for (const language of ['zh-CN', 'en', 'ru']) {
@@ -168,8 +168,7 @@ describe('DotMatrixHero', () => {
         const markup = renderToStaticMarkup(createElement(DotMatrixHero));
         expect(markup).toContain('<canvas');
         expect(markup).toContain('aria-hidden="true"');
-        expect(markup).toContain('lang="en"');
-        expect(markup).toContain(HERO_TITLE);
+        expect(markup).not.toContain(HERO_TITLE);
         expect(markup).not.toContain(i18n.t('splash.subtitle'));
       }
     } finally {

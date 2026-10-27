@@ -180,9 +180,7 @@ export function DotMatrixHero() {
   return (
     <div className={styles.hero}>
       <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
-      <p className={styles.title} lang="en">
-        {HERO_TITLE}
-      </p>
+      {/* Fork: no HERO_TITLE tagline over the dots. */}
     </div>
   );
 }

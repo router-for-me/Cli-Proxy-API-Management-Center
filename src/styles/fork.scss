@@ -1,0 +1,142 @@
+/**
+ * Fork shell overrides (akhial): neutral black dark theme, quiet sidebar
+ * without group headings, frameless top-right actions.
+ *
+ * Kept in one file, loaded last, so upstream syncs touch a single place.
+ */
+
+@use './variables.scss' as *;
+
+[data-theme='dark'] {
+  --bg-secondary: #000000;
+  --bg-primary: #0e0e0e;
+  --bg-tertiary: #1f1f1f;
+  --bg-hover: #262626;
+  --bg-quinary: #080808;
+  --floating-surface: #171717;
+  --floating-shadow: 0 14px 30px rgba(0, 0, 0, 0.6);
+
+  --text-primary: #f5f5f5;
+  --text-secondary: #c4c4c4;
+  --text-tertiary: #8f8f8f;
+  --text-quaternary: #5e5e5e;
+
+  --border-color: #262626;
+  --border-primary: #333333;
+  --border-hover: #444444;
+  --glass-border: color-mix(in srgb, var(--border-color) 55%, transparent);
+}
+
+:root {
+  --sidebar-panel-width: 222px;
+}
+
+.main-content {
+  padding-top: 64px;
+}
+
+/* The black canvas needs no fade behind the frameless actions. */
+.top-gradient-blur {
+  display: none;
+}
+
+.main-header {
+  .header-actions {
+    top: 20px;
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    /* Same as the canvas: invisible at rest, keeps icons legible over scrolled content. */
+    background: var(--bg-secondary);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.sidebar {
+  padding: 16px 13px;
+  background: var(--bg-secondary);
+  border-right: 0;
+
+  .sidebar-header {
+    min-height: 30px;
+    padding: 0 0 0 7px;
+    margin-bottom: 11px;
+    border-bottom: 0;
+  }
+
+  .sidebar-brand {
+    gap: 12px;
+    padding: 0;
+  }
+
+  .sidebar-brand-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .sidebar-brand-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-section {
+    gap: 14px;
+  }
+
+  .nav-group {
+    gap: 3px;
+  }
+
+  .nav-group-label {
+    display: none;
+  }
+
+  .nav-item {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 400;
+    gap: 11px;
+
+    .nav-icon {
+      color: var(--text-secondary);
+    }
+
+    .nav-badge {
+      min-width: 0;
+      padding: 0 4px;
+      background: none;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      font-weight: 400;
+    }
+
+    &:hover {
+      border-color: transparent;
+      transform: none;
+    }
+
+    &.active {
+      background: var(--bg-tertiary);
+      border-color: transparent;
+      box-shadow: none;
+      color: var(--text-primary);
+      font-weight: 500;
+
+      .nav-icon {
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  &.collapsed .nav-item {
+    padding: 0;
+  }
+}
