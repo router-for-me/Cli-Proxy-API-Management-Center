@@ -53,3 +53,39 @@ describe('v8 management transport', () => {
     expect((events[1] as CustomEvent).detail.supportsPlugin).toBe(true);
   });
 });
+
+test('captured SIWC transport keeps original credentials and suppresses stale events, including ABA', async () => {
+  const events: Event[] = [];
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      dispatchEvent: (event: Event) => {
+        events.push(event);
+        return true;
+      },
+    },
+  });
+  apiClient.setConfig({ apiBase: 'https://original.invalid', managementKey: 'original-fixture' });
+  const captured = apiClient.captureConnection();
+  apiClient.setConfig({ apiBase: 'https://new.invalid', managementKey: 'new-fixture' });
+  const adapter: AxiosAdapter = async (config) => {
+    expect(config.baseURL).toBe('https://original.invalid/v8/management');
+    expect(config.headers.Authorization).toBe('Bearer original-fixture');
+    return {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      config,
+      headers: { 'x-cpa-version': 'old', 'x-cpa-support-plugin': 'true' },
+    };
+  };
+  await captured.delete('/oauth/session', { params: { state: 'original-session' }, adapter });
+  apiClient.setConfig({ apiBase: 'https://original.invalid', managementKey: 'original-fixture' });
+  await captured.delete('/oauth/session', { params: { state: 'original-session' }, adapter });
+  expect(events).toEqual([]);
+  const unauthorized: AxiosAdapter = async (config) => {
+    throw { isAxiosError: true, message: 'Unauthorized', config, response: { status: 401 } };
+  };
+  await expect(captured.delete('/oauth/session', { adapter: unauthorized })).rejects.toThrow();
+  expect(events).toEqual([]);
+});

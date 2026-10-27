@@ -1,11 +1,42 @@
 import { apiClient } from '@/services/api/client';
 import {
+  AnthropicResetGrantError,
   anthropicResetGrantBlocker,
   claimClaudeResetGrant,
   readClaudeOrganization,
   readClaudeResetGrants,
   type AnthropicResetSettledCode,
 } from '@/services/api/claudeResetGrants';
+
+export type ResetGrantFailureStage =
+  'organization' | 'status' | 'eligibility' | 'request_id' | 'operation';
+
+/** Only locally generated codes are displayed; never expose raw upstream errors. */
+export class ResetGrantPreflightError extends Error {
+  constructor(
+    readonly stage: ResetGrantFailureStage,
+    readonly reason: string
+  ) {
+    super(`${stage}: ${reason}`);
+  }
+}
+
+export function resetGrantFailureMessageKey(error: unknown) {
+  return error instanceof ResetGrantPreflightError
+    ? `claude_reset.failure_${error.stage}`
+    : 'claude_reset.blocked';
+}
+
+async function readPreflight<T>(stage: 'organization' | 'status', read: () => Promise<T>) {
+  try {
+    return await read();
+  } catch (error) {
+    throw new ResetGrantPreflightError(
+      stage,
+      error instanceof AnthropicResetGrantError ? error.code : 'request_failed'
+    );
+  }
+}
 
 export const RETRY_WINDOW_MS = 10 * 60 * 1000;
 type Operation = {
@@ -48,9 +79,9 @@ export function createResetGrantOperations(deps = defaultDependencies) {
     async run(key: string, authIndex: string, grantId: string) {
       const session = syncSession();
       const assertSession = () => {
-        if (deps.revision() !== session) throw new Error('session');
+        if (deps.revision() !== session) throw new ResetGrantPreflightError('operation', 'session');
       };
-      if (busy.has(key)) throw new Error('busy');
+      if (busy.has(key)) throw new ResetGrantPreflightError('operation', 'busy');
       busy.add(key);
       try {
         let operation = operations.get(key);
@@ -59,32 +90,45 @@ export function createResetGrantOperations(deps = defaultDependencies) {
           operation &&
           (operation.grantId !== grantId || deps.now() - operation.createdAt >= RETRY_WINDOW_MS)
         )
-          throw new Error('expired');
+          throw new ResetGrantPreflightError('operation', 'expired');
         const wasRetry = Boolean(operation);
-        const organization = await deps.readOrganization(authIndex);
+        const organization = await readPreflight('organization', () =>
+          deps.readOrganization(authIndex)
+        );
         assertSession();
-        if (operation && operation.organization !== organization) throw new Error('identity');
+        if (operation && operation.organization !== organization)
+          throw new ResetGrantPreflightError('operation', 'identity');
         if (!operation) {
-          const status = await deps.readStatus(authIndex);
+          const status = await readPreflight('status', () => deps.readStatus(authIndex));
           assertSession();
           const grant = status.grants.find((item) => item.id === grantId);
           const now = deps.now();
-          if (
-            anthropicResetGrantBlocker(status, grantId) ||
-            !grant ||
-            (grant.startsAt && Date.parse(grant.startsAt) > now) ||
-            (grant.endsAt && Date.parse(grant.endsAt) <= now) ||
-            (status.cooldownUntil && Date.parse(status.cooldownUntil) > now)
-          ) {
-            throw new Error('blocked');
+          const blocker = anthropicResetGrantBlocker(status, grantId);
+          const reason =
+            blocker ??
+            (!grant
+              ? 'unknown_grant'
+              : grant.startsAt && Date.parse(grant.startsAt) > now
+                ? 'not_started'
+                : grant.endsAt && Date.parse(grant.endsAt) <= now
+                  ? 'grant_expired'
+                  : status.cooldownUntil && Date.parse(status.cooldownUntil) > now
+                    ? 'cooldown'
+                    : null);
+          if (reason) throw new ResetGrantPreflightError('eligibility', `blocked_${reason}`);
+          let requestId: string;
+          try {
+            requestId = deps.requestId();
+          } catch {
+            throw new ResetGrantPreflightError('request_id', 'generation_failed');
           }
-          operation = { grantId, organization, requestId: deps.requestId(), createdAt: now };
+          operation = { grantId, organization, requestId, createdAt: now };
           operations.set(key, operation);
         }
         // Re-check immediately before dispatch; never send against a replacement connection.
         assertSession();
         if (wasRetry && deps.now() - operation.createdAt >= RETRY_WINDOW_MS) {
-          throw new Error('expired');
+          throw new ResetGrantPreflightError('operation', 'expired');
         }
         const code = await deps.claim(authIndex, organization, grantId, operation.requestId);
         assertSession();

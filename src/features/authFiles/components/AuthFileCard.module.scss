@@ -373,6 +373,23 @@
   opacity: 0.78;
 }
 
+/* ---------- SIWC：状态药丸 + 到期时间，与元数据行同为 mono 小字 ---------- */
+
+.siwcRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.siwcExpires {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
 /* ---------- 页脚动作区 ---------- */
 
 .actions {

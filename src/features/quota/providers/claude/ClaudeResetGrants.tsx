@@ -10,7 +10,12 @@ import {
 } from '@/services/api/claudeResetGrants';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/quota';
-import { resetGrantOperations, RETRY_WINDOW_MS } from './resetGrantOperations';
+import {
+  resetGrantOperations,
+  RETRY_WINDOW_MS,
+  ResetGrantPreflightError,
+  resetGrantFailureMessageKey,
+} from './resetGrantOperations';
 import { selectResetGrant } from './selectResetGrant';
 import { readResetGrantsForCard, scheduleResetGrantRead } from './resetGrantReads';
 
@@ -102,11 +107,18 @@ export function useClaudeResetGrants(
               ? 'success'
               : 'error'
           );
-        } catch {
+        } catch (error: unknown) {
           if (!current()) return;
           const unresolved = resetGrantOperations.inspect(key);
           showNotification(
-            t(`claude_reset.${unresolved && !unresolved.code ? 'unknown' : 'blocked'}`),
+            t(
+              unresolved && !unresolved.code
+                ? 'claude_reset.unknown'
+                : resetGrantFailureMessageKey(error),
+              {
+                code: error instanceof ResetGrantPreflightError ? error.reason : '',
+              }
+            ),
             'error'
           );
         } finally {

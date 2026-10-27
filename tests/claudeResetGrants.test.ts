@@ -8,12 +8,15 @@ import {
   readClaudeOrganization,
   readClaudeResetGrants,
   AnthropicResetGrantUnknownOutcome,
+  AnthropicResetGrantError,
   ANTHROPIC_RESET_RESULTS,
   type AnthropicResetSettledCode,
 } from '../src/services/api/claudeResetGrants';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import {
   createResetGrantOperations,
+  ResetGrantPreflightError,
+  resetGrantFailureMessageKey,
   RETRY_WINDOW_MS,
 } from '../src/features/quota/providers/claude/resetGrantOperations';
 
@@ -293,14 +296,95 @@ test('a stale claim answer cannot settle the replacement session operation', asy
   expect(operations.inspect('account')).toBeUndefined();
 });
 
-test('all grant messages and confirmation are translated in four locales', async () => {
+test('preflight read failures identify the stage without exposing upstream details', async () => {
+  for (const stage of ['organization', 'status'] as const) {
+    for (const failure of [new Error('SECRET'), new AnthropicResetGrantError('auth')]) {
+      const h = setup();
+      const fail = async (): Promise<never> => {
+        throw failure;
+      };
+      if (stage === 'organization') h.deps.readOrganization = fail;
+      else h.deps.readStatus = fail;
+      const operations = createResetGrantOperations(h.deps);
+      try {
+        await operations.run('account', 'a', grant.id);
+        throw new Error('Expected preflight failure');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ResetGrantPreflightError);
+        expect((error as ResetGrantPreflightError).stage).toBe(stage);
+        expect((error as Error).message).not.toContain('SECRET');
+        expect(resetGrantFailureMessageKey(error)).toBe(`claude_reset.failure_${stage}`);
+      }
+      expect(h.ids).toHaveLength(0);
+      expect(operations.inspect('account')).toBeUndefined();
+    }
+  }
+  expect(resetGrantFailureMessageKey(new Error('SECRET'))).toBe('claude_reset.blocked');
+});
+
+test('request ID generation failure is diagnosed before journaling or dispatch', async () => {
+  const h = setup();
+  h.deps.requestId = () => {
+    throw new Error('crypto unavailable');
+  };
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toMatchObject({
+    stage: 'request_id',
+    reason: 'generation_failed',
+  });
+  expect(operations.inspect('account')).toBeUndefined();
+  expect(h.ids).toHaveLength(0);
+});
+
+test('expiry and cooldown failures have distinct safe diagnostic codes', async () => {
+  for (const [fields, reason] of [
+    [{ startsAt: '2099-01-01T00:00:00Z' }, 'blocked_not_started'],
+    [{ endsAt: '1970-01-01T00:00:00Z' }, 'blocked_grant_expired'],
+    [{ paused: true }, 'blocked_paused'],
+  ] as const) {
+    const h = setup();
+    h.deps.readStatus = async () => ({
+      ...status(),
+      grants: [{ ...status().grants[0], ...fields }],
+    });
+    await expect(
+      createResetGrantOperations(h.deps).run('account', 'a', grant.id)
+    ).rejects.toMatchObject({
+      stage: 'eligibility',
+      reason,
+    });
+    expect(h.ids).toHaveLength(0);
+  }
+  const h = setup();
+  h.deps.readStatus = async () => ({ ...status(), cooldownUntil: '2099-01-01T00:00:00Z' });
+  await expect(
+    createResetGrantOperations(h.deps).run('account', 'a', grant.id)
+  ).rejects.toMatchObject({
+    stage: 'eligibility',
+    reason: 'blocked_cooldown',
+  });
+  expect(h.ids).toHaveLength(0);
+});
+
+test('read authentication refusals retain a safe diagnostic code', async () => {
+  for (const statusCode of [401, 403]) {
+    apiCallApi.request = async () => ({ statusCode, header: {}, body: {}, bodyText: '' });
+    await expect(readClaudeOrganization('a')).rejects.toMatchObject({ code: 'auth' });
+    await expect(readClaudeResetGrants('a')).rejects.toMatchObject({ code: 'auth' });
+  }
+});
+
+test('all grant messages and confirmation are translated in six locales', async () => {
   const locales = await Promise.all(
-    ['en', 'zh-CN', 'zh-TW', 'ru'].map(
+    ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko'].map(
       async (locale) => (await Bun.file(`src/i18n/locales/${locale}.json`).json()).claude_reset
     )
   );
   for (const locale of locales) {
     expect(Object.keys(locale).sort()).toEqual(Object.keys(locales[0]).sort());
+    for (const stage of ['organization', 'status', 'eligibility', 'request_id', 'operation']) {
+      expect(locale[`failure_${stage}`]).toContain('{{code}}');
+    }
     expect(locale.confirm_text).toContain('{{name}}');
     expect(locale.retry_confirm).toContain('{{name}}');
     expect(typeof locale.remaining).toBe('string');
