@@ -86,6 +86,19 @@ describe('quota headers', () => {
     expect(fiveHour).toBeNull();
     expect(weekly).toMatchObject({ used: 19, resetAt: Number(sec(NOW + 100 * H)) * 1000 });
   });
+
+  test('ignores the image-generation limit Codex reports after an image request', () => {
+    const readings = signalReadings('codex', {
+      observed_at: new Date(NOW).toISOString(),
+      signals: {
+        'X-Codex-Active-Limit': 'imagegen_premium',
+        'X-Codex-Primary-Window-Minutes': '10080',
+        'X-Codex-Primary-Used-Percent': '0',
+        'X-Codex-Primary-Reset-At': sec(NOW + 20 * H),
+      },
+    });
+    expect(readings).toEqual({ fiveHour: null, weekly: null });
+  });
 });
 
 describe('account rows', () => {

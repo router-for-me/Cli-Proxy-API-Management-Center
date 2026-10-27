@@ -187,6 +187,10 @@ export function signalReadings(
   }
 
   if (provider === 'codex') {
+    // Image-generation responses describe their own limit, not the plan's quota.
+    if ((signals['x-codex-active-limit'] ?? '').toLowerCase().startsWith('imagegen')) {
+      return { fiveHour: null, weekly: null };
+    }
     const windows: Record<number, QuotaReading> = {};
     (['primary', 'secondary'] as const).forEach((slot) => {
       const minutes = num(signals[`x-codex-${slot}-window-minutes`]);
