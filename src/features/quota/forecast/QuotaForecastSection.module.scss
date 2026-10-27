@@ -1,0 +1,22 @@
+/* Forecast section: controls above, one card per provider pool. */
+
+.section,
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-width: 0;
+}
+
+.cards {
+  gap: 17px;
+}
+
+.notice {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}

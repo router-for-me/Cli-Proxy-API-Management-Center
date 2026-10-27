@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
-import type { RoutingMember, RoutingStrategy } from '@/types/routing';
+import {
+  isWeightedRoutingStrategy,
+  type RoutingMember,
+  type RoutingStrategy,
+} from '@/types/routing';
 import { ROUTING_WEIGHT_MAX, clampWeight } from '../logic';
 import styles from '../RoutingPage.module.scss';
 
@@ -58,7 +62,7 @@ export function WeightDialog({
       }
     >
       <p className={styles.dialogHint}>{t('routing.weight_hint')}</p>
-      {strategy !== 'weighted-round-robin' ? (
+      {!isWeightedRoutingStrategy(strategy) ? (
         <p className={styles.dialogNotice}>{t('routing.weight_inactive')}</p>
       ) : null}
       <div className={styles.weightList}>

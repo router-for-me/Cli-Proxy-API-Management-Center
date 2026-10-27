@@ -1,0 +1,239 @@
+/* Forecast controls: one row above the charts, range navigation on the right. */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+.controls,
+.range {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
+}
+
+.range {
+  gap: 6px;
+}
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fieldLabel,
+.rangeLabel {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.rangeLabel {
+  margin-right: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+%control {
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--bg-primary);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-hover) var(--ease-out-strong),
+    color var(--dur-hover) var(--ease-out-strong),
+    transform var(--dur-press) var(--ease-out-strong);
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.segment {
+  @extend %control;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+.segmentActive {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.usageSelect {
+  min-width: 118px;
+
+  button {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.accounts {
+  position: relative;
+}
+
+.plainButton {
+  @extend %control;
+  padding: 0 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+.plainButtonActive {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.iconButton {
+  @extend %control;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+.flip {
+  transform: scaleX(-1);
+}
+
+.todayButton {
+  @extend %control;
+  padding: 0 14px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 300px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--floating-surface);
+  box-shadow: var(--floating-shadow);
+  font-size: 13px;
+}
+
+.popoverSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popoverTitle {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.popoverHint {
+  margin: 0;
+  color: var(--text-tertiary);
+  line-height: 1.45;
+}
+
+.weightRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.weightLabel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--text-secondary);
+}
+
+.weightCount {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.weightInput {
+  width: 72px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: right;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segment,
+  .plainButton,
+  .iconButton,
+  .todayButton {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
+  }
+}

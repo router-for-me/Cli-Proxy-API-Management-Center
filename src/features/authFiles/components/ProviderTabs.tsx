@@ -18,6 +18,8 @@ export type ProviderTabsProps = {
   active: string;
   resolvedTheme: ResolvedTheme;
   onChange: (type: string) => void;
+  /** 'pills': filled active pill without the underline rail (quota page). */
+  variant?: 'underline' | 'pills';
 };
 
 /**
@@ -30,6 +32,7 @@ export function ProviderTabs({
   active,
   resolvedTheme,
   onChange,
+  variant = 'underline',
 }: ProviderTabsProps) {
   const { t } = useTranslation();
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -44,7 +47,12 @@ export function ProviderTabs({
   }, []);
 
   return (
-    <div ref={tabsRef} className={styles.tabs} role="group" aria-label={t('auth_files.filter_all')}>
+    <div
+      ref={tabsRef}
+      className={`${styles.tabs} ${variant === 'pills' ? styles.tabsPills : ''}`}
+      role="group"
+      aria-label={t('auth_files.filter_all')}
+    >
       {types.map((type) => {
         const isActive = active === type;
         const label = type === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, type);

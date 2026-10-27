@@ -127,6 +127,42 @@
   }
 }
 
+/* Pill variant: filled active pill, no underline rail. */
+.tabsPills {
+  gap: 4px;
+  border-bottom: 0;
+
+  .tab {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 400;
+
+    &::after {
+      display: none;
+    }
+  }
+
+  .tabActive {
+    background: var(--bg-tertiary);
+    font-weight: 500;
+  }
+
+  .tabCount {
+    padding: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  .tabActive .tabCount {
+    background: none;
+    color: var(--text-tertiary);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tab,
   .tab::after {

@@ -1,0 +1,154 @@
+/* One provider pool: headline + forecast stats, chart, legend. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px 20px 14px;
+  border-radius: 16px;
+  background: var(--bg-primary);
+  --forecast-surface: var(--bg-primary);
+  --forecast-grid: color-mix(in srgb, var(--text-primary) 9%, transparent);
+  --forecast-grid-faint: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --forecast-now-line: color-mix(in srgb, var(--text-primary) 28%, transparent);
+  --forecast-day-label: color-mix(in srgb, var(--text-tertiary) 88%, var(--bg-primary));
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  min-height: 84px;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.titleRow,
+.headline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 9px;
+  min-width: 0;
+}
+
+.titleRow {
+  align-items: center;
+  min-height: 24px;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.subtle {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.headline {
+  gap: 0 8px;
+}
+
+.bigValue {
+  color: var(--text-primary);
+  font-size: 37px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 36px;
+  margin: 32px 0 0;
+
+  dt {
+    color: var(--text-tertiary);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.stat {
+  min-width: 0;
+}
+
+.stats .statLight {
+  font-weight: 400;
+}
+
+.stats .statQuiet {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.legendTitle {
+  min-width: 60px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.swatchSolid,
+.swatchDashed {
+  width: 15px;
+  height: 0;
+  border-top: 2px solid;
+}
+
+.swatchDashed {
+  border-top-style: dashed;
+}
+
+.swatchBlock {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}

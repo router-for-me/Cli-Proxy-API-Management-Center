@@ -14,8 +14,13 @@ export type { RoutingStrategy };
 export const ROUTING_STRATEGIES: readonly RoutingStrategy[] = [
   'round-robin',
   'weighted-round-robin',
+  'weekly-reset-weighted-round-robin',
   'fill-first',
 ];
+
+/** Strategies that split a tier by weight (the fork's weekly-reset strategy is weighted too). */
+export const isWeightedRoutingStrategy = (strategy: RoutingStrategy): boolean =>
+  strategy === 'weighted-round-robin' || strategy === 'weekly-reset-weighted-round-robin';
 
 /** v8 `api-keys.<family>` lists whose keys schedule one by one. */
 export const ROUTING_KEY_FAMILIES = [

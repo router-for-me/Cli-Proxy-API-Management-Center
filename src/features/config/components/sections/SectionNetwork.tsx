@@ -32,6 +32,12 @@ export function SectionNetwork({
       label: t('config_management.visual.sections.network.strategy_weighted_round_robin'),
     },
     {
+      value: 'weekly-reset-weighted-round-robin',
+      label: t(
+        'config_management.visual.sections.network.strategy_weekly_reset_weighted_round_robin'
+      ),
+    },
+    {
       value: 'fill-first',
       label: t('config_management.visual.sections.network.strategy_fill_first'),
     },

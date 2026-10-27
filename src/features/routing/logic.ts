@@ -25,6 +25,7 @@ import type {
   RoutingStrategy,
   RoutingTier,
 } from '@/types/routing';
+import { isWeightedRoutingStrategy } from '@/types/routing';
 
 /** Gap between newly numbered tiers, leaving room for later insertions. */
 export const TIER_STEP = 10;
@@ -428,7 +429,7 @@ const memberUnits = (
   weights: readonly (number | null)[],
   strategy: RoutingStrategy
 ): number => {
-  if (strategy !== 'weighted-round-robin') return member.keyCount;
+  if (!isWeightedRoutingStrategy(strategy)) return member.keyCount;
   if (member.weights.length === 0) return member.keyCount;
   return member.weights.reduce((sum, _, index) => sum + Math.max(0, weights[index] ?? 1), 0);
 };

@@ -4,7 +4,8 @@ export type OAuthChannelRules = { channel: string; rules: ErrorRuleDraft[] };
 
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
-export type RoutingStrategy = 'round-robin' | 'weighted-round-robin' | 'fill-first';
+export type RoutingStrategy =
+  'round-robin' | 'weighted-round-robin' | 'weekly-reset-weighted-round-robin' | 'fill-first';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
 export type PluginStoreAuthApplyTo = 'registry' | 'metadata' | 'artifact';
 export type PayloadParamValidationErrorCode =

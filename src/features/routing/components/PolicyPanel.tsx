@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { InfoTip } from '@/components/ui/Tooltip';
-import { ROUTING_STRATEGIES, type RoutingSettings, type RoutingStrategy } from '@/types/routing';
+import {
+  ROUTING_STRATEGIES,
+  isWeightedRoutingStrategy,
+  type RoutingSettings,
+  type RoutingStrategy,
+} from '@/types/routing';
 import styles from '../RoutingPage.module.scss';
 
 const strategyKey = (strategy: RoutingStrategy) => strategy.replace(/-/g, '_');
@@ -22,7 +27,7 @@ function StrategyMark({ strategy }: { strategy: RoutingStrategy }) {
   const opacities =
     strategy === 'round-robin'
       ? [1, 1, 1]
-      : strategy === 'weighted-round-robin'
+      : isWeightedRoutingStrategy(strategy)
         ? [1, 0.6, 0.3]
         : [1, 0.25, 0.25];
   return (

@@ -6,7 +6,12 @@ import { PROVIDER_LOGOS } from '@/features/providers/brandLogos';
 import type { ProviderBrand } from '@/features/providers/types';
 import { getAuthFileIcon } from '@/features/authFiles/constants';
 import type { ResolvedTheme } from '@/types';
-import type { RouteMember, RoutingMember, RoutingStrategy } from '@/types/routing';
+import {
+  isWeightedRoutingStrategy,
+  type RouteMember,
+  type RoutingMember,
+  type RoutingStrategy,
+} from '@/types/routing';
 import { formatRoutingDuration } from '../format';
 import styles from './MemberCard.module.scss';
 
@@ -146,7 +151,7 @@ export function MemberCard({
 
   const singleWeight = member.weights.length === 1 ? weights[0] : null;
   const showWeight =
-    strategy === 'weighted-round-robin' &&
+    isWeightedRoutingStrategy(strategy) &&
     singleWeight !== null &&
     singleWeight !== undefined &&
     state !== 'excluded';

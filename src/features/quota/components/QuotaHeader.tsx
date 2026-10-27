@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { IconRefreshCw } from '@/components/ui/icons';
+import { IconEye, IconEyeOff, IconRefreshCw } from '@/components/ui/icons';
 import { useCountUp } from '@/hooks/motion';
 import styles from './QuotaHeader.module.scss';
 
@@ -10,6 +10,9 @@ export type QuotaHeaderProps = {
   refreshing: boolean;
   disableControls: boolean;
   onRefreshAll: () => void;
+  /** Email visibility in forecast account names; the toggle is hidden when omitted. */
+  showEmails?: boolean;
+  onToggleEmails?: () => void;
 };
 
 /**
@@ -22,6 +25,7 @@ export type QuotaHeaderProps = {
 export function QuotaHeader(props: QuotaHeaderProps) {
   const { totalCount, loadedCount, attentionCount, refreshing, disableControls, onRefreshAll } =
     props;
+  const { showEmails = false, onToggleEmails } = props;
   const { t } = useTranslation();
   // 批量结果陆续落地时，「已加载」是页面上唯一滚动的数字
   const displayLoadedCount = useCountUp(loadedCount);
@@ -55,6 +59,17 @@ export function QuotaHeader(props: QuotaHeaderProps) {
         </p>
       </div>
       <div className={styles.actions} data-reveal>
+        {onToggleEmails && (
+          <button
+            type="button"
+            className={styles.secondaryAction}
+            onClick={onToggleEmails}
+            aria-pressed={showEmails}
+          >
+            {showEmails ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+            {showEmails ? t('quota_forecast.hide_emails') : t('quota_forecast.show_emails')}
+          </button>
+        )}
         <button
           type="button"
           className={styles.primaryAction}
