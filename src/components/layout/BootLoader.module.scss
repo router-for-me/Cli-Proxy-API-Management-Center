@@ -1,0 +1,59 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--bg-secondary);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+
+.track {
+  position: relative;
+  width: min(200px, 60vw);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+}
+
+.bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--text-primary);
+  animation: boot-slide 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes boot-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    width: 100%;
+    animation: boot-pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes boot-pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+}

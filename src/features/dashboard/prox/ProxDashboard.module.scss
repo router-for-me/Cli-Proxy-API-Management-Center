@@ -1,0 +1,731 @@
+@use '../../../styles/mixins' as *;
+@use '../../../styles/variables' as *;
+
+/* Dashboard (fork): same header language as the quota page, flat cards on the canvas. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- header ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.headerCopy {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+
+  > span + span::before {
+    content: '·';
+    margin: 0 8px;
+    color: var(--text-quaternary);
+  }
+}
+
+.connection {
+  i {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    vertical-align: 1px;
+    background: var(--text-quaternary);
+  }
+
+  &[data-status='connected'] i {
+    background: var(--viz-success);
+  }
+
+  &[data-status='connecting'] i {
+    background: var(--amber-color);
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    transform var(--dur-press) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong);
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.primaryAction {
+  background: var(--text-primary);
+  color: var(--bg-secondary);
+}
+
+.secondaryAction {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primaryAction:hover {
+    background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
+  }
+
+  .secondaryAction:hover {
+    background: var(--bg-tertiary);
+  }
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  min-width: 0;
+  border-radius: 16px;
+  background: var(--bg-primary);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px 6px;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardCount {
+  font-size: 14px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.cardTools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.routing {
+  @include text-ellipsis;
+  font-family: $font-mono;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.iconButton {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &[aria-pressed='true'] {
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.cardEmpty {
+  margin: 0;
+  padding: 18px 24px 24px;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+.muted {
+  color: var(--text-tertiary);
+}
+
+/* ---------- request totals ---------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-bottom: 1px solid var(--border-color);
+
+  @include mobile {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px 24px 22px;
+
+  & + & {
+    border-left: 1px solid var(--border-color);
+  }
+
+  dt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  @include mobile {
+    padding: 16px 18px;
+
+    &:nth-child(3) {
+      border-left: 0;
+    }
+
+    &:nth-child(n + 3) {
+      border-top: 1px solid var(--border-color);
+    }
+
+    dd {
+      font-size: 26px;
+    }
+  }
+}
+
+/* The figure the totals are judged by: set apart by the tinted cell. */
+.statRate {
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  border-top-right-radius: 16px;
+
+  @include mobile {
+    border-top-right-radius: 0;
+  }
+}
+
+.swatchSuccess,
+.swatchFailure {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.swatchSuccess {
+  background: var(--viz-success);
+}
+
+.swatchFailure {
+  background: var(--viz-failure);
+}
+
+/* ---------- traffic chart ---------- */
+
+.chart {
+  --axis-width: 40px;
+  position: relative;
+  margin: 0;
+  padding: 14px 24px 18px;
+}
+
+.chartTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 26px;
+  margin: 4px 0 8px var(--axis-width);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+}
+
+.textButton {
+  @include button-reset;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+.plotRow {
+  display: flex;
+  margin-bottom: 22px;
+
+  &:last-of-type {
+    margin-bottom: 10px;
+  }
+}
+
+.yAxis {
+  position: relative;
+  flex: none;
+  width: var(--axis-width);
+
+  span {
+    position: absolute;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+  }
+}
+
+.plot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  touch-action: pan-y;
+}
+
+.svg {
+  position: relative;
+  display: block;
+  overflow: visible;
+}
+
+.gridLine {
+  stroke: var(--border-color);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.hoverBand {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  pointer-events: none;
+}
+
+.dot {
+  stroke: var(--bg-primary);
+  stroke-width: 2;
+}
+
+.barSuccess {
+  fill: var(--viz-success);
+}
+
+.barFailure {
+  fill: var(--viz-failure);
+}
+
+.noRequests {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.chartEmpty {
+  margin: 0;
+  padding: 32px 24px;
+  font-size: 14px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.xAxis {
+  position: relative;
+  height: 16px;
+  margin-left: var(--axis-width);
+
+  span {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+}
+
+.tooltip {
+  position: absolute;
+  top: 52px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 156px;
+  margin-left: 24px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--floating-surface, var(--bg-primary));
+  box-shadow: var(--floating-shadow, 0 10px 24px rgba(0, 0, 0, 0.3));
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.tooltipTitle {
+  margin-bottom: 2px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  i {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  b {
+    margin-left: auto;
+    padding-left: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+}
+
+.tooltipDivider {
+  height: 1px;
+  margin: 2px 0;
+  background: var(--border-color);
+}
+
+.tableWrap {
+  max-height: 320px;
+  margin: 10px 0 0 var(--axis-width);
+  overflow: auto;
+  border-top: 1px solid var(--border-color);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 7px 10px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    font-weight: 500;
+    color: var(--text-tertiary);
+  }
+
+  th:first-child {
+    text-align: left;
+  }
+
+  tbody th {
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+
+  td {
+    color: var(--text-primary);
+  }
+
+  tbody tr + tr {
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+/* ---------- accounts ---------- */
+
+.accounts {
+  padding: 4px 24px 12px;
+}
+
+.accountRow {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.4fr) minmax(170px, 1.2fr) minmax(120px, 1fr) minmax(110px, 0.8fr)
+    minmax(110px, 0.8fr) minmax(90px, 0.7fr);
+  align-items: center;
+  column-gap: 24px;
+  min-height: 52px;
+  font-size: 14px;
+  color: var(--text-primary);
+
+  & + & {
+    border-top: 1px solid var(--border-color);
+  }
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(160px, 1.4fr) minmax(150px, 1.2fr) minmax(110px, 1fr) minmax(
+        100px,
+        0.8fr
+      );
+
+    .colFive,
+    .colReset {
+      display: none;
+    }
+  }
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    column-gap: 12px;
+    padding: 8px 0;
+
+    > :nth-child(n + 3) {
+      display: none;
+    }
+  }
+}
+
+.accountHead {
+  min-height: 36px;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+.accountName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.providerIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+
+  img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+}
+
+.ellipsis {
+  @include text-ellipsis;
+  min-width: 0;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+
+  > i {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+}
+
+.statusServing {
+  background: var(--viz-success);
+}
+
+.statusCooling {
+  background: var(--amber-color);
+}
+
+.statusFailing {
+  background: var(--viz-failure);
+}
+
+.statusDisabled {
+  background: var(--text-quaternary);
+}
+
+.priority {
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--viz-success) 45%, transparent);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--viz-success) 12%, transparent);
+}
+
+.requests,
+.quota {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.requestsValue,
+.quotaValue {
+  flex: none;
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
+}
+
+.shareTrack,
+.quotaTrack {
+  position: relative;
+  flex: 1;
+  max-width: 96px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+  }
+}
+
+.quotaTrack span {
+  background: var(--text-secondary);
+}
+
+.quota[data-tone='low'] {
+  .quotaValue {
+    color: var(--quota-medium-color, var(--amber-color));
+  }
+
+  .quotaTrack span {
+    background: var(--quota-medium-color, var(--amber-color));
+  }
+}
+
+.quota[data-tone='critical'] {
+  .quotaValue {
+    color: var(--viz-failure);
+  }
+
+  .quotaTrack span {
+    background: var(--viz-failure);
+  }
+}

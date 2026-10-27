@@ -17,6 +17,7 @@ import { LegacyBackendError } from '@/services/api/legacyBackendProbe';
 import { DotMatrixHero } from './login/DotMatrixHero';
 import { LoginForm } from './login/LoginForm';
 import { resolveLoginRedirect } from '@/router/loginRedirect';
+import { BootLoader } from '@/components/layout/BootLoader';
 import styles from './LoginPage.module.scss';
 
 export type LoginPhase = 'idle' | 'connecting' | 'success' | 'exiting';
@@ -169,16 +170,13 @@ export function LoginPage() {
   );
 
   useEffect(() => {
-    const splashStartedAt = performance.now();
     const init = async () => {
       try {
         const autoLoggedIn = await restoreSession();
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
-          // 每次打开都会经过启动画面：网络快时补足最短停留，避免一闪而过；网络慢时不再额外等待
-          const { splashMin } = getLoginTransitionTimings(prefersReducedMotion());
-          const elapsed = performance.now() - splashStartedAt;
-          leaveTo(redirectTarget, Math.max(0, splashMin - elapsed));
+          // Fork: open the app as soon as the session is restored, with no minimum splash or exit fade.
+          navigate(redirectTarget, { replace: true });
         } else {
           // 按最新的已保存信息回填表单（restoreSession 可能迁移了旧版存储）。
           // 自动登录被 401 拒绝时全局会登出并清空存储，此时保留首帧填入的地址与密钥，
@@ -276,16 +274,8 @@ export function LoginPage() {
 
         <main className={styles.main}>
           {showSplash ? (
-            <div className={styles.splash} role="status" aria-live="polite">
-              <img src={INLINE_LOGO_JPEG} alt="" className={styles.splashLogo} />
-              <div className={styles.splashText}>
-                <h1 className={styles.splashTitle}>{t('splash.title')}</h1>
-                <p className={styles.splashSubtitle}>{t('splash.subtitle')}</p>
-              </div>
-              <div className={styles.splashLoader} aria-hidden="true">
-                <div className={styles.splashLoaderBar} />
-              </div>
-            </div>
+            // Fork: session restore shows the plain full-screen loader, not the branded splash.
+            <BootLoader />
           ) : (
             <div className={styles.column}>
               <h1 className={styles.title}>{t('splash.subtitle')}</h1>
