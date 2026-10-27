@@ -1494,12 +1494,7 @@
     "accounts_other": "계정 {{count}}개",
     "all_available": "모두 사용 가능",
     "available_of": "{{total}}개 중 {{available}}개 사용 가능",
-    "used_of": "{{capacity}}% 중 {{used}}% 사용",
-    "left": "{{left}}% 남음",
-    "next_reset": "다음 초기화: {{name}} {{time}} ({{relative}})",
     "no_reading": "아직 데이터 없음",
-    "unreported_one": "계정 {{count}}개 데이터 없음",
-    "unreported_other": "계정 {{count}}개 데이터 없음",
     "source_note": "실시간 사용량을 불러온 계정은 그 값을, 나머지는 계정별 마지막 프록시 응답을 사용합니다. 한도에 걸린 계정은 모두 사용한 것으로 계산합니다."
   },
   "quota_management": {

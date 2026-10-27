@@ -1502,14 +1502,7 @@
     "accounts_other": "{{count}} аккаунта",
     "all_available": "Все доступны",
     "available_of": "Доступно {{available}} из {{total}}",
-    "used_of": "Использовано {{used}}% из {{capacity}}%",
-    "left": "осталось {{left}}%",
-    "next_reset": "Следующий сброс: {{name}} в {{time}} ({{relative}})",
     "no_reading": "Данных пока нет",
-    "unreported_one": "{{count}} аккаунт ещё без данных",
-    "unreported_few": "{{count}} аккаунта ещё без данных",
-    "unreported_many": "{{count}} аккаунтов ещё без данных",
-    "unreported_other": "{{count}} аккаунта ещё без данных",
     "source_note": "Где загружено текущее использование — берётся оно, иначе последний ответ прокси для аккаунта. Аккаунт на лимите считается использованным полностью."
   },
   "quota_management": {

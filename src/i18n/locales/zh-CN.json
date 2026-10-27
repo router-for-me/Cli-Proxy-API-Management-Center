@@ -1490,11 +1490,7 @@
     "accounts": "{{count}} 个账号",
     "all_available": "全部可用",
     "available_of": "{{total}} 个中 {{available}} 个可用",
-    "used_of": "已用 {{used}}% / 共 {{capacity}}%",
-    "left": "剩余 {{left}}%",
-    "next_reset": "下次重置：{{name}} 于 {{time}}（{{relative}}）",
     "no_reading": "暂无读数",
-    "unreported": "{{count}} 个账号尚无读数",
     "source_note": "已加载实时用量的账号用实时数据，其余用该账号最近一次代理响应。受限账号按已用满计算。"
   },
   "quota_management": {

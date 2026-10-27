@@ -1,6 +1,6 @@
 /**
- * Pooled quota: every account of a provider summed per rate-limit window, out
- * of N × 100%. React-free; `nowMs` is always injected.
+ * Provider overview: each account's 5-hour and weekly usage, grouped by
+ * provider. React-free; `nowMs` is always injected.
  */
 
 import type { RateLimitWindowId } from '@/types';
@@ -34,32 +34,16 @@ export interface PoolAccountInput {
   status: AccountStatus;
 }
 
-export interface PoolAccountWindow {
+export interface PoolAccount {
   name: string;
   displayName: string;
-  reading: PoolReading | null;
-}
-
-export interface PoolWindowSummary {
-  id: PoolWindowId;
-  accounts: PoolAccountWindow[];
-  reporting: number;
-  usedPercent: number;
-  capacityPercent: number;
-  nextReset: { displayName: string; atMs: number } | null;
-}
-
-export interface PoolUnavailableAccount {
-  name: string;
-  displayName: string;
-  status: Exclude<AccountStatus, { kind: 'available' }>;
+  status: AccountStatus;
+  windows: Record<PoolWindowId, PoolReading | null>;
 }
 
 export interface ProviderPool {
   provider: QuotaProviderType;
-  accountCount: number;
-  windows: PoolWindowSummary[];
-  unavailable: PoolUnavailableAccount[];
+  accounts: PoolAccount[];
 }
 
 interface WindowLike {
@@ -99,59 +83,25 @@ export function readPoolWindows(
   return readings;
 }
 
-const backAtOf = (status: AccountStatus): number =>
-  'backAtMs' in status ? status.backAtMs : Number.POSITIVE_INFINITY;
-
 export function summarizeProviderPools(
   accounts: readonly PoolAccountInput[],
   nowMs: number
 ): ProviderPool[] {
-  const byProvider = new Map<QuotaProviderType, PoolAccountInput[]>();
+  const byProvider = new Map<QuotaProviderType, PoolAccount[]>();
   accounts.forEach((account) => {
     if (!isPoolProvider(account.provider)) return;
-    byProvider.set(account.provider, [...(byProvider.get(account.provider) ?? []), account]);
+    const readings = readPoolWindows(account, nowMs);
+    const member: PoolAccount = {
+      name: account.name,
+      displayName: account.displayName,
+      status: account.status,
+      windows: {
+        'five-hour': readings['five-hour'] ?? null,
+        'seven-day': readings['seven-day'] ?? null,
+      },
+    };
+    byProvider.set(account.provider, [...(byProvider.get(account.provider) ?? []), member]);
   });
 
-  return Array.from(byProvider, ([provider, members]) => {
-    const readings = members.map((account) => readPoolWindows(account, nowMs));
-
-    const windows = POOL_WINDOW_IDS.map((id): PoolWindowSummary => {
-      const perAccount = members.map((account, index) => ({
-        name: account.name,
-        displayName: account.displayName,
-        reading: readings[index][id] ?? null,
-      }));
-      const reported = perAccount.filter(
-        (account): account is PoolAccountWindow & { reading: PoolReading } =>
-          account.reading !== null
-      );
-      const nextReset = reported
-        .filter((account) => account.reading.usedPercent > 0 && account.reading.resetAtMs !== null)
-        .reduce<PoolWindowSummary['nextReset']>(
-          (soonest, account) =>
-            soonest === null || account.reading.resetAtMs! < soonest.atMs
-              ? { displayName: account.displayName, atMs: account.reading.resetAtMs! }
-              : soonest,
-          null
-        );
-      return {
-        id,
-        accounts: perAccount,
-        reporting: reported.length,
-        usedPercent: reported.reduce((sum, account) => sum + account.reading.usedPercent, 0),
-        capacityPercent: reported.length * 100,
-        nextReset,
-      };
-    });
-
-    const unavailable = members
-      .filter(
-        (account): account is PoolAccountInput & { status: PoolUnavailableAccount['status'] } =>
-          account.status.kind !== 'available'
-      )
-      .map(({ name, displayName, status }) => ({ name, displayName, status }))
-      .sort((a, b) => backAtOf(a.status) - backAtOf(b.status));
-
-    return { provider, accountCount: members.length, windows, unavailable };
-  });
+  return Array.from(byProvider, ([provider, members]) => ({ provider, accounts: members }));
 }

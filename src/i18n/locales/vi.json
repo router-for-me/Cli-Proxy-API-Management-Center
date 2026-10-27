@@ -1450,12 +1450,7 @@
     "accounts_other": "{{count}} tài khoản",
     "all_available": "Tất cả sẵn sàng",
     "available_of": "{{available}}/{{total}} sẵn sàng",
-    "used_of": "Đã dùng {{used}}% trên {{capacity}}%",
-    "left": "còn {{left}}%",
-    "next_reset": "Đặt lại kế tiếp: {{name}} lúc {{time}} ({{relative}})",
     "no_reading": "Chưa có số liệu",
-    "unreported_one": "{{count}} tài khoản chưa có số liệu",
-    "unreported_other": "{{count}} tài khoản chưa có số liệu",
     "source_note": "Dùng mức dùng hiện tại nếu bạn đã tải, nếu không thì dùng phản hồi proxy gần nhất của từng tài khoản. Tài khoản bị giới hạn được tính là đã dùng hết."
   },
   "quota_management": {

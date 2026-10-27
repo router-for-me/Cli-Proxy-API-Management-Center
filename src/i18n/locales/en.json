@@ -1494,12 +1494,7 @@
     "accounts_other": "{{count}} accounts",
     "all_available": "All available",
     "available_of": "{{available}} of {{total}} available",
-    "used_of": "{{used}}% used of {{capacity}}%",
-    "left": "{{left}}% left",
-    "next_reset": "Next reset: {{name}} at {{time}} ({{relative}})",
     "no_reading": "No reading yet",
-    "unreported_one": "{{count}} account not seen yet",
-    "unreported_other": "{{count}} accounts not seen yet",
     "source_note": "Uses live usage where you loaded it, otherwise each account’s last proxy response. A limited account counts as fully used."
   },
   "quota_management": {

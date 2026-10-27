@@ -8,7 +8,13 @@ import {
   isThemeSurfaceIconProvider,
 } from '@/features/authFiles/constants';
 import { describeAccountStatus, formatClockTime } from '../accountStatus';
-import type { PoolAccountWindow, PoolWindowSummary, ProviderPool } from '../pool';
+import {
+  POOL_WINDOW_IDS,
+  type PoolAccount,
+  type PoolReading,
+  type PoolWindowId,
+  type ProviderPool,
+} from '../pool';
 import { QUOTA_PROGRESS_HIGH_THRESHOLD, QUOTA_PROGRESS_MEDIUM_THRESHOLD } from './QuotaMeter';
 import styles from './QuotaPool.module.scss';
 
@@ -48,11 +54,13 @@ function ProviderPoolCard({
   now: number;
   resolvedTheme: ResolvedTheme;
 }) {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage;
+  const { t } = useTranslation();
   const iconSrc = getAuthFileIcon(pool.provider, resolvedTheme);
   const typeLabel = getTypeLabel(t, pool.provider);
-  const availableCount = pool.accountCount - pool.unavailable.length;
+  const total = pool.accounts.length;
+  const availableCount = pool.accounts.filter(
+    (account) => account.status.kind === 'available'
+  ).length;
 
   return (
     <article className={styles.card}>
@@ -68,125 +76,117 @@ function ProviderPoolCard({
           {iconSrc ? <img src={iconSrc} alt="" className={styles.icon} /> : null}
         </span>
         <h2 className={styles.title}>{typeLabel}</h2>
-        <span className={styles.accounts}>
-          {t('quota_pool.accounts', { count: pool.accountCount })}
-        </span>
+        <span className={styles.accounts}>{t('quota_pool.accounts', { count: total })}</span>
         <span
           className={styles.availability}
-          data-state={pool.unavailable.length === 0 ? 'ok' : availableCount === 0 ? 'none' : 'some'}
+          data-state={availableCount === total ? 'ok' : availableCount === 0 ? 'none' : 'some'}
         >
-          {pool.unavailable.length === 0
+          {availableCount === total
             ? t('quota_pool.all_available')
-            : t('quota_pool.available_of', { available: availableCount, total: pool.accountCount })}
+            : t('quota_pool.available_of', { available: availableCount, total })}
         </span>
       </header>
 
-      <div className={styles.windows}>
-        {pool.windows.map((window) => (
-          <PoolWindowRow key={window.id} window={window} now={now} locale={locale} />
+      <div className={styles.table}>
+        <div className={styles.columns} aria-hidden="true">
+          <span />
+          {POOL_WINDOW_IDS.map((id) => (
+            <span key={id} className={styles.columnLabel}>
+              {t(`account_status.window_${id}`)}
+            </span>
+          ))}
+        </div>
+        {pool.accounts.map((account) => (
+          <AccountRow key={account.name} account={account} now={now} />
         ))}
       </div>
-
-      {pool.unavailable.length > 0 && (
-        <ul className={styles.unavailable}>
-          {pool.unavailable.map((account) => {
-            const { tone, headline, when } = describeAccountStatus(account.status, t, now, locale);
-            return (
-              <li key={account.name} className={styles.unavailableRow} data-tone={tone}>
-                <span className={styles.unavailableDot} aria-hidden="true" />
-                <span className={styles.unavailableName} title={account.displayName}>
-                  {account.displayName}
-                </span>
-                <span className={styles.unavailableStatus}>
-                  {headline}
-                  {when && <span className={styles.when}> · {when}</span>}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </article>
   );
 }
 
-function PoolWindowRow({
-  window,
-  now,
-  locale,
-}: {
-  window: PoolWindowSummary;
-  now: number;
-  locale?: string;
-}) {
-  const { t } = useTranslation();
-  const label = t(`account_status.window_${window.id}`);
-  const used = Math.round(window.usedPercent);
-  const left = Math.round(window.capacityPercent - window.usedPercent);
-  const unreported = window.accounts.length - window.reporting;
+function AccountRow({ account, now }: { account: PoolAccount; now: number }) {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage;
+  const status =
+    account.status.kind === 'available'
+      ? null
+      : describeAccountStatus(account.status, t, now, locale);
 
   return (
-    <div className={styles.window}>
-      <span className={styles.windowLabel}>{label}</span>
-      <div className={styles.slots}>
-        {window.accounts.map((account) => (
-          <AccountSlot key={account.name} account={account} windowLabel={label} />
-        ))}
-      </div>
-      <div className={styles.figures}>
-        {window.reporting === 0 ? (
-          <span className={styles.muted}>{t('quota_pool.no_reading')}</span>
-        ) : (
-          <>
-            <span className={styles.total}>
-              {t('quota_pool.used_of', { used, capacity: window.capacityPercent })}
-            </span>
-            <span className={styles.left}>{t('quota_pool.left', { left })}</span>
-          </>
-        )}
-      </div>
-      <div className={styles.windowMeta}>
-        {window.nextReset && (
-          <span>
-            {t('quota_pool.next_reset', {
-              name: window.nextReset.displayName,
-              time: formatClockTime(window.nextReset.atMs, now, locale),
-              relative: formatRelativeInstant(window.nextReset.atMs, now, locale),
-            })}
+    <div className={styles.row}>
+      <div className={styles.identity}>
+        <span className={styles.name} title={account.displayName}>
+          {account.displayName}
+        </span>
+        {status && (
+          <span className={styles.status} data-tone={status.tone}>
+            <span className={styles.statusDot} aria-hidden="true" />
+            {status.headline}
+            {status.when && <span className={styles.when}> · {status.when}</span>}
           </span>
         )}
-        {unreported > 0 && window.reporting > 0 && (
-          <span className={styles.muted}>{t('quota_pool.unreported', { count: unreported })}</span>
-        )}
       </div>
+      {POOL_WINDOW_IDS.map((id) => (
+        <WindowCell key={id} id={id} reading={account.windows[id]} now={now} locale={locale} />
+      ))}
     </div>
   );
 }
 
-function AccountSlot({
-  account,
-  windowLabel,
+function WindowCell({
+  id,
+  reading,
+  now,
+  locale,
 }: {
-  account: PoolAccountWindow;
-  windowLabel: string;
+  id: PoolWindowId;
+  reading: PoolReading | null;
+  now: number;
+  locale?: string;
 }) {
   const { t } = useTranslation();
-  const used = account.reading === null ? null : Math.round(account.reading.usedPercent);
-  const description = `${account.displayName} · ${windowLabel} · ${
-    used === null
-      ? t('quota_pool.no_reading')
-      : t('quota_management.percent_used', { percent: used })
-  }`;
+  const label = t(`account_status.window_${id}`);
+  const used = reading === null ? null : Math.round(reading.usedPercent);
 
   return (
-    <span className={styles.slot} title={description} role="img" aria-label={description}>
-      {used !== null && (
-        <span
-          className={styles.slotFill}
-          data-tone={headroomTone(used)}
-          style={{ width: `${used}%` }}
-        />
-      )}
-    </span>
+    <div className={styles.cell}>
+      <div className={styles.cellHead}>
+        <span className={styles.cellLabel}>{label}</span>
+        {used === null ? (
+          <span className={styles.muted}>{t('quota_pool.no_reading')}</span>
+        ) : (
+          <>
+            <span className={styles.used}>
+              {t('quota_management.percent_used', { percent: used })}
+            </span>
+            {reading?.resetAtMs != null && (
+              <span
+                className={styles.reset}
+                title={formatClockTime(reading.resetAtMs, now, locale)}
+              >
+                {formatRelativeInstant(reading.resetAtMs, now, locale)}
+              </span>
+            )}
+          </>
+        )}
+      </div>
+      <span
+        className={styles.bar}
+        role="img"
+        aria-label={`${label} · ${
+          used === null
+            ? t('quota_pool.no_reading')
+            : t('quota_management.percent_used', { percent: used })
+        }`}
+      >
+        {used !== null && (
+          <span
+            className={styles.barFill}
+            data-tone={headroomTone(used)}
+            style={{ width: `${used}%` }}
+          />
+        )}
+      </span>
+    </div>
   );
 }

@@ -1518,11 +1518,7 @@
     "accounts": "{{count}} 個帳號",
     "all_available": "全部可用",
     "available_of": "{{total}} 個中 {{available}} 個可用",
-    "used_of": "已用 {{used}}% / 共 {{capacity}}%",
-    "left": "剩餘 {{left}}%",
-    "next_reset": "下次重置：{{name}} 於 {{time}}（{{relative}}）",
     "no_reading": "尚無讀數",
-    "unreported": "{{count}} 個帳號尚無讀數",
     "source_note": "已載入即時用量的帳號使用即時資料，其餘使用該帳號最近一次代理回應。受限帳號視為已用滿。"
   },
   "quota_management": {

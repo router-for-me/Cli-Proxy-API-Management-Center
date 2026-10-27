@@ -368,7 +368,7 @@ describe('pooled quota', () => {
     }),
   });
 
-  test('sums both windows out of N x 100% and counts a limited account as full', () => {
+  test('keeps each account and its own windows, a limited account reading as full', () => {
     const limited: AccountStatus = {
       kind: 'limited',
       window: 'five-hour',
@@ -379,17 +379,26 @@ describe('pooled quota', () => {
       NOW
     );
     expect(pool.provider).toBe('claude');
-    expect(pool.accountCount).toBe(2);
-
-    const [fiveHour, sevenDay] = pool.windows;
-    expect(fiveHour.id).toBe('five-hour');
-    expect(fiveHour.reporting).toBe(2);
-    expect(fiveHour.usedPercent).toBeCloseTo(119);
-    expect(fiveHour.capacityPercent).toBe(200);
-    expect(fiveHour.nextReset).toEqual({ displayName: 'work', atMs: FIVE_HOUR_RESET });
-    expect(sevenDay.usedPercent).toBeCloseTo(50);
-
-    expect(pool.unavailable).toEqual([{ name: 'work', displayName: 'work', status: limited }]);
+    expect(pool.accounts).toEqual([
+      {
+        name: 'work',
+        displayName: 'work',
+        status: limited,
+        windows: {
+          'five-hour': { usedPercent: 100, resetAtMs: FIVE_HOUR_RESET },
+          'seven-day': { usedPercent: 25, resetAtMs: SEVEN_DAY_RESET },
+        },
+      },
+      {
+        name: 'personal',
+        displayName: 'personal',
+        status: { kind: 'available' },
+        windows: {
+          'five-hour': { usedPercent: 19, resetAtMs: FIVE_HOUR_RESET },
+          'seven-day': { usedPercent: 25, resetAtMs: SEVEN_DAY_RESET },
+        },
+      },
+    ]);
   });
 
   test('a window whose reset has passed counts as empty', () => {
@@ -399,10 +408,9 @@ describe('pooled quota', () => {
     });
   });
 
-  test('accounts without a reading are reported separately, not as zero', () => {
+  test('an account without a reading has no windows, not zero', () => {
     const [pool] = summarizeProviderPools(
       [
-        claudeAccount('seen', '0.4'),
         {
           name: 'unseen',
           displayName: 'unseen',
@@ -413,15 +421,10 @@ describe('pooled quota', () => {
       ],
       NOW
     );
-    expect(pool.windows[0].reporting).toBe(1);
-    expect(pool.windows[0].capacityPercent).toBe(100);
-    expect(pool.windows[0].accounts.map((account) => account.reading)).toEqual([
-      { usedPercent: 40, resetAtMs: FIVE_HOUR_RESET },
-      null,
-    ]);
+    expect(pool.accounts[0].windows).toEqual({ 'five-hour': null, 'seven-day': null });
   });
 
-  test('Codex weekly maps to the 7-day pool; providers without these windows are skipped', () => {
+  test('Codex weekly maps to the 7-day column; providers without these windows are skipped', () => {
     const pools = summarizeProviderPools(
       [
         {
@@ -445,23 +448,32 @@ describe('pooled quota', () => {
       NOW
     );
     expect(pools.map((pool) => pool.provider)).toEqual(['codex']);
-    expect(pools[0].windows[1]).toMatchObject({ id: 'seven-day', usedPercent: 30, reporting: 1 });
-    expect(pools[0].windows[0].reporting).toBe(0);
+    expect(pools[0].accounts[0].windows).toEqual({
+      'five-hour': null,
+      'seven-day': { usedPercent: 30, resetAtMs: SEVEN_DAY_RESET },
+    });
   });
 
-  test('renders the pooled headline with used and left', () => {
+  test('renders one row per account with its own usage and reset', () => {
+    const limited: AccountStatus = {
+      kind: 'limited',
+      window: 'five-hour',
+      backAtMs: FIVE_HOUR_RESET,
+    };
     const pools = summarizeProviderPools(
-      [claudeAccount('work', '0.99'), claudeAccount('personal', '0.19')],
+      [claudeAccount('work', '0.99', limited), claudeAccount('personal', '0.19')],
       NOW
     );
     const markup = renderToStaticMarkup(
       createElement(QuotaPool, { pools, now: NOW, resolvedTheme: 'light' })
     );
     expect(markup).toContain('2 accounts');
-    expect(markup).toContain('118% used of 200%');
-    expect(markup).toContain('82% left');
-    expect(markup).toContain('Next reset: work at 17:20');
-    expect(markup).toContain('All available');
+    expect(markup).toContain('1 of 2 available');
+    expect(markup).toContain('5-hour limit reached');
+    expect(markup).toContain('100% used');
+    expect(markup).toContain('19% used');
+    expect(markup).toContain('in 3 hours');
+    expect(markup).not.toContain('of 200%');
   });
 });
 
