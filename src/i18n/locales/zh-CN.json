@@ -2661,8 +2661,6 @@
     "weight": "权重 {{weight}}",
     "renews": "续订 {{absolute}} · {{relative}}",
     "use_reset": "使用一次重置",
-    "details_show": "显示详情",
-    "details_hide": "隐藏详情",
     "claude_bank_hint": "使用后清除符合条件的限额",
     "codex_bank_hint": "使用后重置额度",
     "available": "{{count}} 次可用",

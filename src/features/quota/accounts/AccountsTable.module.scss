@@ -322,14 +322,6 @@
   }
 }
 
-.detailsToggle {
-  padding: 0 6px;
-}
-
-.flipped {
-  transform: rotate(180deg);
-}
-
 .spinning {
   animation: account-spin 0.8s linear infinite;
 }
@@ -344,13 +336,6 @@
   padding: 0 0 12px;
   color: var(--text-tertiary);
   font-size: 12.5px;
-}
-
-.details {
-  margin: 0 0 16px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--bg-tertiary) 55%, transparent);
 }
 
 @media (max-width: 1100px) {

@@ -1772,8 +1772,6 @@
     "weight": "вес {{weight}}",
     "renews": "продление {{absolute}} · {{relative}}",
     "use_reset": "Использовать сброс",
-    "details_show": "Показать детали",
-    "details_hide": "Скрыть детали",
     "claude_bank_hint": "Снимает подходящие лимиты",
     "codex_bank_hint": "Сбрасывает квоту",
     "available": "доступно: {{count}}",

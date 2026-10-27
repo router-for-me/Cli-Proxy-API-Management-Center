@@ -1754,8 +1754,6 @@
     "weight": "가중치 {{weight}}",
     "renews": "갱신 {{absolute}} · {{relative}}",
     "use_reset": "초기화 사용",
-    "details_show": "세부 정보 표시",
-    "details_hide": "세부 정보 숨기기",
     "claude_bank_hint": "사용 시 해당 한도를 해제",
     "codex_bank_hint": "사용 시 할당량 초기화",
     "available": "{{count}}개 사용 가능",

@@ -1699,8 +1699,6 @@
     "weight": "trọng số {{weight}}",
     "renews": "gia hạn {{absolute}} · {{relative}}",
     "use_reset": "Dùng một lần đặt lại",
-    "details_show": "Hiện chi tiết",
-    "details_hide": "Ẩn chi tiết",
     "claude_bank_hint": "Xóa các giới hạn phù hợp khi dùng",
     "codex_bank_hint": "Đặt lại hạn mức khi dùng",
     "available": "còn {{count}}",

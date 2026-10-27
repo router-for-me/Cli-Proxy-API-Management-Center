@@ -1754,8 +1754,6 @@
     "weight": "weight {{weight}}",
     "renews": "renews {{absolute}} · {{relative}}",
     "use_reset": "Use a reset",
-    "details_show": "Show details",
-    "details_hide": "Hide details",
     "claude_bank_hint": "Clears limits on use",
     "codex_bank_hint": "Resets quota on use",
     "available": "{{count}} available",

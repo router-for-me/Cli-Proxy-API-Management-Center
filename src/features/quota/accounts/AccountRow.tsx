@@ -1,11 +1,11 @@
 /**
  * One account on one line: identity, a meter per quota window, banked resets,
- * and actions. Full provider detail stays one click away in the row details.
+ * and actions.
  */
 
-import { useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconChevronDown, IconRefreshCw } from '@/components/ui/icons';
+import { IconRefreshCw } from '@/components/ui/icons';
 import type { CodexQuotaState } from '@/types';
 import { resolveQuotaErrorMessage, resolveResetMs } from '@/utils/quota';
 import { formatInstantShort, formatRelativeInstant } from '@/utils/quota/relativeTime';
@@ -53,7 +53,6 @@ export function AccountRow(props: AccountRowProps) {
   const { priorityRouting, color, gridTemplate, now, locale, canRefresh, resetting } = props;
   const { onRefresh, onReset } = props;
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
   const status = quota?.status ?? 'idle';
@@ -252,32 +251,12 @@ export function AccountRow(props: AccountRowProps) {
             <IconRefreshCw size={12} className={loading ? styles.spinning : undefined} />
             {t('auth_files.quota_refresh_single')}
           </button>
-          {loaded && (
-            <button
-              type="button"
-              className={`${styles.action} ${styles.detailsToggle}`}
-              onClick={() => setExpanded((value) => !value)}
-              aria-expanded={expanded}
-              aria-label={
-                expanded ? t('quota_accounts.details_hide') : t('quota_accounts.details_show')
-              }
-              title={expanded ? t('quota_accounts.details_hide') : t('quota_accounts.details_show')}
-            >
-              <IconChevronDown size={14} className={expanded ? styles.flipped : undefined} />
-            </button>
-          )}
         </div>
       </div>
 
       {claudeReset.message && entry.type === 'claude' && loaded && (
         <div role="status" className={styles.rowNote}>
           {t(`claude_reset.${claudeReset.message}`)}
-        </div>
-      )}
-
-      {expanded && loaded && quota && (
-        <div className={styles.details}>
-          <adapter.Body quota={quota} classes={quotaClasses} />
         </div>
       )}
     </div>

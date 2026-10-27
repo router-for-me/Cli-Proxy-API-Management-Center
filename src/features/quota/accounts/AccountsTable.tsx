@@ -129,7 +129,8 @@ export function AccountsTable(props: AccountsTableProps) {
         'minmax(210px, 1.35fr)',
         `repeat(${Math.max(1, columns.length)}, minmax(128px, 1fr))`,
         showBank ? 'minmax(140px, 0.8fr)' : '',
-        'minmax(150px, auto)',
+        // Room for "Use a reset" too, so a refreshed row's meters stay aligned with the rest.
+        showBank ? 'minmax(228px, auto)' : 'minmax(150px, auto)',
       ]
         .filter(Boolean)
         .join(' ');

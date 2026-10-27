@@ -1754,8 +1754,6 @@
     "weight": "ağırlık {{weight}}",
     "renews": "yenilenme {{absolute}} · {{relative}}",
     "use_reset": "Bir sıfırlama kullan",
-    "details_show": "Ayrıntıları göster",
-    "details_hide": "Ayrıntıları gizle",
     "claude_bank_hint": "Kullanıldığında sınırları temizler",
     "codex_bank_hint": "Kullanıldığında kotayı sıfırlar",
     "available": "{{count}} kullanılabilir",
