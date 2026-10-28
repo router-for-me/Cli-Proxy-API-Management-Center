@@ -52,6 +52,29 @@ describe('recorded series', () => {
     expect(resets).toEqual([{ t: T0 + H, amount: 55 }]);
   });
 
+  test('keeps the higher usage when sources disagree by a point in the same window', () => {
+    // Production: usage API 48 then header 0.47, reset instants 186 ms apart.
+    const resetAt = T0 + 100 * H;
+    const { series, resets } = buildRecordedSeries(
+      [
+        { t: T0, used: 48, resetAt: resetAt - 186 },
+        { t: T0 + H, used: 47, resetAt },
+        { t: T0 + 2 * H, used: 48, resetAt: resetAt + 173 },
+        { t: T0 + 3 * H, used: 49, resetAt },
+      ],
+      T0,
+      T0 + 3 * H
+    );
+    expect(resets).toEqual([]);
+    expect(valueAt(series, T0 + H)).toBe(52);
+    expect(valueAt(series, T0 + 3 * H)).toBe(51);
+  });
+
+  test('still reports a small rise as a reset when the window moved', () => {
+    const { resets } = buildRecordedSeries([point(0, 1, 10), point(1, 0, 178)], T0, T0 + 2 * H);
+    expect(resets).toEqual([{ t: T0 + H, amount: 1 }]);
+  });
+
   test('backfills flat before the first sample', () => {
     const { series } = buildRecordedSeries([point(2, 40)], T0, T0 + 3 * H);
     expect(series[0]).toEqual({ t: T0, v: 60 });

@@ -23,6 +23,9 @@ const SERIES_COLORS: Record<string, { dark: string; light: string }> = {
   codex: { dark: '#90aadb', light: '#3f68b5' },
 };
 
+/** Smallest reset (pool percent) that gets a "+N%" label. */
+const MIN_LABELED_RESET = 5;
+
 /** Validated categorical order (dark steps) for the per-account breakdown. */
 const BREAKDOWN_COLORS = [
   '#3987e5',
@@ -109,14 +112,14 @@ export function PoolForecastCard(props: PoolForecastCardProps) {
       };
     }
     const capacity = Math.max(forecast.capacity, 1);
-    const annotations: ChartAnnotation[] = [
-      ...forecast.recordedResets,
-      ...forecast.projectedResets,
-    ].map((reset) => ({
-      t: reset.t,
-      v: valueAfter(reset.t, forecast),
-      label: formatJump(reset.amount),
-    }));
+    // Resets that refill under MIN_LABELED_RESET stay visible as steps but go unlabeled.
+    const annotations: ChartAnnotation[] = [...forecast.recordedResets, ...forecast.projectedResets]
+      .filter((reset) => reset.amount >= MIN_LABELED_RESET)
+      .map((reset) => ({
+        t: reset.t,
+        v: valueAfter(reset.t, forecast),
+        label: formatJump(reset.amount),
+      }));
     const bands: ChartBand[] | null = showAccounts
       ? forecast.accounts.map((account, index) => ({
           key: account.key,

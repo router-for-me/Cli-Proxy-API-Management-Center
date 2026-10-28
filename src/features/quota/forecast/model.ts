@@ -88,6 +88,12 @@ const RESET_MERGE_MS = 60 * 1000;
 const EPSILON = 1e-6;
 const DRAIN_STEP_MS = 20 * 60 * 1000;
 const STALE_AFTER_RESET_MS = 30 * 60 * 1000;
+/**
+ * Usage never falls within a window, but sources disagree by up to a point:
+ * Claude's usage API reports whole percents while its rate-limit headers floor
+ * the fraction (48 vs 0.47). Smaller rises in the same window are not resets.
+ */
+const SOURCE_NOISE_PERCENT = 2;
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
 
@@ -101,8 +107,9 @@ const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
  * Between samples usage is interpolated linearly. A reset reported by the
  * earlier sample holds its value until the reset instant, jumps to 100, then
  * declines toward the next sample. An unexplained increase (manual reset,
- * missing reset time) becomes a jump at the later sample. Before the first
- * sample the value is held flat so pools stay continuous.
+ * missing reset time) becomes a jump at the later sample, except a dip of under
+ * SOURCE_NOISE_PERCENT within the same window, which keeps the higher usage.
+ * Before the first sample the value is held flat so pools stay continuous.
  */
 export function buildRecordedSeries(
   samples: QuotaHistoryPoint[],
@@ -144,6 +151,15 @@ export function buildRecordedSeries(
       }
       series.push({ t: sample.t, v: remaining });
     } else if (remaining > previousRemaining + 0.5) {
+      const sameWindow =
+        previous.resetAt === null ||
+        sample.resetAt === null ||
+        Math.abs(sample.resetAt - previous.resetAt) <= RESET_MERGE_MS;
+      if (sameWindow && remaining - previousRemaining < SOURCE_NOISE_PERCENT) {
+        series.push({ t: sample.t, v: previousRemaining });
+        previous = { ...sample, used: previous.used };
+        continue;
+      }
       series.push({ t: sample.t, v: previousRemaining });
       series.push({ t: sample.t, v: remaining });
       resets.push({ t: sample.t, amount: remaining - previousRemaining });
