@@ -2216,12 +2216,14 @@
       "loading": "Loading models…",
       "empty": "No models returned by the endpoint",
       "notLoaded": "Click Reload to fetch models",
-      "selectAll": "Select all",
-      "clearAll": "Clear selection",
+      "selectAll": "Select search results",
+      "clearAll": "Deselect search results",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "Already added",
       "close": "Close",
-      "apply": "Apply ({{count}})"
+      "apply": "Apply ({{count}})",
+      "applyChanges": "Apply (+{{added}} / −{{removed}})",
+      "syncHint": "Check or uncheck fetched models, then apply. Models outside these results and settings for retained models stay unchanged. An empty configured list follows backend defaults; it does not necessarily disable all models."
     },
     "toolbar": {
       "sortBy": "Sort by",

@@ -2216,12 +2216,14 @@
       "loading": "Modeller Yükleniyor…",
       "empty": "Uç Nokta Hiçbir Model Döndürmedi",
       "notLoaded": "Modelleri Getirmek için Yeniden Yükle Seçeneğine Tıkla",
-      "selectAll": "Tümünü Seç",
-      "clearAll": "Seçimi Temizle",
+      "selectAll": "Arama Sonuçlarını Seç",
+      "clearAll": "Arama Sonuçlarının Seçimini Kaldır",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "Zaten Eklendi",
       "close": "Kapat",
-      "apply": "Uygula ({{count}})"
+      "apply": "Uygula ({{count}})",
+      "applyChanges": "Uygula (+{{added}} / −{{removed}})",
+      "syncHint": "Getirilen modelleri seçin veya seçimlerini kaldırın, ardından uygulayın. Bu sonuçların dışındaki modeller ve korunan modellerin ayarları değişmeden kalır. Yapılandırılan liste boşsa arka ucun varsayılanları kullanılır; bu, tüm modellerin mutlaka devre dışı bırakıldığı anlamına gelmez."
     },
     "toolbar": {
       "sortBy": "Sırala",

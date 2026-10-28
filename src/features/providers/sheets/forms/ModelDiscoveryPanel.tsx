@@ -3,6 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { IconLoader2, IconRefreshCw, IconSearch } from '@/components/ui/icons';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import type { ModelInfo } from '@/utils/models';
+import {
+  discoveryCatalog,
+  discoverySelectionDiff,
+  resolveDiscoverySelection,
+  setDiscoveryChoices,
+} from '../../discoverySelection';
 import styles from './sharedForm.module.scss';
 
 interface ModelDiscoveryPanelProps {
@@ -12,7 +18,7 @@ interface ModelDiscoveryPanelProps {
   hasFetched: boolean;
   existingNames: Set<string>;
   mutating?: boolean;
-  onApply: (picked: ModelInfo[]) => void;
+  onApply: (picked: ModelInfo[], catalog: ModelInfo[]) => void;
   onReload: () => void;
   onClose: () => void;
 }
@@ -30,44 +36,47 @@ export function ModelDiscoveryPanel({
 }: ModelDiscoveryPanelProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [choices, setChoices] = useState<Map<string, boolean>>(new Map());
+  const catalog = useMemo(() => discoveryCatalog(models), [models]);
+  const selected = resolveDiscoverySelection(catalog, existingNames, choices);
+  const diff = discoverySelectionDiff(catalog, existingNames, selected);
+  const blocked = Boolean(mutating || loading || error || !hasFetched);
+  const canApply = !blocked && diff.added + diff.removed > 0;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return models;
-    return models.filter((m) => `${m.name} ${m.alias ?? ''}`.toLowerCase().includes(q));
-  }, [models, search]);
+    if (!q) return catalog;
+    return catalog.filter((m) => `${m.name} ${m.alias ?? ''}`.toLowerCase().includes(q));
+  }, [catalog, search]);
 
-  const selectable = useMemo(
-    () => filtered.filter((m) => !existingNames.has(m.name)),
-    [filtered, existingNames]
-  );
-
-  const allSelectableChecked =
-    selectable.length > 0 && selectable.every((m) => selected.has(m.name));
+  const allSelectableChecked = filtered.length > 0 && filtered.every((m) => selected.has(m.name));
 
   const toggle = (name: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
+    setChoices((prev) => setDiscoveryChoices(prev, [name], !selected.has(name)));
   };
 
   const toggleAll = () => {
-    if (allSelectableChecked) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(selectable.map((m) => m.name)));
-    }
+    setChoices((prev) =>
+      setDiscoveryChoices(
+        prev,
+        filtered.map((m) => m.name),
+        !allSelectableChecked
+      )
+    );
   };
 
   const handleApply = () => {
-    const picked = models.filter((m) => selected.has(m.name) && !existingNames.has(m.name));
-    if (!picked.length) return;
-    onApply(picked);
-    setSelected(new Set());
+    if (!canApply) return;
+    onApply(
+      catalog.filter((m) => selected.has(m.name)),
+      catalog
+    );
+    // Applied names now follow the parent again; keep choices for temporarily missing results.
+    setChoices((prev) => {
+      const next = new Map(prev);
+      for (const { name } of catalog) next.delete(name);
+      return next;
+    });
   };
 
   const renderModelLabel = (model: ModelInfo) => (
@@ -90,13 +99,14 @@ export function ModelDiscoveryPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('providersPage.discovery.searchPlaceholder')}
+            aria-label={t('providersPage.discovery.searchPlaceholder')}
           />
         </div>
         <button
           type="button"
           className={styles.connectivityBtn}
           onClick={onReload}
-          disabled={loading}
+          disabled={loading || mutating}
           aria-label={t('providersPage.discovery.reload')}
         >
           {loading ? (
@@ -110,6 +120,8 @@ export function ModelDiscoveryPanel({
         </button>
       </div>
 
+      <p className={styles.discoveryCount}>{t('providersPage.discovery.syncHint')}</p>
+
       {loading && !models.length ? (
         <div className={styles.discoveryEmpty}>{t('providersPage.discovery.loading')}</div>
       ) : error ? (
@@ -122,7 +134,7 @@ export function ModelDiscoveryPanel({
             <SelectionCheckbox
               checked={allSelectableChecked}
               onChange={toggleAll}
-              disabled={selectable.length === 0}
+              disabled={blocked || filtered.length === 0}
               label={
                 <span className={styles.discoveryBatchLabel}>
                   {allSelectableChecked
@@ -134,39 +146,21 @@ export function ModelDiscoveryPanel({
             <span className={styles.discoveryCount}>
               {t('providersPage.discovery.selectedCount', {
                 selected: selected.size,
-                total: selectable.length,
+                total: catalog.length,
               })}
             </span>
           </div>
           <ul className={styles.discoveryList}>
-            {filtered.map((m) => {
-              const existing = existingNames.has(m.name);
-              return (
-                <li
-                  key={m.name}
-                  className={
-                    existing
-                      ? `${styles.discoveryItem} ${styles.discoveryItemExisting}`
-                      : styles.discoveryItem
-                  }
-                >
-                  {existing ? (
-                    <>
-                      {renderModelLabel(m)}
-                      <span className={styles.discoveryAddedTag}>
-                        {t('providersPage.discovery.alreadyAdded')}
-                      </span>
-                    </>
-                  ) : (
-                    <SelectionCheckbox
-                      checked={selected.has(m.name)}
-                      onChange={() => toggle(m.name)}
-                      label={renderModelLabel(m)}
-                    />
-                  )}
-                </li>
-              );
-            })}
+            {filtered.map((m) => (
+              <li key={m.name} className={styles.discoveryItem}>
+                <SelectionCheckbox
+                  checked={selected.has(m.name)}
+                  onChange={() => toggle(m.name)}
+                  disabled={blocked}
+                  label={renderModelLabel(m)}
+                />
+              </li>
+            ))}
           </ul>
         </>
       ) : (
@@ -186,9 +180,9 @@ export function ModelDiscoveryPanel({
           type="button"
           className={styles.discoveryApplyBtn}
           onClick={handleApply}
-          disabled={mutating || selected.size === 0}
+          disabled={!canApply}
         >
-          {t('providersPage.discovery.apply', { count: selected.size })}
+          {t('providersPage.discovery.applyChanges', diff)}
         </button>
       </div>
     </div>

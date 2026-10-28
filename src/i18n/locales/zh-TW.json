@@ -2243,12 +2243,14 @@
       "loading": "正在載入模型…",
       "empty": "端點未回傳任何模型",
       "notLoaded": "點擊重新載入以取得模型",
-      "selectAll": "全選",
-      "clearAll": "清空選擇",
+      "selectAll": "選取搜尋結果",
+      "clearAll": "取消選取搜尋結果",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "已新增",
       "close": "關閉",
-      "apply": "套用 ({{count}})"
+      "apply": "套用 ({{count}})",
+      "applyChanges": "套用 (+{{added}} / −{{removed}})",
+      "syncHint": "勾選或取消勾選取得的模型，然後套用。結果之外的模型以及保留模型的設定均維持不變。設定清單為空時將遵循後端預設行為，並不一定會停用所有模型。"
     },
     "toolbar": {
       "sortBy": "排序",

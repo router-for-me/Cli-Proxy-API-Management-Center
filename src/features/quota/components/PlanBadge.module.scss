@@ -1,0 +1,248 @@
+/* ============================================================
+ * PlanBadge — 「珐琅」原型
+ *
+ * 上一版（漆与箔）把黑金、箔字、衬线大写、双镶边、外发光全堆在一起，
+ * 读起来像赌场 UI。这一版只借珐琅彩一种材质，并且只取它最本质的三点：
+ *   1. 玻璃釉：上方一块柔和的镜面反光（不是 Web 2.0 的硬切高光）
+ *   2. 透光纵深：釉层边缘积厚变深、中心浅，光穿过釉层在底部聚出一汪亮色
+ *   3. 掐丝：一根极细的金丝勾边；旗舰的菱形是一枚「嵌填」—— 对比色釉 + 金丝
+ * 字回到产品本身的无衬线，常规大小写，纯色，不做箔印。
+ *
+ * 档位（对应工艺上的「单色釉 → 掐丝珐琅」）：
+ *   standard 纯文字
+ *   premium  单色釉：浅色主题 = 淡釉（瓷白里透一点色）；暗色主题 = 中明度釉；无金丝
+ *   flagship 掐丝珐琅：深宝石釉 + 金丝勾边 + 嵌填菱形
+ *
+ * 色板 = 一种主釉色（OKLCH 色相 + 彩度）+ 一种嵌填色相，靠祖先 data-plan-palette 继承。
+ * 动效：徽章本体永不循环；只有「数据到达扫光一次」与「悬停反光跟手」。
+ * ============================================================ */
+
+/* ---------- 色板（珐琅彩经典釉色） ---------- */
+
+/* 默认：霁蓝（嵌松石） */
+:global(:root),
+:global([data-plan-palette='jilan']) {
+  --plan-h: 264;
+  --plan-c: 0.15;
+  --plan-inlay-h: 196;
+}
+
+/* 松石（嵌珊瑚） */
+:global([data-plan-palette='songshi']) {
+  --plan-h: 198;
+  --plan-c: 0.095;
+  --plan-inlay-h: 28;
+}
+
+/* 胭脂（嵌松石） */
+:global([data-plan-palette='yanzhi']) {
+  --plan-h: 356;
+  --plan-c: 0.14;
+  --plan-inlay-h: 196;
+}
+
+/* 茄皮紫（嵌柠檬黄） */
+:global([data-plan-palette='qiepi']) {
+  --plan-h: 318;
+  --plan-c: 0.11;
+  --plan-inlay-h: 95;
+}
+
+/* ---------- 基础 ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.standard {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chip {
+  --h: var(--plan-h, 264);
+  --c: var(--plan-c, 0.15);
+  /* 单次扫光是屏上移动，用强 ease-in-out；其余沿用全局 token */
+  --pb-ease-sweep: cubic-bezier(0.65, 0, 0.35, 1);
+  --pb-x: 50%;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  gap: 5px;
+  height: 20px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pb-ink);
+  text-shadow: var(--pb-ink-shadow);
+
+  /* 自上而下：镜面反光 → 底部聚光 → 釉层纵深（边深中浅）→ 丝/边 */
+  background:
+    radial-gradient(95% 75% at 40% 0%, var(--pb-gloss) 0%, transparent 70%) padding-box,
+    radial-gradient(60% 55% at 50% 108%, var(--pb-caustic) 0%, transparent 78%) padding-box,
+    radial-gradient(130% 160% at 50% 35%, var(--pb-glaze) 30%, var(--pb-glaze-deep) 100%)
+      padding-box,
+    var(--pb-wire) border-box;
+  box-shadow: var(--pb-shadow);
+
+  /* 悬停：第二块反光在指针处淡入 —— 像把珐琅片在灯下微微转动 */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      28% 90% at var(--pb-x) 18%,
+      var(--pb-gloss-hover) 0%,
+      transparent 80%
+    );
+    opacity: 0;
+    transition: opacity var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+    pointer-events: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip:hover::before {
+    opacity: 1;
+  }
+}
+
+.label {
+  position: relative;
+}
+
+/* 嵌填：对比色釉 + 金丝 */
+.mark {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  fill: oklch(0.7 0.1 var(--plan-inlay-h, 196));
+  stroke: var(--pb-gilt);
+  stroke-width: 1;
+  paint-order: stroke;
+  overflow: visible;
+}
+
+/* ---------- premium：单色釉 ---------- */
+
+.premium {
+  --pb-ink: oklch(0.4 calc(var(--c) * 0.95) var(--h));
+  --pb-ink-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+  --pb-glaze: oklch(0.965 calc(var(--c) * 0.2) var(--h));
+  --pb-glaze-deep: oklch(0.885 calc(var(--c) * 0.42) var(--h));
+  --pb-caustic: oklch(0.99 calc(var(--c) * 0.12) var(--h) / 0.9);
+  --pb-gloss: rgb(255 255 255 / 0.85);
+  --pb-gloss-hover: rgb(255 255 255 / 0.9);
+  --pb-wire: oklch(0.8 calc(var(--c) * 0.5) var(--h));
+  --pb-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 1px 1.5px oklch(0.3 calc(var(--c) * 0.6) var(--h) / 0.14);
+  --pb-sheen: rgb(255 255 255 / 0.55);
+}
+
+:global([data-theme='dark']) .premium {
+  --pb-ink: oklch(0.95 calc(var(--c) * 0.2) var(--h));
+  --pb-ink-shadow: 0 1px 0 oklch(0.2 calc(var(--c) * 0.6) var(--h) / 0.5);
+  --pb-glaze: oklch(0.38 calc(var(--c) * 0.5) var(--h));
+  --pb-glaze-deep: oklch(0.3 calc(var(--c) * 0.45) var(--h));
+  --pb-caustic: oklch(0.5 calc(var(--c) * 0.55) var(--h) / 0.55);
+  --pb-gloss: rgb(255 255 255 / 0.14);
+  --pb-gloss-hover: rgb(255 255 255 / 0.2);
+  --pb-wire: oklch(0.55 calc(var(--c) * 0.6) var(--h));
+  --pb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(0 0 0 / 0.4);
+  --pb-sheen: rgb(255 255 255 / 0.3);
+}
+
+/* ---------- flagship：掐丝珐琅 ---------- */
+
+.flagship {
+  /* 金丝：单线、近乎实色，只留一点上亮下暗的弧度 */
+  --pb-gilt: #d9b968;
+
+  padding: 0 10px 0 8px;
+  --pb-ink: oklch(0.985 0.012 85);
+  --pb-ink-shadow: 0 1px 0 oklch(0.18 calc(var(--c) * 0.8) var(--h) / 0.35);
+  --pb-glaze: oklch(0.41 calc(var(--c) * 0.95) var(--h));
+  --pb-glaze-deep: oklch(0.27 calc(var(--c) * 0.85) var(--h));
+  --pb-caustic: oklch(0.56 calc(var(--c) * 1) var(--h) / 0.6);
+  --pb-gloss: rgb(255 255 255 / 0.26);
+  --pb-gloss-hover: rgb(255 255 255 / 0.32);
+  --pb-wire: linear-gradient(180deg, #f2dea3 0%, #c9a24f 55%, #a5823a 100%);
+  --pb-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    0 1px 2px oklch(0.25 calc(var(--c) * 0.8) var(--h) / 0.3);
+  --pb-sheen: rgb(255 255 255 / 0.45);
+}
+
+:global([data-theme='dark']) .flagship {
+  /* 暗卡上抬一档明度，避免宝石釉沉进底色；金丝压暗一点免得刺眼 */
+  --pb-gilt: #cfae5e;
+  --pb-glaze: oklch(0.45 calc(var(--c) * 0.95) var(--h));
+  --pb-glaze-deep: oklch(0.3 calc(var(--c) * 0.85) var(--h));
+  --pb-caustic: oklch(0.6 calc(var(--c) * 1) var(--h) / 0.6);
+  --pb-wire: linear-gradient(180deg, #e8d293 0%, #bf9a4a 55%, #94742f 100%);
+  --pb-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+/* ---------- 数据到达：一道扫光，只此一次 ---------- */
+
+/* plus-lighter 叠在字上：光同时掠过釉面与文字，像灯下转过的瓷面 */
+.arrive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 34%, var(--pb-sheen) 50%, transparent 66%);
+  mix-blend-mode: plus-lighter;
+  transform: translate3d(-110%, 0, 0);
+  animation: pb-sweep 1000ms var(--pb-ease-sweep) var(--pb-delay, 0ms) both;
+  pointer-events: none;
+}
+
+@keyframes pb-sweep {
+  to {
+    transform: translate3d(110%, 0, 0);
+  }
+}
+
+/* ---------- 无障碍 ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .arrive::after {
+    content: none;
+  }
+
+  .chip {
+    --pb-x: 50% !important;
+  }
+}
+
+/* 高对比：去掉反光与纵深，只留实色釉 + 实色边 */
+@media (prefers-contrast: more) {
+  .chip {
+    background:
+      linear-gradient(var(--pb-glaze-deep), var(--pb-glaze-deep)) padding-box,
+      linear-gradient(var(--pb-ink), var(--pb-ink)) border-box;
+    text-shadow: none;
+  }
+
+  .premium {
+    --pb-glaze-deep: var(--bg-primary);
+    --pb-ink: var(--text-primary);
+  }
+}

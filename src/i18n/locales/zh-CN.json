@@ -2215,12 +2215,14 @@
       "loading": "正在加载模型…",
       "empty": "端点未返回任何模型",
       "notLoaded": "点击重新加载以获取模型",
-      "selectAll": "全选",
-      "clearAll": "清空选择",
+      "selectAll": "选择搜索结果",
+      "clearAll": "取消选择搜索结果",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "已添加",
       "close": "关闭",
-      "apply": "应用 ({{count}})"
+      "apply": "应用 ({{count}})",
+      "applyChanges": "应用 (+{{added}} / −{{removed}})",
+      "syncHint": "勾选或取消勾选拉取的模型，然后应用。结果之外的模型以及保留模型的设置均保持不变。配置列表为空时将遵循后端默认行为，并不一定会禁用所有模型。"
     },
     "toolbar": {
       "sortBy": "排序",

@@ -17,7 +17,8 @@ import {
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
 import { maskApiKey } from '@/utils/format';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
-import { mergeDiscoveredModels } from '../../modelEntries';
+import { removeModelAt } from '../../modelEntries';
+import { syncDiscoveredModels } from '../../discoverySelection';
 import type { ApiKeyFunUsageSummary } from '../../sponsor';
 import { isSponsorPartialMutationError } from '../../sponsorMutationRecovery';
 import {
@@ -271,7 +272,9 @@ function SponsorModelSection({
             hasFetched={discovery.hasFetched}
             existingNames={existingModelNames}
             mutating={mutating}
-            onApply={(picked) => onChange(mergeDiscoveredModels(modelsList, picked))}
+            onApply={(picked, catalog) =>
+              onChange(syncDiscoveredModels(modelsList, picked, catalog))
+            }
             onReload={() => void discovery.fetch()}
             onClose={() => setDiscoveryOpen(false)}
           />
@@ -282,7 +285,7 @@ function SponsorModelSection({
           supportsImage={protocol === 'openai'}
           supportsThinking
           mutating={mutating}
-          removeDisabled={modelsList.length <= 1}
+          removeDisabled={false}
           onUpdate={(modelIndex, patch) =>
             onChange(
               modelsList.map((item, itemIndex) =>
@@ -291,10 +294,7 @@ function SponsorModelSection({
             )
           }
           onAdd={() => onChange([...modelsList, emptyModel()])}
-          onRemove={(modelIndex) => {
-            const next = modelsList.filter((_, itemIndex) => itemIndex !== modelIndex);
-            onChange(next.length ? next : [emptyModel()]);
-          }}
+          onRemove={(modelIndex) => onChange(removeModelAt(modelsList, modelIndex))}
         />
       </div>
     </Collapsible>

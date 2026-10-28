@@ -17,10 +17,26 @@ function RootShell() {
   );
 }
 
+// DEV-only design previews: statically false in production builds, so the
+// branch and its dynamic import are dropped from the single-file bundle.
+const devPreviewRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: '/__preview/plan-badge',
+        HydrateFallback: () => null,
+        lazy: async () => {
+          const { PlanBadgePreview } = await import('@/features/quota/preview/PlanBadgePreview');
+          return { Component: PlanBadgePreview };
+        },
+      },
+    ]
+  : [];
+
 const router = createHashRouter([
   {
     element: <RootShell />,
     children: [
+      ...devPreviewRoutes,
       { path: '/login', element: <LoginPage /> },
       {
         path: '/*',

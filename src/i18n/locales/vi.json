@@ -2094,12 +2094,14 @@
       "loading": "Đang tải model…",
       "empty": "Endpoint không trả về model nào",
       "notLoaded": "Nhấn Tải lại để lấy model",
-      "selectAll": "Chọn tất cả",
-      "clearAll": "Bỏ chọn",
+      "selectAll": "Chọn kết quả tìm kiếm",
+      "clearAll": "Bỏ chọn kết quả tìm kiếm",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "Đã thêm",
       "close": "Đóng",
-      "apply": "Áp dụng ({{count}})"
+      "apply": "Áp dụng ({{count}})",
+      "applyChanges": "Áp dụng (+{{added}} / −{{removed}})",
+      "syncHint": "Chọn hoặc bỏ chọn các model đã lấy, rồi áp dụng. Các model ngoài những kết quả này và thiết lập của các model được giữ lại sẽ không thay đổi. Danh sách cấu hình trống sẽ tuân theo mặc định của backend; điều này không nhất thiết vô hiệu hóa tất cả model."
     },
     "toolbar": {
       "sortBy": "Sắp xếp theo",

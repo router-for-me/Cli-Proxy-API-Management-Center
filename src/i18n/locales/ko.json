@@ -2216,12 +2216,14 @@
       "loading": "모델을 로드하는 중…",
       "empty": "엔드포인트에서 반환된 모델이 없습니다.",
       "notLoaded": "모델을 가져오려면 다시 로드를 클릭하세요.",
-      "selectAll": "모두 선택",
-      "clearAll": "선택 해제",
+      "selectAll": "검색 결과 선택",
+      "clearAll": "검색 결과 선택 해제",
       "selectedCount": "{{selected}} / {{total}}",
       "alreadyAdded": "이미 추가됨",
       "close": "닫기",
-      "apply": "적용 ({{count}})"
+      "apply": "적용 ({{count}})",
+      "applyChanges": "적용 (+{{added}} / −{{removed}})",
+      "syncHint": "가져온 모델을 선택하거나 선택 해제한 다음 적용하세요. 이 결과에 없는 모델과 유지되는 모델의 설정은 변경되지 않습니다. 구성된 목록이 비어 있으면 백엔드 기본값을 따르며, 반드시 모든 모델이 비활성화되는 것은 아닙니다."
     },
     "toolbar": {
       "sortBy": "정렬 기준",
