@@ -11,11 +11,11 @@ This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, no
 - `src/stores/`: Zustand state. `src/types/`: shared types. `src/styles/`: global styles and theme tokens.
 - `src/App.tsx`: hash-router setup. `src/router/MainRoutes.tsx`: authenticated route table. `ProtectedRoute` and `MainLayout` guard and wrap the authenticated app.
 - `src/assets/`: bundled assets, including provider icons in `icons/`.
-- `src/i18n/locales/`: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`, `vi.json`, and `ko.json`, registered in `src/i18n/index.ts`; fallback language is `zh-CN`. Update all six files when adding or changing translation keys, including accessible labels.
+- `src/i18n/locales/`: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`, `vi.json`, `ko.json`, and `tr.json`, registered in `src/i18n/index.ts`; fallback language is `zh-CN`. Update all seven files when adding or changing translation keys, including accessible labels.
 
 ## Build, Test, and Development Commands
 
-Use Bun; `package.json` pins `bun@1.3.14`, and CI uses Node.js 24. Keep dependency changes consistent with `bun.lock`; do not introduce another package manager's lockfile.
+Use Bun; `package.json` pins `bun@1.4.3`, and CI uses Node.js 24. Keep dependency changes consistent with `bun.lock`; do not introduce another package manager's lockfile.
 
 - `bun install --frozen-lockfile`: install locked dependencies.
 - `bun run dev`: start Vite at `http://localhost:5173` by default.

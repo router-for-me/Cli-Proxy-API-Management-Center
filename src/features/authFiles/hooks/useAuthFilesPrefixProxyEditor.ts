@@ -21,6 +21,8 @@ import {
   readAuthFileDisableCooling,
   readAuthFileWebsockets,
   readAuthFileUsingApi,
+  readAuthFileUseSiwc,
+  supportsAuthFileSiwc,
   supportsAuthFileWebsockets,
   supportsAuthFileUsingApi,
 } from '@/features/authFiles/constants';
@@ -50,6 +52,7 @@ export type PrefixProxyEditorField =
   | 'disableCooling'
   | 'websockets'
   | 'usingApi'
+  | 'useSiwc'
   | 'note'
   | 'excludedModelsText'
   | 'headersText';
@@ -77,6 +80,8 @@ export type PrefixProxyEditorState = {
   disableCoolingTouched: boolean;
   websockets: boolean;
   websocketsTouched: boolean;
+  useSiwc: boolean;
+  useSiwcTouched: boolean;
   usingApi: boolean;
   usingApiTouched: boolean;
   note: string;
@@ -374,6 +379,12 @@ export const buildAuthFileFieldsPatch = (
     }
   }
 
+  if (supportsAuthFileSiwc(editor.providerKey) && editor.useSiwcTouched) {
+    if (editor.useSiwc !== readAuthFileUseSiwc(original)) {
+      patch.use_siwc = editor.useSiwc;
+    }
+  }
+
   if (editor.headersTouched) {
     const { value: parsedHeaders, errorKey } = parseHeadersText(editor.headersText);
     if (errorKey) {
@@ -463,6 +474,10 @@ const buildPrefixProxyUpdatedText = (
     next = applyAuthFileUsingApi(next, patch.using_api);
   }
 
+  if (patch.use_siwc !== undefined) {
+    next.use_siwc = patch.use_siwc;
+  }
+
   return JSON.stringify(next);
 };
 
@@ -535,6 +550,8 @@ export function useAuthFilesPrefixProxyEditor(
       disableCoolingTouched: false,
       websockets: false,
       websocketsTouched: false,
+      useSiwc: false,
+      useSiwcTouched: false,
       usingApi: false,
       usingApiTouched: false,
       note: '',
@@ -621,6 +638,8 @@ export function useAuthFilesPrefixProxyEditor(
           disableCoolingTouched: false,
           websockets,
           websocketsTouched: false,
+          useSiwc: supportsAuthFileSiwc(providerKey) && readAuthFileUseSiwc(json),
+          useSiwcTouched: false,
           usingApi,
           usingApiTouched: false,
           note,
@@ -682,6 +701,9 @@ export function useAuthFilesPrefixProxyEditor(
       }
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
+      }
+      if (field === 'useSiwc') {
+        return { ...prev, useSiwc: Boolean(value), useSiwcTouched: true };
       }
       if (field === 'usingApi') {
         return { ...prev, usingApi: Boolean(value), usingApiTouched: true };

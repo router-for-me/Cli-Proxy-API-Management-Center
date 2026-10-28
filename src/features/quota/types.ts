@@ -7,6 +7,8 @@
  * 初始化时抛错并列出缺失清单，替代旧字符串 styleMap 的静默 class="undefined"。
  */
 
+import type { ReactNode } from 'react';
+
 export interface QuotaClassMap {
   // 额度行（五个提供商共用）
   quotaRow: string;
@@ -99,4 +101,8 @@ export function bindQuotaClasses(module: Record<string, string>, source: string)
 export interface QuotaBodyProps<TState> {
   quota: TState;
   classes: QuotaClassMap;
+  /** Host-owned chips appended to the provider's plan row (`codexPlanItem` spans). */
+  planItems?: ReactNode;
+  /** Host-owned content placed right after the plan row, before usage rows. */
+  afterPlan?: ReactNode;
 }

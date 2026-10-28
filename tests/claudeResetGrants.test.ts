@@ -1,6 +1,7 @@
 import { selectResetGrant } from '../src/features/quota/providers/claude/selectResetGrant';
 
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { apiClient } from '../src/services/api/client';
 import {
   anthropicResetGrantBlocker,
   claimClaudeResetGrant,
@@ -8,13 +9,17 @@ import {
   readClaudeOrganization,
   readClaudeResetGrants,
   AnthropicResetGrantUnknownOutcome,
+  AnthropicResetGrantError,
   ANTHROPIC_RESET_RESULTS,
+  ANTHROPIC_RESET_REQUEST_ID_RE,
   type AnthropicResetSettledCode,
 } from '../src/services/api/claudeResetGrants';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import type { AuthFileCooldownResetResponse } from '../src/services/api/authFiles';
 import {
   createResetGrantOperations,
+  ResetGrantPreflightError,
+  resetGrantFailureMessageKey,
   RETRY_WINDOW_MS,
 } from '../src/features/quota/providers/claude/resetGrantOperations';
 
@@ -138,6 +143,156 @@ test('claim terminal mappings and ambiguous outcomes', async () => {
   await expect(claimClaudeResetGrant('a', organization, grant.id, 'r')).rejects.toThrow(
     'outcome is unknown'
   );
+});
+
+async function withGlobalCrypto(source: unknown, run: () => Promise<void>) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+  try {
+    Object.defineProperty(globalThis, 'crypto', { configurable: true, value: source });
+    await run();
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, 'crypto', descriptor);
+    else Reflect.deleteProperty(globalThis, 'crypto');
+  }
+}
+
+function mockDefaultResetRequests(result: 'reset' | 'unknown' = 'reset') {
+  const calls: ApiCallRequest[] = [];
+  const fullBlock = {
+    ...block,
+    ineligible_reason: null,
+    next_grant_id: grant.id,
+    weekly_resets_at: null,
+    cooldown_until: null,
+    grants: [
+      {
+        ...grant,
+        label: 'Test grant',
+        resets_total: 1,
+        resets_left: 1,
+        starts_at: '2000-01-01T00:00:00Z',
+        ends_at: '2099-01-01T00:00:00Z',
+        clears: ['five_hour', 'seven_day', 'seven_day_overage_included'],
+        paused: false,
+        use_requires_limit: false,
+        percent_used: { five_hour: 0, seven_day: 100, seven_day_overage_included: 0 },
+        blocking: [],
+        arm: null,
+      },
+    ],
+  };
+  apiCallApi.request = async (request) => {
+    calls.push(request);
+    const body =
+      request.method === 'POST'
+        ? { result }
+        : request.url.endsWith('/profile')
+          ? {
+              account: { uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' },
+              organization: { uuid: organization },
+            }
+          : { cedar_ember: fullBlock };
+    return { statusCode: 200, body, bodyText: '', header: {} };
+  };
+  return calls;
+}
+
+describe('Claude reset grant default request ID integration', () => {
+  test('HTTP crypto without randomUUID still dispatches a valid reset claim', async () => {
+    using cooldown = spyOn(apiClient, 'post').mockResolvedValue({
+      status: 'ok',
+      auth_index: 'index',
+    });
+    const calls = mockDefaultResetRequests();
+    let randomCalls = 0;
+    await withGlobalCrypto(
+      {
+        getRandomValues(bytes: Uint8Array) {
+          randomCalls++;
+          bytes.fill(10);
+          return bytes;
+        },
+      },
+      async () => {
+        const operations = createResetGrantOperations();
+        expect(await operations.run('account', 'index', grant.id)).toEqual({
+          code: 'reset',
+          unresolved: false,
+        });
+        expect(calls.map((call) => call.method)).toEqual(['GET', 'GET', 'POST']);
+        expect(calls[0].url).toEndWith('/api/oauth/profile');
+        expect(calls[1].url).toEndWith('/api/oauth/usage?cedar_ember=1&skip_spend=1');
+        expect(calls[2].url).toBe(
+          `https://api.anthropic.com/api/organizations/${organization}/reset_rate_limits`
+        );
+        const payload = JSON.parse(calls[2].data!);
+        expect(payload).toEqual({
+          program: 'cedar_ember',
+          grant_id: grant.id,
+          request_id: '0a'.repeat(16),
+        });
+        expect(payload.request_id).toMatch(/^[0-9a-f]{32}$/);
+        expect(payload.request_id).toMatch(ANTHROPIC_RESET_REQUEST_ID_RE);
+        expect(operations.inspect('account')).toMatchObject({
+          requestId: payload.request_id,
+          code: 'reset',
+        });
+        expect(randomCalls).toBe(1);
+        expect(cooldown).toHaveBeenCalledWith('/routing/cooldown/reset', { auth_index: 'index' });
+      }
+    );
+  });
+
+  test('HTTP fallback reuses one secure request ID after an unknown claim outcome', async () => {
+    const calls = mockDefaultResetRequests('unknown');
+    let randomCalls = 0;
+    await withGlobalCrypto(
+      {
+        getRandomValues(bytes: Uint8Array) {
+          randomCalls++;
+          bytes.fill(randomCalls);
+          return bytes;
+        },
+      },
+      async () => {
+        const operations = createResetGrantOperations();
+        await expect(operations.run('account', 'index', grant.id)).rejects.toBeInstanceOf(
+          AnthropicResetGrantUnknownOutcome
+        );
+        const originalId = operations.inspect('account')?.requestId;
+        expect(originalId).toMatch(/^[0-9a-f]{32}$/);
+        await expect(operations.run('account', 'index', grant.id)).rejects.toBeInstanceOf(
+          AnthropicResetGrantUnknownOutcome
+        );
+        const posts = calls.filter((call) => call.method === 'POST');
+        expect(posts).toHaveLength(2);
+        expect(posts.map((call) => JSON.parse(call.data!).request_id)).toEqual([
+          originalId,
+          originalId,
+        ]);
+        expect(calls.map((call) => call.method)).toEqual(['GET', 'GET', 'POST', 'GET', 'POST']);
+        expect(operations.inspect('account')?.code).toBeUndefined();
+        expect(randomCalls).toBe(1);
+      }
+    );
+  });
+
+  test('missing secure randomness prevents spending and journaling without leaving busy state', async () => {
+    const calls = mockDefaultResetRequests();
+    await withGlobalCrypto({}, async () => {
+      const operations = createResetGrantOperations();
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const result = operations.run('account', 'index', grant.id);
+        await expect(result).rejects.toBeInstanceOf(ResetGrantPreflightError);
+        await expect(result).rejects.toMatchObject({
+          stage: 'request_id',
+          reason: 'generation_failed',
+        });
+        expect(operations.inspect('account')).toBeUndefined();
+      }
+      expect(calls.map((call) => call.method)).toEqual(['GET', 'GET', 'GET', 'GET']);
+    });
+  });
 });
 
 function setup() {
@@ -386,7 +541,85 @@ test('a stale claim answer cannot settle the replacement session operation', asy
   expect(operations.inspect('account')).toBeUndefined();
 });
 
-test('all grant messages and confirmation are translated in all six locales', async () => {
+test('preflight read failures identify the stage without exposing upstream details', async () => {
+  for (const stage of ['organization', 'status'] as const) {
+    for (const failure of [new Error('SECRET'), new AnthropicResetGrantError('auth')]) {
+      const h = setup();
+      const fail = async (): Promise<never> => {
+        throw failure;
+      };
+      if (stage === 'organization') h.deps.readOrganization = fail;
+      else h.deps.readStatus = fail;
+      const operations = createResetGrantOperations(h.deps);
+      try {
+        await operations.run('account', 'a', grant.id);
+        throw new Error('Expected preflight failure');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ResetGrantPreflightError);
+        expect((error as ResetGrantPreflightError).stage).toBe(stage);
+        expect((error as Error).message).not.toContain('SECRET');
+        expect(resetGrantFailureMessageKey(error)).toBe(`claude_reset.failure_${stage}`);
+      }
+      expect(h.ids).toHaveLength(0);
+      expect(operations.inspect('account')).toBeUndefined();
+    }
+  }
+  expect(resetGrantFailureMessageKey(new Error('SECRET'))).toBe('claude_reset.blocked');
+});
+
+test('request ID generation failure is diagnosed before journaling or dispatch', async () => {
+  const h = setup();
+  h.deps.requestId = () => {
+    throw new Error('crypto unavailable');
+  };
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toMatchObject({
+    stage: 'request_id',
+    reason: 'generation_failed',
+  });
+  expect(operations.inspect('account')).toBeUndefined();
+  expect(h.ids).toHaveLength(0);
+});
+
+test('expiry and cooldown failures have distinct safe diagnostic codes', async () => {
+  for (const [fields, reason] of [
+    [{ startsAt: '2099-01-01T00:00:00Z' }, 'blocked_not_started'],
+    [{ endsAt: '1970-01-01T00:00:00Z' }, 'blocked_grant_expired'],
+    [{ paused: true }, 'blocked_paused'],
+  ] as const) {
+    const h = setup();
+    h.deps.readStatus = async () => ({
+      ...status(),
+      grants: [{ ...status().grants[0], ...fields }],
+    });
+    await expect(
+      createResetGrantOperations(h.deps).run('account', 'a', grant.id)
+    ).rejects.toMatchObject({
+      stage: 'eligibility',
+      reason,
+    });
+    expect(h.ids).toHaveLength(0);
+  }
+  const h = setup();
+  h.deps.readStatus = async () => ({ ...status(), cooldownUntil: '2099-01-01T00:00:00Z' });
+  await expect(
+    createResetGrantOperations(h.deps).run('account', 'a', grant.id)
+  ).rejects.toMatchObject({
+    stage: 'eligibility',
+    reason: 'blocked_cooldown',
+  });
+  expect(h.ids).toHaveLength(0);
+});
+
+test('read authentication refusals retain a safe diagnostic code', async () => {
+  for (const statusCode of [401, 403]) {
+    apiCallApi.request = async () => ({ statusCode, header: {}, body: {}, bodyText: '' });
+    await expect(readClaudeOrganization('a')).rejects.toMatchObject({ code: 'auth' });
+    await expect(readClaudeResetGrants('a')).rejects.toMatchObject({ code: 'auth' });
+  }
+});
+
+test('all grant messages and confirmation are translated in six locales', async () => {
   const locales = await Promise.all(
     ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko'].map(
       async (locale) => (await Bun.file(`src/i18n/locales/${locale}.json`).json()).claude_reset
@@ -394,6 +627,9 @@ test('all grant messages and confirmation are translated in all six locales', as
   );
   for (const locale of locales) {
     expect(Object.keys(locale).sort()).toEqual(Object.keys(locales[0]).sort());
+    for (const stage of ['organization', 'status', 'eligibility', 'request_id', 'operation']) {
+      expect(locale[`failure_${stage}`]).toContain('{{code}}');
+    }
     expect(locale.confirm_text).toContain('{{name}}');
     expect(locale.retry_confirm).toContain('{{name}}');
     expect(typeof locale.remaining).toBe('string');
@@ -404,7 +640,6 @@ test('all grant messages and confirmation are translated in all six locales', as
       'rate_limited',
       'unknown',
       'expired',
-      'cooldown_clear_failed',
     ]) {
       expect(typeof locale[key]).toBe('string');
     }
@@ -445,6 +680,20 @@ test('Claude card uses Codex count and action styles and shared confirmation, no
   expect(hook).toContain("pending ? 'claude_reset.retry_confirm'");
   expect(hook).not.toContain('<Modal');
   expect(hook).not.toContain('status.grants.map');
+});
+
+test('cooldown clear failures reuse existing messages without new locale keys', async () => {
+  const hook = await Bun.file('src/features/quota/providers/claude/ClaudeResetGrants.tsx').text();
+  expect(hook).toContain("answer.code === 'cooldown_clear_failed'");
+  expect(hook).toContain("t('auth_files.cooldown_reset_failed', {");
+  expect(hook).toContain("message: t('common.unknown_error')");
+  for (const language of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
+    const locale = await Bun.file(`src/i18n/locales/${language}.json`).json();
+    expect(locale.claude_reset.cooldown_clear_failed).toBeUndefined();
+    expect(locale.auth_files.cooldown_reset_failed).toContain('{{name}}');
+    expect(locale.auth_files.cooldown_reset_failed).toContain('{{message}}');
+    expect(typeof locale.common.unknown_error).toBe('string');
+  }
 });
 
 test('account reads map upstream 429 to a sanitized typed rate-limit failure', async () => {

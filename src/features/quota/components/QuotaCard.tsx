@@ -86,6 +86,24 @@ export function QuotaCard(props: QuotaCardProps) {
     quota?.errorStatus,
     quota?.error || t('common.unknown_error')
   );
+  // Claude banked resets join the plan chip row; their expiry list follows it.
+  const showClaudeReset = entry.type === 'claude' && status === 'success';
+  const claudePlanItems = showClaudeReset ? (
+    <span className={quotaClasses.codexPlanItem}>
+      <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
+      <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
+    </span>
+  ) : undefined;
+  const claudeAfterPlan = showClaudeReset ? (
+    <>
+      <ClaudeResetGrantDetails grants={claudeReset.grants} classes={quotaClasses} />
+      {claudeReset.message && (
+        <div role="status" className={quotaClasses.codexResetCreditsError}>
+          {t(`claude_reset.${claudeReset.message}`)}
+        </div>
+      )}
+    </>
+  ) : undefined;
   const showReset =
     status === 'success' &&
     Boolean(adapter.resetQuota) &&
@@ -119,22 +137,6 @@ export function QuotaCard(props: QuotaCardProps) {
       </header>
 
       <div className={styles.body}>
-        {entry.type === 'claude' && status === 'success' && (
-          <>
-            <div className={quotaClasses.codexPlan}>
-              <span className={quotaClasses.codexPlanItem}>
-                <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
-                <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
-              </span>
-            </div>
-            <ClaudeResetGrantDetails grants={claudeReset.grants} classes={quotaClasses} />
-            {claudeReset.message && (
-              <div role="status" className={quotaClasses.codexResetCreditsError}>
-                {t(`claude_reset.${claudeReset.message}`)}
-              </div>
-            )}
-          </>
-        )}
         {status === 'idle' ? (
           <button
             type="button"
@@ -160,7 +162,12 @@ export function QuotaCard(props: QuotaCardProps) {
             {t(`${adapter.i18nPrefix}.load_failed`, { message: errorMessage })}
           </div>
         ) : quota && !retainedClaudeUsage ? (
-          <adapter.Body quota={quota} classes={quotaClasses} />
+          <adapter.Body
+            quota={quota}
+            classes={quotaClasses}
+            planItems={claudePlanItems}
+            afterPlan={claudeAfterPlan}
+          />
         ) : !retainedClaudeUsage ? (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
         ) : null}
@@ -169,7 +176,14 @@ export function QuotaCard(props: QuotaCardProps) {
             {t(`${adapter.i18nPrefix}.loading`)}
           </div>
         )}
-        {retainedClaudeUsage && quota && <adapter.Body quota={quota} classes={quotaClasses} />}
+        {retainedClaudeUsage && quota && (
+          <adapter.Body
+            quota={quota}
+            classes={quotaClasses}
+            planItems={claudePlanItems}
+            afterPlan={claudeAfterPlan}
+          />
+        )}
       </div>
 
       {status !== 'idle' && (

@@ -81,17 +81,9 @@
 
 支持 **English、简体中文、繁體中文和 Русский**，自动识别浏览器语言，也可手动切换。响应式布局适配桌面、平板与手机，支持现代 Chrome、Firefox、Safari 和 Edge 浏览器。
 
-## 赞助商
-
-[![APIMart — AI 图片与视频生成 API](./assets/apimart-zh.png)](https://go.apimart.ai/gh-cli-proxy-api-management-center)
-
-感谢 **APIMart** 赞助本项目！
-
-APIMart 是专注 AI 图片/视频生成的低价 API 平台，GPT-Image-2 低至 $0.006/张，1 美元可出图 160+ 张。图片、视频一套异步 API 通吃，提交任务拿 ID、回调取结果，跑批万张不超时、换模型不改代码。按量付费、无月费，通过[此注册链接](https://go.apimart.ai/gh-cli-proxy-api-management-center)注册即可开用。
-
 ## 部署
 
-如需自行构建单文件界面，使用 **Bun 1.3.14**：
+如需自行构建单文件界面，使用 **Bun 1.4.3**：
 
 ```bash
 bun install --frozen-lockfile

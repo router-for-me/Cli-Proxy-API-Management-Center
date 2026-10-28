@@ -10,6 +10,7 @@ import en from './locales/en.json';
 import ru from './locales/ru.json';
 import vi from './locales/vi.json';
 import ko from './locales/ko.json';
+import tr from './locales/tr.json';
 import { getInitialLanguage } from '@/utils/language';
 
 i18n.use(initReactI18next).init({
@@ -20,6 +21,7 @@ i18n.use(initReactI18next).init({
     ru: { translation: ru },
     vi: { translation: vi },
     ko: { translation: ko },
+    tr: { translation: tr },
   },
   lng: getInitialLanguage(),
   fallbackLng: 'zh-CN',

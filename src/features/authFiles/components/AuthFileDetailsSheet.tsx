@@ -13,6 +13,7 @@ import type {
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import {
+  supportsAuthFileSiwc,
   supportsAuthFileUsingApi,
   supportsAuthFileWebsockets,
 } from '@/features/authFiles/constants';
@@ -258,6 +259,18 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
                         ariaLabel={t('auth_files.websockets_label')}
                       />
                       <div className="hint">{t('auth_files.websockets_hint')}</div>
+                    </div>
+                  )}
+                  {supportsAuthFileSiwc(editor.providerKey) && (
+                    <div className="form-group">
+                      <label>{t('auth_files.use_siwc_label')}</label>
+                      <ToggleSwitch
+                        checked={editor.useSiwc}
+                        onChange={(value) => onChange('useSiwc', value)}
+                        disabled={disableControls || editor.saving || !editor.json}
+                        ariaLabel={t('auth_files.use_siwc_label')}
+                      />
+                      <div className="hint">{t('auth_files.use_siwc_hint')}</div>
                     </div>
                   )}
                   {supportsAuthFileUsingApi(editor.providerKey) && (
