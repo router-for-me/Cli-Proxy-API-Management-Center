@@ -141,12 +141,33 @@ export function timelineSpan(
   const days = TIMELINE_SPAN_DAYS[mode];
   const base = new Date(mode === 'weekly' ? startOfWeek(now) : startOfDay(now));
   base.setDate(base.getDate() + offset * (mode === 'weekly' ? 7 : 1));
+  base.setHours(0, 0, 0, 0);
   const startMs = base.getTime();
 
   const end = new Date(startMs);
   end.setDate(end.getDate() + days);
+  end.setHours(0, 0, 0, 0);
 
   return { startMs, endMs: end.getTime(), days };
+}
+
+/** Local calendar boundaries, weighted by elapsed time to match bar positions. */
+export function timelineCells(
+  mode: TimelineMode,
+  span: { startMs: number; days: number }
+): { at: number; durationMs: number }[] {
+  const perDay = mode === 'session' ? 4 : 1;
+  const boundary = (index: number) => {
+    const date = new Date(span.startMs);
+    date.setDate(date.getDate() + Math.floor(index / perDay));
+    date.setHours((index % perDay) * (24 / perDay), 0, 0, 0);
+    return date.getTime();
+  };
+
+  return Array.from({ length: span.days * perDay }, (_, index) => {
+    const at = boundary(index);
+    return { at, durationMs: boundary(index + 1) - at };
+  });
 }
 
 /**
