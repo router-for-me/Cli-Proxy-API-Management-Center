@@ -9,7 +9,9 @@
 
 import type { TFunction } from 'i18next';
 import type { QuotaHistoryAccount } from '@/services/api/quotaHistory';
+import type { AuthFileItem } from '@/types/authFile';
 import { HOUR_MS } from '@/utils/time/durations';
+import { parseTimestampMs } from '@/utils/timestamp';
 import type { QuotaProviderType } from '../providers/types';
 
 export type AccountWindowCell = {
@@ -228,8 +230,44 @@ export const weeklyResetMs = (
   return cells.find((cell) => cell.id === id)?.resetAtMs ?? null;
 };
 
-/** Mirrors the backend rule: a weekly reset less than 36 hours away gets top priority. */
-export const isPriorityBoosted = (resetAtMs: number | null, nowMs: number): boolean =>
+/** Whether the router can pick a credential right now, and until when it can't. */
+export type CredentialStatus = 'serving' | 'cooling' | 'unavailable' | 'disabled' | 'error';
+
+export const credentialStatus = (
+  file: AuthFileItem,
+  nowMs: number
+): { status: CredentialStatus; until: number | null } => {
+  if (file.disabled) return { status: 'disabled', until: null };
+  const snapshot = file.cooldownSnapshot;
+  const credentialCooldowns = (snapshot?.records ?? [])
+    .filter((record) => record.scope === 'credential')
+    .map((record) => snapshot!.receivedAtMs + record.remainingSeconds * 1000)
+    .filter((until) => until > nowMs);
+  if (credentialCooldowns.length > 0) {
+    return { status: 'cooling', until: Math.max(...credentialCooldowns) };
+  }
+  if (file.unavailable) {
+    const retry = parseTimestampMs(file['next_retry_after']);
+    return {
+      status: 'unavailable',
+      until: Number.isFinite(retry) && retry > nowMs ? retry : null,
+    };
+  }
+  if (String(file.status ?? '').toLowerCase() === 'error') return { status: 'error', until: null };
+  return { status: 'serving', until: null };
+};
+
+/**
+ * Mirrors the backend rule: a weekly reset less than 36 hours away gets top
+ * priority. The backend boosts only credentials it can pick, so one that is
+ * cooling down after a rate limit, or is unavailable or disabled, never counts.
+ */
+export const isPriorityBoosted = (
+  resetAtMs: number | null,
+  nowMs: number,
+  status: CredentialStatus
+): boolean =>
+  status === 'serving' &&
   resetAtMs !== null &&
   resetAtMs > nowMs &&
   resetAtMs - nowMs < PRIORITY_RESET_WINDOW_HOURS * HOUR_MS;

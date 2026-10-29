@@ -16,14 +16,14 @@ const NOW = new Date(2026, 7, 2, 12, 0, 0).getTime();
 
 describe('relativeTimeParts', () => {
   test('picks the coarsest unit that still describes the gap', () => {
-    expect(relativeTimeParts(NOW + DAY_MS, NOW)).toEqual({ value: 1, unit: 'day' });
+    expect(relativeTimeParts(NOW + 2 * DAY_MS, NOW)).toEqual({ value: 2, unit: 'day' });
     expect(relativeTimeParts(NOW + HOUR_MS, NOW)).toEqual({ value: 1, unit: 'hour' });
     expect(relativeTimeParts(NOW + 30_000, NOW)).toEqual({ value: 1, unit: 'minute' });
   });
 
   test('never renders a magnitude that should have been the next unit up', () => {
     // Rounding up here would produce "24 hours" and "60 minutes".
-    expect(relativeTimeParts(NOW + DAY_MS - 1, NOW)).toEqual({ value: 23, unit: 'hour' });
+    expect(relativeTimeParts(NOW + 2 * DAY_MS - 1, NOW)).toEqual({ value: 47, unit: 'hour' });
     expect(relativeTimeParts(NOW + HOUR_MS - 1, NOW)).toEqual({ value: 59, unit: 'minute' });
   });
 
@@ -34,6 +34,17 @@ describe('relativeTimeParts', () => {
       unit: 'day',
     });
     expect(relativeTimeParts(NOW + 90 * MINUTE_MS, NOW)).toEqual({ value: 1, unit: 'hour' });
+  });
+
+  test('counts hours until two days, so 24 to 47 hours never all read "1 day"', () => {
+    expect(relativeTimeParts(NOW + DAY_MS, NOW)).toEqual({ value: 24, unit: 'hour' });
+    expect(relativeTimeParts(NOW + 46 * HOUR_MS + 8 * MINUTE_MS, NOW)).toEqual({
+      value: 46,
+      unit: 'hour',
+    });
+    expect(relativeTimeParts(NOW - 30 * HOUR_MS, NOW)).toEqual({ value: -30, unit: 'hour' });
+    expect(formatRelativeInstant(NOW + 47 * HOUR_MS, NOW, 'en')).toBe('in 47 hours');
+    expect(formatRelativeInstant(NOW + 48 * HOUR_MS, NOW, 'en')).toBe('in 2 days');
   });
 
   test('past instants are negative rather than clamped to zero', () => {
@@ -117,7 +128,7 @@ describe('buildResetDisplay', () => {
   test('treats a placeholder label with a real instant as renderable', () => {
     const display = buildResetDisplay('-', NOW + DAY_MS, NOW, 'en');
     expect(display?.absolute).toBe(formatInstantShort(NOW + DAY_MS));
-    expect(display?.relative).toContain('1 day');
+    expect(display?.relative).toContain('24 hours');
   });
 
   test('rejects a non-finite instant', () => {

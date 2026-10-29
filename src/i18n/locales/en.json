@@ -1751,6 +1751,7 @@
     "status_priority": "Priority · weekly reset {{relative}}",
     "status_recorded": "Recorded {{relative}}",
     "status_unavailable": "Unavailable",
+    "status_cooling": "Cooling down · retry {{relative}}",
     "weight": "weight {{weight}}",
     "renews": "renews {{absolute}} · {{relative}}",
     "use_reset": "Use a reset",

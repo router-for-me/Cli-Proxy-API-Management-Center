@@ -1696,6 +1696,7 @@
     "status_priority": "Ưu tiên · đặt lại tuần {{relative}}",
     "status_recorded": "Ghi nhận {{relative}}",
     "status_unavailable": "Không khả dụng",
+    "status_cooling": "Đang tạm nghỉ · thử lại {{relative}}",
     "weight": "trọng số {{weight}}",
     "renews": "gia hạn {{absolute}} · {{relative}}",
     "use_reset": "Dùng một lần đặt lại",

@@ -5,19 +5,23 @@
  * React-free so it can be unit-tested.
  */
 
+import {
+  credentialStatus,
+  isPriorityBoosted,
+  type CredentialStatus,
+} from '@/features/quota/accounts/rowModel';
 import type { QuotaHistory, QuotaHistoryAccount } from '@/services/api/quotaHistory';
 import type { AuthFileItem } from '@/types/authFile';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { normalizeRecentRequestBuckets, type RecentRequestBucket } from '@/utils/recentRequests';
-import { DAY_MS, HOUR_MS } from '@/utils/time/durations';
+import { DAY_MS } from '@/utils/time/durations';
 import { parseTimestampMs } from '@/utils/timestamp';
 
 /** The backend keeps 20 buckets of 10 minutes, aligned to the Unix epoch. */
 export const BUCKET_MS = 10 * 60 * 1000;
 
-/** Mirrors the backend rule: a weekly reset less than 36 hours away is routed first. */
+/** Routing strategies that boost accounts close to their weekly reset (backend fork). */
 export const WEEKLY_RESET_STRATEGIES = ['weekly-reset-weighted-round-robin', 'weekly-reset-wrr'];
-const PRIORITY_WINDOW_MS = 36 * HOUR_MS;
 const WEEK_MS = 7 * DAY_MS;
 
 // ---------------------------------------------------------------- traffic
@@ -113,7 +117,7 @@ export type QuotaReading = {
   observedAt: number;
 };
 
-export type AccountStatus = 'serving' | 'cooling' | 'unavailable' | 'disabled' | 'error';
+export type AccountStatus = CredentialStatus;
 
 export type AccountRow = {
   key: string;
@@ -257,30 +261,6 @@ const historyFor = (
   );
 };
 
-const statusOf = (
-  file: AuthFileItem,
-  nowMs: number
-): { status: AccountStatus; until: number | null } => {
-  if (file.disabled) return { status: 'disabled', until: null };
-  const snapshot = file.cooldownSnapshot;
-  const credentialCooldowns = (snapshot?.records ?? [])
-    .filter((record) => record.scope === 'credential')
-    .map((record) => snapshot!.receivedAtMs + record.remainingSeconds * 1000)
-    .filter((until) => until > nowMs);
-  if (credentialCooldowns.length > 0) {
-    return { status: 'cooling', until: Math.max(...credentialCooldowns) };
-  }
-  if (file.unavailable) {
-    const retry = parseTimestampMs(file['next_retry_after']);
-    return {
-      status: 'unavailable',
-      until: Number.isFinite(retry) && retry > nowMs ? retry : null,
-    };
-  }
-  if (String(file.status ?? '').toLowerCase() === 'error') return { status: 'error', until: null };
-  return { status: 'serving', until: null };
-};
-
 const accountName = (file: AuthFileItem): string => {
   const email = typeof file.email === 'string' ? file.email.trim() : '';
   if (email) return email;
@@ -310,11 +290,10 @@ export function buildAccountRows(
       nowMs,
       WEEK_MS
     );
-    const { status, until } = statusOf(file, nowMs);
+    const { status, until } = credentialStatus(file, nowMs);
     const buckets = normalizeRecentRequestBuckets(file.recentRequests ?? file.recent_requests);
     const success = buckets.reduce((sum, bucket) => sum + bucket.success, 0);
     const failed = buckets.reduce((sum, bucket) => sum + bucket.failed, 0);
-    const weeklyReset = weekly?.resetAt ?? null;
     return {
       key: `${file.name}|${file.authIndex ?? ''}`,
       provider,
@@ -326,12 +305,7 @@ export function buildAccountRows(
       total: success + failed,
       fiveHour,
       weekly,
-      priority:
-        priorityRouting &&
-        status === 'serving' &&
-        weeklyReset !== null &&
-        weeklyReset > nowMs &&
-        weeklyReset - nowMs < PRIORITY_WINDOW_MS,
+      priority: priorityRouting && isPriorityBoosted(weekly?.resetAt ?? null, nowMs, status),
     };
   });
 

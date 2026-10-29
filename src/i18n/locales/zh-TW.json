@@ -2664,6 +2664,7 @@
     "claude_bank_hint": "使用後清除符合條件的限額",
     "codex_bank_hint": "使用後重置額度",
     "available": "{{count}} 次可用",
-    "next_expires": "最近到期"
+    "next_expires": "最近到期",
+    "status_cooling": "冷卻中 · {{relative}}重試"
   }
 }

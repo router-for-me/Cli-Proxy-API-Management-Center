@@ -1751,6 +1751,7 @@
     "status_priority": "우선 · 주간 초기화 {{relative}}",
     "status_recorded": "{{relative}} 기록",
     "status_unavailable": "사용 불가",
+    "status_cooling": "쿨다운 · {{relative}} 재시도",
     "weight": "가중치 {{weight}}",
     "renews": "갱신 {{absolute}} · {{relative}}",
     "use_reset": "초기화 사용",

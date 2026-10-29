@@ -1751,6 +1751,7 @@
     "status_priority": "Öncelik · haftalık sıfırlama {{relative}}",
     "status_recorded": "{{relative}} kaydedildi",
     "status_unavailable": "Kullanılamıyor",
+    "status_cooling": "Soğumada · yeniden deneme {{relative}}",
     "weight": "ağırlık {{weight}}",
     "renews": "yenilenme {{absolute}} · {{relative}}",
     "use_reset": "Bir sıfırlama kullan",

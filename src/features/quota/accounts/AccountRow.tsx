@@ -16,6 +16,7 @@ import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import bodyStyles from '../components/QuotaBody.module.scss';
 import {
+  credentialStatus,
   isPriorityBoosted,
   remainingTone,
   weeklyResetMs,
@@ -72,7 +73,8 @@ export function AccountRow(props: AccountRowProps) {
   );
 
   const weeklyReset = weeklyResetMs(entry.type, cells);
-  const boosted = priorityRouting && isPriorityBoosted(weeklyReset, now);
+  const routing = credentialStatus(file, now);
+  const boosted = priorityRouting && isPriorityBoosted(weeklyReset, now, routing.status);
   const weight = typeof file.weight === 'number' && file.weight !== 1 ? file.weight : null;
   const renewsAtMs = codex ? resolveResetMs([codex.subscriptionActiveUntil ?? null]) : null;
 
@@ -98,22 +100,29 @@ export function AccountRow(props: AccountRowProps) {
               relative: formatRelativeInstant(weeklyReset as number, now, locale),
             }),
           }
-        : file.unavailable === true
-          ? { tone: 'warning', text: t('quota_accounts.status_unavailable') }
-          : loading
-            ? { tone: 'quiet', text: t(`${adapter.i18nPrefix}.loading`) }
-            : recordedAtMs !== null
-              ? {
-                  tone: 'quiet',
-                  text: t('quota_accounts.status_recorded', {
-                    relative: formatRelativeInstant(
-                      Math.min(recordedAtMs, now - MINUTE_MS),
-                      now,
-                      locale
-                    ),
-                  }),
-                }
-              : null;
+        : routing.status === 'cooling' && routing.until !== null
+          ? {
+              tone: 'warning',
+              text: t('quota_accounts.status_cooling', {
+                relative: formatRelativeInstant(routing.until, now, locale),
+              }),
+            }
+          : file.unavailable === true
+            ? { tone: 'warning', text: t('quota_accounts.status_unavailable') }
+            : loading
+              ? { tone: 'quiet', text: t(`${adapter.i18nPrefix}.loading`) }
+              : recordedAtMs !== null
+                ? {
+                    tone: 'quiet',
+                    text: t('quota_accounts.status_recorded', {
+                      relative: formatRelativeInstant(
+                        Math.min(recordedAtMs, now - MINUTE_MS),
+                        now,
+                        locale
+                      ),
+                    }),
+                  }
+                : null;
 
   const windowSpan = { gridColumn: `span ${Math.max(1, columns.length)}` } as CSSProperties;
   let windowArea;

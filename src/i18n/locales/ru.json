@@ -1769,6 +1769,7 @@
     "status_priority": "Приоритет · недельный сброс {{relative}}",
     "status_recorded": "Записано {{relative}}",
     "status_unavailable": "Недоступен",
+    "status_cooling": "Пауза · повтор {{relative}}",
     "weight": "вес {{weight}}",
     "renews": "продление {{absolute}} · {{relative}}",
     "use_reset": "Использовать сброс",

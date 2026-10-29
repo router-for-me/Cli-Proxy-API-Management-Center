@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
 import {
+  credentialStatus,
   historyWindowCells,
   isPriorityBoosted,
   liveWindowCells,
@@ -9,6 +10,7 @@ import {
   weeklyResetMs,
 } from '@/features/quota/accounts/rowModel';
 import type { QuotaHistoryAccount } from '@/services/api/quotaHistory';
+import type { AuthFileItem } from '@/types/authFile';
 
 const t = ((key: string) => key) as unknown as TFunction;
 const H = 60 * 60 * 1000;
@@ -122,10 +124,49 @@ describe('account row cells', () => {
 
 describe('routing hints', () => {
   test('flag weekly resets less than 36 hours away', () => {
-    expect(isPriorityBoosted(NOW + 35.9 * H, NOW)).toBe(true);
-    expect(isPriorityBoosted(NOW + 36.1 * H, NOW)).toBe(false);
-    expect(isPriorityBoosted(NOW - H, NOW)).toBe(false);
-    expect(isPriorityBoosted(null, NOW)).toBe(false);
+    expect(isPriorityBoosted(NOW + 35.9 * H, NOW, 'serving')).toBe(true);
+    expect(isPriorityBoosted(NOW + 36.1 * H, NOW, 'serving')).toBe(false);
+    expect(isPriorityBoosted(NOW - H, NOW, 'serving')).toBe(false);
+    expect(isPriorityBoosted(null, NOW, 'serving')).toBe(false);
+  });
+
+  test('never boost an account the router cannot pick', () => {
+    for (const status of ['cooling', 'unavailable', 'disabled', 'error'] as const) {
+      expect(isPriorityBoosted(NOW + 3 * H, NOW, status)).toBe(false);
+    }
+  });
+
+  test('read a rate-limited account as cooling until its credential cooldown ends', () => {
+    // Production 2026-10-29: weekly limit spent, reset 3 hours away, 429 cooldown until then.
+    const file: AuthFileItem = {
+      name: 'claude-7681b9e4.json',
+      type: 'claude',
+      status: 'error',
+      unavailable: true,
+      next_retry_after: new Date(NOW + 3 * H).toISOString(),
+      cooldownSnapshot: {
+        receivedAtMs: NOW,
+        records: [
+          {
+            scope: 'credential',
+            reason: 'credential_quota',
+            retryAt: '',
+            remainingSeconds: 3 * 3600,
+          },
+          { scope: 'model', reason: 'quota', retryAt: '', remainingSeconds: 3 * 3600 },
+        ],
+      },
+    };
+    const routing = credentialStatus(file, NOW);
+    expect(routing).toEqual({ status: 'cooling', until: NOW + 3 * H });
+    expect(isPriorityBoosted(NOW + 3 * H, NOW, routing.status)).toBe(false);
+
+    // Once the cooldown has run out, the file's own flags decide.
+    expect(credentialStatus(file, NOW + 4 * H).status).toBe('unavailable');
+    expect(credentialStatus({ name: 'ok.json', type: 'claude' }, NOW).status).toBe('serving');
+    expect(credentialStatus({ name: 'off.json', type: 'claude', disabled: true }, NOW).status).toBe(
+      'disabled'
+    );
   });
 
   test('tone remaining percentages', () => {
