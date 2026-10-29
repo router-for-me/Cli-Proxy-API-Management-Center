@@ -5,7 +5,12 @@
  * IMPORTANT: 这不是安全边界，仅用于避免“肉眼直读”的轻度混淆。
  */
 
-import { obfuscateData, deobfuscateData, isObfuscated } from '@/utils/encryption';
+import {
+  obfuscateData,
+  deobfuscateData,
+  isObfuscated,
+  isLegacyObfuscated,
+} from '@/utils/encryption';
 
 interface StorageOptions {
   /**
@@ -45,7 +50,16 @@ class ObfuscatedStorageService {
 
     try {
       const decrypted = obfuscate ? deobfuscateData(raw) : raw;
-      return JSON.parse(decrypted) as T;
+      const value = JSON.parse(decrypted) as T;
+      if (obfuscate && isLegacyObfuscated(raw)) {
+        // Only migrate successfully parsed values; a changed v1 user agent may decode to garbage.
+        try {
+          this.setItem(key, value);
+        } catch {
+          // Storage may be read-only or full. A failed migration must not prevent login.
+        }
+      }
+      return value;
     } catch {
       // JSON解析失败,尝试兼容旧的纯字符串数据 (非JSON格式)
       try {
