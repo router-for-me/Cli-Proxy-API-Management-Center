@@ -1538,7 +1538,7 @@
   "quota_management": {
     "title": "Quản lý Quota",
     "description": "Theo dõi trạng thái quota OAuth của credential Antigravity, Codex, Claude, Kimi và xAI.",
-    "refresh_all_credentials": "Làm mới mọi credential",
+    "refresh_page_quotas": "Làm mới hạn mức trên trang",
     "sort_label": "Sắp xếp",
     "sort_default": "Mặc định",
     "sort_soonest": "Sớm khôi phục nhất",

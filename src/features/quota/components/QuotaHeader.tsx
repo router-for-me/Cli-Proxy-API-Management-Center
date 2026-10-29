@@ -62,7 +62,7 @@ export function QuotaHeader(props: QuotaHeaderProps) {
           disabled={disableControls || refreshing}
         >
           <IconRefreshCw size={14} className={refreshing ? styles.spinning : undefined} />
-          {t('quota_management.refresh_all_credentials')}
+          {t('quota_management.refresh_page_quotas')}
         </button>
       </div>
     </header>

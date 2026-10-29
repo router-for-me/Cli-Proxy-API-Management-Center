@@ -1587,7 +1587,7 @@
     "search_clear": "검색 초기화",
     "title": "할당량 관리",
     "description": "Antigravity, Codex, Claude, Kimi 및 xAI 자격 증명의 OAuth 할당량 상태를 모니터링합니다.",
-    "refresh_all_credentials": "모든 자격 증명 새로 고침",
+    "refresh_page_quotas": "현재 페이지 할당량 새로 고침",
     "sort_label": "정렬",
     "sort_default": "기본값",
     "sort_soonest": "가장 빠른 복구순",
