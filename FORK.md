@@ -26,7 +26,10 @@ Fork-specific files: `src/styles/fork.scss`, `src/components/layout/ForkBrandLog
 
 Edited upstream file worth checking on sync: `src/utils/quota/relativeTime.ts`
 counts hours up to 48 ("in 46 hours", not "in 1 day"), so a weekly reset reads
-clearly against the 36-hour priority window.
+clearly against the 36-hour priority window. `src/features/quota/QuotaPage.tsx`
+no longer renders the upstream "Quota windows" timeline (`QuotaTimeline`): the
+account grid shows the same windows. The component stays in the tree so syncs
+don't conflict.
 
 The dashboard's provider colors (`#d4734d` / `#5b88d6` dark, `#c2603d` / `#3f68b5`
 light) pass the categorical palette checks (lightness band, chroma floor, colorblind

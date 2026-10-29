@@ -27,7 +27,6 @@ import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { QuotaHeader } from './components/QuotaHeader';
 import { AccountsTable } from './accounts/AccountsTable';
 import { WEEKLY_RESET_STRATEGY } from './accounts/rowModel';
-import { QuotaTimeline } from './components/QuotaTimeline';
 import { maskEmails } from './emailMask';
 import { QuotaForecastSection } from './forecast/QuotaForecastSection';
 import { useForecastPrefs } from './forecast/prefs';
@@ -186,11 +185,6 @@ export function QuotaPage() {
       const name = getQuotaDisplayName(entry.file);
       return showEmails ? name : maskEmails(name, entry.file.email);
     },
-    [showEmails]
-  );
-  // Existing providers display filenames; Devin's timeline lane keeps its identity label.
-  const displayNameFor = useCallback(
-    (name: string) => (showEmails ? name : maskEmails(name)),
     [showEmails]
   );
   const tabCounts = useMemo(() => buildTabCounts(entries), [entries]);
@@ -502,14 +496,6 @@ export function QuotaPage() {
             </Button>
           </div>
         )}
-
-        {/* 时间线只比较当前页凭证，避免大量凭证一次性生成无界泳道。 */}
-        <QuotaTimeline
-          entries={pageItems}
-          quotaFor={getQuota}
-          displayNameFor={displayNameFor}
-          resolvedTheme={resolvedTheme}
-        />
       </section>
     </div>
   );
