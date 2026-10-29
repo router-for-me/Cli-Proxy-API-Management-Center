@@ -371,6 +371,7 @@ export function QuotaPage() {
           refreshKey={historyRefreshKey}
           onHistory={setForecastHistory}
           enabled={!disableControls && filesGeneration === sessionGeneration}
+          priorityRouting={priorityRouting}
           resolvedTheme={resolvedTheme}
         />
 

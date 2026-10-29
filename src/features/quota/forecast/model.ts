@@ -47,6 +47,8 @@ export type ForecastOptions = {
   futureUsage: FutureUsage;
   /** The projection runs to max(to, horizon). */
   horizon: number;
+  /** Weekly-reset routing: how close a reset must be for the account to take all traffic. */
+  priorityWindowMs?: number | null;
 };
 
 export type ProjectedReset = { t: number; amount: number; keys: string[] };
@@ -315,6 +317,10 @@ type Projection = {
  * quota in proportion to their recent burn, shifting to the rest as accounts
  * run dry. Each account refills to 100% at its reset and then resets every
  * period.
+ *
+ * With `priorityWindowMs` (weekly-reset routing), accounts whose reset is that
+ * close take all of it, split evenly the way the router alternates between
+ * boosted accounts. Their 5-hour limits are not modelled.
  */
 export function projectPool(
   accounts: {
@@ -327,7 +333,8 @@ export function projectPool(
   }[],
   poolRate: number,
   start: number,
-  end: number
+  end: number,
+  priorityWindowMs: number | null = null
 ): Projection {
   const sim: SimAccount[] = accounts.map((account) => ({
     key: account.key,
@@ -353,9 +360,21 @@ export function projectPool(
   for (let guard = 0; guard < 5000 && t < end; guard += 1) {
     // Split the pool rate across accounts with quota left.
     const nonEmpty = sim.filter((account) => account.remaining > EPSILON);
+    const boosted =
+      priorityWindowMs === null
+        ? []
+        : nonEmpty.filter(
+            (account) =>
+              account.nextReset !== null &&
+              account.nextReset > t &&
+              account.nextReset - priorityWindowMs <= t
+          );
     let carriers = nonEmpty.filter((account) => account.share > 0);
     let shareOf = (account: SimAccount) => account.share;
-    if (carriers.length === 0) {
+    if (boosted.length > 0) {
+      carriers = boosted;
+      shareOf = () => 1;
+    } else if (carriers.length === 0) {
       carriers = nonEmpty;
       shareOf = (account) => account.weight;
     }
@@ -379,6 +398,12 @@ export function projectPool(
     let next = end;
     sim.forEach((account) => {
       if (account.nextReset !== null && account.nextReset < next) next = account.nextReset;
+      // Entering the priority window re-splits the traffic.
+      const boostFrom =
+        priorityWindowMs !== null && account.nextReset !== null
+          ? account.nextReset - priorityWindowMs
+          : null;
+      if (boostFrom !== null && boostFrom > t && boostFrom < next) next = boostFrom;
     });
     ownRate.forEach((own, account) => {
       const emptyAt = t + (account.remaining / own) * HOUR_MS;
@@ -525,7 +550,8 @@ export function buildPoolForecast(
     })),
     (burnRate ?? 0) * FUTURE_USAGE_MULTIPLIERS[futureUsage],
     now,
-    projectionEnd
+    projectionEnd,
+    options.priorityWindowMs ?? null
   );
 
   const projectedFrom = Math.max(now, from);

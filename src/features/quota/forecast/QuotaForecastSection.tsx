@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { getTypeLabel, type ResolvedTheme } from '@/features/authFiles/constants';
 import { useNow } from '@/hooks/useNow';
 import type { QuotaHistory } from '@/services/api/quotaHistory';
+import { HOUR_MS } from '@/utils/time/durations';
+import { PRIORITY_RESET_WINDOW_HOURS } from '../accounts/rowModel';
 import type { QuotaFileEntry } from '../logic';
 import type { QuotaTabId } from '../constants';
 import { ForecastToolbar, type WeightRow } from './ForecastToolbar';
@@ -35,12 +37,14 @@ export type QuotaForecastSectionProps = {
   /** Receives every loaded history so the account rows can reuse it. */
   onHistory?: (history: QuotaHistory | null) => void;
   enabled: boolean;
+  /** Weekly-reset routing is active, so the projection follows its priority window. */
+  priorityRouting: boolean;
   resolvedTheme: ResolvedTheme;
 };
 
 export function QuotaForecastSection(props: QuotaForecastSectionProps) {
-  const { entries, tab, prefs, onPrefsChange, refreshKey, onHistory, enabled, resolvedTheme } =
-    props;
+  const { entries, tab, prefs, onPrefsChange, refreshKey, onHistory, enabled } = props;
+  const { priorityRouting, resolvedTheme } = props;
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'en';
   const now = useNow();
@@ -102,9 +106,19 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
           burnWindowHours: prefs.burnWindowHours,
           futureUsage: prefs.futureUsage,
           horizon,
+          priorityWindowMs: priorityRouting ? PRIORITY_RESET_WINDOW_HOURS * HOUR_MS : null,
         }),
       })),
-    [horizon, now, pools, prefs.burnWindowHours, prefs.futureUsage, range.from, range.to]
+    [
+      horizon,
+      now,
+      pools,
+      prefs.burnWindowHours,
+      prefs.futureUsage,
+      priorityRouting,
+      range.from,
+      range.to,
+    ]
   );
 
   const weightRows = useMemo<WeightRow[]>(

@@ -168,6 +168,67 @@ describe('projection', () => {
     expect(valueAt(projection.pool, T0 + 3 * H)).toBeCloseTo(250);
   });
 
+  describe('with weekly-reset routing', () => {
+    const WINDOW = 36 * H;
+    const week = 7 * 24 * H;
+    const sim = (resetHours: number, remaining: number, burnRate: number) => ({
+      remaining,
+      burnRate,
+      nextReset: T0 + resetHours * H,
+      periodMs: week,
+    });
+
+    test('drains an account inside its window before the reset instead of wasting it', () => {
+      const accounts = [
+        { key: 'soon', weight: 1, ...sim(10, 80, 1) },
+        { key: 'later', weight: 1, ...sim(100, 100, 9) },
+      ];
+      // Split by recent burn, 'soon' gets 1 of 10 points an hour and resets with 70% unused.
+      const split = projectPool(accounts, 10, T0, T0 + 12 * H);
+      expect(split.resets).toEqual([{ t: T0 + 10 * H, amount: 30, keys: ['soon'] }]);
+
+      const routed = projectPool(accounts, 10, T0, T0 + 12 * H, WINDOW);
+      expect(routed.firstEmpty).toEqual({ key: 'soon', t: T0 + 8 * H });
+      expect(routed.resets).toEqual([{ t: T0 + 10 * H, amount: 100, keys: ['soon'] }]);
+      // 'later' takes the traffic once 'soon' is empty: 2 hours at 10 points.
+      expect(valueAt(routed.accounts.get('later') ?? [], T0 + 10 * H)).toBeCloseTo(80);
+    });
+
+    test('re-splits the traffic when an account enters its window', () => {
+      const projection = projectPool(
+        [
+          { key: 'a', weight: 1, ...sim(40, 80, 5) },
+          { key: 'b', weight: 1, ...sim(140, 100, 5) },
+        ],
+        10,
+        T0,
+        T0 + 12 * H,
+        WINDOW
+      );
+      // 4 hours at half the rate, then all of it: 80 − 20 − 60 runs out at hour 10.
+      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 4 * H)).toBeCloseTo(60);
+      expect(projection.firstEmpty).toEqual({ key: 'a', t: T0 + 10 * H });
+    });
+
+    test('splits evenly between accounts inside their windows, whatever their burn', () => {
+      const projection = projectPool(
+        [
+          { key: 'a', weight: 1, ...sim(20, 100, 9) },
+          { key: 'b', weight: 2, ...sim(30, 100, 0) },
+          { key: 'c', weight: 1, ...sim(100, 100, 1) },
+        ],
+        12,
+        T0,
+        T0 + 5 * H,
+        WINDOW
+      );
+      // 6 pool points an hour each: 'a' loses 6%/h, double-capacity 'b' 3%/h, 'c' nothing.
+      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 5 * H)).toBeCloseTo(70);
+      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(85);
+      expect(valueAt(projection.accounts.get('c') ?? [], T0 + 5 * H)).toBeCloseTo(100);
+    });
+  });
+
   test('starts an unstarted window on first use', () => {
     const projection = projectPool(
       [{ key: 'a', weight: 1, remaining: 100, burnRate: 1, nextReset: null, periodMs: 10 * H }],
@@ -208,6 +269,27 @@ describe('pool forecast', () => {
     expect(forecast.recorded.at(-1)?.t).toBe(now);
     expect(forecast.projected[0]).toEqual({ t: now, v: forecast.remaining });
     expect(forecast.projectedResets[0].t).toBe(T0 + 50 * H);
+  });
+
+  test('follows the priority window when weekly-reset routing is on', () => {
+    const now = T0 + 3 * H;
+    const inputs = [
+      // Resets in 7 hours with 78% left, at 1%/h of a 10%/h pool.
+      account('soon', 1, [point(0, 19, 10), point(3, 22, 10)]),
+      account('later', 1, [point(0, 0, 200), point(3, 27, 200)]),
+    ];
+    const options = {
+      now,
+      from: T0,
+      to: T0 + 24 * H,
+      burnWindowHours: 3,
+      futureUsage: 'same' as const,
+      horizon: now,
+    };
+    const split = buildPoolForecast(inputs, options);
+    const routed = buildPoolForecast(inputs, { ...options, priorityWindowMs: 36 * H });
+    expect(split.nextReset?.amount).toBeCloseTo(22 + 7 * 1);
+    expect(routed.nextReset?.amount).toBeCloseTo(22 + 7 * 10);
   });
 
   test('a paused future keeps the pool flat apart from resets', () => {
