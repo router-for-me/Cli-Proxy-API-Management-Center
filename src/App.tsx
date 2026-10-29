@@ -22,11 +22,11 @@ function RootShell() {
 const devPreviewRoutes = import.meta.env.DEV
   ? [
       {
-        path: '/__preview/plan-badge',
+        path: '/__preview/quota-tiers',
         HydrateFallback: () => null,
         lazy: async () => {
-          const { PlanBadgePreview } = await import('@/features/quota/preview/PlanBadgePreview');
-          return { Component: PlanBadgePreview };
+          const { QuotaTierPreview } = await import('@/features/quota/preview/QuotaTierPreview');
+          return { Component: QuotaTierPreview };
         },
       },
     ]

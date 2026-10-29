@@ -1,11 +1,12 @@
 /**
- * Antigravity 额度渲染体：套餐 chip 行（ultra/ultra-lite=金卡）+ 分组水位条。
+ * Antigravity 额度渲染体：套餐 chip 行（档位见 cardTier.ts）+ 分组水位条。
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { AntigravityQuotaState, AntigravityQuotaSubscription } from '@/types';
+import { planValueClassForTier, resolveAntigravityCardTier } from '../../cardTier';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
@@ -95,8 +96,10 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
   const { t } = useTranslation();
   const groups = quota.groups ?? [];
   const planLabel = getAntigravityPlanLabel(quota.subscription, t);
-  const normalizedPlan = quota.subscription?.plan?.toLowerCase() ?? '';
-  const isPremiumPlan = normalizedPlan === 'ultra' || normalizedPlan === 'ultra-lite';
+  const planValueClass = planValueClassForTier(
+    resolveAntigravityCardTier(quota.subscription?.plan),
+    classes
+  );
   const serverTimeOffsetMs = quota.serverTimeOffsetMs ?? 0;
   const resetTimestamps = useMemo(
     () =>
@@ -141,9 +144,7 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
         <div className={classes.codexPlan}>
           <span className={classes.codexPlanItem}>
             <span className={classes.codexPlanLabel}>{t('antigravity_quota.plan_label')}</span>
-            <span className={isPremiumPlan ? classes.premiumPlanValue : classes.codexPlanValue}>
-              {planLabel}
-            </span>
+            <span className={planValueClass}>{planLabel}</span>
           </span>
         </div>
       )}

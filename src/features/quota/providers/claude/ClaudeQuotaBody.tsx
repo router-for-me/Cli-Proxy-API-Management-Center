@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { ClaudeQuotaState } from '@/types';
 import { buildResetDisplay, formatQuotaResetTime, resolveResetMs } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
+import { planValueClassForTier, resolveClaudeCardTier } from '../../cardTier';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
@@ -64,7 +65,9 @@ export function ClaudeQuotaBody({
           {planType && (
             <span className={classes.codexPlanItem}>
               <span className={classes.codexPlanLabel}>{t('claude_quota.plan_label')}</span>
-              <span className={classes.codexPlanValue}>{t(`claude_quota.${planType}`)}</span>
+              <span className={planValueClassForTier(resolveClaudeCardTier(planType), classes)}>
+                {t(`claude_quota.${planType}`)}
+              </span>
             </span>
           )}
           {planItems}

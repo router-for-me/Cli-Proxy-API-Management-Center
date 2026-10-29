@@ -61,7 +61,7 @@ describe('CodexQuotaBody', () => {
   };
 
   test.each(['en', 'zh-CN', 'zh-TW', 'ru'])(
-    'renders Business Premium with its premium badge in %s',
+    'renders Business Premium as a plain plan in %s',
     async (language) => {
       await i18n.changeLanguage(language);
       try {
@@ -69,7 +69,7 @@ describe('CodexQuotaBody', () => {
           const markup = renderToStaticMarkup(
             createElement(CodexQuotaBody, { quota: { ...quota, planType }, classes })
           );
-          expect(markup).toContain('<span class="premiumPlanValue">Business Premium</span>');
+          expect(markup).toContain('<span class="codexPlanValue">Business Premium</span>');
           expect(markup).not.toContain('self_serve_business_prolite');
         }
       } finally {
@@ -79,7 +79,8 @@ describe('CodexQuotaBody', () => {
   );
 
   test.each([
-    ['pro', 'Pro 200', 'elitePlanValue'],
+    ['promax', 'Pro 500', 'elitePlanValue'],
+    ['pro', 'Pro 200', 'premiumPlanValue'],
     ['prolite', 'Pro 100', 'premiumPlanValue'],
     ['team', 'Team', 'codexPlanValue'],
     ['self_serve_business_usage_based', 'self_serve_business_usage_based', 'codexPlanValue'],

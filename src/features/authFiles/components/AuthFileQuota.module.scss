@@ -203,32 +203,13 @@ button.quotaMessageAction {
   color: var(--text-secondary);
 }
 
-.premiumPlanValue {
-  font-family: $font-mono;
-  font-size: $quota-font-size;
-  font-weight: 650;
-  color: var(--amber-text);
-}
-
-/* Codex Pro 20x 铂金（紧凑版）：与 5x 金色值完全同构，只换色相为铂金钢蓝灰。
- *
- * 这一行里 5x 就是一枚变了色的 mono 文本（premiumPlanValue = amber 文字），
- * 所以 20x 也只是一枚变了色的 mono 文本。之前这里镶了整块切面宝石：
- * 15px 宽的切面在 11px 行里糊成噪点，还得吃掉 18px 左内边距把文字挤偏，
- * 而兄弟 chip 全是朴素文字 —— 一枚发光石头在其中只是吵，不是贵。
- *
- * 色值与配额页同族（液态铂金，2026-07-31 起替代 MC 钻石青）：
- * 浅色 #526379 对白底 6.1:1；深色提亮成银蓝。钢灰在 mono 文本里偏安静，
- * 但这正是该档的性格 —— 铂金的贵是冷的，吵的留给 amber。 */
+/* 高档套餐：与额度页卡面同一强调色，只换文字颜色。 */
+.premiumPlanValue,
 .elitePlanValue {
   font-family: $font-mono;
   font-size: $quota-font-size;
   font-weight: 650;
-  color: #526379;
-}
-
-:global([data-theme='dark']) .elitePlanValue {
-  color: #c3d3e4;
+  color: var(--plan-accent-text);
 }
 
 /* ---------- Antigravity 分组 ---------- */

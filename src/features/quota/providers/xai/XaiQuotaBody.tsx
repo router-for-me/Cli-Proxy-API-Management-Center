@@ -1,5 +1,5 @@
 /**
- * xAI 额度渲染体：套餐 chip 行（SuperGrok Heavy / 付费档=金卡）、
+ * xAI 额度渲染体：套餐 chip 行（档位见 cardTier.ts）、
  * 周/月账单水位条、按量付费余额。
  */
 
@@ -8,6 +8,12 @@ import { useTranslation } from 'react-i18next';
 import type { XaiBillingSummary, XaiQuotaState } from '@/types';
 import { buildResetDisplay, formatQuotaResetTime, parseIsoToMs } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
+import {
+  XAI_SUPERGROK_HEAVY_LIMIT_CENTS,
+  XAI_SUPERGROK_LIMIT_CENTS,
+  planValueClassForTier,
+  resolveXaiCardTier,
+} from '../../cardTier';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { XAI_WEEKLY_ROW_ID, collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
@@ -48,27 +54,9 @@ const formatXaiPercent = (value: number | null): string => {
   return `${Math.round(value)}%`;
 };
 
-const XAI_SUPERGROK_LIMIT_CENTS = 15_000;
-const XAI_SUPERGROK_HEAVY_LIMIT_CENTS = 150_000;
-
-const planValueClass = (
-  tier: XaiBillingSummary['planTier'],
-  classes: QuotaBodyProps<XaiQuotaState>['classes']
-) => {
-  if (tier === 'elite') return classes.elitePlanValue;
-  if (tier === 'premium') return classes.premiumPlanValue;
-  return classes.codexPlanValue;
-};
-
-const resolveXaiPlan = (
-  monthlyLimitCents: number | null
-): { labelKey: string; premium: boolean } | null => {
-  if (monthlyLimitCents === XAI_SUPERGROK_LIMIT_CENTS) {
-    return { labelKey: 'plan_supergrok', premium: false };
-  }
-  if (monthlyLimitCents === XAI_SUPERGROK_HEAVY_LIMIT_CENTS) {
-    return { labelKey: 'plan_supergrok_heavy', premium: true };
-  }
+const resolveXaiPlanLabelKey = (monthlyLimitCents: number | null): string | null => {
+  if (monthlyLimitCents === XAI_SUPERGROK_LIMIT_CENTS) return 'plan_supergrok';
+  if (monthlyLimitCents === XAI_SUPERGROK_HEAVY_LIMIT_CENTS) return 'plan_supergrok_heavy';
   return null;
 };
 
@@ -89,20 +77,14 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
     return <div className={classes.quotaMessage}>{t('xai_quota.empty_data')}</div>;
   }
 
+  const planValueClass = planValueClassForTier(resolveXaiCardTier(billing), classes);
+
   if (billing.mode === 'paid-health') {
     return (
       <>
         <div className={classes.codexPlan}>
           <span className={classes.codexPlanLabel}>{t('xai_quota.plan_label')}</span>
-          <span
-            className={
-              billing.planLabel
-                ? planValueClass(billing.planTier, classes)
-                : classes.premiumPlanValue
-            }
-          >
-            {billing.planLabel ?? t('xai_quota.plan_paid')}
-          </span>
+          <span className={planValueClass}>{billing.planLabel ?? t('xai_quota.plan_paid')}</span>
         </div>
         <div className={classes.quotaMessage}>{t('xai_quota.paid_health')}</div>
       </>
@@ -133,7 +115,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
     clampedOnDemandUsed === null ? null : Math.max(0, Math.min(100, 100 - clampedOnDemandUsed));
   const onDemandPercentLabel = formatXaiPercent(onDemandRemaining);
   const onDemandAmountLabel = formatXaiOnDemandAmount(billing);
-  const plan = resolveXaiPlan(billing.monthlyLimitCents);
+  const planLabelKey = resolveXaiPlanLabelKey(billing.monthlyLimitCents);
   const weeklyUsed =
     billing.periodType === 'weekly' && billing.usagePercent !== null
       ? Math.max(0, Math.min(100, billing.usagePercent))
@@ -155,12 +137,8 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
       Boolean(billing.billingPeriodEnd)) &&
     !(hasWeeklyData && billing.monthlyLimitCents === 0 && billing.usedCents === 0);
 
-  const subscriptionLabel = billing.planLabel ?? (plan ? t(`xai_quota.${plan.labelKey}`) : null);
-  const subscriptionClass = billing.planLabel
-    ? planValueClass(billing.planTier, classes)
-    : plan?.premium
-      ? classes.premiumPlanValue
-      : classes.codexPlanValue;
+  const subscriptionLabel =
+    billing.planLabel ?? (planLabelKey ? t(`xai_quota.${planLabelKey}`) : null);
   const headerReset = buildResetDisplay(
     null,
     hasWeeklyData ? billing.resetAtMs : parseIsoToMs(billing.billingPeriodEnd),
@@ -175,7 +153,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
           {subscriptionLabel && (
             <span className={classes.codexPlanItem}>
               <span className={classes.codexPlanLabel}>{t('xai_quota.plan_label')}</span>
-              <span className={subscriptionClass}>{subscriptionLabel}</span>
+              <span className={planValueClass}>{subscriptionLabel}</span>
             </span>
           )}
           {onDemandCap <= 0 && (

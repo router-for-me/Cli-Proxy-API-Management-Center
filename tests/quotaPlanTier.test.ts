@@ -3,11 +3,10 @@ import en from '@/i18n/locales/en.json';
 import zhCN from '@/i18n/locales/zh-CN.json';
 import zhTW from '@/i18n/locales/zh-TW.json';
 import ru from '@/i18n/locales/ru.json';
-import {
-  ELITE_CODEX_PLAN_TYPE,
-  PREMIUM_CODEX_PLAN_TYPES,
-  resolvePlanTier,
-} from '@/utils/quota';
+import vi from '@/i18n/locales/vi.json';
+import ko from '@/i18n/locales/ko.json';
+import tr from '@/i18n/locales/tr.json';
+import { resolvePlanTier } from '@/utils/quota';
 
 describe('Codex Pro display names', () => {
   for (const [locale, messages] of Object.entries({ en, 'zh-CN': zhCN, 'zh-TW': zhTW, ru })) {
@@ -16,33 +15,42 @@ describe('Codex Pro display names', () => {
       expect(messages.codex_quota.plan_pro).toBe('Pro 200');
     });
   }
+
+  for (const [locale, messages] of Object.entries({
+    en,
+    'zh-CN': zhCN,
+    'zh-TW': zhTW,
+    ru,
+    vi,
+    ko,
+    tr,
+  })) {
+    test(`${locale} labels Pro Max as Pro 500`, () => {
+      expect(messages.codex_quota.plan_promax).toBe('Pro 500');
+    });
+  }
 });
 
 describe('resolvePlanTier', () => {
-  test("elite wins for 'pro' even though it is also in the premium set (order contract)", () => {
-    // 顺序契约回归：'pro' 同时命中 PREMIUM_CODEX_PLAN_TYPES，
-    // 一旦 premium 判断先行，Pro 200 会静默退回金卡。
-    expect(PREMIUM_CODEX_PLAN_TYPES.has(ELITE_CODEX_PLAN_TYPE)).toBe(true);
-    expect(resolvePlanTier('pro')).toBe('elite');
+  test('only Pro 500 is elite, in every spelling', () => {
+    expect(resolvePlanTier('promax')).toBe('elite');
+    expect(resolvePlanTier('  ProMax  ')).toBe('elite');
+    expect(resolvePlanTier('pro-max')).toBe('elite');
+    expect(resolvePlanTier('pro_max')).toBe('elite');
   });
 
-  test('normalizes case and whitespace before matching', () => {
-    expect(resolvePlanTier('PRO')).toBe('elite');
-    expect(resolvePlanTier('  Pro  ')).toBe('elite');
-    expect(resolvePlanTier('Pro-Lite')).toBe('premium');
-  });
-
-  test('maps every pro-lite spelling to premium', () => {
+  test('Pro 200 and Pro 100 share the premium tier', () => {
+    expect(resolvePlanTier('pro')).toBe('premium');
+    expect(resolvePlanTier('  PRO  ')).toBe('premium');
     expect(resolvePlanTier('prolite')).toBe('premium');
-    expect(resolvePlanTier('pro-lite')).toBe('premium');
+    expect(resolvePlanTier('Pro-Lite')).toBe('premium');
     expect(resolvePlanTier('pro_lite')).toBe('premium');
   });
 
-  test('recognizes Business Premium without promoting other business entitlements', () => {
-    expect(resolvePlanTier('self_serve_business_prolite')).toBe('premium');
-    expect(resolvePlanTier('  SELF_SERVE_BUSINESS_PROLITE  ')).toBe('premium');
+  test('Business plans, including Business Premium, rank with Plus', () => {
+    expect(resolvePlanTier('self_serve_business_prolite')).toBe('plain');
+    expect(resolvePlanTier('  SELF_SERVE_BUSINESS_PROLITE  ')).toBe('plain');
     expect(resolvePlanTier('self_serve_business_usage_based')).toBe('plain');
-    expect(resolvePlanTier('self_serve_business_prolite_future')).toBe('plain');
   });
 
   test('maps ordinary and unknown plans to plain', () => {

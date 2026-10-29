@@ -90,6 +90,18 @@
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-press: 160ms;
   --dur-hover: 200ms;
+
+  // 套房色（额度卡高档位）：日间石灰华、夜间冷调石材，配暗藏灯带的暖光。
+  // 套餐文字色在浅色底上压暗到 AA 对比度。
+  --suite-travertine: #f8efe1;
+  --suite-travertine-deep: #efe1cb;
+  --suite-stone: #202226;
+  --suite-stone-deep: #18191c;
+  --suite-ink: #f2efea;
+  --suite-ink-muted: #8e929b;
+  --suite-champagne: #e5c49f;
+  --suite-amber: #d69e68;
+  --plan-accent-text: #8a6438;
 }
 
 // 纯白主题
@@ -238,6 +250,8 @@
   // 因此深色单独降一档。三套主题均已通过对比度/色盲/亮度校验。
   --viz-success: #0fae78;
   --viz-failure: #cf4b3a;
+
+  --plan-accent-text: var(--suite-champagne);
 }
 
 @media (max-width: 768px),
