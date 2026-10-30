@@ -251,14 +251,15 @@ export function LoginPage() {
       </div>
 
       <div className={styles.formPanel}>
-        <header className={styles.topBar}>
-          <div className={styles.brandMark}>
-            <img src={INLINE_LOGO_JPEG} alt="" className={styles.brandLogo} />
-            <span className={styles.brandName} title={LOGIN_BRAND_NAME}>
-              {LOGIN_BRAND_NAME}
-            </span>
-          </div>
-          {!showSplash && (
+        {/* 自动登录启动页自带大徽标与品牌名，此时不再渲染顶栏，避免重复 */}
+        {!showSplash && (
+          <header className={styles.topBar}>
+            <div className={styles.brandMark}>
+              <img src={INLINE_LOGO_JPEG} alt="" className={styles.brandLogo} />
+              <span className={styles.brandName} title={LOGIN_BRAND_NAME}>
+                {LOGIN_BRAND_NAME}
+              </span>
+            </div>
             <Select
               className={styles.languageSelect}
               dropdownClassName={styles.languageDropdown}
@@ -270,8 +271,8 @@ export function LoginPage() {
               size="sm"
               ariaLabel={t('language.switch')}
             />
-          )}
-        </header>
+          </header>
+        )}
 
         <main className={styles.main}>
           {showSplash ? (

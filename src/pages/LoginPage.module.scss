@@ -152,6 +152,8 @@
 }
 
 .main {
+  // 固定在 1fr 行：启动页不渲染顶栏时也能占满剩余高度
+  grid-row: 2;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -283,7 +285,10 @@
   }
 }
 
+// 在面板内垂直居中，底部留白略大使其视觉上稍偏上；矮屏时自动外边距归零。
 .splash {
+  margin-block: auto;
+  padding-bottom: 6vh;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -145,4 +145,12 @@ describe('splash pacing', () => {
     expect(source).not.toContain('1500');
     expect(source).toContain('Math.max(0, splashMin - elapsed)');
   });
+
+  test('splash hides the top brand bar and is vertically centered', async () => {
+    const source = await Bun.file('src/pages/LoginPage.tsx').text();
+    expect(source).toMatch(/\{!showSplash && \(\s*<header className=\{styles\.topBar\}>/);
+    const scss = await Bun.file('src/pages/LoginPage.module.scss').text();
+    expect(scss).toMatch(/\.main \{[^}]*grid-row: 2;/);
+    expect(scss).toMatch(/\.splash \{[^}]*margin-block: auto;/);
+  });
 });
