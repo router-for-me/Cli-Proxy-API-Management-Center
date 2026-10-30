@@ -1,6 +1,5 @@
 @use './login/palette' as *;
 
-// 整页：左右同为纯黑，固定一屏高度，不出现滚动
 .container {
   @include login-palette;
   position: relative;
@@ -12,7 +11,6 @@
   color: var(--text-primary);
 }
 
-// 左侧点阵区（内容由 DotMatrixHero 绝对定位填满）
 .brandPanel {
   position: relative;
   flex: 1.15 1 0;
@@ -25,16 +23,21 @@
   }
 }
 
-// 右侧功能区
 .formPanel {
   flex: 1 1 0;
-  min-width: 400px;
+  min-width: min(400px, 100%);
   max-width: 640px;
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  // 列必须允许收缩到 0，否则长文案/固定宽度控件会把列撑出面板
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   padding: clamp(20px, 3.5vh, 36px) clamp(24px, 4vw, 56px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 
   @media (max-width: $breakpoint-mobile) {
     min-width: 0;
@@ -74,7 +77,6 @@
   white-space: nowrap;
 }
 
-// 窄屏下与语言切换抢宽度时以省略号收尾，不换行撑高顶栏
 .brandName {
   min-width: 0;
   overflow: hidden;
@@ -89,13 +91,10 @@
   flex-shrink: 0;
 }
 
-// 语言切换：安静的幽灵按钮，悬停才显形
 .languageSelect {
   flex: 0 0 auto;
 
-  // 下拉层与触发器同宽：给触发器留足宽度，最长的语言名也不换行；文字靠右贴近箭头
   button[aria-haspopup] {
-    min-width: 168px;
     justify-content: flex-end;
     height: 32px;
     padding: 0 10px;
@@ -141,16 +140,18 @@
 }
 
 .main {
-  min-height: 0;
+  min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding-bottom: 32px;
+  padding: 24px 0 32px;
 }
 
+// 自动外边距在矮屏归零，避免居中内容向上溢出到不可滚动区域。
 .column {
   width: 100%;
   max-width: 360px;
+  margin-block: auto;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -177,14 +178,13 @@
   color: var(--text-primary);
 }
 
-// 矮屏收紧节奏，保证一屏放下
 @media (max-height: 680px) {
   .column {
     gap: 24px;
   }
 
   .main {
-    padding-bottom: 0;
+    padding: 16px 0;
   }
 }
 
@@ -194,7 +194,20 @@
   }
 }
 
-// ========== 登录成功退场：整页淡入纯黑，交给全局黑幕揭幕主界面 ==========
+@media (max-height: 440px) {
+  .formPanel {
+    padding-block: 12px;
+  }
+
+  .main {
+    padding: 8px 0;
+  }
+
+  .column {
+    gap: 16px;
+  }
+}
+
 // 时长与 useLoginTransitionStore 的 exit 保持一致（320ms / 减少动效 150ms）
 
 @keyframes exitToBlack {
@@ -229,8 +242,6 @@
     }
   }
 }
-
-// ========== 启动动画（自动登录） ==========
 
 @keyframes splashEnter {
   from {

@@ -23,15 +23,13 @@ import styles from './LoginPage.module.scss';
  */
 type RedirectState = { from?: { pathname?: string } };
 
-/**
- * 登录页自身的阶段：
- * idle → connecting（请求中）→ success（按钮就地确认）→ exiting（整页淡入纯黑）→ 交给全局黑幕揭幕主界面。
- * 非 idle 阶段会屏蔽"已登录即重定向"，让退场完整播完。
- */
 export type LoginPhase = 'idle' | 'connecting' | 'success' | 'exiting';
 
 /** 左上角品牌名：产品全称，所有语言下保持英文，不走 i18n */
 export const LOGIN_BRAND_NAME = 'CLI Proxy API Management Center';
+
+/** 语言下拉层最小宽度：最长的语言名（繁體中文（台灣））单行显示 */
+const LANGUAGE_DROPDOWN_MIN_WIDTH = 180;
 
 function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
   if (error instanceof LegacyBackendError) return t('login.error_legacy_backend');
@@ -133,10 +131,6 @@ export function LoginPage() {
     []
   );
 
-  /**
-   * 退场编排：确认停留 → 淡入纯黑 → 在黑暗中切换路由并交给全局黑幕揭幕。
-   * hold 为确认态停留时长（自动登录时由启动画面自身承担）。
-   */
   const leaveTo = useCallback(
     (redirect: string, hold: number) => {
       const timings = getLoginTransitionTimings(prefersReducedMotion());
@@ -175,7 +169,6 @@ export function LoginPage() {
         const autoLoggedIn = await restoreSession();
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
-          // 启动画面停留约 1.5s（含退场），再以与手动登录相同的方式揭幕主界面
           const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
           const { exit } = getLoginTransitionTimings(prefersReducedMotion());
           leaveTo(redirect, Math.max(0, 1500 - exit));
@@ -185,7 +178,6 @@ export function LoginPage() {
           setRememberPassword(storedRememberPassword || Boolean(storedKey));
         }
       } finally {
-        // 自动登录成功时 showSplash 仍由 autoLoginSuccess 维持，可无条件结束 loading
         setAutoLoading(false);
       }
     };
@@ -218,7 +210,6 @@ export function LoginPage() {
       showNotification(`${t('notification.login_failed')}: ${message}`, 'error');
       return;
     }
-    // 成功的确认放在按钮本身（✓ 已连接），不再额外弹通知
     setPhase('success');
     const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
     leaveTo(redirect, getLoginTransitionTimings(prefersReducedMotion()).successHold);
@@ -240,17 +231,14 @@ export function LoginPage() {
     return <Navigate to={redirect} replace />;
   }
 
-  // 显示启动动画（自动登录中或自动登录成功）
   const showSplash = autoLoading || autoLoginSuccess;
 
   return (
     <div className={styles.container} data-phase={phase === 'exiting' ? 'exiting' : undefined}>
-      {/* 左侧品牌展示区：点阵雷达波 */}
       <div className={styles.brandPanel}>
         <DotMatrixHero />
       </div>
 
-      {/* 右侧功能交互区：与左侧同为纯黑底，一屏内完成登录，不滚动 */}
       <div className={styles.formPanel}>
         <header className={styles.topBar}>
           <div className={styles.brandMark}>
@@ -263,6 +251,7 @@ export function LoginPage() {
             <Select
               className={styles.languageSelect}
               dropdownClassName={styles.languageDropdown}
+              dropdownMinWidth={LANGUAGE_DROPDOWN_MIN_WIDTH}
               value={language}
               options={languageOptions}
               onChange={handleLanguageChange}
@@ -275,7 +264,6 @@ export function LoginPage() {
 
         <main className={styles.main}>
           {showSplash ? (
-            /* 启动动画（自动登录中或成功） */
             <div className={styles.splash} role="status" aria-live="polite">
               <img src={INLINE_LOGO_JPEG} alt="" className={styles.splashLogo} />
               <div className={styles.splashText}>

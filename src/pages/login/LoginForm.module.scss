@@ -3,7 +3,6 @@
 $field-height: 44px;
 $field-radius: 10px;
 
-// 首次进入的级联浮现：只播一次，且不阻塞输入
 @keyframes fieldRise {
   from {
     opacity: 0;
@@ -139,7 +138,6 @@ $field-radius: 10px;
   }
 }
 
-// 只读的当前地址：与输入框同高，切换编辑时布局不跳动
 .readout {
   display: flex;
   align-items: center;
@@ -265,14 +263,12 @@ $field-radius: 10px;
     opacity: 0.7;
   }
 
-  // 成功确认不是"禁用"：保持满亮度
   &[data-state='success'] {
     cursor: default;
     opacity: 1;
   }
 }
 
-// 按钮内容切换（登录 → 连接中 → 已连接）：轻微模糊交叉，掩盖两态叠影
 @keyframes submitContentIn {
   from {
     opacity: 0;
@@ -307,7 +303,6 @@ $field-radius: 10px;
   }
 }
 
-// 对勾自绘：一笔画出，确认"已连接"
 .successIcon {
   stroke-width: 2.4;
 
@@ -352,7 +347,6 @@ $field-radius: 10px;
     margin-top: 3px;
   }
 
-  // 长错误（含后端详情）最多 4 行，完整内容同时出现在通知中，保证页面一屏放得下
   span {
     display: -webkit-box;
     -webkit-line-clamp: 4;

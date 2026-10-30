@@ -13,7 +13,6 @@ import styles from './DotMatrixHero.module.scss';
 const DOT_COLOR = '#e2e8f0';
 /** 品牌标语：按设计要求在所有语言下统一使用英文，不走 i18n */
 export const HERO_TITLE = 'Welcome to CLI Proxy API.';
-/** 与参考视频一致的 30fps 节拍；点阵本身是阶跃式变化，更高帧率没有收益 */
 const FRAME_INTERVAL_MS = 1000 / 30;
 /** 减少动效模式下展示的固定时刻（秒），避开入场阶段 */
 const STATIC_TIME = 4;
@@ -52,10 +51,6 @@ function paintSteady(context: CanvasRenderingContext2D, grid: DotGrid, targets: 
   context.globalAlpha = 1;
 }
 
-/**
- * 登录页左侧品牌区：右下角起扫的雷达波入场，随后点阵像星云一样持续缓慢漂移、形变、闪烁。
- * 仅在可见时以 30fps 运行；减少动效偏好下渲染一帧静态画面。
- */
 export function DotMatrixHero() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -130,7 +125,6 @@ export function DotMatrixHero() {
       typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(resize);
     resizeObserver?.observe(canvas);
 
-    // 面板被隐藏（移动端）或滚出视口时暂停
     const intersectionObserver =
       typeof IntersectionObserver === 'undefined'
         ? null

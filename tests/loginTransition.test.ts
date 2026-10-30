@@ -60,11 +60,9 @@ describe('login transition store', () => {
 
   test('keeps the whole hand-off brisk, and shorter still with reduced motion', () => {
     const total = (t: typeof LOGIN_TRANSITION_TIMINGS) => t.successHold + t.exit + t.reveal;
-    // 退场要快于入场；整段在 1.3s 内完成
     expect(LOGIN_TRANSITION_TIMINGS.exit).toBeLessThan(LOGIN_TRANSITION_TIMINGS.reveal);
     expect(total(LOGIN_TRANSITION_TIMINGS)).toBeLessThanOrEqual(1300);
     expect(total(LOGIN_TRANSITION_TIMINGS_REDUCED)).toBeLessThan(total(LOGIN_TRANSITION_TIMINGS));
-    // 减少动效仍保留"已连接"的状态确认
     expect(LOGIN_TRANSITION_TIMINGS_REDUCED.successHold).toBeGreaterThan(0);
     expect(getLoginTransitionTimings(true)).toBe(LOGIN_TRANSITION_TIMINGS_REDUCED);
     expect(getLoginTransitionTimings(false)).toBe(LOGIN_TRANSITION_TIMINGS);
@@ -120,9 +118,7 @@ describe('login hand-off wiring', () => {
     expect(source).toContain("setPhase('success')");
     expect(source).toContain("setPhase('exiting')");
     expect(source).toMatch(/startReveal\(\);\s*navigate\(redirect, \{ replace: true \}\);/);
-    // 已登录即重定向必须让位于退场编排
     expect(source).toContain("phase === 'idle'");
-    // 成功确认改在按钮上，不再额外弹出"已连接"通知
     expect(source).not.toContain("showNotification(t('common.connected_status')");
   });
 

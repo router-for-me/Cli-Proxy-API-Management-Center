@@ -1,16 +1,3 @@
-/**
- * 登录页左侧点阵场的纯逻辑。
- *
- * 行为按参考视频逐帧测量复刻：
- * - 点阵是一张约 2 格/秒向左漂移、同时自身形变的噪声"星云"，场值决定点亮概率；
- * - 每个点按自己的节拍重新掷骰，云团内外的点持续亮/灭交替
- *   （实测每帧约 3% 切换，1 秒后点亮状态仅约 45% 重合）；
- * - 稳态亮度只有两档：暗（约 88%）与中（密集核心，约 12%），切换是瞬时的；
- *   白色高亮只出现在雷达波入场的闪光里，随后逐级回落。
- *
- * 网格以右下角为锚点排布，窗口尺寸变化时右下角（标题所在处）的图案保持稳定。
- */
-
 export interface DotGrid {
   width: number;
   height: number;
@@ -38,21 +25,18 @@ export interface DotGridOptions {
   seed?: number;
 }
 
-/** 视频中整屏高度约 84 行点阵；按面板高度换算点距，并限制在可读范围内 */
 export const ROWS_PER_HEIGHT = 84;
 export const MIN_PITCH = 9;
 export const MAX_PITCH = 14;
-/** 点径 / 点距，视频约 8 / 12.9 */
+/** 点径 / 点距 */
 export const DOT_RATIO = 0.62;
 
-/** 两档稳态亮度（透明度），取自视频灰度：≈55 / ≈120（白点 ≈240 仅见于入场闪光） */
 export const TONE_DIM = 0.22;
 export const TONE_MID = 0.47;
 
-/** 星云整体向左漂移速度（格/秒），视频约 2 格/秒 */
+/** 向左漂移速度（格/秒） */
 export const DRIFT_SPEED = 2;
 
-/** 雷达波从右下角扫到最远角所用时间 */
 export const WAVE_DURATION = 0.72;
 export const WAVE_JITTER = 0.1;
 export const FLASH_RISE = 0.05;
@@ -60,20 +44,12 @@ export const FLASH_SETTLE = 0.33;
 const FLASH_BOOST = 0.45;
 
 const DEFAULT_SEED = 0x0b17;
-/** 场值对比度拉伸倍数 */
 const FIELD_CONTRAST = 2.2;
-/**
- * 点亮概率曲线：场值在 [DENSITY_LOW, DENSITY_HIGH] 间平滑升到 DENSITY_MAX。
- * 视频里云团内部也是"抖动"的——点亮的点周围平均只有约一半邻居亮着。
- */
 const DENSITY_LOW = 0.38;
 const DENSITY_HIGH = 0.9;
 const DENSITY_MAX = 0.82;
-/** 全场零星散点的概率 */
 const SCATTER = 0.035;
-/** 进入"中亮"档的场值（密集核心） */
 const MID_THRESHOLD = 0.8;
-/** 场值达到中亮阈值后，被分到中亮档的概率 */
 const MID_CHANCE = 0.28;
 /** 每个点闪烁节拍的周期范围（秒） */
 const PERIOD_MIN = 1.2;
@@ -111,10 +87,6 @@ const valueNoise = (x: number, y: number, seed: number): number => {
   return top + (bottom - top) * sy;
 };
 
-/**
- * 时间 t 下格子 (col, row) 的星云场值，约在 [0, 1]。
- * 主层整体向左漂移；副层沿另一方向缓慢流动，两者叠加使云团在漂移中持续变形。
- */
 export const fieldAt = (col: number, row: number, time: number, seed: number): number => {
   // col 以右侧为 0 向左递增，"内容向左移动" 即采样点向右（col 减小方向）回溯
   const x = col - DRIFT_SPEED * time;
@@ -184,10 +156,7 @@ export function createDotGrid(
   return grid;
 }
 
-/**
- * 计算时间 t 下每个格子的目标透明度（0 表示熄灭），写入 out。
- * 同一时刻结果确定，可用于测试与静态帧。
- */
+/** 将各点的目标透明度写入 out；同一时刻结果确定。 */
 export function sampleDotTargets(
   grid: DotGrid,
   time: number,
@@ -213,9 +182,6 @@ export function sampleDotTargets(
   }
 }
 
-/**
- * 叠加雷达波入场：揭示前不可见 → 迅速点亮到峰值 → 缓出回落到当前亮度。
- */
 export function applyReveal(alpha: number, revealAt: number, elapsed: number): number {
   const local = elapsed - revealAt;
   if (local <= 0) return 0;

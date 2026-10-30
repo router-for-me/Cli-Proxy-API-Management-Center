@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { IconChevronDown } from './icons';
 import styles from './Select.module.scss';
+import { resolveDropdownStyle } from './selectPosition';
 
 export interface SelectOption {
   value: string;
@@ -24,8 +25,9 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
-  /** 作用于挂到 body 的下拉层，便于局部配色的页面（如登录页）同步样式 */
+  /** 作用于挂到 body 的下拉层。 */
   dropdownClassName?: string;
+  dropdownMinWidth?: number;
   disabled?: boolean;
   ariaLabel?: string;
   ariaLabelledBy?: string;
@@ -36,50 +38,6 @@ interface SelectProps {
   id?: string;
 }
 
-const VIEWPORT_MARGIN = 8;
-const DROPDOWN_OFFSET = 6;
-const DROPDOWN_MAX_HEIGHT = 240;
-const DROPDOWN_Z_INDEX = 2010;
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-
-const resolveDropdownStyle = (element: HTMLElement): CSSProperties => {
-  const rect = element.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const width = Math.min(rect.width, Math.max(0, viewportWidth - VIEWPORT_MARGIN * 2));
-  const left = clamp(
-    rect.left,
-    VIEWPORT_MARGIN,
-    Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN)
-  );
-  const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN - DROPDOWN_OFFSET;
-  const spaceAbove = rect.top - VIEWPORT_MARGIN - DROPDOWN_OFFSET;
-  const direction = spaceBelow >= DROPDOWN_MAX_HEIGHT || spaceBelow >= spaceAbove ? 'down' : 'up';
-  const maxHeight = Math.max(
-    0,
-    Math.min(DROPDOWN_MAX_HEIGHT, direction === 'down' ? spaceBelow : spaceAbove)
-  );
-
-  return direction === 'down'
-    ? {
-        position: 'fixed',
-        top: rect.bottom + DROPDOWN_OFFSET,
-        left,
-        width,
-        maxHeight,
-        zIndex: DROPDOWN_Z_INDEX,
-      }
-    : {
-        position: 'fixed',
-        bottom: viewportHeight - rect.top + DROPDOWN_OFFSET,
-        left,
-        width,
-        maxHeight,
-        zIndex: DROPDOWN_Z_INDEX,
-      };
-};
-
 export function Select({
   value,
   options,
@@ -87,6 +45,7 @@ export function Select({
   placeholder,
   className,
   dropdownClassName,
+  dropdownMinWidth,
   disabled = false,
   ariaLabel,
   ariaLabelledBy,
@@ -121,8 +80,15 @@ export function Select({
 
   const updateDropdownStyle = useCallback(() => {
     if (!wrapRef.current) return;
-    setDropdownStyle(resolveDropdownStyle(wrapRef.current));
-  }, []);
+    setDropdownStyle(
+      resolveDropdownStyle(
+        wrapRef.current.getBoundingClientRect(),
+        window.innerWidth,
+        window.innerHeight,
+        dropdownMinWidth
+      )
+    );
+  }, [dropdownMinWidth]);
 
   const scheduleDropdownStyleUpdate = useCallback(() => {
     if (typeof window === 'undefined') return;

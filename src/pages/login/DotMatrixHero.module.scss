@@ -1,5 +1,3 @@
-// 登录页左侧品牌区：纯黑底 + 点阵雷达波
-// 该区域不随主题切换，始终保持黑底高对比
 
 .hero {
   position: absolute;
@@ -16,7 +14,6 @@
   height: 100%;
   display: block;
   pointer-events: none;
-  // 右缘渐隐：与右侧同底色无缝衔接，点阵不越过左栏、也不留下硬切边
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent);
   mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent);
 }
@@ -32,7 +29,6 @@
   }
 }
 
-// 右下角主标题
 .title {
   position: absolute;
   z-index: 1;
@@ -46,7 +42,6 @@
   line-height: 1.15;
   letter-spacing: -0.01em;
   text-align: right;
-  // 压暗标题背后的点阵，保证文字边缘清晰
   text-shadow:
     0 0 18px #000000,
     0 0 6px #000000;

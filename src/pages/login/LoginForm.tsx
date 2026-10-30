@@ -13,7 +13,6 @@ export interface LoginFormProps {
   showKey: boolean;
   rememberPassword: boolean;
   loading: boolean;
-  /** 登录已成功、正在退场：按钮就地确认，表单锁定 */
   success?: boolean;
   error: string;
   onApiBaseChange: (value: string) => void;
@@ -24,10 +23,6 @@ export interface LoginFormProps {
   onSubmit: () => void;
 }
 
-/**
- * 登录表单：连接地址就地编辑、管理密钥、记住密码与提交。
- * 原生 <form> 提交，回车即登录；所有状态由 LoginPage 持有。
- */
 export function LoginForm({
   apiBase,
   detectedBase,
@@ -75,7 +70,6 @@ export function LoginForm({
             onClick={() => {
               const next = !editingBase;
               onEditingBaseChange(next);
-              // 收起编辑后把焦点交还给密钥输入，保持键盘流不断
               if (!next) keyInputRef.current?.focus();
             }}
           >
