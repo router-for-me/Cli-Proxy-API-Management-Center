@@ -70,35 +70,6 @@ class ObfuscatedStorageService {
   removeItem(key: string): void {
     localStorage.removeItem(key);
   }
-
-  /**
-   * 迁移旧的明文缓存为加密格式
-   */
-  migratePlaintextKeys(keys: string[]): void {
-    keys.forEach((key) => {
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-
-      // 如果已经是加密格式，跳过
-      if (isObfuscated(raw)) {
-        return;
-      }
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        // 原值不是 JSON，直接使用字符串
-        parsed = raw;
-      }
-
-      try {
-        this.setItem(key, parsed);
-      } catch (error) {
-        console.warn(`Failed to migrate key "${key}":`, error);
-      }
-    });
-  }
 }
 
 export const obfuscatedStorage = new ObfuscatedStorageService();
