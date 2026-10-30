@@ -13,6 +13,7 @@ import { isSupportedLanguage } from '@/utils/language';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import type { ApiError } from '@/types';
 import { LegacyBackendError } from '@/services/api/legacyBackendProbe';
+import { DotMatrixHero } from './login/DotMatrixHero';
 import styles from './LoginPage.module.scss';
 
 /**
@@ -207,13 +208,9 @@ export function LoginPage() {
 
   return (
     <div className={styles.container}>
-      {/* 左侧品牌展示区 */}
+      {/* 左侧品牌展示区：点阵雷达波 */}
       <div className={styles.brandPanel}>
-        <div className={styles.brandContent}>
-          <span className={styles.brandWord}>CLI</span>
-          <span className={styles.brandWord}>PROXY</span>
-          <span className={styles.brandWord}>API</span>
-        </div>
+        <DotMatrixHero />
       </div>
 
       {/* 右侧功能交互区 */}

@@ -1,0 +1,59 @@
+// 登录页左侧品牌区：纯黑底 + 点阵雷达波
+// 该区域不随主题切换，始终保持黑底高对比
+
+.hero {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000000;
+  isolation: isolate;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+@keyframes heroTitleIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+// 右下角主标题
+.title {
+  position: absolute;
+  z-index: 1;
+  right: clamp(32px, 7%, 96px);
+  bottom: clamp(40px, 11%, 120px);
+  max-width: calc(100% - 64px);
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(26px, 2.6vw, 48px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-align: right;
+  // 压暗标题背后的点阵，保证文字边缘清晰
+  text-shadow:
+    0 0 18px #000000,
+    0 0 6px #000000;
+  opacity: 0;
+  animation: heroTitleIn 0.6s var(--ease-out-strong) 0.4s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title {
+    opacity: 1;
+    animation: none;
+  }
+}
