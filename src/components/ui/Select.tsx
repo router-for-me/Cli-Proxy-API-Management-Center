@@ -24,6 +24,8 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** 作用于挂到 body 的下拉层，便于局部配色的页面（如登录页）同步样式 */
+  dropdownClassName?: string;
   disabled?: boolean;
   ariaLabel?: string;
   ariaLabelledBy?: string;
@@ -84,6 +86,7 @@ export function Select({
   onChange,
   placeholder,
   className,
+  dropdownClassName,
   disabled = false,
   ariaLabel,
   ariaLabelledBy,
@@ -281,7 +284,7 @@ export function Select({
     isOpen && dropdownStyle ? (
       <div
         ref={dropdownRef}
-        className={styles.dropdown}
+        className={`${styles.dropdown} ${dropdownClassName ?? ''}`.trim()}
         id={listboxId}
         role="listbox"
         aria-label={ariaLabel}

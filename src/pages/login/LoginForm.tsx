@@ -1,0 +1,160 @@
+import { useId, useRef, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { IconAlertTriangle, IconEye, IconEyeOff } from '@/components/ui/icons';
+import styles from './LoginForm.module.scss';
+
+export interface LoginFormProps {
+  /** 输入框中的连接地址（可能为空，此时回退到 detectedBase） */
+  apiBase: string;
+  detectedBase: string;
+  editingBase: boolean;
+  managementKey: string;
+  showKey: boolean;
+  rememberPassword: boolean;
+  loading: boolean;
+  error: string;
+  onApiBaseChange: (value: string) => void;
+  onEditingBaseChange: (value: boolean) => void;
+  onManagementKeyChange: (value: string) => void;
+  onShowKeyChange: (value: boolean) => void;
+  onRememberPasswordChange: (value: boolean) => void;
+  onSubmit: () => void;
+}
+
+/**
+ * 登录表单：连接地址就地编辑、管理密钥、记住密码与提交。
+ * 原生 <form> 提交，回车即登录；所有状态由 LoginPage 持有。
+ */
+export function LoginForm({
+  apiBase,
+  detectedBase,
+  editingBase,
+  managementKey,
+  showKey,
+  rememberPassword,
+  loading,
+  error,
+  onApiBaseChange,
+  onEditingBaseChange,
+  onManagementKeyChange,
+  onShowKeyChange,
+  onRememberPasswordChange,
+  onSubmit,
+}: LoginFormProps) {
+  const { t } = useTranslation();
+  const baseId = useId();
+  const keyId = useId();
+  const errorId = useId();
+  const keyInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!loading) onSubmit();
+  };
+
+  const toggleKeyLabel = showKey ? t('login.hide_key') : t('login.show_key');
+
+  return (
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <div className={styles.field} data-stagger>
+        <div className={styles.labelRow}>
+          <label className={styles.label} htmlFor={editingBase ? baseId : undefined}>
+            {editingBase ? t('login.custom_connection_label') : t('login.connection_current')}
+          </label>
+          <button
+            type="button"
+            className={styles.textButton}
+            aria-expanded={editingBase}
+            aria-controls={baseId}
+            onClick={() => {
+              const next = !editingBase;
+              onEditingBaseChange(next);
+              // 收起编辑后把焦点交还给密钥输入，保持键盘流不断
+              if (!next) keyInputRef.current?.focus();
+            }}
+          >
+            {editingBase ? t('login.connection_done') : t('login.connection_edit')}
+          </button>
+        </div>
+        {editingBase ? (
+          <input
+            id={baseId}
+            className={`${styles.input} ${styles.mono}`}
+            type="url"
+            inputMode="url"
+            autoFocus
+            autoComplete="url"
+            spellCheck={false}
+            placeholder={t('login.custom_connection_placeholder')}
+            value={apiBase}
+            onChange={(event) => onApiBaseChange(event.target.value)}
+          />
+        ) : (
+          <div
+            id={baseId}
+            className={`${styles.readout} ${styles.mono}`}
+            title={apiBase || detectedBase}
+          >
+            <span className={styles.readoutText}>{apiBase || detectedBase}</span>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.field} data-stagger>
+        <label className={styles.label} htmlFor={keyId}>
+          {t('login.management_key_label')}
+        </label>
+        <div className={styles.inputWrap}>
+          <input
+            ref={keyInputRef}
+            id={keyId}
+            className={`${styles.input} ${styles.inputWithAction}`}
+            type={showKey ? 'text' : 'password'}
+            name="cpa-management-key"
+            autoComplete="current-password"
+            autoFocus={!editingBase}
+            spellCheck={false}
+            placeholder={t('login.management_key_placeholder')}
+            value={managementKey}
+            aria-invalid={Boolean(error) || undefined}
+            aria-describedby={error ? errorId : undefined}
+            onChange={(event) => onManagementKeyChange(event.target.value)}
+          />
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => onShowKeyChange(!showKey)}
+            aria-label={toggleKeyLabel}
+            aria-pressed={showKey}
+            title={toggleKeyLabel}
+          >
+            {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.options} data-stagger>
+        <SelectionCheckbox
+          checked={rememberPassword}
+          onChange={onRememberPasswordChange}
+          label={t('login.remember_password_label')}
+          labelClassName={styles.checkboxLabel}
+        />
+      </div>
+
+      <div className={styles.actions} data-stagger>
+        <button type="submit" className={styles.submit} disabled={loading} aria-busy={loading}>
+          {loading && <span className="loading-spinner" aria-hidden="true" />}
+          <span>{loading ? t('login.submitting') : t('login.submit_button')}</span>
+        </button>
+        {error && (
+          <p id={errorId} className={styles.error} role="alert" title={error}>
+            <IconAlertTriangle size={14} aria-hidden="true" />
+            <span>{error}</span>
+          </p>
+        )}
+      </div>
+    </form>
+  );
+}

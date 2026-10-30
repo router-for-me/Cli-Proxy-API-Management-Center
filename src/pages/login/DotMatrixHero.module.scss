@@ -16,6 +16,9 @@
   height: 100%;
   display: block;
   pointer-events: none;
+  // 右缘渐隐：与右侧同底色无缝衔接，点阵不越过左栏、也不留下硬切边
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 120px), transparent);
 }
 
 @keyframes heroTitleIn {

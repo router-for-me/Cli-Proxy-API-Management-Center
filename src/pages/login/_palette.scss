@@ -1,0 +1,23 @@
+// 登录页固定使用的纯黑配色：与左侧点阵同底，不随应用主题切换。
+// 以局部 CSS 变量覆盖主题 token，共享组件（复选框、下拉）自动跟随。
+@mixin login-palette {
+  color-scheme: dark;
+  --bg-secondary: #000000;
+  --bg-primary: #0e0e0e;
+  --bg-tertiary: #161616;
+  --bg-hover: #1c1c1c;
+  --text-primary: #f5f5f4;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #6b6b6b;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.22);
+  --primary-color: #f5f5f4;
+  --primary-hover: #ffffff;
+  --primary-active: #e7e5e4;
+  --primary-contrast: #0a0a0a;
+  --shadow: none;
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+// 文字型错误色：在纯黑底上满足 AA 对比度
+$login-error: #f2a59a;
