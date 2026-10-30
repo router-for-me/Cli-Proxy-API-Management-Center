@@ -60,6 +60,11 @@ describe('Kimi International auth files', () => {
       apiCallApi.request = request;
       download.mockRestore();
     }
-    expect(urls).toEqual([KIMI_USAGE_URL, KIMI_AI_USAGE_URL, KIMI_AI_USAGE_URL]);
+    expect(urls).toEqual(
+      [KIMI_USAGE_URL, KIMI_AI_USAGE_URL, KIMI_AI_USAGE_URL].flatMap((url) => [
+        url,
+        url.replace('/usages', '/me'),
+      ])
+    );
   });
 });

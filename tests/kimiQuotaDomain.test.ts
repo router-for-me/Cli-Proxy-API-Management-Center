@@ -115,7 +115,7 @@ describe('Kimi effective quota domain', () => {
       try {
         if (scope === 'unrelated') {
           await KIMI_CONFIG.fetchQuota(file, i18n.t);
-          expect(request).toHaveBeenCalledTimes(1);
+          expect(request).toHaveBeenCalledTimes(2);
         } else {
           await expect(KIMI_CONFIG.fetchQuota(file, i18n.t)).rejects.toThrow(
             i18n.t('kimi_quota.stale_request')
@@ -140,7 +140,9 @@ describe('Kimi effective quota domain', () => {
       expect(download).toHaveBeenCalledTimes(2);
       expect(request.mock.calls.map(([payload]) => payload.url)).toEqual([
         KIMI_USAGE_URL,
+        KIMI_USAGE_URL.replace('/usages', '/me'),
         KIMI_AI_USAGE_URL,
+        KIMI_AI_USAGE_URL.replace('/usages', '/me'),
       ]);
     } finally {
       download.mockRestore();

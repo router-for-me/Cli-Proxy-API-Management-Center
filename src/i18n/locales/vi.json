@@ -575,6 +575,8 @@
     "plan_business_premium": "Business Premium"
   },
   "kimi_quota": {
+    "plan_label": "Gói",
+    "plan_unknown": "Không xác định",
     "title": "Quota Kimi",
     "empty_title": "Không có File xác thực Kimi",
     "empty_desc": "Tải lên credential Kimi để xem quota còn lại.",

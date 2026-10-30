@@ -6,6 +6,7 @@ import {
   resolveClaudeCardTier,
   resolveCodexCardTier,
   resolveInitialQuotaCardTier,
+  resolveKimiCardTier,
   resolveQuotaCardTier,
   resolveXaiCardTier,
 } from '@/features/quota/cardTier';
@@ -41,6 +42,25 @@ describe('quota card tier ladder', () => {
     expect(resolveCodexCardTier('team')).toBe('standard');
     expect(resolveCodexCardTier('plus')).toBe('standard');
     expect(resolveCodexCardTier(null)).toBe('standard');
+  });
+
+  test.each([
+    ['Allegro', 'promax'],
+    ['Allegretto', 'pro'],
+    ['Moderato', 'plus'],
+  ])('Kimi %s shares the Codex %s tier', (planName, codexPlan) => {
+    const expected = resolveCodexCardTier(codexPlan);
+    expect(resolveKimiCardTier(planName)).toBe(expected);
+    expect(resolveKimiCardTier(` ${planName.toUpperCase()} `)).toBe(expected);
+    expect(resolveQuotaCardTier('kimi', { status: 'success', rows: [], planName })).toBe(expected);
+  });
+
+  test('Kimi Andante and unknown names stay standard, and pending reads preserve the tier', () => {
+    for (const name of ['Andante', 'Vivace', 'Allegro Plus', '', null, undefined]) {
+      expect(resolveKimiCardTier(name)).toBe('standard');
+    }
+    expect(resolveQuotaCardTier('kimi', { status: 'loading' })).toBeNull();
+    expect(resolveQuotaCardTier('kimi', { status: 'error' })).toBeNull();
   });
 
   test('Antigravity: Ultra is the suite, Ultra Lite is premium', () => {

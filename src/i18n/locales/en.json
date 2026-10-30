@@ -619,6 +619,8 @@
     "remaining": "{{percent}}% remaining"
   },
   "kimi_quota": {
+    "plan_label": "Plan",
+    "plan_unknown": "Unknown",
     "title": "Kimi Quota",
     "empty_title": "No Kimi Auth Files",
     "empty_desc": "Upload a Kimi credential to view remaining quota.",

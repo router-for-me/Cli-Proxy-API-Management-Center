@@ -619,6 +619,8 @@
     "remaining": "{{percent}}% 남음"
   },
   "kimi_quota": {
+    "plan_label": "요금제",
+    "plan_unknown": "알 수 없음",
     "title": "Kimi 할당량",
     "empty_title": "Kimi 인증 파일 없음",
     "empty_desc": "남은 할당량을 확인하려면 Kimi 자격 증명을 업로드하세요.",

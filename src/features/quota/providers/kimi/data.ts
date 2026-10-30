@@ -3,9 +3,9 @@
  */
 
 import type { TFunction } from 'i18next';
-import type { AuthFileItem, KimiQuotaRow, KimiQuotaState } from '@/types';
+import type { AuthFileItem, KimiQuotaState } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
-import { resolveKimiQuotaUrl } from '@/services/api/kimiQuota';
+import { fetchKimiPlanName, resolveKimiQuotaUrl } from '@/services/api/kimiQuota';
 import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores/useQuotaStore';
 import {
   KIMI_REQUEST_HEADERS,
@@ -18,7 +18,9 @@ import {
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import type { QuotaProviderData } from '../types';
 
-const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuotaRow[]> => {
+type KimiQuotaData = Pick<KimiQuotaState, 'rows' | 'planName'>;
+
+const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
@@ -57,10 +59,13 @@ const fetchKimiQuota = async (file: AuthFileItem, t: TFunction): Promise<KimiQuo
     throw new Error(t('kimi_quota.empty_data'));
   }
 
-  return buildKimiQuotaRows(payload);
+  const planName = await fetchKimiPlanName(authIndex, url);
+  // Profile failures are optional, but session/file invalidation must still reject the result.
+  assertCurrent();
+  return { rows: buildKimiQuotaRows(payload), planName };
 };
 
-export const KIMI_CONFIG: QuotaProviderData<KimiQuotaState, KimiQuotaRow[]> = {
+export const KIMI_CONFIG: QuotaProviderData<KimiQuotaState, KimiQuotaData> = {
   type: 'kimi',
   i18nPrefix: 'kimi_quota',
   filterFn: (file) => isKimiFile(file) && !isDisabledAuthFile(file),
@@ -68,7 +73,7 @@ export const KIMI_CONFIG: QuotaProviderData<KimiQuotaState, KimiQuotaRow[]> = {
   storeSelector: (state) => state.kimiQuota,
   storeSetter: 'setKimiQuota',
   buildLoadingState: () => ({ status: 'loading', rows: [] }),
-  buildSuccessState: (rows) => ({ status: 'success', rows }),
+  buildSuccessState: (data) => ({ status: 'success', ...data }),
   buildErrorState: (message, status) => ({
     status: 'error',
     rows: [],

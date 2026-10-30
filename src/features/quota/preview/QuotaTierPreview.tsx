@@ -16,6 +16,7 @@ import type {
   ClaudeQuotaState,
   CodexQuotaState,
   CodexQuotaWindow,
+  KimiQuotaState,
   Theme,
   XaiBillingSummary,
   XaiQuotaState,
@@ -151,6 +152,24 @@ const claudeQuota = (planType: string, used: [number, number]): ClaudeQuotaState
 });
 
 const buildAccounts = (): MockAccount[] => [
+  ...['Allegro', 'Allegretto', 'Moderato', 'Andante'].map((planName): MockAccount => ({
+    entry: { type: 'kimi', file: file(`kimi-${planName.toLowerCase()}.json`, 'kimi') },
+    quota: {
+      status: 'success',
+      planName,
+      rows: [
+        {
+          id: 'five-hour',
+          labelKey: 'kimi_quota.limit_window',
+          labelParams: { duration: '5h' },
+          used: 25,
+          limit: 100,
+          resetAtMs: Date.now() + 2 * HOUR_MS,
+          periodHours: 5,
+        },
+      ],
+    } as KimiQuotaState,
+  })),
   {
     entry: { type: 'codex', file: file('codex-pro500.json', 'codex') },
     quota: codexQuota('promax', [6, 21]),

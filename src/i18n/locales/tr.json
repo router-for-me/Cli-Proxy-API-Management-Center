@@ -619,6 +619,8 @@
     "remaining": "%{{percent}} Kaldı"
   },
   "kimi_quota": {
+    "plan_label": "Plan",
+    "plan_unknown": "Bilinmiyor",
     "title": "Kimi Kotası",
     "empty_title": "Kimi Kimlik Dosyası Yok",
     "empty_desc": "Kalan Kotayı Görmek için Bir Kimi Kimlik Bilgisi Yükle.",

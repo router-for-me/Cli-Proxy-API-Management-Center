@@ -1,6 +1,54 @@
 import type { AuthFileItem } from '@/types';
 import { KIMI_AI_USAGE_URL, KIMI_USAGE_URL } from '@/utils/quota/constants';
 import { authFilesApi } from './authFiles';
+import { apiCallApi } from './apiCall';
+import { isRecord } from '@/utils/helpers';
+
+/** The official /me response supplies the display name; never infer it from quota amounts. */
+export function parseKimiPlanName(payload: unknown): string | null {
+  if (typeof payload === 'string') {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  }
+  if (!isRecord(payload) || typeof payload.user_id !== 'string' || !payload.user_id.trim()) {
+    return null;
+  }
+  return typeof payload.user_level_name === 'string'
+    ? payload.user_level_name.trim() || null
+    : null;
+}
+
+/** Optional enrichment: account/profile failures must not hide usable quota data. */
+export async function fetchKimiPlanName(
+  authIndex: string,
+  usageUrl: string
+): Promise<string | null> {
+  const baseUrl =
+    usageUrl === KIMI_AI_USAGE_URL
+      ? KIMI_AI_USAGE_URL
+      : usageUrl === KIMI_USAGE_URL
+        ? KIMI_USAGE_URL
+        : null;
+  if (!baseUrl) return null;
+  try {
+    const result = await apiCallApi.request(
+      {
+        authIndex,
+        method: 'GET',
+        url: baseUrl.replace(/\/usages$/, '/me'),
+        header: { Authorization: 'Bearer $TOKEN$', Accept: 'application/json' },
+      },
+      { timeout: 8000 }
+    );
+    if (result.statusCode < 200 || result.statusCode >= 300) return null;
+    return parseKimiPlanName(result.body ?? result.bodyText);
+  } catch {
+    return null;
+  }
+}
 
 const domainFromValue = (value: unknown): 'ai' | 'com' | null => {
   if (typeof value !== 'string') return null;

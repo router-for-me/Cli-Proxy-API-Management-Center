@@ -618,6 +618,8 @@
     "remaining_percent": "剩餘 {{percent}}%"
   },
   "kimi_quota": {
+    "plan_label": "方案",
+    "plan_unknown": "未知",
     "title": "Kimi 配額",
     "empty_title": "暫無 Kimi 驗證",
     "empty_desc": "上傳 Kimi 驗證檔案後即可查看配額。",

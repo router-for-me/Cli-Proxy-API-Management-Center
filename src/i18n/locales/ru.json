@@ -622,6 +622,8 @@
     "remaining_percent": "Осталось {{percent}}%"
   },
   "kimi_quota": {
+    "plan_label": "Тариф",
+    "plan_unknown": "Неизвестно",
     "title": "Квота Kimi",
     "empty_title": "Файлы авторизации Kimi отсутствуют",
     "empty_desc": "Загрузите учётные данные Kimi, чтобы увидеть оставшуюся квоту.",

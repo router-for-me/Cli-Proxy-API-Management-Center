@@ -424,6 +424,8 @@ export interface KimiQuotaRow {
 export interface KimiQuotaState {
   status: 'idle' | 'loading' | 'success' | 'error';
   rows: KimiQuotaRow[];
+  /** Official user_level_name from /me; absent for unavailable account information. */
+  planName?: string | null;
   error?: string;
   errorStatus?: number;
 }

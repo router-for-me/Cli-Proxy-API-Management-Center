@@ -5,11 +5,11 @@
  * 规则：各家最高个人档 = 套房；其下的付费个人档 = 行政间；入门付费档、
  * 团队/商业套餐与免费档 = 标准间。
  *
- * - flagship 套房：Codex Pro 500、Claude Max 20x、Antigravity Ultra、SuperGrok Heavy
+ * - flagship 套房：Codex Pro 500、Kimi Allegro、Claude Max 20x、Antigravity Ultra、SuperGrok Heavy
  * - premium  行政间：Codex Pro 200 / Pro 100、Claude Max 5x / Max（未区分）、
- *            Antigravity Ultra Lite、SuperGrok、xAI 付费 API
+ *            Kimi Allegretto、Antigravity Ultra Lite、SuperGrok、xAI 付费 API
  * - standard 标准间：Plus、Team、Business（含 Business Premium）、Pro（Claude /
- *            Antigravity）、Free，以及档位未知
+ *            Antigravity）、Kimi Moderato / Andante、Free，以及档位未知
  *
  * React-free，便于单测。
  */
@@ -19,6 +19,7 @@ import type {
   AntigravityQuotaState,
   ClaudeQuotaState,
   CodexQuotaState,
+  KimiQuotaState,
   XaiBillingSummary,
   XaiQuotaState,
 } from '@/types';
@@ -37,6 +38,14 @@ export function resolveCodexCardTier(planType: string | null | undefined): Quota
   const tier = resolvePlanTier(planType);
   if (tier === 'elite') return 'flagship';
   if (tier === 'premium') return 'premium';
+  return 'standard';
+}
+
+/** Kimi: Allegro = Pro 500, Allegretto = Pro 200, Moderato = Plus. */
+export function resolveKimiCardTier(planName: string | null | undefined): QuotaCardTier {
+  const normalized = planName?.trim().toLowerCase();
+  if (normalized === 'allegro') return 'flagship';
+  if (normalized === 'allegretto') return 'premium';
   return 'standard';
 }
 
@@ -77,6 +86,8 @@ export function resolveQuotaCardTier(
   switch (type) {
     case 'codex':
       return resolveCodexCardTier((quota as CodexQuotaState).planType);
+    case 'kimi':
+      return resolveKimiCardTier((quota as KimiQuotaState).planName);
     case 'antigravity':
       return resolveAntigravityCardTier((quota as AntigravityQuotaState).subscription?.plan);
     case 'claude':
