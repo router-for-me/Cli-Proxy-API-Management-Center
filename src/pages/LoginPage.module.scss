@@ -9,6 +9,9 @@
   overflow: hidden;
   background: var(--login-bg);
   color: var(--text-primary);
+
+  // 移动端顶部点阵横幅的高度
+  --hero-band: clamp(200px, 38dvh, 340px);
 }
 
 .brandPanel {
@@ -18,8 +21,13 @@
   height: 100%;
   overflow: hidden;
 
+  // 移动端：点阵收为页面顶部的横幅，铺在品牌栏之后、向下淡入底色，表单在其下方
   @media (max-width: $breakpoint-mobile) {
-    display: none;
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 0;
+    height: var(--hero-band);
+    pointer-events: none;
   }
 }
 
@@ -40,6 +48,8 @@
   scrollbar-width: thin;
 
   @media (max-width: $breakpoint-mobile) {
+    position: relative;
+    z-index: 1;
     min-width: 0;
     max-width: none;
     padding: 20px 24px;
@@ -193,6 +203,14 @@
 @media (max-height: 560px) {
   .title {
     font-size: 24px;
+  }
+}
+
+// 移动端：表单落在顶部点阵横幅下缘附近，点阵在标题之上，不压住输入区。
+// 放在矮屏规则之后以覆盖其 padding；极矮屏（<560px）直接从顶部排布，交给滚动兜底。
+@media (max-width: $breakpoint-mobile) and (min-height: 560px) {
+  .main {
+    padding-top: calc(var(--hero-band) - 128px);
   }
 }
 

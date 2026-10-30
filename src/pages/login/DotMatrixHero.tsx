@@ -13,6 +13,9 @@ import styles from './DotMatrixHero.module.scss';
 /** 点色取自 CSS 变量 --login-dot-color（随主题切换），读取失败时回退到深色版点色 */
 export const FALLBACK_DOT_COLOR = '#e2e8f0';
 
+/** 与 $breakpoint-mobile 一致：移动端点阵为页面顶部的横幅 */
+const COMPACT_QUERY = '(max-width: 768px)';
+
 const readDotColor = (element: Element) =>
   getComputedStyle(element).getPropertyValue('--login-dot-color').trim() || FALLBACK_DOT_COLOR;
 /** 品牌标语：按设计要求在所有语言下统一使用英文，不走 i18n */
@@ -128,7 +131,11 @@ export function DotMatrixHero() {
       canvas.width = Math.round(rect.width * dpr);
       canvas.height = Math.round(rect.height * dpr);
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      grid = createDotGrid(rect.width, rect.height);
+      const compact =
+        typeof window.matchMedia === 'function' && window.matchMedia(COMPACT_QUERY).matches;
+      grid = createDotGrid(rect.width, rect.height, {
+        origin: compact ? 'top-right' : 'bottom-right',
+      });
       targets = new Float32Array(grid.columns * grid.rows);
       if (reduced) {
         render(STATIC_TIME, false);

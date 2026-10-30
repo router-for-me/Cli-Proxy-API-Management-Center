@@ -20,9 +20,13 @@ export interface DotGrid {
   introDuration: number;
 }
 
+/** 雷达波起点：桌面版从右下角（标题处）扩散；移动端顶部横幅从右上角向下扫向表单 */
+export type WaveOrigin = 'bottom-right' | 'top-right';
+
 export interface DotGridOptions {
   pitch?: number;
   seed?: number;
+  origin?: WaveOrigin;
 }
 
 export const ROWS_PER_HEIGHT = 84;
@@ -107,6 +111,7 @@ export function createDotGrid(
   options: DotGridOptions = {}
 ): DotGrid {
   const seed = options.seed ?? DEFAULT_SEED;
+  const origin = options.origin ?? 'bottom-right';
   const valid = width > 0 && height > 0;
   const pitch = options.pitch ?? pitchForHeight(height);
   const dotSize = Math.max(2, Math.round(pitch * DOT_RATIO));
@@ -144,7 +149,8 @@ export function createDotGrid(
       grid.ys[index] = y;
       grid.cols[index] = col;
       grid.rowsIndex[index] = row;
-      const distance = clamp(Math.hypot(width - x, height - y) / diagonal, 0, 1);
+      const originY = origin === 'top-right' ? 0 : height;
+      const distance = clamp(Math.hypot(width - x, originY - y) / diagonal, 0, 1);
       const revealAt = WAVE_DURATION * distance + WAVE_JITTER * hash2(col, row, seed + 13);
       grid.revealAt[index] = revealAt;
       grid.period[index] = PERIOD_MIN + (PERIOD_MAX - PERIOD_MIN) * hash2(col, row, seed + 17);

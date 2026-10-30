@@ -177,3 +177,51 @@ describe('DotMatrixHero', () => {
     }
   });
 });
+
+describe('login dot-matrix on mobile', () => {
+  test('the compact banner ripples from the top-right corner down toward the form', () => {
+    const banner = createDotGrid(390, 320, { origin: 'top-right' });
+    const n = banner.columns * banner.rows;
+    let topRightLatest = 0;
+    let bottomLeftEarliest = Infinity;
+    for (let i = 0; i < n; i += 1) {
+      const x = banner.xs[i];
+      const y = banner.ys[i];
+      if (x > 390 * 0.8 && y < 320 * 0.2)
+        topRightLatest = Math.max(topRightLatest, banner.revealAt[i]);
+      if (x < 390 * 0.2 && y > 320 * 0.8)
+        bottomLeftEarliest = Math.min(bottomLeftEarliest, banner.revealAt[i]);
+    }
+    expect(topRightLatest).toBeLessThan(bottomLeftEarliest);
+    expect(banner.introDuration).toBeLessThanOrEqual(1.2 + 1e-6);
+    // 点距随横幅高度收紧，保证小屏也有足够的点
+    expect(banner.pitch).toBe(MIN_PITCH);
+    expect(n).toBeGreaterThan(1000);
+  });
+
+  test('the default origin stays bottom-right for the desktop panel', () => {
+    const desktop = createDotGrid(390, 320);
+    const explicit = createDotGrid(390, 320, { origin: 'bottom-right' });
+    expect(desktop.revealAt).toEqual(explicit.revealAt);
+  });
+
+  test('the hero picks the top-right origin on mobile widths', async () => {
+    const source = await Bun.file('src/pages/login/DotMatrixHero.tsx').text();
+    expect(source).toContain("const COMPACT_QUERY = '(max-width: 768px)'");
+    expect(source).toContain("origin: compact ? 'top-right' : 'bottom-right'");
+  });
+
+  test('mobile shows the dots as a top banner instead of hiding them', async () => {
+    const page = await Bun.file('src/pages/LoginPage.module.scss').text();
+    const hero = await Bun.file('src/pages/login/DotMatrixHero.module.scss').text();
+    const brandPanel = page.slice(page.indexOf('.brandPanel {'), page.indexOf('.formPanel {'));
+    expect(brandPanel).not.toContain('display: none');
+    expect(brandPanel).toContain('height: var(--hero-band)');
+    expect(brandPanel).toContain('pointer-events: none');
+    expect(page).toMatch(/--hero-band: clamp\(/);
+    // 横幅向下淡出；标语在移动端让位给表单标题
+    const mobileHero = hero.slice(hero.indexOf('@media (max-width: $breakpoint-mobile)'));
+    expect(mobileHero).toMatch(/mask-image: linear-gradient\(\s*to bottom/);
+    expect(mobileHero).toMatch(/\.title \{\s*display: none;/);
+  });
+});

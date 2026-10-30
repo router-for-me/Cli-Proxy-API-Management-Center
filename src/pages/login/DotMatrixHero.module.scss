@@ -48,6 +48,31 @@
   animation: heroTitleIn 0.6s var(--ease-out-strong) 0.4s forwards;
 }
 
+// 移动端顶部横幅：顶端轻压（让品牌栏文字更清晰），下半段淡入底色衔接表单；
+// 标语让位给表单标题，不在横幅中出现
+@media (max-width: $breakpoint-mobile) {
+  .canvas {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.3) 0,
+      #000 80px,
+      #000 42%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.3) 0,
+      #000 80px,
+      #000 42%,
+      transparent 100%
+    );
+  }
+
+  .title {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .title {
     opacity: 1;
