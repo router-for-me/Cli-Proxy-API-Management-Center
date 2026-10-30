@@ -93,6 +93,10 @@ $field-radius: 10px;
     outline: 2px solid rgba(255, 255, 255, 0.5);
     outline-offset: 3px;
   }
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
 }
 
 .input,
@@ -259,6 +263,66 @@ $field-radius: 10px;
   &:disabled {
     cursor: progress;
     opacity: 0.7;
+  }
+
+  // 成功确认不是"禁用"：保持满亮度
+  &[data-state='success'] {
+    cursor: default;
+    opacity: 1;
+  }
+}
+
+// 按钮内容切换（登录 → 连接中 → 已连接）：轻微模糊交叉，掩盖两态叠影
+@keyframes submitContentIn {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+    transform: translate3d(0, 2px, 0);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes checkDraw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.submitContent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: submitContentIn 200ms var(--ease-out-strong);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: fieldFade 150ms ease;
+  }
+}
+
+// 对勾自绘：一笔画出，确认"已连接"
+.successIcon {
+  stroke-width: 2.4;
+
+  path,
+  polyline {
+    stroke-dasharray: 24;
+    animation: checkDraw 280ms var(--ease-out-strong) 40ms both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    path,
+    polyline {
+      animation: none;
+      stroke-dasharray: none;
+    }
   }
 }
 

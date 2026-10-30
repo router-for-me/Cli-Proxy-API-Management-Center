@@ -1,0 +1,28 @@
+// 登录 → 主界面的"开灯"黑幕。时长与 useLoginTransitionStore 的 reveal 保持一致。
+@keyframes loginVeilOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.login-reveal-veil {
+  position: fixed;
+  inset: 0;
+  // 低于通知层，高于主界面全部浮层
+  z-index: $z-notification - 1;
+  background: #000000;
+  pointer-events: none;
+  // 先留一拍纯黑，让新页面的首帧在幕后完成绘制；随后快起慢收地亮起
+  animation: loginVeilOut 600ms cubic-bezier(0.32, 0.72, 0, 1) 40ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-reveal-veil {
+    animation-duration: 200ms;
+    animation-delay: 0ms;
+    animation-timing-function: ease;
+  }
+}

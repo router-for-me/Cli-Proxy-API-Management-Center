@@ -1016,3 +1016,54 @@
     }
   }
 }
+
+// ========== 登录揭幕：外壳随黑幕亮起而落位 ==========
+// 仅桌面端：移动端侧栏本身依赖 transform 收起，不叠加入场。
+// 总时长不超过揭幕时长（640ms），揭幕结束时类名撤销不会跳变。
+@keyframes shellSidebarIn {
+  from {
+    opacity: 0;
+    transform: translate3d(-16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes shellChromeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes shellFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: #{$breakpoint-mobile + 1}) and (prefers-reduced-motion: no-preference) {
+  .app-shell--arriving {
+    .sidebar {
+      animation: shellSidebarIn 560ms var(--ease-out-strong) 60ms both;
+    }
+
+    .main-header .header-actions {
+      transform-origin: top right;
+      animation: shellChromeIn 460ms var(--ease-out-strong) 160ms both;
+    }
+
+    .main-header .sidebar-toggle-floating {
+      animation: shellFadeIn 360ms ease 260ms both;
+    }
+  }
+}

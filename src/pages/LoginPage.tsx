@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Select } from '@/components/ui/Select';
 import { useAuthStore, useLanguageStore, useNotificationStore } from '@/stores';
+import {
+  getLoginTransitionTimings,
+  useLoginTransitionStore,
+} from '@/stores/useLoginTransitionStore';
+import { prefersReducedMotion } from '@/hooks/motion';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
@@ -17,6 +22,13 @@ import styles from './LoginPage.module.scss';
  * 将 API 错误转换为本地化的用户友好消息
  */
 type RedirectState = { from?: { pathname?: string } };
+
+/**
+ * 登录页自身的阶段：
+ * idle → connecting（请求中）→ success（按钮就地确认）→ exiting（整页淡入纯黑）→ 交给全局黑幕揭幕主界面。
+ * 非 idle 阶段会屏蔽"已登录即重定向"，让退场完整播完。
+ */
+export type LoginPhase = 'idle' | 'connecting' | 'success' | 'exiting';
 
 /** 左上角品牌名：产品全称，所有语言下保持英文，不走 i18n */
 export const LOGIN_BRAND_NAME = 'CLI Proxy API Management Center';
@@ -103,12 +115,42 @@ export function LoginPage() {
   const [showCustomBase, setShowCustomBase] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<LoginPhase>('idle');
   const [autoLoading, setAutoLoading] = useState(true);
   const [autoLoginSuccess, setAutoLoginSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  const startReveal = useLoginTransitionStore((state) => state.startReveal);
+  const exitTimersRef = useRef<number[]>([]);
+  const loading = phase === 'connecting';
+
   const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
+
+  useEffect(
+    () => () => {
+      exitTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    []
+  );
+
+  /**
+   * 退场编排：确认停留 → 淡入纯黑 → 在黑暗中切换路由并交给全局黑幕揭幕。
+   * hold 为确认态停留时长（自动登录时由启动画面自身承担）。
+   */
+  const leaveTo = useCallback(
+    (redirect: string, hold: number) => {
+      const timings = getLoginTransitionTimings(prefersReducedMotion());
+      const schedule = (callback: () => void, delay: number) => {
+        exitTimersRef.current.push(window.setTimeout(callback, delay));
+      };
+      schedule(() => setPhase('exiting'), hold);
+      schedule(() => {
+        startReveal();
+        navigate(redirect, { replace: true });
+      }, hold + timings.exit);
+    },
+    [navigate, startReveal]
+  );
   const languageOptions = useMemo(
     () =>
       LANGUAGE_ORDER.map((lang) => ({
@@ -133,11 +175,10 @@ export function LoginPage() {
         const autoLoggedIn = await restoreSession();
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
-          // 延迟跳转，让用户看到成功动画
-          setTimeout(() => {
-            const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-            navigate(redirect, { replace: true });
-          }, 1500);
+          // 启动画面停留约 1.5s（含退场），再以与手动登录相同的方式揭幕主界面
+          const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
+          const { exit } = getLoginTransitionTimings(prefersReducedMotion());
+          leaveTo(redirect, Math.max(0, 1500 - exit));
         } else {
           setApiBase(storedBase || detectedBase);
           setManagementKey(storedKey || '');
@@ -154,13 +195,15 @@ export function LoginPage() {
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (phase !== 'idle') return;
     if (!managementKey.trim()) {
       setError(t('login.error_required'));
       return;
     }
 
     const baseToUse = apiBase ? normalizeApiBase(apiBase) : detectedBase;
-    setLoading(true);
+    // 先进入 connecting：登录成功瞬间 isAuthenticated 变真时不会被立即重定向打断
+    setPhase('connecting');
     setError('');
     try {
       await login({
@@ -168,27 +211,31 @@ export function LoginPage() {
         managementKey: managementKey.trim(),
         rememberPassword,
       });
-      showNotification(t('common.connected_status'), 'success');
-      navigate('/', { replace: true });
     } catch (err: unknown) {
       const message = getLocalizedErrorMessage(err, t);
+      setPhase('idle');
       setError(message);
       showNotification(`${t('notification.login_failed')}: ${message}`, 'error');
-    } finally {
-      setLoading(false);
+      return;
     }
+    // 成功的确认放在按钮本身（✓ 已连接），不再额外弹通知
+    setPhase('success');
+    const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
+    leaveTo(redirect, getLoginTransitionTimings(prefersReducedMotion()).successHold);
   }, [
     apiBase,
     detectedBase,
+    leaveTo,
+    location.state,
     login,
     managementKey,
-    navigate,
+    phase,
     rememberPassword,
     showNotification,
     t,
   ]);
 
-  if (isAuthenticated && !autoLoading && !autoLoginSuccess) {
+  if (isAuthenticated && !autoLoading && !autoLoginSuccess && phase === 'idle') {
     const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
     return <Navigate to={redirect} replace />;
   }
@@ -197,7 +244,7 @@ export function LoginPage() {
   const showSplash = autoLoading || autoLoginSuccess;
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} data-phase={phase === 'exiting' ? 'exiting' : undefined}>
       {/* 左侧品牌展示区：点阵雷达波 */}
       <div className={styles.brandPanel}>
         <DotMatrixHero />
@@ -250,6 +297,7 @@ export function LoginPage() {
                 showKey={showKey}
                 rememberPassword={rememberPassword}
                 loading={loading}
+                success={phase === 'success' || phase === 'exiting'}
                 error={error}
                 onApiBaseChange={setApiBase}
                 onEditingBaseChange={setShowCustomBase}

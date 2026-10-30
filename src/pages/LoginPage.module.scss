@@ -194,6 +194,42 @@
   }
 }
 
+// ========== 登录成功退场：整页淡入纯黑，交给全局黑幕揭幕主界面 ==========
+// 时长与 useLoginTransitionStore 的 exit 保持一致（320ms / 减少动效 150ms）
+
+@keyframes exitToBlack {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes exitLift {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+.container[data-phase='exiting'] {
+  .brandPanel,
+  .topBar {
+    animation: exitToBlack 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .main > * {
+    animation: exitLift 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brandPanel,
+    .topBar,
+    .main > * {
+      animation: exitToBlack 150ms ease both;
+    }
+  }
+}
+
 // ========== 启动动画（自动登录） ==========
 
 @keyframes splashEnter {

@@ -1,7 +1,7 @@
 import { useId, useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
-import { IconAlertTriangle, IconEye, IconEyeOff } from '@/components/ui/icons';
+import { IconAlertTriangle, IconCheck, IconEye, IconEyeOff } from '@/components/ui/icons';
 import styles from './LoginForm.module.scss';
 
 export interface LoginFormProps {
@@ -13,6 +13,8 @@ export interface LoginFormProps {
   showKey: boolean;
   rememberPassword: boolean;
   loading: boolean;
+  /** 登录已成功、正在退场：按钮就地确认，表单锁定 */
+  success?: boolean;
   error: string;
   onApiBaseChange: (value: string) => void;
   onEditingBaseChange: (value: boolean) => void;
@@ -34,6 +36,7 @@ export function LoginForm({
   showKey,
   rememberPassword,
   loading,
+  success = false,
   error,
   onApiBaseChange,
   onEditingBaseChange,
@@ -47,10 +50,11 @@ export function LoginForm({
   const keyId = useId();
   const errorId = useId();
   const keyInputRef = useRef<HTMLInputElement | null>(null);
+  const locked = loading || success;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!loading) onSubmit();
+    if (!locked) onSubmit();
   };
 
   const toggleKeyLabel = showKey ? t('login.hide_key') : t('login.show_key');
@@ -67,6 +71,7 @@ export function LoginForm({
             className={styles.textButton}
             aria-expanded={editingBase}
             aria-controls={baseId}
+            disabled={locked}
             onClick={() => {
               const next = !editingBase;
               onEditingBaseChange(next);
@@ -87,6 +92,7 @@ export function LoginForm({
             autoComplete="url"
             spellCheck={false}
             placeholder={t('login.custom_connection_placeholder')}
+            readOnly={locked}
             value={apiBase}
             onChange={(event) => onApiBaseChange(event.target.value)}
           />
@@ -116,6 +122,7 @@ export function LoginForm({
             autoFocus={!editingBase}
             spellCheck={false}
             placeholder={t('login.management_key_placeholder')}
+            readOnly={locked}
             value={managementKey}
             aria-invalid={Boolean(error) || undefined}
             aria-describedby={error ? errorId : undefined}
@@ -144,9 +151,24 @@ export function LoginForm({
       </div>
 
       <div className={styles.actions} data-stagger>
-        <button type="submit" className={styles.submit} disabled={loading} aria-busy={loading}>
-          {loading && <span className="loading-spinner" aria-hidden="true" />}
-          <span>{loading ? t('login.submitting') : t('login.submit_button')}</span>
+        <button
+          type="submit"
+          className={styles.submit}
+          disabled={locked}
+          aria-busy={loading}
+          data-state={success ? 'success' : loading ? 'loading' : undefined}
+        >
+          {success ? (
+            <span key="success" className={styles.submitContent} role="status">
+              <IconCheck size={16} className={styles.successIcon} />
+              <span>{t('common.connected_status')}</span>
+            </span>
+          ) : (
+            <span key="idle" className={styles.submitContent}>
+              {loading && <span className="loading-spinner" aria-hidden="true" />}
+              <span>{loading ? t('login.submitting') : t('login.submit_button')}</span>
+            </span>
+          )}
         </button>
         {error && (
           <p id={errorId} className={styles.error} role="alert" title={error}>
