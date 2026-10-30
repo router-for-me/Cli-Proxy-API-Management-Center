@@ -4,18 +4,22 @@ export type LoginTransitionPhase = 'idle' | 'revealing';
 
 export interface LoginTransitionTimings {
   successHold: number;
+  /** 自动登录启动画面的最短停留（从页面打开算起），避免网络快时一闪而过 */
+  splashMin: number;
   exit: number;
   reveal: number;
 }
 
 export const LOGIN_TRANSITION_TIMINGS: LoginTransitionTimings = {
   successHold: 260,
+  splashMin: 700,
   exit: 320,
   reveal: 640,
 };
 
 export const LOGIN_TRANSITION_TIMINGS_REDUCED: LoginTransitionTimings = {
   successHold: 260,
+  splashMin: 700,
   exit: 150,
   reveal: 200,
 };

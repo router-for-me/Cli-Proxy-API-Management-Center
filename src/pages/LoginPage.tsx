@@ -16,12 +16,8 @@ import type { ApiError } from '@/types';
 import { LegacyBackendError } from '@/services/api/legacyBackendProbe';
 import { DotMatrixHero } from './login/DotMatrixHero';
 import { LoginForm } from './login/LoginForm';
+import { resolveLoginRedirect } from '@/router/loginRedirect';
 import styles from './LoginPage.module.scss';
-
-/**
- * 将 API 错误转换为本地化的用户友好消息
- */
-type RedirectState = { from?: { pathname?: string } };
 
 export type LoginPhase = 'idle' | 'connecting' | 'success' | 'exiting';
 
@@ -31,6 +27,9 @@ export const LOGIN_BRAND_NAME = 'CLI Proxy API Management Center';
 /** 语言下拉层最小宽度：最长的语言名（繁體中文（台灣））单行显示 */
 const LANGUAGE_DROPDOWN_MIN_WIDTH = 180;
 
+/**
+ * 将 API 错误转换为本地化的用户友好消息
+ */
 function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
   if (error instanceof LegacyBackendError) return t('login.error_legacy_backend');
   const apiError = error as Partial<ApiError>;
@@ -104,25 +103,31 @@ export function LoginPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
   const restoreSession = useAuthStore((state) => state.restoreSession);
-  const storedBase = useAuthStore((state) => state.apiBase);
-  const storedKey = useAuthStore((state) => state.managementKey);
-  const storedRememberPassword = useAuthStore((state) => state.rememberPassword);
 
-  const [apiBase, setApiBase] = useState('');
-  const [managementKey, setManagementKey] = useState('');
+  const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
+  // 首帧即用已保存的连接信息填好表单：没有可恢复会话时表单直接出现，不闪启动画面
+  const [apiBase, setApiBase] = useState(() => useAuthStore.getState().apiBase || detectedBase);
+  const [managementKey, setManagementKey] = useState(
+    () => useAuthStore.getState().managementKey || ''
+  );
   const [showCustomBase, setShowCustomBase] = useState(false);
   const [showKey, setShowKey] = useState(false);
-  const [rememberPassword, setRememberPassword] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(() => {
+    const { rememberPassword: remembered, managementKey: key } = useAuthStore.getState();
+    return remembered || Boolean(key);
+  });
   const [phase, setPhase] = useState<LoginPhase>('idle');
-  const [autoLoading, setAutoLoading] = useState(true);
+  // 仅在确实会自动登录时显示启动画面
+  const [autoLoading, setAutoLoading] = useState(() =>
+    useAuthStore.getState().hasRestorableSession()
+  );
   const [autoLoginSuccess, setAutoLoginSuccess] = useState(false);
   const [error, setError] = useState('');
 
   const startReveal = useLoginTransitionStore((state) => state.startReveal);
   const exitTimersRef = useRef<number[]>([]);
   const loading = phase === 'connecting';
-
-  const detectedBase = useMemo(() => detectApiBaseFromLocation(), []);
+  const redirectTarget = resolveLoginRedirect(location.state);
 
   useEffect(
     () => () => {
@@ -164,18 +169,26 @@ export function LoginPage() {
   );
 
   useEffect(() => {
+    const splashStartedAt = performance.now();
     const init = async () => {
       try {
         const autoLoggedIn = await restoreSession();
         if (autoLoggedIn) {
           setAutoLoginSuccess(true);
-          const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-          const { exit } = getLoginTransitionTimings(prefersReducedMotion());
-          leaveTo(redirect, Math.max(0, 1500 - exit));
+          // 每次打开都会经过启动画面：网络快时补足最短停留，避免一闪而过；网络慢时不再额外等待
+          const { splashMin } = getLoginTransitionTimings(prefersReducedMotion());
+          const elapsed = performance.now() - splashStartedAt;
+          leaveTo(redirectTarget, Math.max(0, splashMin - elapsed));
         } else {
-          setApiBase(storedBase || detectedBase);
-          setManagementKey(storedKey || '');
-          setRememberPassword(storedRememberPassword || Boolean(storedKey));
+          // 按最新的已保存信息回填表单（restoreSession 可能迁移了旧版存储）。
+          // 自动登录被 401 拒绝时全局会登出并清空存储，此时保留首帧填入的地址与密钥，
+          // 用户修正后即可直接重试，自定义地址也不会丢失。
+          const stored = useAuthStore.getState();
+          setApiBase((previous) => stored.apiBase || previous || detectedBase);
+          setManagementKey((previous) => stored.managementKey || previous);
+          setRememberPassword(
+            (previous) => stored.rememberPassword || Boolean(stored.managementKey) || previous
+          );
         }
       } finally {
         setAutoLoading(false);
@@ -211,24 +224,22 @@ export function LoginPage() {
       return;
     }
     setPhase('success');
-    const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-    leaveTo(redirect, getLoginTransitionTimings(prefersReducedMotion()).successHold);
+    leaveTo(redirectTarget, getLoginTransitionTimings(prefersReducedMotion()).successHold);
   }, [
     apiBase,
     detectedBase,
     leaveTo,
-    location.state,
     login,
     managementKey,
     phase,
+    redirectTarget,
     rememberPassword,
     showNotification,
     t,
   ]);
 
   if (isAuthenticated && !autoLoading && !autoLoginSuccess && phase === 'idle') {
-    const redirect = (location.state as RedirectState | null)?.from?.pathname || '/';
-    return <Navigate to={redirect} replace />;
+    return <Navigate to={redirectTarget} replace />;
   }
 
   const showSplash = autoLoading || autoLoginSuccess;
