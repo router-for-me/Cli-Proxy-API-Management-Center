@@ -74,7 +74,7 @@ describe('login transition store', () => {
     const layout = await Bun.file('src/styles/layout.scss').text();
 
     expect(animationTotal(veil, 'loginVeilOut')).toBe(LOGIN_TRANSITION_TIMINGS.reveal);
-    expect(animationTotal(page, 'exitToBlack')).toBe(LOGIN_TRANSITION_TIMINGS.exit);
+    expect(animationTotal(page, 'exitToBase')).toBe(LOGIN_TRANSITION_TIMINGS.exit);
     expect(animationTotal(page, 'exitLift')).toBe(LOGIN_TRANSITION_TIMINGS.exit);
     // 外壳入场必须在揭幕结束前落定，否则撤销类名时会跳变
     for (const name of ['shellSidebarIn', 'shellChromeIn', 'shellFadeIn']) {

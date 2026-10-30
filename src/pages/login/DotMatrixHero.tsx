@@ -10,7 +10,11 @@ import {
 } from './dotMatrixField';
 import styles from './DotMatrixHero.module.scss';
 
-const DOT_COLOR = '#e2e8f0';
+/** 点色取自 CSS 变量 --login-dot-color（随主题切换），读取失败时回退到深色版点色 */
+export const FALLBACK_DOT_COLOR = '#e2e8f0';
+
+const readDotColor = (element: Element) =>
+  getComputedStyle(element).getPropertyValue('--login-dot-color').trim() || FALLBACK_DOT_COLOR;
 /** 品牌标语：按设计要求在所有语言下统一使用英文，不走 i18n */
 export const HERO_TITLE = 'Welcome to CLI Proxy API.';
 const FRAME_INTERVAL_MS = 1000 / 30;
@@ -21,10 +25,11 @@ function paintIntro(
   context: CanvasRenderingContext2D,
   grid: DotGrid,
   targets: Float32Array,
-  elapsed: number
+  elapsed: number,
+  color: string
 ) {
   context.clearRect(0, 0, grid.width, grid.height);
-  context.fillStyle = DOT_COLOR;
+  context.fillStyle = color;
   const { dotSize } = grid;
   for (let i = 0; i < targets.length; i += 1) {
     const alpha = applyReveal(targets[i], grid.revealAt[i], elapsed);
@@ -36,9 +41,14 @@ function paintIntro(
 }
 
 /** 稳态只有两档亮度：按档位分两遍绘制，避免逐点切换 globalAlpha */
-function paintSteady(context: CanvasRenderingContext2D, grid: DotGrid, targets: Float32Array) {
+function paintSteady(
+  context: CanvasRenderingContext2D,
+  grid: DotGrid,
+  targets: Float32Array,
+  color: string
+) {
   context.clearRect(0, 0, grid.width, grid.height);
-  context.fillStyle = DOT_COLOR;
+  context.fillStyle = color;
   const { dotSize } = grid;
   const dim = Math.fround(TONE_DIM);
   const mid = Math.fround(TONE_MID);
@@ -68,12 +78,27 @@ export function DotMatrixHero() {
     let startTime: number | null = null;
     let lastPaint = -Infinity;
     let clock = 0;
+    let dotColor = readDotColor(canvas);
 
     const render = (time: number, intro: boolean) => {
       sampleDotTargets(grid, time, targets);
-      if (intro) paintIntro(context, grid, targets, time);
-      else paintSteady(context, grid, targets);
+      if (intro) paintIntro(context, grid, targets, time, dotColor);
+      else paintSteady(context, grid, targets, dotColor);
     };
+
+    // 主题切换（含 auto 跟随系统）：换点色并立即重绘当前帧
+    const themeObserver =
+      typeof MutationObserver === 'undefined'
+        ? null
+        : new MutationObserver(() => {
+            dotColor = readDotColor(canvas);
+            if (reduced) render(STATIC_TIME, false);
+            else render(clock, clock < grid.introDuration);
+          });
+    themeObserver?.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
 
     const tick = (now: number) => {
       frameId = requestAnimationFrame(tick);
@@ -140,6 +165,7 @@ export function DotMatrixHero() {
       stop();
       resizeObserver?.disconnect();
       intersectionObserver?.disconnect();
+      themeObserver?.disconnect();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);

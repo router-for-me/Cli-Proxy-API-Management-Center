@@ -1,5 +1,3 @@
-@use './palette' as *;
-
 $field-height: 44px;
 $field-radius: 10px;
 
@@ -89,7 +87,7 @@ $field-radius: 10px;
 
   &:focus-visible {
     opacity: 1;
-    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline: 2px solid var(--login-outline);
     outline-offset: 3px;
   }
   &:disabled {
@@ -105,7 +103,7 @@ $field-radius: 10px;
   padding: 0 14px;
   border-radius: $field-radius;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--login-field-bg);
   color: var(--text-primary);
   font-size: 14px;
 }
@@ -128,13 +126,13 @@ $field-radius: 10px;
 
   &:focus {
     outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.05);
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+    border-color: var(--login-focus-border);
+    background: var(--login-field-bg-focus);
+    box-shadow: 0 0 0 4px var(--login-focus-ring);
   }
 
   &[aria-invalid='true'] {
-    border-color: rgba($login-error, 0.55);
+    border-color: color-mix(in srgb, var(--login-error) 55%, transparent);
   }
 }
 
@@ -142,7 +140,7 @@ $field-radius: 10px;
   display: flex;
   align-items: center;
   border-color: transparent;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--login-readout-bg);
   color: var(--text-secondary);
 }
 
@@ -189,7 +187,7 @@ $field-radius: 10px;
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--login-hover-bg);
     }
   }
 
@@ -199,7 +197,7 @@ $field-radius: 10px;
 
   &:focus-visible {
     color: var(--text-primary);
-    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline: 2px solid var(--login-outline);
     outline-offset: 0;
   }
 }
@@ -231,8 +229,8 @@ $field-radius: 10px;
   gap: 8px;
   border: 0;
   border-radius: $field-radius;
-  background: #f5f5f4;
-  color: #0a0a0a;
+  background: var(--login-submit-bg);
+  color: var(--login-submit-fg);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -245,7 +243,7 @@ $field-radius: 10px;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover:not(:disabled) {
-      background: #ffffff;
+      background: var(--login-submit-hover);
     }
   }
 
@@ -254,7 +252,7 @@ $field-radius: 10px;
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline: 2px solid var(--login-outline);
     outline-offset: 3px;
   }
 
@@ -339,7 +337,7 @@ $field-radius: 10px;
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: $login-error;
+  color: var(--login-error);
   animation: errorIn 200ms var(--ease-out-strong);
 
   svg {
