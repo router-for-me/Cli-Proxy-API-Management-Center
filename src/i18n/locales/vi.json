@@ -1242,6 +1242,8 @@
           "passthrough_headers_desc": "Chuyển tiếp header phản hồi upstream đã lọc đến client downstream",
           "disable_cooling": "Tắt Cooling",
           "disable_cooling_desc": "Tắt toàn cục cửa sổ cooldown auth/model sau thất bại",
+          "quota_usage_limit": "Báo giới hạn sử dụng khi hết quota",
+          "quota_usage_limit_desc": "Khi mọi credential hết quota, báo client thời điểm đặt lại để tạm dừng rồi tiếp tục thay vì thử lại.",
           "session_affinity": "Định tuyến Session Affinity",
           "ws_auth": "Xác thực WebSocket",
           "ws_auth_desc": "Bật xác thực WebSocket (/v1/ws)",

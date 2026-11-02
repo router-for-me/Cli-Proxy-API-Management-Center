@@ -1452,6 +1452,8 @@
           "passthrough_headers_desc": "Süzülmüş Yukarı Akış Yanıt Üst Bilgilerini Aşağı Akış İstemcilerine İlet",
           "disable_cooling": "Soğumayı Devre Dışı Bırak",
           "disable_cooling_desc": "Hatalardan Sonra Kimlik/Model Soğuma Pencerelerini Genel Olarak Devre Dışı Bırak",
+          "quota_usage_limit": "Kota Tükenince Kullanım Sınırını Bildir",
+          "quota_usage_limit_desc": "Tüm kimlik bilgilerinin kotası bittiğinde istemcilere sıfırlama zamanını bildir; tekrar denemek yerine durup sonra devam ederler.",
           "session_affinity": "Oturum Yakınlığı Yönlendirmesi",
           "ws_auth": "WebSocket Kimlik Doğrulaması",
           "ws_auth_desc": "AI Studio WebSocket Bağlantıları için Kimlik Doğrulama İste (oauth.providers.aistudio.ws-auth)"

@@ -437,6 +437,15 @@ export function parseRoutingStrategy(raw: unknown): RoutingStrategy {
   return 'round-robin';
 }
 
+/** Mirrors the backend's NormalizeQuotaCooldownResponseMode: trimmed, case-insensitive, empty = retryable. */
+export function isQuotaUsageLimit(raw: unknown): boolean {
+  return (
+    String(raw ?? '')
+      .trim()
+      .toLowerCase() === 'usage-limit'
+  );
+}
+
 export function parseDisableImageGenerationMode(raw: unknown): DisableImageGenerationMode {
   if (raw === true) return 'true';
   if (typeof raw === 'string') {
@@ -1215,6 +1224,7 @@ function getNextDirtyFields(
       'pluginsEnabled',
       'passthroughHeaders',
       'disableCooling',
+      'quotaUsageLimit',
       'disableImageGeneration',
       'gptImage2BaseModel',
       'authAutoRefreshWorkers',
@@ -1476,6 +1486,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
     maxRetryCredentials: String(v8RoutingRetry?.['max-retry-credentials'] ?? ''),
     maxRetryInterval: String(v8RoutingRetry?.['max-retry-interval'] ?? ''),
     disableCooling: Boolean(v8RoutingCooldown?.['disable-cooling']),
+    quotaUsageLimit: isQuotaUsageLimit(v8RoutingCooldown?.['quota-response-mode']),
     disableImageGeneration: parseDisableImageGenerationMode(
       v8Multimedia?.['disable-image-generation']
     ),
@@ -1666,6 +1677,7 @@ export function useVisualConfig() {
             'maxRetryCredentials',
             'maxRetryInterval',
             'disableCooling',
+            'quotaUsageLimit',
             'routingStrategy',
             'routingSessionAffinity',
             'routingSessionAffinityTTL',
@@ -1825,6 +1837,16 @@ export function useVisualConfig() {
         }
         if (dirtyFields.has('disableCooling')) {
           setBooleanInDoc(doc, ['routing', 'cooldown', 'disable-cooling'], values.disableCooling);
+        }
+        if (dirtyFields.has('quotaUsageLimit')) {
+          // Off is the backend default (retryable), so the key is removed rather than written.
+          const path = ['routing', 'cooldown', 'quota-response-mode'];
+          if (values.quotaUsageLimit) {
+            ensureMapInDoc(doc, ['routing', 'cooldown']);
+            doc.setIn(path, 'usage-limit');
+          } else if (doc.hasIn(path)) {
+            deletePathInDoc(doc, path);
+          }
         }
         if (dirtyFields.has('disableImageGeneration')) {
           setDisableImageGenerationInDoc(

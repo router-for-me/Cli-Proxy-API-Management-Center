@@ -1452,6 +1452,8 @@
           "passthrough_headers_desc": "Forward filtered upstream response headers to downstream clients",
           "disable_cooling": "Disable Cooling",
           "disable_cooling_desc": "Globally disable auth/model cooldown windows after failures",
+          "quota_usage_limit": "Report usage limit on quota exhaustion",
+          "quota_usage_limit_desc": "When every credential is out of quota, tell clients the reset time so they pause and resume instead of retrying.",
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
           "ws_auth_desc": "Require authentication for AI Studio WebSocket connections (oauth.providers.aistudio.ws-auth)"

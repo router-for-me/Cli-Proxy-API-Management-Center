@@ -1452,6 +1452,8 @@
           "passthrough_headers_desc": "필터링된 업스트림 응답 헤더를 다운스트림 클라이언트에 전달합니다.",
           "disable_cooling": "쿨다운 비활성화",
           "disable_cooling_desc": "실패 후 인증/모델 쿨다운 기간을 전역적으로 비활성화합니다.",
+          "quota_usage_limit": "할당량 소진 시 사용 한도 알림",
+          "quota_usage_limit_desc": "모든 자격 증명의 할당량이 소진되면 재설정 시간을 알려 클라이언트가 재시도 대신 일시 중지 후 재개하게 합니다.",
           "session_affinity": "세션 어피니티 라우팅",
           "ws_auth": "WebSocket 인증",
           "ws_auth_desc": "AI Studio WebSocket 연결에 인증을 요구합니다 (oauth.providers.aistudio.ws-auth)"

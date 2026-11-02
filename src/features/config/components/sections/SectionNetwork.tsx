@@ -183,6 +183,14 @@ export function SectionNetwork({
           disabled={disabled}
           error={getValidationMessage(t, validationErrors?.transientErrorCooldownSeconds)}
         />
+        <ToggleSetting
+          fieldId="quotaUsageLimit"
+          label={t('config_management.visual.sections.network.quota_usage_limit')}
+          description={t('config_management.visual.sections.network.quota_usage_limit_desc')}
+          checked={values.quotaUsageLimit}
+          disabled={disabled}
+          onChange={(quotaUsageLimit) => onChange({ quotaUsageLimit })}
+        />
         <TextSetting
           fieldId="videoResultAuthCacheTTL"
           size="sm"

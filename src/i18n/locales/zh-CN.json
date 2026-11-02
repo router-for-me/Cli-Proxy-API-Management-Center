@@ -1451,6 +1451,8 @@
           "passthrough_headers_desc": "将过滤后的上游响应 Header 转发给下游客户端",
           "disable_cooling": "禁用冷却调度",
           "disable_cooling_desc": "全局禁用认证/模型失败后的冷却窗口",
+          "quota_usage_limit": "配额耗尽时报告用量上限",
+          "quota_usage_limit_desc": "所有凭证配额耗尽时，告诉客户端重置时间，让其暂停并在重置后继续，而不是反复重试。",
           "session_affinity": "会话亲和性路由",
           "ws_auth": "WebSocket 认证",
           "ws_auth_desc": "启用 AI Studio WebSocket 连接认证（oauth.providers.aistudio.ws-auth）"

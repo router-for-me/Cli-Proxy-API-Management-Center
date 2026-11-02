@@ -206,8 +206,15 @@ describe('v8 scalar read/write path parity', () => {
       const path = [...entry.yamlKeys!];
       if (field === 'tlsEnable') path.push('enable');
       if (field === 'pluginsEnabled') path.push('enabled');
+      // quotaUsageLimit is a switch over an enum key: on writes 'usage-limit'.
       const expected =
-        field === 'apiKeysText' ? [value] : numericFields.has(field) ? Number(value) : value;
+        field === 'apiKeysText'
+          ? [value]
+          : field === 'quotaUsageLimit'
+            ? 'usage-limit'
+            : numericFields.has(field)
+              ? Number(value)
+              : value;
       expect(
         path.reduce<unknown>(
           (node, key) => (node as Record<string, unknown>)[key],

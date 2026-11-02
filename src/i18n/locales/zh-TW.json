@@ -1479,6 +1479,8 @@
           "passthrough_headers_desc": "將過濾後的上游回應 Header 轉發給下游客戶端",
           "disable_cooling": "停用冷卻調度",
           "disable_cooling_desc": "全域停用驗證/模型失敗後的冷卻視窗",
+          "quota_usage_limit": "配額耗盡時回報用量上限",
+          "quota_usage_limit_desc": "所有憑證配額耗盡時，告知用戶端重置時間，讓其暫停並在重置後繼續，而非反覆重試。",
           "session_affinity": "工作階段親和性路由",
           "ws_auth": "WebSocket 驗證",
           "ws_auth_desc": "啟用 AI Studio WebSocket 連線驗證（oauth.providers.aistudio.ws-auth）"

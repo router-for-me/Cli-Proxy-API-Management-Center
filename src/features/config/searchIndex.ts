@@ -457,6 +457,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     yamlKeys: ['routing', 'cooldown', 'disable-cooling'],
   },
   {
+    fieldId: 'quotaUsageLimit',
+    sectionId: 'network',
+    labelKey: L('sections.network.quota_usage_limit'),
+    hintKey: L('sections.network.quota_usage_limit_desc'),
+    yamlKeys: ['routing', 'cooldown', 'quota-response-mode'],
+    keywords: ['usage-limit', 'retryable'],
+  },
+  {
     fieldId: 'routingSessionAffinity',
     sectionId: 'network',
     labelKey: L('sections.network.session_affinity'),

@@ -1455,6 +1455,8 @@
           "passthrough_headers_desc": "Передавать отфильтрованные upstream-заголовки ответа downstream-клиентам",
           "disable_cooling": "Отключить cooldown",
           "disable_cooling_desc": "Глобально отключить окна охлаждения auth/model после ошибок",
+          "quota_usage_limit": "Сообщать о лимите при исчерпании квоты",
+          "quota_usage_limit_desc": "Когда квота исчерпана у всех учётных данных, сообщать клиентам время сброса, чтобы они ждали, а не повторяли запросы.",
           "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
           "ws_auth_desc": "Аутентификация WebSocket AI Studio (oauth.providers.aistudio.ws-auth)"
