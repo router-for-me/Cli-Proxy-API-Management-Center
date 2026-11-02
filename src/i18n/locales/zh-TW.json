@@ -2109,6 +2109,45 @@
       "quickFill": "快速接入",
       "activeCount": "{{active}}/{{total}} 活躍"
     },
+    "smartConfig": {
+      "title": "智慧設定",
+      "description": "貼上包含 Base URL 與 API Key 的文字（支援 cc-switch、new-api、curl、純文字等），系統會先預覽辨識結果再填入。",
+      "inputLabel": "貼上設定文字",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "填入表單",
+      "clear": "清除",
+      "baseUrl": "介面位址",
+      "apiKey": "API 金鑰",
+      "models": "模型",
+      "modelsDetected": "辨識到 {{count}} 個",
+      "name": "名稱",
+      "prefix": "前置字串",
+      "notFound": "未辨識",
+      "noMatch": "未辨識到可用的 Base URL 或 API Key，請檢查貼上內容後重試。",
+      "applied": "已填入 {{count}} 項。",
+      "extraKeysIgnored": "此供應商只能儲存 {{count}} 個金鑰中的第一個。",
+      "modelsKept": "已辨識到模型，但模型清單非空，未自動填入。",
+      "multiple": "辨識到 {{count}} 個設定",
+      "candidate": "設定 #{{index}}",
+      "candidateSelect": "選擇設定",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "鍵值對",
+        "text": "文字"
+      },
+      "warnings": {
+        "noBaseUrl": "未辨識到 Base URL。",
+        "noApiKey": "未辨識到 API Key。",
+        "shortApiKey": "API Key 似乎過短，請於儲存前確認。",
+        "normalizedBaseUrl": "已將工作階段端點路徑裁剪為 Base URL。",
+        "modelsTruncated": "只會填入前 {{count}} 個模型。"
+      }
+    },
     "providerNames": {
       "meta": "Muse (Meta)",
       "gemini": "Gemini",

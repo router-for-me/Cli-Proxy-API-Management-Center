@@ -2082,6 +2082,45 @@
       "quickFill": "Hızlı Doldur",
       "activeCount": "{{active}} / {{total}} Aktif"
     },
+    "smartConfig": {
+      "title": "Akıllı doldurma",
+      "description": "cc-switch, new-api, curl veya düz metinden Base URL ve API anahtarını yapıştırın. Algılanan değerler doldurulmadan önce önizlenir.",
+      "inputLabel": "Yapılandırma metnini yapıştırın",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "Formu doldur",
+      "clear": "Temizle",
+      "baseUrl": "Base URL",
+      "apiKey": "API anahtarı",
+      "models": "Modeller",
+      "modelsDetected": "{{count}} algılandı",
+      "name": "Ad",
+      "prefix": "Önek",
+      "notFound": "Algılanmadı",
+      "noMatch": "Kullanılabilir bir Base URL veya API anahtarı bulunamadı. Yapıştırılan metni kontrol edip tekrar deneyin.",
+      "applied": "{{count}} alan dolduruldu.",
+      "extraKeysIgnored": "Bu sağlayıcı için {{count}} anahtardan yalnızca ilki saklanabilir.",
+      "modelsKept": "Modeller algılandı ancak model listesi boş olmadığı için doldurulmadı.",
+      "multiple": "{{count}} yapılandırma algılandı",
+      "candidate": "Yapılandırma #{{index}}",
+      "candidateSelect": "Yapılandırma seçin",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "Anahtar-değer",
+        "text": "Metin"
+      },
+      "warnings": {
+        "noBaseUrl": "Base URL algılanmadı.",
+        "noApiKey": "API anahtarı algılanmadı.",
+        "shortApiKey": "API anahtarı alışılmadık derecede kısa — kaydetmeden önce doğrulayın.",
+        "normalizedBaseUrl": "Uç nokta yolu Base URL'ye kısaltıldı.",
+        "modelsTruncated": "Yalnızca ilk {{count}} model doldurulacak."
+      }
+    },
     "providerNames": {
       "meta": "Muse (Meta)",
       "gemini": "Gemini",

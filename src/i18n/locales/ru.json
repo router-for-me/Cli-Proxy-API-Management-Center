@@ -2076,6 +2076,45 @@
       "quickFill": "Быстрое заполнение",
       "activeCount": "{{active}}/{{total}} активных"
     },
+    "smartConfig": {
+      "title": "Умное заполнение",
+      "description": "Вставьте текст с Base URL и API-ключом из cc-switch, new-api, curl или обычного текста. Распознанные значения сначала показываются для проверки.",
+      "inputLabel": "Вставьте текст конфигурации",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "Заполнить форму",
+      "clear": "Очистить",
+      "baseUrl": "Базовый URL",
+      "apiKey": "API-ключ",
+      "models": "Модели",
+      "modelsDetected": "Обнаружено: {{count}}",
+      "name": "Название",
+      "prefix": "Префикс",
+      "notFound": "Не найдено",
+      "noMatch": "Не найдено подходящего Base URL или API-ключа. Проверьте текст и повторите.",
+      "applied": "Заполнено полей: {{count}}.",
+      "extraKeysIgnored": "Для этого провайдера можно сохранить только первый из {{count}} ключей.",
+      "modelsKept": "Модели найдены, но список моделей не пуст — они не заполнены.",
+      "multiple": "Найдено конфигураций: {{count}}",
+      "candidate": "Конфигурация №{{index}}",
+      "candidateSelect": "Выберите конфигурацию",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "Ключ-значение",
+        "text": "Текст"
+      },
+      "warnings": {
+        "noBaseUrl": "Base URL не найден.",
+        "noApiKey": "API-ключ не найден.",
+        "shortApiKey": "API-ключ выглядит слишком коротким — проверьте его перед сохранением.",
+        "normalizedBaseUrl": "Путь эндпоинта сокращён до базового URL.",
+        "modelsTruncated": "Будут заполнены только первые {{count}} моделей."
+      }
+    },
     "providerNames": {
       "meta": "Muse (Meta)",
       "gemini": "Gemini",

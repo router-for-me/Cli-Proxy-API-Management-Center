@@ -2082,6 +2082,45 @@
       "quickFill": "Quick Fill",
       "activeCount": "{{active}}/{{total}} active"
     },
+    "smartConfig": {
+      "title": "Smart fill",
+      "description": "Paste a base URL and API key from cc-switch, new-api, curl or plain text. Detected values are previewed before they are filled in.",
+      "inputLabel": "Paste configuration text",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "Fill form",
+      "clear": "Clear",
+      "baseUrl": "Base URL",
+      "apiKey": "API key",
+      "models": "Models",
+      "modelsDetected": "{{count}} detected",
+      "name": "Name",
+      "prefix": "Prefix",
+      "notFound": "Not detected",
+      "noMatch": "No usable base URL or API key found. Check the pasted text and try again.",
+      "applied": "Filled {{count}} field(s).",
+      "extraKeysIgnored": "Only the first of {{count}} keys can be stored for this provider.",
+      "modelsKept": "Models were detected but not filled because the model list is not empty.",
+      "multiple": "{{count}} configs detected",
+      "candidate": "Config #{{index}}",
+      "candidateSelect": "Select configuration",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "Key-value",
+        "text": "Text"
+      },
+      "warnings": {
+        "noBaseUrl": "No base URL detected.",
+        "noApiKey": "No API key detected.",
+        "shortApiKey": "The API key looks unusually short — verify it before saving.",
+        "normalizedBaseUrl": "The endpoint path was trimmed to a base URL.",
+        "modelsTruncated": "Only the first {{count}} models will be filled."
+      }
+    },
     "providerNames": {
       "meta": "Muse (Meta)",
       "gemini": "Gemini",

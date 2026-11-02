@@ -36,6 +36,7 @@ import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
 import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
+import { SmartConfigPanel } from './SmartConfigPanel';
 import styles from './sharedForm.module.scss';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
 import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
@@ -495,6 +496,15 @@ export function BaseProviderForm({
 
   return (
     <form id={formId} className={styles.form} onSubmit={handleSubmit} noValidate>
+      <Collapsible label={t('providersPage.smartConfig.title')} defaultOpen={mode === 'create'}>
+        <SmartConfigPanel
+          brand={brand}
+          form={form}
+          mutating={mutating}
+          onApply={(next) => setForm(next)}
+        />
+      </Collapsible>
+
       {/* 基础字段 */}
       <div className={styles.section}>
         {descriptor.supportsName ? (
