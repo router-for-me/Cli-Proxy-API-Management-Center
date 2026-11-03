@@ -30,7 +30,7 @@ import {
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import { deriveAuthFileIdentity } from '@/features/authFiles/identity';
-import { resolveAuthFileQuotaType } from '@/features/authFiles/logic';
+import { formatResetHintFromMessage, resolveAuthFileQuotaType } from '@/features/authFiles/logic';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFileCooldownSection } from './AuthFileCooldownSection';
@@ -109,6 +109,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
 
   const rawStatusMessage = getAuthFileStatusMessage(file);
   const hasStatusWarning = hasAuthFileStatusWarning(file);
+  const resetHint = hasStatusWarning ? formatResetHintFromMessage(rawStatusMessage) : null;
 
   const priorityValue = Number.isSafeInteger(file.priority) ? file.priority : undefined;
   const weightValue = Number.isSafeInteger(file.weight) ? file.weight : undefined;
@@ -185,7 +186,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
       {rawStatusMessage && hasStatusWarning && (
         <div className={styles.warning} title={rawStatusMessage}>
           <IconInfo className={styles.warningIcon} size={14} />
-          <span>{rawStatusMessage}</span>
+          <div className={styles.warningBody}>
+            <span>{rawStatusMessage}</span>
+            {resetHint && (
+              <div className={styles.warningHint}>
+                {t('auth_files.reset_at', { time: resetHint })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

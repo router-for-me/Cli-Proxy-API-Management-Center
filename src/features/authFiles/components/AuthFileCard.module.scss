@@ -154,6 +154,15 @@
   }
 }
 
+.warningBody {
+  min-width: 0;
+}
+
+.warningHint {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
 .warningIcon {
   flex-shrink: 0;
   margin-top: 2px;

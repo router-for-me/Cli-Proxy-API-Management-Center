@@ -279,6 +279,7 @@
     "health_status_healthy": "Healthy",
     "health_status_warning": "Warning",
     "health_status_disabled": "Disabled",
+    "reset_at": "Resets at: {{time}}",
     "download_button": "Download",
     "refresh_all_button": "Refresh all credentials",
     "refresh_all_confirm": "Refresh all eligible credentials on the server, not just the current filtered results. The backend skips disabled or ineligible credentials. This does not reload the list or reset quotas and may take several minutes. Continue?",

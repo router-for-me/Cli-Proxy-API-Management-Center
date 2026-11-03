@@ -279,6 +279,7 @@
     "health_status_healthy": "Sağlıklı",
     "health_status_warning": "Uyarı",
     "health_status_disabled": "Devre Dışı",
+    "reset_at": "Sıfırlanma zamanı: {{time}}",
     "download_button": "İndir",
     "refresh_all_button": "Tüm Kimlik Bilgilerini Yenile",
     "refresh_all_confirm": "Yalnızca Geçerli Süzülmüş Sonuçları Değil, Sunucudaki Uygun Tüm Kimlik Bilgilerini Yenile. Arka Uç, Devre Dışı veya Uygun Olmayan Kimlik Bilgilerini Atlar. Bu İşlem Listeyi Yeniden Yüklemez, Kotaları Sıfırlamaz ve Birkaç Dakika Sürebilir. Devam Edilsin Mi?",

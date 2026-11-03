@@ -279,6 +279,7 @@
     "health_status_healthy": "정상",
     "health_status_warning": "경고",
     "health_status_disabled": "비활성화됨",
+    "reset_at": "초기화 시각: {{time}}",
     "download_button": "다운로드",
     "refresh_all_button": "모든 자격 증명 새로 고침",
     "refresh_all_confirm": "현재 필터링된 결과뿐만 아니라 서버의 적격한 모든 자격 증명을 새로 고칩니다. 백엔드는 비활성화되었거나 자격이 없는 자격 증명을 건너뜁니다. 이 작업은 목록을 다시 로드하거나 할당량을 초기화하지 않으며 몇 분 정도 걸릴 수 있습니다. 계속하시겠습니까?",

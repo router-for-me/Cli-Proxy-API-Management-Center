@@ -277,6 +277,7 @@
     "health_status_healthy": "健康",
     "health_status_warning": "警告",
     "health_status_disabled": "已停用",
+    "reset_at": "重置時間：{{time}}",
     "download_button": "下載",
     "refresh_all_button": "重新整理全部憑證",
     "refresh_all_confirm": "重新整理伺服器上所有符合條件的憑證（不限於目前篩選結果）。後端會略過已停用或不符合重新整理條件的憑證；此操作不是重新整理清單或重設配額，可能需要幾分鐘。是否繼續？",

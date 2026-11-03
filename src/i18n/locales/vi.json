@@ -241,6 +241,7 @@
     "health_status_healthy": "Khỏe mạnh",
     "health_status_warning": "Cảnh báo",
     "health_status_disabled": "Đã tắt",
+    "reset_at": "Đặt lại lúc: {{time}}",
     "download_button": "Tải xuống",
     "manual_refresh_button": "Làm mới credential OAuth",
     "manual_refresh_requested": "Đã yêu cầu làm mới credential cho \"{{name}}\"",
