@@ -1754,6 +1754,7 @@
     "refresh": "Làm mới",
     "retry": "Thử lại",
     "load_failed": "Không thể tải cửa hàng plugin",
+    "rate_limited": "Đã đạt giới hạn yêu cầu GitHub API. Thử lại sau {{time}}.",
     "unsupported_backend": "Backend hiện tại không cung cấp API plugin store. Hãy dùng bản backend mới hơn có endpoint plugin store, sau đó khởi động lại dịch vụ.",
     "registry_failed": "Không thể kết nối registry plugin",
     "global_status": "Trạng thái toàn cục",

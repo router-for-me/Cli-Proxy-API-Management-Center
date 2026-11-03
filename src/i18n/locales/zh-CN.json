@@ -1797,6 +1797,7 @@
     "refresh": "刷新",
     "retry": "重试",
     "load_failed": "插件商店加载失败",
+    "rate_limited": "已达到 GitHub API 速率限制，请在 {{time}} 后重试。",
     "unsupported_backend": "当前后端未暴露插件商店 API。请使用包含插件商店接口的新后端构建,并重启服务。",
     "registry_failed": "插件注册表请求失败",
     "global_status": "全局状态",

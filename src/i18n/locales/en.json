@@ -1798,6 +1798,7 @@
     "refresh": "Refresh",
     "retry": "Retry",
     "load_failed": "Failed to load the plugin store",
+    "rate_limited": "GitHub API rate limit reached. Retry after {{time}}.",
     "unsupported_backend": "The current backend does not expose the plugin store API. Use a newer backend build that includes plugin store endpoints, then restart the service.",
     "registry_failed": "Failed to reach the plugin registry",
     "global_status": "Global status",
