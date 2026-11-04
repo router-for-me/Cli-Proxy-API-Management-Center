@@ -84,7 +84,9 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
       <>
         <div className={classes.codexPlan}>
           <span className={classes.codexPlanLabel}>{t('xai_quota.plan_label')}</span>
-          <span className={planValueClass}>{billing.planLabel ?? t('xai_quota.plan_paid')}</span>
+          <span className={planValueClass} data-quota-plan="">
+            {billing.planLabel ?? t('xai_quota.plan_paid')}
+          </span>
         </div>
         <div className={classes.quotaMessage}>{t('xai_quota.paid_health')}</div>
       </>
@@ -151,7 +153,7 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
       {(subscriptionLabel || headerReset || onDemandCap <= 0) && (
         <div className={classes.codexPlan}>
           {subscriptionLabel && (
-            <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanItem} data-quota-plan="">
               <span className={classes.codexPlanLabel}>{t('xai_quota.plan_label')}</span>
               <span className={planValueClass}>{subscriptionLabel}</span>
             </span>

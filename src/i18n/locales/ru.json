@@ -1590,6 +1590,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "Раскладка карточек",
+    "even": "Ровные ряды",
+    "stacked": "Стопкой",
+    "compact": "Компактно",
+    "show_details": "Показать подробности",
+    "hide_details": "Скрыть подробности"
+  },
   "quota_management": {
     "search_label": "Поиск аккаунтов",
     "search_placeholder": "Поиск по имени файла или электронной почте",

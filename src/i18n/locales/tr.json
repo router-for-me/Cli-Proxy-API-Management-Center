@@ -1587,6 +1587,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "Kart Düzeni",
+    "even": "Eşit Satırlar",
+    "stacked": "Yığılmış",
+    "compact": "Kompakt",
+    "show_details": "Ayrıntıları Göster",
+    "hide_details": "Ayrıntıları Gizle"
+  },
   "quota_management": {
     "search_label": "Hesap Ara",
     "search_placeholder": "Dosya Adına veya E-postaya Göre Ara",
