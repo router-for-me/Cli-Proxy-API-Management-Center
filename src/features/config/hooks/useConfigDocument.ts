@@ -14,6 +14,7 @@ import {
   rebaseConfigDraft,
   type ConfigPatchPlan,
 } from '@/services/api/configPatch';
+import type { ApiError } from '@/types/api';
 import type { ConfigEditorMode } from '../constants';
 
 export function readCommercialModeFromYaml(yamlContent: string): boolean {
@@ -88,6 +89,28 @@ export function buildConfigSaveDraft(
  */
 export function shouldReloadVisualDraft(sourceDirty: boolean, visualParseError: string | null) {
   return sourceDirty || visualParseError !== null;
+}
+
+/**
+ * A core without routing.cooldown.quota-response-mode rejects the PATCH that sets it
+ * ("field cooldown not found"). The PATCH is the plan's first write, so nothing was saved.
+ */
+export function isUnsupportedQuotaUsageLimitSave(
+  error: unknown,
+  plan: ConfigPatchPlan | null
+): boolean {
+  const routing = plan?.patch.routing;
+  const cooldown =
+    routing && typeof routing === 'object' ? (routing as Record<string, unknown>).cooldown : null;
+  if (!cooldown || typeof cooldown !== 'object' || !('quota-response-mode' in cooldown)) {
+    return false;
+  }
+  const apiError = error as ApiError | null;
+  return (
+    apiError?.status === 400 &&
+    apiError.apiCode === 'invalid_config' &&
+    /quota-response-mode|field cooldown not found/.test(apiError.message ?? '')
+  );
 }
 
 export function useConfigDocument({
@@ -273,6 +296,19 @@ export function useConfigDocument({
           : err instanceof Error
             ? err.message
             : '';
+      if (
+        writeAttempted &&
+        previewMode === 'visual' &&
+        isUnsupportedQuotaUsageLimitSave(err, previewPlan)
+      ) {
+        // Nothing was written: keep the draft and baseline as they are.
+        setDiffModalOpen(false);
+        showNotification(
+          t('config_management.visual.sections.network.quota_usage_limit_unsupported'),
+          'error'
+        );
+        return;
+      }
       if (writeAttempted && previewMode === 'visual') {
         // v8 field mutations are not a transaction. Never roll back with a full document.
         // Re-read immediately so changing an already-applied value back remains a dirty edit.

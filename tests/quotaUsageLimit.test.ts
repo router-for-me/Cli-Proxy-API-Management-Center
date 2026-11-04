@@ -5,6 +5,10 @@ import { I18nextProvider } from 'react-i18next';
 import { parseDocument } from 'yaml';
 import i18n from '@/i18n';
 import { SectionNetwork } from '@/features/config/components/sections/SectionNetwork';
+import { isUnsupportedQuotaUsageLimitSave } from '@/features/config/hooks/useConfigDocument';
+import { parseApiErrorResponse } from '@/services/api/apiError';
+import { buildConfigPatch } from '@/services/api/configPatch';
+import type { ApiError } from '@/types/api';
 import { isQuotaUsageLimit } from '@/hooks/useVisualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 import { runVisualConfig } from './helpers/visualConfig';
@@ -91,13 +95,50 @@ describe('quota usage-limit switch (routing.cooldown.quota-response-mode)', () =
     }
   });
 
+  test('a core without the setting: its save refusal is recognised, other failures are not', () => {
+    // An error built the way apiClient builds one from a Management API response.
+    const apiError = (status: number, body: Record<string, unknown>): ApiError => {
+      const parsed = parseApiErrorResponse(body, `Request failed with status code ${status}`);
+      return Object.assign(new Error(parsed.message), { status, apiCode: parsed.apiCode });
+    };
+    // The response of a core without routing.cooldown.quota-response-mode to this save.
+    const refusal = apiError(400, {
+      error: 'invalid_config',
+      message:
+        'yaml: unmarshal errors:\n  line 2: field cooldown not found in type config.RoutingConfig',
+    });
+    const yaml = 'routing:\n  cooldown:\n    disable-cooling: false\n';
+    const on = buildConfigPatch(
+      yaml,
+      runVisualConfig(yaml, [{ quotaUsageLimit: true }]).applyVisualChangesToYaml(yaml)
+    );
+    expect(isUnsupportedQuotaUsageLimitSave(refusal, on)).toBe(true);
+
+    const other = buildConfigPatch(
+      yaml,
+      runVisualConfig(yaml, [{ disableCooling: true }]).applyVisualChangesToYaml(yaml)
+    );
+    expect(isUnsupportedQuotaUsageLimitSave(refusal, other)).toBe(false);
+    expect(isUnsupportedQuotaUsageLimitSave(refusal, null)).toBe(false);
+    const invalidValue = apiError(400, { error: 'invalid_config', message: 'invalid port' });
+    expect(isUnsupportedQuotaUsageLimitSave(invalidValue, on)).toBe(false);
+    expect(isUnsupportedQuotaUsageLimitSave(apiError(500, { error: 'write_failed' }), on)).toBe(
+      false
+    );
+    expect(isUnsupportedQuotaUsageLimitSave(new Error('Network Error'), on)).toBe(false);
+  });
+
   test('every locale has a label and a one-line description', async () => {
     for (const locale of LOCALES) {
       const messages = (await Bun.file(`src/i18n/locales/${locale}.json`).json()) as {
         config_management: { visual: { sections: { network: Record<string, unknown> } } };
       };
       const network = messages.config_management.visual.sections.network;
-      for (const key of ['quota_usage_limit', 'quota_usage_limit_desc']) {
+      for (const key of [
+        'quota_usage_limit',
+        'quota_usage_limit_desc',
+        'quota_usage_limit_unsupported',
+      ]) {
         expect(typeof network[key]).toBe('string');
         expect(String(network[key]).trim()).not.toBe('');
         expect(String(network[key])).not.toContain('\n');

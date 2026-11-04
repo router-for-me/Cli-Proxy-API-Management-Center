@@ -1481,6 +1481,7 @@
           "disable_cooling_desc": "全域停用驗證/模型失敗後的冷卻視窗",
           "quota_usage_limit": "配額耗盡時回報用量上限",
           "quota_usage_limit_desc": "所有憑證配額耗盡時，告知用戶端重置時間，讓其暫停並在重置後繼續，而非反覆重試。",
+          "quota_usage_limit_unsupported": "未儲存：此核心不支援「配額耗盡時回報用量上限」。未做任何變更。關閉此開關後即可儲存其他變更。",
           "session_affinity": "工作階段親和性路由",
           "ws_auth": "WebSocket 驗證",
           "ws_auth_desc": "啟用 AI Studio WebSocket 連線驗證（oauth.providers.aistudio.ws-auth）"
