@@ -252,6 +252,10 @@ describe('routing hints', () => {
     expect(pair(26, 27)).toEqual(['exempt', 'limited']);
     expect(pair(26, 27.1)).toEqual(['exempt']);
     expect(pair(35, 12)).toEqual(['limited']);
+    // Under an hour from the reset the limited deadline lies in the past: still eligible, still first.
+    expect(pair(20 / 60, 30 / 60)).toEqual(['limited']);
+    expect(pair(50 / 60, 10 / 60)).toEqual(['limited']);
+    expect(pair(2, 0.5)).toEqual(['limited']);
   });
 
   test('tone remaining percentages', () => {
