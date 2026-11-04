@@ -378,15 +378,17 @@ function allocateByDeadline(
   };
   let left = rate;
   let queue = accounts.filter((account) => account.nextReset !== null);
+  const capOf = (account: SimAccount) =>
+    account.sessionLimited && account.sessionShare
+      ? (account.sessionShare / SESSION_WINDOW_HOURS) * account.weight
+      : Infinity;
   while (left > EPSILON && queue.length > 0) {
     const first = firstInLine(queue, deadlineOf, (account) => account.sessionLimited);
-    const each = left / first.length;
-    first.forEach((account) => {
-      const cap =
-        account.sessionLimited && account.sessionShare
-          ? (account.sessionShare / SESSION_WINDOW_HOURS) * account.weight
-          : Infinity;
-      const give = Math.min(each, cap);
+    // Tied accounts split evenly; what a capped one cannot take goes to the others in the
+    // tie before any later deadline (smallest cap first, so each sees what is left).
+    const byCap = [...first].sort((a, b) => capOf(a) - capOf(b));
+    byCap.forEach((account, index) => {
+      const give = Math.min(capOf(account), left / (byCap.length - index));
       ownRate.set(account, give / account.weight);
       left -= give;
     });

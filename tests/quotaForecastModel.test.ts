@@ -244,6 +244,24 @@ describe('projection', () => {
       expect(at(projection, 'exempt', 2)).toBeCloseTo(88);
     });
 
+    test('gives what a capped account in a tie cannot take to the others in the tie', () => {
+      // Same deadline; 5-hour caps of 1 and 10 points an hour against 10 points of traffic.
+      const projection = projectPool(
+        [
+          { key: 'small', weight: 1, ...sim(30, 5, 1), sessionLimited: true, sessionShare: 5 },
+          { key: 'large', weight: 1, ...sim(30, 50, 1), sessionLimited: true, sessionShare: 50 },
+          { key: 'later', weight: 1, ...sim(90, 100, 1) },
+        ],
+        10,
+        T0,
+        T0 + H,
+        true
+      );
+      expect(at(projection, 'small', 1)).toBeCloseTo(4);
+      expect(at(projection, 'large', 1)).toBeCloseTo(41);
+      expect(at(projection, 'later', 1)).toBeCloseTo(100);
+    });
+
     test('starts a session-limited account early only under heavy traffic', () => {
       const run = (rate: number) =>
         projectPool(
