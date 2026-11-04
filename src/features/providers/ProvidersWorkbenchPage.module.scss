@@ -27,6 +27,13 @@
   }
 }
 
+.quickStartStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .modelCatalogSlot {
   margin-top: 4px;
 }

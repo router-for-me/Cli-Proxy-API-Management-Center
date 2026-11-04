@@ -16,7 +16,7 @@ describe('visual config Antigravity sensitive words', () => {
 
       if (!loaded) {
         visualConfig.loadVisualValuesFromYaml(
-          'antigravity:\n  sensitive-words:\n    - Hermes\n    - Nous Research\n'
+          'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - Hermes\n        - Nous Research\n'
         );
         setLoaded(true);
         return null;
@@ -40,7 +40,7 @@ describe('visual config Antigravity sensitive words', () => {
 
       if (phase === 0) {
         visualConfig.loadVisualValuesFromYaml(
-          'antigravity:\n  sensitive-words:\n    - old-word\n  future-option: true\n'
+          'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - old-word\n      future-option: true\n'
         );
         setPhase(1);
       } else if (phase === 1) {
@@ -53,7 +53,7 @@ describe('visual config Antigravity sensitive words', () => {
           'pre',
           null,
           visualConfig.applyVisualChangesToYaml(
-            'antigravity:\n  sensitive-words:\n    - old-word\n  future-option: true\n'
+            'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - old-word\n      future-option: true\n'
           )
         );
       }
@@ -63,9 +63,13 @@ describe('visual config Antigravity sensitive words', () => {
 
     const markup = renderToStaticMarkup(createElement(Harness));
     expect(parseYaml(unwrapPre(markup))).toEqual({
-      antigravity: {
-        'sensitive-words': ['Hermes', 'Nous Research'],
-        'future-option': true,
+      oauth: {
+        providers: {
+          antigravity: {
+            'sensitive-words': ['Hermes', 'Nous Research'],
+            'future-option': true,
+          },
+        },
       },
     });
   });
@@ -77,7 +81,7 @@ describe('visual config Antigravity sensitive words', () => {
 
       if (phase === 0) {
         visualConfig.loadVisualValuesFromYaml(
-          'debug: true\nantigravity:\n  sensitive-words:\n    - proxy\n'
+          'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - proxy\nobservability:\n  logs:\n    debug: true\n'
         );
         setPhase(1);
       } else if (phase === 1) {
@@ -88,7 +92,7 @@ describe('visual config Antigravity sensitive words', () => {
           'pre',
           null,
           visualConfig.applyVisualChangesToYaml(
-            'debug: true\nantigravity:\n  sensitive-words:\n    - proxy\n'
+            'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - proxy\nobservability:\n  logs:\n    debug: true\n'
           )
         );
       }
@@ -97,6 +101,6 @@ describe('visual config Antigravity sensitive words', () => {
     }
 
     const markup = renderToStaticMarkup(createElement(Harness));
-    expect(parseYaml(unwrapPre(markup))).toEqual({ debug: true });
+    expect(parseYaml(unwrapPre(markup))).toEqual({ observability: { logs: { debug: true } } });
   });
 });

@@ -67,6 +67,15 @@ describe('auth-files response normalization', () => {
     expect(result.files[0]?.project_id).toBe(' my-proj ');
   });
 
+  test('normalizes generic plugin quota capability fields', () => {
+    const result = normalizeAuthFilesResponse(
+      responseWithRawFiles([{ name: 'kiro-a.json', supports_quota: true, quota_provider: 'kiro' }])
+    );
+
+    expect(result.files[0]?.supportsQuota).toBe(true);
+    expect(result.files[0]?.quotaProvider).toBe('kiro');
+  });
+
   test('recovers a non-empty email from the lower-priority duplicate entry', () => {
     const result = normalizeAuthFilesResponse(
       responseWithRawFiles([

@@ -7,10 +7,12 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type AriaAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { IconChevronDown } from './icons';
 import styles from './Select.module.scss';
+import { resolveDropdownStyle } from './selectPosition';
 
 export interface SelectOption {
   value: string;
@@ -23,58 +25,18 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  /** 作用于挂到 body 的下拉层。 */
+  dropdownClassName?: string;
+  dropdownMinWidth?: number;
   disabled?: boolean;
   ariaLabel?: string;
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
+  ariaInvalid?: AriaAttributes['aria-invalid'];
   fullWidth?: boolean;
   size?: 'sm' | 'md';
   id?: string;
 }
-
-const VIEWPORT_MARGIN = 8;
-const DROPDOWN_OFFSET = 6;
-const DROPDOWN_MAX_HEIGHT = 240;
-const DROPDOWN_Z_INDEX = 2010;
-
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-
-const resolveDropdownStyle = (element: HTMLElement): CSSProperties => {
-  const rect = element.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const width = Math.min(rect.width, Math.max(0, viewportWidth - VIEWPORT_MARGIN * 2));
-  const left = clamp(
-    rect.left,
-    VIEWPORT_MARGIN,
-    Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN)
-  );
-  const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_MARGIN - DROPDOWN_OFFSET;
-  const spaceAbove = rect.top - VIEWPORT_MARGIN - DROPDOWN_OFFSET;
-  const direction = spaceBelow >= DROPDOWN_MAX_HEIGHT || spaceBelow >= spaceAbove ? 'down' : 'up';
-  const maxHeight = Math.max(
-    0,
-    Math.min(DROPDOWN_MAX_HEIGHT, direction === 'down' ? spaceBelow : spaceAbove)
-  );
-
-  return direction === 'down'
-    ? {
-        position: 'fixed',
-        top: rect.bottom + DROPDOWN_OFFSET,
-        left,
-        width,
-        maxHeight,
-        zIndex: DROPDOWN_Z_INDEX,
-      }
-    : {
-        position: 'fixed',
-        bottom: viewportHeight - rect.top + DROPDOWN_OFFSET,
-        left,
-        width,
-        maxHeight,
-        zIndex: DROPDOWN_Z_INDEX,
-      };
-};
 
 export function Select({
   value,
@@ -82,10 +44,13 @@ export function Select({
   onChange,
   placeholder,
   className,
+  dropdownClassName,
+  dropdownMinWidth,
   disabled = false,
   ariaLabel,
   ariaLabelledBy,
   ariaDescribedBy,
+  ariaInvalid,
   fullWidth = true,
   size = 'md',
   id,
@@ -96,6 +61,7 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties | null>(null);
@@ -114,8 +80,15 @@ export function Select({
 
   const updateDropdownStyle = useCallback(() => {
     if (!wrapRef.current) return;
-    setDropdownStyle(resolveDropdownStyle(wrapRef.current));
-  }, []);
+    setDropdownStyle(
+      resolveDropdownStyle(
+        wrapRef.current.getBoundingClientRect(),
+        window.innerWidth,
+        window.innerHeight,
+        dropdownMinWidth
+      )
+    );
+  }, [dropdownMinWidth]);
 
   const scheduleDropdownStyleUpdate = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -191,6 +164,7 @@ export function Select({
       onChange(nextOption.value);
       setOpen(false);
       setHighlightedIndex(nextIndex);
+      triggerRef.current?.focus({ preventScroll: true });
     },
     [onChange, options]
   );
@@ -250,7 +224,9 @@ export function Select({
         case 'Escape':
           if (!isOpen) return;
           event.preventDefault();
+          event.stopPropagation();
           setOpen(false);
+          triggerRef.current?.focus({ preventScroll: true });
           return;
         case 'Tab':
           if (isOpen) setOpen(false);
@@ -274,7 +250,7 @@ export function Select({
     isOpen && dropdownStyle ? (
       <div
         ref={dropdownRef}
-        className={styles.dropdown}
+        className={`${styles.dropdown} ${dropdownClassName ?? ''}`.trim()}
         id={listboxId}
         role="listbox"
         aria-label={ariaLabel}
@@ -310,6 +286,7 @@ export function Select({
       >
         <button
           id={selectId}
+          ref={triggerRef}
           type="button"
           className={`${styles.trigger} ${size === 'sm' ? styles.triggerSm : ''}`.trim()}
           onClick={disabled ? undefined : () => setOpen((prev) => !prev)}
@@ -325,6 +302,7 @@ export function Select({
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
           aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
           disabled={disabled}
         >
           <span className={`${styles.triggerText} ${isPlaceholder ? styles.placeholder : ''}`}>

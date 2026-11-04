@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { createLogRequestGuard, createLogRequestQueue } from '../src/pages/hooks/logRequests';
+import {
+  createLogRequestGuard,
+  createLogRequestQueue,
+} from '../src/features/logs/model/logRequests';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -124,6 +127,24 @@ describe('log request ownership', () => {
     expect(queue.finish(fresh)).toBe(false);
   });
 
+  test('A→B→A identity changes cannot revive old reads or confirmations', async () => {
+    const { queue, state, read } = createReader();
+    const session = createLogRequestGuard();
+    const confirmation = session.capture();
+    const old = deferred<{ lines: string[]; cursor: string }>();
+    const pending = read(old.promise);
+    for (let transition = 0; transition < 2; transition++) {
+      queue.invalidate();
+      session.invalidate();
+    }
+    await read(Promise.resolve({ lines: ['new A'], cursor: 'new-A' }));
+    old.resolve({ lines: ['old A'], cursor: 'old-A' });
+    await pending;
+    expect(state.lines).toEqual(['new A']);
+    expect(state.cursor).toBe('new-A');
+    expect(session.isCurrent(confirmation)).toBe(false);
+  });
+
   test('completed requests remain in their generation until invalidation', () => {
     const queue = createLogRequestQueue();
     const request = queue.startRead(true)!;
@@ -147,20 +168,26 @@ describe('log request ownership', () => {
   });
 });
 
-describe('logs page lifecycle wiring', () => {
-  const source = readFileSync(new URL('../src/pages/LogsPage.tsx', import.meta.url), 'utf8');
+describe('logs controller lifecycle wiring', () => {
+  const page = readFileSync(new URL('../src/features/logs/LogsPage.tsx', import.meta.url), 'utf8');
+  const source = readFileSync(
+    new URL('../src/features/logs/hooks/useLogStream.ts', import.meta.url),
+    'utf8'
+  );
 
   test('invalidates synchronously on connection identity/config changes and unmount', () => {
-    expect(source).toContain('useAuthStore.subscribe');
-    expect(source).toContain('next.apiBase === previous.apiBase');
-    expect(source).toContain('next.managementKey === previous.managementKey');
-    expect(source).toContain('next.connectionStatus === previous.connectionStatus');
-    expect(source).toContain('next.isAuthenticated === previous.isAuthenticated');
+    for (const owner of [page, source]) {
+      expect(owner).toContain('useAuthStore.subscribe');
+      expect(owner).toContain('next.apiBase === previous.apiBase');
+      expect(owner).toContain('next.managementKey === previous.managementKey');
+      expect(owner).toContain('next.connectionStatus === previous.connectionStatus');
+      expect(owner).toContain('next.isAuthenticated === previous.isAuthenticated');
+      expect(owner).toContain(
+        'unsubscribeAuth();\n      unsubscribeConfig();\n      invalidateSession();'
+      );
+    }
     expect(source).toContain('next.config?.loggingToFile !== previous.config?.loggingToFile');
-    expect(source).toContain('next.config?.requestLog !== previous.config?.requestLog');
-    expect(source).toContain(
-      'unsubscribeAuth();\n      unsubscribeConfig();\n      invalidateSession();'
-    );
+    expect(page).toContain('next.config?.requestLog !== previous.config?.requestLog');
   });
 
   test('queued reloads read current stores and delayed confirmations check their session', () => {
@@ -168,15 +195,32 @@ describe('logs page lifecycle wiring', () => {
     expect(source).toContain('!useConfigStore.getState().config?.loggingToFile');
     expect(source).toContain('if (!requests.session.isCurrent(session)) return;');
     expect(source).toContain('requests.logs.startClear()');
+    expect(source).toContain('requests.logs.finish(request, clearFailed)');
   });
 
-  test('preserves bounded buffering, cursor reset, overlap merging and scroll integration', () => {
-    expect(source).toContain('const MAX_BUFFER_LINES = 10000;');
-    expect(source).toContain('const INITIAL_DISPLAY_LINES = 100;');
-    expect(source).toContain('incremental && data.cursorReset');
-    expect(source).toContain('mergeIncrementalLines(prev.buffer, newLines)');
-    expect(source).toContain('useLogScroller({');
-    // Ownership is checked before enqueueing, not inside a replayable React state updater.
-    expect(source).not.toContain('if (!requests.logs.isCurrent(request)) return prev;');
+  test('delegates buffer semantics to the model after ownership checks and preserves scrolling', () => {
+    expect(page).toContain('useLogStream({');
+    expect(page).toContain('useLogScroller({');
+    expect(page).not.toContain('logsApi.fetchLogs(');
+    expect(source).toContain('const cursor = logBufferRef.current.cursor;');
+    expect(source).toContain('logsApi.fetchLogs(buildLogsQuery(cursor))');
+    const checked = source.indexOf('if (!requests.logs.isCurrent(request)) return;');
+    const applied = source.indexOf('applyLogPage(logBufferRef.current, data, cursor)');
+    expect(checked).toBeGreaterThan(0);
+    expect(applied).toBeGreaterThan(checked);
+    expect(source).toContain('logBufferRef.current = next;');
+    expect(source).toContain('if (data.cursorReset)');
+    expect(source).toContain('setVisibleCount(INITIAL_DISPLAY_LINES)');
+    expect(source).toContain('if (stickToBottom) onFollow();');
+    expect(source).not.toContain('mergeIncrementalLines');
+  });
+
+  test('bounds catch-up work and backs off polling while hidden or paused', () => {
+    expect(source).toContain('page < 3');
+    expect(source).toContain('shouldCatchUp(data, cursor)');
+    expect(source).toContain('incremental && !autoRefreshRef.current');
+    expect(source).toContain("document.visibilityState === 'hidden'");
+    expect(source).toContain('Date.now() < nextReadAtRef.current');
+    expect(source).toContain('Math.min(retryDelayRef.current * 2, 60000)');
   });
 });

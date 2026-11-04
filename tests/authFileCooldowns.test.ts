@@ -1,9 +1,10 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '../src/i18n/index';
-import { normalizeAuthFilesResponse } from '../src/services/api/authFiles';
+import { authFilesApi, normalizeAuthFilesResponse } from '../src/services/api/authFiles';
 import { normalizeAuthFileCooldowns } from '../src/services/api/authFileCooldowns';
+import { apiClient } from '../src/services/api/client';
 import {
   cooldownReasonKey,
   cooldownRemainingSeconds,
@@ -26,14 +27,36 @@ const modelRecord = {
 const normalize = (value: unknown) => normalizeAuthFileCooldowns(value, observedAt, receivedAtMs);
 const snapshot = normalize([modelRecord])!;
 const record = snapshot.records![0];
-const render = (value?: AuthFileCooldownSnapshot) =>
-  renderToStaticMarkup(createElement(AuthFileCooldownSection, { snapshot: value }));
+const render = (
+  value?: AuthFileCooldownSnapshot,
+  options: { resetting?: boolean; resetDisabled?: boolean; onReset?: () => void } = {}
+) => renderToStaticMarkup(createElement(AuthFileCooldownSection, { snapshot: value, ...options }));
 
 function response(files: Record<string, unknown>[]): AuthFilesResponse {
   return { observed_at: observedAt, files } as unknown as AuthFilesResponse;
 }
 
 describe('cooldown API normalization', () => {
+  test('posts the auth index as a raw v8 operation payload', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({
+      status: 'ok',
+      auth_index: 'auth-index-1',
+      models: ['model-a'],
+    });
+    try {
+      expect(await authFilesApi.resetCooldown('auth-index-1')).toEqual({
+        status: 'ok',
+        auth_index: 'auth-index-1',
+        models: ['model-a'],
+      });
+      expect(post).toHaveBeenCalledWith('/routing/cooldown/reset', {
+        auth_index: 'auth-index-1',
+      });
+    } finally {
+      post.mockRestore();
+    }
+  });
+
   test('distinguishes old servers, unknown state, and known empty state', () => {
     expect(normalize(undefined)).toBeUndefined();
     expect(normalize(null)?.records).toBeNull();
@@ -197,6 +220,19 @@ describe('cooldown section rendering', () => {
     expect(markup).toContain(i18n.t('auth_files.cooldown_note'));
   });
 
+  test('keeps the reset action contextual and exposes pending state', () => {
+    expect(render(snapshot)).not.toContain(i18n.t('auth_files.cooldown_reset_button'));
+
+    const available = render(snapshot, { onReset: () => {} });
+    expect(available).toContain(i18n.t('auth_files.cooldown_reset_button'));
+    expect(available).toContain(i18n.t('auth_files.cooldown_reset_hint'));
+    expect(available).not.toContain('disabled=""');
+
+    const pending = render(snapshot, { onReset: () => {}, resetting: true });
+    expect(pending).toContain('disabled=""');
+    expect(pending).toContain('loading-spinner');
+  });
+
   test('shows elapsed / refresh confirmation and safely escapes model keys', () => {
     const expired = { ...snapshot, receivedAtMs: receivedAtMs - 100_000 };
     expect(render(expired)).toContain(i18n.t('auth_files.cooldown_elapsed'));
@@ -227,6 +263,7 @@ describe('cooldown section rendering', () => {
             time: '32s',
             status: 429,
             level: 6,
+            message: 'sample error',
           });
           expect(result).not.toContain('auth_files.');
           expect(result).not.toContain('{{');

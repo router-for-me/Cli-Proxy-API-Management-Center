@@ -6,12 +6,11 @@
 import type { GeminiKeyConfig, ProviderKeyConfig, OpenAIProviderConfig } from './provider';
 
 export interface QuotaExceededConfig {
-  switchProject?: boolean;
-  switchPreviewModel?: boolean;
   antigravityCredits?: boolean;
 }
 
 export interface Config {
+  providerGroups?: Record<string, unknown>;
   debug?: boolean;
   proxyUrl?: string;
   requestRetry?: number;

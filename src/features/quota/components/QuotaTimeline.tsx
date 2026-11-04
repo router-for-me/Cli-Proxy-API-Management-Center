@@ -24,8 +24,9 @@ import {
   laneHasWindow,
   projectLane,
   projectResetCredits,
+  timelineCells,
   timelineSpan,
-  DAY_MS,
+  HOUR_MS,
 } from '../quotaTimelineModel';
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
@@ -130,16 +131,14 @@ export function QuotaTimeline({
   /** Weekly: one cell per day. Session: one per 6 hours. */
   const cells = useMemo(() => {
     const zoomed = mode === 'session';
-    const count = zoomed ? span.days * 4 : span.days;
-    const cellMs = (span.endMs - span.startMs) / count;
     const todayStart = new Date(now).setHours(0, 0, 0, 0);
 
-    return Array.from({ length: count }, (_, index) => {
-      const at = span.startMs + index * cellMs;
+    return timelineCells(mode, span).map(({ at, durationMs }, index) => {
       const date = new Date(at);
-      const isDayStart = !zoomed || date.getHours() === 0;
+      const isDayStart = !zoomed || index % 4 === 0;
       return {
         at,
+        durationMs,
         isDayStart,
         isToday: new Date(at).setHours(0, 0, 0, 0) === todayStart,
         isWeekend: date.getDay() === 0 || date.getDay() === 6,
@@ -167,7 +166,7 @@ export function QuotaTimeline({
             {t('quota_management.windows_title', { defaultValue: 'Quota windows' })}
           </h2>
           <p className={styles.range}>
-            {formatDay(span.startMs)} – {formatDay(span.endMs - DAY_MS)}
+            {formatDay(span.startMs)} – {formatDay(span.endMs - 1)}
             {' · '}
             {mode === 'weekly'
               ? t('quota_management.windows_span_weekly', { defaultValue: 'two weeks' })
@@ -224,7 +223,16 @@ export function QuotaTimeline({
         </div>
       </header>
 
-      <div className={styles.chart}>
+      <div
+        className={styles.chart}
+        style={
+          {
+            '--timeline-columns': cells
+              .map((cell) => `minmax(0, ${cell.durationMs / HOUR_MS}fr)`)
+              .join(' '),
+          } as CSSProperties
+        }
+      >
         {lanes.length === 0 ? (
           <div className={styles.empty} role="status">
             {t('quota_management.windows_empty_session', {
@@ -357,8 +365,7 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
         <div className={styles.laneLimits}>
           {lane.limits.map((limit) => (
             <span key={limit.label} className={styles.laneLimit}>
-              {lane.provider === 'meta' ? t(limit.label) : limit.label}{' '}
-              <b>{limit.remaining}%</b>
+              {lane.provider === 'meta' ? t(limit.label) : limit.label} <b>{limit.remaining}%</b>
             </span>
           ))}
         </div>
@@ -408,10 +415,10 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
               >
                 {/* Only the API-reported current window has meaningful usage;
                     projected windows intentionally have no fill. */}
-                {window.remaining !== null && (
+                {window.usedFillPercent !== null && window.usedFillPercent > 0 && (
                   <span
                     className={styles.windowFill}
-                    style={{ width: `${100 - window.remaining}%` }}
+                    style={{ width: `${window.usedFillPercent}%` }}
                   />
                 )}
                 {showLabel && (

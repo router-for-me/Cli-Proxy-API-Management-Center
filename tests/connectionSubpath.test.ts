@@ -25,7 +25,7 @@ describe('reverse-proxy panel path detection', () => {
   });
 
   test('keeps normalized management paths stable', () => {
-    expect(normalizeApiBase('https://example.test/proxy/v0/management/')).toBe(
+    expect(normalizeApiBase('https://example.test/proxy/v8/management/')).toBe(
       'https://example.test/proxy'
     );
   });

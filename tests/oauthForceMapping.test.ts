@@ -7,12 +7,10 @@ import {
 describe('OAuth model alias force mapping', () => {
   test('normalizes and serializes force-mapping without dropping it', () => {
     const normalized = normalizeOauthModelAlias({
-      'oauth-model-alias': {
-        codex: [
-          { name: 'gpt-source', alias: 'gpt-alias', 'force-mapping': true },
-          { name: 'gpt-source-2', alias: 'gpt-alias-2', forceMapping: false },
-        ],
-      },
+      codex: [
+        { name: 'gpt-source', alias: 'gpt-alias', 'force-mapping': true },
+        { name: 'gpt-source-2', alias: 'gpt-alias-2', forceMapping: false },
+      ],
     });
 
     expect(normalized.codex).toEqual([

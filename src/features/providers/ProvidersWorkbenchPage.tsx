@@ -16,6 +16,7 @@ import { ProviderHeaderCard } from './components/ProviderHeaderCard';
 import { ProviderCategoryList } from './components/ProviderCategoryList';
 import { ProviderResourcePanel } from './components/ProviderResourcePanel';
 import type { ProviderPanelControls } from './components/ProviderResourcePanel';
+import { SponsorCampaignCard } from './components/SponsorCampaignCard';
 import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
 import { APIKEY_FUN_DISPLAY_NAME } from './sponsor';
@@ -271,8 +272,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     [groups]
   );
   const quickStartResource = useMemo(
-    () =>
-      fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null,
+    () => (fixedBrand === 'apikeyFun' && activeGroup ? (activeGroup.resources[0] ?? null) : null),
     [activeGroup, fixedBrand]
   );
 
@@ -448,11 +448,14 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
           />
         ) : null}
         {fixedBrand === 'apikeyFun' ? (
-          <SponsorQuickStartPanel
-            resource={quickStartResource}
-            workbench={workbench}
-            mutationDisabled={disableMutations}
-          />
+          <div className={styles.quickStartStack}>
+            <SponsorCampaignCard />
+            <SponsorQuickStartPanel
+              resource={quickStartResource}
+              workbench={workbench}
+              mutationDisabled={disableMutations}
+            />
+          </div>
         ) : (
           <ProviderResourcePanel
             group={activeGroup}

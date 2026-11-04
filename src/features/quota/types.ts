@@ -7,6 +7,8 @@
  * 初始化时抛错并列出缺失清单，替代旧字符串 styleMap 的静默 class="undefined"。
  */
 
+import type { ReactNode } from 'react';
+
 export interface QuotaClassMap {
   // 额度行（五个提供商共用）
   quotaRow: string;
@@ -21,7 +23,7 @@ export interface QuotaClassMap {
   quotaMessage: string;
   quotaWarningMessage: string;
   // 套餐 chip 行（codex 命名，claude/antigravity/kimi/xai 复用；
-  // premium=金卡、elite=Pro 20x 液态铂金 —— 均为定稿资产，样式不可改）
+  // premium=金卡、elite=和田玉金镶玉 —— 均为定稿资产，样式不可改；档位判定见 cardTier.ts）
   codexPlan: string;
   codexPlanItem: string;
   codexPlanLabel: string;
@@ -101,4 +103,8 @@ export function bindQuotaClasses(module: Record<string, string>, source: string)
 export interface QuotaBodyProps<TState> {
   quota: TState;
   classes: QuotaClassMap;
+  /** Host-owned chips appended to the provider's plan row (`codexPlanItem` spans). */
+  planItems?: ReactNode;
+  /** Host-owned content placed right after the plan row, before usage rows. */
+  afterPlan?: ReactNode;
 }

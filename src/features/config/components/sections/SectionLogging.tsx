@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { Input } from '@/components/ui/Input';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
 import { SectionCard } from '../SectionCard';
-import { FieldAnchor, FieldGrid, FieldStack, ToggleRow } from '../fields/FieldPrimitives';
+import { SettingList, TextSetting, ToggleSetting } from '../fields/FieldPrimitives';
 import { DebugToggle, LoggingToFileToggle } from '../fields/sharedFields';
 import { getValidationMessage } from '../blocks/shared';
 
@@ -18,12 +17,7 @@ export function SectionLogging({
   onChange,
 }: ConfigSectionProps) {
   const { t } = useTranslation();
-  const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
-  const errorLogsMaxFilesError = getValidationMessage(t, validationErrors?.errorLogsMaxFiles);
-  const redisUsageQueueRetentionError = getValidationMessage(
-    t,
-    validationErrors?.redisUsageQueueRetentionSeconds
-  );
+  const fieldProps = { values, disabled, onChange };
 
   return (
     <SectionCard
@@ -33,74 +27,70 @@ export function SectionLogging({
       description={t('config_management.visual.sections.logging.description')}
       animateIn={animateIn}
     >
-      <FieldStack>
-        <FieldGrid>
-          <DebugToggle values={values} disabled={disabled} onChange={onChange} />
-          <FieldAnchor fieldId="commercialMode">
-            <ToggleRow
-              title={t('config_management.visual.sections.system.commercial_mode')}
-              description={t('config_management.visual.sections.system.commercial_mode_desc')}
-              checked={values.commercialMode}
-              disabled={disabled}
-              onChange={(commercialMode) => onChange({ commercialMode })}
-            />
-          </FieldAnchor>
-          <LoggingToFileToggle values={values} disabled={disabled} onChange={onChange} />
-        </FieldGrid>
+      <SettingList>
+        <DebugToggle {...fieldProps} />
+        <ToggleSetting
+          fieldId="commercialMode"
+          label={t('config_management.visual.sections.system.commercial_mode')}
+          description={t('config_management.visual.sections.system.commercial_mode_desc')}
+          checked={values.commercialMode}
+          disabled={disabled}
+          onChange={(commercialMode) => onChange({ commercialMode })}
+        />
+        <LoggingToFileToggle {...fieldProps} />
+      </SettingList>
 
-        <FieldGrid>
-          <FieldAnchor fieldId="logsMaxTotalSizeMb">
-            <Input
-              label={t('config_management.visual.sections.system.logs_max_size')}
-              type="number"
-              placeholder="0"
-              value={values.logsMaxTotalSizeMb}
-              onChange={(e) => onChange({ logsMaxTotalSizeMb: e.target.value })}
-              disabled={disabled}
-              error={logsMaxSizeError}
-            />
-          </FieldAnchor>
-          <FieldAnchor fieldId="errorLogsMaxFiles">
-            <Input
-              label={t('config_management.visual.sections.system.error_logs_max_files')}
-              type="number"
-              placeholder="10"
-              value={values.errorLogsMaxFiles}
-              onChange={(e) => onChange({ errorLogsMaxFiles: e.target.value })}
-              disabled={disabled}
-              error={errorLogsMaxFilesError}
-            />
-          </FieldAnchor>
-          <FieldAnchor fieldId="redisUsageQueueRetentionSeconds">
-            <Input
-              label={t('config_management.visual.sections.system.redis_usage_retention')}
-              type="number"
-              min={1}
-              max={3600}
-              placeholder="60"
-              value={values.redisUsageQueueRetentionSeconds}
-              onChange={(e) => onChange({ redisUsageQueueRetentionSeconds: e.target.value })}
-              disabled={disabled}
-              hint={t('config_management.visual.sections.system.redis_usage_retention_hint')}
-              error={redisUsageQueueRetentionError}
-            />
-          </FieldAnchor>
-        </FieldGrid>
+      <SettingList>
+        <TextSetting
+          fieldId="logsMaxTotalSizeMb"
+          size="sm"
+          label={t('config_management.visual.sections.system.logs_max_size')}
+          type="number"
+          placeholder="0"
+          value={values.logsMaxTotalSizeMb}
+          onChange={(logsMaxTotalSizeMb) => onChange({ logsMaxTotalSizeMb })}
+          disabled={disabled}
+          error={getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb)}
+        />
+        <TextSetting
+          fieldId="errorLogsMaxFiles"
+          size="sm"
+          label={t('config_management.visual.sections.system.error_logs_max_files')}
+          type="number"
+          placeholder="10"
+          value={values.errorLogsMaxFiles}
+          onChange={(errorLogsMaxFiles) => onChange({ errorLogsMaxFiles })}
+          disabled={disabled}
+          error={getValidationMessage(t, validationErrors?.errorLogsMaxFiles)}
+        />
+        <TextSetting
+          fieldId="redisUsageQueueRetentionSeconds"
+          size="sm"
+          label={t('config_management.visual.sections.system.redis_usage_retention')}
+          description={t('config_management.visual.sections.system.redis_usage_retention_hint')}
+          type="number"
+          min={1}
+          max={3600}
+          placeholder="60"
+          value={values.redisUsageQueueRetentionSeconds}
+          onChange={(redisUsageQueueRetentionSeconds) =>
+            onChange({ redisUsageQueueRetentionSeconds })
+          }
+          disabled={disabled}
+          error={getValidationMessage(t, validationErrors?.redisUsageQueueRetentionSeconds)}
+        />
+      </SettingList>
 
-        <FieldGrid>
-          <FieldAnchor fieldId="usageStatisticsEnabled">
-            <ToggleRow
-              title={t('config_management.visual.sections.system.usage_statistics_enabled')}
-              description={t(
-                'config_management.visual.sections.system.usage_statistics_enabled_desc'
-              )}
-              checked={values.usageStatisticsEnabled}
-              disabled={disabled}
-              onChange={(usageStatisticsEnabled) => onChange({ usageStatisticsEnabled })}
-            />
-          </FieldAnchor>
-        </FieldGrid>
-      </FieldStack>
+      <SettingList>
+        <ToggleSetting
+          fieldId="usageStatisticsEnabled"
+          label={t('config_management.visual.sections.system.usage_statistics_enabled')}
+          description={t('config_management.visual.sections.system.usage_statistics_enabled_desc')}
+          checked={values.usageStatisticsEnabled}
+          disabled={disabled}
+          onChange={(usageStatisticsEnabled) => onChange({ usageStatisticsEnabled })}
+        />
+      </SettingList>
     </SectionCard>
   );
 }

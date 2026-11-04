@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, type AxiosResponse } from 'axios';
 import { apiClient } from '@/services/api/client';
-import { createOAuthAttempts } from '@/pages/oauthAttempts';
+import { createOAuthAttempts } from '@/features/oauth/oauthAttempts';
 
 // Use the real Axios interceptor chain with a deferred transport response.
 // Abandoned requests must not emit old server metadata or log out a new session.
@@ -22,7 +22,7 @@ describe('OAuth transport cancellation', () => {
       const attempts = createOAuthAttempts({ setTimeout: () => 0, clearTimeout: () => {} });
       const attempt = attempts.begin('devin');
       try {
-        const request = apiClient.get('/get-auth-status', {
+        const request = apiClient.get('/oauth/status', {
           signal: attempt.signal,
           adapter: (config) =>
             new Promise<AxiosResponse>((resolve, reject) => {

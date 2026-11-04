@@ -25,7 +25,7 @@ describe('provider credential weight normalization', () => {
     const provider = normalizeOpenAIProvider({
       name: 'example',
       'base-url': 'https://example.com/v1',
-      'api-key-entries': [{ 'api-key': 'key-a', weight: 3 }, { 'api-key': 'key-b' }],
+      keys: [{ 'api-key': 'key-a', weight: 3 }, { 'api-key': 'key-b' }],
     });
 
     expect(provider?.apiKeyEntries[0]?.weight).toBe(3);
@@ -35,14 +35,15 @@ describe('provider credential weight normalization', () => {
   test('removes a cleared Vertex weight while preserving unknown fields', async () => {
     let written: unknown;
     apiClient.get = (async () => ({
-      'vertex-api-key': [
-        {
-          'api-key': 'vertex-key',
-          'base-url': 'https://vertex.example',
-          weight: 9,
-          'future-field': 'keep',
-        },
-      ],
+      'api-keys': {
+        vertex: [
+          {
+            name: 'vertex-1',
+            'base-url': 'https://vertex.example',
+            keys: [{ 'api-key': 'vertex-key', weight: 9, 'future-field': 'keep' }],
+          },
+        ],
+      },
     })) as typeof apiClient.get;
     apiClient.put = (async (_url: string, data?: unknown) => {
       written = data;
@@ -57,9 +58,9 @@ describe('provider credential weight normalization', () => {
 
     expect(written).toEqual([
       {
-        'api-key': 'vertex-key',
+        name: 'vertex-1',
         'base-url': 'https://vertex.example',
-        'future-field': 'keep',
+        keys: [{ 'api-key': 'vertex-key', 'future-field': 'keep' }],
       },
     ]);
   });
@@ -67,28 +68,30 @@ describe('provider credential weight normalization', () => {
   test('writes and clears nested OpenAI-compatible key weights', async () => {
     let written: unknown;
     apiClient.get = (async () => ({
-      'openai-compatibility': [
-        {
-          name: 'example',
-          'base-url': 'https://example.com/v1',
-          'api-key-entries': [
-            { 'api-key': 'key-a', weight: 8, custom: 'keep-a' },
-            { 'api-key': 'key-b', custom: 'keep-b' },
-          ],
-        },
-      ],
+      'api-keys': {
+        'openai-compatibility': [
+          {
+            name: 'example',
+            'base-url': 'https://example.com/v1',
+            keys: [
+              { 'api-key': 'key-a', weight: 8, custom: 'keep-a' },
+              { 'api-key': 'key-b', custom: 'keep-b' },
+            ],
+          },
+        ],
+      },
     })) as typeof apiClient.get;
     apiClient.put = (async (_url: string, data?: unknown) => {
       written = data;
       return undefined;
     }) as typeof apiClient.put;
 
+    const current = (await providersApi.getOpenAIProviders())[0];
     await providersApi.updateOpenAIProvider('example', 0, {
-      name: 'example',
-      baseUrl: 'https://example.com/v1',
+      ...current,
       apiKeyEntries: [
-        { apiKey: 'key-a', weight: undefined },
-        { apiKey: 'key-b', weight: 4 },
+        { ...current.apiKeyEntries[0], weight: undefined },
+        { ...current.apiKeyEntries[1], weight: 4 },
       ],
     });
 
@@ -96,7 +99,7 @@ describe('provider credential weight normalization', () => {
       {
         name: 'example',
         'base-url': 'https://example.com/v1',
-        'api-key-entries': [
+        keys: [
           { 'api-key': 'key-a', custom: 'keep-a' },
           { 'api-key': 'key-b', custom: 'keep-b', weight: 4 },
         ],

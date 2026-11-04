@@ -14,9 +14,11 @@ describe('visual config Codex identity-confuse', () => {
       if (phase === 0) {
         visualConfig.loadVisualValuesFromYaml(
           [
-            'codex:',
-            '  identity-confuse: true',
-            '  existing-setting: keep-me',
+            'oauth:',
+            '  providers:',
+            '    codex:',
+            '      identity-confuse: true',
+            '      existing-setting: keep-me',
             'unrelated:',
             '  nested: preserved',
             '',
@@ -35,9 +37,11 @@ describe('visual config Codex identity-confuse', () => {
           null,
           visualConfig.applyVisualChangesToYaml(
             [
-              'codex:',
-              '  identity-confuse: true',
-              '  existing-setting: keep-me',
+              'oauth:',
+              '  providers:',
+              '    codex:',
+              '      identity-confuse: true',
+              '      existing-setting: keep-me',
               'unrelated:',
               '  nested: preserved',
               '',
@@ -54,9 +58,13 @@ describe('visual config Codex identity-confuse', () => {
 
     expect(merged).not.toBe('load-failed');
     expect(parseYaml(merged)).toEqual({
-      codex: {
-        'identity-confuse': false,
-        'existing-setting': 'keep-me',
+      oauth: {
+        providers: {
+          codex: {
+            'identity-confuse': false,
+            'existing-setting': 'keep-me',
+          },
+        },
       },
       unrelated: {
         nested: 'preserved',
@@ -70,7 +78,9 @@ describe('visual config Codex identity-confuse', () => {
       const [phase, setPhase] = useState(0);
 
       if (phase === 0) {
-        visualConfig.loadVisualValuesFromYaml('codex:\n  existing-setting: keep-me\n');
+        visualConfig.loadVisualValuesFromYaml(
+          'oauth:\n  providers:\n    codex:\n      existing-setting: keep-me\n'
+        );
         setPhase(1);
       } else if (phase === 1) {
         visualConfig.setVisualValues({ codexIdentityConfuse: true });
@@ -79,7 +89,9 @@ describe('visual config Codex identity-confuse', () => {
         return createElement(
           'pre',
           null,
-          visualConfig.applyVisualChangesToYaml('codex:\n  existing-setting: keep-me\n')
+          visualConfig.applyVisualChangesToYaml(
+            'oauth:\n  providers:\n    codex:\n      existing-setting: keep-me\n'
+          )
         );
       }
 
@@ -90,9 +102,13 @@ describe('visual config Codex identity-confuse', () => {
     const merged = markup.slice('<pre>'.length, -'</pre>'.length);
 
     expect(parseYaml(merged)).toEqual({
-      codex: {
-        'existing-setting': 'keep-me',
-        'identity-confuse': true,
+      oauth: {
+        providers: {
+          codex: {
+            'existing-setting': 'keep-me',
+            'identity-confuse': true,
+          },
+        },
       },
     });
   });
@@ -102,7 +118,7 @@ describe('visual config Codex identity-confuse', () => {
       CONFIG_FIELD_SEARCH_INDEX.find((entry) => entry.fieldId === 'codexIdentityConfuse')
     ).toMatchObject({
       sectionId: 'advanced',
-      yamlKeys: ['codex', 'identity-confuse'],
+      yamlKeys: ['oauth', 'providers', 'codex', 'identity-confuse'],
     });
   });
 });
