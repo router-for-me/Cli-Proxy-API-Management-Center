@@ -40,6 +40,17 @@ export type QuotaCardProps = {
   onReset: () => void;
 };
 
+// The parent keys this state by selected source, without remounting the credential card.
+function QuotaCardIcon({ src, label }: { src?: string; label: string }) {
+  const [failed, setFailed] = useState(false);
+
+  return src && !failed ? (
+    <img src={src} alt="" className={styles.icon} onError={() => setFailed(true)} />
+  ) : (
+    <span className={styles.iconFallback}>{label.slice(0, 1).toUpperCase()}</span>
+  );
+}
+
 export function QuotaCard(props: QuotaCardProps) {
   const {
     entry,
@@ -83,7 +94,6 @@ export function QuotaCard(props: QuotaCardProps) {
   const iconSrc =
     getAuthFileIcon(providerType, resolvedTheme) ||
     (entry.type === 'plugin' ? props.pluginLogo : undefined);
-  const [failedIconSrc, setFailedIconSrc] = useState<string | null>(null);
   const typeLabel = getTypeLabel(t, providerType);
   const errorMessage = resolveQuotaErrorMessage(
     t,
@@ -129,17 +139,7 @@ export function QuotaCard(props: QuotaCardProps) {
               : undefined
           }
         >
-          {iconSrc && iconSrc !== failedIconSrc ? (
-            <img
-              key={iconSrc}
-              src={iconSrc}
-              alt=""
-              className={styles.icon}
-              onError={() => setFailedIconSrc(iconSrc)}
-            />
-          ) : (
-            <span className={styles.iconFallback}>{typeLabel.slice(0, 1).toUpperCase()}</span>
-          )}
+          <QuotaCardIcon key={iconSrc} src={iconSrc} label={typeLabel} />
         </span>
         <span className={styles.fileName} title={displayName}>
           {displayName}

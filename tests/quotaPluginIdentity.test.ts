@@ -133,6 +133,44 @@ describe('quota card icon precedence', () => {
   });
 });
 
+// Source contracts guard React's state ownership/key boundary. SSR above cannot exercise image
+// errors or reconciliation; the real QuotaPage browser fixture verifies both recovery sequences.
+describe('quota card icon lifetime contract', () => {
+  const source = readFileSync(
+    join(import.meta.dir, '../src/features/quota/components/QuotaCard.tsx'),
+    'utf8'
+  );
+  const [iconSource, cardSource] = source.split('export function QuotaCard(');
+
+  test('keys the state-owning icon by selected source, including the absent lifetime', () => {
+    expect(iconSource).toContain('function QuotaCardIcon(');
+    expect(iconSource).toContain('const [failed, setFailed] = useState(false)');
+    expect(cardSource).toContain('<QuotaCardIcon key={iconSrc} src={iconSrc} label={typeLabel} />');
+    // Keep the child present for A -> absent -> A, not just A -> B -> A.
+    expect(cardSource).not.toMatch(/iconSrc\s*&&\s*<QuotaCardIcon/);
+    expect(cardSource).not.toMatch(/useState[^;]*(?:failed|Failed)/);
+    expect(cardSource).not.toContain('failedIconSrc');
+  });
+
+  test('same-source failure is terminal for that icon instance, without an effect or retry', () => {
+    expect(iconSource).toContain('return src && !failed ?');
+    expect(iconSource).toContain('onError={() => setFailed(true)}');
+    expect(iconSource).toContain('<span className={styles.iconFallback}>');
+    expect(iconSource).not.toMatch(/setFailed\(false\)|useEffect|setTimeout|setInterval/);
+  });
+
+  test('does not key or move entrance and credential state into the icon lifetime', () => {
+    expect(cardSource).toContain('const [mountEntranceDelayMs] = useState<number | null>(');
+    expect(cardSource).toContain('const claudeReset = useClaudeResetGrants(');
+    expect(cardSource).not.toMatch(/<article[^>]*\bkey=/s);
+    const pageSource = readFileSync(
+      join(import.meta.dir, '../src/features/quota/QuotaPage.tsx'),
+      'utf8'
+    );
+    expect(pageSource).toContain('key={`${entry.type}:${getQuotaCacheKey(entry.file)}`}');
+  });
+});
+
 describe('aggregate Plugin tab localization', () => {
   const labels = {
     en: 'Plugin',
