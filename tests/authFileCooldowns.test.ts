@@ -32,6 +32,14 @@ const render = (
   options: { resetting?: boolean; resetDisabled?: boolean; onReset?: () => void } = {}
 ) => renderToStaticMarkup(createElement(AuthFileCooldownSection, { snapshot: value, ...options }));
 
+// A translated label as it appears in the markup: React escapes quotes and
+// apostrophes, which only some locales contain.
+const label = (key: string) =>
+  renderToStaticMarkup(createElement('span', null, i18n.t(key))).slice(
+    '<span>'.length,
+    -'</span>'.length
+  );
+
 function response(files: Record<string, unknown>[]): AuthFilesResponse {
   return { observed_at: observedAt, files } as unknown as AuthFilesResponse;
 }
@@ -205,7 +213,7 @@ describe('cooldown section rendering', () => {
   test('does not add a panel for old servers or known-empty state', () => {
     expect(render()).toBe('');
     expect(render(normalize([]))).toBe('');
-    expect(render(normalize(null))).toContain(i18n.t('auth_files.cooldown_unknown'));
+    expect(render(normalize(null))).toContain(label('auth_files.cooldown_unknown'));
   });
 
   test('offers native keyboard-accessible disclosure with scope, reason and deadline', () => {
@@ -214,7 +222,7 @@ describe('cooldown section rendering', () => {
     expect(markup).toContain('<summary');
     expect(markup).not.toContain(' open=""');
     expect(markup).toContain('model-a');
-    expect(markup).toContain(i18n.t('auth_files.cooldown_reason_quota'));
+    expect(markup).toContain(label('auth_files.cooldown_reason_quota'));
     expect(markup).toContain('429');
     expect(markup).toContain('dateTime="2026-07-17T10:00:32.000Z"');
   });
@@ -235,25 +243,25 @@ describe('cooldown section rendering', () => {
     // The note text appears only in that hidden copy.
     expect(markup.split(note)).toHaveLength(2);
     // The tip sits on the snapshot line, after the observed timestamp.
-    const snapshotLine = markup.slice(markup.indexOf(i18n.t('auth_files.cooldown_observed')));
+    const snapshotLine = markup.slice(markup.indexOf(label('auth_files.cooldown_observed')));
     expect(snapshotLine.indexOf(`dateTime="${observedAt}"`)).toBeLessThan(
       snapshotLine.indexOf('data-info-tip')
     );
 
     // Without a snapshot time the caveat stays reachable through a generically named tip.
     const untimed = render({ ...snapshot, observedAt: undefined });
-    expect(untimed).not.toContain(i18n.t('auth_files.cooldown_observed'));
+    expect(untimed).not.toContain(label('auth_files.cooldown_observed'));
     expect(untimed).toContain('data-info-tip=""');
     expect(untimed).toContain(`aria-label="${Bun.escapeHTML(i18n.t('common.more_info'))}"`);
     expect(untimed).toContain(note);
   });
 
   test('keeps the reset action contextual and exposes pending state', () => {
-    expect(render(snapshot)).not.toContain(i18n.t('auth_files.cooldown_reset_button'));
+    expect(render(snapshot)).not.toContain(label('auth_files.cooldown_reset_button'));
 
     const available = render(snapshot, { onReset: () => {} });
-    expect(available).toContain(i18n.t('auth_files.cooldown_reset_button'));
-    expect(available).toContain(Bun.escapeHTML(i18n.t('auth_files.cooldown_reset_hint')));
+    expect(available).toContain(label('auth_files.cooldown_reset_button'));
+    expect(available).toContain(label('auth_files.cooldown_reset_hint'));
     expect(available).not.toContain('disabled=""');
 
     const pending = render(snapshot, { onReset: () => {}, resetting: true });
@@ -263,8 +271,8 @@ describe('cooldown section rendering', () => {
 
   test('shows elapsed / refresh confirmation and safely escapes model keys', () => {
     const expired = { ...snapshot, receivedAtMs: receivedAtMs - 100_000 };
-    expect(render(expired)).toContain(i18n.t('auth_files.cooldown_elapsed'));
-    expect(render(expired)).toContain(i18n.t('auth_files.cooldown_refresh_hint'));
+    expect(render(expired)).toContain(label('auth_files.cooldown_elapsed'));
+    expect(render(expired)).toContain(label('auth_files.cooldown_refresh_hint'));
     const markup = render(normalize([{ ...modelRecord, model_key: '<script>example</script>' }]));
     expect(markup).not.toContain('<script>');
     expect(markup).toContain('&lt;script&gt;');
