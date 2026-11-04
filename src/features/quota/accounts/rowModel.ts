@@ -172,6 +172,8 @@ const HISTORY_WINDOWS: Record<string, Record<string, { id: string; labelKey: str
 /**
  * Cells from the latest recorded sample of each window, so rows show quota
  * without a live read. A reset that has passed since the sample reads as full.
+ * Windows the credential no longer reports are left out, so they read "not on
+ * this plan" as after a live read.
  */
 export function historyWindowCells(
   account: QuotaHistoryAccount | undefined,
@@ -185,7 +187,7 @@ export function historyWindowCells(
   Object.entries(mapping).forEach(([historyId, column]) => {
     const window = account.windows.find((candidate) => candidate.id === historyId);
     const latest = window?.points[window.points.length - 1];
-    if (!window || !latest) return;
+    if (!window || !latest || window.droppedAt !== null) return;
     observedAtMs = Math.max(observedAtMs ?? 0, latest.t);
     const resetPassed = latest.resetAt !== null && latest.resetAt <= nowMs;
     const periodMs = window.periodSeconds ? window.periodSeconds * 1000 : null;

@@ -128,6 +128,7 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
           key: plan.key,
           label: `${providerLabel(pool.provider)} · ${planLabel(pool.provider, plan.plan)}`,
           weight: plan.weight,
+          defaultWeight: plan.defaultWeight,
           count: plan.count,
         }))
       ),

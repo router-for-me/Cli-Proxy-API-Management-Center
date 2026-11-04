@@ -506,8 +506,8 @@
     "plan_free": "Free",
     "plan_pro": "Pro",
     "plan_max": "Max",
-    "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x",
+    "plan_max5": "Max",
+    "plan_max20": "Ultra",
     "plan_team": "Team"
   },
   "codex_quota": {
@@ -2615,7 +2615,7 @@
     "accounts": "账号",
     "show_breakdown": "显示各账号占比",
     "capacity_weights": "容量权重",
-    "capacity_weights_hint": "该套餐单个账号的额度相对于权重 1 的倍数。",
+    "capacity_weights_hint": "该套餐单个账号的额度。默认值按各套餐的每周额度计算，最大的套餐为 1。",
     "no_accounts": "还没有记录到额度的账号。",
     "accounts_count": "{{count}} 个账号",
     "unrecorded_count": "{{count}} 个尚未记录",

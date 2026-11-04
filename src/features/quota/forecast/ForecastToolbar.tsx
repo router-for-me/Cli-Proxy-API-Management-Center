@@ -15,7 +15,13 @@ import {
 } from './prefs';
 import styles from './ForecastToolbar.module.scss';
 
-export type WeightRow = { key: string; label: string; weight: number; count: number };
+export type WeightRow = {
+  key: string;
+  label: string;
+  weight: number;
+  defaultWeight: number;
+  count: number;
+};
 
 export type ForecastToolbarProps = {
   prefs: ForecastPrefs;
@@ -181,13 +187,13 @@ function AccountsMenu({
     };
   }, [open]);
 
-  const setWeight = (key: string, raw: string) => {
+  const setWeight = (row: WeightRow, raw: string) => {
     if (raw.trim() === '') return;
     const value = Number(raw);
     if (!Number.isFinite(value) || value < 0) return;
     const planWeights = { ...prefs.planWeights };
-    if (value === 1) delete planWeights[key];
-    else planWeights[key] = Math.min(MAX_PLAN_WEIGHT, value);
+    if (value === row.defaultWeight) delete planWeights[row.key];
+    else planWeights[row.key] = Math.min(MAX_PLAN_WEIGHT, value);
     onPrefsChange({ planWeights });
   };
 
@@ -234,9 +240,9 @@ function AccountsMenu({
                     type="number"
                     min={0}
                     max={MAX_PLAN_WEIGHT}
-                    step={0.5}
+                    step={0.1}
                     defaultValue={row.weight}
-                    onChange={(event) => setWeight(row.key, event.target.value)}
+                    onChange={(event) => setWeight(row, event.target.value)}
                   />
                 </label>
               ))

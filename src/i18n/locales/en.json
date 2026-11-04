@@ -521,8 +521,8 @@
     "plan_free": "Free",
     "plan_pro": "Pro",
     "plan_max": "Max",
-    "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x",
+    "plan_max5": "Max",
+    "plan_max20": "Ultra",
     "plan_team": "Team"
   },
   "codex_quota": {
@@ -1706,7 +1706,7 @@
     "accounts": "Accounts",
     "show_breakdown": "Show each account's share",
     "capacity_weights": "Capacity weights",
-    "capacity_weights_hint": "How much quota one account on a plan holds, relative to a weight of 1.",
+    "capacity_weights_hint": "How much quota one account on a plan holds. Defaults follow each plan's weekly quota, with the largest plan at 1.",
     "no_accounts": "No accounts with recorded quota yet.",
     "accounts_count_one": "{{count}} account",
     "accounts_count_other": "{{count}} accounts",

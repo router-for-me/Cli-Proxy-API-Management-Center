@@ -83,11 +83,13 @@ describe('account row cells', () => {
           id: 'seven_day',
           periodSeconds: 604800,
           points: [{ t: NOW - 10 * 60 * 1000, used: 16, resetAt: NOW + 30 * H }],
+          droppedAt: null,
         },
         {
           id: 'five_hour',
           periodSeconds: 18000,
           points: [{ t: NOW - 6 * H, used: 80, resetAt: NOW - H }],
+          droppedAt: null,
         },
       ],
     };
@@ -108,6 +110,35 @@ describe('account row cells', () => {
       },
     ]);
     expect(weeklyResetMs('codex', cells)).toBe(NOW + 30 * H);
+  });
+
+  test('leave out recorded windows the credential no longer reports', () => {
+    const account: QuotaHistoryAccount = {
+      authId: 'claude-a.json',
+      authIndex: '',
+      fileName: 'claude-a.json',
+      provider: 'claude',
+      label: '',
+      email: '',
+      plan: 'max20',
+      windows: [
+        {
+          id: 'five_hour',
+          periodSeconds: 18000,
+          points: [{ t: NOW - 6 * 24 * H, used: 30, resetAt: NOW - 6 * 24 * H + 2 * H }],
+          droppedAt: NOW - 5 * 60 * 1000,
+        },
+        {
+          id: 'seven_day',
+          periodSeconds: 604800,
+          points: [{ t: NOW - 5 * 60 * 1000, used: 7, resetAt: NOW + 100 * H }],
+          droppedAt: null,
+        },
+      ],
+    };
+    const { cells, observedAtMs } = historyWindowCells(account, NOW, t);
+    expect(cells.map((cell) => cell.id)).toEqual(['seven-day']);
+    expect(observedAtMs).toBe(NOW - 5 * 60 * 1000);
   });
 
   test('share columns across a section in first-seen order', () => {

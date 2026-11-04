@@ -24,7 +24,7 @@ export type ForecastPrefs = {
   /** Draw each account's share of the pool. */
   showAccounts: boolean;
   showEmails: boolean;
-  /** Capacity multiplier per `provider:plan`; absent means 1. */
+  /** Capacity multiplier per `provider:plan`; absent means the plan's default (see pools). */
   planWeights: Record<string, number>;
 };
 

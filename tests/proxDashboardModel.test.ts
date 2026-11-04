@@ -158,6 +158,7 @@ describe('account rows', () => {
               id: 'seven_day',
               periodSeconds: 7 * 24 * 3600,
               points: [{ t: NOW - 5 * 60 * 1000, used: 70, resetAt: NOW + 50 * H }],
+              droppedAt: null,
             },
           ],
         },
@@ -171,6 +172,35 @@ describe('account rows', () => {
     );
     expect(rows[0].weekly?.used).toBe(70);
     expect(rows[0].fiveHour?.used).toBeCloseTo(10);
+  });
+
+  test('ignores a recorded window the credential no longer reports', () => {
+    const history: QuotaHistory = {
+      enabled: true,
+      now: NOW,
+      pollIntervalSeconds: 600,
+      accounts: [
+        {
+          authId: 'a',
+          authIndex: 'idx-1',
+          fileName: 'a',
+          provider: 'claude',
+          label: '',
+          email: '',
+          plan: 'max20',
+          windows: [
+            {
+              id: 'five_hour',
+              periodSeconds: 5 * 3600,
+              points: [{ t: NOW - 6 * 24 * H, used: 40, resetAt: NOW + H }],
+              droppedAt: NOW - 5 * 60 * 1000,
+            },
+          ],
+        },
+      ],
+    };
+    const rows = buildAccountRows([file('a', { authIndex: 'idx-1' })], history, '', NOW);
+    expect(rows[0].fiveHour).toBeNull();
   });
 
   test('treats a passed reset as an empty window', () => {

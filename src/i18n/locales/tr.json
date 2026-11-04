@@ -521,8 +521,8 @@
     "plan_free": "Ücretsiz",
     "plan_pro": "Pro",
     "plan_max": "Max",
-    "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x",
+    "plan_max5": "Max",
+    "plan_max20": "Ultra",
     "plan_team": "Team"
   },
   "codex_quota": {
@@ -1706,7 +1706,7 @@
     "accounts": "Hesaplar",
     "show_breakdown": "Her hesabın payını göster",
     "capacity_weights": "Kapasite ağırlıkları",
-    "capacity_weights_hint": "Bir plandaki tek bir hesabın, 1 ağırlığa göre ne kadar kota taşıdığı.",
+    "capacity_weights_hint": "Bir plandaki tek bir hesabın taşıdığı kota. Varsayılanlar her planın haftalık kotasını izler; en büyük plan 1 sayılır.",
     "no_accounts": "Henüz kotası kaydedilmiş hesap yok.",
     "accounts_count_one": "{{count}} hesap",
     "accounts_count_other": "{{count}} hesap",

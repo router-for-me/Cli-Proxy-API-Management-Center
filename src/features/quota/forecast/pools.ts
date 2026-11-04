@@ -18,7 +18,34 @@ export type ForecastProvider = (typeof FORECAST_PROVIDERS)[number];
 /** The pool tracks each account's weekly window. */
 export const FORECAST_WINDOW_ID = 'seven_day';
 
-export type PoolPlan = { key: string; plan: string; weight: number; count: number };
+export type PoolPlan = {
+  key: string;
+  plan: string;
+  weight: number;
+  /** Weight used when none is set in the preferences. */
+  defaultWeight: number;
+  count: number;
+};
+
+/**
+ * Weekly quota of one account, in Pro accounts, per recorded plan: Max (5x)
+ * holds five Pro weeks and Ultra (20x) ten. The pool's largest plan counts as
+ * 1, so a pool of four Ultra accounts and one Pro holds 410%, not 500%.
+ */
+export const PLAN_WEEKLY_UNITS: Partial<Record<string, Record<string, number>>> = {
+  claude: { pro: 1, max5: 5, max20: 10 },
+};
+
+/**
+ * Default capacity weight of each plan in a pool, relative to the largest
+ * plan with known units. Plans without known units count as 1.
+ */
+export const defaultPlanWeights = (provider: string, plans: string[]): Map<string, number> => {
+  const units = PLAN_WEEKLY_UNITS[provider] ?? {};
+  const known = plans.map((plan) => units[plan]).filter((value) => value !== undefined);
+  const reference = known.length > 0 ? Math.max(...known) : 1;
+  return new Map(plans.map((plan) => [plan, units[plan] ? units[plan] / reference : 1]));
+};
 
 export type ForecastPool = {
   provider: ForecastProvider;
@@ -76,18 +103,33 @@ export function buildForecastPools(
     const inputs: ForecastAccountInput[] = [];
     let unrecordedCount = 0;
 
-    providerFiles.forEach((file) => {
+    const recorded = providerFiles.flatMap((file) => {
       const account = accounts.find(
         (candidate) => candidate.provider === provider && matchesFile(candidate, file)
       );
       const window = account?.windows.find((candidate) => candidate.id === FORECAST_WINDOW_ID);
       if (!account || !window || window.points.length === 0) {
         unrecordedCount += 1;
-        return;
+        return [];
       }
+      return [{ file, account, window }];
+    });
+    const defaults = defaultPlanWeights(
+      provider,
+      recorded.map(({ account }) => account.plan)
+    );
+
+    recorded.forEach(({ file, account, window }) => {
       const key = planWeightKey(provider, account.plan);
-      const weight = options.planWeights[key] ?? 1;
-      const plan = plans.get(key) ?? { key, plan: account.plan, weight, count: 0 };
+      const defaultWeight = defaults.get(account.plan) ?? 1;
+      const weight = options.planWeights[key] ?? defaultWeight;
+      const plan = plans.get(key) ?? {
+        key,
+        plan: account.plan,
+        weight,
+        defaultWeight,
+        count: 0,
+      };
       plan.count += 1;
       plans.set(key, plan);
       inputs.push({

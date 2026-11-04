@@ -24,6 +24,11 @@ export type QuotaHistoryWindow = {
   id: string;
   periodSeconds: number | null;
   points: QuotaHistoryPoint[];
+  /**
+   * Set when the credential stopped reporting this window (e.g. a Claude plan
+   * exempt from the 5-hour limit): the newest sample that no longer has it.
+   */
+  droppedAt: number | null;
 };
 
 export type QuotaHistoryAccount = {
@@ -72,7 +77,12 @@ const normalizeWindow = (raw: unknown): QuotaHistoryWindow | null => {
     .map(normalizePoint)
     .filter((point): point is QuotaHistoryPoint => point !== null)
     .sort((a, b) => a.t - b.t);
-  return { id, periodSeconds: toFiniteNumber(raw.period_seconds), points };
+  return {
+    id,
+    periodSeconds: toFiniteNumber(raw.period_seconds),
+    points,
+    droppedAt: toFiniteNumber(raw.dropped_at),
+  };
 };
 
 const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {

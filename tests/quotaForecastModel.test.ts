@@ -327,6 +327,7 @@ describe('history normalization', () => {
               period_seconds: 604800,
               points: [[2, 140, null], [1, 10, 9], ['bad']],
             },
+            { id: 'five_hour', period_seconds: 18000, points: [[1, 5, null]], dropped_at: 2 },
           ],
         },
         { provider: 'codex' },
@@ -339,5 +340,6 @@ describe('history normalization', () => {
       { t: 1, used: 10, resetAt: 9 },
       { t: 2, used: 100, resetAt: null },
     ]);
+    expect(history.accounts[0].windows.map((window) => window.droppedAt)).toEqual([null, 2]);
   });
 });

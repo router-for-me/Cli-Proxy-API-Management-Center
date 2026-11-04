@@ -22,7 +22,12 @@ const account = (
   email: '',
   plan: '',
   windows: [
-    { id: 'seven_day', periodSeconds: 604800, points: [{ t: 1, used: 10, resetAt: null }] },
+    {
+      id: 'seven_day',
+      periodSeconds: 604800,
+      points: [{ t: 1, used: 10, resetAt: null }],
+      droppedAt: null,
+    },
   ],
   ...extra,
 });
@@ -72,7 +77,55 @@ describe('forecast pools', () => {
     expect(claude.accounts.map((input) => input.name)).toEqual(['a•••@x•••.com']);
     expect(claude.unrecordedCount).toBe(1);
     expect(codex.accounts[0].weight).toBe(2.5);
-    expect(codex.plans).toEqual([{ key: 'codex:pro', plan: 'pro', weight: 2.5, count: 1 }]);
+    expect(codex.plans).toEqual([
+      { key: 'codex:pro', plan: 'pro', weight: 2.5, defaultWeight: 1, count: 1 },
+    ]);
+  });
+
+  test('weigh Claude plans by weekly quota, the largest plan counting 1', () => {
+    const claudeEntries = ['u1', 'u2', 'u3', 'u4', 'p', 'm', 'x'].map((name) =>
+      entry(`${name}.json`, 'claude')
+    );
+    const plans: Record<string, string> = {
+      u1: 'max20',
+      u2: 'max20',
+      u3: 'max20',
+      u4: 'max20',
+      p: 'pro',
+      m: 'max5',
+      x: 'max',
+    };
+    const recorded = (names: string[]) =>
+      history(names.map((name) => account(`${name}.json`, 'claude', { plan: plans[name] })));
+    const weightsOf = (pool: { accounts: { key: string; weight: number }[] }) =>
+      Object.fromEntries(pool.accounts.map((input) => [input.key, input.weight]));
+
+    const [ultraPool] = buildForecastPools(recorded(['u1', 'u2', 'u3', 'u4', 'p']), claudeEntries, {
+      planWeights: {},
+      showEmails: false,
+    });
+    expect(weightsOf(ultraPool)).toEqual({
+      'p.json': 0.1,
+      'u1.json': 1,
+      'u2.json': 1,
+      'u3.json': 1,
+      'u4.json': 1,
+    });
+    const capacity = ultraPool.accounts.reduce((sum, input) => sum + input.weight * 100, 0);
+    expect(capacity).toBeCloseTo(410);
+    expect(ultraPool.plans.find((plan) => plan.plan === 'pro')).toMatchObject({
+      key: 'claude:pro',
+      weight: 0.1,
+      defaultWeight: 0.1,
+    });
+
+    // Without Ultra accounts, Max counts 1; an unknown tier keeps 1; a set weight wins.
+    const [maxPool] = buildForecastPools(recorded(['p', 'm', 'x']), claudeEntries, {
+      planWeights: { 'claude:pro': 0.25 },
+      showEmails: false,
+    });
+    expect(weightsOf(maxPool)).toEqual({ 'm.json': 1, 'p.json': 0.25, 'x.json': 1 });
+    expect(maxPool.plans.find((plan) => plan.plan === 'pro')?.defaultWeight).toBe(0.2);
   });
 
   test('mask emails until shown and keep non-email labels', () => {

@@ -24,6 +24,10 @@ Fork-specific files: `src/styles/fork.scss`, `src/components/layout/ForkBrandLog
 `src/landOnDashboard.ts`, `src/features/quota/forecast/`, `src/features/quota/accounts/`,
 `src/features/quota/emailMask.ts`, `src/services/api/quotaHistory.ts`.
 
+Edited upstream strings worth checking on sync: `claude_quota.plan_max5` and
+`plan_max20` read "Max" and "Ultra" in every locale (Anthropic's current plan
+names; the API tiers are still `claude_max_5x` / `claude_max_20x`).
+
 Edited upstream file worth checking on sync: `src/utils/quota/relativeTime.ts`
 counts hours up to 48 ("in 46 hours", not "in 1 day"), so a weekly reset reads
 clearly against the 36-hour priority window. `src/features/quota/QuotaPage.tsx`

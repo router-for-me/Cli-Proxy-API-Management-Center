@@ -506,8 +506,8 @@
     "plan_free": "Free",
     "plan_pro": "Pro",
     "plan_max": "Max",
-    "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x",
+    "plan_max5": "Max",
+    "plan_max20": "Ultra",
     "plan_team": "Team"
   },
   "codex_quota": {
@@ -2615,7 +2615,7 @@
     "accounts": "帳號",
     "show_breakdown": "顯示各帳號占比",
     "capacity_weights": "容量權重",
-    "capacity_weights_hint": "該方案單一帳號的額度相對於權重 1 的倍數。",
+    "capacity_weights_hint": "該方案單一帳號的額度。預設值依各方案的每週額度計算，最大的方案為 1。",
     "no_accounts": "尚無已記錄額度的帳號。",
     "accounts_count": "{{count}} 個帳號",
     "unrecorded_count": "{{count}} 個尚未記錄",

@@ -215,13 +215,15 @@ export function signalReadings(
   return { fiveHour: null, weekly: null };
 }
 
-/** The newest recorded sample of a history window. */
+/** The newest recorded sample of a history window the credential still reports. */
 const historyReading = (
   account: QuotaHistoryAccount | undefined,
   windowId: string
 ): QuotaReading | null => {
-  const points = account?.windows.find((window) => window.id === windowId)?.points;
-  const latest = points?.[points.length - 1];
+  const window = account?.windows.find((candidate) => candidate.id === windowId);
+  if (!window || window.droppedAt !== null) return null;
+  const points = window.points;
+  const latest = points[points.length - 1];
   return latest ? { used: latest.used, resetAt: latest.resetAt, observedAt: latest.t } : null;
 };
 

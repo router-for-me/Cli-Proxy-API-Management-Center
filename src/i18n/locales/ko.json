@@ -521,8 +521,8 @@
     "plan_free": "Free",
     "plan_pro": "Pro",
     "plan_max": "Max",
-    "plan_max5": "Max 5x",
-    "plan_max20": "Max 20x",
+    "plan_max5": "Max",
+    "plan_max20": "Ultra",
     "plan_team": "Team"
   },
   "codex_quota": {
@@ -1706,7 +1706,7 @@
     "accounts": "계정",
     "show_breakdown": "계정별 비중 표시",
     "capacity_weights": "용량 가중치",
-    "capacity_weights_hint": "해당 플랜 계정 하나의 할당량을 가중치 1 대비 배수로 지정합니다.",
+    "capacity_weights_hint": "해당 플랜 계정 하나의 할당량입니다. 기본값은 각 플랜의 주간 할당량을 따르며, 가장 큰 플랜이 1입니다.",
     "no_accounts": "아직 할당량이 기록된 계정이 없습니다.",
     "accounts_count_one": "계정 {{count}}개",
     "accounts_count_other": "계정 {{count}}개",
