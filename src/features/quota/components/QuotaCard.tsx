@@ -30,6 +30,7 @@ const quotaClasses = bindQuotaClasses(bodyStyles, 'QuotaBody.module.scss');
 export type QuotaCardProps = {
   entry: QuotaFileEntry;
   quota?: QuotaCardState;
+  pluginLogo?: string;
   resolvedTheme: ResolvedTheme;
   canRefresh: boolean;
   resetting: boolean;
@@ -79,7 +80,10 @@ export function QuotaCard(props: QuotaCardProps) {
           file.quotaProvider ?? file['quota_provider'] ?? file.provider ?? file.type ?? 'plugin'
         )
       : entry.type;
-  const iconSrc = getAuthFileIcon(providerType, resolvedTheme);
+  const iconSrc =
+    getAuthFileIcon(providerType, resolvedTheme) ||
+    (entry.type === 'plugin' ? props.pluginLogo : undefined);
+  const [failedIconSrc, setFailedIconSrc] = useState<string | null>(null);
   const typeLabel = getTypeLabel(t, providerType);
   const errorMessage = resolveQuotaErrorMessage(
     t,
@@ -125,8 +129,14 @@ export function QuotaCard(props: QuotaCardProps) {
               : undefined
           }
         >
-          {iconSrc ? (
-            <img src={iconSrc} alt="" className={styles.icon} />
+          {iconSrc && iconSrc !== failedIconSrc ? (
+            <img
+              key={iconSrc}
+              src={iconSrc}
+              alt=""
+              className={styles.icon}
+              onError={() => setFailedIconSrc(iconSrc)}
+            />
           ) : (
             <span className={styles.iconFallback}>{typeLabel.slice(0, 1).toUpperCase()}</span>
           )}
