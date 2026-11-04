@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "round-robin (轮询)",
     "routing_strategy_weighted_round_robin": "weighted-round-robin (加权轮询)",
     "routing_strategy_fill_first": "fill-first（优先填满）",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin（优先用掉 36 小时内重置的额度）"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin（按过期顺序用掉额度）"
   },
   "auth_files": {
     "sync_catalog_button": "更新模型目录",
@@ -1776,7 +1776,7 @@
     "duration_minutes": "{{count}} 分钟",
     "duration_hours": "{{count}} 小时",
     "strategy_weekly_reset_weighted_round_robin": "重置加权轮询",
-    "strategy_weekly_reset_weighted_round_robin_desc": "按权重分配请求，但每周额度将在 36 小时内重置的凭据优先接收。"
+    "strategy_weekly_reset_weighted_round_robin_desc": "每个请求都发给每周额度最先过期的凭据。流量大时，有 5 小时限制的凭据会提前开始，以便及时用完各个窗口。"
   },
   "plugin_management": {
     "title": "插件",
@@ -2571,7 +2571,7 @@
     "status_error": "错误",
     "status_disabled": "已禁用",
     "priority": "优先",
-    "priority_hint": "每周重置不到 36 小时，优先路由",
+    "priority_hint": "每周额度最先过期，新请求发往这里",
     "in_duration": "{{duration}}后"
   },
   "sensitive_replacements": {

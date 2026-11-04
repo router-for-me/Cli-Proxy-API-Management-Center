@@ -8,7 +8,7 @@
  */
 
 import type { TFunction } from 'i18next';
-import type { QuotaHistoryAccount } from '@/services/api/quotaHistory';
+import type { QuotaHistoryAccount, QuotaHistoryRouting } from '@/services/api/quotaHistory';
 import type { AuthFileItem } from '@/types/authFile';
 import { HOUR_MS } from '@/utils/time/durations';
 import { parseTimestampMs } from '@/utils/timestamp';
@@ -25,9 +25,8 @@ export type AccountWindowCell = {
 
 export type AccountColumn = { id: string; label: string };
 
-/** Routing strategy that boosts accounts close to their weekly reset (backend fork). */
+/** Routing strategy that spends weekly quota in the order it would expire (backend fork). */
 export const WEEKLY_RESET_STRATEGY = 'weekly-reset-weighted-round-robin';
-export const PRIORITY_RESET_WINDOW_HOURS = 36;
 /** Column id of the 5-hour session window, for Claude and Codex alike. */
 export const SESSION_WINDOW_ID = 'five-hour';
 const MAX_WINDOW_COLUMNS = 4;
@@ -243,81 +242,110 @@ export const credentialStatus = (
 ): { status: CredentialStatus; until: number | null } => {
   if (file.disabled) return { status: 'disabled', until: null };
   const snapshot = file.cooldownSnapshot;
-  const credentialCooldowns = (snapshot?.records ?? [])
-    .filter((record) => record.scope === 'credential')
-    .map((record) => snapshot!.receivedAtMs + record.remainingSeconds * 1000)
-    .filter((until) => until > nowMs);
-  if (credentialCooldowns.length > 0) {
-    return { status: 'cooling', until: Math.max(...credentialCooldowns) };
+  const active = (snapshot?.records ?? [])
+    .map((record) => ({
+      scope: record.scope,
+      until: snapshot!.receivedAtMs + record.remainingSeconds * 1000,
+    }))
+    .filter((record) => record.until > nowMs);
+  const credential = active.filter((record) => record.scope === 'credential');
+  if (credential.length > 0) {
+    return { status: 'cooling', until: Math.max(...credential.map((record) => record.until)) };
   }
   if (file.unavailable) {
+    // Model cooldowns (a 429 on its models) are what keep it out: back when the first ends.
+    if (active.length > 0) {
+      return { status: 'cooling', until: Math.min(...active.map((record) => record.until)) };
+    }
+    // The router picks a flagged credential again once its retry time has passed; the
+    // flag itself only clears on the next success.
     const retry = parseTimestampMs(file['next_retry_after']);
-    return {
-      status: 'unavailable',
-      until: Number.isFinite(retry) && retry > nowMs ? retry : null,
-    };
+    if (Number.isFinite(retry)) {
+      return retry > nowMs
+        ? { status: 'unavailable', until: retry }
+        : { status: 'serving', until: null };
+    }
+    return { status: 'unavailable', until: null };
   }
   if (String(file.status ?? '').toLowerCase() === 'error') return { status: 'error', until: null };
   return { status: 'serving', until: null };
 };
 
 /**
- * Mirrors the backend rule for who can get the boost: a weekly reset less than
- * 36 hours away. The backend ranks only credentials it can pick, so one that
- * is cooling down after a rate limit, or is unavailable or disabled, never
- * counts. Of the eligible ones, `priorityKeys` picks the boosted.
+ * Credentials whose deadlines lie within this of the earliest one count as tied, and
+ * then the session-limited ones go first (backend `WeeklyResetTieBand`).
  */
-export const isPriorityEligible = (
-  resetAtMs: number | null,
-  nowMs: number,
-  status: CredentialStatus
-): boolean =>
-  status === 'serving' &&
-  resetAtMs !== null &&
-  resetAtMs > nowMs &&
-  resetAtMs - nowMs < PRIORITY_RESET_WINDOW_HOURS * HOUR_MS;
+export const PRIORITY_TIE_BAND_HOURS = 1;
 
 /**
- * The boost-eligible candidates the router sends traffic to, as the backend
- * ranks them: those with a 5-hour session limit go before exempt ones (they
- * can spend only a session at a time), then the soonest weekly reset wins.
- * Ties all count.
+ * Whether the weekly-reset router can rank a credential: it must be pickable now (one
+ * cooling down, unavailable or disabled never counts) and have a known deadline.
  */
-export function mostUrgent<T>(
+export const isPriorityEligible = (deadlineMs: number | null, status: CredentialStatus): boolean =>
+  status === 'serving' && deadlineMs !== null;
+
+/**
+ * The candidates the weekly-reset router sends traffic to, as the backend ranks them:
+ * the earliest effective deadline, where within `PRIORITY_TIE_BAND_HOURS` of it the
+ * session-limited ones go first. Exact ties all count.
+ */
+export function firstInLine<T>(
   candidates: T[],
-  resetOf: (candidate: T) => number,
+  deadlineOf: (candidate: T) => number,
   sessionLimitedOf: (candidate: T) => boolean
 ): T[] {
-  const limited = candidates.filter(sessionLimitedOf);
-  const tier = limited.length > 0 ? limited : candidates;
-  if (tier.length === 0) return [];
-  const earliest = Math.min(...tier.map(resetOf));
-  return tier.filter((candidate) => resetOf(candidate) === earliest);
+  if (candidates.length === 0) return [];
+  const earliest = Math.min(...candidates.map(deadlineOf));
+  let band = candidates.filter(
+    (candidate) => deadlineOf(candidate) <= earliest + PRIORITY_TIE_BAND_HOURS * HOUR_MS
+  );
+  const limited = band.filter(sessionLimitedOf);
+  if (limited.length > 0) band = limited;
+  const first = Math.min(...band.map(deadlineOf));
+  return band.filter((candidate) => deadlineOf(candidate) === first);
 }
 
 export type PriorityCandidate = {
   key: string;
-  resetAtMs: number | null;
+  /**
+   * Effective deadline from the backend's routing report (epoch ms), or the weekly
+   * reset on backends without it.
+   */
+  deadlineMs: number | null;
   status: CredentialStatus;
   /** The credential has a 5-hour session limit. */
   sessionLimited: boolean;
 };
 
 /**
- * Keys of the credentials the weekly-reset router boosts now, among one
- * provider's credentials: of the eligible ones, the session-limited ones if
- * any, and of those the soonest weekly reset.
+ * Keys of the credentials the weekly-reset router sends new requests to now, among
+ * one provider's credentials.
  */
-export const priorityKeys = (candidates: PriorityCandidate[], nowMs: number): Set<string> =>
+export const priorityKeys = (candidates: PriorityCandidate[]): Set<string> =>
   new Set(
-    mostUrgent(
-      candidates.filter((candidate) =>
-        isPriorityEligible(candidate.resetAtMs, nowMs, candidate.status)
-      ),
-      (candidate) => candidate.resetAtMs as number,
+    firstInLine(
+      candidates.filter((candidate) => isPriorityEligible(candidate.deadlineMs, candidate.status)),
+      (candidate) => candidate.deadlineMs as number,
       (candidate) => candidate.sessionLimited
     ).map((candidate) => candidate.key)
   );
+
+/**
+ * A credential's routing placement: the backend's report when present, otherwise its
+ * weekly reset (if still ahead) and whether it shows a 5-hour window.
+ */
+export const routingPlacement = (
+  routing: QuotaHistoryRouting | null | undefined,
+  weeklyResetAtMs: number | null,
+  hasSessionWindow: boolean,
+  nowMs: number
+): { deadlineMs: number | null; sessionLimited: boolean } =>
+  routing
+    ? { deadlineMs: routing.deadline, sessionLimited: routing.sessionLimited }
+    : {
+        deadlineMs: weeklyResetAtMs !== null && weeklyResetAtMs > nowMs ? weeklyResetAtMs : null,
+        sessionLimited: hasSessionWindow,
+      };
 
 /** Severity of a remaining percentage, for the number's color. */
 export const remainingTone = (remaining: number | null): 'normal' | 'low' | 'critical' => {

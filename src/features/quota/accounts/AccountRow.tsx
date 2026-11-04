@@ -99,14 +99,15 @@ export function AccountRow(props: AccountRowProps) {
               relative: formatRelativeInstant(weeklyReset as number, now, locale),
             }),
           }
-        : routing.status === 'cooling' && routing.until !== null
+        : (routing.status === 'cooling' || routing.status === 'unavailable') &&
+            routing.until !== null
           ? {
               tone: 'warning',
               text: t('quota_accounts.status_cooling', {
                 relative: formatRelativeInstant(routing.until, now, locale),
               }),
             }
-          : file.unavailable === true
+          : routing.status === 'unavailable'
             ? { tone: 'warning', text: t('quota_accounts.status_unavailable') }
             : loading
               ? { tone: 'quiet', text: t(`${adapter.i18nPrefix}.loading`) }

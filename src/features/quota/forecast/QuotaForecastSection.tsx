@@ -8,8 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { getTypeLabel, type ResolvedTheme } from '@/features/authFiles/constants';
 import { useNow } from '@/hooks/useNow';
 import type { QuotaHistory } from '@/services/api/quotaHistory';
-import { HOUR_MS } from '@/utils/time/durations';
-import { PRIORITY_RESET_WINDOW_HOURS } from '../accounts/rowModel';
 import type { QuotaFileEntry } from '../logic';
 import type { QuotaTabId } from '../constants';
 import { ForecastToolbar, type WeightRow } from './ForecastToolbar';
@@ -106,7 +104,7 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
           burnWindowHours: prefs.burnWindowHours,
           futureUsage: prefs.futureUsage,
           horizon,
-          priorityWindowMs: priorityRouting ? PRIORITY_RESET_WINDOW_HOURS * HOUR_MS : null,
+          weeklyResetRouting: priorityRouting,
         }),
       })),
     [

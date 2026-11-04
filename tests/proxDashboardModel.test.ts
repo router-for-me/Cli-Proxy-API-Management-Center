@@ -102,7 +102,7 @@ describe('quota headers', () => {
 });
 
 describe('account rows', () => {
-  test('flags priority only for serving accounts with a weekly reset under 36 hours', () => {
+  test('flags priority only for the serving account with the earliest deadline', () => {
     const rows = buildAccountRows(
       [
         file('soon', { quota: claudeQuota(0.1, 0.5, NOW + 20 * H) }),
@@ -159,7 +159,8 @@ describe('account rows', () => {
       NOW
     );
     const flagged = rows.filter((row) => row.priority).map((row) => row.name);
-    // Session-limited accounts go first, so 'limited-12h30' beats exempt 'in-12h'.
+    // Within an hour of the earliest deadline session-limited accounts go first, so
+    // 'limited-12h30' beats exempt 'in-12h'.
     expect(flagged).toEqual(['limited-12h30@example.com', 'codex@example.com']);
   });
 
@@ -246,7 +247,42 @@ describe('account rows', () => {
     );
     expect(rows[0].weekly?.used).toBe(0);
     expect(rows[0].weekly?.resetAt).toBe(Number(sec(NOW - H)) * 1000 + 7 * 24 * H);
-    expect(rows[0].priority).toBe(false);
+    // Its next window ends a week after the passed reset, and as the only account it is
+    // still first in line.
+    expect(rows[0].priority).toBe(true);
+  });
+
+  test("ranks by the backend's routing deadline when the history reports one", () => {
+    const routed = (authId: string, deadline: number, sessionLimited: boolean) => ({
+      authId,
+      authIndex: authId,
+      fileName: authId,
+      provider: 'claude',
+      label: '',
+      email: '',
+      plan: 'max20',
+      windows: [],
+      routing: { deadline, sessionLimited, sessionShare: 28, drain: 10 },
+    });
+    const history: QuotaHistory = {
+      enabled: true,
+      now: NOW,
+      pollIntervalSeconds: 600,
+      // 'later' resets 2 hours after 'sooner', but its 5-hour windows move it ahead.
+      accounts: [routed('sooner', NOW + 20 * H, false), routed('later', NOW + 15.4 * H, true)],
+    };
+    const rows = buildAccountRows(
+      [
+        file('sooner', { authIndex: 'sooner', quota: claudeQuota(0, 0, NOW + 20 * H) }),
+        file('later', { authIndex: 'later', quota: claudeQuota(0, 0, NOW + 22 * H) }),
+      ],
+      history,
+      'weekly-reset-weighted-round-robin',
+      NOW
+    );
+    expect(rows.filter((row) => row.priority).map((row) => row.name)).toEqual([
+      'later@example.com',
+    ]);
   });
 
   test('sums recent requests and reports disabled and unavailable credentials', () => {

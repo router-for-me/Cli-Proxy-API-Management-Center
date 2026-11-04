@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "round-robin (цикл)",
     "routing_strategy_weighted_round_robin": "weighted-round-robin (взвешенный цикл)",
     "routing_strategy_fill_first": "fill-first (приоритет)",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (сначала квота со сбросом в течение 36 ч)"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (квота расходуется в порядке истечения)"
   },
   "auth_files": {
     "sync_catalog_button": "Синхронизировать каталог моделей",
@@ -1839,7 +1839,7 @@
     "strategy_fill_first": "Сначала заполнять",
     "strategy_round_robin_desc": "Учётные данные уровня принимают запросы по очереди.",
     "strategy_weighted_round_robin_desc": "Запросы распределяются по уровню пропорционально весам.",
-    "strategy_weekly_reset_weighted_round_robin_desc": "Запросы распределяются по весам, но первыми их получают учётные данные, чья недельная квота сбрасывается в ближайшие 36 часов.",
+    "strategy_weekly_reset_weighted_round_robin_desc": "Каждый запрос идёт к учётным данным, чья недельная квота истечёт первой. При высокой нагрузке учётные данные с 5-часовым лимитом начинают раньше, чтобы успеть использовать свои окна.",
     "strategy_fill_first_desc": "Одни учётные данные принимают всё, пока не станут недоступны, затем следующие.",
     "affinity_label": "Привязка сессий",
     "affinity_desc": "Запросы одной сессии идут на одни учётные данные, с переключением при их недоступности.",
@@ -2673,7 +2673,7 @@
     "status_error": "Ошибка",
     "status_disabled": "Отключён",
     "priority": "Приоритет",
-    "priority_hint": "Недельный сброс меньше чем через 36 часов, поэтому запросы идут сюда первыми",
+    "priority_hint": "Её недельная квота истекает первой, поэтому новые запросы идут сюда",
     "in_duration": "через {{duration}}"
   },
   "sensitive_replacements": {

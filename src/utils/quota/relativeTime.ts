@@ -36,8 +36,7 @@ export interface RelativeTimeParts {
  * Sub-minute gaps floor to a magnitude of 1 so nothing renders "in 0 minutes".
  *
  * Days start at two (fork): truncated to "1 day", anything from 24 to 47 hours
- * looks the same, which hides whether a weekly reset is inside the 36-hour
- * priority window.
+ * looks the same, which hides the hours that decide the weekly-reset routing order.
  */
 export function relativeTimeParts(targetMs: number, nowMs: number): RelativeTimeParts {
   const delta = targetMs - nowMs;

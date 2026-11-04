@@ -31,6 +31,20 @@ export type QuotaHistoryWindow = {
   droppedAt: number | null;
 };
 
+/**
+ * Where the weekly-reset router places a credential now (backend `routing`):
+ * the earliest deadline among available credentials goes first.
+ */
+export type QuotaHistoryRouting = {
+  /** Effective deadline, epoch ms: the weekly reset, earlier for a session-limited credential under heavy traffic. */
+  deadline: number | null;
+  sessionLimited: boolean;
+  /** Weekly % one full 5-hour window allows, when measured. */
+  sessionShare: number | null;
+  /** Weekly %/h the pool's daily traffic would spend if it all went here, when measured. */
+  drain: number | null;
+};
+
 export type QuotaHistoryAccount = {
   authId: string;
   authIndex: string;
@@ -40,6 +54,8 @@ export type QuotaHistoryAccount = {
   email: string;
   plan: string;
   windows: QuotaHistoryWindow[];
+  /** Null on backends without the routing report. */
+  routing?: QuotaHistoryRouting | null;
 };
 
 export type QuotaHistory = {
@@ -85,6 +101,21 @@ const normalizeWindow = (raw: unknown): QuotaHistoryWindow | null => {
   };
 };
 
+const positiveOrNull = (value: unknown): number | null => {
+  const number = toFiniteNumber(value);
+  return number !== null && number > 0 ? number : null;
+};
+
+const normalizeRouting = (raw: unknown): QuotaHistoryRouting | null => {
+  if (!isRecord(raw)) return null;
+  return {
+    deadline: positiveOrNull(raw.deadline),
+    sessionLimited: raw.session_limited === true,
+    sessionShare: positiveOrNull(raw.session_share),
+    drain: positiveOrNull(raw.drain),
+  };
+};
+
 const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {
   if (!isRecord(raw)) return null;
   const provider = toText(raw.provider).toLowerCase();
@@ -101,6 +132,7 @@ const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {
     windows: (Array.isArray(raw.windows) ? raw.windows : [])
       .map(normalizeWindow)
       .filter((window): window is QuotaHistoryWindow => window !== null),
+    routing: normalizeRouting(raw.routing),
   };
 };
 

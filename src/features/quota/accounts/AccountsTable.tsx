@@ -24,6 +24,7 @@ import {
   historyWindowCells,
   liveWindowCells,
   priorityKeys,
+  routingPlacement,
   sectionColumns,
   SESSION_WINDOW_ID,
   weeklyResetMs,
@@ -125,7 +126,20 @@ export function AccountsTable(props: AccountsTableProps) {
           cells = fromHistory.cells;
           recordedAtMs = fromHistory.cells.length > 0 ? fromHistory.observedAtMs : null;
         }
-        return { entry, quota, cells, recordedAtMs, plan: planOf(entry, quota, recorded?.plan, t) };
+        const placement = routingPlacement(
+          recorded?.routing,
+          weeklyResetMs(entry.type, cells),
+          cells.some((cell) => cell.id === SESSION_WINDOW_ID),
+          now
+        );
+        return {
+          entry,
+          quota,
+          cells,
+          recordedAtMs,
+          placement,
+          plan: planOf(entry, quota, recorded?.plan, t),
+        };
       });
       const columns = sectionColumns(rows.map((row) => row.cells));
       // Rows of one provider compete for the same requests, so they are ranked together.
@@ -133,11 +147,10 @@ export function AccountsTable(props: AccountsTableProps) {
         ? priorityKeys(
             rows.map((row) => ({
               key: getQuotaCacheKey(row.entry.file),
-              resetAtMs: weeklyResetMs(row.entry.type, row.cells),
+              deadlineMs: row.placement.deadlineMs,
               status: credentialStatus(row.entry.file, now).status,
-              sessionLimited: row.cells.some((cell) => cell.id === SESSION_WINDOW_ID),
-            })),
-            now
+              sessionLimited: row.placement.sessionLimited,
+            }))
           )
         : new Set<string>();
       const showBank = type === 'claude' || type === 'codex';

@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "round-robin (luân phiên)",
     "routing_strategy_weighted_round_robin": "weighted-round-robin (luân phiên có trọng số)",
     "routing_strategy_fill_first": "fill-first (ưu tiên lấp đầy)",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (ưu tiên hạn mức đặt lại trong 36 giờ)"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (dùng hạn mức theo thứ tự hết hạn)"
   },
   "auth_files": {
     "sync_catalog_button": "Đồng bộ danh mục mô hình",
@@ -1766,7 +1766,7 @@
     "strategy_fill_first": "Lấp đầy trước",
     "strategy_round_robin_desc": "Mỗi thông tin xác thực trong tầng lần lượt nhận yêu cầu.",
     "strategy_weighted_round_robin_desc": "Yêu cầu được chia trong tầng theo trọng số.",
-    "strategy_weekly_reset_weighted_round_robin_desc": "Yêu cầu được chia theo trọng số, nhưng thông tin xác thực có hạn mức tuần đặt lại trong vòng 36 giờ sẽ nhận trước.",
+    "strategy_weekly_reset_weighted_round_robin_desc": "Mỗi yêu cầu đi tới thông tin xác thực có hạn mức tuần hết hạn sớm nhất. Khi lưu lượng cao, thông tin xác thực có giới hạn 5 giờ bắt đầu sớm hơn để kịp dùng các khung của nó.",
     "strategy_fill_first_desc": "Một thông tin xác thực nhận hết cho đến khi không khả dụng, rồi đến cái tiếp theo.",
     "affinity_label": "Gắn phiên",
     "affinity_desc": "Yêu cầu của cùng một phiên đi tới cùng một thông tin xác thực, tự chuyển khi nó không khả dụng.",
@@ -2651,7 +2651,7 @@
     "status_error": "Lỗi",
     "status_disabled": "Đã tắt",
     "priority": "Ưu tiên",
-    "priority_hint": "Đặt lại tuần trong vòng 36 giờ nên được định tuyến trước",
+    "priority_hint": "Hạn mức tuần của nó hết hạn sớm nhất nên yêu cầu mới đi vào đây",
     "in_duration": "sau {{duration}}"
   },
   "sensitive_replacements": {

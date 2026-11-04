@@ -8,6 +8,7 @@
 import {
   credentialStatus,
   priorityKeys,
+  routingPlacement,
   type CredentialStatus,
 } from '@/features/quota/accounts/rowModel';
 import type { QuotaHistory, QuotaHistoryAccount } from '@/services/api/quotaHistory';
@@ -278,6 +279,7 @@ export function buildAccountRows(
   nowMs: number
 ): AccountRow[] {
   const priorityRouting = WEEKLY_RESET_STRATEGIES.includes(routingStrategy.trim());
+  const placements = new Map<string, ReturnType<typeof routingPlacement>>();
   const rows = files.map((file): AccountRow => {
     const provider = credentialProvider(file);
     const signals = signalReadings(provider, file['quota']);
@@ -293,11 +295,16 @@ export function buildAccountRows(
       WEEK_MS
     );
     const { status, until } = credentialStatus(file, nowMs);
+    const key = `${file.name}|${file.authIndex ?? ''}`;
+    placements.set(
+      key,
+      routingPlacement(recorded?.routing, weekly?.resetAt ?? null, fiveHour !== null, nowMs)
+    );
     const buckets = normalizeRecentRequestBuckets(file.recentRequests ?? file.recent_requests);
     const success = buckets.reduce((sum, bucket) => sum + bucket.success, 0);
     const failed = buckets.reduce((sum, bucket) => sum + bucket.failed, 0);
     return {
-      key: `${file.name}|${file.authIndex ?? ''}`,
+      key,
       provider,
       name: accountName(file),
       status,
@@ -318,11 +325,10 @@ export function buildAccountRows(
       const boosted = priorityKeys(
         sameProvider.map((row) => ({
           key: row.key,
-          resetAtMs: row.weekly?.resetAt ?? null,
+          deadlineMs: placements.get(row.key)?.deadlineMs ?? null,
           status: row.status,
-          sessionLimited: row.fiveHour !== null,
-        })),
-        nowMs
+          sessionLimited: placements.get(row.key)?.sessionLimited ?? row.fiveHour !== null,
+        }))
       );
       sameProvider.forEach((row) => {
         row.priority = boosted.has(row.key);

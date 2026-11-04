@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "round-robin（輪詢）",
     "routing_strategy_weighted_round_robin": "weighted-round-robin（加權輪詢）",
     "routing_strategy_fill_first": "fill-first（優先填滿）",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin（優先用掉 36 小時內重置的額度）"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin（依過期順序用掉額度）"
   },
   "auth_files": {
     "sync_catalog_button": "更新模型目錄",
@@ -1776,7 +1776,7 @@
     "duration_minutes": "{{count}} 分鐘",
     "duration_hours": "{{count}} 小時",
     "strategy_weekly_reset_weighted_round_robin": "重置加權輪詢",
-    "strategy_weekly_reset_weighted_round_robin_desc": "依權重分配請求，但每週額度將在 36 小時內重置的憑證優先接收。"
+    "strategy_weekly_reset_weighted_round_robin_desc": "每個請求都發給每週額度最先過期的憑證。流量大時，有 5 小時限制的憑證會提前開始，以便及時用完各個窗口。"
   },
   "plugin_management": {
     "title": "插件",
@@ -2571,7 +2571,7 @@
     "status_error": "錯誤",
     "status_disabled": "已停用",
     "priority": "優先",
-    "priority_hint": "每週重置不到 36 小時，優先路由",
+    "priority_hint": "每週額度最先過期，新請求發往這裡",
     "in_duration": "{{duration}}後"
   },
   "sensitive_replacements": {

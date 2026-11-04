@@ -58,6 +58,8 @@ import styles from './QuotaPage.module.scss';
 
 const TAB_IDS: string[] = ['all', ...QUOTA_TAB_ORDER];
 const SKELETON_ROW_COUNT = 6;
+/** How often the credential list (status, cooldowns) is re-read in the background. */
+const FILES_REFRESH_MS = 60 * 1000;
 
 export function QuotaPage() {
   const { t } = useTranslation();
@@ -123,6 +125,30 @@ export function QuotaPage() {
       listRequestRef.current += 1;
     };
   }, [loadFiles]);
+
+  // Cooldowns start and end on their own, so re-read the list quietly (no loading state)
+  // while the page is visible: a row must not keep a status the router has left.
+  useEffect(() => {
+    if (connectionStatus !== 'connected') return;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      const requestId = listRequestRef.current;
+      const generation = sessionGeneration;
+      void authFilesApi
+        .list()
+        .then((data) => {
+          if (
+            requestId !== listRequestRef.current ||
+            generation !== useQuotaStore.getState().cacheGeneration
+          ) {
+            return;
+          }
+          setFiles(data?.files || []);
+        })
+        .catch(() => undefined);
+    }, FILES_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [connectionStatus, sessionGeneration]);
 
   /* ---------- 额度缓存 ----------
    * 排在归类/排序之前：「最快恢复优先」要读它算排序键。 */

@@ -29,8 +29,8 @@ Edited upstream strings worth checking on sync: `claude_quota.plan_max5` and
 names; the API tiers are still `claude_max_5x` / `claude_max_20x`).
 
 Edited upstream file worth checking on sync: `src/utils/quota/relativeTime.ts`
-counts hours up to 48 ("in 46 hours", not "in 1 day"), so a weekly reset reads
-clearly against the 36-hour priority window. `src/features/quota/QuotaPage.tsx`
+counts hours up to 48 ("in 46 hours", not "in 1 day"), so a weekly reset a day or
+two away reads to the hour, which is what decides the weekly-reset routing order. `src/features/quota/QuotaPage.tsx`
 no longer renders the upstream "Quota windows" timeline (`QuotaTimeline`): the
 account grid shows the same windows. The component stays in the tree so syncs
 don't conflict.

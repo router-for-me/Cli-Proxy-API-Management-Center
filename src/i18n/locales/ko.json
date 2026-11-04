@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "round-robin (순환)",
     "routing_strategy_weighted_round_robin": "weighted-round-robin (가중 순환)",
     "routing_strategy_fill_first": "fill-first (우선 채우기)",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (36시간 내 초기화되는 할당량 우선 사용)"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (만료되는 순서대로 할당량 사용)"
   },
   "auth_files": {
     "sync_catalog_button": "모델 카탈로그 동기화",
@@ -1821,7 +1821,7 @@
     "strategy_fill_first": "먼저 채우기",
     "strategy_round_robin_desc": "계층의 각 자격 증명이 차례로 요청을 받습니다.",
     "strategy_weighted_round_robin_desc": "계층 안에서 가중치 비율로 요청을 나눕니다.",
-    "strategy_weekly_reset_weighted_round_robin_desc": "가중치 비율로 요청을 나누되, 주간 할당량이 36시간 안에 초기화되는 자격 증명이 먼저 받습니다.",
+    "strategy_weekly_reset_weighted_round_robin_desc": "각 요청은 주간 할당량이 가장 먼저 만료될 자격 증명으로 갑니다. 트래픽이 많을 때는 5시간 제한이 있는 자격 증명이 제때 창을 쓰도록 더 일찍 시작합니다.",
     "strategy_fill_first_desc": "하나의 자격 증명이 사용할 수 없을 때까지 모두 받고, 그다음으로 넘어갑니다.",
     "affinity_label": "세션 고정",
     "affinity_desc": "같은 세션의 요청은 같은 자격 증명으로 가며, 사용할 수 없으면 자동으로 전환합니다.",
@@ -2651,7 +2651,7 @@
     "status_error": "오류",
     "status_disabled": "비활성화",
     "priority": "우선",
-    "priority_hint": "주간 초기화까지 36시간 미만이라 먼저 라우팅됩니다",
+    "priority_hint": "주간 할당량이 가장 먼저 만료되어 새 요청이 여기로 갑니다",
     "in_duration": "{{duration}} 후"
   },
   "sensitive_replacements": {

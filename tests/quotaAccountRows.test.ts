@@ -5,6 +5,7 @@ import {
   historyWindowCells,
   isPriorityEligible,
   priorityKeys,
+  routingPlacement,
   liveWindowCells,
   remainingTone,
   sectionColumns,
@@ -156,16 +157,11 @@ describe('account row cells', () => {
 });
 
 describe('routing hints', () => {
-  test('flag weekly resets less than 36 hours away', () => {
-    expect(isPriorityEligible(NOW + 35.9 * H, NOW, 'serving')).toBe(true);
-    expect(isPriorityEligible(NOW + 36.1 * H, NOW, 'serving')).toBe(false);
-    expect(isPriorityEligible(NOW - H, NOW, 'serving')).toBe(false);
-    expect(isPriorityEligible(null, NOW, 'serving')).toBe(false);
-  });
-
-  test('never boost an account the router cannot pick', () => {
+  test('rank any account the router can pick that has a known deadline', () => {
+    expect(isPriorityEligible(NOW + 100 * H, 'serving')).toBe(true);
+    expect(isPriorityEligible(null, 'serving')).toBe(false);
     for (const status of ['cooling', 'unavailable', 'disabled', 'error'] as const) {
-      expect(isPriorityEligible(NOW + 3 * H, NOW, status)).toBe(false);
+      expect(isPriorityEligible(NOW + 3 * H, status)).toBe(false);
     }
   });
 
@@ -192,84 +188,106 @@ describe('routing hints', () => {
     };
     const routing = credentialStatus(file, NOW);
     expect(routing).toEqual({ status: 'cooling', until: NOW + 3 * H });
-    expect(isPriorityEligible(NOW + 3 * H, NOW, routing.status)).toBe(false);
+    expect(isPriorityEligible(NOW + 3 * H, routing.status)).toBe(false);
 
-    // Once the cooldown has run out, the file's own flags decide.
-    expect(credentialStatus(file, NOW + 4 * H).status).toBe('unavailable');
+    // The router picks it again once the retry time has passed, although the flag only
+    // clears on its next success (production 2026-11-04: a Pro shown unavailable while serving).
+    expect(credentialStatus(file, NOW + 4 * H)).toEqual({ status: 'serving', until: null });
     expect(credentialStatus({ name: 'ok.json', type: 'claude' }, NOW).status).toBe('serving');
     expect(credentialStatus({ name: 'off.json', type: 'claude', disabled: true }, NOW).status).toBe(
       'disabled'
     );
   });
 
-  test('boost only the most urgent eligible account, ties sharing', () => {
+  test('read an unavailable account by what keeps it out', () => {
+    const base: AuthFileItem = { name: 'pro.json', type: 'claude', unavailable: true };
+    // Only model cooldowns: back when the first one ends.
+    const models: AuthFileItem = {
+      ...base,
+      cooldownSnapshot: {
+        receivedAtMs: NOW,
+        records: [
+          { scope: 'model', reason: 'quota', retryAt: '', remainingSeconds: 2 * 3600 },
+          { scope: 'model', reason: 'quota', retryAt: '', remainingSeconds: 3600 },
+        ],
+      },
+    };
+    expect(credentialStatus(models, NOW)).toEqual({ status: 'cooling', until: NOW + H });
+    // A retry time still ahead: unavailable until then.
+    const retrying = { ...base, next_retry_after: new Date(NOW + 30 * 60 * 1000).toISOString() };
+    expect(credentialStatus(retrying, NOW)).toEqual({
+      status: 'unavailable',
+      until: NOW + 30 * 60 * 1000,
+    });
+    // No recovery time at all: unavailable for good.
+    expect(credentialStatus(base, NOW)).toEqual({ status: 'unavailable', until: null });
+  });
+
+  test('send new requests to the earliest deadline, ties sharing', () => {
     const candidate = (
       key: string,
-      resetHours: number | null,
+      deadlineHours: number | null,
       sessionLimited = false,
       status: CredentialStatus = 'serving'
     ) => ({
       key,
-      resetAtMs: resetHours === null ? null : NOW + resetHours * H,
+      deadlineMs: deadlineHours === null ? null : NOW + deadlineHours * H,
       status,
       sessionLimited,
     });
     const keys = (...candidates: ReturnType<typeof candidate>[]) =>
-      [...priorityKeys(candidates, NOW)].sort();
+      [...priorityKeys(candidates)].sort();
 
     expect(keys(candidate('35h', 35), candidate('12h', 12), candidate('far', 100))).toEqual([
       '12h',
     ]);
-    // The most urgent one is cooling down, so the next one is boosted.
+    // The first is cooling down, so the next one is first in line.
     expect(keys(candidate('35h', 35), candidate('12h', 12, false, 'cooling'))).toEqual(['35h']);
     expect(keys(candidate('a', 20), candidate('b', 20))).toEqual(['a', 'b']);
-    expect(keys(candidate('far', 40), candidate('none', null))).toEqual([]);
+    // A deadline days away still counts; an unknown one never does.
+    expect(keys(candidate('far', 140), candidate('none', null))).toEqual(['far']);
   });
 
-  test('rank accounts with a 5-hour limit first', () => {
-    const pair = (
-      exemptHours: number,
-      limitedHours: number,
-      limitedStatus: CredentialStatus = 'serving'
-    ) =>
+  test('send session-limited accounts first within an hour of the earliest deadline', () => {
+    const pair = (exemptHours: number, limitedHours: number) =>
       [
-        ...priorityKeys(
-          [
-            {
-              key: 'exempt',
-              resetAtMs: NOW + exemptHours * H,
-              status: 'serving',
-              sessionLimited: false,
-            },
-            {
-              key: 'limited',
-              resetAtMs: NOW + limitedHours * H,
-              status: limitedStatus,
-              sessionLimited: true,
-            },
-          ],
-          NOW
-        ),
+        ...priorityKeys([
+          {
+            key: 'exempt',
+            deadlineMs: NOW + exemptHours * H,
+            status: 'serving',
+            sessionLimited: false,
+          },
+          {
+            key: 'limited',
+            deadlineMs: NOW + limitedHours * H,
+            status: 'serving',
+            sessionLimited: true,
+          },
+        ]),
       ].sort();
     expect(pair(26, 26)).toEqual(['limited']);
-    expect(pair(26, 27.1)).toEqual(['limited']);
-    expect(pair(12, 35)).toEqual(['limited']);
+    expect(pair(26, 26.9)).toEqual(['limited']);
+    expect(pair(26, 27)).toEqual(['limited']);
+    expect(pair(26, 27.1)).toEqual(['exempt']);
     expect(pair(35, 12)).toEqual(['limited']);
-    expect(pair(20 / 60, 30 / 60)).toEqual(['limited']);
-    // A limited account outside the window, or cooling down, leaves the exempt one first.
-    expect(pair(20, 40)).toEqual(['exempt']);
-    expect(pair(20, 12, 'cooling')).toEqual(['exempt']);
-    // Among limited accounts the soonest reset wins.
-    expect([
-      ...priorityKeys(
-        [
-          { key: 'a', resetAtMs: NOW + 30 * H, status: 'serving', sessionLimited: true },
-          { key: 'b', resetAtMs: NOW + 20 * H, status: 'serving', sessionLimited: true },
-          { key: 'c', resetAtMs: NOW + 5 * H, status: 'serving', sessionLimited: false },
-        ],
-        NOW
-      ),
-    ]).toEqual(['b']);
+    expect(pair(1, 34)).toEqual(['exempt']);
+  });
+
+  test('place accounts by the backend report, else by their weekly reset', () => {
+    const routing = { deadline: NOW + 5 * H, sessionLimited: true, sessionShare: 28, drain: 3.9 };
+    expect(routingPlacement(routing, NOW + 9 * H, false, NOW)).toEqual({
+      deadlineMs: NOW + 5 * H,
+      sessionLimited: true,
+    });
+    expect(routingPlacement(null, NOW + 9 * H, true, NOW)).toEqual({
+      deadlineMs: NOW + 9 * H,
+      sessionLimited: true,
+    });
+    expect(routingPlacement(undefined, NOW - H, false, NOW)).toEqual({
+      deadlineMs: null,
+      sessionLimited: false,
+    });
   });
 
   test('tone remaining percentages', () => {

@@ -209,7 +209,7 @@
     "routing_strategy_round_robin": "Round-Robin (Döngü)",
     "routing_strategy_weighted_round_robin": "Weighted-Round-Robin (Ağırlıklı Döngü)",
     "routing_strategy_fill_first": "Fill-First (Önceliklendir)",
-    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (36 saat içinde sıfırlanan kotayı önce kullan)"
+    "routing_strategy_weekly_reset_weighted_round_robin": "weekly-reset-weighted-round-robin (kotayı sona erme sırasına göre kullan)"
   },
   "auth_files": {
     "sync_catalog_button": "Model kataloğunu eşitle",
@@ -1821,7 +1821,7 @@
     "strategy_fill_first": "Önce doldur",
     "strategy_round_robin_desc": "Katmandaki her kimlik sırayla istek alır.",
     "strategy_weighted_round_robin_desc": "İstekler katman içinde ağırlığa göre bölünür.",
-    "strategy_weekly_reset_weighted_round_robin_desc": "İstekler ağırlığa göre bölünür; ancak haftalık kotası 36 saat içinde sıfırlanan kimlikler önce alır.",
+    "strategy_weekly_reset_weighted_round_robin_desc": "Her istek, haftalık kotası ilk sona erecek kimliğe gider. Yoğun trafikte 5 saatlik sınırı olan kimlikler pencerelerini zamanında kullanmak için daha erken başlar.",
     "strategy_fill_first_desc": "Bir kimlik kullanılamaz olana kadar her şeyi alır, sonra sıradakine geçilir.",
     "affinity_label": "Oturum bağlılığı",
     "affinity_desc": "Bir oturumun istekleri aynı kimliğe gider; kullanılamazsa otomatik olarak devredilir.",
@@ -2651,7 +2651,7 @@
     "status_error": "Hata",
     "status_disabled": "Devre dışı",
     "priority": "Öncelik",
-    "priority_hint": "Haftalık sıfırlamaya 36 saatten az kaldı, bu yüzden önce buraya yönlendirilir",
+    "priority_hint": "Haftalık kotası ilk sona eriyor, bu yüzden yeni istekler buraya gider",
     "in_duration": "{{duration}} içinde"
   },
   "sensitive_replacements": {

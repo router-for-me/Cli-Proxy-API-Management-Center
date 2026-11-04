@@ -140,12 +140,15 @@ export function buildForecastPools(
         weight,
         periodMs: window.periodSeconds ? window.periodSeconds * 1000 : 7 * 24 * 60 * 60 * 1000,
         samples: window.points,
-        sessionLimited: account.windows.some(
-          (candidate) =>
-            candidate.id === SESSION_HISTORY_WINDOW_ID &&
-            candidate.points.length > 0 &&
-            candidate.droppedAt === null
-        ),
+        sessionLimited:
+          account.routing?.sessionLimited ??
+          account.windows.some(
+            (candidate) =>
+              candidate.id === SESSION_HISTORY_WINDOW_ID &&
+              candidate.points.length > 0 &&
+              candidate.droppedAt === null
+          ),
+        sessionShare: account.routing?.sessionShare ?? null,
       });
     });
 

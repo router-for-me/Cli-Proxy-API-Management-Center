@@ -12,7 +12,7 @@
  */
 
 import type { QuotaHistoryPoint } from '@/services/api/quotaHistory';
-import { mostUrgent } from '../accounts/rowModel';
+import { firstInLine } from '../accounts/rowModel';
 
 export type SeriesPoint = { t: number; v: number };
 
@@ -26,8 +26,10 @@ export type ForecastAccountInput = {
   periodMs: number | null;
   /** Samples of the forecast window, sorted by time. */
   samples: QuotaHistoryPoint[];
-  /** The account has a 5-hour session limit (ranks it earlier under weekly-reset routing). */
+  /** The account has a 5-hour session limit. */
   sessionLimited?: boolean;
+  /** Weekly % one full 5-hour window allows (backend routing report), when measured. */
+  sessionShare?: number | null;
 };
 
 export type FutureUsage = 'none' | 'half' | 'same' | 'more' | 'double';
@@ -50,8 +52,8 @@ export type ForecastOptions = {
   futureUsage: FutureUsage;
   /** The projection runs to max(to, horizon). */
   horizon: number;
-  /** Weekly-reset routing: how close a reset must be for the account to take all traffic. */
-  priorityWindowMs?: number | null;
+  /** Project traffic the way the weekly-reset router sends it: earliest deadline first. */
+  weeklyResetRouting?: boolean;
 };
 
 export type ProjectedReset = { t: number; amount: number; keys: string[] };
@@ -303,6 +305,7 @@ type SimAccount = {
   nextReset: number | null;
   periodMs: number | null;
   sessionLimited: boolean;
+  sessionShare: number | null;
   points: SeriesPoint[];
 };
 
@@ -315,6 +318,89 @@ type Projection = {
   drain: SeriesPoint[];
 };
 
+const SESSION_WINDOW_HOURS = 5;
+
+/**
+ * Hours to spend `left` (% of the week) at `drain` %/h when each 5-hour window
+ * allows at most `share` %, the first window starting now (backend `hoursToSpend`).
+ */
+export function hoursToSpend(left: number, drain: number, share: number): number {
+  let remaining = left;
+  let elapsed = 0;
+  let end = SESSION_WINDOW_HOURS;
+  for (let guard = 0; guard < 1000; guard += 1) {
+    const window = Math.min(share, drain * (end - elapsed));
+    if (remaining <= window) return elapsed + remaining / drain;
+    remaining -= Math.max(0, window);
+    elapsed = end;
+    end += SESSION_WINDOW_HOURS;
+  }
+  return elapsed + remaining / Math.min(drain, share / SESSION_WINDOW_HOURS);
+}
+
+/** Splits `rate` (pool %/h) over accounts in proportion to their recent burn. */
+function splitByShare(accounts: SimAccount[], rate: number, ownRate: Map<SimAccount, number>) {
+  let carriers = accounts.filter((account) => account.share > 0);
+  let shareOf = (account: SimAccount) => account.share;
+  if (carriers.length === 0) {
+    carriers = accounts;
+    shareOf = (account) => account.weight;
+  }
+  const total = carriers.reduce((sum, account) => sum + shareOf(account), 0);
+  if (total <= 0) return;
+  carriers.forEach((account) => {
+    ownRate.set(
+      account,
+      (ownRate.get(account) ?? 0) + (rate * shareOf(account)) / total / account.weight
+    );
+  });
+}
+
+/**
+ * Weekly-reset routing: the account with the earliest effective deadline takes the
+ * traffic, a session-limited one only as much as its 5-hour windows allow on average,
+ * and the rest goes to the next. The deadline is the reset, moved earlier for a
+ * session-limited account by the extra time its windows add at this traffic (the
+ * backend rule). Accounts without a known reset share what is left by burn.
+ */
+function allocateByDeadline(
+  accounts: SimAccount[],
+  rate: number,
+  ownRate: Map<SimAccount, number>
+) {
+  const deadlineOf = (account: SimAccount) => {
+    const reset = account.nextReset as number;
+    if (!account.sessionLimited || !account.sessionShare) return reset;
+    const drain = rate / account.weight;
+    const extra =
+      hoursToSpend(account.remaining, drain, account.sessionShare) - account.remaining / drain;
+    return reset - Math.max(0, extra) * HOUR_MS;
+  };
+  let left = rate;
+  let queue = accounts.filter((account) => account.nextReset !== null);
+  while (left > EPSILON && queue.length > 0) {
+    const first = firstInLine(queue, deadlineOf, (account) => account.sessionLimited);
+    const each = left / first.length;
+    first.forEach((account) => {
+      const cap =
+        account.sessionLimited && account.sessionShare
+          ? (account.sessionShare / SESSION_WINDOW_HOURS) * account.weight
+          : Infinity;
+      const give = Math.min(each, cap);
+      ownRate.set(account, give / account.weight);
+      left -= give;
+    });
+    queue = queue.filter((account) => !first.includes(account));
+  }
+  if (left > EPSILON) {
+    splitByShare(
+      accounts.filter((account) => account.nextReset === null),
+      left,
+      ownRate
+    );
+  }
+}
+
 /**
  * Event-driven projection. The pool keeps consuming `poolRate` (pool %/h) the
  * way the router keeps sending traffic: split across accounts that still have
@@ -322,12 +408,9 @@ type Projection = {
  * run dry. Each account refills to 100% at its reset and then resets every
  * period.
  *
- * With `priorityWindowMs` (weekly-reset routing), the most urgent account whose
- * reset is that close takes all of it, as the router boosts it: of those
- * accounts, the session-limited ones if any, and of them the soonest reset,
- * ties split evenly. The next one takes over when it runs dry. 5-hour limits
- * themselves are not modelled; outside the window the recent burn already
- * reflects the router sending session-limited accounts traffic first.
+ * With `routed` (weekly-reset routing), traffic goes to accounts in order of
+ * their effective deadline instead (see `allocateByDeadline`), re-ranked at least
+ * hourly as they drain.
  */
 export function projectPool(
   accounts: {
@@ -338,11 +421,12 @@ export function projectPool(
     nextReset: number | null;
     periodMs: number | null;
     sessionLimited?: boolean;
+    sessionShare?: number | null;
   }[],
   poolRate: number,
   start: number,
   end: number,
-  priorityWindowMs: number | null = null
+  routed = false
 ): Projection {
   const sim: SimAccount[] = accounts.map((account) => ({
     key: account.key,
@@ -352,6 +436,7 @@ export function projectPool(
     nextReset: account.nextReset !== null && account.nextReset > start ? account.nextReset : null,
     periodMs: account.periodMs,
     sessionLimited: account.sessionLimited === true,
+    sessionShare: account.sessionShare && account.sessionShare > 0 ? account.sessionShare : null,
     points: [{ t: start, v: clampPercent(account.remaining) }],
   }));
   const poolValue = () => sim.reduce((sum, account) => sum + account.weight * account.remaining, 0);
@@ -369,36 +454,15 @@ export function projectPool(
   for (let guard = 0; guard < 5000 && t < end; guard += 1) {
     // Split the pool rate across accounts with quota left.
     const nonEmpty = sim.filter((account) => account.remaining > EPSILON);
-    const boosted =
-      priorityWindowMs === null
-        ? []
-        : mostUrgent(
-            nonEmpty.filter(
-              (account) =>
-                account.nextReset !== null &&
-                account.nextReset > t &&
-                account.nextReset - priorityWindowMs <= t
-            ),
-            (account) => account.nextReset as number,
-            (account) => account.sessionLimited
-          );
-    let carriers = nonEmpty.filter((account) => account.share > 0);
-    let shareOf = (account: SimAccount) => account.share;
-    if (boosted.length > 0) {
-      carriers = boosted;
-      shareOf = () => 1;
-    } else if (carriers.length === 0) {
-      carriers = nonEmpty;
-      shareOf = (account) => account.weight;
-    }
-    const totalShare = carriers.reduce((sum, account) => sum + shareOf(account), 0);
     const ownRate = new Map<SimAccount, number>();
-    if (rate > 0 && totalShare > 0) {
-      carriers.forEach((account) => {
-        ownRate.set(account, (rate * shareOf(account)) / totalShare / account.weight);
-      });
+    if (rate > 0) {
+      if (routed) allocateByDeadline(nonEmpty, rate, ownRate);
+      else splitByShare(nonEmpty, rate, ownRate);
     }
-    const flowing = ownRate.size > 0 ? rate : 0;
+    let flowing = 0;
+    ownRate.forEach((own, account) => {
+      flowing += own * account.weight;
+    });
     drain.push({ t, v: flowing });
 
     // A window that has not started yet starts on first use.
@@ -408,17 +472,13 @@ export function projectPool(
       }
     });
 
-    let next = end;
+    // Deadlines move as accounts drain, so routed traffic is re-ranked at least hourly.
+    let next = routed ? Math.min(end, t + HOUR_MS) : end;
     sim.forEach((account) => {
       if (account.nextReset !== null && account.nextReset < next) next = account.nextReset;
-      // Entering the priority window re-splits the traffic.
-      const boostFrom =
-        priorityWindowMs !== null && account.nextReset !== null
-          ? account.nextReset - priorityWindowMs
-          : null;
-      if (boostFrom !== null && boostFrom > t && boostFrom < next) next = boostFrom;
     });
     ownRate.forEach((own, account) => {
+      if (own <= 0) return;
       const emptyAt = t + (account.remaining / own) * HOUR_MS;
       if (emptyAt < next) next = emptyAt;
     });
@@ -561,11 +621,12 @@ export function buildPoolForecast(
       nextReset: item.nextReset,
       periodMs: item.input.periodMs,
       sessionLimited: item.input.sessionLimited,
+      sessionShare: item.input.sessionShare ?? null,
     })),
     (burnRate ?? 0) * FUTURE_USAGE_MULTIPLIERS[futureUsage],
     now,
     projectionEnd,
-    options.priorityWindowMs ?? null
+    options.weeklyResetRouting === true
   );
 
   const projectedFrom = Math.max(now, from);

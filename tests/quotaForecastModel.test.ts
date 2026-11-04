@@ -5,6 +5,7 @@ import {
   buildRecordedSeries,
   consumedBetween,
   niceCeiling,
+  hoursToSpend,
   projectPool,
   sumSeries,
   valueAt,
@@ -169,7 +170,6 @@ describe('projection', () => {
   });
 
   describe('with weekly-reset routing', () => {
-    const WINDOW = 36 * H;
     const week = 7 * 24 * H;
     const sim = (resetHours: number, remaining: number, burnRate: number) => ({
       remaining,
@@ -177,8 +177,10 @@ describe('projection', () => {
       nextReset: T0 + resetHours * H,
       periodMs: week,
     });
+    const at = (projection: ReturnType<typeof projectPool>, key: string, hours: number) =>
+      valueAt(projection.accounts.get(key) ?? [], T0 + hours * H);
 
-    test('drains an account inside its window before the reset instead of wasting it', () => {
+    test('drains the account resetting first instead of wasting it', () => {
       const accounts = [
         { key: 'soon', weight: 1, ...sim(10, 80, 1) },
         { key: 'later', weight: 1, ...sim(100, 100, 9) },
@@ -187,48 +189,27 @@ describe('projection', () => {
       const split = projectPool(accounts, 10, T0, T0 + 12 * H);
       expect(split.resets).toEqual([{ t: T0 + 10 * H, amount: 30, keys: ['soon'] }]);
 
-      const routed = projectPool(accounts, 10, T0, T0 + 12 * H, WINDOW);
+      const routed = projectPool(accounts, 10, T0, T0 + 12 * H, true);
       expect(routed.firstEmpty).toEqual({ key: 'soon', t: T0 + 8 * H });
       expect(routed.resets).toEqual([{ t: T0 + 10 * H, amount: 100, keys: ['soon'] }]);
       // 'later' takes the traffic once 'soon' is empty: 2 hours at 10 points.
-      expect(valueAt(routed.accounts.get('later') ?? [], T0 + 10 * H)).toBeCloseTo(80);
+      expect(at(routed, 'later', 10)).toBeCloseTo(80);
     });
 
-    test('re-splits the traffic when an account enters its window', () => {
+    test('follows the earliest reset however far away', () => {
       const projection = projectPool(
         [
-          { key: 'a', weight: 1, ...sim(40, 80, 5) },
+          { key: 'a', weight: 1, ...sim(80, 80, 5) },
           { key: 'b', weight: 1, ...sim(140, 100, 5) },
         ],
         10,
         T0,
         T0 + 12 * H,
-        WINDOW
+        true
       );
-      // 4 hours at half the rate, then all of it: 80 − 20 − 60 runs out at hour 10.
-      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 4 * H)).toBeCloseTo(60);
-      expect(projection.firstEmpty).toEqual({ key: 'a', t: T0 + 10 * H });
-    });
-
-    test('gives all traffic to the most urgent account, then the next', () => {
-      const projection = projectPool(
-        [
-          { key: 'a', weight: 1, ...sim(20, 100, 0) },
-          { key: 'b', weight: 2, ...sim(30, 100, 9) },
-          { key: 'c', weight: 1, ...sim(100, 100, 1) },
-        ],
-        12,
-        T0,
-        T0 + 10 * H,
-        WINDOW
-      );
-      // 'a' resets first and loses 12%/h whatever its burn; empty after 8h20m.
-      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 5 * H)).toBeCloseTo(40);
-      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(100);
-      expect(projection.firstEmpty?.key).toBe('a');
-      // Then double-capacity 'b' takes the 12 pool points: 6%/h for 1h40m.
-      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 10 * H)).toBeCloseTo(90);
-      expect(valueAt(projection.accounts.get('c') ?? [], T0 + 10 * H)).toBeCloseTo(100);
+      expect(at(projection, 'a', 4)).toBeCloseTo(40);
+      expect(projection.firstEmpty).toEqual({ key: 'a', t: T0 + 8 * H });
+      expect(at(projection, 'b', 12)).toBeCloseTo(60);
     });
 
     test('splits evenly between accounts tied on their reset', () => {
@@ -240,36 +221,61 @@ describe('projection', () => {
         12,
         T0,
         T0 + 5 * H,
-        WINDOW
+        true
       );
       // 6 pool points an hour each: 'a' loses 6%/h, double-capacity 'b' 3%/h.
-      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 5 * H)).toBeCloseTo(70);
-      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(85);
+      expect(at(projection, 'a', 5)).toBeCloseTo(70);
+      expect(at(projection, 'b', 5)).toBeCloseTo(85);
     });
 
-    test('drains a session-limited account first', () => {
-      const run = (limitedResetHours: number) =>
+    test('caps a session-limited account at its 5-hour share and spills the rest', () => {
+      const projection = projectPool(
+        [
+          { key: 'limited', weight: 1, ...sim(10, 100, 1), sessionLimited: true, sessionShare: 20 },
+          { key: 'exempt', weight: 1, ...sim(50, 100, 1) },
+        ],
+        10,
+        T0,
+        T0 + 2 * H,
+        true
+      );
+      // 20% per 5 hours is 4%/h; the other 6 points an hour go to the next deadline.
+      expect(at(projection, 'limited', 2)).toBeCloseTo(92);
+      expect(at(projection, 'exempt', 2)).toBeCloseTo(88);
+    });
+
+    test('starts a session-limited account early only under heavy traffic', () => {
+      const run = (rate: number) =>
         projectPool(
           [
             { key: 'exempt', weight: 1, ...sim(20, 100, 1) },
-            { key: 'limited', weight: 1, ...sim(limitedResetHours, 100, 1), sessionLimited: true },
+            {
+              key: 'limited',
+              weight: 1,
+              ...sim(22, 100, 1),
+              sessionLimited: true,
+              sessionShare: 28,
+            },
           ],
-          10,
+          rate,
           T0,
-          T0 + 2 * H,
-          WINDOW
+          T0 + H,
+          true
         );
-      const left = (projection: ReturnType<typeof run>, key: string) =>
-        valueAt(projection.accounts.get(key) ?? [], T0 + 2 * H);
-      for (const limitedResetHours of [20, 30, 5]) {
-        const projection = run(limitedResetHours);
-        expect(left(projection, 'limited')).toBeCloseTo(80);
-        expect(left(projection, 'exempt')).toBeCloseTo(100);
-      }
-      // Outside the window the limited account loses its place.
-      const outside = run(40);
-      expect(left(outside, 'limited')).toBeCloseTo(100);
-      expect(left(outside, 'exempt')).toBeCloseTo(80);
+      // At 10%/h its windows need 16.6 h instead of 10 h: it goes before the exempt one.
+      const heavy = run(10);
+      expect(at(heavy, 'limited', 1)).toBeCloseTo(100 - 5.6);
+      expect(at(heavy, 'exempt', 1)).toBeCloseTo(100 - 4.4);
+      // At 1%/h the windows never bind, so the earlier reset goes first.
+      const light = run(1);
+      expect(at(light, 'exempt', 1)).toBeCloseTo(99);
+      expect(at(light, 'limited', 1)).toBeCloseTo(100);
+    });
+
+    test('spends limited windows the way the backend counts them', () => {
+      expect(hoursToSpend(20, 10, 28)).toBeCloseTo(2);
+      expect(hoursToSpend(50, 2, 28)).toBeCloseTo(25);
+      expect(hoursToSpend(100, 10, 28)).toBeCloseTo(16.6);
     });
   });
 
@@ -315,7 +321,7 @@ describe('pool forecast', () => {
     expect(forecast.projectedResets[0].t).toBe(T0 + 50 * H);
   });
 
-  test('follows the priority window when weekly-reset routing is on', () => {
+  test('follows the earliest reset when weekly-reset routing is on', () => {
     const now = T0 + 3 * H;
     const inputs = [
       // Resets in 7 hours with 78% left, at 1%/h of a 10%/h pool.
@@ -331,7 +337,7 @@ describe('pool forecast', () => {
       horizon: now,
     };
     const split = buildPoolForecast(inputs, options);
-    const routed = buildPoolForecast(inputs, { ...options, priorityWindowMs: 36 * H });
+    const routed = buildPoolForecast(inputs, { ...options, weeklyResetRouting: true });
     expect(split.nextReset?.amount).toBeCloseTo(22 + 7 * 1);
     expect(routed.nextReset?.amount).toBeCloseTo(22 + 7 * 10);
   });
@@ -385,5 +391,33 @@ describe('history normalization', () => {
       { t: 2, used: 100, resetAt: null },
     ]);
     expect(history.accounts[0].windows.map((window) => window.droppedAt)).toEqual([null, 2]);
+  });
+});
+
+describe('quota history routing report', () => {
+  test("reads each account's routing placement", () => {
+    const history = normalizeQuotaHistory({
+      enabled: true,
+      accounts: [
+        {
+          auth_id: 'a',
+          provider: 'claude',
+          windows: [],
+          routing: {
+            deadline: 1800000000000,
+            session_limited: true,
+            session_share: 28.2,
+            drain: 3.87,
+          },
+        },
+        { auth_id: 'b', provider: 'claude', windows: [], routing: { session_limited: false } },
+        { auth_id: 'c', provider: 'claude', windows: [] },
+      ],
+    });
+    expect(history.accounts.map((account) => account.routing)).toEqual([
+      { deadline: 1800000000000, sessionLimited: true, sessionShare: 28.2, drain: 3.87 },
+      { deadline: null, sessionLimited: false, sessionShare: null, drain: null },
+      null,
+    ]);
   });
 });

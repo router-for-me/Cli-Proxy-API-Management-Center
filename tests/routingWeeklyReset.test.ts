@@ -78,6 +78,6 @@ describe('weekly-reset routing strategy on the routing board', () => {
       })
     );
     expect(html).toMatch(/role="radio" aria-checked="true" tabindex="0"[^>]*>.*Reset weighted round-robin</);
-    expect(html).toContain('weekly quota resets within 36 hours');
+    expect(html).toContain('weekly quota would expire first');
   });
 });
