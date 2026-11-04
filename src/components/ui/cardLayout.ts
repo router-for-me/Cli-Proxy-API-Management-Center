@@ -14,14 +14,17 @@ export const DEFAULT_CARD_LAYOUT: CardLayout = 'even';
 export const isCardLayout = (value: unknown): value is CardLayout =>
   typeof value === 'string' && (CARD_LAYOUTS as readonly string[]).includes(value);
 
-/** Each page keeps its own choice in localStorage; unknown or unreadable values give the default. */
-export const readCardLayout = (storageKey: string): CardLayout => {
-  if (typeof window === 'undefined') return DEFAULT_CARD_LAYOUT;
+/** Each page keeps its own choice in localStorage; unknown or unreadable values give `fallback`. */
+export const readCardLayout = (
+  storageKey: string,
+  fallback: CardLayout = DEFAULT_CARD_LAYOUT
+): CardLayout => {
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = window.localStorage.getItem(storageKey);
-    return isCardLayout(stored) ? stored : DEFAULT_CARD_LAYOUT;
+    return isCardLayout(stored) ? stored : fallback;
   } catch {
-    return DEFAULT_CARD_LAYOUT;
+    return fallback;
   }
 };
 

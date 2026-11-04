@@ -8,6 +8,8 @@ import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer'
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { StackedColumns } from '@/components/ui/StackedColumns';
+import { readCardLayout, writeCardLayout, type CardLayout } from '@/components/ui/cardLayout';
 import { copyToClipboard } from '@/utils/clipboard';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import {
@@ -45,6 +47,7 @@ import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth'
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import {
+  AUTH_FILES_CARD_LAYOUT_KEY,
   isAuthFilesStatusFilterMode,
   isAuthFilesSortMode,
   readAuthFilesUiState,
@@ -54,7 +57,9 @@ import {
   type AuthFilesStatusFilterMode,
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
-import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import { QUOTA_ADAPTERS } from '@/features/quota/providers';
+import type { QuotaStore } from '@/features/quota/providers/types';
+import { useAuthStore, useNotificationStore, useQuotaStore, useThemeStore } from '@/stores';
 import styles from './AuthFilesPage.module.scss';
 
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
@@ -88,7 +93,9 @@ export function AuthFilesPage() {
 
   const [filter, setFilter] = useState<'all' | string>('all');
   const [statusFilterMode, setStatusFilterMode] = useState<AuthFilesStatusFilterMode>('all');
-  const [compactMode, setCompactMode] = useState(false);
+  const [layout, setLayout] = useState<CardLayout>('even');
+  // Compact is the page's existing compact card; it keeps its own page size.
+  const compactMode = layout === 'compact';
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSizeByMode, setPageSizeByMode] = useState({
@@ -205,9 +212,7 @@ export function AuthFilesPage() {
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
-    if (typeof persistedCompactMode === 'boolean') {
-      setCompactMode(persistedCompactMode);
-    }
+    let compactFallback = persistedCompactMode === true;
 
     const persisted = readAuthFilesUiState();
     if (persisted) {
@@ -228,7 +233,7 @@ export function AuthFilesPage() {
         );
       }
       if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
-        setCompactMode(persisted.compactMode);
+        compactFallback = persisted.compactMode;
       }
       if (typeof persisted.search === 'string') {
         setSearch(persisted.search);
@@ -257,6 +262,8 @@ export function AuthFilesPage() {
       }
     }
 
+    // Before card layouts existed, the compact switch was the only choice.
+    setLayout(readCardLayout(AUTH_FILES_CARD_LAYOUT_KEY, compactFallback ? 'compact' : 'even'));
     setUiStateHydrated(true);
   }, []);
 
@@ -277,8 +284,10 @@ export function AuthFilesPage() {
       sortMode,
     });
     writePersistedAuthFilesCompactMode(compactMode);
+    writeCardLayout(AUTH_FILES_CARD_LAYOUT_KEY, layout);
   }, [
     compactMode,
+    layout,
     disabledOnly,
     filter,
     page,
@@ -584,6 +593,45 @@ export function AuthFilesPage() {
     .filter(Boolean)
     .join(' ');
 
+  // Credentials whose quota is loading, joined into one string so the selector result compares
+  // by value. Stacked keeps a loading card's last height, so a refresh doesn't move cards.
+  const loadingQuotaKeys = useQuotaStore((state) =>
+    Object.values(QUOTA_ADAPTERS)
+      .flatMap((adapter) =>
+        Object.entries(adapter.storeSelector(state as unknown as QuotaStore))
+          .filter(([, quota]) => quota?.status === 'loading')
+          .map(([key]) => key)
+      )
+      .join('\n')
+  );
+  const loadingQuotaSet = useMemo(() => new Set(loadingQuotaKeys.split('\n')), [loadingQuotaKeys]);
+
+  const renderCard = (file: (typeof pageItems)[number], index: number) => (
+    <AuthFileCard
+      key={getQuotaCacheKey(file)}
+      file={file}
+      compact={compactMode}
+      selected={selectedFiles.has(file.name)}
+      resolvedTheme={resolvedTheme}
+      disableControls={disableControls}
+      deleting={deleting}
+      statusUpdating={statusUpdating}
+      manualRefreshing={manualRefreshing}
+      cooldownResetting={cooldownResetting}
+      quotaFilterType={activeQuotaFilter}
+      statusBarCache={statusBarCache}
+      entranceDelayMs={cardEntranceDelay(index)}
+      onShowModels={showModels}
+      onDownload={handleDownload}
+      onManualRefresh={handleManualRefresh}
+      onCooldownReset={handleCooldownReset}
+      onOpenPrefixProxyEditor={openPrefixProxyEditor}
+      onDelete={handleDelete}
+      onToggleStatus={handleStatusToggle}
+      onToggleSelect={toggleSelect}
+    />
+  );
+
   return (
     <div className={styles.page}>
       <VaultHeader
@@ -639,8 +687,8 @@ export function AuthFilesPage() {
           pageSizeInput={pageSizeInput}
           onPageSizeInputChange={handlePageSizeChange}
           onPageSizeCommit={commitPageSizeInput}
-          compactMode={compactMode}
-          onCompactModeChange={setCompactMode}
+          layout={layout}
+          onLayoutChange={setLayout}
           deleteLabel={deleteAllButtonLabel}
           deleteDisabled={disableControls || loading || deletingAll || files.length === 0}
           deleteLoading={deletingAll}
@@ -700,33 +748,18 @@ export function AuthFilesPage() {
             }
           />
         ) : (
-          <div className={gridClasses}>
-            {pageItems.map((file, index) => (
-              <AuthFileCard
-                key={getQuotaCacheKey(file)}
-                file={file}
-                compact={compactMode}
-                selected={selectedFiles.has(file.name)}
-                resolvedTheme={resolvedTheme}
-                disableControls={disableControls}
-                deleting={deleting}
-                statusUpdating={statusUpdating}
-                manualRefreshing={manualRefreshing}
-                cooldownResetting={cooldownResetting}
-                quotaFilterType={activeQuotaFilter}
-                statusBarCache={statusBarCache}
-                entranceDelayMs={cardEntranceDelay(index)}
-                onShowModels={showModels}
-                onDownload={handleDownload}
-                onManualRefresh={handleManualRefresh}
-                onCooldownReset={handleCooldownReset}
-                onOpenPrefixProxyEditor={openPrefixProxyEditor}
-                onDelete={handleDelete}
-                onToggleStatus={handleStatusToggle}
-                onToggleSelect={toggleSelect}
-              />
-            ))}
-          </div>
+          // One container for every layout, so switching layouts never remounts the cards.
+          <StackedColumns
+            stacked={layout !== 'even'}
+            className={layout === 'even' ? gridClasses : undefined}
+            minColumnWidth={compactMode && !activeQuotaFilter ? 260 : 340}
+            gap={16}
+            items={pageItems.map((file, index) => ({
+              key: getQuotaCacheKey(file),
+              node: renderCard(file, index),
+              settled: !loadingQuotaSet.has(getQuotaCacheKey(file)),
+            }))}
+          />
         )}
 
         {!loading && sorted.length > pageSize && (

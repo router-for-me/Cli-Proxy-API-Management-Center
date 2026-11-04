@@ -25,6 +25,8 @@ export type AuthFilesUiState = {
 
 const AUTH_FILES_UI_STATE_KEY = 'authFilesPage.uiState';
 const AUTH_FILES_COMPACT_MODE_KEY = 'authFilesPage.compactMode';
+/** Card layout (Even rows / Stacked / Compact). compactMode is still written for older versions. */
+export const AUTH_FILES_CARD_LAYOUT_KEY = 'authFilesPage.cardLayout';
 const AUTH_FILES_SORT_MODE_SET = new Set<AuthFilesSortMode>(AUTH_FILES_SORT_MODES);
 const AUTH_FILES_STATUS_FILTER_MODE_SET = new Set<AuthFilesStatusFilterMode>(
   AUTH_FILES_STATUS_FILTER_MODES

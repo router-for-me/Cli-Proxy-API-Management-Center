@@ -86,6 +86,14 @@ describe('stored layout choice', () => {
     expect(readCardLayout('a')).toBe('even');
   });
 
+  test('uses the caller fallback only when nothing valid is stored', () => {
+    // Auth Files passes 'compact' for users who had the old compact switch on.
+    withStorage((key) => (key === 'set' ? 'stacked' : key === 'bad' ? 'grid' : null));
+    expect(readCardLayout('set', 'compact')).toBe('stacked');
+    expect(readCardLayout('bad', 'compact')).toBe('compact');
+    expect(readCardLayout('missing', 'compact')).toBe('compact');
+  });
+
   test('writes the choice under the page key', () => {
     const store = new Map<string, string>();
     withStorage(() => null, store);
