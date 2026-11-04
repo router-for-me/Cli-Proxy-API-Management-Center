@@ -247,7 +247,7 @@ describe('projection', () => {
       expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(85);
     });
 
-    test('ranks a session-limited account an hour earlier', () => {
+    test('drains a session-limited account first', () => {
       const run = (limitedResetHours: number) =>
         projectPool(
           [
@@ -261,12 +261,15 @@ describe('projection', () => {
         );
       const left = (projection: ReturnType<typeof run>, key: string) =>
         valueAt(projection.accounts.get(key) ?? [], T0 + 2 * H);
-      const close = run(20.5);
-      expect(left(close, 'limited')).toBeCloseTo(80);
-      expect(left(close, 'exempt')).toBeCloseTo(100);
-      const apart = run(21.5);
-      expect(left(apart, 'limited')).toBeCloseTo(100);
-      expect(left(apart, 'exempt')).toBeCloseTo(80);
+      for (const limitedResetHours of [20, 30, 5]) {
+        const projection = run(limitedResetHours);
+        expect(left(projection, 'limited')).toBeCloseTo(80);
+        expect(left(projection, 'exempt')).toBeCloseTo(100);
+      }
+      // Outside the window the limited account loses its place.
+      const outside = run(40);
+      expect(left(outside, 'limited')).toBeCloseTo(100);
+      expect(left(outside, 'exempt')).toBeCloseTo(80);
     });
   });
 

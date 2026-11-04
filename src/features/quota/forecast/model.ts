@@ -12,7 +12,7 @@
  */
 
 import type { QuotaHistoryPoint } from '@/services/api/quotaHistory';
-import { mostUrgent, priorityDeadline } from '../accounts/rowModel';
+import { mostUrgent } from '../accounts/rowModel';
 
 export type SeriesPoint = { t: number; v: number };
 
@@ -323,10 +323,11 @@ type Projection = {
  * period.
  *
  * With `priorityWindowMs` (weekly-reset routing), the most urgent account whose
- * reset is that close takes all of it, as the router boosts it: the soonest
- * reset, a session-limited account counting an hour earlier, ties split
- * evenly. The next one takes over when it runs dry. 5-hour limits themselves
- * are not modelled.
+ * reset is that close takes all of it, as the router boosts it: of those
+ * accounts, the session-limited ones if any, and of them the soonest reset,
+ * ties split evenly. The next one takes over when it runs dry. 5-hour limits
+ * themselves are not modelled; outside the window the recent burn already
+ * reflects the router sending session-limited accounts traffic first.
  */
 export function projectPool(
   accounts: {
@@ -378,7 +379,8 @@ export function projectPool(
                 account.nextReset > t &&
                 account.nextReset - priorityWindowMs <= t
             ),
-            (account) => priorityDeadline(account.nextReset as number, account.sessionLimited)
+            (account) => account.nextReset as number,
+            (account) => account.sessionLimited
           );
     let carriers = nonEmpty.filter((account) => account.share > 0);
     let shareOf = (account: SimAccount) => account.share;

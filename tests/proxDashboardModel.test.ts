@@ -159,7 +159,7 @@ describe('account rows', () => {
       NOW
     );
     const flagged = rows.filter((row) => row.priority).map((row) => row.name);
-    // The session-limited account resets 30 minutes later but counts an hour earlier.
+    // Session-limited accounts go first, so 'limited-12h30' beats exempt 'in-12h'.
     expect(flagged).toEqual(['limited-12h30@example.com', 'codex@example.com']);
   });
 

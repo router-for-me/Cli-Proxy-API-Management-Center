@@ -28,12 +28,6 @@ export type AccountColumn = { id: string; label: string };
 /** Routing strategy that boosts accounts close to their weekly reset (backend fork). */
 export const WEEKLY_RESET_STRATEGY = 'weekly-reset-weighted-round-robin';
 export const PRIORITY_RESET_WINDOW_HOURS = 36;
-/**
- * A credential with a 5-hour session limit counts as resetting this much
- * earlier when the router ranks boosted credentials (backend
- * `WeeklyResetSessionHeadStart`): it can only spend a session at a time.
- */
-export const SESSION_HEAD_START_HOURS = 1;
 /** Column id of the 5-hour session window, for Claude and Codex alike. */
 export const SESSION_WINDOW_ID = 'five-hour';
 const MAX_WINDOW_COLUMNS = 4;
@@ -283,15 +277,22 @@ export const isPriorityEligible = (
   resetAtMs > nowMs &&
   resetAtMs - nowMs < PRIORITY_RESET_WINDOW_HOURS * HOUR_MS;
 
-/** The instant the router ranks a boost-eligible credential by. */
-export const priorityDeadline = (resetAtMs: number, sessionLimited: boolean): number =>
-  resetAtMs - (sessionLimited ? SESSION_HEAD_START_HOURS * HOUR_MS : 0);
-
-/** The candidates with the earliest deadline; ties all count. */
-export function mostUrgent<T>(candidates: T[], deadlineOf: (candidate: T) => number): T[] {
-  if (candidates.length === 0) return [];
-  const earliest = Math.min(...candidates.map(deadlineOf));
-  return candidates.filter((candidate) => deadlineOf(candidate) === earliest);
+/**
+ * The boost-eligible candidates the router sends traffic to, as the backend
+ * ranks them: those with a 5-hour session limit go before exempt ones (they
+ * can spend only a session at a time), then the soonest weekly reset wins.
+ * Ties all count.
+ */
+export function mostUrgent<T>(
+  candidates: T[],
+  resetOf: (candidate: T) => number,
+  sessionLimitedOf: (candidate: T) => boolean
+): T[] {
+  const limited = candidates.filter(sessionLimitedOf);
+  const tier = limited.length > 0 ? limited : candidates;
+  if (tier.length === 0) return [];
+  const earliest = Math.min(...tier.map(resetOf));
+  return tier.filter((candidate) => resetOf(candidate) === earliest);
 }
 
 export type PriorityCandidate = {
@@ -304,8 +305,8 @@ export type PriorityCandidate = {
 
 /**
  * Keys of the credentials the weekly-reset router boosts now, among one
- * provider's credentials: of the eligible ones, those whose weekly reset is
- * soonest, a session-limited one counting `SESSION_HEAD_START_HOURS` earlier.
+ * provider's credentials: of the eligible ones, the session-limited ones if
+ * any, and of those the soonest weekly reset.
  */
 export const priorityKeys = (candidates: PriorityCandidate[], nowMs: number): Set<string> =>
   new Set(
@@ -313,7 +314,8 @@ export const priorityKeys = (candidates: PriorityCandidate[], nowMs: number): Se
       candidates.filter((candidate) =>
         isPriorityEligible(candidate.resetAtMs, nowMs, candidate.status)
       ),
-      (candidate) => priorityDeadline(candidate.resetAtMs as number, candidate.sessionLimited)
+      (candidate) => candidate.resetAtMs as number,
+      (candidate) => candidate.sessionLimited
     ).map((candidate) => candidate.key)
   );
 

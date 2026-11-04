@@ -226,8 +226,12 @@ describe('routing hints', () => {
     expect(keys(candidate('far', 40), candidate('none', null))).toEqual([]);
   });
 
-  test('rank an account with a 5-hour limit an hour earlier', () => {
-    const pair = (exemptHours: number, limitedHours: number) =>
+  test('rank accounts with a 5-hour limit first', () => {
+    const pair = (
+      exemptHours: number,
+      limitedHours: number,
+      limitedStatus: CredentialStatus = 'serving'
+    ) =>
       [
         ...priorityKeys(
           [
@@ -240,7 +244,7 @@ describe('routing hints', () => {
             {
               key: 'limited',
               resetAtMs: NOW + limitedHours * H,
-              status: 'serving',
+              status: limitedStatus,
               sessionLimited: true,
             },
           ],
@@ -248,14 +252,24 @@ describe('routing hints', () => {
         ),
       ].sort();
     expect(pair(26, 26)).toEqual(['limited']);
-    expect(pair(26, 26.9)).toEqual(['limited']);
-    expect(pair(26, 27)).toEqual(['exempt', 'limited']);
-    expect(pair(26, 27.1)).toEqual(['exempt']);
+    expect(pair(26, 27.1)).toEqual(['limited']);
+    expect(pair(12, 35)).toEqual(['limited']);
     expect(pair(35, 12)).toEqual(['limited']);
-    // Under an hour from the reset the limited deadline lies in the past: still eligible, still first.
     expect(pair(20 / 60, 30 / 60)).toEqual(['limited']);
-    expect(pair(50 / 60, 10 / 60)).toEqual(['limited']);
-    expect(pair(2, 0.5)).toEqual(['limited']);
+    // A limited account outside the window, or cooling down, leaves the exempt one first.
+    expect(pair(20, 40)).toEqual(['exempt']);
+    expect(pair(20, 12, 'cooling')).toEqual(['exempt']);
+    // Among limited accounts the soonest reset wins.
+    expect([
+      ...priorityKeys(
+        [
+          { key: 'a', resetAtMs: NOW + 30 * H, status: 'serving', sessionLimited: true },
+          { key: 'b', resetAtMs: NOW + 20 * H, status: 'serving', sessionLimited: true },
+          { key: 'c', resetAtMs: NOW + 5 * H, status: 'serving', sessionLimited: false },
+        ],
+        NOW
+      ),
+    ]).toEqual(['b']);
   });
 
   test('tone remaining percentages', () => {
