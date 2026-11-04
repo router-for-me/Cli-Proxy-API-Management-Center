@@ -14,7 +14,11 @@ import {
   FIELD_VALUE_KEYS,
   SECTION_VALIDATION_FIELDS,
 } from '@/features/config/constants';
-import { CONFIG_FIELD_SEARCH_INDEX, findConfigFieldById } from '@/features/config/searchIndex';
+import {
+  CONFIG_FIELD_SEARCH_INDEX,
+  findConfigFieldById,
+  searchConfigFields,
+} from '@/features/config/searchIndex';
 import { getVisualConfigValidationErrors } from '@/hooks/useVisualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 
@@ -109,7 +113,7 @@ describe('JSX anchor parity (source scan)', () => {
 });
 
 describe('registry consistency', () => {
-  test('tab id registry is common + the seven canonical sections', () => {
+  test('tab id registry is common + the canonical sections', () => {
     expect([...CONFIG_TAB_IDS]).toEqual(['common', ...CONFIG_SECTION_IDS]);
   });
 
@@ -131,4 +135,36 @@ describe('registry consistency', () => {
       expect(INDEX_FIELD_ID_SET.has(fieldId)).toBe(true);
     }
   });
+});
+
+describe('v8 YAML search paths', () => {
+  test('deprecated quota switches are absent from values and search metadata', () => {
+    for (const fieldId of ['quotaSwitchProject', 'quotaSwitchPreviewModel']) {
+      expect(LEAF_VALUE_KEYS.has(fieldId)).toBe(false);
+      expect(findConfigFieldById(fieldId)).toBeUndefined();
+      expect(FIELD_VALUE_KEYS).not.toHaveProperty(fieldId);
+    }
+  });
+
+  for (const [fieldId, path] of [
+    ['apiKeys', 'access.api-keys'],
+    ['commercialMode', 'server.commercial-mode'],
+    ['requestRetry', 'routing.retry.request-retry'],
+    ['routingStrategy', 'routing.strategy'],
+    ['quotaAntigravityCredits', 'oauth.providers.antigravity.antigravity-credits'],
+    ['wsAuth', 'oauth.providers.aistudio.ws-auth'],
+    ['codexHeaderUserAgent', 'oauth.providers.codex.header-defaults.user-agent'],
+    ['codexOptimizeMultiAgentV2', 'client.codex.optimize-multi-agent-v2'],
+    ['codexResponseSteering', 'upstream.codex.response-steering'],
+    ['claudeHeaderUserAgent', 'upstream.claude.header-defaults.user-agent'],
+    ['xaiInjectXSearch', 'upstream.xai.inject-x-search'],
+    ['streamingNonstreamKeepalive', 'requests.nonstream-keepalive-interval'],
+    ['payloadDefaultRules', 'requests.payload.default'],
+    ['pluginStoreAuth', 'plugins.store-auth'],
+  ]) {
+    test(`indexes ${path}`, () => {
+      expect(findConfigFieldById(fieldId)?.yamlKeys?.join('.')).toBe(path);
+      expect(searchConfigFields(path, () => '').map((entry) => entry.fieldId)).toContain(fieldId);
+    });
+  }
 });

@@ -8,7 +8,7 @@ import { useQuotaStore } from '@/stores/useQuotaStore';
 import i18n from '@/i18n';
 
 for (const hasUsage of [true, false]) {
-  test(`Meta adapter uses /api-call with ${hasUsage ? 'populated' : 'missing'} usage`, async () => {
+  test(`Meta adapter uses /requests/api-call with ${hasUsage ? 'populated' : 'missing'} usage`, async () => {
     const download = spyOn(authFilesApi, 'downloadText').mockResolvedValue(
       '{"dca_token":"dca:fixture-only","api_key":"LLM|unused"}'
     );
@@ -23,7 +23,7 @@ for (const hasUsage of [true, false]) {
     try {
       const data = await META_CONFIG.fetchQuota(file, i18n.t);
       expect(post).toHaveBeenCalledWith(
-        '/api-call',
+        '/requests/api-call',
         {
           authIndex: 'fixture-index',
           method: 'POST',

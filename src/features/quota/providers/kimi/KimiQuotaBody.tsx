@@ -10,11 +10,11 @@ import { useNow } from '@/hooks/useNow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
+import { planValueClassForTier, resolveKimiCardTier } from '../../cardTier';
 import type { QuotaBodyProps } from '../../types';
 
 export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>) {
   const { t, i18n } = useTranslation();
-  // Ahead of the early return below — hooks cannot be conditional.
   const now = useNow();
   const soonestRowId = useMemo(
     () => pickUrgentRowId(collectQuotaRowInstants('kimi', quota), now),
@@ -22,12 +22,19 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
   );
   const rows = quota.rows ?? [];
 
-  if (rows.length === 0) {
-    return <div className={classes.quotaMessage}>{t('kimi_quota.empty_data')}</div>;
-  }
-
   return (
     <>
+      <div className={classes.codexPlan}>
+        <span className={classes.codexPlanItem}>
+          <span className={classes.codexPlanLabel}>{t('kimi_quota.plan_label')}</span>
+          <span className={planValueClassForTier(resolveKimiCardTier(quota.planName), classes)}>
+            {quota.planName || t('kimi_quota.plan_unknown')}
+          </span>
+        </span>
+      </div>
+      {rows.length === 0 && (
+        <div className={classes.quotaMessage}>{t('kimi_quota.empty_data')}</div>
+      )}
       {rows.map((row, index) => {
         const limit = row.limit;
         const used = row.used;

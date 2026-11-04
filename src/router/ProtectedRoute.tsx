@@ -1,40 +1,22 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import type { LoginRedirectState } from './loginRedirect';
 
+/**
+ * 未通过本次会话验证时一律交给登录页：
+ * 保存了密码的用户在登录页经由启动画面自动登录，并以统一的"开灯"过渡回到原目标页；
+ * 没有可恢复会话的用户直接看到登录表单。
+ */
 export function ProtectedRoute({ children }: { children: ReactElement }) {
   const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const managementKey = useAuthStore((state) => state.managementKey);
-  const apiBase = useAuthStore((state) => state.apiBase);
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-  const [checking, setChecking] = useState(false);
-
-  useEffect(() => {
-    const tryRestore = async () => {
-      if (!isAuthenticated && managementKey && apiBase) {
-        setChecking(true);
-        try {
-          await checkAuth();
-        } finally {
-          setChecking(false);
-        }
-      }
-    };
-    tryRestore();
-  }, [apiBase, isAuthenticated, managementKey, checkAuth]);
-
-  if (checking) {
-    return (
-      <div className="main-content">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    const state: LoginRedirectState = {
+      from: { pathname: location.pathname, search: location.search },
+    };
+    return <Navigate to="/login" replace state={state} />;
   }
 
   return children;

@@ -1,5 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  COMMON_FIELD_IDS,
+  CONFIG_SECTION_IDS,
+  CONFIG_TAB_IDS,
+  FIELD_VALUE_KEYS,
+  SECTION_INDEX_LABELS,
+} from '@/features/config/constants';
+import {
+  CONFIG_FIELD_SEARCH_INDEX,
+  findConfigFieldById,
+  searchConfigFields,
+} from '@/features/config/searchIndex';
+import {
   buildHeaderMeta,
   countSectionErrors,
   countTotalErrors,
@@ -10,6 +22,7 @@ import {
   type ConfigStatusInput,
 } from '@/features/config/uiState';
 import type { VisualConfigValidationErrors } from '@/types/visualConfig';
+import { LANGUAGE_ORDER } from '@/utils/constants';
 
 const statusInput = (overrides: Partial<ConfigStatusInput> = {}): ConfigStatusInput => ({
   disconnected: false,
@@ -50,8 +63,8 @@ describe('resolveStatus', () => {
     expect(status.tone).toBe('error');
   });
 
-  test('every status resolves label keys that exist in all four locales', async () => {
-    const locales = ['en', 'zh-CN', 'zh-TW', 'ru'];
+  test('every status resolves label keys that exist in all supported locales', async () => {
+    const locales = LANGUAGE_ORDER;
     const inputs: Partial<ConfigStatusInput>[] = [
       { disconnected: true },
       { loading: true },
@@ -93,7 +106,7 @@ describe('countSectionErrors', () => {
     expect(counts.network).toBe(1);
     expect(counts.streaming).toBe(1);
     expect(counts.logging).toBe(0);
-    expect(counts.quota).toBe(0);
+    expect(counts).not.toHaveProperty('quota');
     expect(counts.advanced).toBe(0);
     expect(counts.payload).toBe(0);
     // port 由常用 tab 渲染，同一错误在两个 tab 都要可见
@@ -143,14 +156,81 @@ describe('resolveDirtyTabs', () => {
     expect(tabs.has('connectivity')).toBe(true);
     expect(tabs.size).toBe(2);
 
-    const quotaTabs = resolveDirtyTabs(new Set(['quotaSwitchProject']));
-    expect(quotaTabs.has('common')).toBe(true);
-    expect(quotaTabs.has('quota')).toBe(true);
+    expect([...resolveDirtyTabs(new Set(['quotaAntigravityCredits']))]).toEqual(['advanced']);
+    expect(resolveDirtyTabs(new Set(['quotaSwitchProject', 'quotaSwitchPreviewModel'])).size).toBe(
+      0
+    );
   });
 
   test('unknown keys are ignored instead of crashing', () => {
     const tabs = resolveDirtyTabs(new Set(['not-a-real-key']));
     expect(tabs.size).toBe(0);
+  });
+});
+
+describe('Antigravity credits UI and search', () => {
+  test('removes the quota tab and keeps section numbering contiguous', () => {
+    expect(CONFIG_TAB_IDS).not.toContain('quota');
+    expect(CONFIG_SECTION_IDS.map((id) => SECTION_INDEX_LABELS[id])).toEqual([
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+      '06',
+    ]);
+    expect(CONFIG_FIELD_SEARCH_INDEX.some((entry) => String(entry.sectionId) === 'quota')).toBe(
+      false
+    );
+    for (const field of ['quotaSwitchProject', 'quotaSwitchPreviewModel']) {
+      expect(findConfigFieldById(field)).toBeUndefined();
+      expect(FIELD_VALUE_KEYS).not.toHaveProperty(field);
+      expect(COMMON_FIELD_IDS).not.toContain(field);
+    }
+    for (const query of ['switch-project', 'switch-preview-model', 'quota-exceeded']) {
+      expect(searchConfigFields(query, (key) => key)).toEqual([]);
+    }
+  });
+
+  test('credits search targets Advanced in every locale', async () => {
+    const entry = findConfigFieldById('quotaAntigravityCredits');
+    expect(entry?.sectionId).toBe('advanced');
+    expect(entry?.labelKey).toBe('config_management.visual.sections.advanced.antigravity_credits');
+    for (const locale of LANGUAGE_ORDER) {
+      const json = await Bun.file(`src/i18n/locales/${locale}.json`).json();
+      const sections = json.config_management.visual.sections;
+      expect(sections).not.toHaveProperty('quota');
+      expect(typeof sections.advanced.antigravity_credits).toBe('string');
+      const translate = (key: string): string =>
+        key === entry?.labelKey ? sections.advanced.antigravity_credits : key;
+      for (const query of [sections.advanced.antigravity_credits, 'antigravity-credits']) {
+        expect(searchConfigFields(query, translate)).toContainEqual(entry);
+      }
+    }
+  });
+
+  test('renders credits inside the Advanced Antigravity group, not common', async () => {
+    const root = 'src/features/config';
+    const advanced = await Bun.file(`${root}/components/sections/SectionAdvanced.tsx`).text();
+    const group = advanced.slice(
+      advanced.indexOf("label={t('config_management.visual.sections.advanced.antigravity_title')}"),
+      advanced.indexOf("label={t('config_management.visual.sections.advanced.devin_title')}")
+    );
+    expect(group).toContain('fieldId="quotaAntigravityCredits"');
+    expect(group).toContain('checked={values.quotaAntigravityCredits}');
+    expect(group).toContain(
+      'onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}'
+    );
+    expect(group).toContain('config_management.visual.sections.advanced.antigravity_credits');
+    for (const file of [
+      'components/sections/SectionCommon.tsx',
+      'components/fields/sharedFields.tsx',
+      'ConfigPage.tsx',
+    ]) {
+      const source = await Bun.file(`${root}/${file}`).text();
+      expect(source).not.toMatch(/QuotaSwitch|quotaSwitch|SectionQuota|case 'quota'/);
+    }
+    expect(await Bun.file(`${root}/components/sections/SectionQuota.tsx`).exists()).toBe(false);
   });
 });
 
@@ -215,6 +295,7 @@ describe('localStorage readers', () => {
   });
 
   test('readSavedSection falls back to common on stale values', () => {
+    expect(readSavedSection('quota')).toBe('common');
     expect(readSavedSection('payload')).toBe('payload');
     expect(readSavedSection('common')).toBe('common');
     expect(readSavedSection('server')).toBe('common'); // 历史分区 id 不再存在

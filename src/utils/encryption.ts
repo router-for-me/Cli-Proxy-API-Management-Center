@@ -5,10 +5,9 @@
  * IMPORTANT: 这不是安全边界。浏览器端长期持久化的密钥仍应视为可被读取。
  */
 
-const ENC_PREFIX = 'enc::v1::';
+const ENC_PREFIX = 'enc::v2::';
+const LEGACY_ENC_PREFIX = 'enc::v1::';
 const SECRET_SALT = 'cli-proxy-api-webui::secure-storage';
-
-let cachedKeyBytes: Uint8Array | null = null;
 
 function encodeText(text: string): Uint8Array {
   const encoder = new TextEncoder();
@@ -20,19 +19,16 @@ function decodeText(bytes: Uint8Array): string {
   return decoder.decode(bytes);
 }
 
-function getKeyBytes(): Uint8Array {
-  if (cachedKeyBytes) return cachedKeyBytes;
-
+function getKeyBytes(legacy = false): Uint8Array {
   try {
     const host = window.location.host;
-    const ua = navigator.userAgent;
-    cachedKeyBytes = encodeText(`${SECRET_SALT}|${host}|${ua}`);
-  } catch (error) {
-    console.warn('Obfuscation fallback to simple key:', error);
-    cachedKeyBytes = encodeText(SECRET_SALT);
+    // Only non-auth legacy data may still be read; new writes never depend on the UA.
+    return encodeText(
+      legacy ? `${SECRET_SALT}|${host}|${navigator.userAgent}` : `${SECRET_SALT}|${host}`
+    );
+  } catch {
+    return encodeText(SECRET_SALT);
   }
-
-  return cachedKeyBytes;
 }
 
 function xorBytes(data: Uint8Array, keyBytes: Uint8Array): Uint8Array {
@@ -80,14 +76,15 @@ export function obfuscateData(value: string): string {
  * 解密数据
  */
 export function deobfuscateData(payload: string): string {
-  if (!payload || !payload.startsWith(ENC_PREFIX)) {
+  if (!payload || !isObfuscated(payload)) {
     return payload;
   }
 
   try {
-    const encodedBody = payload.slice(ENC_PREFIX.length);
+    const legacy = payload.startsWith(LEGACY_ENC_PREFIX);
+    const encodedBody = payload.slice(legacy ? LEGACY_ENC_PREFIX.length : ENC_PREFIX.length);
     const encrypted = fromBase64(encodedBody);
-    const decrypted = xorBytes(encrypted, getKeyBytes());
+    const decrypted = xorBytes(encrypted, getKeyBytes(legacy));
     return decodeText(decrypted);
   } catch (error) {
     console.warn('Deobfuscation failed, return as-is:', error);
@@ -99,5 +96,9 @@ export function deobfuscateData(payload: string): string {
  * 检查是否已加密
  */
 export function isObfuscated(value: string): boolean {
+  return isCurrentObfuscated(value) || value?.startsWith(LEGACY_ENC_PREFIX) || false;
+}
+
+export function isCurrentObfuscated(value: string): boolean {
   return value?.startsWith(ENC_PREFIX) || false;
 }

@@ -89,7 +89,7 @@ describe('auth storage isolation', () => {
   test('migrates legacy credentials only when the normalized panel identity is exact', () => {
     obfuscatedStorage.setItem(
       STORAGE_KEY_AUTH,
-      JSON.parse(envelope('https://example.test/proxy/v0/management/', 'legacy-key'))
+      JSON.parse(envelope('https://example.test/proxy/v8/management/', 'legacy-key'))
     );
     localStorage.setItem('isLoggedIn', 'true');
     const storage = createScopedAuthStorage(() => 'https://example.test/proxy');
@@ -139,6 +139,25 @@ describe('auth storage isolation', () => {
     expect(tenantB.getItem(STORAGE_KEY_AUTH)).toContain('key-from-b');
     expect(tenantB.getItem(STORAGE_KEY_AUTH)).not.toContain('key-from-a');
   });
+
+  test.each(['enc::v1::obsolete', '{"state":{"managementKey":"old-key"}}'])(
+    'retires obsolete scoped credentials without exposing another panel: %s',
+    (raw) => {
+      const panel = 'https://example.test/tenant-a';
+      const backend = 'https://api.example.test/shared';
+      const tenantA = createScopedAuthStorage(() => panel);
+      const tenantB = createScopedAuthStorage(() => 'https://example.test/tenant-b');
+      tenantA.setItem(STORAGE_KEY_AUTH, envelope(backend, 'key-a'));
+      tenantB.setItem(STORAGE_KEY_AUTH, envelope(backend, 'key-b'));
+      localStorage.setItem(getScopedAuthStorageKey(panel, backend), raw);
+      localStorage.setItem(getAuthLoginStateStorageKey(panel), 'true');
+
+      expect(tenantA.getItem(STORAGE_KEY_AUTH)).toBeNull();
+      expect(localStorage.getItem(getScopedAuthStorageKey(panel, backend))).toBeNull();
+      expect(localStorage.getItem(getAuthLoginStateStorageKey(panel))).toBeNull();
+      expect(tenantB.getItem(STORAGE_KEY_AUTH)).toContain('key-b');
+    }
+  );
 
   test('clears every scoped and legacy auth record while preserving unrelated storage', () => {
     const tenantA = createScopedAuthStorage(() => 'https://example.test/tenant-a');

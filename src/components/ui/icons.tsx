@@ -19,6 +19,15 @@ const baseSvgProps: SVGProps<SVGSVGElement> = {
   focusable: 'false',
 };
 
+export function IconCopy({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
 export function IconSlidersHorizontal({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>
@@ -509,6 +518,52 @@ export function IconSidebarSystem({ size = 20, ...props }: IconProps) {
       <rect width="20" height="8" x="2" y="14" rx="2" />
       <line x1="6" x2="6.01" y1="6" y2="6" />
       <line x1="6" x2="6.01" y1="18" y2="18" />
+    </svg>
+  );
+}
+
+/** Lucide "route". */
+export function IconSidebarRouting({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <circle cx="6" cy="19" r="3" />
+      <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+      <circle cx="18" cy="5" r="3" />
+    </svg>
+  );
+}
+
+/** Lucide "grip-vertical". */
+export function IconGripVertical({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="9" cy="5" r="1" />
+      <circle cx="9" cy="19" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="15" cy="5" r="1" />
+      <circle cx="15" cy="19" r="1" />
+    </svg>
+  );
+}
+
+/** Lucide "ellipsis". */
+export function IconEllipsis({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
+    </svg>
+  );
+}
+
+/** Lucide "lock". */
+export function IconLock({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   );
 }

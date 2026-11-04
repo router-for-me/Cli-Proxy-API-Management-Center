@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
-import { CODEX_CONFIG, buildCodexQuotaWindows } from '@/features/quota/providers/codex/data';
+import {
+  CODEX_CONFIG,
+  buildCodexQuotaWindows,
+  normalizeCodexAccountCredits,
+} from '@/features/quota/providers/codex/data';
 import type { CodexQuotaState, CodexUsagePayload } from '@/types';
 import { apiCallApi, type ApiCallRequest, type ApiCallResult } from '@/services/api';
 import {
@@ -104,6 +108,57 @@ describe('Codex current usage payload', () => {
     };
 
     expect(CODEX_CONFIG.canResetQuota?.(quota)).toBeTrue();
+  });
+});
+
+describe('Codex account credits', () => {
+  test('normalizes remaining balance without confusing it with manual resets', () => {
+    expect(
+      normalizeCodexAccountCredits({ has_credits: false, unlimited: false, balance: '0' })
+    ).toEqual({ balance: '0', unlimited: false });
+    expect(
+      normalizeCodexAccountCredits({ has_credits: true, unlimited: false, balance: ' 12.50 ' })
+    ).toEqual({ balance: '12.50', unlimited: false });
+    expect(normalizeCodexAccountCredits({ unlimited: true, balance: null })).toEqual({
+      balance: null,
+      unlimited: true,
+    });
+    expect(normalizeCodexAccountCredits(null)).toEqual({ balance: null, unlimited: false });
+    expect(normalizeCodexAccountCredits({ balance: 'not available' })).toEqual({
+      balance: null,
+      unlimited: false,
+    });
+    expect(normalizeCodexAccountCredits({ balance: -1 })).toEqual({
+      balance: null,
+      unlimited: false,
+    });
+  });
+
+  test('reads credits from the existing usage request and forwards them into quota state', async () => {
+    const requests: ApiCallRequest[] = [];
+    apiCallApi.request = async (payload) => {
+      requests.push(payload);
+      if (payload.url === CODEX_USAGE_URL) {
+        return result(200, {
+          ...CURRENT_CODEX_USAGE_PAYLOAD,
+          credits: { has_credits: true, unlimited: false, balance: '8.75' },
+        });
+      }
+      if (payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_URL) {
+        return result(200, { available_count: 1, credits: [] });
+      }
+      throw new Error(`Unexpected URL: ${payload.url}`);
+    };
+
+    const data = await CODEX_CONFIG.fetchQuota(
+      { name: 'codex.json', type: 'codex', auth_index: 'codex:1' },
+      t
+    );
+    const state = CODEX_CONFIG.buildSuccessState(data);
+    expect(state.creditBalance).toBe('8.75');
+    expect(state.creditsUnlimited).toBeFalse();
+    expect(state.rateLimitResetCreditsAvailableCount).toBe(1);
+    expect(requests.filter((request) => request.url === CODEX_USAGE_URL)).toHaveLength(1);
   });
 });
 

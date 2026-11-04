@@ -16,8 +16,8 @@ describe('visual config Devin sensitive words', () => {
 
       if (!loaded) {
         visualConfig.loadVisualValuesFromYaml(
-          'devin:\n  sensitive-words:\n    - Claude Code\n    - security testing\n' +
-            'antigravity:\n  sensitive-words:\n    - proxy\n'
+          'oauth:\n  providers:\n    devin:\n      sensitive-words:\n        - Claude Code\n        - security testing\n' +
+            '    antigravity:\n      sensitive-words:\n        - proxy\n'
         );
         setLoaded(true);
         return null;
@@ -36,18 +36,20 @@ describe('visual config Devin sensitive words', () => {
   });
 
   test('writes trimmed values while preserving unknown keys, comments, and Antigravity', () => {
-    const yaml =
-      '# root comment\n' +
-      'devin:\n' +
-      '  # list comment\n' +
-      '  sensitive-words:\n' +
-      '    # retained item comment\n' +
-      '    - old-word\n' +
-      '  # unknown comment\n' +
-      '  future-option: true\n' +
-      'antigravity:\n' +
-      '  sensitive-words:\n' +
-      '    - proxy\n';
+    const yaml = `# root comment
+oauth:
+  providers:
+    devin:
+      # list comment
+      sensitive-words:
+        # retained item comment
+        - old-word
+      # unknown comment
+      future-option: true
+    antigravity:
+      sensitive-words:
+        - proxy
+`;
 
     function Harness() {
       const visualConfig = useVisualConfig();
@@ -68,11 +70,15 @@ describe('visual config Devin sensitive words', () => {
 
     const output = unwrapPre(renderToStaticMarkup(createElement(Harness)));
     expect(parseYaml(output)).toEqual({
-      devin: {
-        'sensitive-words': ['old-word', 'new phrase'],
-        'future-option': true,
+      oauth: {
+        providers: {
+          devin: {
+            'sensitive-words': ['old-word', 'new phrase'],
+            'future-option': true,
+          },
+          antigravity: { 'sensitive-words': ['proxy'] },
+        },
       },
-      antigravity: { 'sensitive-words': ['proxy'] },
     });
     expect(output).toContain('# root comment');
     expect(output).toContain('# list comment');
@@ -81,7 +87,8 @@ describe('visual config Devin sensitive words', () => {
   });
 
   test('clears the sensitive-words key and removes an otherwise empty Devin block', () => {
-    const yaml = 'debug: true\ndevin:\n  sensitive-words:\n    - remove-me\n';
+    const yaml =
+      'oauth:\n  providers:\n    devin:\n      sensitive-words:\n        - remove-me\nobservability:\n  logs:\n    debug: true\n';
 
     function Harness() {
       const visualConfig = useVisualConfig();
@@ -101,14 +108,14 @@ describe('visual config Devin sensitive words', () => {
     }
 
     expect(parseYaml(unwrapPre(renderToStaticMarkup(createElement(Harness))))).toEqual({
-      debug: true,
+      observability: { logs: { debug: true } },
     });
   });
 
   test('cancels dirty state when restored and never marks Antigravity dirty', () => {
     const yaml =
-      'devin:\n  sensitive-words:\n    - original\n' +
-      'antigravity:\n  sensitive-words:\n    - untouched\n';
+      'oauth:\n  providers:\n    devin:\n      sensitive-words:\n        - original\n' +
+      '    antigravity:\n      sensitive-words:\n        - untouched\n';
 
     function Harness() {
       const visualConfig = useVisualConfig();

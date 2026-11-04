@@ -7,13 +7,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AuthState, LoginCredentials, ConnectionStatus } from '@/types';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
-import {
-  createScopedAuthStorage,
-  getAuthLoginStateStorageKey,
-  obfuscatedStorage,
-  resolveLegacyAuthApiBase,
-} from '@/services/storage/secureStorage';
+import { createScopedAuthStorage, getAuthLoginStateStorageKey } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
+import { LegacyBackendError, probeLegacyBackend } from '@/services/api/legacyBackendProbe';
 import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { useQuotaStore } from './useQuotaStore';
@@ -27,11 +23,23 @@ interface AuthStoreState extends AuthState {
   logout: () => void;
   checkAuth: () => Promise<boolean>;
   restoreSession: () => Promise<boolean>;
+  /** 同步判断 restoreSession 是否会尝试自动登录（不产生副作用），用于决定首屏显示启动画面还是表单 */
+  hasRestorableSession: () => boolean;
   updateServerVersion: (version: string | null, buildDate?: string | null) => void;
   updateServerPluginSupport: (supportsPlugin: boolean) => void;
 }
 
 let restoreSessionPromise: Promise<boolean> | null = null;
+
+/**
+ * 自动登录的前提：上次登录时勾选了记住密码且未登出（isLoggedIn 标记），并且保存了密钥。
+ * restoreSession 与 hasRestorableSession 共用此判断，保证"显示启动画面"与"真的去自动登录"一致。
+ */
+export const shouldAttemptAutoLogin = (
+  wasLoggedIn: boolean,
+  apiBase: string,
+  managementKey: string
+): boolean => wasLoggedIn && Boolean(apiBase) && Boolean(managementKey);
 
 export const useAuthStore = create<AuthStoreState>()(
   persist(
@@ -51,39 +59,13 @@ export const useAuthStore = create<AuthStoreState>()(
         if (restoreSessionPromise) return restoreSessionPromise;
 
         restoreSessionPromise = (async () => {
-          obfuscatedStorage.migratePlaintextKeys(['apiBase', 'apiUrl', 'managementKey']);
-
-          const legacyBase =
-            obfuscatedStorage.getItem<string>('apiBase') ||
-            obfuscatedStorage.getItem<string>('apiUrl', { encrypt: true });
-          const legacyKey = obfuscatedStorage.getItem<string>('managementKey');
           const detectedBase = detectApiBaseFromLocation();
-          const migratedLegacyBase = legacyBase
-            ? resolveLegacyAuthApiBase(legacyBase, detectedBase)
-            : null;
-
           const { apiBase, managementKey, rememberPassword } = get();
-          const canUseLegacyCredentials = !apiBase && Boolean(migratedLegacyBase);
-          const resolvedBase = normalizeApiBase(
-            apiBase || (canUseLegacyCredentials ? migratedLegacyBase : '') || detectedBase
-          );
-          const resolvedKey =
-            managementKey || (canUseLegacyCredentials ? legacyKey : '') || '';
-          const resolvedRememberPassword =
-            rememberPassword ||
-            Boolean(managementKey) ||
-            Boolean(canUseLegacyCredentials && legacyKey);
-          const loginStateKey = getAuthLoginStateStorageKey(detectedBase);
+          const resolvedBase = normalizeApiBase(apiBase || detectedBase);
+          const resolvedKey = managementKey || '';
+          const resolvedRememberPassword = rememberPassword;
           const wasLoggedIn =
-            localStorage.getItem(loginStateKey) === 'true' ||
-            (canUseLegacyCredentials && localStorage.getItem('isLoggedIn') === 'true');
-
-          if (canUseLegacyCredentials) {
-            obfuscatedStorage.removeItem('apiBase');
-            obfuscatedStorage.removeItem('apiUrl');
-            obfuscatedStorage.removeItem('managementKey');
-            localStorage.removeItem('isLoggedIn');
-          }
+            localStorage.getItem(getAuthLoginStateStorageKey(detectedBase)) === 'true';
 
           set({
             apiBase: resolvedBase,
@@ -92,7 +74,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
           apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
 
-          if (wasLoggedIn && resolvedBase && resolvedKey) {
+          if (shouldAttemptAutoLogin(wasLoggedIn, resolvedBase, resolvedKey)) {
             try {
               await get().login({
                 apiBase: resolvedBase,
@@ -112,6 +94,16 @@ export const useAuthStore = create<AuthStoreState>()(
         return restoreSessionPromise;
       },
 
+      hasRestorableSession: () => {
+        if (typeof localStorage === 'undefined') return false;
+        const wasLoggedIn =
+          localStorage.getItem(getAuthLoginStateStorageKey(detectApiBaseFromLocation())) === 'true';
+        const { apiBase, managementKey } = get();
+        // 与 restoreSession 相同：地址总能回退到当前访问地址，因此只需地址非空的占位判断
+        const base = apiBase || detectApiBaseFromLocation();
+        return shouldAttemptAutoLogin(wasLoggedIn, base, managementKey);
+      },
+
       // 登录
       login: async (credentials) => {
         const apiBase = normalizeApiBase(credentials.apiBase);
@@ -125,6 +117,7 @@ export const useAuthStore = create<AuthStoreState>()(
             serverBuildDate: null,
             supportsPlugin: false,
           });
+          useConfigStore.getState().clearCache();
           useModelsStore.getState().clearCache();
           useQuotaStore.getState().clearQuotaCache();
 
@@ -134,8 +127,21 @@ export const useAuthStore = create<AuthStoreState>()(
             managementKey,
           });
 
-          // 测试连接 - 获取配置
-          await useConfigStore.getState().fetchConfig(true);
+          // 测试连接 - 获取配置。只在 v8 路由不存在时诊断旧版后端。
+          const revision = apiClient.getConnectionRevision();
+          try {
+            await useConfigStore.getState().fetchConfig(true);
+          } catch (error) {
+            if (
+              (error as { status?: number })?.status === 404 &&
+              revision === apiClient.getConnectionRevision() &&
+              (await probeLegacyBackend(apiBase, managementKey)) &&
+              revision === apiClient.getConnectionRevision()
+            ) {
+              throw new LegacyBackendError();
+            }
+            throw error;
+          }
 
           // 登录成功
           set({
@@ -159,6 +165,7 @@ export const useAuthStore = create<AuthStoreState>()(
       // 登出
       logout: () => {
         restoreSessionPromise = null;
+        apiClient.setConfig({ apiBase: '', managementKey: '' });
         useConfigStore.getState().clearCache();
         useModelsStore.getState().clearCache();
         useQuotaStore.getState().clearQuotaCache();

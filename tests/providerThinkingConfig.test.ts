@@ -13,7 +13,7 @@ afterEach(() => {
 describe('provider model thinking config', () => {
   test('serializes thinking overrides for Vertex models', async () => {
     let putData: unknown;
-    apiClient.get = (async () => ({ 'vertex-api-key': [] })) as typeof apiClient.get;
+    apiClient.get = (async () => ({ 'api-keys': { vertex: [] } })) as typeof apiClient.get;
     apiClient.put = (async (_url: string, data?: unknown) => {
       putData = data;
       return undefined;
@@ -37,17 +37,22 @@ describe('provider model thinking config', () => {
 
     expect(putData).toEqual([
       {
-        'api-key': 'vertex-key',
-        models: [
+        name: 'vertex-1',
+        keys: [
           {
-            name: 'gemini-3-pro',
-            alias: 'vertex-pro',
-            thinking: {
-              min: 128,
-              max: 32768,
-              zero_allowed: true,
-              dynamic_allowed: true,
-            },
+            'api-key': 'vertex-key',
+            models: [
+              {
+                name: 'gemini-3-pro',
+                alias: 'vertex-pro',
+                thinking: {
+                  min: 128,
+                  max: 32768,
+                  'zero-allowed': true,
+                  'dynamic-allowed': true,
+                },
+              },
+            ],
           },
         ],
       },
@@ -57,20 +62,27 @@ describe('provider model thinking config', () => {
   test('can clear thinking while preserving unknown model fields', async () => {
     let putData: unknown;
     apiClient.get = (async () => ({
-      'codex-api-key': [
-        {
-          'api-key': 'codex-key',
-          'base-url': 'https://example.com',
-          models: [
-            {
-              name: 'gpt-5-codex',
-              alias: 'codex-latest',
-              thinking: { levels: ['low', 'high'] },
-              'future-field': 'preserved',
-            },
-          ],
-        },
-      ],
+      'api-keys': {
+        codex: [
+          {
+            name: 'codex-1',
+            'base-url': 'https://example.com',
+            keys: [
+              {
+                'api-key': 'codex-key',
+                models: [
+                  {
+                    name: 'gpt-5-codex',
+                    alias: 'codex-latest',
+                    thinking: { levels: ['low', 'high'] },
+                    'future-field': 'preserved',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     })) as typeof apiClient.get;
     apiClient.put = (async (_url: string, data?: unknown) => {
       putData = data;
@@ -85,13 +97,18 @@ describe('provider model thinking config', () => {
 
     expect(putData).toEqual([
       {
-        'api-key': 'codex-key',
+        name: 'codex-1',
         'base-url': 'https://example.com',
-        models: [
+        keys: [
           {
-            'future-field': 'preserved',
-            name: 'gpt-5-codex',
-            alias: 'codex-latest',
+            'api-key': 'codex-key',
+            models: [
+              {
+                'future-field': 'preserved',
+                name: 'gpt-5-codex',
+                alias: 'codex-latest',
+              },
+            ],
           },
         ],
       },

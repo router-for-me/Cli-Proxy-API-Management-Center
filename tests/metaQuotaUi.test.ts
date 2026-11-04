@@ -36,8 +36,8 @@ const snapshot = (): MetaQuotaState => ({
 afterEach(() => useQuotaStore.getState().clearQuotaCache());
 
 describe('Muse quota UI integration', () => {
-  test('provides quota labels in all four locales', () => {
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
+  test('provides quota labels in all six locales', () => {
+    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko']) {
       const translations = JSON.parse(readFileSync(`src/i18n/locales/${locale}.json`, 'utf8'));
       for (const key of [
         'title',
@@ -60,6 +60,7 @@ describe('Muse quota UI integration', () => {
         'inactive',
         'window',
         'window_duration',
+        'window_duration_hours',
         'weekly',
         'unknown',
         'remaining',
@@ -82,14 +83,32 @@ describe('Muse quota UI integration', () => {
       createElement(MetaQuotaBody, { quota: snapshot(), classes })
     );
     expect(markup).toContain('Muse fixture plan');
-    expect(markup).toContain(i18n.t('meta_quota.active'));
-    expect(markup).toContain(i18n.t('meta_quota.window_duration', { minutes: 300 }));
+    expect(markup).not.toContain(i18n.t('meta_quota.active'));
+    expect(markup).toContain(i18n.t('meta_quota.window_duration_hours', { hours: 5 }));
+    expect(markup).not.toContain(i18n.t('meta_quota.window_duration', { minutes: 300 }));
     expect(markup).toContain(i18n.t('meta_quota.weekly'));
     expect(markup.match(/role="meter"/g)).toHaveLength(2);
     expect(markup).toContain('aria-valuenow="100"');
     expect(markup).toContain('aria-valuenow="99"');
     expect(markup).toContain('width:100%');
     expect(markup).toContain('width:99%');
+  });
+
+  test.each([true, false])('hides subscription status %s without an empty plan row', (active) => {
+    const quota = snapshot();
+    quota.data!.isSubscriptionActive = active;
+    quota.data!.planName = undefined;
+    const markup = renderToStaticMarkup(createElement(MetaQuotaBody, { quota, classes }));
+    expect(markup).not.toContain(i18n.t('meta_quota.active'));
+    expect(markup).not.toContain(i18n.t('meta_quota.inactive'));
+    expect(markup).not.toContain('class="codexPlan"');
+  });
+
+  test('keeps minutes for a window that is not a whole number of hours', () => {
+    const quota = snapshot();
+    quota.data!.windows[0].durationMinutes = 90;
+    const markup = renderToStaticMarkup(createElement(MetaQuotaBody, { quota, classes }));
+    expect(markup).toContain(i18n.t('meta_quota.window_duration', { minutes: 90 }));
   });
 
   test('distinguishes unknown and exhausted quotas', () => {

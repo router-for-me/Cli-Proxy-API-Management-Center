@@ -58,6 +58,62 @@ describe('Claude plan type', () => {
   });
 
   test.each([
+    ['default_claude_max_20x', 'plan_max20'],
+    ['default_claude_max_5x', 'plan_max5'],
+    ['  DEFAULT_CLAUDE_MAX_20X  ', 'plan_max20'],
+  ] as const)('separates Max by the organization rate-limit tier %s', (tier, expected) => {
+    expect(
+      resolveClaudePlanType({
+        account: { has_claude_max: true, has_claude_pro: true },
+        organization: { rate_limit_tier: tier },
+      })
+    ).toBe(expected);
+  });
+
+  test('accepts the camelCase rateLimitTier spelling', () => {
+    expect(
+      resolveClaudePlanType({
+        account: { has_claude_max: true },
+        organization: { rateLimitTier: 'default_claude_max_5x' },
+      } as ClaudeProfileResponse)
+    ).toBe('plan_max5');
+  });
+
+  test.each(['default_claude_ai', 'unknown_tier', undefined])(
+    'keeps an undifferentiated Max when the tier is %s',
+    (tier) => {
+      expect(
+        resolveClaudePlanType({
+          account: { has_claude_max: true },
+          organization: { rate_limit_tier: tier },
+        })
+      ).toBe('plan_max');
+    }
+  );
+
+  test('does not read Pro from default_claude_ai', () => {
+    expect(
+      resolveClaudePlanType({
+        account: { has_claude_max: false, has_claude_pro: false },
+        organization: { rate_limit_tier: 'default_claude_ai' },
+      })
+    ).toBe('plan_free');
+  });
+
+  test('an active Team organization still wins over a Max tier', () => {
+    expect(
+      resolveClaudePlanType({
+        account: { has_claude_max: true },
+        organization: {
+          organization_type: 'claude_team',
+          subscription_status: 'active',
+          rate_limit_tier: 'default_claude_max_20x',
+        },
+      })
+    ).toBe('plan_team');
+  });
+
+  test.each([
     null,
     {},
     { account: { has_claude_max: false } },

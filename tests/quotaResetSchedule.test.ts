@@ -44,6 +44,38 @@ describe('collectQuotaRowInstants', () => {
     ]);
   });
 
+  test('collects Claude dollar-window resets with their original upstream keys', () => {
+    const quota = {
+      ...claudeQuota,
+      dollarWindows: [
+        { key: 'iguana_necktie', resetsAt: iso(NOW + DAY_MS) },
+        { key: 'arbitrary_future_balance', resetsAt: iso(NOW + 2 * DAY_MS) },
+      ],
+    };
+    expect(collectQuotaRowInstants('claude', quota)).toEqual([
+      { rowId: 'five_hour', atMs: NOW + 3 * HOUR_MS, kind: 'window' },
+      { rowId: 'seven_day', atMs: NOW + 4 * DAY_MS, kind: 'window' },
+      { rowId: 'iguana_necktie', atMs: NOW + DAY_MS, kind: 'window' },
+      { rowId: 'arbitrary_future_balance', atMs: NOW + 2 * DAY_MS, kind: 'window' },
+    ]);
+  });
+
+  test('drops Claude dollar balances with missing, null, or invalid resets', () => {
+    const quota = {
+      status: 'success',
+      dollarWindows: [
+        { key: 'valid', resetsAt: iso(NOW + HOUR_MS) },
+        { key: 'missing' },
+        { key: 'null', resetsAt: null },
+        { key: 'empty', resetsAt: '' },
+        { key: 'invalid', resetsAt: 'not a date' },
+      ],
+    };
+    expect(collectQuotaRowInstants('claude', quota)).toEqual([
+      { rowId: 'valid', atMs: NOW + HOUR_MS, kind: 'window' },
+    ]);
+  });
+
   test('collects Codex windows and available reset credits together', () => {
     const instants = collectQuotaRowInstants('codex', codexQuota);
     expect(instants).toHaveLength(4);
@@ -224,6 +256,23 @@ describe('nextRecoveryMs', () => {
       ],
     };
     expect(nextRecoveryMs('claude', quota, NOW)).toBe(NOW + DAY_MS);
+  });
+
+  test('uses the next dollar-balance reset while ignoring elapsed and exactly-now resets', () => {
+    const quota = {
+      status: 'success',
+      windows: [{ id: 'expired-plan', resetAtMs: NOW - DAY_MS }],
+      dollarWindows: [
+        { key: 'expired-balance', resetsAt: iso(NOW - HOUR_MS) },
+        { key: 'exactly-now', resetsAt: iso(NOW) },
+        { key: 'upcoming-balance', resetsAt: iso(NOW + HOUR_MS) },
+      ],
+    };
+    expect(nextRecoveryMs('claude', quota, NOW)).toBe(NOW + HOUR_MS);
+    expect(pickSoonestRowId(collectQuotaRowInstants('claude', quota), NOW)).toBe(
+      'upcoming-balance'
+    );
+    expect(nextRecoveryMs('claude', quota, NOW + HOUR_MS)).toBeNull();
   });
 
   test('is null for an unloaded credential, so sorting can sink it', () => {

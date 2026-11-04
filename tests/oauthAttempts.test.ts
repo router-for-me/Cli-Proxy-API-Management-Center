@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { createOAuthAttempts } from '../src/pages/oauthAttempts';
+import { createOAuthAttempts } from '@/features/oauth/oauthAttempts';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -208,6 +208,65 @@ describe('OAuth attempt lifecycle', () => {
       expect(other.isCurrent()).toBe(true);
       expect(devin.isCurrent()).toBe(false);
     }
+  });
+
+  test('a failed status request ends polling and the same attempt can resume it', async () => {
+    const { attempts, tasks, tick } = setup();
+    const responses: Array<() => Promise<string>> = [
+      async () => {
+        throw new Error('Request failed with status code 502');
+      },
+      async () => 'wait',
+      async () => 'ok',
+    ];
+    const results: string[] = [];
+    let errors = 0;
+    const attempt = attempts.begin('codex');
+    const poll = () =>
+      attempt.poll(
+        () => responses.shift()!(),
+        (result) => {
+          results.push(result);
+          return result === 'wait';
+        },
+        () => errors++,
+        3000
+      );
+    expect(attempt.isPolling()).toBe(false);
+    poll();
+    expect(attempt.isPolling()).toBe(true);
+    tick();
+    await flush();
+    expect(errors).toBe(1);
+    expect(attempt.isPolling()).toBe(false);
+    expect(tasks.size).toBe(0);
+
+    // An accepted callback resumes polling on the attempt that still owns the login.
+    poll();
+    expect(attempt.isPolling()).toBe(true);
+    tick();
+    await flush();
+    expect(attempt.isPolling()).toBe(true);
+    tick();
+    await flush();
+    expect(results).toEqual(['wait', 'ok']);
+    expect(attempt.isPolling()).toBe(false);
+    expect(tasks.size).toBe(0);
+  });
+
+  test('an invalidated attempt never reports an active poll', () => {
+    const { attempts } = setup();
+    const old = attempts.begin('codex');
+    old.poll(
+      async () => 'wait',
+      () => true,
+      () => {},
+      3000
+    );
+    expect(old.isPolling()).toBe(true);
+    const next = attempts.begin('codex');
+    expect(old.isPolling()).toBe(false);
+    expect(next.isPolling()).toBe(false);
   });
 
   test('terminal results and request errors do not schedule another poll', async () => {

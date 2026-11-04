@@ -2,10 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createElement, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parse as parseYaml } from 'yaml';
-import {
-  parseDisableImageGenerationMode,
-  useVisualConfig,
-} from '../src/hooks/useVisualConfig';
+import { parseDisableImageGenerationMode, useVisualConfig } from '../src/hooks/useVisualConfig';
 
 describe('visual config disable-image-generation', () => {
   test('loads and writes the passthrough mode', () => {
@@ -22,7 +19,7 @@ describe('visual config disable-image-generation', () => {
         return createElement(
           'pre',
           null,
-          visualConfig.applyVisualChangesToYaml('disable-image-generation: false\n')
+          visualConfig.applyVisualChangesToYaml('multimedia:\n  disable-image-generation: false\n')
         );
       }
 
@@ -32,6 +29,8 @@ describe('visual config disable-image-generation', () => {
     const markup = renderToStaticMarkup(createElement(Harness));
     const result = markup.slice('<pre>'.length, -'</pre>'.length);
 
-    expect(parseYaml(result)).toEqual({ 'disable-image-generation': 'passthrough' });
+    expect(parseYaml(result)).toEqual({
+      multimedia: { 'disable-image-generation': 'passthrough' },
+    });
   });
 });

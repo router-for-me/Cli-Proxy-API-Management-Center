@@ -47,6 +47,21 @@ describe('resolveAuthFileQuotaType', () => {
     expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), 'claude')).toBeNull();
     expect(resolveAuthFileQuotaType(authFile({ type: 'codex' }), null)).toBeNull();
   });
+
+  test('exposes a plugin quota on its own provider tab', () => {
+    const kiro = authFile({ type: 'kiro', supportsQuota: true, quotaProvider: 'kiro' });
+    expect(resolveAuthFileQuotaType(kiro, 'all')).toBe('plugin');
+    expect(resolveAuthFileQuotaType(kiro, 'kiro')).toBe('plugin');
+  });
+
+  test('exposes a probe-only plugin quota without a provider identifier', () => {
+    expect(resolveAuthFileQuotaType(authFile({ type: 'kiro', supportsQuota: true }), 'all')).toBe(
+      'plugin'
+    );
+    expect(
+      resolveAuthFileQuotaType(authFile({ type: 'kiro', supportsQuota: true }), 'plugin')
+    ).toBe('plugin');
+  });
 });
 
 describe('matchesAuthFileSearch', () => {
@@ -80,6 +95,37 @@ describe('matchesAuthFileSearch', () => {
     expect(
       search(authFile({ name: 'kimi-1712345678901.json', email: 'user@example.com' }), 'user@*com')
     ).toBe(true);
+  });
+
+  test('finds credentials by HTTP error code or error content', () => {
+    const forbidden = authFile({ statusMessage: '403 Forbidden: invalid credentials' });
+    const rateLimited = authFile({
+      statusMessage: '{"error":{"code":429,"message":"Rate limit exceeded"}}',
+    });
+    expect(search(forbidden, '403')).toBe(true);
+    expect(search(forbidden, 'INVALID')).toBe(true);
+    expect(search(forbidden, '403 Forbidden: invalid credentials')).toBe(true);
+    expect(search(forbidden, '429')).toBe(false);
+    expect(search(rateLimited, '429')).toBe(true);
+    expect(search(rateLimited, 'rate limit exceeded')).toBe(true);
+  });
+
+  test('uses the same status message as the card, including raw backend fields', () => {
+    expect(search(authFile({ status_message: '403 Forbidden' }), '403')).toBe(true);
+    expect(
+      search(authFile({ status_message: '429 Too Many Requests', statusMessage: '403' }), '403')
+    ).toBe(false);
+  });
+
+  test('supports wildcards in error content and treats regex punctuation literally', () => {
+    const file = authFile({ statusMessage: '403: invalid_request (credentials)' });
+    expect(search(file, '403*INVALID')).toBe(true);
+    expect(search(file, 'invalid*(credentials)')).toBe(true);
+    expect(search(file, 'invalid*[credentials]')).toBe(false);
+  });
+
+  test('does not search arbitrary credential metadata', () => {
+    expect(search(authFile({ metadata: { secret: 'invalid-secret' } }), 'invalid')).toBe(false);
   });
 
   test('never matches the account field — it can be a raw API key', () => {

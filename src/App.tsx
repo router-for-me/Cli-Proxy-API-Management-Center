@@ -3,6 +3,7 @@ import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
+import { LoginRevealVeil } from '@/components/common/LoginRevealVeil';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useLanguageStore, useThemeStore } from '@/stores';
@@ -13,14 +14,31 @@ function RootShell() {
       <NotificationContainer />
       <ConfirmationModal />
       <Outlet />
+      <LoginRevealVeil />
     </>
   );
 }
+
+// DEV-only design previews: statically false in production builds, so the
+// branch and its dynamic import are dropped from the single-file bundle.
+const devPreviewRoutes = import.meta.env.DEV
+  ? [
+      {
+        path: '/__preview/quota-tiers',
+        HydrateFallback: () => null,
+        lazy: async () => {
+          const { QuotaTierPreview } = await import('@/features/quota/preview/QuotaTierPreview');
+          return { Component: QuotaTierPreview };
+        },
+      },
+    ]
+  : [];
 
 const router = createHashRouter([
   {
     element: <RootShell />,
     children: [
+      ...devPreviewRoutes,
       { path: '/login', element: <LoginPage /> },
       {
         path: '/*',

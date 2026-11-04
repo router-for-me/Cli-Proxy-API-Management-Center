@@ -40,6 +40,8 @@ export interface PluginListEntry {
   effectiveEnabled: boolean;
   supportsOAuth: boolean;
   oauthProvider?: string;
+  supportsQuota: boolean;
+  quotaProvider?: string;
   logo: string;
   configFields: PluginConfigField[];
   menus: PluginMenu[];

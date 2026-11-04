@@ -5,7 +5,12 @@
  * IMPORTANT: 这不是安全边界，仅用于避免“肉眼直读”的轻度混淆。
  */
 
-import { obfuscateData, deobfuscateData, isObfuscated } from '@/utils/encryption';
+import {
+  obfuscateData,
+  deobfuscateData,
+  isObfuscated,
+  isCurrentObfuscated,
+} from '@/utils/encryption';
 import {
   STORAGE_KEY_AUTH,
   STORAGE_KEY_AUTH_LOGIN_PREFIX,
@@ -77,35 +82,6 @@ class ObfuscatedStorageService {
   removeItem(key: string): void {
     localStorage.removeItem(key);
   }
-
-  /**
-   * 迁移旧的明文缓存为加密格式
-   */
-  migratePlaintextKeys(keys: string[]): void {
-    keys.forEach((key) => {
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-
-      // 如果已经是加密格式，跳过
-      if (isObfuscated(raw)) {
-        return;
-      }
-
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        // 原值不是 JSON，直接使用字符串
-        parsed = raw;
-      }
-
-      try {
-        this.setItem(key, parsed);
-      } catch (error) {
-        console.warn(`Failed to migrate key "${key}":`, error);
-      }
-    });
-  }
 }
 
 export const obfuscatedStorage = new ObfuscatedStorageService();
@@ -165,16 +141,29 @@ export const createScopedAuthStorage = (
   detectPanelBase: () => string = detectApiBaseFromLocation
 ) => ({
   getItem: (name: string): string | null => {
+    // Retire pre-v2 credentials without decoding them, while retaining panel isolation.
+    localStorage.removeItem('managementKey');
     const panelBase = normalizeApiBase(detectPanelBase());
     const selectionKey = getAuthSelectionStorageKey(panelBase);
     const selectedBase = obfuscatedStorage.getItem<string>(selectionKey);
-    const selectedEnvelope = selectedBase
-      ? obfuscatedStorage.getItem<PersistedAuthEnvelope>(
-          getScopedAuthStorageKey(panelBase, selectedBase)
-        )
-      : null;
+    const selectedKey = selectedBase ? getScopedAuthStorageKey(panelBase, selectedBase) : null;
+    const selectedRaw = selectedKey ? localStorage.getItem(selectedKey) : null;
+    if (selectedKey && selectedRaw && !isCurrentObfuscated(selectedRaw)) {
+      localStorage.removeItem(selectedKey);
+      localStorage.removeItem(getAuthLoginStateStorageKey(panelBase));
+    }
+    const selectedEnvelope =
+      selectedKey && selectedRaw && isCurrentObfuscated(selectedRaw)
+        ? obfuscatedStorage.getItem<PersistedAuthEnvelope>(selectedKey)
+        : null;
     if (selectedEnvelope) return JSON.stringify(selectedEnvelope);
 
+    const legacyRaw = localStorage.getItem(name);
+    if (!legacyRaw || !isCurrentObfuscated(legacyRaw)) {
+      localStorage.removeItem(name);
+      localStorage.removeItem('isLoggedIn');
+      return null;
+    }
     const legacy = obfuscatedStorage.getItem<PersistedAuthEnvelope>(name);
     const migrated = legacy ? migrateLegacyAuthEnvelope(legacy, panelBase) : null;
     if (!migrated) return null;
