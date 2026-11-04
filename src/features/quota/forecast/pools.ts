@@ -17,6 +17,8 @@ export type ForecastProvider = (typeof FORECAST_PROVIDERS)[number];
 
 /** The pool tracks each account's weekly window. */
 export const FORECAST_WINDOW_ID = 'seven_day';
+/** Recorded 5-hour session window; dropped on plans exempt from it. */
+const SESSION_HISTORY_WINDOW_ID = 'five_hour';
 
 export type PoolPlan = {
   key: string;
@@ -138,6 +140,12 @@ export function buildForecastPools(
         weight,
         periodMs: window.periodSeconds ? window.periodSeconds * 1000 : 7 * 24 * 60 * 60 * 1000,
         samples: window.points,
+        sessionLimited: account.windows.some(
+          (candidate) =>
+            candidate.id === SESSION_HISTORY_WINDOW_ID &&
+            candidate.points.length > 0 &&
+            candidate.droppedAt === null
+        ),
       });
     });
 

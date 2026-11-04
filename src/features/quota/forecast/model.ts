@@ -12,6 +12,7 @@
  */
 
 import type { QuotaHistoryPoint } from '@/services/api/quotaHistory';
+import { mostUrgent, priorityDeadline } from '../accounts/rowModel';
 
 export type SeriesPoint = { t: number; v: number };
 
@@ -25,6 +26,8 @@ export type ForecastAccountInput = {
   periodMs: number | null;
   /** Samples of the forecast window, sorted by time. */
   samples: QuotaHistoryPoint[];
+  /** The account has a 5-hour session limit (ranks it earlier under weekly-reset routing). */
+  sessionLimited?: boolean;
 };
 
 export type FutureUsage = 'none' | 'half' | 'same' | 'more' | 'double';
@@ -299,6 +302,7 @@ type SimAccount = {
   share: number;
   nextReset: number | null;
   periodMs: number | null;
+  sessionLimited: boolean;
   points: SeriesPoint[];
 };
 
@@ -318,9 +322,11 @@ type Projection = {
  * run dry. Each account refills to 100% at its reset and then resets every
  * period.
  *
- * With `priorityWindowMs` (weekly-reset routing), accounts whose reset is that
- * close take all of it, split evenly the way the router alternates between
- * boosted accounts. Their 5-hour limits are not modelled.
+ * With `priorityWindowMs` (weekly-reset routing), the most urgent account whose
+ * reset is that close takes all of it, as the router boosts it: the soonest
+ * reset, a session-limited account counting an hour earlier, ties split
+ * evenly. The next one takes over when it runs dry. 5-hour limits themselves
+ * are not modelled.
  */
 export function projectPool(
   accounts: {
@@ -330,6 +336,7 @@ export function projectPool(
     burnRate: number | null;
     nextReset: number | null;
     periodMs: number | null;
+    sessionLimited?: boolean;
   }[],
   poolRate: number,
   start: number,
@@ -343,6 +350,7 @@ export function projectPool(
     share: Math.max(0, account.burnRate ?? 0) * account.weight,
     nextReset: account.nextReset !== null && account.nextReset > start ? account.nextReset : null,
     periodMs: account.periodMs,
+    sessionLimited: account.sessionLimited === true,
     points: [{ t: start, v: clampPercent(account.remaining) }],
   }));
   const poolValue = () => sim.reduce((sum, account) => sum + account.weight * account.remaining, 0);
@@ -363,11 +371,14 @@ export function projectPool(
     const boosted =
       priorityWindowMs === null
         ? []
-        : nonEmpty.filter(
-            (account) =>
-              account.nextReset !== null &&
-              account.nextReset > t &&
-              account.nextReset - priorityWindowMs <= t
+        : mostUrgent(
+            nonEmpty.filter(
+              (account) =>
+                account.nextReset !== null &&
+                account.nextReset > t &&
+                account.nextReset - priorityWindowMs <= t
+            ),
+            (account) => priorityDeadline(account.nextReset as number, account.sessionLimited)
           );
     let carriers = nonEmpty.filter((account) => account.share > 0);
     let shareOf = (account: SimAccount) => account.share;
@@ -547,6 +558,7 @@ export function buildPoolForecast(
       burnRate: item.burnRate,
       nextReset: item.nextReset,
       periodMs: item.input.periodMs,
+      sessionLimited: item.input.sessionLimited,
     })),
     (burnRate ?? 0) * FUTURE_USAGE_MULTIPLIERS[futureUsage],
     now,

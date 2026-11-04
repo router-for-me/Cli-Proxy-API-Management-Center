@@ -3,11 +3,13 @@ import type { TFunction } from 'i18next';
 import {
   credentialStatus,
   historyWindowCells,
-  isPriorityBoosted,
+  isPriorityEligible,
+  priorityKeys,
   liveWindowCells,
   remainingTone,
   sectionColumns,
   weeklyResetMs,
+  type CredentialStatus,
 } from '@/features/quota/accounts/rowModel';
 import type { QuotaHistoryAccount } from '@/services/api/quotaHistory';
 import type { AuthFileItem } from '@/types/authFile';
@@ -155,15 +157,15 @@ describe('account row cells', () => {
 
 describe('routing hints', () => {
   test('flag weekly resets less than 36 hours away', () => {
-    expect(isPriorityBoosted(NOW + 35.9 * H, NOW, 'serving')).toBe(true);
-    expect(isPriorityBoosted(NOW + 36.1 * H, NOW, 'serving')).toBe(false);
-    expect(isPriorityBoosted(NOW - H, NOW, 'serving')).toBe(false);
-    expect(isPriorityBoosted(null, NOW, 'serving')).toBe(false);
+    expect(isPriorityEligible(NOW + 35.9 * H, NOW, 'serving')).toBe(true);
+    expect(isPriorityEligible(NOW + 36.1 * H, NOW, 'serving')).toBe(false);
+    expect(isPriorityEligible(NOW - H, NOW, 'serving')).toBe(false);
+    expect(isPriorityEligible(null, NOW, 'serving')).toBe(false);
   });
 
   test('never boost an account the router cannot pick', () => {
     for (const status of ['cooling', 'unavailable', 'disabled', 'error'] as const) {
-      expect(isPriorityBoosted(NOW + 3 * H, NOW, status)).toBe(false);
+      expect(isPriorityEligible(NOW + 3 * H, NOW, status)).toBe(false);
     }
   });
 
@@ -190,7 +192,7 @@ describe('routing hints', () => {
     };
     const routing = credentialStatus(file, NOW);
     expect(routing).toEqual({ status: 'cooling', until: NOW + 3 * H });
-    expect(isPriorityBoosted(NOW + 3 * H, NOW, routing.status)).toBe(false);
+    expect(isPriorityEligible(NOW + 3 * H, NOW, routing.status)).toBe(false);
 
     // Once the cooldown has run out, the file's own flags decide.
     expect(credentialStatus(file, NOW + 4 * H).status).toBe('unavailable');
@@ -198,6 +200,58 @@ describe('routing hints', () => {
     expect(credentialStatus({ name: 'off.json', type: 'claude', disabled: true }, NOW).status).toBe(
       'disabled'
     );
+  });
+
+  test('boost only the most urgent eligible account, ties sharing', () => {
+    const candidate = (
+      key: string,
+      resetHours: number | null,
+      sessionLimited = false,
+      status: CredentialStatus = 'serving'
+    ) => ({
+      key,
+      resetAtMs: resetHours === null ? null : NOW + resetHours * H,
+      status,
+      sessionLimited,
+    });
+    const keys = (...candidates: ReturnType<typeof candidate>[]) =>
+      [...priorityKeys(candidates, NOW)].sort();
+
+    expect(keys(candidate('35h', 35), candidate('12h', 12), candidate('far', 100))).toEqual([
+      '12h',
+    ]);
+    // The most urgent one is cooling down, so the next one is boosted.
+    expect(keys(candidate('35h', 35), candidate('12h', 12, false, 'cooling'))).toEqual(['35h']);
+    expect(keys(candidate('a', 20), candidate('b', 20))).toEqual(['a', 'b']);
+    expect(keys(candidate('far', 40), candidate('none', null))).toEqual([]);
+  });
+
+  test('rank an account with a 5-hour limit an hour earlier', () => {
+    const pair = (exemptHours: number, limitedHours: number) =>
+      [
+        ...priorityKeys(
+          [
+            {
+              key: 'exempt',
+              resetAtMs: NOW + exemptHours * H,
+              status: 'serving',
+              sessionLimited: false,
+            },
+            {
+              key: 'limited',
+              resetAtMs: NOW + limitedHours * H,
+              status: 'serving',
+              sessionLimited: true,
+            },
+          ],
+          NOW
+        ),
+      ].sort();
+    expect(pair(26, 26)).toEqual(['limited']);
+    expect(pair(26, 26.9)).toEqual(['limited']);
+    expect(pair(26, 27)).toEqual(['exempt', 'limited']);
+    expect(pair(26, 27.1)).toEqual(['exempt']);
+    expect(pair(35, 12)).toEqual(['limited']);
   });
 
   test('tone remaining percentages', () => {

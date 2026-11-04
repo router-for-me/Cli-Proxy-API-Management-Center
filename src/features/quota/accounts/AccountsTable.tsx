@@ -20,9 +20,13 @@ import type { QuotaFileEntry } from '../logic';
 import type { QuotaCardState } from '../providers';
 import { AccountRow } from './AccountRow';
 import {
+  credentialStatus,
   historyWindowCells,
   liveWindowCells,
+  priorityKeys,
   sectionColumns,
+  SESSION_WINDOW_ID,
+  weeklyResetMs,
   type AccountWindowCell,
 } from './rowModel';
 import styles from './AccountsTable.module.scss';
@@ -124,6 +128,18 @@ export function AccountsTable(props: AccountsTableProps) {
         return { entry, quota, cells, recordedAtMs, plan: planOf(entry, quota, recorded?.plan, t) };
       });
       const columns = sectionColumns(rows.map((row) => row.cells));
+      // Rows of one provider compete for the same requests, so they are ranked together.
+      const boosted = priorityRouting
+        ? priorityKeys(
+            rows.map((row) => ({
+              key: getQuotaCacheKey(row.entry.file),
+              resetAtMs: weeklyResetMs(row.entry.type, row.cells),
+              status: credentialStatus(row.entry.file, now).status,
+              sessionLimited: row.cells.some((cell) => cell.id === SESSION_WINDOW_ID),
+            })),
+            now
+          )
+        : new Set<string>();
       const showBank = type === 'claude' || type === 'codex';
       const gridTemplate = [
         'minmax(210px, 1.35fr)',
@@ -134,9 +150,9 @@ export function AccountsTable(props: AccountsTableProps) {
       ]
         .filter(Boolean)
         .join(' ');
-      return { type, rows, columns, showBank, gridTemplate };
+      return { type, rows, columns, showBank, gridTemplate, boosted };
     });
-  }, [entries, history, now, quotaFor, t]);
+  }, [entries, history, now, priorityRouting, quotaFor, t]);
 
   return (
     <div className={styles.table}>
@@ -175,7 +191,7 @@ export function AccountsTable(props: AccountsTableProps) {
                   cells={row.cells}
                   recordedAtMs={row.recordedAtMs}
                   showBank={section.showBank}
-                  priorityRouting={priorityRouting}
+                  boosted={section.boosted.has(getQuotaCacheKey(row.entry.file))}
                   color={color}
                   gridTemplate={section.gridTemplate}
                   now={now}

@@ -129,6 +129,40 @@ describe('account rows', () => {
     expect(rows[0].statusUntil).toBe(NOW + 7 * H);
   });
 
+  test('flags only the most urgent account of each provider', () => {
+    const exempt = (weekReset: number) => ({
+      observed_at: new Date(NOW).toISOString(),
+      signals: {
+        'Anthropic-Ratelimit-Unified-7d-Utilization': '0.2',
+        'Anthropic-Ratelimit-Unified-7d-Reset': sec(weekReset),
+      },
+    });
+    const rows = buildAccountRows(
+      [
+        file('in-35h', { quota: claudeQuota(0.1, 0.5, NOW + 35 * H) }),
+        file('in-12h', { quota: exempt(NOW + 12 * H) }),
+        file('limited-12h30', { quota: claudeQuota(0.1, 0.5, NOW + 12.5 * H) }),
+        file('codex', {
+          type: 'codex',
+          quota: {
+            observed_at: new Date(NOW).toISOString(),
+            signals: {
+              'X-Codex-Primary-Window-Minutes': '10080',
+              'X-Codex-Primary-Used-Percent': '10',
+              'X-Codex-Primary-Reset-At': sec(NOW + 30 * H),
+            },
+          },
+        }),
+      ],
+      null,
+      'weekly-reset-weighted-round-robin',
+      NOW
+    );
+    const flagged = rows.filter((row) => row.priority).map((row) => row.name);
+    // The session-limited account resets 30 minutes later but counts an hour earlier.
+    expect(flagged).toEqual(['limited-12h30@example.com', 'codex@example.com']);
+  });
+
   test('never flags priority under another routing strategy', () => {
     const rows = buildAccountRows(
       [file('soon', { quota: claudeQuota(0.1, 0.5, NOW + 20 * H) })],

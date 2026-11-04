@@ -210,22 +210,63 @@ describe('projection', () => {
       expect(projection.firstEmpty).toEqual({ key: 'a', t: T0 + 10 * H });
     });
 
-    test('splits evenly between accounts inside their windows, whatever their burn', () => {
+    test('gives all traffic to the most urgent account, then the next', () => {
+      const projection = projectPool(
+        [
+          { key: 'a', weight: 1, ...sim(20, 100, 0) },
+          { key: 'b', weight: 2, ...sim(30, 100, 9) },
+          { key: 'c', weight: 1, ...sim(100, 100, 1) },
+        ],
+        12,
+        T0,
+        T0 + 10 * H,
+        WINDOW
+      );
+      // 'a' resets first and loses 12%/h whatever its burn; empty after 8h20m.
+      expect(valueAt(projection.accounts.get('a') ?? [], T0 + 5 * H)).toBeCloseTo(40);
+      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(100);
+      expect(projection.firstEmpty?.key).toBe('a');
+      // Then double-capacity 'b' takes the 12 pool points: 6%/h for 1h40m.
+      expect(valueAt(projection.accounts.get('b') ?? [], T0 + 10 * H)).toBeCloseTo(90);
+      expect(valueAt(projection.accounts.get('c') ?? [], T0 + 10 * H)).toBeCloseTo(100);
+    });
+
+    test('splits evenly between accounts tied on their reset', () => {
       const projection = projectPool(
         [
           { key: 'a', weight: 1, ...sim(20, 100, 9) },
-          { key: 'b', weight: 2, ...sim(30, 100, 0) },
-          { key: 'c', weight: 1, ...sim(100, 100, 1) },
+          { key: 'b', weight: 2, ...sim(20, 100, 0) },
         ],
         12,
         T0,
         T0 + 5 * H,
         WINDOW
       );
-      // 6 pool points an hour each: 'a' loses 6%/h, double-capacity 'b' 3%/h, 'c' nothing.
+      // 6 pool points an hour each: 'a' loses 6%/h, double-capacity 'b' 3%/h.
       expect(valueAt(projection.accounts.get('a') ?? [], T0 + 5 * H)).toBeCloseTo(70);
       expect(valueAt(projection.accounts.get('b') ?? [], T0 + 5 * H)).toBeCloseTo(85);
-      expect(valueAt(projection.accounts.get('c') ?? [], T0 + 5 * H)).toBeCloseTo(100);
+    });
+
+    test('ranks a session-limited account an hour earlier', () => {
+      const run = (limitedResetHours: number) =>
+        projectPool(
+          [
+            { key: 'exempt', weight: 1, ...sim(20, 100, 1) },
+            { key: 'limited', weight: 1, ...sim(limitedResetHours, 100, 1), sessionLimited: true },
+          ],
+          10,
+          T0,
+          T0 + 2 * H,
+          WINDOW
+        );
+      const left = (projection: ReturnType<typeof run>, key: string) =>
+        valueAt(projection.accounts.get(key) ?? [], T0 + 2 * H);
+      const close = run(20.5);
+      expect(left(close, 'limited')).toBeCloseTo(80);
+      expect(left(close, 'exempt')).toBeCloseTo(100);
+      const apart = run(21.5);
+      expect(left(apart, 'limited')).toBeCloseTo(100);
+      expect(left(apart, 'exempt')).toBeCloseTo(80);
     });
   });
 

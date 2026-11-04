@@ -17,7 +17,6 @@ import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import bodyStyles from '../components/QuotaBody.module.scss';
 import {
   credentialStatus,
-  isPriorityBoosted,
   remainingTone,
   weeklyResetMs,
   type AccountColumn,
@@ -38,7 +37,8 @@ export type AccountRowProps = {
   /** Set when `cells` come from recorded history rather than a live read. */
   recordedAtMs: number | null;
   showBank: boolean;
-  priorityRouting: boolean;
+  /** The weekly-reset router boosts this credential now. */
+  boosted: boolean;
   color: string;
   gridTemplate: string;
   now: number;
@@ -51,7 +51,7 @@ export type AccountRowProps = {
 
 export function AccountRow(props: AccountRowProps) {
   const { entry, quota, name, plan, columns, cells, recordedAtMs, showBank } = props;
-  const { priorityRouting, color, gridTemplate, now, locale, canRefresh, resetting } = props;
+  const { boosted, color, gridTemplate, now, locale, canRefresh, resetting } = props;
   const { onRefresh, onReset } = props;
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
@@ -74,7 +74,6 @@ export function AccountRow(props: AccountRowProps) {
 
   const weeklyReset = weeklyResetMs(entry.type, cells);
   const routing = credentialStatus(file, now);
-  const boosted = priorityRouting && isPriorityBoosted(weeklyReset, now, routing.status);
   const weight = typeof file.weight === 'number' && file.weight !== 1 ? file.weight : null;
   const renewsAtMs = codex ? resolveResetMs([codex.subscriptionActiveUntil ?? null]) : null;
 

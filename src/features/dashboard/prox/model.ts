@@ -7,7 +7,7 @@
 
 import {
   credentialStatus,
-  isPriorityBoosted,
+  priorityKeys,
   type CredentialStatus,
 } from '@/features/quota/accounts/rowModel';
 import type { QuotaHistory, QuotaHistoryAccount } from '@/services/api/quotaHistory';
@@ -307,9 +307,28 @@ export function buildAccountRows(
       total: success + failed,
       fiveHour,
       weekly,
-      priority: priorityRouting && isPriorityBoosted(weekly?.resetAt ?? null, nowMs, status),
+      priority: false,
     };
   });
+
+  // The router ranks the credentials of one provider against each other.
+  if (priorityRouting) {
+    new Set(rows.map((row) => row.provider)).forEach((provider) => {
+      const sameProvider = rows.filter((row) => row.provider === provider);
+      const boosted = priorityKeys(
+        sameProvider.map((row) => ({
+          key: row.key,
+          resetAtMs: row.weekly?.resetAt ?? null,
+          status: row.status,
+          sessionLimited: row.fiveHour !== null,
+        })),
+        nowMs
+      );
+      sameProvider.forEach((row) => {
+        row.priority = boosted.has(row.key);
+      });
+    });
+  }
 
   const providerOrder = (provider: string) =>
     provider === 'claude' ? 0 : provider === 'codex' ? 1 : 2;
