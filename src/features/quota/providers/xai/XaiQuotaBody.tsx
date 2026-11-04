@@ -146,6 +146,10 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
     locale
   );
 
+  // With no figure to sit beside, the weekly reset would only repeat the plan row's.
+  const showWeeklyReset =
+    weeklyResetDisplay !== null && (weeklyRemaining !== null || headerReset === null);
+
   return (
     <>
       {(subscriptionLabel || headerReset || onDemandCap <= 0) && (
@@ -190,19 +194,25 @@ export function XaiQuotaBody({ quota, classes }: QuotaBodyProps<XaiQuotaState>) 
         >
           <div className={classes.quotaRowHeader}>
             <span className={classes.quotaModel}>{t('xai_quota.weekly_limit')}</span>
-            <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>
-                {weeklyRemaining === null
-                  ? t('xai_quota.usage_unavailable')
-                  : formatXaiPercent(weeklyRemaining)}
-              </span>
-              {weeklyResetDisplay && (
-                <QuotaResetLabel display={weeklyResetDisplay} classes={classes} soon={weeklySoon} />
-              )}
-            </div>
+            {(weeklyRemaining !== null || showWeeklyReset) && (
+              <div className={classes.quotaMeta}>
+                {weeklyRemaining !== null && (
+                  <span className={classes.quotaPercent}>{formatXaiPercent(weeklyRemaining)}</span>
+                )}
+                {showWeeklyReset && (
+                  <QuotaResetLabel
+                    display={weeklyResetDisplay}
+                    classes={classes}
+                    soon={weeklySoon}
+                  />
+                )}
+              </div>
+            )}
           </div>
-          {weeklyRemaining !== null && (
+          {weeklyRemaining !== null ? (
             <QuotaMeter percent={weeklyRemaining} classes={classes} index={0} />
+          ) : (
+            <div className={classes.quotaNote}>{t('xai_quota.usage_unavailable')}</div>
           )}
         </div>
       )}
