@@ -79,4 +79,19 @@ describe('auth file card presentation contract', () => {
     expect(source).toContain('showManualRefreshButton');
     expect(source).toContain('file.disabled ||');
   });
+
+  test('shows a local reset time under warnings that carry an upstream reset epoch', () => {
+    expect(source).toContain(
+      'hasStatusWarning ? formatResetHintFromMessage(rawStatusMessage) : null'
+    );
+    expect(source).toContain("t('auth_files.reset_at', { time: resetHint })");
+    expect(source).toContain('{rawStatusMessage}');
+
+    for (const locale of ['en', 'ko', 'ru', 'tr', 'vi', 'zh-CN', 'zh-TW']) {
+      const { auth_files: messages } = JSON.parse(
+        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
+      ) as { auth_files: Record<string, string> };
+      expect(messages.reset_at).toContain('{{time}}');
+    }
+  });
 });
