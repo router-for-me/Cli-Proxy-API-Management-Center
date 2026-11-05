@@ -20,6 +20,12 @@ import {
   resolveQiniuCloudBaseUrl,
 } from './qiniuCloud';
 import {
+  AI_CODE_MIRROR_DISPLAY_NAME,
+  AI_CODE_MIRROR_PROTOCOL_LABELS,
+  getAiCodeMirrorProtocolUrls,
+  resolveAiCodeMirrorBaseUrl,
+} from './aiCodeMirror';
+import {
   KIMI_DISPLAY_NAME,
   KIMI_PROTOCOL_LABELS,
   getKimiProtocolUrls,
@@ -335,6 +341,15 @@ export function qiniuCloudToResource(raw: SponsorProviderRaw): ProviderResource 
     protocolLabels: QINIU_CLOUD_PROTOCOL_LABELS,
     resolveBaseUrl: resolveQiniuCloudBaseUrl,
     getProtocolUrls: getQiniuCloudProtocolUrls,
+  });
+}
+
+export function aiCodeMirrorToResource(raw: SponsorProviderRaw): ProviderResource | null {
+  return sponsorRawToResource('aiCodeMirror', raw, {
+    displayName: AI_CODE_MIRROR_DISPLAY_NAME,
+    protocolLabels: AI_CODE_MIRROR_PROTOCOL_LABELS,
+    resolveBaseUrl: resolveAiCodeMirrorBaseUrl,
+    getProtocolUrls: getAiCodeMirrorProtocolUrls,
   });
 }
 
