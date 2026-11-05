@@ -26,6 +26,21 @@ const asString = (value: unknown): string => {
   return String(value);
 };
 
+// Entry metadata is escaped by the backend's Go html.EscapeString. Undo only
+// that encoding in one pass: literal entity text must not be decoded twice.
+// These remain untrusted strings rendered through React text/attribute props.
+const pluginEntryEntities: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&#34;': '"',
+  '&#39;': "'",
+};
+const decodePluginEntryText = (value: unknown): string =>
+  asString(value)
+    .replace(/&(?:amp|lt|gt|#34|#39);/g, (entity) => pluginEntryEntities[entity])
+    .trim();
+
 const asBoolean = (value: unknown): boolean => value === true;
 
 const normalizePluginOAuthProvider = (value: unknown): string | undefined => {
@@ -56,8 +71,8 @@ const normalizePluginOAuthProviderEntries = (
     const identifier = normalizePluginOAuthProvider(item.identifier);
     if (!identifier || !providers.includes(identifier)) continue;
     if (entries.some((entry) => entry.identifier === identifier)) continue;
-    const name = asString(item.name).trim();
-    const logo = asString(item.logo).trim();
+    const name = decodePluginEntryText(item.name);
+    const logo = decodePluginEntryText(item.logo);
     entries.push({ identifier, ...(name ? { name } : {}), ...(logo ? { logo } : {}) });
   }
   return entries;

@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { apiClient } from '@/services/api/client';
 import { pluginsApi } from '@/services/api/plugins';
 import { buildPluginOAuthProviderCards } from '@/features/oauth/providers';
@@ -61,6 +63,65 @@ describe('plugin OAuth entry normalization', () => {
     expect(entry?.oauthProviderEntries).toEqual([
       { identifier: 'zcode-zai', name: 'Z.ai', logo: 'https://chat.z.ai/zai.png' },
       { identifier: 'zcode-bigmodel', name: 'BigModel', logo: 'https://bigmodel.cn/bigmodel.png' },
+    ]);
+  });
+
+  test('decodes backend-escaped entry metadata before building cards', async () => {
+    // GET /plugins uses Go html.EscapeString for entry names and logo URLs.
+    mockGet(
+      listResponse([
+        {
+          id: 'multi',
+          supports_oauth: true,
+          effective_enabled: true,
+          oauth_providers: ['portal'],
+          logo: 'https://example.test/default.svg',
+          oauth_provider_entries: [
+            {
+              identifier: 'portal',
+              name: ' Z.ai &lt;International&gt; &amp; &#34;Team&#34; &#39;云端&#39; ',
+              logo: ' https://example.test/logo.svg?a=1&amp;b=2&amp;sig=x%2By%3D ',
+            },
+          ],
+        },
+      ])
+    );
+    const cards = buildPluginOAuthProviderCards(
+      (await pluginsApi.list()).plugins,
+      'https://proxy.test'
+    );
+    expect(cards[0].title).toBe('Z.ai <International> & "Team" \'云端\'');
+    expect(cards[0].icon).toBe('https://example.test/logo.svg?a=1&b=2&sig=x%2By%3D');
+    expect(new URL(cards[0].icon).searchParams.get('b')).toBe('2');
+    // Decoding restores text, not trusted HTML; React still escapes it at render time.
+    const markup = renderToStaticMarkup(createElement('span', null, cards[0].title));
+    expect(markup).toContain('&lt;International&gt;');
+    expect(markup).not.toContain('<International>');
+  });
+
+  test('decodes exactly once and preserves literal entities and URL encoding', async () => {
+    mockGet(
+      listResponse([
+        {
+          id: 'multi',
+          oauth_providers: ['portal'],
+          oauth_provider_entries: [
+            {
+              identifier: 'portal',
+              name: 'Literal &amp;lt;tag&amp;gt; &amp;#39; &amp;amp;',
+              logo: '/logo.svg?literal=&amp;amp;&amp;encoded=%26amp%3B',
+            },
+          ],
+        },
+      ])
+    );
+    const [entry] = (await pluginsApi.list()).plugins;
+    expect(entry.oauthProviderEntries).toEqual([
+      {
+        identifier: 'portal',
+        name: 'Literal &lt;tag&gt; &#39; &amp;',
+        logo: '/logo.svg?literal=&amp;&encoded=%26amp%3B',
+      },
     ]);
   });
 
