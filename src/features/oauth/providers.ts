@@ -151,29 +151,36 @@ export const isSponsor = (
 export const resolveThemedIcon = (icon: ThemedIcon, theme: 'light' | 'dark'): string =>
   typeof icon === 'string' ? icon : icon[theme];
 
+/**
+ * 一个插件可能声明多个登录入口（各自带标题与图标），每个入口一张卡；
+ * v8.0.49 之前只有单个 `oauth_provider`，那时仍然只出一张卡。
+ */
 export const buildPluginOAuthProviderCards = (
   plugins: PluginListEntry[],
   apiBase: string
 ): PluginOAuthProviderCard[] => {
   const seenProviders = new Set(BUILTIN_PROVIDER_IDS);
   return plugins.flatMap((plugin) => {
-    const provider = plugin.oauthProvider;
-    if (
-      !plugin.supportsOAuth ||
-      !plugin.effectiveEnabled ||
-      !provider ||
-      seenProviders.has(provider)
-    ) {
-      return [];
-    }
-    seenProviders.add(provider);
-    return [
-      {
-        kind: 'plugin' as const,
-        id: provider,
-        title: getPluginTitle(plugin),
-        icon: resolvePluginAssetURL(plugin.logo || plugin.metadata?.logo || '', apiBase),
-      },
-    ];
+    if (!plugin.supportsOAuth || !plugin.effectiveEnabled) return [];
+    const declared = plugin.oauthProviders?.length
+      ? plugin.oauthProviders
+      : plugin.oauthProvider
+        ? [plugin.oauthProvider]
+        : [];
+    const pluginTitle = getPluginTitle(plugin);
+    const pluginLogo = plugin.logo || plugin.metadata?.logo || '';
+    return declared.flatMap((provider) => {
+      if (seenProviders.has(provider)) return [];
+      seenProviders.add(provider);
+      const entry = plugin.oauthProviderEntries?.find((item) => item.identifier === provider);
+      return [
+        {
+          kind: 'plugin' as const,
+          id: provider,
+          title: entry?.name?.trim() || pluginTitle,
+          icon: resolvePluginAssetURL(entry?.logo?.trim() || pluginLogo, apiBase),
+        },
+      ];
+    });
   });
 };
