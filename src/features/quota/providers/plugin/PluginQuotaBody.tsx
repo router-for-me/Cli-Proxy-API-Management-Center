@@ -26,7 +26,7 @@ export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaSt
       {(plan || quota.summary.length > 0) && (
         <div className={classes.codexPlan}>
           {plan && (
-            <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanItem} data-quota-plan="">
               <span className={classes.codexPlanLabel}>{t('plugin_quota.plan_label')}</span>
               <span className={classes.codexPlanValue}>{plan}</span>
             </span>

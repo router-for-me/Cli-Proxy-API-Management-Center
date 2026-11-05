@@ -1587,6 +1587,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "카드 레이아웃",
+    "even": "균등한 행",
+    "stacked": "쌓기",
+    "compact": "간결하게",
+    "show_details": "세부 정보 보기",
+    "hide_details": "세부 정보 숨기기"
+  },
   "quota_management": {
     "search_label": "계정 검색",
     "search_placeholder": "파일명 또는 이메일로 검색",

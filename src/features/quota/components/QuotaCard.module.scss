@@ -85,6 +85,57 @@
   @include text-ellipsis;
 }
 
+/* ---------- Compact layout: glance card and its details toggle ---------- */
+
+.cardGlance {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.cardGlance .body {
+  gap: 6px;
+}
+
+.glanceToggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  svg {
+    display: block;
+    transition: transform var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+  }
+
+  &[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glanceToggle:hover {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+  }
+}
+
 /* ---------- body 容器 ---------- */
 
 .body {
@@ -292,7 +343,9 @@
 @media (prefers-reduced-motion: reduce) {
   .card,
   .idleBody,
-  .actionPill {
+  .actionPill,
+  .glanceToggle,
+  .glanceToggle svg {
     transition: none;
   }
 

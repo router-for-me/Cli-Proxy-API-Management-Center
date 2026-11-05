@@ -1614,6 +1614,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "卡片佈局",
+    "even": "等高列",
+    "stacked": "堆疊",
+    "compact": "緊湊",
+    "show_details": "顯示詳情",
+    "hide_details": "隱藏詳情"
+  },
   "quota_management": {
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",

@@ -1587,6 +1587,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "Card layout",
+    "even": "Even rows",
+    "stacked": "Stacked",
+    "compact": "Compact",
+    "show_details": "Show details",
+    "hide_details": "Hide details"
+  },
   "quota_management": {
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",

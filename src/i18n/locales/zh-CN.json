@@ -1586,6 +1586,14 @@
       }
     }
   },
+  "card_layout": {
+    "label": "卡片布局",
+    "even": "等高行",
+    "stacked": "堆叠",
+    "compact": "紧凑",
+    "show_details": "显示详情",
+    "hide_details": "隐藏详情"
+  },
   "quota_management": {
     "search_label": "搜索账号",
     "search_placeholder": "按文件名或邮箱搜索",
