@@ -11,6 +11,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
+import { ollamaQuotaApi } from '@/services/api/ollamaQuota';
+import { ollamaConnectionEntries } from './providers/ollama/data';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconSearch, IconX } from '@/components/ui/icons';
@@ -70,6 +72,7 @@ export function QuotaPage() {
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [ollamaError, setOllamaError] = useState(false);
   const [tab, setTab] = useState<QuotaTabId>(() => readQuotaUiState()?.tab ?? 'all');
   const [sortMode, setSortMode] = useState<QuotaSortMode>(
     () => readQuotaUiState()?.sortMode ?? 'default'
@@ -101,9 +104,16 @@ export function QuotaPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await authFilesApi.list();
+      const [dataResult, connectionsResult] = await Promise.allSettled([
+        authFilesApi.list(),
+        ollamaQuotaApi.connections(),
+      ]);
       if (!isCurrent()) return;
-      setFiles(data?.files || []);
+      if (dataResult.status === 'rejected') throw dataResult.reason;
+      const data = dataResult.value;
+      const connections = connectionsResult.status === 'fulfilled' ? connectionsResult.value : [];
+      setOllamaError(connectionsResult.status === 'rejected');
+      setFiles([...(data?.files || []), ...ollamaConnectionEntries(connections)]);
       setFilesGeneration(sessionGeneration);
     } catch (err: unknown) {
       if (!isCurrent()) return;
@@ -134,6 +144,7 @@ export function QuotaPage() {
   const metaQuota = useQuotaStore((state) => state.metaQuota);
   const pluginQuota = useQuotaStore((state) => state.pluginQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
+  const ollamaQuota = useQuotaStore((state) => state.ollamaQuota);
 
   const quotaByType = useMemo<Record<QuotaProviderType, Record<string, QuotaCardState>>>(
     () =>
@@ -146,6 +157,7 @@ export function QuotaPage() {
         meta: metaQuota,
         plugin: pluginQuota,
         xai: xaiQuota,
+        ollama: ollamaQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
     [
       antigravityQuota,
@@ -156,6 +168,7 @@ export function QuotaPage() {
       metaQuota,
       pluginQuota,
       xaiQuota,
+      ollamaQuota,
     ]
   );
 
@@ -387,6 +400,11 @@ export function QuotaPage() {
         {error && (
           <div className={styles.errorBanner} role="alert">
             {error}
+          </div>
+        )}
+        {ollamaError && (
+          <div className={styles.errorBanner} role="alert">
+            {t('ollama_quota.discovery_failed')}
           </div>
         )}
 

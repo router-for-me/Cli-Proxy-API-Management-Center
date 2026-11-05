@@ -53,6 +53,7 @@ export const BUILT_IN_QUOTA_PROVIDERS: ReadonlySet<string> = new Set([
  * when a plugin also advertises quota for the same provider.
  */
 export function isPluginQuotaFile(file: AuthFileItem): boolean {
+  if (resolveAuthProvider(file) === 'ollama-cloud') return false;
   if (BUILT_IN_QUOTA_PROVIDERS.has(resolveAuthProvider(file))) return false;
   const supported = file.supportsQuota ?? file['supports_quota'];
   return supported === true || supported === 'true' || supported === '1';

@@ -9,6 +9,8 @@ const QUOTA_IDENTITY_SEPARATOR = '\0';
  * from one physical file, distinguished by auth_index.
  */
 export function getQuotaCacheKey(file: AuthFileItem): string {
+  if (file.provider === 'ollama-cloud')
+    return `ollama-cloud${QUOTA_IDENTITY_SEPARATOR}${file.authIndex}`;
   if (!isDevinFile(file) && !isPluginQuotaFile(file)) return file.name;
   const authIndex = normalizeRecentRequestAuthIndex(file.authIndex);
   return `${file.name}${QUOTA_IDENTITY_SEPARATOR}${authIndex ?? ''}`;

@@ -6,6 +6,7 @@
  */
 
 import type { TFunction } from 'i18next';
+import type { OllamaQuotaState } from './ollama/data';
 import type {
   AntigravityQuotaState,
   AuthFileItem,
@@ -21,10 +22,12 @@ import type {
 export type QuotaUpdater<T> = T | ((prev: T) => T);
 
 export type QuotaProviderType =
-  'antigravity' | 'claude' | 'codex' | 'devin' | 'kimi' | 'meta' | 'plugin' | 'xai';
+  'antigravity' | 'claude' | 'codex' | 'devin' | 'kimi' | 'meta' | 'ollama' | 'plugin' | 'xai';
 
 /** useQuotaStore 的结构契约（storeSelector/storeSetter 依赖）。 */
 export interface QuotaStore {
+  ollamaQuota: Record<string, OllamaQuotaState>;
+  setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
   antigravityQuota: Record<string, AntigravityQuotaState>;
   claudeQuota: Record<string, ClaudeQuotaState>;
   codexQuota: Record<string, CodexQuotaState>;

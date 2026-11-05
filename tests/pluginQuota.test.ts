@@ -68,7 +68,8 @@ describe('generic plugin quota', () => {
   });
 
   test('keeps built-in quota cards when a plugin also advertises quota', () => {
-    const builtIns = QUOTA_TAB_ORDER.filter((type) => type !== 'plugin');
+    // Ollama connections are quota-only config resources, not auth files.
+    const builtIns = QUOTA_TAB_ORDER.filter((type) => type !== 'plugin' && type !== 'ollama');
     expect([...BUILT_IN_QUOTA_PROVIDERS].sort()).toEqual([...builtIns].sort());
     for (const type of builtIns) {
       for (const capability of [

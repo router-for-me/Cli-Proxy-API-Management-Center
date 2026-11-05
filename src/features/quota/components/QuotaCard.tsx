@@ -21,6 +21,9 @@ import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
 import { hasClaudeUsageData } from '../providers/claude/data';
+import { Select } from '@/components/ui/Select';
+import { selectOllamaRange, type OllamaQuotaState } from '../providers/ollama/data';
+import type { OllamaRange } from '@/services/api/ollamaQuota';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -53,8 +56,9 @@ export function QuotaCard(props: QuotaCardProps) {
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
-  const retainedClaudeUsage =
-    entry.type === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined);
+  const retainedUsage =
+    (entry.type === 'claude' && hasClaudeUsageData(quota as ClaudeQuotaState | undefined)) ||
+    (entry.type === 'ollama' && Boolean((quota as OllamaQuotaState | undefined)?.data));
   const displayName = getQuotaDisplayName(file);
 
   // Capture the entrance delay only at mount, without a render-time ref read.
@@ -80,7 +84,8 @@ export function QuotaCard(props: QuotaCardProps) {
         )
       : entry.type;
   const iconSrc = getAuthFileIcon(providerType, resolvedTheme);
-  const typeLabel = getTypeLabel(t, providerType);
+  const typeLabel =
+    entry.type === 'ollama' ? t('ollama_quota.title') : getTypeLabel(t, providerType);
   const errorMessage = resolveQuotaErrorMessage(
     t,
     quota?.errorStatus,
@@ -147,7 +152,7 @@ export function QuotaCard(props: QuotaCardProps) {
             <IconRefreshCw size={15} aria-hidden="true" className={styles.idleGlyph} />
             <span className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</span>
           </button>
-        ) : loading && !retainedClaudeUsage ? (
+        ) : loading && !retainedUsage ? (
           <div className={styles.skeleton} aria-busy="true">
             <span className={styles.srOnly}>{t(`${adapter.i18nPrefix}.loading`)}</span>
             {[0, 1].map((row) => (
@@ -161,27 +166,48 @@ export function QuotaCard(props: QuotaCardProps) {
           <div className={styles.errorStrip} role="alert">
             {t(`${adapter.i18nPrefix}.load_failed`, { message: errorMessage })}
           </div>
-        ) : quota && !retainedClaudeUsage ? (
+        ) : quota && !retainedUsage ? (
           <adapter.Body
             quota={quota}
             classes={quotaClasses}
             planItems={claudePlanItems}
             afterPlan={claudeAfterPlan}
           />
-        ) : !retainedClaudeUsage ? (
+        ) : !retainedUsage ? (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
         ) : null}
-        {loading && retainedClaudeUsage && (
+        {loading && retainedUsage && (
           <div role="status" aria-busy="true" className={quotaClasses.quotaMessage}>
             {t(`${adapter.i18nPrefix}.loading`)}
           </div>
         )}
-        {retainedClaudeUsage && quota && (
+        {retainedUsage && quota && (
           <adapter.Body
             quota={quota}
             classes={quotaClasses}
             planItems={claudePlanItems}
             afterPlan={claudeAfterPlan}
+            {...(entry.type === 'ollama'
+              ? {
+                  planItems: (
+                    <Select
+                      value={
+                        (quota as OllamaQuotaState).selectedRange ??
+                        (quota as OllamaQuotaState).data?.range ??
+                        '7d'
+                      }
+                      options={['24h', '7d', '30d'].map((value) => ({ value, label: value }))}
+                      ariaLabel={t('ollama_quota.range')}
+                      disabled={!canRefresh || loading}
+                      onChange={(value) => {
+                        selectOllamaRange(file, value as OllamaRange);
+                        onRefresh();
+                      }}
+                      size="sm"
+                    />
+                  ),
+                }
+              : {})}
           />
         )}
       </div>

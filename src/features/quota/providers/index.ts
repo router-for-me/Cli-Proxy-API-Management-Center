@@ -27,6 +27,8 @@ import { PLUGIN_CONFIG } from './plugin/data';
 import { PluginQuotaBody } from './plugin/PluginQuotaBody';
 import { XAI_CONFIG } from './xai/data';
 import { XaiQuotaBody } from './xai/XaiQuotaBody';
+import { OLLAMA_CONFIG } from './ollama/data';
+import { OllamaQuotaBody } from './ollama/OllamaQuotaBody';
 
 /** 所有 provider 额度状态的公共骨架（各 *QuotaState 的结构子集）。 */
 export interface QuotaCardState {
@@ -52,6 +54,7 @@ export interface QuotaAdapter {
 }
 
 export const QUOTA_ADAPTERS: Record<QuotaProviderType, QuotaAdapter> = {
+  ollama: { ...OLLAMA_CONFIG, Body: OllamaQuotaBody } as unknown as QuotaAdapter,
   antigravity: {
     ...ANTIGRAVITY_CONFIG,
     Body: AntigravityQuotaBody,

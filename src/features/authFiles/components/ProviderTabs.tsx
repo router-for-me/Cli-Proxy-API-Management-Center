@@ -46,7 +46,12 @@ export function ProviderTabs({
     <div ref={tabsRef} className={styles.tabs} role="group" aria-label={t('auth_files.filter_all')}>
       {types.map((type) => {
         const isActive = active === type;
-        const label = type === 'all' ? t('auth_files.filter_all') : getTypeLabel(t, type);
+        const label =
+          type === 'all'
+            ? t('auth_files.filter_all')
+            : type === 'ollama'
+              ? t('ollama_quota.title')
+              : getTypeLabel(t, type);
         const iconSrc = type === 'all' ? null : getAuthFileIcon(type, resolvedTheme);
 
         return (

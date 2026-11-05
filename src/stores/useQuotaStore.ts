@@ -3,6 +3,7 @@
  */
 
 import { create } from 'zustand';
+import type { OllamaQuotaState } from '@/features/quota/providers/ollama/data';
 import { getQuotaCacheFileName } from '@/utils/quota/identity';
 import type {
   AntigravityQuotaState,
@@ -18,6 +19,8 @@ import type {
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
 interface QuotaStoreState {
+  ollamaQuota: Record<string, OllamaQuotaState>;
+  setOllamaQuota: (updater: QuotaUpdater<Record<string, OllamaQuotaState>>) => void;
   cacheGeneration: number;
   fileGenerations: Record<string, number>;
   antigravityQuota: Record<string, AntigravityQuotaState>;
@@ -47,6 +50,25 @@ const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
 };
 
 export const useQuotaStore = create<QuotaStoreState>((set) => ({
+  ollamaQuota: {},
+  setOllamaQuota: (updater) =>
+    set((state) => {
+      const next = resolveUpdater(updater, state.ollamaQuota);
+      return {
+        ollamaQuota: Object.fromEntries(
+          Object.entries(next).map(([key, value]) => [
+            key,
+            value.data
+              ? value
+              : {
+                  ...value,
+                  data: state.ollamaQuota[key]?.data,
+                  selectedRange: value.selectedRange ?? state.ollamaQuota[key]?.selectedRange,
+                },
+          ])
+        ),
+      };
+    }),
   cacheGeneration: 0,
   fileGenerations: {},
   antigravityQuota: {},
@@ -133,6 +155,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
         };
         return {
           fileGenerations,
+          ollamaQuota: omitNames(state.ollamaQuota),
           antigravityQuota: omitNames(state.antigravityQuota),
           claudeQuota: omitNames(state.claudeQuota),
           codexQuota: omitNames(state.codexQuota),
@@ -145,6 +168,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
       }
       return {
         cacheGeneration: state.cacheGeneration + 1,
+        ollamaQuota: {},
         fileGenerations: {},
         antigravityQuota: {},
         claudeQuota: {},
