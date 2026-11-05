@@ -2082,6 +2082,45 @@
       "quickFill": "빠른 입력",
       "activeCount": "활성 {{active}}/{{total}}"
     },
+    "smartConfig": {
+      "title": "스마트 입력",
+      "description": "cc-switch, new-api, curl 또는 일반 텍스트의 Base URL과 API Key를 붙여넣으세요. 인식된 값은 먼저 미리보기로 확인한 뒤 입력됩니다.",
+      "inputLabel": "설정 텍스트 붙여넣기",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "폼에 입력",
+      "clear": "지우기",
+      "baseUrl": "Base URL",
+      "apiKey": "API Key",
+      "models": "모델",
+      "modelsDetected": "{{count}}개 인식",
+      "name": "이름",
+      "prefix": "접두사",
+      "notFound": "인식되지 않음",
+      "noMatch": "사용 가능한 Base URL 또는 API Key를 찾지 못했습니다. 붙여넣은 내용을 확인하고 다시 시도하세요.",
+      "applied": "{{count}}개 항목을 입력했습니다.",
+      "extraKeysIgnored": "이 제공자는 {{count}}개 키 중 첫 번째만 저장할 수 있습니다.",
+      "modelsKept": "모델을 인식했지만 모델 목록이 비어 있지 않아 입력하지 않았습니다.",
+      "multiple": "{{count}}개 설정 인식",
+      "candidate": "설정 #{{index}}",
+      "candidateSelect": "설정 선택",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "키-값",
+        "text": "텍스트"
+      },
+      "warnings": {
+        "noBaseUrl": "Base URL을 인식하지 못했습니다.",
+        "noApiKey": "API Key를 인식하지 못했습니다.",
+        "shortApiKey": "API Key가 비정상적으로 짧습니다 — 저장 전에 확인하세요.",
+        "normalizedBaseUrl": "엔드포인트 경로를 Base URL로 줄였습니다.",
+        "modelsTruncated": "처음 {{count}}개 모델만 입력됩니다."
+      }
+    },
     "providerNames": {
        "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",

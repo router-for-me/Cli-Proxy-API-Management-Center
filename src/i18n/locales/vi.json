@@ -1954,6 +1954,45 @@
       "quickFill": "Điền nhanh",
       "activeCount": "{{active}}/{{total}} đang hoạt động"
     },
+    "smartConfig": {
+      "title": "Điền thông minh",
+      "description": "Dán văn bản chứa Base URL và API Key từ cc-switch, new-api, curl hoặc văn bản thường. Giá trị nhận diện sẽ được xem trước rồi mới điền.",
+      "inputLabel": "Dán văn bản cấu hình",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "Điền vào biểu mẫu",
+      "clear": "Xóa",
+      "baseUrl": "Base URL",
+      "apiKey": "API Key",
+      "models": "Mô hình",
+      "modelsDetected": "Nhận diện {{count}}",
+      "name": "Tên",
+      "prefix": "Tiền tố",
+      "notFound": "Không nhận diện",
+      "noMatch": "Không tìm thấy Base URL hoặc API Key khả dụng. Vui lòng kiểm tra nội dung đã dán và thử lại.",
+      "applied": "Đã điền {{count}} mục.",
+      "extraKeysIgnored": "Nhà cung cấp này chỉ lưu được khóa đầu tiên trong {{count}} khóa.",
+      "modelsKept": "Đã nhận diện mô hình nhưng không điền vì danh sách mô hình không trống.",
+      "multiple": "Nhận diện {{count}} cấu hình",
+      "candidate": "Cấu hình #{{index}}",
+      "candidateSelect": "Chọn cấu hình",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "Khóa-giá trị",
+        "text": "Văn bản"
+      },
+      "warnings": {
+        "noBaseUrl": "Không nhận diện Base URL.",
+        "noApiKey": "Không nhận diện API Key.",
+        "shortApiKey": "API Key có vẻ quá ngắn — hãy kiểm tra trước khi lưu.",
+        "normalizedBaseUrl": "Đã cắt đường dẫn endpoint thành Base URL.",
+        "modelsTruncated": "Chỉ điền {{count}} mô hình đầu tiên."
+      }
+    },
     "providerNames": {
        "aiCodeMirror": "AIcodemirror",
       "gemini": "Gemini",

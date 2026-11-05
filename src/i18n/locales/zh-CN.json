@@ -2081,6 +2081,45 @@
       "quickFill": "快速接入",
       "activeCount": "{{active}}/{{total}} 活跃"
     },
+    "smartConfig": {
+      "title": "智能配置",
+      "description": "粘贴包含 Base URL 与 API Key 的文本（支持 cc-switch、new-api、curl、纯文本等），系统会先预览识别结果再填入。",
+      "inputLabel": "粘贴配置文本",
+      "placeholder": "Base URL: https://api.example.com/v1\nAPI Key: sk-...",
+      "apply": "填入表单",
+      "clear": "清空",
+      "baseUrl": "接口地址",
+      "apiKey": "API 密钥",
+      "models": "模型",
+      "modelsDetected": "识别到 {{count}} 个",
+      "name": "名称",
+      "prefix": "前缀",
+      "notFound": "未识别",
+      "noMatch": "未识别到可用的 Base URL 或 API Key，请检查粘贴内容后重试。",
+      "applied": "已填入 {{count}} 项。",
+      "extraKeysIgnored": "该提供商只能保存 {{count}} 个密钥中的第一个。",
+      "modelsKept": "已识别到模型，但模型列表非空，未自动填入。",
+      "multiple": "识别到 {{count}} 个配置",
+      "candidate": "配置 #{{index}}",
+      "candidateSelect": "选择配置",
+      "format": {
+        "ccSwitch": "cc-switch",
+        "newApi": "new-api",
+        "claudeCode": "Claude Code",
+        "openai": "OpenAI",
+        "curl": "curl",
+        "json": "JSON",
+        "keyValue": "键值对",
+        "text": "文本"
+      },
+      "warnings": {
+        "noBaseUrl": "未识别到 Base URL。",
+        "noApiKey": "未识别到 API Key。",
+        "shortApiKey": "API Key 似乎过短，请保存前确认。",
+        "normalizedBaseUrl": "已将会话端点路径裁剪为 Base URL。",
+        "modelsTruncated": "只会填入前 {{count}} 个模型。"
+      }
+    },
     "providerNames": {
        "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
