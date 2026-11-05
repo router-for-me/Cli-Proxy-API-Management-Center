@@ -34,6 +34,13 @@ $quota-font-size: 11.5px;
   padding: 5px 4px;
 }
 
+.quotaNote {
+  font-size: $quota-font-size;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
 button.quotaMessageAction {
   cursor: pointer;
   border: 0;

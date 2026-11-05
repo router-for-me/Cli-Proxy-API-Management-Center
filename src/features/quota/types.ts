@@ -21,6 +21,8 @@ export interface QuotaClassMap {
   quotaResetRelativeSoon: string;
   quotaAmount: string;
   quotaMessage: string;
+  /** Prose note inside a quota row, in place of a meter (e.g. usage unavailable). */
+  quotaNote: string;
   // 套餐 chip 行（codex 命名，claude/antigravity/kimi/xai 复用；
   // premium=金卡、elite=和田玉金镶玉 —— 均为定稿资产，样式不可改；档位判定见 cardTier.ts）
   codexPlan: string;
@@ -61,6 +63,7 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'quotaResetRelativeSoon',
   'quotaAmount',
   'quotaMessage',
+  'quotaNote',
   'codexPlan',
   'codexPlanItem',
   'codexPlanLabel',

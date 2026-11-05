@@ -92,6 +92,13 @@
   padding: 6px 4px;
 }
 
+.quotaNote {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
 /* ---------- 水位条（QuotaMeter）----------
  * 轨道退居背景（8% 墨色），填充按剩余量三档着色；
  * percent === null 时宽度为 0 —— 未知不着色。 */

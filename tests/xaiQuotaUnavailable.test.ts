@@ -105,6 +105,33 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(markup).not.toContain('$0.00 / $0.00');
   });
 
+  test('puts the unavailable note under the weekly label, not in the figure slot', () => {
+    const markup = render(quotaFor(weeklyConfig(), monthlyConfig()));
+    const resetTime = formatQuotaResetTime(WEEKLY_PERIOD_END);
+
+    // The figure slot is mono and never shrinks, so a sentence there squeezed
+    // the "Weekly limit" label to nothing and ran past the card edge.
+    expect(markup).not.toContain('class="quotaMeta"');
+    expect(markup).not.toContain('class="quotaPercent"');
+    expect(markup).toContain(
+      '<span class="quotaModel">Weekly limit</span></div><div class="quotaNote">Usage unavailable from xAI</div>'
+    );
+    // The plan row above already shows this reset; the weekly row must not repeat it.
+    expect(markup.split(resetTime)).toHaveLength(2);
+    expect(markup).not.toContain('class="quotaReset"');
+  });
+
+  test('keeps the weekly reset in the row when the plan row has none to show', () => {
+    const quota = quotaFor(weeklyConfig(), monthlyConfig());
+    if (!quota.billing) throw new Error('missing billing');
+    quota.billing.resetAtMs = null;
+
+    const markup = render(quota);
+
+    expect(markup).toContain('class="quotaNote">Usage unavailable from xAI</div>');
+    expect(markup).toContain(`Resets ${formatQuotaResetTime(WEEKLY_PERIOD_END)}`);
+  });
+
   test('keeps usagePercent null for a malformed percentage string', () => {
     const quota = quotaFor(weeklyConfig({ creditUsagePercent: 'not-a-number' }), monthlyConfig());
     expect(quota.billing?.usagePercent).toBeNull();
