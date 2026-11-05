@@ -220,17 +220,29 @@ describe('cooldown section rendering', () => {
     expect(markup).toContain(i18n.t('auth_files.cooldown_note'));
   });
 
-  test('keeps the reset action contextual and exposes pending state', () => {
+  test('keeps the reset action contextual and exposes pending state', async () => {
     expect(render(snapshot)).not.toContain(i18n.t('auth_files.cooldown_reset_button'));
 
     const available = render(snapshot, { onReset: () => {} });
     expect(available).toContain(i18n.t('auth_files.cooldown_reset_button'));
-    expect(available).toContain(i18n.t('auth_files.cooldown_reset_hint'));
+    expect(available).toContain(i18n.t('auth_files.cooldown_reset_hint').replace(/'/g, '&#x27;'));
     expect(available).not.toContain('disabled=""');
 
     const pending = render(snapshot, { onReset: () => {}, resetting: true });
     expect(pending).toContain('disabled=""');
     expect(pending).toContain('loading-spinner');
+
+    const previousLanguage = i18n.language;
+    try {
+      await i18n.changeLanguage('en');
+      const enAvailable = render(snapshot, { onReset: () => {} });
+      expect(enAvailable).toContain(
+        i18n.t('auth_files.cooldown_reset_hint').replace(/'/g, '&#x27;')
+      );
+      expect(enAvailable).toContain('&#x27;');
+    } finally {
+      await i18n.changeLanguage(previousLanguage);
+    }
   });
 
   test('shows elapsed / refresh confirmation and safely escapes model keys', () => {
