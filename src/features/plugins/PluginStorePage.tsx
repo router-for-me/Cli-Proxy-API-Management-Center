@@ -38,6 +38,7 @@ import {
   type PluginReleaseVersion,
 } from './pluginReleaseVersions';
 import { waitForPluginStoreState } from './pluginPolling';
+import { getStoreEntryDisplay } from './pluginStoreMetadata';
 import styles from './PluginStorePage.module.scss';
 
 type StoreStatusFilter = 'all' | 'installed' | 'notInstalled' | 'updates';
@@ -59,7 +60,8 @@ const getErrorDetailMessage = (error: unknown): string => {
 
 const DESCRIPTION_COLLAPSED_LINES = 2;
 
-const getStoreEntryTitle = (entry: PluginStoreEntry) => entry.name || entry.id;
+const getStoreEntryTitle = (entry: PluginStoreEntry, language: string) =>
+  getStoreEntryDisplay(entry, language).name || entry.id;
 const getStoreEntryKey = (entry: PluginStoreEntry) => entry.storeId || entry.id;
 const getDescriptionDOMID = (entryKey: string) =>
   `plugin-store-desc-${encodeURIComponent(entryKey)}`;
@@ -234,9 +236,10 @@ function PluginInstallOptionsModal({
   const requestedVersion =
     !supportsVersionSelection || versionMode === 'latest' ? '' : version.trim();
   const displayVersion = requestedVersion || entry.version;
+  const entryTitle = getStoreEntryTitle(entry, i18n.language);
   const target = displayVersion
-    ? `${getStoreEntryTitle(entry)} ${formatPluginVersion(displayVersion)}`
-    : getStoreEntryTitle(entry);
+    ? `${entryTitle} ${formatPluginVersion(displayVersion)}`
+    : entryTitle;
   const message = isUpdate
     ? t('plugin_store.update_confirm_message', { target })
     : t('plugin_store.install_confirm_message', { target });
@@ -460,7 +463,7 @@ function PluginInstallOptionsModal({
 }
 
 export function PluginStorePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
@@ -555,6 +558,7 @@ export function PluginStorePage() {
     if (!query) return byStatus;
 
     return byStatus.filter((plugin) => {
+      const display = getStoreEntryDisplay(plugin, i18n.language);
       const haystack = [
         plugin.id,
         plugin.name,
@@ -565,13 +569,19 @@ export function PluginStorePage() {
         plugin.sourceUrl,
         plugin.license,
         ...plugin.tags,
+        // 翻译与根字段一起可搜，避免切语言后搜不到原文。
+        display.name,
+        display.description,
+        display.author,
+        display.license,
+        ...display.tags,
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [data?.plugins, filter, statusFilter]);
+  }, [data?.plugins, filter, i18n.language, statusFilter]);
 
   const statusFilters: Array<{ key: StoreStatusFilter; label: string; count: number }> = [
     { key: 'all', label: t('plugin_store.filter_all'), count: stats.total },
@@ -586,7 +596,7 @@ export function PluginStorePage() {
 
   const restartNames = restartRequiredKeys.map((key) => {
     const entry = data?.plugins.find((plugin) => getStoreEntryKey(plugin) === key);
-    return entry ? getStoreEntryTitle(entry) : key;
+    return entry ? getStoreEntryTitle(entry, i18n.language) : key;
   });
 
   const hasActiveFilters = Boolean(filter.trim()) || statusFilter !== 'all';
@@ -788,9 +798,10 @@ export function PluginStorePage() {
 
   const renderCard = (entry: PluginStoreEntry) => {
     const entryKey = getStoreEntryKey(entry);
+    const display = getStoreEntryDisplay(entry, i18n.language);
     const logo = resolvePluginAssetURL(entry.logo, apiBase);
     const repositoryURL = buildRepositoryURL(entry.repository);
-    const homepageURL = /^https?:\/\//i.test(entry.homepage) ? entry.homepage : '';
+    const homepageURL = /^https?:\/\//i.test(display.homepage) ? display.homepage : '';
     const isUpdate = entry.installed && entry.updateAvailable;
     const isOfficial = isOfficialPlugin(entry);
     const versionText =
@@ -805,7 +816,7 @@ export function PluginStorePage() {
       ? t('plugin_store.cli_proxy_api_source')
       : entry.sourceName;
     const sourceText = sourceName ? t('plugin_store.source_name', { source: sourceName }) : '';
-    const metaItems = [versionText, sourceText, entry.author, entry.license].filter(Boolean);
+    const metaItems = [versionText, sourceText, display.author, display.license].filter(Boolean);
     const isInstalling = installingKey === entryKey;
     const hasPendingInstall = Boolean(installingKey);
     const missingAuth = entry.authRequired && !entry.authConfigured;
@@ -828,6 +839,7 @@ export function PluginStorePage() {
       : '';
     const actionDisabled = !connected || missingAuth || (hasPendingInstall && !isInstalling);
     const actionTitle = missingAuth ? t('plugin_store.auth_required_hint') : undefined;
+    const entryTitle = getStoreEntryTitle(entry, i18n.language);
 
     return (
       <article key={entryKey} className={styles.card}>
@@ -836,7 +848,7 @@ export function PluginStorePage() {
             <StoreCardLogo src={logo} />
           </div>
           <div className={styles.cardTitleBlock}>
-            <h2 className={styles.cardTitle}>{getStoreEntryTitle(entry)}</h2>
+            <h2 className={styles.cardTitle}>{entryTitle}</h2>
             <span className={styles.cardId}>{entry.id}</span>
           </div>
           <div className={styles.cardBadges}>
@@ -862,7 +874,7 @@ export function PluginStorePage() {
           </div>
         </div>
 
-        {entry.description ? (
+        {display.description ? (
           <div className={styles.cardDescBlock}>
             <p
               id={descriptionID}
@@ -871,7 +883,7 @@ export function PluginStorePage() {
                 isDescriptionExpanded ? styles.cardDescExpanded : ''
               }`}
             >
-              {entry.description}
+              {display.description}
             </p>
             {isDescriptionOverflowing ? (
               <button
@@ -908,9 +920,9 @@ export function PluginStorePage() {
           </div>
         ) : null}
 
-        {entry.tags.length > 0 ? (
+        {display.tags.length > 0 ? (
           <div className={styles.tagRow}>
-            {entry.tags.map((tag) => (
+            {display.tags.map((tag) => (
               <span key={`${entryKey}-tag-${tag}`} className={styles.tag}>
                 {tag}
               </span>

@@ -16,6 +16,7 @@ import type {
   PluginOAuthProviderEntry,
   PluginStoreEntry,
   PluginStoreInstallResult,
+  PluginStoreLocale,
   PluginStorePlatform,
   PluginStoreResponse,
   PluginStoreSourceError,
@@ -205,6 +206,34 @@ const normalizeDeleteResult = (value: unknown): PluginDeleteResult => {
   };
 };
 
+/** 与后端 NormalizePluginLocales 一致：丢弃无法归一化或全空的 locale 块。 */
+const normalizeStoreLocales = (value: unknown): Record<string, PluginStoreLocale> | undefined => {
+  if (!isRecord(value)) return undefined;
+  const locales: Record<string, PluginStoreLocale> = {};
+  for (const [rawKey, rawLocale] of Object.entries(value)) {
+    const key = rawKey.trim();
+    const locale = isRecord(rawLocale) ? rawLocale : {};
+    const tags = Array.isArray(locale.tags)
+      ? locale.tags.map((item) => asString(item).trim()).filter(Boolean)
+      : [];
+    const name = asString(locale.name).trim();
+    const description = asString(locale.description).trim();
+    const author = asString(locale.author).trim();
+    const homepage = asString(locale.homepage).trim();
+    const license = asString(locale.license).trim();
+    const normalized: PluginStoreLocale = {
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      ...(author ? { author } : {}),
+      ...(homepage ? { homepage } : {}),
+      ...(license ? { license } : {}),
+      ...(tags.length > 0 ? { tags } : {}),
+    };
+    if (key && Object.keys(normalized).length > 0) locales[key] = normalized;
+  }
+  return Object.keys(locales).length > 0 ? locales : undefined;
+};
+
 const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   if (!isRecord(value)) return null;
   const id = asString(value.id).trim();
@@ -215,6 +244,7 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   const tags = Array.isArray(value.tags)
     ? value.tags.map((item) => asString(item).trim()).filter(Boolean)
     : [];
+  const locales = normalizeStoreLocales(value.locales);
   const platforms = Array.isArray(value.platforms)
     ? (value.platforms
         .map((item): PluginStorePlatform | null => {
@@ -245,6 +275,7 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
     homepage: asString(value.homepage).trim(),
     license: asString(value.license).trim(),
     tags,
+    ...(locales ? { locales } : {}),
     installed: asBoolean(value.installed),
     installedVersion: asString(value.installed_version).trim(),
     path: asString(value.path).trim(),
