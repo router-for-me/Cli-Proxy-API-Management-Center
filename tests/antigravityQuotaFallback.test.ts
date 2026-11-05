@@ -85,7 +85,7 @@ describe('Antigravity partial quota fallback', () => {
         {
           ...claude,
           buckets: [
-            ...claude.buckets,
+            { bucketId: 'claude-weekly', window: 'weekly', remainingFraction: 0.1 },
             { bucketId: 'claude-five-hour', window: '5h', remainingFraction: 0.7 },
           ],
         },
@@ -94,9 +94,10 @@ describe('Antigravity partial quota fallback', () => {
     ]);
     const result = await ANTIGRAVITY_CONFIG.fetchQuota(file, t);
     expect(result.groups[0].buckets.map((bucket) => bucket.id)).toEqual([
-      'claude-weekly',
       'claude-five-hour',
+      'claude-weekly',
     ]);
+    expect(result.groups[0].buckets.map((bucket) => bucket.remainingFraction)).toEqual([0.7, 0.5]);
   });
 
   test('retains partial quota when fallback endpoints return HTTP errors', async () => {

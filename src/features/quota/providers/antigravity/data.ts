@@ -24,6 +24,7 @@ import {
   normalizeStringValue,
   parseAntigravityPayload,
   buildAntigravityQuotaGroups,
+  compareAntigravityQuotaBuckets,
   createStatusError,
   getStatusFromError,
   isAntigravityFile,
@@ -188,6 +189,7 @@ const fetchAntigravityQuota = async (
         }
         const bucketIds = new Set(existing.buckets.map((bucket) => bucket.id));
         existing.buckets.push(...group.buckets.filter((bucket) => !bucketIds.has(bucket.id)));
+        existing.buckets.sort(compareAntigravityQuotaBuckets);
       }
 
       // Daily hosts can return a successful but partial Claude/GPT-only summary.
