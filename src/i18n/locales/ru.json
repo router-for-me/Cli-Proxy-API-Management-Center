@@ -333,7 +333,6 @@
     "problem_filter_problem": "Пробл.",
     "problem_filter_disabled": "Откл.",
     "display_options_label": "Параметры отображения",
-    "compact_mode_label": "Компактный режим",
     "sort_label": "Сортировка",
     "sort_default": "По умолчанию",
     "sort_az": "A-Z Имя",
@@ -1589,6 +1588,14 @@
         "add": "Добавить"
       }
     }
+  },
+  "card_layout": {
+    "label": "Раскладка карточек",
+    "even": "Ровные ряды",
+    "stacked": "Стопкой",
+    "compact": "Компактно",
+    "show_details": "Показать подробности",
+    "hide_details": "Скрыть подробности"
   },
   "quota_management": {
     "search_label": "Поиск аккаунтов",

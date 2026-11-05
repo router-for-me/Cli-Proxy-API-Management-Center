@@ -19,7 +19,7 @@ export function DevinQuotaBody({ quota, classes }: QuotaBodyProps<DevinQuotaStat
       {(quota.plan || planEnd) && (
         <div className={classes.codexPlan}>
           {quota.plan && (
-            <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanItem} data-quota-plan="">
               <span className={classes.codexPlanLabel}>{t('devin_quota.plan_label')}</span>
               <span className={classes.codexPlanValue}>{quota.plan}</span>
             </span>

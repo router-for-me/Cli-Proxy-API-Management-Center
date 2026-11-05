@@ -25,7 +25,7 @@ export function KimiQuotaBody({ quota, classes }: QuotaBodyProps<KimiQuotaState>
   return (
     <>
       <div className={classes.codexPlan}>
-        <span className={classes.codexPlanItem}>
+        <span className={classes.codexPlanItem} data-quota-plan="">
           <span className={classes.codexPlanLabel}>{t('kimi_quota.plan_label')}</span>
           <span className={planValueClassForTier(resolveKimiCardTier(quota.planName), classes)}>
             {quota.planName || t('kimi_quota.plan_unknown')}

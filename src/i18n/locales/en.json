@@ -330,7 +330,6 @@
     "problem_filter_problem": "Problem",
     "problem_filter_disabled": "Disabled",
     "display_options_label": "Display options",
-    "compact_mode_label": "Compact mode",
     "sort_label": "Sort",
     "sort_default": "Default",
     "sort_az": "A-Z Name",
@@ -1586,6 +1585,14 @@
         "add": "Add"
       }
     }
+  },
+  "card_layout": {
+    "label": "Card layout",
+    "even": "Even rows",
+    "stacked": "Stacked",
+    "compact": "Compact",
+    "show_details": "Show details",
+    "hide_details": "Hide details"
   },
   "quota_management": {
     "search_label": "Search accounts",

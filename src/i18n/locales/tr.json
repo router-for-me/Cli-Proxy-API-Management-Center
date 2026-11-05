@@ -330,7 +330,6 @@
     "problem_filter_problem": "Sorunlu",
     "problem_filter_disabled": "Devre Dışı",
     "display_options_label": "Görünüm Seçenekleri",
-    "compact_mode_label": "Sıkışık Mod",
     "sort_label": "Sırala",
     "sort_default": "Varsayılan",
     "sort_az": "A-Z Ad",
@@ -1586,6 +1585,14 @@
         "add": "Ekle"
       }
     }
+  },
+  "card_layout": {
+    "label": "Kart Düzeni",
+    "even": "Eşit Satırlar",
+    "stacked": "Yığılmış",
+    "compact": "Kompakt",
+    "show_details": "Ayrıntıları Göster",
+    "hide_details": "Ayrıntıları Gizle"
   },
   "quota_management": {
     "search_label": "Hesap Ara",

@@ -191,6 +191,44 @@
   }
 }
 
+/* ---------- Compact layout: glance card ----------
+ * QuotaCard sets data-quota-glance in the Compact layout. A glance keeps the plan and one line
+ * per limit (name, percent, bar); reset times, amounts, credit lists and group notes stay in
+ * the full card, which the card's details toggle opens. */
+
+[data-quota-glance] {
+  .quotaRow {
+    gap: 3px;
+  }
+
+  /* A glance row is only a name and a percent: keep it on one line on phones too. */
+  .quotaRowHeader {
+    flex-direction: row;
+    align-items: baseline;
+  }
+
+  .quotaModel {
+    width: auto;
+    @include text-ellipsis;
+  }
+
+  .quotaReset,
+  .quotaResetRelative,
+  .quotaAmount,
+  .codexResetCredits,
+  .codexResetCreditsError,
+  .antigravityQuotaGroupDescription,
+  .codexPlanLabel,
+  .codexPlanItem:not([data-quota-plan]) {
+    display: none;
+  }
+
+  /* Own rule: a browser without :has() drops only this one, not the rules above. */
+  .codexPlan:not(:has([data-quota-plan])) {
+    display: none;
+  }
+}
+
 /* ============================================================
  * 以下至文件末尾：套餐徽章定稿区块（逐字节搬迁，禁止改动）
  * ============================================================ */

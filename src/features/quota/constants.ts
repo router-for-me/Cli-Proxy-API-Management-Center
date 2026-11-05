@@ -22,5 +22,12 @@ export const QUOTA_SORT_MODES = ['default', 'soonest'] as const;
 
 export type QuotaSortMode = (typeof QUOTA_SORT_MODES)[number];
 
+/** Card layout (Even rows / Stacked / Compact), kept in localStorage across sessions. */
+export const QUOTA_CARD_LAYOUT_KEY = 'quotaPage.cardLayout';
+
+/** Column minimums and gaps for the Stacked and Compact layouts; Even rows uses `.grid`. */
+export const QUOTA_STACKED_COLUMNS = { minColumnWidth: 340, gap: 16 } as const;
+export const QUOTA_COMPACT_COLUMNS = { minColumnWidth: 260, gap: 10 } as const;
+
 /** 与 useRevealGroup 的 GROUP_MAX_TOTAL 一致：卡片级联总预算 360ms。 */
 export const CARD_ENTRANCE_BUDGET_MS = 360;
