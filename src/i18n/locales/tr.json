@@ -506,13 +506,13 @@
     "refresh_button": "Kotayı Yenile",
     "fetch_all": "Tümünü Getir",
     "five_hour": "5 Saatlik Sınır",
-    "seven_day": "7 Günlük Sınır",
-    "seven_day_oauth_apps": "7 Günlük OAuth Uygulamaları",
-    "seven_day_opus": "7 Günlük Opus",
-    "seven_day_sonnet": "7 Günlük Sonnet",
-    "seven_day_cowork": "7 Günlük Cowork",
+    "seven_day": "Haftalık Sınır",
+    "seven_day_oauth_apps": "OAuth Uygulamaları Haftalık Sınır",
+    "seven_day_opus": "Opus Haftalık Sınır",
+    "seven_day_sonnet": "Sonnet Haftalık Sınır",
+    "seven_day_cowork": "Cowork Haftalık Sınır",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "7 Günlük Fable 5",
+    "seven_day_fable": "Fable 5 Haftalık Sınır",
     "cloud_session_credits": "Bulut Oturum Kredileri",
     "extra_usage_label": "Ek Kullanım",
     "extra_usage_enabled": "Etkin",
@@ -583,8 +583,8 @@
     "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
-    "daily": "Günlük Kalan",
-    "weekly": "Haftalık Kalan",
+    "daily": "Günlük Sınır",
+    "weekly": "Haftalık Sınır",
     "plan_label": "Plan",
     "plan_end": "Abonelik Bitişi",
     "unavailable": "Kullanılamaz",
@@ -619,10 +619,10 @@
     "plan": "Plan",
     "active": "Abonelik Aktif",
     "inactive": "Abonelik Aktif Değil",
-    "window": "Kullanım Penceresi",
-    "window_duration": "{{minutes}} Dakikalık Pencere",
-    "window_duration_hours": "{{hours}} Saatlik Pencere",
-    "weekly": "Haftalık Kota",
+    "window": "Kullanım Sınırı",
+    "window_duration": "{{minutes}} Dakikalık Sınır",
+    "window_duration_hours": "{{hours}} Saatlik Sınır",
+    "weekly": "Haftalık Sınır",
     "unknown": "Bilinmiyor",
     "remaining": "%{{percent}} Kaldı"
   },
@@ -2098,6 +2098,7 @@
       "activeCount": "{{active}} / {{total}} Aktif"
     },
     "providerNames": {
+       "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2160,6 +2161,8 @@
       "urlMode": "{{provider}} URL'si",
       "urlHint": "Tüm URL'ler Aynı API Kurallarını Kullanır. Kayıt Yalnızca Geçerli Gruplanmış Protokolün Uç Noktasını Yazar.",
       "urlOptions": {
+         "aiCodeMirrorGlobal": "Yüksek Korumalı Küresel Rota",
+         "aiCodeMirrorDomestic": "Çin Ana Karası için Optimize Edilmiş Rota",
         "standard": "Standart URL",
         "direct": "Doğrudan URL",
         "domestic": "Çin Ana Karası Rotası",
@@ -2168,6 +2171,8 @@
         "global": "Küresel"
       },
       "urlOptionDescriptions": {
+         "aiCodeMirrorGlobal": "Küresel erişim için yüksek korumalı bir rota.",
+         "aiCodeMirrorDomestic": "Çin ana karasındaki ağlar için optimize edilmiş bir rota.",
         "domestic": "Çin Ana Karasındaki Kullanıcılar ve İş Yükleri için. Ana Kara Ağlarında Genellikle Daha Düşük Gecikme.",
         "overseas": "Yurt Dışı Dağıtımlar, Sınır Ötesi Erişim veya Yurt Dışı Modeller Gerektiren İş Yükleri için.",
         "mainlandChinaRecommended": "Çin Ana Karası Ağlarındaki Kullanıcılar ve İş Yükleri için Önerilir.",

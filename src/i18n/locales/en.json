@@ -506,13 +506,13 @@
     "refresh_button": "Refresh Quota",
     "fetch_all": "Fetch All",
     "five_hour": "5-hour limit",
-    "seven_day": "7-day limit",
-    "seven_day_oauth_apps": "7-day OAuth apps",
-    "seven_day_opus": "7-day Opus",
-    "seven_day_sonnet": "7-day Sonnet",
-    "seven_day_cowork": "7-day Cowork",
+    "seven_day": "Weekly limit",
+    "seven_day_oauth_apps": "Weekly OAuth apps limit",
+    "seven_day_opus": "Weekly Opus limit",
+    "seven_day_sonnet": "Weekly Sonnet limit",
+    "seven_day_cowork": "Weekly Cowork limit",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "7-day Fable 5",
+    "seven_day_fable": "Weekly Fable 5 limit",
     "cloud_session_credits": "Cloud session credits",
     "extra_usage_label": "Extra Usage",
     "extra_usage_enabled": "Enabled",
@@ -583,8 +583,8 @@
     "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
-    "daily": "Daily remaining",
-    "weekly": "Weekly remaining",
+    "daily": "Daily limit",
+    "weekly": "Weekly limit",
     "plan_label": "Plan",
     "plan_end": "Subscription ends",
     "unavailable": "Unavailable",
@@ -619,10 +619,10 @@
     "plan": "Plan",
     "active": "Subscription active",
     "inactive": "Subscription inactive",
-    "window": "Usage window",
-    "window_duration": "{{minutes}}-minute window",
-    "window_duration_hours": "{{hours}}-hour window",
-    "weekly": "Weekly quota",
+    "window": "Usage limit",
+    "window_duration": "{{minutes}}-minute limit",
+    "window_duration_hours": "{{hours}}-hour limit",
+    "weekly": "Weekly limit",
     "unknown": "Unknown",
     "remaining": "{{percent}}% remaining"
   },
@@ -2115,6 +2115,7 @@
       "activeCount": "{{active}}/{{total}} active"
     },
     "providerNames": {
+       "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2177,6 +2178,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
       "urlOptions": {
+         "aiCodeMirrorGlobal": "Global high-protection route",
+         "aiCodeMirrorDomestic": "Mainland China optimized route",
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
@@ -2185,6 +2188,8 @@
         "global": "Global"
       },
       "urlOptionDescriptions": {
+         "aiCodeMirrorGlobal": "A high-protection route for global access.",
+         "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
         "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
         "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",

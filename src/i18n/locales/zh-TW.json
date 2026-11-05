@@ -491,13 +491,13 @@
     "refresh_button": "重新整理配額",
     "fetch_all": "取得全部",
     "five_hour": "5 小時限額",
-    "seven_day": "7 天限額",
-    "seven_day_oauth_apps": "7 天 OAuth 應用",
-    "seven_day_opus": "7 天 Opus",
-    "seven_day_sonnet": "7 天 Sonnet",
-    "seven_day_cowork": "7 天 Cowork",
+    "seven_day": "週限額",
+    "seven_day_oauth_apps": "OAuth 應用週限額",
+    "seven_day_opus": "Opus 週限額",
+    "seven_day_sonnet": "Sonnet 週限額",
+    "seven_day_cowork": "Cowork 週限額",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "7 天 Fable 5",
+    "seven_day_fable": "Fable 5 週限額",
     "cloud_session_credits": "雲端工作階段額度",
     "extra_usage_label": "額外用量",
     "extra_usage_enabled": "已啟用",
@@ -569,8 +569,8 @@
     "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
-    "daily": "每日剩餘額度",
-    "weekly": "每週剩餘額度",
+    "daily": "日限額",
+    "weekly": "週限額",
     "plan_label": "方案",
     "plan_end": "訂閱到期",
     "unavailable": "暫無資料",
@@ -605,10 +605,10 @@
     "plan": "方案",
     "active": "訂閱有效",
     "inactive": "訂閱未啟用",
-    "window": "週期額度",
-    "window_duration": "{{minutes}} 分鐘週期",
-    "window_duration_hours": "{{hours}} 小時週期",
-    "weekly": "每週額度",
+    "window": "使用限額",
+    "window_duration": "{{minutes}} 分鐘限額",
+    "window_duration_hours": "{{hours}} 小時限額",
+    "weekly": "週限額",
     "unknown": "未知",
     "remaining": "剩餘 {{percent}}%"
   },
@@ -2142,6 +2142,7 @@
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
+       "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2204,6 +2205,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
+         "aiCodeMirrorGlobal": "全球高保線路",
+         "aiCodeMirrorDomestic": "國內優化線路",
         "standard": "普通 URL",
         "direct": "專線直連 URL",
         "domestic": "中國大陸線路",
@@ -2212,6 +2215,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
+         "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
+         "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
         "domestic": "面向中國大陸使用者和部署在中國大陸網路環境中的業務，通常可獲得更低延遲。",
         "overseas": "面向海外部署、跨境存取或需要存取境外模型的業務。",
         "mainlandChinaRecommended": "推薦中國大陸使用者和部署在中國大陸網路環境中的業務使用。",

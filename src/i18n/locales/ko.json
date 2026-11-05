@@ -506,13 +506,13 @@
     "refresh_button": "할당량 새로 고침",
     "fetch_all": "전체 가져오기",
     "five_hour": "5시간 한도",
-    "seven_day": "7일 한도",
-    "seven_day_oauth_apps": "7일 OAuth 앱",
-    "seven_day_opus": "7일 Opus",
-    "seven_day_sonnet": "7일 Sonnet",
-    "seven_day_cowork": "7일 Cowork",
+    "seven_day": "주간 한도",
+    "seven_day_oauth_apps": "OAuth 앱 주간 한도",
+    "seven_day_opus": "Opus 주간 한도",
+    "seven_day_sonnet": "Sonnet 주간 한도",
+    "seven_day_cowork": "Cowork 주간 한도",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "7일 Fable 5",
+    "seven_day_fable": "Fable 5 주간 한도",
     "cloud_session_credits": "클라우드 세션 크레딧",
     "extra_usage_label": "추가 사용량",
     "extra_usage_enabled": "활성화됨",
@@ -583,8 +583,8 @@
     "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
-    "daily": "일일 잔여 할당량",
-    "weekly": "주간 잔여 할당량",
+    "daily": "일일 한도",
+    "weekly": "주간 한도",
     "plan_label": "플랜",
     "plan_end": "구독 만료",
     "unavailable": "정보 없음",
@@ -619,10 +619,10 @@
     "plan": "플랜",
     "active": "구독 활성",
     "inactive": "구독 비활성",
-    "window": "사용 주기",
-    "window_duration": "{{minutes}}분 주기",
-    "window_duration_hours": "{{hours}}시간 주기",
-    "weekly": "주간 할당량",
+    "window": "사용 한도",
+    "window_duration": "{{minutes}}분 한도",
+    "window_duration_hours": "{{hours}}시간 한도",
+    "weekly": "주간 한도",
     "unknown": "알 수 없음",
     "remaining": "{{percent}}% 남음"
   },
@@ -2098,6 +2098,7 @@
       "activeCount": "활성 {{active}}/{{total}}"
     },
     "providerNames": {
+       "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2160,6 +2161,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "모든 URL은 동일한 API 규칙을 사용합니다. 저장 시 현재 그룹화된 프로토콜의 엔드포인트만 기록됩니다.",
       "urlOptions": {
+         "aiCodeMirrorGlobal": "글로벌 고보호 경로",
+         "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
         "standard": "표준 URL",
         "direct": "직접 연결 URL",
         "domestic": "중국 본토 경로",
@@ -2168,6 +2171,8 @@
         "global": "글로벌"
       },
       "urlOptionDescriptions": {
+         "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
+         "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
         "domestic": "중국 본토의 사용자 및 워크로드용입니다. 본토 네트워크에서 일반적으로 대기 시간이 더 짧습니다.",
         "overseas": "해외 배포, 국경 간 액세스 또는 해외 모델이 필요한 워크로드용입니다.",
         "mainlandChinaRecommended": "중국 본토 네트워크의 사용자 및 워크로드에 권장됩니다.",

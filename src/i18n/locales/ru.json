@@ -496,13 +496,13 @@
     "refresh_button": "Обновить квоту",
     "fetch_all": "Получить все",
     "five_hour": "Лимит на 5 часов",
-    "seven_day": "Лимит на 7 дней",
-    "seven_day_oauth_apps": "7 дней OAuth приложения",
-    "seven_day_opus": "7 дней Opus",
-    "seven_day_sonnet": "7 дней Sonnet",
-    "seven_day_cowork": "7 дней Cowork",
+    "seven_day": "Недельный лимит",
+    "seven_day_oauth_apps": "OAuth-приложения: недельный лимит",
+    "seven_day_opus": "Opus: недельный лимит",
+    "seven_day_sonnet": "Sonnet: недельный лимит",
+    "seven_day_cowork": "Cowork: недельный лимит",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "7 дней Fable 5",
+    "seven_day_fable": "Fable 5: недельный лимит",
     "cloud_session_credits": "Кредиты облачных сессий",
     "extra_usage_label": "Дополнительное использование",
     "extra_usage_enabled": "Включено",
@@ -573,8 +573,8 @@
     "plan_business_premium": "Business Premium"
   },
   "devin_quota": {
-    "daily": "Остаток на день",
-    "weekly": "Остаток на неделю",
+    "daily": "Дневной лимит",
+    "weekly": "Недельный лимит",
     "plan_label": "Тариф",
     "plan_end": "Окончание подписки",
     "unavailable": "Нет данных",
@@ -609,10 +609,10 @@
     "plan": "Тариф",
     "active": "Подписка активна",
     "inactive": "Подписка неактивна",
-    "window": "Квота за период",
-    "window_duration": "Период: {{minutes}} мин.",
-    "window_duration_hours": "Период: {{hours}} ч.",
-    "weekly": "Недельная квота",
+    "window": "Лимит использования",
+    "window_duration": "Лимит на {{minutes}} мин.",
+    "window_duration_hours": "Лимит на {{hours}} ч.",
+    "weekly": "Недельный лимит",
     "unknown": "Неизвестно",
     "remaining": "Осталось {{percent}}%"
   },
@@ -2109,6 +2109,7 @@
       "activeCount": "{{active}}/{{total}} активных"
     },
     "providerNames": {
+       "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2171,6 +2172,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
+         "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
+         "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
         "standard": "Обычный URL",
         "direct": "Прямой URL",
         "domestic": "Маршрут для материкового Китая",
@@ -2179,6 +2182,8 @@
         "global": "Глобальный"
       },
       "urlOptionDescriptions": {
+         "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
+         "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
         "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
         "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели.",
         "mainlandChinaRecommended": "Рекомендуется для пользователей и нагрузок в сетях материкового Китая.",

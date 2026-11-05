@@ -13,6 +13,7 @@ import type {
   PluginListResponse,
   PluginMetadata,
   PluginMenu,
+  PluginOAuthProviderEntry,
   PluginStoreEntry,
   PluginStoreInstallResult,
   PluginStorePlatform,
@@ -25,11 +26,56 @@ const asString = (value: unknown): string => {
   return String(value);
 };
 
+// Entry metadata is escaped by the backend's Go html.EscapeString. Undo only
+// that encoding in one pass: literal entity text must not be decoded twice.
+// These remain untrusted strings rendered through React text/attribute props.
+const pluginEntryEntities: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&#34;': '"',
+  '&#39;': "'",
+};
+const decodePluginEntryText = (value: unknown): string =>
+  asString(value)
+    .replace(/&(?:amp|lt|gt|#34|#39);/g, (entity) => pluginEntryEntities[entity])
+    .trim();
+
 const asBoolean = (value: unknown): boolean => value === true;
 
 const normalizePluginOAuthProvider = (value: unknown): string | undefined => {
   const provider = normalizeManagementOAuthProviderKey(asString(value));
   return isManagementOAuthProviderKey(provider) ? provider : undefined;
+};
+
+/** 同一插件可声明多个登录入口：按声明顺序去重，逐项做与单数字段相同的归一化。 */
+const normalizePluginOAuthProviders = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const providers: string[] = [];
+  for (const item of value) {
+    const provider = normalizePluginOAuthProvider(item);
+    if (provider && !providers.includes(provider)) providers.push(provider);
+  }
+  return providers;
+};
+
+/** 入口级名称与图标，只保留插件真正声明过的 identifier。 */
+const normalizePluginOAuthProviderEntries = (
+  value: unknown,
+  providers: readonly string[]
+): PluginOAuthProviderEntry[] => {
+  if (!Array.isArray(value) || providers.length === 0) return [];
+  const entries: PluginOAuthProviderEntry[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const identifier = normalizePluginOAuthProvider(item.identifier);
+    if (!identifier || !providers.includes(identifier)) continue;
+    if (entries.some((entry) => entry.identifier === identifier)) continue;
+    const name = decodePluginEntryText(item.name);
+    const logo = decodePluginEntryText(item.logo);
+    entries.push({ identifier, ...(name ? { name } : {}), ...(logo ? { logo } : {}) });
+  }
+  return entries;
 };
 
 const normalizeConfigField = (value: unknown): PluginConfigField | null => {
@@ -101,6 +147,12 @@ const normalizePluginEntry = (value: unknown): PluginListEntry | null => {
   const configFields = normalizeConfigFields(value.config_fields);
   const supportsOAuth = asBoolean(value.supports_oauth);
   const oauthProvider = normalizePluginOAuthProvider(value.oauth_provider);
+  // 旧后端只发单数 `oauth_provider`，单数字段原样保留，既有消费方行为不变。
+  const oauthProviders = normalizePluginOAuthProviders(value.oauth_providers);
+  const oauthProviderEntries = normalizePluginOAuthProviderEntries(
+    value.oauth_provider_entries,
+    oauthProviders
+  );
   const quotaProvider = asString(value.quota_provider).trim().toLowerCase();
 
   return {
@@ -112,6 +164,8 @@ const normalizePluginEntry = (value: unknown): PluginListEntry | null => {
     effectiveEnabled: asBoolean(value.effective_enabled),
     supportsOAuth,
     oauthProvider,
+    ...(oauthProviders.length > 0 ? { oauthProviders } : {}),
+    ...(oauthProviderEntries.length > 0 ? { oauthProviderEntries } : {}),
     supportsQuota: asBoolean(value.supports_quota),
     ...(quotaProvider ? { quotaProvider } : {}),
     logo: asString(value.logo || metadata?.logo).trim(),
