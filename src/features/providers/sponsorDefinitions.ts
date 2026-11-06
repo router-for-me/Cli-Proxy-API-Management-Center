@@ -27,6 +27,15 @@ import {
   resolveQiniuCloudBaseUrl,
 } from './qiniuCloud';
 import {
+  OPEN_ROUTER_BASE_URL_OPTIONS,
+  OPEN_ROUTER_DISPLAY_NAME,
+  OPEN_ROUTER_KEYS_URL,
+  OPEN_ROUTER_PROTOCOL_LABELS,
+  OPEN_ROUTER_PROVIDER_NAME,
+  getOpenRouterProtocolUrls,
+  resolveOpenRouterBaseUrl,
+} from './openRouter';
+import {
   AI_CODE_MIRROR_AFFILIATE_URL,
   AI_CODE_MIRROR_BASE_URL_OPTIONS,
   AI_CODE_MIRROR_DISPLAY_NAME,
@@ -136,6 +145,19 @@ const SPONSOR_DEFINITIONS: Record<SponsorProviderBrand, SponsorProviderDefinitio
     resolveBaseUrl: resolveAiCodeMirrorBaseUrl,
     getProtocolUrls: getAiCodeMirrorProtocolUrls,
   },
+  openRouter: {
+    brand: 'openRouter',
+    displayName: OPEN_ROUTER_DISPLAY_NAME,
+    providerName: OPEN_ROUTER_PROVIDER_NAME,
+    affiliateUrl: OPEN_ROUTER_KEYS_URL,
+    protocols: ['openai'],
+    protocolLabels: OPEN_ROUTER_PROTOCOL_LABELS,
+    defaultProtocol: 'openai',
+    baseUrlOptions: OPEN_ROUTER_BASE_URL_OPTIONS,
+    supportsUsageCheck: false,
+    resolveBaseUrl: resolveOpenRouterBaseUrl,
+    getProtocolUrls: getOpenRouterProtocolUrls,
+  },
   kimi: {
     brand: 'kimi',
     displayName: KIMI_DISPLAY_NAME,
@@ -155,6 +177,7 @@ export const isMultiProtocolSponsorBrand = (brand: ProviderBrand): brand is Spon
   brand === 'fennoAI' ||
   brand === 'qiniuCloud' ||
   brand === 'aiCodeMirror' ||
+  brand === 'openRouter' ||
   brand === 'kimi';
 
 export type SponsorAggregationConflict = 'multiple-configs' | 'multiple-openai-keys';

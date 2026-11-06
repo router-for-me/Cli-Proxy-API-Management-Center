@@ -11,6 +11,7 @@ import apikeyFunLogo from '@/assets/icons/apikey-fun.png';
 import fennoAILogo from '@/assets/icons/fenno-ai.png';
 import qiniuCloudLogo from '@/assets/icons/qiniu-cloud.png';
 import aiCodeMirrorLogo from '@/assets/icons/ai-code-mirror.png';
+import openRouterLogo from '@/assets/icons/openrouter.png';
 import xaiLightLogo from '@/assets/icons/grok.svg';
 import xaiDarkLogo from '@/assets/icons/grok-dark.svg';
 import kimiLightLogo from '@/assets/icons/kimi-light.svg';
@@ -41,6 +42,7 @@ export const PROVIDER_LOGOS: Record<ProviderBrandLogoKey, ProviderBrandLogo> = {
   fennoAI: { src: fennoAILogo, transparent: true },
   qiniuCloud: { src: qiniuCloudLogo, transparent: true },
   aiCodeMirror: { src: aiCodeMirrorLogo, transparent: true },
+  openRouter: { src: openRouterLogo },
   kimi: {
     src: kimiDarkLogo,
     darkSrc: kimiLightLogo,

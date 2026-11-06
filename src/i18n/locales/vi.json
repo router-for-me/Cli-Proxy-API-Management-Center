@@ -1956,6 +1956,7 @@
     },
     "providerNames": {
        "aiCodeMirror": "AIcodemirror",
+       "openRouter": "OpenRouter",
       "gemini": "Gemini",
       "interactions": "Interactions API",
       "codex": "Codex",

@@ -20,6 +20,12 @@ import {
   resolveQiniuCloudBaseUrl,
 } from './qiniuCloud';
 import {
+  OPEN_ROUTER_DISPLAY_NAME,
+  OPEN_ROUTER_PROTOCOL_LABELS,
+  getOpenRouterProtocolUrls,
+  resolveOpenRouterBaseUrl,
+} from './openRouter';
+import {
   AI_CODE_MIRROR_DISPLAY_NAME,
   AI_CODE_MIRROR_PROTOCOL_LABELS,
   getAiCodeMirrorProtocolUrls,
@@ -341,6 +347,15 @@ export function qiniuCloudToResource(raw: SponsorProviderRaw): ProviderResource 
     protocolLabels: QINIU_CLOUD_PROTOCOL_LABELS,
     resolveBaseUrl: resolveQiniuCloudBaseUrl,
     getProtocolUrls: getQiniuCloudProtocolUrls,
+  });
+}
+
+export function openRouterToResource(raw: SponsorProviderRaw): ProviderResource | null {
+  return sponsorRawToResource('openRouter', raw, {
+    displayName: OPEN_ROUTER_DISPLAY_NAME,
+    protocolLabels: OPEN_ROUTER_PROTOCOL_LABELS,
+    resolveBaseUrl: resolveOpenRouterBaseUrl,
+    getProtocolUrls: getOpenRouterProtocolUrls,
   });
 }
 

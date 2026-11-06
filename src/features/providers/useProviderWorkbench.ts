@@ -25,6 +25,7 @@ import {
   openaiToResource,
   qiniuCloudToResource,
   aiCodeMirrorToResource,
+  openRouterToResource,
   kimiToResource,
   vertexToResource,
   xaiToResource,
@@ -64,6 +65,7 @@ import {
   isAiCodeMirrorGeminiProvider,
   isAiCodeMirrorOpenAIProvider,
 } from './aiCodeMirror';
+import { buildOpenRouterRaw, isOpenRouterOpenAIProvider } from './openRouter';
 import {
   buildKimiRaw,
   isKimiClaudeProvider,
@@ -433,6 +435,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
               !isApiKeyFunOpenAIProvider(item) &&
               !isQiniuCloudOpenAIProvider(item) &&
               !isAiCodeMirrorOpenAIProvider(item) &&
+              !isOpenRouterOpenAIProvider(item) &&
               !isKimiOpenAIProvider(item)
             ) {
               out.push(openaiToResource(item, index));
@@ -454,6 +457,11 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
       }
       case 'qiniuCloud': {
         const sponsorResource = qiniuCloudToResource(buildQiniuCloudRaw(config));
+        resources = sponsorResource ? [sponsorResource] : [];
+        break;
+      }
+      case 'openRouter': {
+        const sponsorResource = openRouterToResource(buildOpenRouterRaw(config));
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
@@ -560,7 +568,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               ? buildQiniuCloudRaw(config)
               : brand === 'aiCodeMirror'
                 ? buildAiCodeMirrorRaw(config)
-                : buildKimiRaw(config);
+                : brand === 'openRouter'
+                  ? buildOpenRouterRaw(config)
+                  : buildKimiRaw(config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
@@ -710,6 +720,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
           brand === 'aiCodeMirror' ||
+          brand === 'openRouter' ||
           brand === 'qiniuCloud' ||
           brand === 'kimi'
         ) {
@@ -786,6 +797,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           );
         } else if (
           brand === 'aiCodeMirror' ||
+          brand === 'openRouter' ||
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||
@@ -876,6 +888,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'fennoAI' ||
           sel.brand === 'qiniuCloud' ||
           sel.brand === 'aiCodeMirror' ||
+          sel.brand === 'openRouter' ||
           sel.brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(async () => {
@@ -975,6 +988,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           );
         } else if (
           brand === 'aiCodeMirror' ||
+          brand === 'openRouter' ||
           brand === 'apikeyFun' ||
           brand === 'fennoAI' ||
           brand === 'qiniuCloud' ||

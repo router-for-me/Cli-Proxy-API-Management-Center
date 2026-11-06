@@ -2083,6 +2083,7 @@
     },
     "providerNames": {
        "aiCodeMirror": "AIcodemirror",
+       "openRouter": "OpenRouter",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
