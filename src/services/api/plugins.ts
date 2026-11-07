@@ -314,7 +314,8 @@ export interface PluginStoreInstallOptions {
 
 export const pluginsApi = {
   async list(): Promise<PluginListResponse> {
-    const data = await apiClient.get('/plugins');
+    const client = apiClient.captureConnection();
+    const data = await client.get('/plugins');
     return normalizePluginList(data);
   },
 

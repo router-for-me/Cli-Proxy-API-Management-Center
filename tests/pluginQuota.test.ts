@@ -419,7 +419,9 @@ describe('generic plugin quota', () => {
 
   test('normalizes plugin quota capabilities from the plugin list', async () => {
     list.mockRestore();
-    const get = spyOn(apiClient, 'get').mockResolvedValue({
+    const client = apiClient.captureConnection();
+    const capture = spyOn(apiClient, 'captureConnection').mockReturnValue(client);
+    const get = spyOn(client, 'get').mockResolvedValue({
       plugins: [
         { id: 'a', registered: true, supports_quota: true, quota_provider: ' Kiro ' },
         { id: 'b', registered: true },
@@ -435,6 +437,7 @@ describe('generic plugin quota', () => {
       ]);
     } finally {
       get.mockRestore();
+      capture.mockRestore();
     }
   });
 
