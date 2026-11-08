@@ -589,7 +589,6 @@
     "credit_overage_dialog_title": "Kullanım Limitinden Sonra Kredi Kullanımı",
     "credit_overage_account": "Hesap",
     "credit_overage_current": "Ayar durumu",
-    "credit_overage_unknown_hint": "Bu ayar henüz doğrulanmadı. Güncellemek için aşağıdan bir seçenek belirleyin.",
     "credit_overage_intro": "İzin verildiğinde uygulamalar, planın kullanım sınırı dolduktan sonra hesabın kredi bakiyesini harcayarak çalışmaya devam edebilir.",
     "credit_overage_scope_note": "Bu ChatGPT planını kullanma izni olan tüm uygulamalar için geçerlidir.",
     "credit_overage_shared_note": "Bu paneldeki {{total}} kimlik bilgisi bu hesap ayarını paylaşır.",

@@ -575,7 +575,6 @@
     "credit_overage_dialog_title": "额度用尽后使用 Credit",
     "credit_overage_account": "账号",
     "credit_overage_current": "设置状态",
-    "credit_overage_unknown_hint": "当前设置尚未确认，可直接选择下方选项进行设置。",
     "credit_overage_intro": "允许后，套餐额度用尽时，应用可继续处理请求，并消耗账号的 Credit 余额。",
     "credit_overage_scope_note": "此设置适用于所有已授权使用该 ChatGPT 套餐的应用。",
     "credit_overage_shared_note": "本面板中有 {{total}} 个同账号凭证共享此设置。",

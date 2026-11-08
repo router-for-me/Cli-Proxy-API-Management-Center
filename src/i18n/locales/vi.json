@@ -589,7 +589,6 @@
     "credit_overage_dialog_title": "Dùng Credit sau khi hết giới hạn sử dụng",
     "credit_overage_account": "Tài khoản",
     "credit_overage_current": "Trạng thái cài đặt",
-    "credit_overage_unknown_hint": "Cài đặt này chưa được xác nhận. Chọn một tùy chọn bên dưới để cập nhật.",
     "credit_overage_intro": "Khi được cho phép, ứng dụng có thể tiếp tục hoạt động sau khi hết hạn mức gói bằng cách sử dụng số dư Credit của tài khoản.",
     "credit_overage_scope_note": "Áp dụng cho mọi ứng dụng được phép sử dụng gói ChatGPT này.",
     "credit_overage_shared_note": "Có {{total}} thông tin xác thực trong bảng điều khiển dùng chung cài đặt tài khoản này.",

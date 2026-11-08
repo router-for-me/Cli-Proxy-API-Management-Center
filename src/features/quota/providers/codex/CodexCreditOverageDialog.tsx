@@ -73,9 +73,6 @@ export function CodexCreditOverageDialog({
       closeDisabled={pending}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
-            {t('common.cancel')}
-          </Button>
           <Button
             variant="secondary"
             onClick={() => onApply(false)}
@@ -129,9 +126,6 @@ export function CodexCreditOverageDialog({
           <> {t('codex_quota.credit_overage_shared_note', { total: sharedCredentialCount })}</>
         )}
       </p>
-      {state === 'unknown' && (
-        <p className={styles.hint}>{t('codex_quota.credit_overage_unknown_hint')}</p>
-      )}
       {feedbackMessage && (
         <div
           className={styles.feedback}

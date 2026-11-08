@@ -589,7 +589,6 @@
     "credit_overage_dialog_title": "Use credits after the usage limit",
     "credit_overage_account": "Account",
     "credit_overage_current": "Setting status",
-    "credit_overage_unknown_hint": "This setting has not been confirmed. Choose an option below to update it.",
     "credit_overage_intro": "Allowing this lets apps continue after the plan’s usage limit by spending the account’s credit balance.",
     "credit_overage_scope_note": "Applies to all apps authorized to use this ChatGPT plan.",
     "credit_overage_shared_note": "{{total}} credentials in this panel share this account setting.",

@@ -145,7 +145,7 @@ describe('CodexCreditOverageDialog', () => {
     expect(markup).toContain('user@example.com');
     expect(markup).toContain('1250');
     expect(markup).toContain('data-state="unknown"');
-    expect(markup).toContain('Choose an option below to update it.');
+    expect(markup).not.toContain('Choose an option below to update it.');
     expect(markup).toContain('spending the account’s credit balance');
     expect(markup).toContain('Applies to all apps authorized to use this ChatGPT plan.');
     expect(markup).not.toContain('SIWC');
@@ -156,6 +156,9 @@ describe('CodexCreditOverageDialog', () => {
     expect(markup).toContain('btn-secondary');
     expect(markup).toContain('Don’t allow credits');
     expect(markup).toMatch(/btn-danger[^>]*><span>Allow credits<\/span>/);
+    const footer = markup.slice(markup.indexOf('modal-footer'));
+    expect(footer.match(/<button\b/g)?.length).toBe(2);
+    expect(footer).not.toContain('Cancel');
   });
 
   test('the close control precedes both choices, so initial focus never lands on Allow', () => {
@@ -173,12 +176,11 @@ describe('CodexCreditOverageDialog', () => {
     expect(render({ context: { ...context, creditsUnlimited: true } })).toContain('Unlimited');
   });
 
-  test('shows a confirmed value without the unknown hint', () => {
+  test('shows the confirmed value and its confirmation time', () => {
     const markup = render({ entry: { status: 'known', value: true, at: Date.now() } });
 
     expect(markup).toContain('data-state="allowed"');
     expect(markup).toContain('confirmed ');
-    expect(markup).not.toContain('Choose an option below to update it.');
   });
 
   test('omits an unavailable balance instead of adding a placeholder fact', () => {
@@ -238,7 +240,7 @@ describe('CodexCreditOverageDialog', () => {
     const footer = markup.slice(markup.indexOf('modal-footer'));
 
     expect(markup).toMatch(/class="modal-close-floating"[^>]*disabled=""/);
-    expect(footer.match(/disabled=""/g)?.length).toBe(3);
+    expect(footer.match(/disabled=""/g)?.length).toBe(2);
   });
 
   test.each([true, false])(
@@ -260,7 +262,7 @@ describe('CodexCreditOverageDialog', () => {
     }
   );
 
-  test('an expired dialog blocks writes while keeping cancel and closing available', () => {
+  test('an expired dialog blocks writes while keeping closing available', () => {
     const markup = render({ contextCurrent: false });
     const footer = markup.slice(markup.indexOf('modal-footer'));
     expect(footer.match(/disabled=""/g)?.length).toBe(2);
