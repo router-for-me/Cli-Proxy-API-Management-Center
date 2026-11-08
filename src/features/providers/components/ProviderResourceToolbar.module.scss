@@ -136,7 +136,7 @@
 
 .filterItem {
   padding: 4px 6px;
-  border-radius: var(--radius-sm);
+  border-radius: $radius-sm;
 
   &:hover {
     background: var(--bg-tertiary);
