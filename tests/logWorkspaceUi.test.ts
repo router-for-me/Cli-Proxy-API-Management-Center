@@ -49,7 +49,6 @@ describe('log workspace layout contract', () => {
   test('row actions do not wrap into an empty line or remove keyboard access', () => {
     const copy = styles.match(/^\.copyButton:global\(\.btn\) \{([^}]+)\}/m)?.[1] ?? '';
     expect(copy).toContain('position: sticky');
-    expect(page).toContain("useLocalStorage('logsPage.wrapLogs', false)");
     expect(styles).toContain('width: max-content');
     expect(styles).toContain('flex-wrap: nowrap');
     expect(styles).toContain('.logRow:focus-within .copyButton');
@@ -57,6 +56,13 @@ describe('log workspace layout contract', () => {
     expect(page).toContain('tabIndex={0}');
     expect(page).toContain("aria-label={t('logs.log_content')}");
     expect(page).toContain('aria-pressed={autoRefresh}');
+  });
+
+  test('rows wrap by default below 1280px, where unwrapped rows clip the message', () => {
+    expect(page).toContain("const WRAP_BY_DEFAULT_QUERY = '(max-width: 1279px)';");
+    expect(page).toMatch(
+      /useLocalStorage\(\s*'logsPage\.wrapLogs',\s*\(\) =>[^;]*matchMedia\(WRAP_BY_DEFAULT_QUERY\)\.matches/
+    );
   });
 
   test('background refresh retains loaded content and compact status stays outside viewer', () => {

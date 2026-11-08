@@ -6,15 +6,17 @@ import { useCallback, useState } from 'react';
 
 export function useLocalStorage<T>(
   key: string,
-  initialValue: T
+  initialValue: T | (() => T)
 ): [T, (value: T | ((val: T) => T)) => void] {
   const [storedValue, setStoredValue] = useState<T>(() => {
+    // Like useState, a function initial value is called only when nothing is stored.
+    const resolveInitial = () => (initialValue instanceof Function ? initialValue() : initialValue);
     try {
       const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
+      return item ? (JSON.parse(item) as T) : resolveInitial();
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
+      return resolveInitial();
     }
   });
 

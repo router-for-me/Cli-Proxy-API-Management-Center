@@ -52,6 +52,10 @@ const INITIAL_DISPLAY_LINES = INITIAL_VISIBLE_LINES;
 
 type TabType = 'logs' | 'errors';
 
+// An unwrapped request row is about 850px wide. Below 1280px the log panel is
+// narrower, so the end of the row (often the request path) is clipped. Wrap by default there.
+const WRAP_BY_DEFAULT_QUERY = '(max-width: 1279px)';
+
 export function LogsPage() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
@@ -69,7 +73,11 @@ export function LogsPage() {
     true
   );
   const [showRawLogs, setShowRawLogs] = useLocalStorage('logsPage.showRawLogs', false);
-  const [wrapLogs, setWrapLogs] = useLocalStorage('logsPage.wrapLogs', false);
+  const [wrapLogs, setWrapLogs] = useLocalStorage(
+    'logsPage.wrapLogs',
+    () =>
+      typeof window.matchMedia === 'function' && window.matchMedia(WRAP_BY_DEFAULT_QUERY).matches
+  );
   const [structuredFiltersExpanded, setStructuredFiltersExpanded] = useState(false);
   const [errorLogs, setErrorLogs] = useState<ErrorLogFile[]>([]);
   const [loadingErrors, setLoadingErrors] = useState(false);
