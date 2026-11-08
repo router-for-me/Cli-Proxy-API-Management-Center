@@ -15,14 +15,15 @@
   background-color: var(--bg-secondary);
   color: var(--text-primary);
 
+  // Ink colors: the theme's text color as the fill keeps the label readable in both themes.
   &.btn-primary {
-    background-color: var(--primary-color);
-    color: var(--primary-contrast, #fff);
-    border-color: var(--primary-color);
+    background-color: var(--text-primary);
+    color: var(--bg-secondary);
+    border-color: var(--text-primary);
 
     &:hover {
-      background-color: var(--primary-hover);
-      border-color: var(--primary-hover);
+      background-color: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
+      border-color: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
     }
   }
 
@@ -70,17 +71,6 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-}
-
-[data-theme='dark'] {
-  .btn {
-    color: #fff;
-  }
-
-  .btn.btn-secondary,
-  .btn.btn-ghost {
-    color: #fff;
   }
 }
 
