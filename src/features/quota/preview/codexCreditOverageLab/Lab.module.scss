@@ -1,0 +1,141 @@
+.lab {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px;
+  color: var(--text-primary);
+  h1 {
+    margin: 0 0 6px;
+    font-size: 24px;
+  }
+  h2 {
+    margin: 0 0 8px;
+    font-size: 16px;
+  }
+  p {
+    margin: 0;
+    line-height: 1.6;
+  }
+  select {
+    min-width: 0;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font: inherit;
+  }
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.notice {
+  padding: 12px 0;
+  color: var(--text-secondary);
+}
+.selection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 13px;
+  }
+  label:first-child {
+    flex: 1;
+    min-width: 240px;
+  }
+}
+.instructions {
+  padding: 16px 0;
+  border-block: 1px solid var(--border-color);
+  p + p {
+    margin-top: 8px;
+  }
+}
+.commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0;
+}
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 0;
+  font-size: 13px;
+}
+.stage {
+  max-width: 100%;
+  overflow: auto;
+  padding-block: 8px;
+  iframe {
+    display: block;
+    height: min(900px, 80vh);
+    max-width: none;
+    margin: 0 auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+  }
+}
+.trace,
+.catalog {
+  margin-top: 16px;
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  pre {
+    max-height: 460px;
+    padding: 12px;
+    overflow: auto;
+    background: var(--bg-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  th,
+  td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  a {
+    color: var(--primary-color);
+  }
+}
+.runtime {
+  min-height: 100vh;
+  padding: 16px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.runtimeLabel {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+@media (max-width: 600px) {
+  .lab {
+    padding: 12px;
+  }
+  .header {
+    align-items: flex-start;
+  }
+  .header h1 {
+    font-size: 19px;
+  }
+}
