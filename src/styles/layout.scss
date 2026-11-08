@@ -845,7 +845,9 @@
     --floating-control-size: 36px;
   }
 
+  // The drawer is off-canvas on phones, so the gradient spans the full width.
   .top-gradient-blur {
+    left: 0;
     height: 114px;
   }
 
