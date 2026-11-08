@@ -513,7 +513,7 @@
     "cloud_session_credits": "Cloud session credits",
     "extra_usage_label": "Extra Usage",
     "extra_usage_enabled": "Enabled",
-    "extra_usage_disabled": "Disabled",
+    "extra_usage_disabled": "Not enabled",
     "usage_spent_limit": "Spent {{spent}} / Limit {{limit}}",
     "usage_utilization": "{{percent}}% used",
     "extra_usage_spend_limit_reached": "Spending limit reached",

@@ -513,7 +513,7 @@
     "cloud_session_credits": "Tín dụng phiên đám mây",
     "extra_usage_label": "Sử dụng thêm",
     "extra_usage_enabled": "Đã bật",
-    "extra_usage_disabled": "Đã tắt",
+    "extra_usage_disabled": "Chưa bật",
     "usage_spent_limit": "Đã chi {{spent}} / Giới hạn {{limit}}",
     "usage_utilization": "Đã dùng {{percent}}%",
     "extra_usage_spend_limit_reached": "Đã đạt giới hạn chi tiêu",

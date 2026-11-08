@@ -503,7 +503,7 @@
     "cloud_session_credits": "Кредиты облачных сессий",
     "extra_usage_label": "Дополнительное использование",
     "extra_usage_enabled": "Включено",
-    "extra_usage_disabled": "Отключено",
+    "extra_usage_disabled": "Не включено",
     "usage_spent_limit": "Потрачено {{spent}} / Лимит {{limit}}",
     "usage_utilization": "Использовано {{percent}}%",
     "extra_usage_spend_limit_reached": "Достигнут лимит расходов",

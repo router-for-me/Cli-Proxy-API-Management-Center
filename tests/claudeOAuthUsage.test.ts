@@ -457,7 +457,7 @@ describe('Claude usage snapshot rendering and retention', () => {
 
   test.each([
     [true, 'Enabled'],
-    [false, 'Disabled'],
+    [false, 'Not enabled'],
     [null, 'Unknown'],
   ] as const)(
     'keeps extra-usage state %s beside its label without utilization',
@@ -526,7 +526,7 @@ describe('Claude usage snapshot rendering and retention', () => {
         disabledReason: 'user_disabled',
       },
     });
-    expect(markup.match(/Disabled/g)).toHaveLength(1);
+    expect(markup.match(/Not enabled/g)).toHaveLength(1);
     expect(markup).toContain('Spent $0.00 / Limit $0.00');
     expect(markup).toContain('Spending limit reached');
     expect(markup).not.toContain('Reason: user_disabled');
@@ -546,7 +546,7 @@ describe('Claude usage snapshot rendering and retention', () => {
           disabledReason,
         },
       });
-      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup.match(/Not enabled/g)).toHaveLength(1);
       expect(markup).not.toContain('class="quotaMeta"');
     }
   );
@@ -565,9 +565,9 @@ describe('Claude usage snapshot rendering and retention', () => {
           disabledReason: null,
         },
       });
-      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup.match(/Not enabled/g)).toHaveLength(1);
       expect(markup).not.toContain('Reason: user_disabled');
-      expect(markup).toContain('<span class="claudeExtraUsageStatus">Disabled</span>');
+      expect(markup).toContain('<span class="claudeExtraUsageStatus">Not enabled</span>');
       expect(markup).not.toContain('class="quotaMeta"');
     }
   );
@@ -586,7 +586,7 @@ describe('Claude usage snapshot rendering and retention', () => {
           disabledReason: 'user_disabled',
         },
       });
-      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup.match(/Not enabled/g)).toHaveLength(1);
       expect(markup).not.toContain('Reason: user_disabled');
       expect(markup).not.toContain('class="quotaMeta"');
     }
@@ -603,7 +603,7 @@ describe('Claude usage snapshot rendering and retention', () => {
       },
     });
     expect(markup).toContain('Reason: account_review_required');
-    expect(markup.match(/Disabled/g)).toHaveLength(1);
+    expect(markup.match(/Not enabled/g)).toHaveLength(1);
   });
 
   test('shows the last observation time when a retained snapshot is stale', () => {
