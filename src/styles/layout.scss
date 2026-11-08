@@ -909,6 +909,18 @@
     }
   }
 
+  // The open drawer covers the page, so its header actions go under the backdrop.
+  .app-shell.sidebar-is-open .main-header .header-actions {
+    visibility: hidden;
+  }
+
+  // Clear the floating close button, which sits over the drawer's top-left corner.
+  .sidebar .sidebar-header,
+  .sidebar.collapsed .sidebar-header {
+    justify-content: flex-start;
+    padding-left: 56px;
+  }
+
   .main-body {
     height: auto;
     min-height: 100vh;
