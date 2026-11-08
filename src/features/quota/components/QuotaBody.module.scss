@@ -50,9 +50,15 @@
 }
 
 .claudeExtraUsageStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-secondary);
+  line-height: 1.35;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
