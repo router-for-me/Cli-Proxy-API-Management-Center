@@ -6,7 +6,7 @@
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
-import type { ClaudeQuotaState, ResolvedTheme } from '@/types';
+import type { ClaudeQuotaState, CodexQuotaState, ResolvedTheme } from '@/types';
 import { resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaDisplayName } from '@/utils/quota/identity';
 import {
@@ -21,6 +21,9 @@ import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
 import { hasClaudeUsageData } from '../providers/claude/data';
+import { CodexCreditOverageDialog } from '../providers/codex/CodexCreditOverageDialog';
+import { CodexCreditOverageRow } from '../providers/codex/CodexCreditOverageRow';
+import { useCodexCreditOverage } from '../providers/codex/useCodexCreditOverage';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -35,6 +38,8 @@ export type QuotaCardProps = {
   resetting: boolean;
   /** Initial cascade delay; null disables entrance motion for later mounts. */
   entranceDelayMs?: number | null;
+  /** Codex only: credentials in the panel sharing this account user's credit setting. */
+  creditOverageSharedCount?: number;
   onRefresh: () => void;
   onReset: () => void;
 };
@@ -47,6 +52,7 @@ export function QuotaCard(props: QuotaCardProps) {
     canRefresh,
     resetting,
     entranceDelayMs,
+    creditOverageSharedCount = 1,
     onRefresh,
     onReset,
   } = props;
@@ -103,6 +109,20 @@ export function QuotaCard(props: QuotaCardProps) {
         </div>
       )}
     </>
+  ) : undefined;
+  const creditOverage = useCodexCreditOverage(
+    file,
+    entry.type === 'codex' ? (quota as CodexQuotaState | undefined) : undefined,
+    !canRefresh || loading || resetting
+  );
+  const codexAfterPlan = creditOverage.visible ? (
+    <CodexCreditOverageRow
+      entry={creditOverage.entry}
+      classes={quotaClasses}
+      disabled={creditOverage.blocked}
+      name={displayName}
+      onManage={creditOverage.openDialog}
+    />
   ) : undefined;
   const showReset =
     status === 'success' &&
@@ -166,7 +186,7 @@ export function QuotaCard(props: QuotaCardProps) {
             quota={quota}
             classes={quotaClasses}
             planItems={claudePlanItems}
-            afterPlan={claudeAfterPlan}
+            afterPlan={entry.type === 'codex' ? codexAfterPlan : claudeAfterPlan}
           />
         ) : !retainedClaudeUsage ? (
           <div className={styles.idleHint}>{t(`${adapter.i18nPrefix}.idle`)}</div>
@@ -223,6 +243,21 @@ export function QuotaCard(props: QuotaCardProps) {
             {t('auth_files.quota_refresh_single')}
           </button>
         </footer>
+      )}
+      {creditOverage.context && (
+        <CodexCreditOverageDialog
+          open={creditOverage.open}
+          context={creditOverage.context}
+          entry={creditOverage.entry}
+          operation={creditOverage.operation}
+          writeDisabled={creditOverage.writeDisabled}
+          contextCurrent={creditOverage.contextCurrent}
+          sharedCredentialCount={creditOverageSharedCount}
+          pendingTarget={creditOverage.pendingTarget}
+          feedback={creditOverage.feedback}
+          onApply={(value) => void creditOverage.apply(value)}
+          onClose={creditOverage.closeDialog}
+        />
       )}
     </article>
   );
