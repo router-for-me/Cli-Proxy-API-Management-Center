@@ -139,6 +139,48 @@
   line-height: 1.55;
 }
 
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  margin-top: $spacing-md;
+  color-scheme: light;
+
+  :global([data-theme='dark']) & {
+    color-scheme: dark;
+  }
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  min-height: 36px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+
+  input {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--primary-color);
+    cursor: inherit;
+  }
+
+  input:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+  }
+
+  &:has(input:disabled) {
+    cursor: not-allowed;
+    color: var(--text-secondary);
+  }
+}
+
 .feedback {
   margin-top: $spacing-md;
   padding: 10px 12px;

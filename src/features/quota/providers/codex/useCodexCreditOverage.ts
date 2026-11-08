@@ -9,6 +9,7 @@ import {
   buildCodexCreditOverageContext,
   codexCreditOverageKey,
   codexCreditOverageDisplayEntry,
+  codexCreditOverageWriteBlocked,
   isCodexCreditOverageContextCurrent,
   describeCodexCreditOverageError,
   type CodexCreditOverageContext,
@@ -22,7 +23,7 @@ export interface CodexCreditOverageFeedback {
 
 /**
  * Card-owned controller for the account-level credit overage setting. Nothing is sent
- * until the operator picks a value in the dialog; the store holds the account state.
+ * until the operator saves a selected value; the store holds the confirmed account state.
  */
 export function useCodexCreditOverage(
   file: AuthFileItem,
@@ -33,6 +34,7 @@ export function useCodexCreditOverage(
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [context, setContext] = useState<CodexCreditOverageContext | null>(null);
   const [open, setOpen] = useState(false);
+  const [selection, setSelection] = useState<boolean | null>(null);
   const [pendingTarget, setPendingTarget] = useState<boolean | null>(null);
   const [feedback, setFeedback] = useState<CodexCreditOverageFeedback | null>(null);
   const inFlight = useRef(false);
@@ -62,7 +64,14 @@ export function useCodexCreditOverage(
     if (blocked) return;
     const next = buildCodexCreditOverageContext(file, quota);
     if (!next) return;
+    const store = useQuotaStore.getState();
+    const current = codexCreditOverageDisplayEntry(
+      store.codexCreditOverage[next.key],
+      store.codexCreditOverageOperations[next.accountId]
+    );
     setContext(next);
+    // Only a confirmed value may initialize the form. Unsubmitted choices are discarded.
+    setSelection(current?.status === 'known' ? current.value : null);
     setFeedback(null);
     setOpen(true);
   };
@@ -72,8 +81,24 @@ export function useCodexCreditOverage(
     setOpen(false);
   };
 
-  const apply = async (value: boolean) => {
-    if (inFlight.current || !context || !open) return;
+  const selectValue = (value: boolean) => {
+    if (
+      inFlight.current ||
+      !context ||
+      !open ||
+      disabled ||
+      !visible ||
+      !isCodexCreditOverageContextCurrent(file, context) ||
+      codexCreditOverageWriteBlocked(operation, value)
+    )
+      return;
+    setSelection(value);
+    setFeedback(null);
+  };
+
+  const save = async () => {
+    if (inFlight.current || !context || !open || selection === null) return;
+    const value = selection;
     // A list refresh may have replaced this credential while the dialog was open.
     if (!isCodexCreditOverageContextCurrent(file, context)) {
       setFeedback({ tone: 'warning', message: t('codex_quota.credit_overage_stale') });
@@ -129,10 +154,12 @@ export function useCodexCreditOverage(
     contextCurrent,
     context,
     open,
+    selection,
     pendingTarget,
     feedback,
     openDialog,
     closeDialog,
-    apply,
+    selectValue,
+    save,
   };
 }

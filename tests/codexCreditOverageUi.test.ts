@@ -129,9 +129,11 @@ describe('CodexCreditOverageDialog', () => {
         context,
         entry: undefined,
         sharedCredentialCount: 1,
+        selection: null,
         pendingTarget: null,
         feedback: null,
-        onApply: () => {},
+        onSelect: () => {},
+        onSave: () => {},
         onClose: () => {},
         ...props,
       })
@@ -153,18 +155,40 @@ describe('CodexCreditOverageDialog', () => {
     expect(markup).not.toContain('read this setting');
     expect(markup).not.toContain('cool down');
     expect(markup).not.toContain('share this account setting');
-    expect(markup).toContain('btn-secondary');
+    expect(markup).toContain('role="radiogroup"');
     expect(markup).toContain('Don’t allow credits');
-    expect(markup).toMatch(/btn-danger[^>]*><span>Allow credits<\/span>/);
+    expect(markup).toContain('Allow credits');
+    expect(markup.match(/type="radio"/g)?.length).toBe(2);
+    expect(markup).not.toContain('checked=""');
     const footer = markup.slice(markup.indexOf('modal-footer'));
-    expect(footer.match(/<button\b/g)?.length).toBe(2);
+    expect(footer.match(/<button\b/g)?.length).toBe(1);
+    expect(footer).toMatch(/<button[^>]*disabled=""[^>]*><span>Save<\/span>/);
     expect(footer).not.toContain('Cancel');
   });
 
-  test('the close control precedes both choices, so initial focus never lands on Allow', () => {
+  test('the close control precedes the choices and Save for safe initial focus', () => {
     const markup = render();
-    expect(markup.indexOf('modal-close-floating')).toBeLessThan(markup.indexOf('btn-danger'));
+    expect(markup.indexOf('modal-close-floating')).toBeLessThan(
+      markup.indexOf('role="radiogroup"')
+    );
+    expect(markup.indexOf('modal-close-floating')).toBeLessThan(markup.indexOf('modal-footer'));
   });
+
+  test.each([true, false])(
+    'permits saving an explicit %p selection without changing the account status',
+    (selection) => {
+      const markup = render({ selection });
+      const radios = markup.match(/<input\b[^>]*>/g) ?? [];
+      for (const value of [true, false]) {
+        const radio = radios.find((tag) => tag.includes(`value="${value}"`));
+        expect(radio).toBeDefined();
+        expect(radio!.includes('checked=""')).toBe(value === selection);
+      }
+      expect(markup).toContain('data-state="unknown"');
+      const footer = markup.slice(markup.indexOf('modal-footer'));
+      expect(footer).not.toContain('disabled');
+    }
+  );
 
   test('mentions sibling credentials only when the account user is shared', () => {
     expect(render({ sharedCredentialCount: 3 })).toContain(
@@ -177,7 +201,10 @@ describe('CodexCreditOverageDialog', () => {
   });
 
   test('shows the confirmed value and its confirmation time', () => {
-    const markup = render({ entry: { status: 'known', value: true, at: Date.now() } });
+    const markup = render({
+      entry: { status: 'known', value: true, at: Date.now() },
+      selection: true,
+    });
 
     expect(markup).toContain('data-state="allowed"');
     expect(markup).toContain('confirmed ');
@@ -201,13 +228,13 @@ describe('CodexCreditOverageDialog', () => {
     { status: 'unconfirmed', target: true, at: 1 },
   ])('keeps spending and scope disclosures visible before the choices for %j', (entry) => {
     const markup = render({ entry });
-    const footer = markup.indexOf('modal-footer');
+    const choices = markup.indexOf('role="radiogroup"');
     for (const text of [
       'spending the account’s credit balance',
       'all apps authorized to use this ChatGPT plan',
     ]) {
       expect(markup.indexOf(text)).toBeGreaterThan(0);
-      expect(markup.indexOf(text)).toBeLessThan(footer);
+      expect(markup.indexOf(text)).toBeLessThan(choices);
     }
   });
 
@@ -240,7 +267,8 @@ describe('CodexCreditOverageDialog', () => {
     const footer = markup.slice(markup.indexOf('modal-footer'));
 
     expect(markup).toMatch(/class="modal-close-floating"[^>]*disabled=""/);
-    expect(footer.match(/disabled=""/g)?.length).toBe(2);
+    expect(footer.match(/disabled=""/g)?.length).toBe(1);
+    expect(markup.match(/<input[^>]*disabled=""/g)?.length).toBe(2);
   });
 
   test.each([true, false])(
@@ -250,12 +278,26 @@ describe('CodexCreditOverageDialog', () => {
         entry: { status: 'unconfirmed', target, at: 1 },
         operation: { status: 'unconfirmed', target, at: 1 },
       });
-      const allow = markup.match(/<button[^>]*class="btn btn-danger"[^>]*>/)?.[0];
-      const block = markup.match(/<button[^>]*class="btn btn-secondary"[^>]*>/)?.[0];
+      const inputs = markup.match(/<input\b[^>]*>/g) ?? [];
+      const allow = inputs.find((tag) => tag.includes('value="true"'));
+      const block = inputs.find((tag) => tag.includes('value="false"'));
       expect(allow).toBeDefined();
       expect(block).toBeDefined();
       expect(allow!.includes('disabled')).toBe(!target);
       expect(block!.includes('disabled')).toBe(target);
+      expect(markup).not.toContain('checked=""');
+      const selected = render({
+        entry: { status: 'unconfirmed', target, at: 1 },
+        operation: { status: 'unconfirmed', target, at: 1 },
+        selection: target,
+      });
+      expect(selected.slice(selected.indexOf('modal-footer'))).not.toContain('disabled');
+      const opposite = render({
+        entry: { status: 'unconfirmed', target, at: 1 },
+        operation: { status: 'unconfirmed', target, at: 1 },
+        selection: !target,
+      });
+      expect(opposite.slice(opposite.indexOf('modal-footer'))).toContain('disabled');
       expect(markup).toContain('Only the same choice can be retried for now.');
       expect(markup).toContain('role="status"');
       expect(markup).not.toMatch(/class="modal-close-floating"[^>]*disabled/);
@@ -265,7 +307,8 @@ describe('CodexCreditOverageDialog', () => {
   test('an expired dialog blocks writes while keeping closing available', () => {
     const markup = render({ contextCurrent: false });
     const footer = markup.slice(markup.indexOf('modal-footer'));
-    expect(footer.match(/disabled=""/g)?.length).toBe(2);
+    expect(footer.match(/disabled=""/g)?.length).toBe(1);
+    expect(markup.match(/<input[^>]*disabled=""/g)?.length).toBe(2);
     expect(markup).toContain('The connection or credential changed.');
     expect(markup).not.toMatch(/class="modal-close-floating"[^>]*disabled/);
   });
@@ -273,7 +316,8 @@ describe('CodexCreditOverageDialog', () => {
   test('a write started by another credential locks both choices in an already open dialog', () => {
     const markup = render({ operation: { status: 'writing', target: true, unconfirmed: false } });
     const footer = markup.slice(markup.indexOf('modal-footer'));
-    expect(footer.match(/disabled=""/g)?.length).toBe(2);
+    expect(footer.match(/disabled=""/g)?.length).toBe(1);
+    expect(markup.match(/<input[^>]*disabled=""/g)?.length).toBe(2);
     expect(markup).not.toMatch(/class="modal-close-floating"[^>]*disabled/);
   });
 

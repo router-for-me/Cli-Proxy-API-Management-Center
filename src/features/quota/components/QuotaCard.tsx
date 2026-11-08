@@ -253,9 +253,11 @@ export function QuotaCard(props: QuotaCardProps) {
           writeDisabled={creditOverage.writeDisabled}
           contextCurrent={creditOverage.contextCurrent}
           sharedCredentialCount={creditOverageSharedCount}
+          selection={creditOverage.selection}
           pendingTarget={creditOverage.pendingTarget}
           feedback={creditOverage.feedback}
-          onApply={(value) => void creditOverage.apply(value)}
+          onSelect={creditOverage.selectValue}
+          onSave={() => void creditOverage.save()}
           onClose={creditOverage.closeDialog}
         />
       )}

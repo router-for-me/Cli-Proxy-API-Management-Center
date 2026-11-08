@@ -4,6 +4,7 @@
  * a successful retry does not prove that the earlier request has finished.
  */
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -26,9 +27,11 @@ export interface CodexCreditOverageDialogProps {
   contextCurrent?: boolean;
   /** Credentials in the panel that share this account user's setting. */
   sharedCredentialCount: number;
+  selection: boolean | null;
   pendingTarget: boolean | null;
   feedback: CodexCreditOverageFeedback | null;
-  onApply: (value: boolean) => void;
+  onSelect: (value: boolean) => void;
+  onSave: () => void;
   onClose: () => void;
 }
 
@@ -40,14 +43,22 @@ export function CodexCreditOverageDialog({
   writeDisabled = false,
   contextCurrent = true,
   sharedCredentialCount,
+  selection,
   pendingTarget,
   feedback,
-  onApply,
+  onSelect,
+  onSave,
   onClose,
 }: CodexCreditOverageDialogProps) {
   const { t } = useTranslation();
+  const groupName = useId();
   const pending = pendingTarget !== null;
   const writesBlocked = writeDisabled || !contextCurrent;
+  const saveDisabled =
+    pending ||
+    writesBlocked ||
+    selection === null ||
+    codexCreditOverageWriteBlocked(operation, selection);
   const unconfirmed =
     operation?.status === 'unconfirmed' ||
     (operation?.status === 'writing' && operation.unconfirmed);
@@ -72,24 +83,9 @@ export function CodexCreditOverageDialog({
       title={t('codex_quota.credit_overage_dialog_title')}
       closeDisabled={pending}
       footer={
-        <>
-          <Button
-            variant="secondary"
-            onClick={() => onApply(false)}
-            disabled={pending || writesBlocked || codexCreditOverageWriteBlocked(operation, false)}
-            loading={pendingTarget === false}
-          >
-            {t('codex_quota.credit_overage_block')}
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => onApply(true)}
-            disabled={pending || writesBlocked || codexCreditOverageWriteBlocked(operation, true)}
-            loading={pendingTarget === true}
-          >
-            {t('codex_quota.credit_overage_allow')}
-          </Button>
-        </>
+        <Button type="button" onClick={onSave} disabled={saveDisabled} loading={pending}>
+          {t('common.save')}
+        </Button>
       }
     >
       <dl className={styles.facts}>
@@ -126,6 +122,29 @@ export function CodexCreditOverageDialog({
           <> {t('codex_quota.credit_overage_shared_note', { total: sharedCredentialCount })}</>
         )}
       </p>
+      <div
+        className={styles.choices}
+        role="radiogroup"
+        aria-label={t('codex_quota.credit_overage_label')}
+      >
+        {[true, false].map((value) => (
+          <label key={String(value)} className={styles.choice}>
+            <input
+              type="radio"
+              name={groupName}
+              value={String(value)}
+              checked={selection === value}
+              onChange={() => onSelect(value)}
+              disabled={
+                pending || writesBlocked || codexCreditOverageWriteBlocked(operation, value)
+              }
+            />
+            <span>
+              {t(value ? 'codex_quota.credit_overage_allow' : 'codex_quota.credit_overage_block')}
+            </span>
+          </label>
+        ))}
+      </div>
       {feedbackMessage && (
         <div
           className={styles.feedback}
