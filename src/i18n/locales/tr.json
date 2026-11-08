@@ -516,7 +516,6 @@
     "extra_usage_disabled": "Devre Dışı",
     "usage_spent_limit": "Harcanan {{spent}} / Sınır {{limit}}",
     "usage_utilization": "%{{percent}} Kullanıldı",
-    "extra_usage_user_disabled": "Kullanıcı Tarafından Devre Dışı",
     "extra_usage_spend_limit_reached": "Harcama Sınırına Ulaşıldı",
     "extra_usage_disabled_reason": "Neden: {{reason}}",
     "dollar_balance_remaining": "{{amount}} Kaldı",

@@ -41,11 +41,19 @@ export function ClaudeQuotaBody({
     }
   };
 
+  const hasUserDisabledReason =
+    extraUsage?.userDisabled === true || extraUsage?.disabledReason === 'user_disabled';
+  // Consolidate upstream off signals into the single state beside the label.
+  const extraUsageStatusKey =
+    extraUsage?.isEnabled === false || hasUserDisabledReason
+      ? 'claude_quota.extra_usage_disabled'
+      : extraUsage?.isEnabled === true
+        ? 'claude_quota.extra_usage_enabled'
+        : 'claude_quota.plan_unknown';
   const extraUsageNotes = extraUsage
     ? [
-        extraUsage.userDisabled ? t('claude_quota.extra_usage_user_disabled') : '',
         extraUsage.spendLimitReached ? t('claude_quota.extra_usage_spend_limit_reached') : '',
-        extraUsage.disabledReason
+        extraUsage.disabledReason && extraUsage.disabledReason !== 'user_disabled'
           ? t('claude_quota.extra_usage_disabled_reason', { reason: extraUsage.disabledReason })
           : '',
       ].filter(Boolean)
@@ -80,15 +88,7 @@ export function ClaudeQuotaBody({
           <div className={classes.quotaRowHeader}>
             <div className={classes.claudeExtraUsageTitle}>
               <span className={classes.quotaModel}>{t('claude_quota.extra_usage_label')}</span>
-              <span className={classes.claudeExtraUsageStatus}>
-                {t(
-                  extraUsage.isEnabled === null
-                    ? 'claude_quota.plan_unknown'
-                    : extraUsage.isEnabled
-                      ? 'claude_quota.extra_usage_enabled'
-                      : 'claude_quota.extra_usage_disabled'
-                )}
-              </span>
+              <span className={classes.claudeExtraUsageStatus}>{t(extraUsageStatusKey)}</span>
             </div>
             {extraUsage.utilization !== null && (
               <div className={classes.quotaMeta}>

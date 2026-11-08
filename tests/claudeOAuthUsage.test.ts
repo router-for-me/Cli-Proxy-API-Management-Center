@@ -512,7 +512,7 @@ describe('Claude usage snapshot rendering and retention', () => {
     expect(chipOnly).toContain('<div class="codexPlan"><span data-slot="chip"></span></div>');
   });
 
-  test('renders disabled extra usage, reasons, and zero amounts', () => {
+  test('omits redundant user-disabled notes but preserves limits and zero amounts', () => {
     const markup = render({
       ...quota,
       extraUsage: {
@@ -526,11 +526,84 @@ describe('Claude usage snapshot rendering and retention', () => {
         disabledReason: 'user_disabled',
       },
     });
-    expect(markup).toContain('Disabled');
+    expect(markup.match(/Disabled/g)).toHaveLength(1);
     expect(markup).toContain('Spent $0.00 / Limit $0.00');
-    expect(markup).toContain('Disabled by user');
     expect(markup).toContain('Spending limit reached');
-    expect(markup).toContain('Reason: user_disabled');
+    expect(markup).not.toContain('Reason: user_disabled');
+  });
+
+  test.each([null, 'user_disabled'])(
+    'does not repeat an off state when the user-disabled reason is %s',
+    (disabledReason) => {
+      const markup = render({
+        ...quota,
+        dollarWindows: [],
+        extraUsage: {
+          ...snapshot.extraUsage!,
+          isEnabled: false,
+          utilization: null,
+          userDisabled: true,
+          disabledReason,
+        },
+      });
+      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup).not.toContain('class="quotaMeta"');
+    }
+  );
+
+  test.each([true, false, null])(
+    'renders user-disabled only beside the label when the enabled flag is %s',
+    (isEnabled) => {
+      const markup = render({
+        ...quota,
+        dollarWindows: [],
+        extraUsage: {
+          ...snapshot.extraUsage!,
+          isEnabled,
+          utilization: null,
+          userDisabled: true,
+          disabledReason: null,
+        },
+      });
+      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup).not.toContain('Reason: user_disabled');
+      expect(markup).toContain('<span class="claudeExtraUsageStatus">Disabled</span>');
+      expect(markup).not.toContain('class="quotaMeta"');
+    }
+  );
+
+  test.each([true, null])(
+    'moves a user_disabled reason code into the sole status when the enabled flag is %s',
+    (isEnabled) => {
+      const markup = render({
+        ...quota,
+        dollarWindows: [],
+        extraUsage: {
+          ...snapshot.extraUsage!,
+          isEnabled,
+          utilization: null,
+          userDisabled: null,
+          disabledReason: 'user_disabled',
+        },
+      });
+      expect(markup.match(/Disabled/g)).toHaveLength(1);
+      expect(markup).not.toContain('Reason: user_disabled');
+      expect(markup).not.toContain('class="quotaMeta"');
+    }
+  );
+
+  test('preserves a distinct extra-usage disabled reason', () => {
+    const markup = render({
+      ...quota,
+      extraUsage: {
+        ...snapshot.extraUsage!,
+        isEnabled: false,
+        userDisabled: true,
+        disabledReason: 'account_review_required',
+      },
+    });
+    expect(markup).toContain('Reason: account_review_required');
+    expect(markup.match(/Disabled/g)).toHaveLength(1);
   });
 
   test('shows the last observation time when a retained snapshot is stale', () => {
