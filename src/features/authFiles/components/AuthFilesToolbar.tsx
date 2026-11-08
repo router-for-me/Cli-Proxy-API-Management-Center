@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { keepInViewport } from '@/components/ui/keepInViewport';
 import { IconSearch, IconSlidersHorizontal, IconTrash2 } from '@/components/ui/icons';
 import {
   MAX_CARD_PAGE_SIZE,
@@ -145,7 +146,7 @@ export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
         </button>
 
         {displaySettingsOpen && (
-          <div id="auth-files-display-settings" className={styles.popover}>
+          <div id="auth-files-display-settings" className={styles.popover} ref={keepInViewport}>
             <div className={styles.popoverRow}>
               <label htmlFor="auth-files-page-size">{t('auth_files.page_size_label')}</label>
               <input
