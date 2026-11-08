@@ -57,11 +57,12 @@ class ApiClient {
   }
 
   /** Pin credentials and suppress response side effects after the owning connection changes. */
-  captureConnection(): ApiClient {
+  captureConnection(isCurrent: () => boolean = () => true): ApiClient {
     const revision = this.connectionRevision;
-    const client = new ApiClient(() => this.connectionRevision === revision);
+    const client = new ApiClient(() => this.connectionRevision === revision && isCurrent());
     client.apiBase = this.apiBase;
     client.managementKey = this.managementKey;
+    client.instance.defaults.timeout = this.instance.defaults.timeout;
     return client;
   }
 

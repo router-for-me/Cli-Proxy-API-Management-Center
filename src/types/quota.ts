@@ -310,6 +310,20 @@ export interface CodexQuotaState {
   errorStatus?: number;
 }
 
+/**
+ * Session knowledge of the account-level "use credits after the usage limit" setting.
+ * This feature records confirmed writes; an absent entry means the value is unknown.
+ */
+export type CodexCreditOverageEntry =
+  | { status: 'writing'; target: boolean }
+  | { status: 'known'; value: boolean; at: number }
+  | { status: 'unconfirmed'; target: boolean; at: number };
+
+/** Account-wide mutex and unresolved-write journal, separate from user snapshots. */
+export type CodexCreditOverageOperation =
+  | { status: 'writing'; target: boolean; unconfirmed: boolean }
+  | { status: 'unconfirmed'; target: boolean; at: number };
+
 export interface DevinQuotaWindow {
   id: 'daily' | 'weekly';
   label?: string;
