@@ -440,9 +440,9 @@ describe('Claude usage snapshot rendering and retention', () => {
 
   test('extra usage and balances share the window-row typography', () => {
     const markup = render({ ...quota, planType: 'plan_max' });
-    // Same anatomy as plan windows: label + mono telemetry header, never bare reset text.
+    // State belongs with the label; the right-hand telemetry is numeric.
     expect(markup).toContain(
-      '<div class="quotaRowHeader"><span class="quotaModel">Extra Usage</span><div class="quotaMeta"><span class="quotaPercent">Enabled</span><span class="quotaResetRelative">25% used</span>'
+      '<div class="claudeExtraUsageTitle"><span class="quotaModel">Extra Usage</span><span class="claudeExtraUsageStatus">Enabled</span></div><div class="quotaMeta"><span class="quotaPercent">25% used</span>'
     );
     expect(markup).toContain(
       '<span class="quotaModel" title="iguana_necktie">iguana_necktie</span><div class="quotaMeta"><span class="quotaPercent">$94.96 remaining</span>'
@@ -454,6 +454,27 @@ describe('Claude usage snapshot rendering and retention', () => {
       '<span class="codexPlanItem"><span class="codexPlanLabel">Plan</span>'
     );
   });
+
+  test.each([
+    [true, 'Enabled'],
+    [false, 'Disabled'],
+    [null, 'Unknown'],
+  ] as const)(
+    'keeps extra-usage state %s beside its label without utilization',
+    (isEnabled, label) => {
+      const markup = render({
+        ...quota,
+        dollarWindows: [],
+        extraUsage: { ...snapshot.extraUsage!, isEnabled, utilization: null },
+      });
+      expect(markup).toContain(
+        `<div class="claudeExtraUsageTitle"><span class="quotaModel">Extra Usage</span><span class="claudeExtraUsageStatus">${label}</span></div>`
+      );
+      expect(markup).not.toContain('class="quotaMeta"');
+      expect(markup).not.toContain('class="quotaPercent"');
+      expect(markup).not.toContain('class="quotaResetRelative"');
+    }
+  );
 
   test('host chips join the plan row and host content follows it', () => {
     const markup = renderToStaticMarkup(

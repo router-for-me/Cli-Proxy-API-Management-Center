@@ -74,14 +74,13 @@ export function ClaudeQuotaBody({
         </div>
       )}
       {afterPlan}
-      {/* Extra usage and dollar balances share the window-row anatomy:
-          label + mono telemetry header, then one mono detail line. */}
+      {/* Keep the extra-usage state with its label; only numeric usage goes on the right. */}
       {extraUsage && (
         <div className={classes.quotaRow}>
           <div className={classes.quotaRowHeader}>
-            <span className={classes.quotaModel}>{t('claude_quota.extra_usage_label')}</span>
-            <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>
+            <div className={classes.claudeExtraUsageTitle}>
+              <span className={classes.quotaModel}>{t('claude_quota.extra_usage_label')}</span>
+              <span className={classes.claudeExtraUsageStatus}>
                 {t(
                   extraUsage.isEnabled === null
                     ? 'claude_quota.plan_unknown'
@@ -90,12 +89,14 @@ export function ClaudeQuotaBody({
                       : 'claude_quota.extra_usage_disabled'
                 )}
               </span>
-              {extraUsage.utilization !== null && (
-                <span className={classes.quotaResetRelative}>
+            </div>
+            {extraUsage.utilization !== null && (
+              <div className={classes.quotaMeta}>
+                <span className={classes.quotaPercent}>
                   {t('claude_quota.usage_utilization', { percent: extraUsage.utilization })}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
           <div className={classes.quotaAmount}>
             {t('claude_quota.usage_spent_limit', {
