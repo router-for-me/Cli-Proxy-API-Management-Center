@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-const VIEWPORT_MARGIN = 8;
+export const VIEWPORT_MARGIN = 8;
 const DROPDOWN_OFFSET = 6;
 const DROPDOWN_MAX_HEIGHT = 240;
 const DROPDOWN_Z_INDEX = 2010;
