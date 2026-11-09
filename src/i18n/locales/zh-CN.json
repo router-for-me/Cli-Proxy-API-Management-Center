@@ -1,4 +1,20 @@
 {
+  "codex_auto_reset": {
+    "title": "自动使用即将到期的重置积分",
+    "disabled": "已禁用",
+    "before": "到期前 {{minutes}} 分钟内使用",
+    "confirm": "允许服务器在 OpenAI 确认符合条件且适用窗口剩余额度低于 80% 时，使用此账户即将到期的 Codex 重置积分。关闭浏览器后仍会运行，不使用付费积分或制造虚假用量。结果不明确时将停止自动操作，等待管理员核实。",
+    "waiting": "等待符合条件且即将到期的重置积分",
+    "unavailable": "自动重置不可用；请重新加载并检查后端持久化存储",
+    "unknown": "兑换结果未知。自动操作已停止；手动恢复前请向 OpenAI 核实所选积分。",
+    "reset": "已确认重置",
+    "read_failed": "用量读取失败；稍后重试",
+    "identity_changed": "账户身份已更改；未使用积分",
+    "cooldown_pending": "重置已确认；正在重试清除网关冷却状态",
+    "no_credit": "没有可用积分",
+    "nothing_to_reset": "无需重置",
+    "not_eligible": "等待符合条件且即将到期的重置积分"
+  },
   "common": {
     "login": "登录",
     "logout": "登出",

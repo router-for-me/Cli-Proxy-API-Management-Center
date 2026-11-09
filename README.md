@@ -75,11 +75,20 @@ Upgrade the backend first and back up `config.yaml`. The backend returns the v8 
 | **AI providers** | Configure Gemini, Codex, Claude, Vertex, and OpenAI-compatible providers; manage keys, headers, proxies, and model mappings. |
 | **Auth files & OAuth** | Upload, download, and organize credentials; connect supported providers with OAuth or device flows; manage model aliases and exclusions. |
 | **Quotas** | Inspect quota and usage information for supported providers, including Claude, Antigravity, Codex, Kimi, and xAI/Grok. |
+| **Expiring Codex resets** | Opt in per account from its Quotas card. The supporting backend redeems eligible banked resets before expiry, including with the browser closed; no paid credits or artificial usage. |
 | **Logs** | Follow logs with auto-refresh, search, hide management traffic, and download request error logs. |
 | **Plugins** | Access plugin management when the connected backend advertises support. |
 | **System** | Check for updates, inspect available models, and clear local login data. |
 
 Supports **English, 简体中文, 繁體中文, and Русский**, with browser-language detection and a manual language switch. Responsive layouts support desktop, tablet, and mobile use in modern Chrome, Firefox, Safari, and Edge.
+
+Automatic Codex resets require the backend's v8 `/routing/codex-reset-policy`
+endpoints and persistent KV storage. Older backends hide the control; unavailable
+storage disables it. Automation defaults to off, requires confirmation, and stops
+on ambiguous redemption results until an operator reconciles the selected credit
+with OpenAI. Disabling and re-enabling does not retry an unresolved debit. Quota
+cards refresh after a confirmed server-side reset. Existing manual resets remain
+unchanged. See the backend's `docs/codex-expiring-resets.md` for recovery limits.
 
 ## Deployment
 

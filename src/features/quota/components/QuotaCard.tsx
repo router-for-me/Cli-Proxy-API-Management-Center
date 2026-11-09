@@ -21,6 +21,7 @@ import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
 import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
 import { ClaudeResetGrantDetails } from '../providers/claude/ClaudeResetGrantDetails';
 import { hasClaudeUsageData } from '../providers/claude/data';
+import { CodexAutoReset } from '../providers/codex/CodexAutoReset';
 import bodyStyles from './QuotaBody.module.scss';
 import styles from './QuotaCard.module.scss';
 
@@ -137,6 +138,13 @@ export function QuotaCard(props: QuotaCardProps) {
       </header>
 
       <div className={styles.body}>
+        {entry.type === 'codex' && (
+          <CodexAutoReset
+            file={file}
+            disabled={!canRefresh || loading || resetting}
+            onRefresh={onRefresh}
+          />
+        )}
         {status === 'idle' ? (
           <button
             type="button"

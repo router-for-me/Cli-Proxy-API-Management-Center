@@ -1,4 +1,20 @@
 {
+  "codex_auto_reset": {
+    "title": "Automatic expiring resets",
+    "disabled": "Disabled",
+    "before": "Use within {{minutes}} minutes of expiry",
+    "confirm": "Allow the server to redeem this account’s expiring banked Codex resets when OpenAI reports eligibility and a covered window has less than 80% remaining. This works with the browser closed, uses no paid credits, and never creates artificial usage. Ambiguous results stop automation for operator review.",
+    "waiting": "Waiting for an eligible expiring reset",
+    "unavailable": "Automatic resets unavailable; reload and check backend persistent storage",
+    "unknown": "Redemption outcome unknown. Automation is blocked; verify the selected credit with OpenAI before any manual recovery.",
+    "reset": "Reset confirmed",
+    "read_failed": "Usage read failed; backing off",
+    "identity_changed": "Account identity changed; no reset spent",
+    "cooldown_pending": "Reset confirmed; retrying gateway cooldown cleanup",
+    "no_credit": "No available credit",
+    "nothing_to_reset": "Nothing to reset",
+    "not_eligible": "Waiting for an eligible expiring reset"
+  },
   "common": {
     "login": "Login",
     "logout": "Logout",

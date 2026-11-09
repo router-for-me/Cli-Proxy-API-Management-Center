@@ -1,4 +1,20 @@
 {
+  "codex_auto_reset": {
+    "title": "自動使用即將到期的重設點數",
+    "disabled": "已停用",
+    "before": "到期前 {{minutes}} 分鐘內使用",
+    "confirm": "允許伺服器在 OpenAI 確認符合條件且適用視窗剩餘額度低於 80% 時，使用此帳戶即將到期的 Codex 重設點數。關閉瀏覽器後仍會執行，不使用付費點數或製造虛假用量。結果不明確時將停止自動操作，等待管理員確認。",
+    "waiting": "等待符合條件且即將到期的重設點數",
+    "unavailable": "自動重設無法使用；請重新載入並檢查後端持久化儲存",
+    "unknown": "兌換結果未知。自動操作已停止；手動復原前請向 OpenAI 確認所選點數。",
+    "reset": "已確認重設",
+    "read_failed": "用量讀取失敗；稍後重試",
+    "identity_changed": "帳戶身分已變更；未使用點數",
+    "cooldown_pending": "重設已確認；正在重試清除閘道冷卻狀態",
+    "no_credit": "沒有可用點數",
+    "nothing_to_reset": "無需重設",
+    "not_eligible": "等待符合條件且即將到期的重設點數"
+  },
   "common": {
     "login": "登入",
     "logout": "登出",

@@ -1,4 +1,20 @@
 {
+  "codex_auto_reset": {
+    "title": "Süresi dolan sıfırlamaları otomatik kullan",
+    "disabled": "Devre dışı",
+    "before": "Sona ermeden önceki {{minutes}} dakika içinde kullan",
+    "confirm": "OpenAI uygunluğu onayladığında ve kapsanan pencerede kotanın %80'inden azı kaldığında sunucunun bu hesabın süresi dolan Codex sıfırlamalarını kullanmasına izin verin. Tarayıcı kapalıyken de çalışır; ücretli kredi kullanmaz veya yapay trafik oluşturmaz. Belirsiz sonuçlarda operatör incelemesine kadar otomasyon durur.",
+    "waiting": "Uygun ve süresi dolmak üzere olan sıfırlama bekleniyor",
+    "unavailable": "Otomatik sıfırlama kullanılamıyor; yenileyin ve sunucunun kalıcı depolamasını kontrol edin",
+    "unknown": "Kullanım sonucu bilinmiyor. Otomasyon durduruldu; elle kurtarmadan önce seçilen krediyi OpenAI ile doğrulayın.",
+    "reset": "Sıfırlama onaylandı",
+    "read_failed": "Kota okunamadı; yeniden deneme ertelendi",
+    "identity_changed": "Hesap kimliği değişti; sıfırlama kullanılmadı",
+    "cooldown_pending": "Sıfırlama onaylandı; ağ geçidi bekleme durumu tekrar temizleniyor",
+    "no_credit": "Kullanılabilir kredi yok",
+    "nothing_to_reset": "Sıfırlanacak bir şey yok",
+    "not_eligible": "Uygun ve süresi dolmak üzere olan sıfırlama bekleniyor"
+  },
   "common": {
     "login": "Giriş",
     "logout": "Çıkış",

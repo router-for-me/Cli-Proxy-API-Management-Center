@@ -1,4 +1,20 @@
 {
+  "codex_auto_reset": {
+    "title": "Tự động dùng lượt đặt lại sắp hết hạn",
+    "disabled": "Đã tắt",
+    "before": "Dùng trong {{minutes}} phút trước khi hết hạn",
+    "confirm": "Cho phép máy chủ dùng lượt đặt lại Codex sắp hết hạn của tài khoản khi OpenAI xác nhận đủ điều kiện và cửa sổ áp dụng còn dưới 80% hạn mức. Hoạt động cả khi đóng trình duyệt, không dùng tín dụng trả phí hay tạo lưu lượng giả. Kết quả không rõ sẽ dừng tự động để quản trị viên kiểm tra.",
+    "waiting": "Đang chờ lượt đặt lại đủ điều kiện sắp hết hạn",
+    "unavailable": "Không thể tự đặt lại; tải lại và kiểm tra bộ lưu trữ bền vững của máy chủ",
+    "unknown": "Chưa rõ kết quả đổi lượt. Đã dừng tự động; xác minh lượt đã chọn với OpenAI trước khi khôi phục thủ công.",
+    "reset": "Đã xác nhận đặt lại",
+    "read_failed": "Không đọc được hạn mức; chờ thử lại",
+    "identity_changed": "Danh tính tài khoản đã đổi; chưa dùng lượt đặt lại",
+    "cooldown_pending": "Đã xác nhận đặt lại; đang thử xóa thời gian chờ của cổng",
+    "no_credit": "Không có lượt đặt lại",
+    "nothing_to_reset": "Không cần đặt lại",
+    "not_eligible": "Đang chờ lượt đặt lại đủ điều kiện sắp hết hạn"
+  },
   "common": {
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
