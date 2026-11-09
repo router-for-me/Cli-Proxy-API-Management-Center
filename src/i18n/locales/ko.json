@@ -841,6 +841,8 @@
     "recommended_provider_badge": "추천 공급자",
     "other_oauth_providers": "기타 OAuth 공급자",
     "other_login_methods": "기타 로그인 방식",
+    "login_proxy_label": "로그인 프록시 (선택)",
+    "login_proxy_hint": "이번 OAuth 로그인에 사용되며 새 자격 증명의 proxy_url로 저장됩니다. 비워 두면 서버 네트워크 설정을 사용합니다.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Codex 로그인 시작",
     "codex_oauth_hint": "OAuth 흐름을 통해 Codex 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",

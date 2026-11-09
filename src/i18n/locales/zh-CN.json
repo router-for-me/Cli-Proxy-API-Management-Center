@@ -840,6 +840,8 @@
     "recommended_provider_badge": "推荐提供商",
     "other_oauth_providers": "其他 OAuth 提供商",
     "other_login_methods": "其他登录方式",
+    "login_proxy_label": "登录代理（可选）",
+    "login_proxy_hint": "用于本次 OAuth 登录，并保存为新凭证的 proxy_url。留空则使用服务器的网络设置。",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "开始 Codex 登录",
     "codex_oauth_hint": "通过 OAuth 流程登录 Codex 服务，自动获取并保存认证文件。",

@@ -841,6 +841,8 @@
     "recommended_provider_badge": "Recommended provider",
     "other_oauth_providers": "Other OAuth providers",
     "other_login_methods": "Other login methods",
+    "login_proxy_label": "Login proxy (optional)",
+    "login_proxy_hint": "Used for this OAuth login and saved as the new credential's proxy_url. Leave empty to use the server's network settings.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Start Codex Login",
     "codex_oauth_hint": "Login to Codex service through OAuth flow, automatically obtain and save authentication files.",

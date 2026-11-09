@@ -841,6 +841,8 @@
     "recommended_provider_badge": "Önerilen Sağlayıcı",
     "other_oauth_providers": "Diğer OAuth Sağlayıcıları",
     "other_login_methods": "Diğer Giriş Yöntemleri",
+    "login_proxy_label": "Giriş proxy'si (isteğe bağlı)",
+    "login_proxy_hint": "Bu OAuth girişi için kullanılır ve yeni kimlik bilgisinin proxy_url değeri olarak kaydedilir. Sunucunun ağ ayarlarını kullanmak için boş bırakın.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Codex Girişini Başlat",
     "codex_oauth_hint": "OAuth Akışıyla Codex Hizmetine Giriş Yap. Kimlik Doğrulama Dosyaları Otomatik Alınır ve Kaydedilir.",

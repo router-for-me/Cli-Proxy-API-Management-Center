@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useThemeStore } from '@/stores';
+import { Input } from '@/components/ui/Input';
 import iconVertex from '@/assets/icons/vertex.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import { KIMI_DISPLAY_NAME } from '@/features/providers/kimi';
@@ -57,6 +58,7 @@ export function OAuthPage() {
   const [dialog, setDialog] = useState<DialogTarget | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [siwcOpen, setSiwcOpen] = useState(false);
+  const [loginProxy, setLoginProxy] = useState('');
   // 每次打开换新 key 重新挂载（全新选择与会话）；关闭后保持挂载，让退出动画走完
   const [siwcKey, setSiwcKey] = useState(0);
   const openSiwc = () => {
@@ -119,7 +121,7 @@ export function OAuthPage() {
     setDialog({ kind: 'oauth', id: card.id });
     setDialogOpen(true);
     // 已有进行中/失败/刚成功的尝试 → 只是重新打开查看；否则立即开始登录
-    if (!flows.states[card.id]?.status) void flows.startAuth(card.id);
+    if (!flows.states[card.id]?.status) void flows.startAuth(card.id, loginProxy);
   };
 
   const openVertex = () => {
@@ -185,6 +187,18 @@ export function OAuthPage() {
         addedCount={flows.addedCount}
       />
 
+      <div className={styles.loginProxy} data-reveal>
+        <Input
+          label={t('auth_login.login_proxy_label')}
+          hint={t('auth_login.login_proxy_hint')}
+          placeholder="socks5://username:password@proxy_ip:port"
+          value={loginProxy}
+          onChange={(event) => setLoginProxy(event.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      </div>
+
       {/* 赞助商独占首行：一张品牌卡收拢两站入口，其余提供商在下方紧凑网格 */}
       {sponsorCards.length > 0 && (
         <SponsorCard
@@ -232,7 +246,7 @@ export function OAuthPage() {
           text={(suffix) => flows.providerText(dialogCard.id, suffix)}
           supportsCallback={supportsManualCallback(dialogCard)}
           sponsor={sponsorOf(dialogCard)}
-          onStart={() => void flows.startAuth(dialogCard.id)}
+          onStart={() => void flows.startAuth(dialogCard.id, loginProxy)}
           onCancel={() => void flows.cancelAuth(dialogCard.id)}
           onCallbackChange={(value) => flows.setCallbackInput(dialogCard.id, value)}
           onCallbackSubmit={() => void flows.submitCallback(dialogCard.id)}

@@ -243,7 +243,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
     startPolling(provider, state, attempt);
   };
 
-  const startAuth = async (provider: string) => {
+  const startAuth = async (provider: string, proxyUrl?: string) => {
     // A network error can stop polling while the server is still waiting. Require
     // explicit cancellation before replacing that Devin session.
     if (provider === 'devin' && states[provider]?.state) return;
@@ -264,7 +264,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
       callbackSubmitting: false,
     });
     try {
-      const res = await oauthApi.startAuth(provider, attempt.signal);
+      const res = await oauthApi.startAuth(provider, attempt.signal, proxyUrl);
       if (!attempt.isCurrent()) return;
       if (!res.state) {
         const message = t('auth_login.missing_state');

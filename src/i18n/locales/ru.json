@@ -844,6 +844,8 @@
     "recommended_provider_badge": "Рекомендуемый провайдер",
     "other_oauth_providers": "Другие провайдеры OAuth",
     "other_login_methods": "Другие способы входа",
+    "login_proxy_label": "Прокси для входа (необязательно)",
+    "login_proxy_hint": "Используется для этого входа OAuth и сохраняется как proxy_url новой учётной записи. Оставьте пустым, чтобы использовать сетевые настройки сервера.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Начать вход Codex",
     "codex_oauth_hint": "Выполните вход в сервис Codex через OAuth и автоматически получите/сохраните файлы авторизации.",

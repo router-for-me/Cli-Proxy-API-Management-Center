@@ -780,6 +780,8 @@
     "recommended_provider_badge": "Provider đề xuất",
     "other_oauth_providers": "Provider OAuth khác",
     "other_login_methods": "Phương thức đăng nhập khác",
+    "login_proxy_label": "Proxy đăng nhập (tùy chọn)",
+    "login_proxy_hint": "Dùng cho lần đăng nhập OAuth này và được lưu làm proxy_url của thông tin xác thực mới. Để trống để dùng cấu hình mạng của máy chủ.",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Bắt đầu đăng nhập Codex",
     "codex_oauth_hint": "Đăng nhập dịch vụ Codex qua luồng OAuth, tự động lấy và lưu file xác thực.",
