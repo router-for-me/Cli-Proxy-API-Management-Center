@@ -16,9 +16,9 @@ import type {
 } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
 import { normalizeClaudeUsageSnapshot } from '@/services/api/claudeUsage';
+import { claudeUsageReader } from '@/services/api/claudeUsageReads';
 import {
   CLAUDE_PROFILE_URL,
-  CLAUDE_USAGE_URL,
   CLAUDE_REQUEST_HEADERS,
   CLAUDE_USAGE_WINDOW_KEYS,
   claudePeriodHours,
@@ -213,12 +213,7 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
   }
 
   const [usageResult, profileResult] = await Promise.allSettled([
-    apiCallApi.request({
-      authIndex,
-      method: 'GET',
-      url: CLAUDE_USAGE_URL,
-      header: { ...CLAUDE_REQUEST_HEADERS, Accept: 'application/json' },
-    }),
+    claudeUsageReader.read(authIndex, 'quota', file.name),
     apiCallApi.request({
       authIndex,
       method: 'GET',
@@ -231,7 +226,7 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
     throw usageResult.reason;
   }
 
-  const result = usageResult.value;
+  const result = usageResult.value.response;
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
     throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
@@ -266,7 +261,7 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
     windows,
     extraUsage: snapshot.extraUsage,
     dollarWindows,
-    observedAt: new Date().toISOString(),
+    observedAt: usageResult.value.observedAt,
     planType,
   };
 };

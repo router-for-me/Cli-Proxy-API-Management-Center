@@ -3,6 +3,7 @@
  */
 
 import { create } from 'zustand';
+import { claudeUsageReader } from '@/services/api/claudeUsageReads';
 import { getQuotaCacheFileName } from '@/utils/quota/identity';
 import type {
   AntigravityQuotaState,
@@ -115,6 +116,7 @@ export const useQuotaStore = create<QuotaStoreState>((set) => ({
     })),
   clearQuotaCache: (names) =>
     set((state) => {
+      claudeUsageReader.clear(names);
       if (names) {
         if (names.length === 0) return state;
         const fileGenerations = { ...state.fileGenerations };
