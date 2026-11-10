@@ -51,7 +51,7 @@ export function useClaudeResetGrants(
     const current = () =>
       !cancelled && version === generation.current && session === apiClient.getConnectionRevision();
     const cancelRead = scheduleResetGrantRead(() => {
-      void readResetGrantsForCard(authIndex).then(
+      void readResetGrantsForCard(authIndex, file.name).then(
         (result) => {
           if (current()) {
             setStatus(result);
@@ -74,7 +74,7 @@ export function useClaudeResetGrants(
       cancelRead();
       generation.current += 1;
     };
-  }, [authIndex, key, enabled, disabled, sessionActive, session, refreshToken, reload]);
+  }, [authIndex, key, file.name, enabled, disabled, sessionActive, session, refreshToken, reload]);
 
   const operation = resetGrantOperations.inspect(key);
   const pending = operation && !operation.code ? operation : undefined;

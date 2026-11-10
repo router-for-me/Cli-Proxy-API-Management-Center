@@ -7,6 +7,7 @@ import i18n from '@/i18n';
 import { normalizeClaudeUsageSnapshot } from '@/services/api/claudeUsage';
 import { apiCallApi, getApiCallErrorMessage, type ApiCallResult } from '@/services/api/apiCall';
 import { apiClient } from '@/services/api/client';
+import { claudeUsageReader } from '@/services/api/claudeUsageReads';
 import { CLAUDE_CONFIG, hasClaudeUsageData } from '@/features/quota/providers/claude/data';
 import { ClaudeQuotaBody } from '@/features/quota/providers/claude/ClaudeQuotaBody';
 import { buildTimelineLane } from '@/features/quota/quotaTimelineModel';
@@ -182,6 +183,7 @@ describe('Claude quota usage reads', () => {
   const originalRequest = apiCallApi.request;
   afterEach(() => {
     apiCallApi.request = originalRequest;
+    claudeUsageReader.clear();
   });
 
   test('uses existing quota reads and separates dollar balances from plan windows', async () => {
@@ -232,6 +234,7 @@ describe('Claude quota usage reads', () => {
 
   test('rejects every upstream failure even when its body contains usage values', async () => {
     for (const status of [0, 199, 302, 401, 403, 429, 500]) {
+      claudeUsageReader.clear();
       apiCallApi.request = async (request) =>
         request.url === CLAUDE_USAGE_URL
           ? result(status, fixture)
@@ -257,6 +260,7 @@ describe('Claude quota usage reads', () => {
       { utilization: 41, resets_at: fixture.seven_day.resets_at },
       { utilization: 5, remaining_dollars: 95, resets_at: fixture.seven_day.resets_at },
     ]) {
+      claudeUsageReader.clear();
       apiCallApi.request = async (request) =>
         request.url === CLAUDE_USAGE_URL
           ? result(200, { iguana_necktie: window })
@@ -272,6 +276,7 @@ describe('Claude quota usage reads', () => {
 
   test('rejects malformed successful responses rather than erasing the last-good values', async () => {
     for (const body of [null, '', 'not-json', [], { error: 'no usage' }]) {
+      claudeUsageReader.clear();
       apiCallApi.request = async () => result(200, body);
       await expect(CLAUDE_CONFIG.fetchQuota(file, translations.t)).rejects.toThrow(
         translations.t('claude_quota.empty_windows')
@@ -309,6 +314,7 @@ describe('Claude quota usage reads', () => {
         );
         store.setClaudeQuota({ [key]: good });
         failing = true;
+        claudeUsageReader.clear(); // Simulate a later refresh after the observation expires.
         store.setClaudeQuota({ [key]: CLAUDE_CONFIG.buildLoadingState() });
         expect(useQuotaStore.getState().claudeQuota[key].windows).toBe(good.windows);
         let failureHandled = false;
@@ -333,6 +339,7 @@ describe('Claude quota usage reads', () => {
         expect(retained.extraUsage).toBe(good.extraUsage);
         expect(retained.dollarWindows).toBe(good.dollarWindows);
         failing = false;
+        claudeUsageReader.clear(); // Simulate recovery after the rate-limit delay.
         const recovered = CLAUDE_CONFIG.buildSuccessState(
           await CLAUDE_CONFIG.fetchQuota(file, translations.t)
         );

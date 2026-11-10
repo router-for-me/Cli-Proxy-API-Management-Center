@@ -1,5 +1,5 @@
 import { apiClient } from '@/services/api/client';
-import { readClaudeResetGrants } from '@/services/api/claudeResetGrants';
+import { readClaudeResetGrantsForDisplay } from '@/services/api/claudeResetGrants';
 
 export const RESET_GRANT_READ_DELAY_MS = 2000;
 
@@ -15,12 +15,12 @@ export function scheduleResetGrantRead(start: () => void, current: () => boolean
 export function createResetGrantReader(
   deps = {
     revision: () => apiClient.getConnectionRevision(),
-    read: readClaudeResetGrants,
+    read: readClaudeResetGrantsForDisplay,
   }
 ) {
   let session = deps.revision();
-  const inFlight = new Map<string, ReturnType<typeof readClaudeResetGrants>>();
-  return (authIndex: string) => {
+  const inFlight = new Map<string, ReturnType<typeof readClaudeResetGrantsForDisplay>>();
+  return (authIndex: string, fileName?: string) => {
     const revision = deps.revision();
     if (revision !== session) {
       session = revision;
@@ -29,7 +29,7 @@ export function createResetGrantReader(
     const existing = inFlight.get(authIndex);
     if (existing) return existing;
     const request = deps
-      .read(authIndex)
+      .read(authIndex, fileName)
       .then((result) => {
         if (deps.revision() !== revision) throw new Error('session');
         return result;

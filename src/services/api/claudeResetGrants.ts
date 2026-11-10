@@ -1,5 +1,6 @@
 // Upstream cedar_ember contract, following opencodex anthropic-reset-grants.
-import { apiCallApi } from './apiCall';
+import { apiCallApi, type ApiCallResult } from './apiCall';
+import { claudeUsageReader } from './claudeUsageReads';
 import { CLAUDE_REQUEST_HEADERS } from '@/utils/quota/constants';
 
 export const ANTHROPIC_API_ORIGIN = 'https://api.anthropic.com';
@@ -245,6 +246,10 @@ async function readAccount(authIndex: string, path: string): Promise<Record<stri
     },
     { timeout: 12000 }
   );
+  return readBody(response);
+}
+
+function readBody(response: ApiCallResult): Record<string, unknown> {
   if (response.statusCode === 401 || response.statusCode === 403)
     throw new AnthropicResetGrantError('auth');
   if (response.statusCode === 429) throw new AnthropicResetGrantError('rate_limited');
@@ -256,6 +261,14 @@ async function readAccount(authIndex: string, path: string): Promise<Record<stri
 
 export async function readClaudeResetGrants(authIndex: string) {
   const body = await readAccount(authIndex, ANTHROPIC_RESET_GRANT_STATUS_PATH);
+  const status = parseAnthropicResetGrantStatus(body.cedar_ember);
+  if (!status) throw new AnthropicResetGrantError('malformed');
+  return status;
+}
+
+export async function readClaudeResetGrantsForDisplay(authIndex: string, fileName?: string) {
+  const { response } = await claudeUsageReader.read(authIndex, 'grants', fileName);
+  const body = readBody(response);
   const status = parseAnthropicResetGrantStatus(body.cedar_ember);
   if (!status) throw new AnthropicResetGrantError('malformed');
   return status;
@@ -310,6 +323,8 @@ export async function claimClaudeResetGrant(
     }
   } catch {
     /* The proxy may have sent the claim even if the management request failed. */
+  } finally {
+    claudeUsageReader.invalidate(authIndex);
   }
   throw new AnthropicResetGrantUnknownOutcome();
 }
