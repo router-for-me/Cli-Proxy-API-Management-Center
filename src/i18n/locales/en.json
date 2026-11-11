@@ -1,17 +1,4 @@
 {
-  "codex_account_settings": {
-    "title": "ChatGPT credit spending",
-    "description": "Let apps spend credits after your plan allowance runs out.",
-    "unknown": "Status unavailable",
-    "scope": "Account-wide · Applies immediately",
-    "unavailable": "Account ID or credential index is missing; this setting cannot be changed.",
-    "allow": "Allow credit spending",
-    "deny": "Disallow credit spending",
-    "confirm": "Apply “{{action}}” to ChatGPT account {{account}}? This affects all apps authorized to use this account's plan. Allowing it may spend your ChatGPT credits after your plan allowance runs out. This takes effect immediately, even if you cancel credential edits.",
-    "success": "ChatGPT confirmed: {{action}}. This is the result of this write, not a live account status.",
-    "failed": "ChatGPT did not confirm the change. The account state is unknown. Check your connection and credential permissions, then explicitly set the desired value again.",
-    "saving": "Updating ChatGPT account setting…"
-  },
   "common": {
     "login": "Login",
     "logout": "Logout",

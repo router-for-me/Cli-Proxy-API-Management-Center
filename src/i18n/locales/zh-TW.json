@@ -1,17 +1,4 @@
 {
-  "codex_account_settings": {
-    "title": "ChatGPT 點數",
-    "description": "方案額度用盡後，是否允許應用程式繼續消耗點數。",
-    "unknown": "無法讀取狀態",
-    "scope": "帳號層級設定 · 立即生效",
-    "unavailable": "缺少帳號 ID 或憑證索引，無法修改此設定。",
-    "allow": "允許使用點數",
-    "deny": "禁止使用點數",
-    "confirm": "對 ChatGPT 帳號 {{account}} 執行「{{action}}」？此設定影響所有已授權使用此帳號方案的應用程式。允許後，方案額度耗盡可能繼續消耗 ChatGPT 點數。操作立即生效，即使取消憑證編輯也不會撤銷。",
-    "success": "ChatGPT 已確認：{{action}}。這是本次寫入結果，並非帳號即時狀態。",
-    "failed": "ChatGPT 未確認修改結果，帳號狀態未知。請檢查連線與憑證權限，再重新設定期望值。",
-    "saving": "正在更新 ChatGPT 帳號設定…"
-  },
   "common": {
     "login": "登入",
     "logout": "登出",

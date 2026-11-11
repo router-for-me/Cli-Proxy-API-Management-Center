@@ -1,17 +1,4 @@
 {
-  "codex_account_settings": {
-    "title": "Sử dụng tín dụng ChatGPT",
-    "description": "Cho phép ứng dụng dùng tín dụng sau khi hết hạn mức gói.",
-    "unknown": "Không thể đọc trạng thái",
-    "scope": "Toàn bộ tài khoản · Áp dụng ngay",
-    "unavailable": "Thiếu ID tài khoản hoặc chỉ mục thông tin xác thực; không thể thay đổi.",
-    "allow": "Cho phép dùng tín dụng",
-    "deny": "Không cho phép dùng tín dụng",
-    "confirm": "Áp dụng “{{action}}” cho tài khoản ChatGPT {{account}}? Thao tác ảnh hưởng mọi ứng dụng được cấp quyền dùng gói của tài khoản. Cho phép có thể tiêu tín dụng khi hết hạn mức. Có hiệu lực ngay, kể cả khi hủy chỉnh sửa thông tin xác thực.",
-    "success": "ChatGPT đã xác nhận: {{action}}. Đây là kết quả ghi lần này, không phải trạng thái trực tiếp.",
-    "failed": "ChatGPT chưa xác nhận thay đổi. Trạng thái chưa rõ. Kiểm tra kết nối và quyền xác thực, rồi đặt lại giá trị mong muốn.",
-    "saving": "Đang cập nhật cài đặt tài khoản ChatGPT…"
-  },
   "common": {
     "login": "Đăng nhập",
     "logout": "Đăng xuất",

@@ -1,17 +1,4 @@
 {
-  "codex_account_settings": {
-    "title": "ChatGPT kredi kullanımı",
-    "description": "Plan kotası dolduktan sonra uygulamaların kredi harcamasına izin verin.",
-    "unknown": "Durum okunamıyor",
-    "scope": "Tüm hesap · Hemen uygulanır",
-    "unavailable": "Hesap kimliği veya kimlik bilgisi dizini eksik; ayar değiştirilemez.",
-    "allow": "Kredi kullanımına izin ver",
-    "deny": "Kredi kullanımını engelle",
-    "confirm": "ChatGPT hesabı {{account}} için “{{action}}” uygulansın mı? Hesabın planını kullanmaya yetkili tüm uygulamaları etkiler. İzin verilirse plan kotası dolunca krediler harcanabilir. Hemen uygulanır; kimlik bilgisi düzenlemesini iptal etmek bu işlemi geri almaz.",
-    "success": "ChatGPT onayladı: {{action}}. Bu, yazma işleminin sonucudur; canlı hesap durumu değildir.",
-    "failed": "ChatGPT değişikliği onaylamadı. Hesap durumu bilinmiyor. Bağlantıyı ve kimlik bilgisi izinlerini kontrol edip istenen değeri yeniden ayarlayın.",
-    "saving": "ChatGPT hesap ayarı güncelleniyor…"
-  },
   "common": {
     "login": "Giriş",
     "logout": "Çıkış",

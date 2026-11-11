@@ -1,17 +1,4 @@
 {
-  "codex_account_settings": {
-    "title": "ChatGPT 积分",
-    "description": "套餐额度用尽后，是否允许应用继续消耗积分。",
-    "unknown": "状态不可读取",
-    "scope": "账号级设置 · 立即生效",
-    "unavailable": "缺少账号 ID 或凭据索引，无法修改此设置。",
-    "allow": "允许使用积分",
-    "deny": "禁止使用积分",
-    "confirm": "对 ChatGPT 账号 {{account}} 执行“{{action}}”？此设置影响所有已授权使用该账号套餐的应用。允许后，套餐额度耗尽可能继续消耗 ChatGPT 积分。操作立即生效，即使取消凭据编辑也不会撤销。",
-    "success": "ChatGPT 已确认：{{action}}。这是本次写入结果，并非账号实时状态。",
-    "failed": "ChatGPT 未确认修改结果，账号状态未知。请检查连接和凭据权限，然后重新设置期望值。",
-    "saving": "正在更新 ChatGPT 账号设置…"
-  },
   "common": {
     "login": "登录",
     "logout": "登出",
