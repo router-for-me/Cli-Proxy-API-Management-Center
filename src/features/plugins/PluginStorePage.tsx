@@ -38,6 +38,7 @@ import {
   type PluginReleaseVersion,
 } from './pluginReleaseVersions';
 import { waitForPluginStoreState } from './pluginPolling';
+import { formatPluginStoreRetryTime } from './storeErrors';
 import styles from './PluginStorePage.module.scss';
 
 type StoreStatusFilter = 'all' | 'installed' | 'notInstalled' | 'updates';
@@ -460,7 +461,7 @@ function PluginInstallOptionsModal({
 }
 
 export function PluginStorePage() {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
   const navigate = useNavigate();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
@@ -515,15 +516,18 @@ export function PluginStorePage() {
             : t('plugin_store.registry_failed'),
         });
       } else {
+        const retryTime = formatPluginStoreRetryTime(err, i18n.language);
         setError({
           kind: 'generic',
-          message: getErrorMessage(err, t('plugin_store.load_failed')),
+          message: retryTime
+            ? t('plugin_store.rate_limited', { time: retryTime })
+            : getErrorMessage(err, t('plugin_store.load_failed')),
         });
       }
     } finally {
       setLoading(false);
     }
-  }, [connected, t]);
+  }, [connected, i18n.language, t]);
 
   useHeaderRefresh(loadStore, connected);
 
@@ -728,13 +732,17 @@ export function PluginStorePage() {
           'success'
         );
       } catch (err: unknown) {
-        showNotification(`${t(failedKey)}: ${getErrorMessage(err, t(failedKey))}`, 'error');
+        const retryTime = formatPluginStoreRetryTime(err, i18n.language);
+        const detail = retryTime
+          ? t('plugin_store.rate_limited', { time: retryTime })
+          : getErrorMessage(err, t(failedKey));
+        showNotification(`${t(failedKey)}: ${detail}`, 'error');
         throw err;
       } finally {
         setInstallingKey('');
       }
     },
-    [clearConfigCache, showNotification, t]
+    [clearConfigCache, i18n.language, showNotification, t]
   );
 
   const handleInstall = (entry: PluginStoreEntry) => {

@@ -4,7 +4,12 @@
  */
 
 import type { AuthFileItem } from '@/types';
-import { isPluginQuotaFile, resolveAuthProvider } from '@/utils/quota';
+import {
+  formatInstantShort,
+  isPluginQuotaFile,
+  parseUnixToMs,
+  resolveAuthProvider,
+} from '@/utils/quota';
 import {
   QUOTA_PROVIDER_TYPES,
   getAuthFileStatusMessage,
@@ -95,3 +100,52 @@ export const sortAuthFiles = (files: AuthFileItem[], mode: AuthFilesSortMode): A
   }
   return copy;
 };
+
+/**
+ * Reset time carried inside a raw upstream error body, in the viewer's local time.
+ *
+ * Some providers put their JSON error straight into the credential's status
+ * message, e.g. {"error":{"type":"usage_limit_reached","resets_at":1793973920}}.
+ * The epoch in there is unreadable on its own, so it is formatted for display.
+ */
+
+const RESET_KEYS = ['resets_at', 'reset_at', 'resetsAt'] as const;
+/** Anything outside 2000..2100 is not a reset time; show nothing rather than a bogus date. */
+const MIN_RESET_MS = Date.UTC(2000, 0, 1);
+const MAX_RESET_MS = Date.UTC(2101, 0, 1);
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const findResetMs = (record: Record<string, unknown>): number | null => {
+  for (const key of RESET_KEYS) {
+    const ms = parseUnixToMs(record[key]);
+    if (ms !== null) return ms;
+  }
+  return null;
+};
+
+/** Local-time reset label for a status message holding a JSON error body, or null. Never throws. */
+export function formatResetHintFromMessage(message: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(message);
+  } catch {
+    return null;
+  }
+
+  const root = asRecord(parsed);
+  if (!root) return null;
+
+  for (const candidate of [root, asRecord(root.error)]) {
+    if (!candidate) continue;
+    const ms = findResetMs(candidate);
+    if (ms === null) continue;
+    if (ms < MIN_RESET_MS || ms >= MAX_RESET_MS) continue;
+    return formatInstantShort(ms);
+  }
+
+  return null;
+}
