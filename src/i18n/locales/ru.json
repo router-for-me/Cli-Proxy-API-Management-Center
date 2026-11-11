@@ -221,6 +221,10 @@
     "routing_strategy_fill_first": "fill-first (приоритет)"
   },
   "auth_files": {
+    "sync_catalog_button": "Синхронизировать каталог моделей",
+    "sync_catalog_success": "Каталог моделей синхронизирован. Обновлены провайдеры: {{providers}}",
+    "sync_catalog_unchanged": "Каталог моделей синхронизирован. Изменений нет.",
+    "sync_catalog_failed": "Не удалось синхронизировать каталог моделей",
     "title": "Управление файлами авторизации",
     "meta_total": "{{count}} учётных данных",
     "meta_active": "{{count}} активно",

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { authFilesApi } from '@/services/api';
+import { apiClient, authFilesApi } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import type { AuthFileModelItem } from '@/features/authFiles/constants';
@@ -32,6 +32,7 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
   const [modelsError, setModelsError] = useState<ModelsError>(null);
   const modelsCacheRef = useRef<Map<string, AuthFileModelItem[]>>(new Map());
   const modelsCacheVersionRef = useRef(0);
+  const modelsConnectionRef = useRef(apiClient.getConnectionRevision());
   const modelsFileVersionRef = useRef<Map<string, number>>(new Map());
   const activeModelsRequestIdRef = useRef(0);
 
@@ -56,6 +57,11 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
 
   const showModels = useCallback(
     async (item: AuthFileItem) => {
+      const revision = apiClient.getConnectionRevision();
+      if (modelsConnectionRef.current !== revision) {
+        invalidateModels();
+        modelsConnectionRef.current = revision;
+      }
       const cacheKey = item.name.trim();
       const requestId = ++activeModelsRequestIdRef.current;
 
@@ -75,6 +81,7 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
       const cacheVersion = modelsCacheVersionRef.current;
       const fileVersion = modelsFileVersionRef.current.get(cacheKey) ?? 0;
       const isCacheCurrent = () =>
+        revision === apiClient.getConnectionRevision() &&
         cacheVersion === modelsCacheVersionRef.current &&
         fileVersion === (modelsFileVersionRef.current.get(cacheKey) ?? 0);
       const isRequestCurrent = () => requestId === activeModelsRequestIdRef.current;
@@ -102,7 +109,7 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
         if (isRequestCurrent()) setModelsLoading(false);
       }
     },
-    [showNotification, t]
+    [invalidateModels, showNotification, t]
   );
 
   return {

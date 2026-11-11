@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "fill-first (prioritize)"
   },
   "auth_files": {
+    "sync_catalog_button": "Sync model catalog",
+    "sync_catalog_success": "Model catalog synced. Updated providers: {{providers}}",
+    "sync_catalog_unchanged": "Model catalog synced. No changes.",
+    "sync_catalog_failed": "Failed to sync model catalog",
     "title": "Auth Files Management",
     "meta_total": "{{count}} credentials",
     "meta_active": "{{count}} active",

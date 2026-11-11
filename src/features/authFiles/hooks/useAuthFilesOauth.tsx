@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { authFilesApi } from '@/services/api';
+import { apiClient, authFilesApi } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
 import type { AuthFileModelItem, OAuthConfigLoadError } from '@/features/authFiles/constants';
@@ -31,12 +31,13 @@ export type UseAuthFilesOauthResult = {
 };
 
 export type UseAuthFilesOauthOptions = {
+  modelCatalogVersion?: number;
   viewMode: ViewMode;
   files: AuthFileItem[];
 };
 
 export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFilesOauthResult {
-  const { viewMode, files } = options;
+  const { viewMode, files, modelCatalogVersion = 0 } = options;
   const { t } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
 
@@ -90,6 +91,8 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
     if (viewMode !== 'diagram') return;
 
     let cancelled = false;
+    const revision = apiClient.getConnectionRevision();
+    setAllProviderModels({});
 
     const loadAllModels = async () => {
       if (providerList.length === 0) {
@@ -108,7 +111,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
         })
       );
 
-      if (cancelled) return;
+      if (cancelled || revision !== apiClient.getConnectionRevision()) return;
 
       const nextModels: Record<string, AuthFileModelItem[]> = {};
       results.forEach(({ provider, models }) => {
@@ -125,7 +128,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
     return () => {
       cancelled = true;
     };
-  }, [providerList, viewMode]);
+  }, [providerList, viewMode, modelCatalogVersion]);
 
   const loadExcluded = useCallback(async () => {
     const requestId = ++excludedLoadRequestRef.current;

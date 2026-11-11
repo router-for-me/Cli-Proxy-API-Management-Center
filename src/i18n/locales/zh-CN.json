@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "fill-first (优先填充)"
   },
   "auth_files": {
+    "sync_catalog_button": "同步模型目录",
+    "sync_catalog_success": "模型目录同步成功，已更新提供商：{{providers}}",
+    "sync_catalog_unchanged": "模型目录同步成功，无变化。",
+    "sync_catalog_failed": "同步模型目录失败",
     "title": "认证文件管理",
     "meta_total": "{{count}} 个凭证",
     "meta_active": "{{count}} 个启用",

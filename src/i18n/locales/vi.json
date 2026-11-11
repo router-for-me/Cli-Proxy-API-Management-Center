@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "fill-first (ưu tiên lấp đầy)"
   },
   "auth_files": {
+    "sync_catalog_button": "Đồng bộ danh mục mô hình",
+    "sync_catalog_success": "Đã đồng bộ danh mục mô hình. Nhà cung cấp được cập nhật: {{providers}}",
+    "sync_catalog_unchanged": "Đã đồng bộ danh mục mô hình. Không có thay đổi.",
+    "sync_catalog_failed": "Không thể đồng bộ danh mục mô hình",
     "title": "Quản lý File xác thực",
     "meta_total": "{{count}} credential",
     "meta_active": "{{count}} đang hoạt động",

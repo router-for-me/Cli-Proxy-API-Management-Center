@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "Fill-First (Önceliklendir)"
   },
   "auth_files": {
+    "sync_catalog_button": "Model kataloğunu eşitle",
+    "sync_catalog_success": "Model kataloğu eşitlendi. Güncellenen sağlayıcılar: {{providers}}",
+    "sync_catalog_unchanged": "Model kataloğu eşitlendi. Değişiklik yok.",
+    "sync_catalog_failed": "Model kataloğu eşitlenemedi",
     "title": "Kimlik Dosyası Yönetimi",
     "meta_total": "{{count}} Kimlik Bilgisi",
     "meta_active": "{{count}} Aktif",
