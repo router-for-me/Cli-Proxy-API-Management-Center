@@ -2420,7 +2420,18 @@
     "ineligible": "此帳戶不符合資格。",
     "unavailable": "重置暫不可用。",
     "rate_limited": "請求過於頻繁。",
-    "auth_error": "授權遭拒。"
+    "auth_error": "授權遭拒。",
+    "kind_weekly": "每週重置",
+    "kind_session": "5 小時重置",
+    "kind_full": "全部重置",
+    "kind_fable": "Fable 重置",
+    "kind_unknown": "重置額度",
+    "selected_grant": "所選重置：{{kind}} · {{label}}",
+    "redeem_grant": "使用 {{kind}} · {{label}}",
+    "retry_grant": "重試 {{kind}} · {{label}}",
+    "no_usage": "沒有可重置的 Fable 用量。",
+    "fable_hint": "補充 Fable 額度，並將其用量返還至每週額度。其他每週用量保持不變。",
+    "exact_grant_hint": "僅使用此重置額度。"
   },
   "siwc": {
     "title": "綁定 SIWC",

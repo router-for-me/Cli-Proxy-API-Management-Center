@@ -90,3 +90,74 @@ describe('Claude reset grant details', () => {
     }
   );
 });
+
+test('renders a named action for every grant and disables unusable choices', () => {
+  const markup = renderToStaticMarkup(
+    createElement(ClaudeResetGrantDetails, {
+      classes,
+      grants: [
+        grant({ id: 'weekly', label: 'Weekly choice', resetType: 'weekly' }),
+        grant({
+          id: 'model',
+          label: 'Model choice',
+          resetType: 'full',
+          givesBackWeekly: true,
+          percentUsed: { seven_day_overage_included: 0 },
+        }),
+      ],
+      onRedeem: () => {
+        throw new Error('Rendering must never claim a reset');
+      },
+      canRedeem: (id) => id === 'weekly',
+    })
+  );
+  expect(markup.match(/<button/g)).toHaveLength(2);
+  expect(markup).toContain('Redeem Weekly reset · Weekly choice');
+  expect(markup).toContain('Redeem Fable reset · Model choice');
+  expect(markup).toContain('No Fable usage to reset.');
+  expect(markup.match(/disabled=""/g)).toHaveLength(1);
+});
+
+test('pending spent grant retains its exact retry button and blocks peers', () => {
+  const markup = renderToStaticMarkup(
+    createElement(ClaudeResetGrantDetails, {
+      classes,
+      grants: [
+        grant({ id: 'weekly', label: 'Weekly choice', resetType: 'weekly' }),
+        grant({ id: 'model', label: 'Model choice', givesBackWeekly: true, resetsLeft: 0 }),
+      ],
+      onRedeem: () => {},
+      canRedeem: (id) => id === 'model',
+      pendingGrantId: 'model',
+    })
+  );
+  expect(markup).toContain('Retry Fable reset · Model choice');
+  expect(markup.match(/<button/g)).toHaveLength(2);
+  expect(markup.match(/disabled=""/g)).toHaveLength(1);
+});
+
+test.each(['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr'])(
+  'exact-grant action and model refill explanation are translated in %s',
+  async (locale) => {
+    const messages = (await Bun.file(`src/i18n/locales/${locale}.json`).json()).claude_reset;
+    for (const key of [
+      'kind_weekly',
+      'kind_session',
+      'kind_full',
+      'kind_fable',
+      'kind_unknown',
+      'selected_grant',
+      'redeem_grant',
+      'retry_grant',
+      'no_usage',
+      'fable_hint',
+      'exact_grant_hint',
+    ]) {
+      expect(typeof messages[key]).toBe('string');
+    }
+    for (const key of ['selected_grant', 'redeem_grant', 'retry_grant']) {
+      expect(messages[key]).toContain('{{kind}}');
+      expect(messages[key]).toContain('{{label}}');
+    }
+  }
+);

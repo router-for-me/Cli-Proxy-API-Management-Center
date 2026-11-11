@@ -16,7 +16,7 @@ import {
   ResetGrantPreflightError,
   resetGrantFailureMessageKey,
 } from './resetGrantOperations';
-import { selectResetGrant } from './selectResetGrant';
+import { canChooseResetGrant, resetGrantKind } from './resetGrantChoice';
 import { readResetGrantsForCard, scheduleResetGrantRead } from './resetGrantReads';
 
 /** Card-owned reads; the session-scoped journal owns spending and ambiguous retries. */
@@ -78,19 +78,29 @@ export function useClaudeResetGrants(
 
   const operation = resetGrantOperations.inspect(key);
   const pending = operation && !operation.code ? operation : undefined;
+  const grants = [...(status?.grants ?? [])];
+  if (pending && !grants.some((grant) => grant.id === pending.grantId)) grants.push(pending.grant);
   const expired = Boolean(pending && now - pending.createdAt >= RETRY_WINDOW_MS);
-  const selected = pending?.grantId ?? (status ? selectResetGrant(status, now)?.id : undefined);
-  const blocked = disabled || !sessionActive || !authIndex || busy || expired || !selected;
-  const confirm = () => {
-    if (blocked || lock.current || !selected || !authIndex) return;
+  const blocked = disabled || !sessionActive || !authIndex || busy || expired;
+  const canRedeemGrant = (grantId: unknown) =>
+    !blocked && canChooseResetGrant(status, pending?.grantId, grantId, now);
+  const confirm = (selected: string) => {
+    if (!canRedeemGrant(selected) || lock.current || !authIndex) return;
+    const grant = pending?.grant ?? grants.find((candidate) => candidate.id === selected);
     const version = generation.current;
     const current = () =>
       session === apiClient.getConnectionRevision() && version === generation.current;
     showConfirmation({
       title: t('claude_reset.title'),
-      message: t(pending ? 'claude_reset.retry_confirm' : 'claude_reset.confirm_text', {
-        name: file.name,
-      }),
+      message:
+        t(pending ? 'claude_reset.retry_confirm' : 'claude_reset.confirm_text', {
+          name: file.name,
+        }) +
+        '\n\n' +
+        t('claude_reset.selected_grant', {
+          kind: t(`claude_reset.kind_${resetGrantKind(grant)}`),
+          label: grant?.label || selected,
+        }),
       confirmText: t(pending ? 'claude_reset.retry' : 'claude_reset.confirm'),
       variant: 'primary',
       onConfirm: async () => {
@@ -139,11 +149,11 @@ export function useClaudeResetGrants(
   };
   return {
     count: status?.grants.reduce((sum, grant) => sum + grant.resetsLeft, 0) ?? null,
-    grants: status?.grants ?? [],
+    grants,
+    pendingGrantId: pending?.grantId,
+    canRedeemGrant,
     busy,
-    blocked,
     confirm,
     message: pending ? (expired ? 'expired' : 'unknown') : message,
-    buttonLabel: pending ? 'retry' : 'use',
   };
 }

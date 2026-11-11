@@ -2399,7 +2399,18 @@
     "ineligible": "Tài khoản này không đủ điều kiện.",
     "unavailable": "Tính năng đặt lại hiện không khả dụng.",
     "rate_limited": "Yêu cầu bị giới hạn tốc độ.",
-    "auth_error": "Ủy quyền đã bị từ chối."
+    "auth_error": "Ủy quyền đã bị từ chối.",
+    "kind_weekly": "Đặt lại hằng tuần",
+    "kind_session": "Đặt lại 5 giờ",
+    "kind_full": "Đặt lại toàn bộ",
+    "kind_fable": "Đặt lại Fable",
+    "kind_unknown": "Lượt đặt lại",
+    "selected_grant": "Lượt đã chọn: {{kind}} · {{label}}",
+    "redeem_grant": "Dùng {{kind}} · {{label}}",
+    "retry_grant": "Thử lại {{kind}} · {{label}}",
+    "no_usage": "Chưa có mức sử dụng Fable để đặt lại.",
+    "fable_hint": "Khôi phục hạn mức Fable và hoàn lại phần đã dùng vào hạn mức tuần. Mức sử dụng tuần khác không thay đổi.",
+    "exact_grant_hint": "Chỉ dùng đúng lượt đặt lại này."
   },
   "siwc": {
     "title": "Liên kết SIWC",

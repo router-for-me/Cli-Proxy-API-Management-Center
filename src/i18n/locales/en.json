@@ -2393,7 +2393,18 @@
     "ineligible": "This account is not eligible.",
     "unavailable": "Resets are currently unavailable.",
     "rate_limited": "Request rate limited.",
-    "auth_error": "Authorization was refused."
+    "auth_error": "Authorization was refused.",
+    "kind_weekly": "Weekly reset",
+    "kind_session": "5-hour reset",
+    "kind_full": "Full reset",
+    "kind_fable": "Fable reset",
+    "kind_unknown": "Reset grant",
+    "selected_grant": "Selected reset: {{kind}} · {{label}}",
+    "redeem_grant": "Redeem {{kind}} · {{label}}",
+    "retry_grant": "Retry {{kind}} · {{label}}",
+    "no_usage": "No Fable usage to reset.",
+    "fable_hint": "Refills Fable and returns its share to your weekly allowance. Other weekly usage stays unchanged.",
+    "exact_grant_hint": "Uses exactly this reset grant."
   },
   "siwc": {
     "title": "Bind SIWC",

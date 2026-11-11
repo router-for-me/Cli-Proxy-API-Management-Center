@@ -87,23 +87,32 @@ export function QuotaCard(props: QuotaCardProps) {
     quota?.error || t('common.unknown_error')
   );
   // Claude banked resets join the plan chip row; their expiry list follows it.
-  const showClaudeReset = entry.type === 'claude' && status === 'success';
+  const showClaudeReset =
+    entry.type === 'claude' && (status === 'success' || Boolean(claudeReset.pendingGrantId));
   const claudePlanItems = showClaudeReset ? (
     <span className={quotaClasses.codexPlanItem}>
       <span className={quotaClasses.codexPlanLabel}>{t('claude_reset.remaining')}</span>
       <span className={quotaClasses.codexPlanValue}>{claudeReset.count ?? '--'}</span>
     </span>
   ) : undefined;
-  const claudeAfterPlan = showClaudeReset ? (
+  const claudeGrantDetails = (
     <>
-      <ClaudeResetGrantDetails grants={claudeReset.grants} classes={quotaClasses} />
+      <ClaudeResetGrantDetails
+        grants={claudeReset.grants}
+        classes={quotaClasses}
+        onRedeem={claudeReset.confirm}
+        canRedeem={claudeReset.canRedeemGrant}
+        busy={claudeReset.busy}
+        pendingGrantId={claudeReset.pendingGrantId}
+      />
       {claudeReset.message && (
         <div role="status" className={quotaClasses.codexResetCreditsError}>
           {t(`claude_reset.${claudeReset.message}`)}
         </div>
       )}
     </>
-  ) : undefined;
+  );
+  const claudeAfterPlan = showClaudeReset ? claudeGrantDetails : undefined;
   const showReset =
     status === 'success' &&
     Boolean(adapter.resetQuota) &&
@@ -184,22 +193,15 @@ export function QuotaCard(props: QuotaCardProps) {
             afterPlan={claudeAfterPlan}
           />
         )}
+        {entry.type === 'claude' &&
+          claudeReset.pendingGrantId &&
+          status !== 'success' &&
+          !retainedClaudeUsage &&
+          claudeGrantDetails}
       </div>
 
       {status !== 'idle' && (
         <footer className={styles.actionRow}>
-          {entry.type === 'claude' && (
-            <button
-              type="button"
-              className={styles.actionPill}
-              disabled={claudeReset.blocked}
-              onClick={claudeReset.confirm}
-              title={t(`claude_reset.${claudeReset.buttonLabel}`)}
-            >
-              <IconRefreshCw size={13} className={claudeReset.busy ? styles.spinning : undefined} />
-              {t(`claude_reset.${claudeReset.buttonLabel}`)}
-            </button>
-          )}
           {showReset && (
             <button
               type="button"
