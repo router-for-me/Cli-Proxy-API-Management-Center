@@ -2424,7 +2424,22 @@
     "ineligible": "이 계정은 자격 요건을 충족하지 않습니다.",
     "unavailable": "현재 초기화를 사용할 수 없습니다.",
     "rate_limited": "요청 속도가 제한되었습니다.",
-    "auth_error": "인증이 거부되었습니다."
+    "auth_error": "인증이 거부되었습니다.",
+    "kind_weekly": "주간 초기화",
+    "kind_session": "5시간 초기화",
+    "kind_full": "전체 초기화",
+    "kind_fable": "Fable 초기화",
+    "kind_unknown": "초기화 크레딧",
+    "selected_grant": "선택한 초기화: {{kind}} · {{label}}",
+    "redeem_grant": "{{kind}} 사용 · {{label}}",
+    "retry_grant": "{{kind}} 재시도 · {{label}}",
+    "no_usage": "초기화할 Fable 사용량이 없습니다.",
+    "fable_hint": "Fable 한도를 복원하고 사용한 몫을 주간 한도로 반환합니다. 다른 주간 사용량은 유지됩니다.",
+    "exact_grant_hint": "이 초기화 크레딧만 사용합니다.",
+    "choose_grant": "초기화 크레딧 선택",
+    "no_grants": "사용 가능한 초기화 크레딧이 없습니다.",
+    "grant_expiry": "만료: {{date}}",
+    "grant_unavailable": "현재 사용할 수 없습니다."
   },
   "siwc": {
     "title": "SIWC 바인딩",

@@ -2424,7 +2424,22 @@
     "ineligible": "Bu Hesap Uygun Değil.",
     "unavailable": "Sıfırlamalar Şu Anda Kullanılamaz.",
     "rate_limited": "İstek Hızı Sınırlandı.",
-    "auth_error": "Yetkilendirme Reddedildi."
+    "auth_error": "Yetkilendirme Reddedildi.",
+    "kind_weekly": "Haftalık sıfırlama",
+    "kind_session": "5 saatlik sıfırlama",
+    "kind_full": "Tam sıfırlama",
+    "kind_fable": "Fable sıfırlaması",
+    "kind_unknown": "Sıfırlama hakkı",
+    "selected_grant": "Seçilen sıfırlama: {{kind}} · {{label}}",
+    "redeem_grant": "{{kind}} kullan · {{label}}",
+    "retry_grant": "{{kind}} yeniden dene · {{label}}",
+    "no_usage": "Sıfırlanacak Fable kullanımı yok.",
+    "fable_hint": "Fable kotasını doldurur ve kullandığı payı haftalık kotaya geri verir. Diğer haftalık kullanım değişmez.",
+    "exact_grant_hint": "Yalnızca bu sıfırlama hakkını kullanır.",
+    "choose_grant": "Sıfırlama hakkı seçin",
+    "no_grants": "Kullanılabilir sıfırlama hakkı yok.",
+    "grant_expiry": "Son kullanma: {{date}}",
+    "grant_unavailable": "Şu anda kullanılamıyor."
   },
   "siwc": {
     "title": "SIWC Bağla",
