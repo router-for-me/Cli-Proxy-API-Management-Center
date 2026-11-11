@@ -20,7 +20,13 @@ import {
   startOfLocalDay,
 } from './model';
 import { PoolForecastCard } from './PoolForecastCard';
-import { FORECAST_PROVIDERS, buildForecastPools, type ForecastProvider } from './pools';
+import {
+  FORECAST_PROVIDERS,
+  buildForecastPools,
+  summarizePools,
+  type ForecastProvider,
+  type PoolSummary,
+} from './pools';
 import type { ForecastPrefs } from './prefs';
 import { useQuotaHistory } from './useQuotaHistory';
 import styles from './QuotaForecastSection.module.scss';
@@ -34,6 +40,8 @@ export type QuotaForecastSectionProps = {
   refreshKey: number;
   /** Receives every loaded history so the account rows can reuse it. */
   onHistory?: (history: QuotaHistory | null) => void;
+  /** Receives each charted pool's headline figures, for the accounts list headers. */
+  onPools?: (pools: Record<string, PoolSummary>) => void;
   enabled: boolean;
   /** Weekly-reset routing is active, so the projection follows its priority window. */
   priorityRouting: boolean;
@@ -41,7 +49,7 @@ export type QuotaForecastSectionProps = {
 };
 
 export function QuotaForecastSection(props: QuotaForecastSectionProps) {
-  const { entries, tab, prefs, onPrefsChange, refreshKey, onHistory, enabled } = props;
+  const { entries, tab, prefs, onPrefsChange, refreshKey, onHistory, onPools, enabled } = props;
   const { priorityRouting, resolvedTheme } = props;
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'en';
@@ -118,6 +126,16 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
       range.to,
     ]
   );
+
+  // Only what the cards below actually chart: nothing while history is off or failed.
+  const charted = enabled && !unsupported && !error && history?.enabled !== false;
+  const poolSummaries = useMemo(
+    () => summarizePools(charted ? forecasts : []),
+    [charted, forecasts]
+  );
+  useEffect(() => {
+    onPools?.(poolSummaries);
+  }, [onPools, poolSummaries]);
 
   const weightRows = useMemo<WeightRow[]>(
     () =>

@@ -16,8 +16,9 @@
 
 .sectionHeader {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 9px;
+  gap: 4px 9px;
   padding: 16px 0 10px;
 }
 
@@ -49,11 +50,48 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Pool figures beside the provider name: what is left, and what the next reset returns. */
+.sectionStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 30px;
+  min-width: 0;
+  margin-left: 22px;
+}
+
+.sectionStat {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  white-space: nowrap;
+
+  strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+}
+
+/* Column header: the same grid as the rows below it. */
+.columns {
+  display: grid;
+  column-gap: 28px;
+  padding: 0 0 10px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .rowGroup {
   border-top: 1px solid var(--border-color);
 }
 
 .row {
+  position: relative;
   display: grid;
   align-items: center;
   column-gap: 28px;
@@ -67,7 +105,14 @@
 .account {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -77,6 +122,19 @@
   font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Plan tag, in the provider's color. */
+.plan {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--account-color) 15%, transparent);
+  color: var(--account-color);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
   white-space: nowrap;
 }
 
@@ -94,17 +152,12 @@
   }
 }
 
-.plan {
-  font-weight: 500;
-}
-
 .status {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
   max-width: 100%;
-  margin-top: 2px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -118,6 +171,10 @@
   height: 6px;
   border-radius: 50%;
   background: var(--text-secondary);
+}
+
+.status_priority .statusDot {
+  background: var(--account-color);
 }
 
 .status_quiet {
@@ -142,19 +199,89 @@
 .cell {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
+  container-type: inline-size;
 }
 
-.cellHead {
+/* The column header shows the label; cells keep it for assistive tech and the stacked layout. */
+.cellLabel,
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cellValue {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 8px;
   min-width: 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-.cellLabel {
+/* Plain until a window runs low; red only once it is spent. */
+.tone_low {
+  color: var(--quota-medium-color);
+}
+
+.tone_empty {
+  color: var(--viz-failure);
+}
+
+.lowTag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+
+  /* An icon has no baseline of its own; nudge it onto the text's optical center. */
+  svg {
+    flex: none;
+    transform: translateY(1.5px);
+  }
+}
+
+/* In a tight column the warning keeps its icon and drops the word. */
+@container (max-width: 170px) {
+  .lowText {
+    display: none;
+  }
+}
+
+.track {
+  position: relative;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--text-primary);
+}
+
+.fill_low {
+  background: var(--quota-medium-color);
+}
+
+.fill_empty {
+  background: var(--viz-failure);
+}
+
+.cellFoot {
   overflow: hidden;
   color: var(--text-tertiary);
   font-size: 13px;
@@ -162,54 +289,76 @@
   white-space: nowrap;
 }
 
-.cellValue {
-  flex: none;
+.cellMuted {
+  .cellValue,
+  .cellFoot {
+    color: var(--text-quaternary);
+  }
+
+  .track {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- banked resets ---------- */
+
+.resets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resetsEmpty {
+  color: var(--text-quaternary);
+  font-size: 13px;
+}
+
+/* The buttons share one track, so they line up down the section. */
+.resetLine {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 30px;
+}
+
+.resetText {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.resetCount {
+  /* One digit wide in every row, so the kinds line up down the column. */
+  min-width: 1ch;
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.tone_low {
-  color: var(--quota-medium-color);
-}
-
-.tone_critical {
-  color: var(--viz-failure);
-}
-
-.track {
-  position: relative;
-  height: 4px;
+.resetKind {
   overflow: hidden;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
-}
-
-.fill {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-}
-
-.cellFoot {
-  overflow: hidden;
-  color: var(--text-tertiary);
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
-  white-space: nowrap;
-
-  strong {
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
 }
 
-.cellMuted {
-  .cellLabel,
-  .cellFoot {
-    color: var(--text-quaternary);
+.resetExpiry {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+
+  svg {
+    flex: none;
+    transform: translateY(1.5px);
   }
 }
 
@@ -280,27 +429,24 @@
 
 /* ---------- actions ---------- */
 
+/* Pulled toward the reset buttons, so refresh and "use a reset" read as one group. */
 .actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 2px;
+  margin-left: -10px;
 }
 
-.action {
+.iconButton {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 30px;
   height: 30px;
-  padding: 0 8px;
+  padding: 0;
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--text-tertiary);
-  font: inherit;
-  font-size: 13px;
-  white-space: nowrap;
+  color: var(--text-secondary);
   cursor: pointer;
   transition:
     background-color var(--dur-hover) var(--ease-out-strong),
@@ -313,7 +459,7 @@
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.45;
+    opacity: 0.35;
   }
 
   &:focus-visible {
@@ -338,18 +484,49 @@
   font-size: 12.5px;
 }
 
+/* A setting under the row, such as QuotaCard's Codex credit row. */
+.rowExtra {
+  padding: 0 0 12px;
+  font-size: 12.5px;
+}
+
 @media (max-width: 1100px) {
+  .columns {
+    display: none;
+  }
+
+  /* The pool figures take their own line, flush with the provider name. */
+  .sectionStats {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
   .row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .account,
-  .actions {
+  /* Refresh sits beside the name instead of taking a line of its own. */
+  .account {
     grid-column: 1 / -1;
+    padding-right: 40px;
   }
 
   .actions {
-    justify-content: flex-start;
+    position: absolute;
+    top: 12px;
+    right: 0;
+    margin-left: 0;
+  }
+
+  .cellLabel {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: hidden;
+    clip-path: none;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    text-overflow: ellipsis;
   }
 
   .loadButton,
@@ -367,7 +544,7 @@
   }
 
   .loadButton,
-  .action {
+  .iconButton {
     transition: none;
   }
 }

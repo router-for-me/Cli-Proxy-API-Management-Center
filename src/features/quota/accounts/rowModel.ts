@@ -10,7 +10,7 @@
 import type { TFunction } from 'i18next';
 import type { QuotaHistoryAccount, QuotaHistoryRouting } from '@/services/api/quotaHistory';
 import type { AuthFileItem } from '@/types/authFile';
-import { HOUR_MS } from '@/utils/time/durations';
+import { DAY_MS, HOUR_MS, MINUTE_MS } from '@/utils/time/durations';
 import { parseTimestampMs } from '@/utils/timestamp';
 import type { QuotaProviderType } from '../providers/types';
 
@@ -347,8 +347,50 @@ export const routingPlacement = (
         sessionLimited: hasSessionWindow,
       };
 
-/** Severity of a remaining percentage, for the number's color. */
+/** Below this much left, a window reads as low in the accounts list. */
+export const LOW_REMAINING_PERCENT = 20;
+
+/**
+ * How a window reads in the accounts list: plain until it runs low, a warning
+ * while low, and spent once nothing is left (what the row shows as 0%).
+ */
+export const meterTone = (remaining: number | null): 'normal' | 'low' | 'empty' => {
+  if (remaining === null) return 'normal';
+  if (Math.round(remaining) <= 0) return 'empty';
+  return remaining < LOW_REMAINING_PERCENT ? 'low' : 'normal';
+};
+
+/**
+ * Time left as the two largest units ("19h 12m", "2d 0h"). Truncated, so it
+ * never claims more time than remains; all zero under a minute.
+ */
+export const timeLeftParts = (
+  remainingMs: number
+): { days: number; hours: number; minutes: number } => {
+  const totalMinutes = Math.max(0, Math.floor(remainingMs / MINUTE_MS));
+  return {
+    days: Math.floor(totalMinutes / (24 * 60)),
+    hours: Math.floor((totalMinutes % (24 * 60)) / 60),
+    minutes: totalMinutes % 60,
+  };
+};
+
+/** Severity of a remaining percentage, for the number's color (dashboard). */
 export const remainingTone = (remaining: number | null): 'normal' | 'low' | 'critical' => {
   if (remaining === null || remaining >= 60) return 'normal';
   return remaining >= 20 ? 'low' : 'critical';
+};
+
+/**
+ * Time left in one short figure for a tight column: whole days from two days,
+ * whole hours below that, and "under an hour" at the end. Truncated, so it never
+ * claims more time than remains.
+ */
+export const compactRemaining = (
+  remainingMs: number
+): { unit: 'day' | 'hour'; value: number; under: boolean } => {
+  const left = Math.max(0, remainingMs);
+  if (left >= 2 * DAY_MS) return { unit: 'day', value: Math.floor(left / DAY_MS), under: false };
+  if (left >= HOUR_MS) return { unit: 'hour', value: Math.floor(left / HOUR_MS), under: false };
+  return { unit: 'hour', value: 1, under: true };
 };

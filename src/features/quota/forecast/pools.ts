@@ -8,7 +8,7 @@ import type { QuotaHistory, QuotaHistoryAccount } from '@/services/api/quotaHist
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { maskEmails } from '../emailMask';
 import type { QuotaFileEntry } from '../logic';
-import type { ForecastAccountInput } from './model';
+import type { ForecastAccountInput, PoolForecast } from './model';
 import { planWeightKey } from './prefs';
 
 /** Providers whose quota the backend collector records. */
@@ -56,6 +56,34 @@ export type ForecastPool = {
   /** Enabled credentials of this provider without recorded samples yet. */
   unrecordedCount: number;
 };
+
+/** What the accounts list shows of a pool beside its provider name. */
+export type PoolSummary = {
+  /** Pool percent left now, and the pool's full size. */
+  remaining: number;
+  capacity: number;
+  /** The next projected reset and the pool percent it returns. */
+  nextReset: { t: number; amount: number } | null;
+};
+
+/** Headline figures of each pool that has recorded accounts, by provider. */
+export const summarizePools = (
+  forecasts: { pool: ForecastPool; forecast: PoolForecast }[]
+): Record<string, PoolSummary> =>
+  Object.fromEntries(
+    forecasts
+      .filter(({ pool }) => pool.accounts.length > 0)
+      .map(({ pool, forecast }) => [
+        pool.provider,
+        {
+          remaining: forecast.remaining,
+          capacity: forecast.capacity,
+          nextReset: forecast.nextReset
+            ? { t: forecast.nextReset.t, amount: forecast.nextReset.amount }
+            : null,
+        },
+      ])
+  );
 
 const isEmail = (value: string) => /@/.test(value);
 

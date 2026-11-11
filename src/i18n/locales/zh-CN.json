@@ -488,7 +488,7 @@
     "seven_day_sonnet": "Sonnet 周限额",
     "seven_day_cowork": "Cowork 周限额",
     "iguana_necktie": "Iguana Necktie",
-    "seven_day_fable": "Fable 5 周限额",
+    "seven_day_fable": "Fable 周限额",
     "cloud_session_credits": "云端会话额度",
     "extra_usage_label": "额外用量",
     "extra_usage_enabled": "已启用",
@@ -2508,7 +2508,8 @@
     "choose_grant": "选择要使用的重置",
     "no_grants": "暂无可用的重置。",
     "grant_expiry": "到期时间：{{date}}",
-    "grant_unavailable": "当前不可使用。"
+    "grant_unavailable": "当前不可使用。",
+    "confirm_text_fable": "确定为“{{name}}”消耗一次 Fable 重置？它会恢复 Fable 限额，并把本周 Fable 的用量退回每周限额。重置次数有限。"
   },
   "siwc": {
     "title": "绑定 SIWC",
@@ -2661,10 +2662,18 @@
     "weight": "权重 {{weight}}",
     "renews": "续订 {{absolute}} · {{relative}}",
     "use_reset": "使用一次重置",
-    "claude_bank_hint": "使用后清除符合条件的限额",
-    "codex_bank_hint": "使用后重置额度",
-    "available": "{{count}} 次可用",
     "next_expires": "最近到期",
-    "status_cooling": "冷却中 · {{relative}}重试"
+    "status_cooling": "冷却中 · {{relative}}重试",
+    "col_account": "账号",
+    "col_resets": "重置次数",
+    "low": "偏低",
+    "reset_general": "通用",
+    "reset_fable": "Fable",
+    "reset_available": "可用",
+    "resets_none": "无",
+    "use_reset_general": "使用一次通用重置",
+    "use_reset_fable": "使用一次 Fable 重置",
+    "resets_in": "{{duration}}后重置",
+    "pool_capacity": "额度池共 {{capacity}}"
   }
 }

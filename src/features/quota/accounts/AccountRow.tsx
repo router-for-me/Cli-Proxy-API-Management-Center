@@ -1,11 +1,12 @@
 /**
- * One account on one line: identity, a meter per quota window, banked resets,
- * and actions.
+ * One account on one line: identity and plan, a meter per quota window, banked
+ * resets by kind with the button that spends one, and refresh.
  */
 
 import type { CSSProperties } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { IconRefreshCw } from '@/components/ui/icons';
+import { IconAlertTriangle, IconRefreshCw } from '@/components/ui/icons';
 import type { CodexQuotaState } from '@/types';
 import { resolveQuotaErrorMessage, resolveResetMs } from '@/utils/quota';
 import { formatInstantShort, formatRelativeInstant } from '@/utils/quota/relativeTime';
@@ -13,11 +14,16 @@ import { MINUTE_MS } from '@/utils/time/durations';
 import { bindQuotaClasses } from '../types';
 import { QUOTA_ADAPTERS, type QuotaCardState } from '../providers';
 import { isQuotaRefreshDisabled, type QuotaFileEntry } from '../logic';
-import { useClaudeResetGrants } from '../providers/claude/ClaudeResetGrants';
+import { useClaudeResetGrants, type ClaudeResetLine } from '../providers/claude/ClaudeResetGrants';
+import { CodexCreditOverageDialog } from '../providers/codex/CodexCreditOverageDialog';
+import { CodexCreditOverageRow } from '../providers/codex/CodexCreditOverageRow';
+import { useCodexCreditOverage } from '../providers/codex/useCodexCreditOverage';
 import bodyStyles from '../components/QuotaBody.module.scss';
+import { ResetsCell, type ResetLine } from './ResetsCell';
 import {
   credentialStatus,
-  remainingTone,
+  meterTone,
+  timeLeftParts,
   weeklyResetMs,
   type AccountColumn,
   type AccountWindowCell,
@@ -45,6 +51,8 @@ export type AccountRowProps = {
   locale: string;
   canRefresh: boolean;
   resetting: boolean;
+  /** Codex only: credentials in the panel sharing this account user's credit setting. */
+  creditOverageSharedCount?: number;
   onRefresh: () => void;
   onReset: () => void;
 };
@@ -52,7 +60,7 @@ export type AccountRowProps = {
 export function AccountRow(props: AccountRowProps) {
   const { entry, quota, name, plan, columns, cells, recordedAtMs, showBank } = props;
   const { boosted, color, gridTemplate, now, locale, canRefresh, resetting } = props;
-  const { onRefresh, onReset } = props;
+  const { creditOverageSharedCount = 1, onRefresh, onReset } = props;
   const { t } = useTranslation();
   const adapter = QUOTA_ADAPTERS[entry.type];
   const file = entry.file;
@@ -66,6 +74,12 @@ export function AccountRow(props: AccountRowProps) {
     !canRefresh || loading || resetting,
     quota,
     onRefresh
+  );
+  // QuotaCard's Codex credit setting, on the row like the card's other actions.
+  const creditOverage = useCodexCreditOverage(
+    file,
+    entry.type === 'codex' ? (quota as CodexQuotaState | undefined) : undefined,
+    !canRefresh || loading || resetting
   );
   const codex = entry.type === 'codex' && loaded ? (quota as CodexQuotaState) : null;
   const showCodexReset = Boolean(
@@ -130,10 +144,12 @@ export function AccountRow(props: AccountRowProps) {
     windowArea = columns.map((column) => {
       const cell = cells.find((candidate) => candidate.id === column.id);
       return cell ? (
-        <WindowCell key={column.id} cell={cell} color={color} now={now} locale={locale} />
+        <WindowCell key={column.id} cell={cell} now={now} />
       ) : (
         <div key={column.id} className={`${styles.cell} ${styles.cellMuted}`}>
           <span className={styles.cellLabel}>{column.label}</span>
+          <span className={styles.cellValue}>—</span>
+          <span className={styles.track} aria-hidden="true" />
           <span className={styles.cellFoot}>{t('quota_accounts.not_on_plan')}</span>
         </div>
       );
@@ -173,41 +189,69 @@ export function AccountRow(props: AccountRowProps) {
     );
   }
 
+  let resetLines: ResetLine[] = [];
+  let resetsKnown = false;
+  if (entry.type === 'claude' && loaded) {
+    resetsKnown = claudeReset.known;
+    resetLines = claudeReset.lines.map((line) => claudeResetLine(line, t));
+  } else if (codex) {
+    const available = codex.rateLimitResetCreditsAvailableCount ?? null;
+    resetsKnown = available !== null;
+    if ((available ?? 0) > 0 || showCodexReset) {
+      resetLines = [
+        {
+          key: 'codex',
+          count: available,
+          label: t('quota_accounts.reset_available'),
+          expiresAtMs: nextCodexCreditExpiry(codex, now),
+          action: showCodexReset
+            ? {
+                label: t('quota_accounts.use_reset'),
+                disabled: !canRefresh || loading || resetting,
+                busy: resetting,
+                onClick: onReset,
+              }
+            : null,
+        },
+      ];
+    }
+  }
+
   return (
-    <div className={styles.rowGroup} role="listitem">
+    <div
+      className={styles.rowGroup}
+      role="listitem"
+      style={{ '--account-color': color } as CSSProperties}
+    >
       <div className={styles.row} style={{ gridTemplateColumns: gridTemplate }}>
         <div className={styles.account}>
-          <span className={styles.name} title={name}>
-            {name}
+          <span className={styles.nameLine}>
+            <span className={styles.name} title={name}>
+              {name}
+            </span>
+            {plan && <span className={styles.plan}>{plan}</span>}
           </span>
-          <span className={styles.meta}>
-            {plan && (
-              <span className={styles.plan} style={{ color }}>
-                {plan}
-              </span>
-            )}
-            {weight !== null && (
-              <span>{t('quota_accounts.weight', { weight: Number(weight.toFixed(2)) })}</span>
-            )}
-            {renewsAtMs !== null && (
-              <span>
-                {t('quota_accounts.renews', {
-                  absolute: formatInstantShort(renewsAtMs),
-                  relative: formatRelativeInstant(renewsAtMs, now, locale),
-                })}
-              </span>
-            )}
-          </span>
+          {(weight !== null || renewsAtMs !== null) && (
+            <span className={styles.meta}>
+              {weight !== null && (
+                <span>{t('quota_accounts.weight', { weight: Number(weight.toFixed(2)) })}</span>
+              )}
+              {renewsAtMs !== null && (
+                <span>
+                  {t('quota_accounts.renews', {
+                    absolute: formatInstantShort(renewsAtMs),
+                    relative: formatRelativeInstant(renewsAtMs, now, locale),
+                  })}
+                </span>
+              )}
+            </span>
+          )}
           {statusLine && (
             <span
               className={`${styles.status} ${styles[`status_${statusLine.tone}`] ?? ''}`}
               title={statusLine.text}
             >
-              <span
-                className={styles.statusDot}
-                style={statusLine.tone === 'priority' ? { background: color } : undefined}
-                aria-hidden="true"
-              />
+              <span className={styles.statusDot} aria-hidden="true" />
               {statusLine.text}
             </span>
           )}
@@ -216,162 +260,127 @@ export function AccountRow(props: AccountRowProps) {
         {windowArea}
 
         {showBank && (
-          <BankCell
-            type={entry.type}
-            claudeCount={loaded ? claudeReset.count : null}
-            codex={codex}
-            now={now}
-            locale={locale}
-          />
+          <ResetsCell lines={resetLines} known={resetsKnown} now={now} locale={locale} />
         )}
 
         <div className={styles.actions}>
-          {entry.type === 'claude' && loaded && (
-            <button
-              type="button"
-              className={styles.action}
-              disabled={claudeReset.blocked}
-              onClick={claudeReset.confirm}
-            >
-              <IconRefreshCw size={12} className={claudeReset.busy ? styles.spinning : undefined} />
-              {claudeReset.buttonLabel === 'retry'
-                ? t('claude_reset.retry')
-                : t('quota_accounts.use_reset')}
-            </button>
-          )}
-          {showCodexReset && (
-            <button
-              type="button"
-              className={styles.action}
-              onClick={onReset}
-              disabled={!canRefresh || loading || resetting}
-            >
-              <IconRefreshCw size={12} className={resetting ? styles.spinning : undefined} />
-              {t('quota_accounts.use_reset')}
-            </button>
-          )}
           <button
             type="button"
-            className={styles.action}
+            className={styles.iconButton}
             onClick={onRefresh}
             disabled={isQuotaRefreshDisabled(canRefresh, loading, resetting || claudeReset.busy)}
+            aria-label={t('auth_files.quota_refresh_single')}
             title={t('auth_files.quota_refresh_hint')}
           >
-            <IconRefreshCw size={12} className={loading ? styles.spinning : undefined} />
-            {t('auth_files.quota_refresh_single')}
+            <IconRefreshCw size={15} className={loading ? styles.spinning : undefined} />
           </button>
         </div>
       </div>
+
+      {creditOverage.visible && (
+        <div className={styles.rowExtra}>
+          <CodexCreditOverageRow
+            entry={creditOverage.entry}
+            classes={quotaClasses}
+            disabled={creditOverage.blocked}
+            name={name}
+            onManage={creditOverage.openDialog}
+          />
+        </div>
+      )}
 
       {claudeReset.message && entry.type === 'claude' && loaded && (
         <div role="status" className={styles.rowNote}>
           {t(`claude_reset.${claudeReset.message}`)}
         </div>
       )}
-    </div>
-  );
-}
 
-function WindowCell({
-  cell,
-  color,
-  now,
-  locale,
-}: {
-  cell: AccountWindowCell;
-  color: string;
-  now: number;
-  locale: string;
-}) {
-  const { t } = useTranslation();
-  const tone = remainingTone(cell.remaining);
-  const pending = cell.resetAtMs !== null && cell.resetAtMs > now;
-  return (
-    <div className={styles.cell}>
-      <span className={styles.cellHead}>
-        <span className={styles.cellLabel} title={cell.label}>
-          {cell.label}
-        </span>
-        <span className={`${styles.cellValue} ${styles[`tone_${tone}`] ?? ''}`}>
-          {cell.remaining === null
-            ? '—'
-            : t('quota_accounts.percent_left', { percent: Math.round(cell.remaining) })}
-        </span>
-      </span>
-      <span className={styles.track} aria-hidden="true">
-        <span
-          className={styles.fill}
-          style={{
-            width: `${cell.remaining ?? 0}%`,
-            background: tone === 'critical' ? 'var(--viz-failure)' : color,
-          }}
+      {creditOverage.context && (
+        <CodexCreditOverageDialog
+          open={creditOverage.open}
+          context={creditOverage.context}
+          entry={creditOverage.entry}
+          operation={creditOverage.operation}
+          writeDisabled={creditOverage.writeDisabled}
+          contextCurrent={creditOverage.contextCurrent}
+          sharedCredentialCount={creditOverageSharedCount}
+          selection={creditOverage.selection}
+          pendingTarget={creditOverage.pendingTarget}
+          feedback={creditOverage.feedback}
+          onSelect={creditOverage.selectValue}
+          onSave={() => void creditOverage.save()}
+          onClose={creditOverage.closeDialog}
         />
-      </span>
-      <span className={styles.cellFoot}>
-        {pending ? (
-          <>
-            <strong>{formatRelativeInstant(cell.resetAtMs as number, now, locale)}</strong>
-            {' · '}
-            {formatInstantShort(cell.resetAtMs as number)}
-          </>
-        ) : (
-          t('quota_accounts.no_reset')
-        )}
-      </span>
+      )}
     </div>
   );
 }
 
-function BankCell({
-  type,
-  claudeCount,
-  codex,
-  now,
-  locale,
-}: {
-  type: string;
-  claudeCount: number | null;
-  codex: CodexQuotaState | null;
-  now: number;
-  locale: string;
-}) {
-  const { t } = useTranslation();
-  if (type === 'claude') {
-    return (
-      <div className={styles.cell}>
-        <span className={styles.cellHead}>
-          <span className={styles.cellLabel}>{t('claude_reset.title')}</span>
-          <span className={styles.cellValue}>{claudeCount ?? '—'}</span>
-        </span>
-        <span className={styles.cellFoot}>{t('quota_accounts.claude_bank_hint')}</span>
-      </div>
-    );
-  }
-  const available = codex?.rateLimitResetCreditsAvailableCount ?? null;
-  const next = (codex?.rateLimitResetCredits ?? [])
+const claudeResetLine = (line: ClaudeResetLine, t: (key: string) => string): ResetLine => ({
+  key: line.kind ?? 'retry',
+  count: line.count,
+  label: line.kind ? t(`quota_accounts.reset_${line.kind}`) : null,
+  expiresAtMs: line.expiresAtMs,
+  action: {
+    label:
+      line.retry || !line.kind
+        ? t('claude_reset.retry')
+        : t(`quota_accounts.use_reset_${line.kind}`),
+    disabled: line.blocked,
+    busy: line.busy,
+    onClick: line.confirm,
+  },
+});
+
+/** When the first available Codex reset credit expires. */
+const nextCodexCreditExpiry = (codex: CodexQuotaState, now: number): number | null =>
+  (codex.rateLimitResetCredits ?? [])
     .filter((credit) => credit.status === 'available')
     .map((credit) => Date.parse(credit.expiresAt))
     .filter((ms) => Number.isFinite(ms) && ms > now)
-    .sort((a, b) => a - b)[0];
+    .sort((a, b) => a - b)[0] ?? null;
+
+/** "19h 12m" in the UI language; the unit strings are shared with the Antigravity countdown. */
+const formatTimeLeft = (t: TFunction, remainingMs: number): string => {
+  const { days, hours, minutes } = timeLeftParts(remainingMs);
+  if (days > 0) return t('antigravity_quota.duration_day_hour', { days, hours });
+  if (hours > 0) return t('antigravity_quota.duration_hour_minute', { hours, minutes });
+  if (minutes > 0) return t('antigravity_quota.duration_minute', { minutes });
+  return t('antigravity_quota.duration_less_than_minute');
+};
+
+function WindowCell({ cell, now }: { cell: AccountWindowCell; now: number }) {
+  const { t } = useTranslation();
+  const tone = meterTone(cell.remaining);
+  const resetAtMs = cell.resetAtMs !== null && cell.resetAtMs > now ? cell.resetAtMs : null;
   return (
     <div className={styles.cell}>
-      <span className={styles.cellHead}>
-        <span className={styles.cellLabel}>{t('codex_quota.reset_credits_label')}</span>
-        <span className={styles.cellValue}>
-          {available === null ? '—' : t('quota_accounts.available', { count: available })}
-        </span>
-      </span>
-      <span className={styles.cellFoot}>
-        {next !== undefined ? (
-          <>
-            {t('quota_accounts.next_expires')}{' '}
-            <strong>{formatRelativeInstant(next, now, locale)}</strong>
-            {' · '}
-            {formatInstantShort(next)}
-          </>
-        ) : (
-          t('quota_accounts.codex_bank_hint')
+      <span className={styles.cellLabel}>{cell.label}</span>
+      <span className={`${styles.cellValue} ${styles[`tone_${tone}`] ?? ''}`}>
+        {cell.remaining === null
+          ? '—'
+          : t('quota_accounts.percent_left', { percent: Math.round(cell.remaining) })}
+        {tone === 'low' && (
+          <span className={styles.lowTag} title={t('quota_accounts.low')}>
+            <IconAlertTriangle size={12} />
+            <span className={styles.lowText}>{t('quota_accounts.low')}</span>
+          </span>
         )}
+      </span>
+      <span className={styles.track} aria-hidden="true">
+        <span
+          className={`${styles.fill} ${styles[`fill_${tone}`] ?? ''}`}
+          style={{ width: `${cell.remaining ?? 0}%` }}
+        />
+      </span>
+      {/* Time left only; the exact instant is one hover away. */}
+      <span
+        className={styles.cellFoot}
+        title={resetAtMs === null ? undefined : formatInstantShort(resetAtMs)}
+      >
+        {resetAtMs === null
+          ? t('quota_accounts.no_reset')
+          : t('quota_accounts.resets_in', { duration: formatTimeLeft(t, resetAtMs - now) })}
       </span>
     </div>
   );

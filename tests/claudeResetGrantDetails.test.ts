@@ -24,6 +24,7 @@ const grant = (overrides: Partial<AnthropicResetGrant> = {}): AnthropicResetGran
   paused: false,
   usableNow: true,
   useRequiresLimit: true,
+  givesBackWeekly: false,
   percentUsed: {},
   ...overrides,
 });

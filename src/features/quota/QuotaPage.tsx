@@ -29,6 +29,7 @@ import { AccountsTable } from './accounts/AccountsTable';
 import { WEEKLY_RESET_STRATEGY } from './accounts/rowModel';
 import { maskEmails } from './emailMask';
 import { QuotaForecastSection } from './forecast/QuotaForecastSection';
+import type { PoolSummary } from './forecast/pools';
 import { useForecastPrefs } from './forecast/prefs';
 import {
   QUOTA_PAGE_SIZE,
@@ -49,6 +50,10 @@ import {
 } from './logic';
 import { nextRecoveryMs } from './resetSchedule';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers';
+import {
+  codexCreditOverageKey,
+  countCodexCreditOverageKeys,
+} from './providers/codex/creditOverage';
 import type { QuotaProviderType } from './providers/types';
 import { useDevinQuotaAutoLoad } from './providers/devin/useDevinQuotaAutoLoad';
 import { useQuotaActions } from './hooks/useQuotaActions';
@@ -80,6 +85,8 @@ export function QuotaPage() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   // Recorded history, shared by the pool charts and the account rows.
   const [forecastHistory, setForecastHistory] = useState<QuotaHistory | null>(null);
+  // Pool figures from the charts, repeated in the account list's provider headers.
+  const [poolSummaries, setPoolSummaries] = useState<Record<string, PoolSummary>>({});
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -214,6 +221,21 @@ export function QuotaPage() {
     [showEmails]
   );
   const tabCounts = useMemo(() => buildTabCounts(entries), [entries]);
+  // Account-level settings span every page and tab, so count over all entries.
+  const codexCreditOverageCounts = useMemo(
+    () =>
+      countCodexCreditOverageKeys(
+        entries.filter((entry) => entry.type === 'codex').map((entry) => entry.file)
+      ),
+    [entries]
+  );
+  const creditOverageCountFor = useCallback(
+    (entry: QuotaFileEntry) =>
+      entry.type === 'codex'
+        ? codexCreditOverageCounts.get(codexCreditOverageKey(entry.file) ?? '')
+        : undefined,
+    [codexCreditOverageCounts]
+  );
   // The plugin tab only appears once a plugin credential exists.
   const visibleTabIds = useMemo(
     () => TAB_IDS.filter((id) => id !== 'plugin' || (tabCounts[id] ?? 0) > 0 || tab === id),
@@ -396,6 +418,7 @@ export function QuotaPage() {
           onPrefsChange={updateForecastPrefs}
           refreshKey={historyRefreshKey}
           onHistory={setForecastHistory}
+          onPools={setPoolSummaries}
           enabled={!disableControls && filesGeneration === sessionGeneration}
           priorityRouting={priorityRouting}
           resolvedTheme={resolvedTheme}
@@ -487,10 +510,12 @@ export function QuotaPage() {
             quotaFor={getQuota}
             nameFor={accountNameFor}
             history={forecastHistory}
+            pools={poolSummaries}
             priorityRouting={priorityRouting}
             resolvedTheme={resolvedTheme}
             canUseActions={canUseActions}
             resettingName={resettingQuotaName}
+            creditOverageCountFor={creditOverageCountFor}
             onRefresh={(entry) => void refreshQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
             onReset={(entry) => resetQuota(entry.file, QUOTA_ADAPTERS[entry.type])}
           />

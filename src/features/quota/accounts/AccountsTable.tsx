@@ -1,6 +1,7 @@
 /**
- * Accounts grid: provider sections, one line per credential. Window columns are
- * shared within a section so meters line up down the page.
+ * Accounts grid: provider sections, one line per credential under a shared
+ * column header. Window columns are shared within a section so meters line up
+ * down the page.
  */
 
 import { useMemo } from 'react';
@@ -17,6 +18,8 @@ import type { QuotaHistory, QuotaHistoryAccount } from '@/services/api/quotaHist
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from '../logic';
+import { formatJump, formatPoolPercent, formatUpcoming } from '../forecast/format';
+import type { PoolSummary } from '../forecast/pools';
 import type { QuotaCardState } from '../providers';
 import { AccountRow } from './AccountRow';
 import {
@@ -44,10 +47,14 @@ export type AccountsTableProps = {
   quotaFor: (entry: QuotaFileEntry) => QuotaCardState | undefined;
   nameFor: (entry: QuotaFileEntry) => string;
   history: QuotaHistory | null;
+  /** Pool figures by provider, shown beside the provider name. */
+  pools?: Record<string, PoolSummary>;
   priorityRouting: boolean;
   resolvedTheme: ResolvedTheme;
   canUseActions: boolean;
   resettingName: string | null;
+  /** Codex only: how many credentials share an entry's account-level credit setting. */
+  creditOverageCountFor?: (entry: QuotaFileEntry) => number | undefined;
   onRefresh: (entry: QuotaFileEntry) => void;
   onReset: (entry: QuotaFileEntry) => void;
 };
@@ -101,8 +108,8 @@ const planOf = (
 };
 
 export function AccountsTable(props: AccountsTableProps) {
-  const { entries, quotaFor, nameFor, history, priorityRouting, resolvedTheme } = props;
-  const { canUseActions, resettingName, onRefresh, onReset } = props;
+  const { entries, quotaFor, nameFor, history, pools, priorityRouting, resolvedTheme } = props;
+  const { canUseActions, resettingName, creditOverageCountFor, onRefresh, onReset } = props;
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'en';
   const now = useNow();
@@ -154,12 +161,13 @@ export function AccountsTable(props: AccountsTableProps) {
           )
         : new Set<string>();
       const showBank = type === 'claude' || type === 'codex';
+      // Fixed tracks only: the header and every row must resolve to the same columns.
       const gridTemplate = [
-        'minmax(210px, 1.35fr)',
+        'minmax(200px, 1.3fr)',
         `repeat(${Math.max(1, columns.length)}, minmax(128px, 1fr))`,
-        showBank ? 'minmax(140px, 0.8fr)' : '',
-        // Room for "Use a reset" too, so a refreshed row's meters stay aligned with the rest.
-        showBank ? 'minmax(228px, auto)' : 'minmax(150px, auto)',
+        // Capped, so the "use a reset" button stays beside its line on wide screens.
+        showBank ? 'minmax(176px, 184px)' : '',
+        '30px',
       ]
         .filter(Boolean)
         .join(' ');
@@ -174,6 +182,7 @@ export function AccountsTable(props: AccountsTableProps) {
         const icon = getAuthFileIcon(section.type, resolvedTheme);
         const palette = PROVIDER_COLORS[section.type] ?? NEUTRAL_COLOR;
         const color = resolvedTheme === 'dark' ? palette.dark : palette.light;
+        const pool = pools?.[section.type];
         return (
           <section key={section.type} className={styles.section} aria-label={label}>
             <header className={styles.sectionHeader}>
@@ -191,7 +200,40 @@ export function AccountsTable(props: AccountsTableProps) {
               )}
               <h3 className={styles.sectionTitle}>{label}</h3>
               <span className={styles.sectionCount}>{section.rows.length}</span>
+              {pool && (
+                <span className={styles.sectionStats}>
+                  <span className={styles.sectionStat}>
+                    <strong>{formatPoolPercent(pool.remaining)}</strong>{' '}
+                    {t('quota_accounts.pool_capacity', {
+                      capacity: formatPoolPercent(pool.capacity),
+                    })}
+                  </span>
+                  {pool.nextReset && (
+                    <span className={styles.sectionStat}>
+                      {t('quota_forecast.next_reset')} {formatJump(pool.nextReset.amount)}
+                      {' · '}
+                      {formatUpcoming(pool.nextReset.t, now, locale)}
+                    </span>
+                  )}
+                </span>
+              )}
             </header>
+            {/* Visual only: each cell names its own column for assistive tech. */}
+            <div
+              className={styles.columns}
+              style={{ gridTemplateColumns: section.gridTemplate }}
+              aria-hidden="true"
+            >
+              <span>{t('quota_accounts.col_account')}</span>
+              {section.columns.length === 0 && <span />}
+              {section.columns.map((column) => (
+                <span key={column.id} title={column.label}>
+                  {column.label}
+                </span>
+              ))}
+              {section.showBank && <span>{t('quota_accounts.col_resets')}</span>}
+              <span />
+            </div>
             <div role="list">
               {section.rows.map((row) => (
                 <AccountRow
@@ -211,6 +253,7 @@ export function AccountsTable(props: AccountsTableProps) {
                   locale={locale}
                   canRefresh={canUseActions && !row.entry.file.disabled}
                   resetting={resettingName === getQuotaCacheKey(row.entry.file)}
+                  creditOverageSharedCount={creditOverageCountFor?.(row.entry)}
                   onRefresh={() => onRefresh(row.entry)}
                   onReset={() => onReset(row.entry)}
                 />

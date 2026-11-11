@@ -70,6 +70,7 @@ describe('Claude reset grant fail-closed parsing', () => {
       { paused: 'false' },
       { starts_at: 'bad' },
       { clears: {} },
+      { gives_back_weekly: 'true' },
     ]) {
       expect(
         parseAnthropicResetGrantStatus({ ...block, grants: [{ ...grant, ...fields }] })
