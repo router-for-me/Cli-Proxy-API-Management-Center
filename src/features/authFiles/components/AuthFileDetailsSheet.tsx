@@ -18,6 +18,7 @@ import {
   supportsAuthFileWebsockets,
 } from '@/features/authFiles/constants';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import { CodexAccountSettings } from './CodexAccountSettings';
 import { AuthFileExcludedModelsField } from './AuthFileExcludedModelsField';
 import { AuthFilePolicyFields } from './AuthFilePolicyFields';
 import { credentialPolicyError, readCredentialPolicy } from '../credentialPolicy';
@@ -175,6 +176,13 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
           ) : (
             <>
               {editor.error && <div className={styles.error}>{editor.error}</div>}
+              {editor.providerKey === 'codex' && (
+                <CodexAccountSettings
+                  key={editor.fileInfoText}
+                  fileInfoText={editor.fileInfoText}
+                  disabled={disableControls || editor.saving}
+                />
+              )}
               <div className={styles.jsonWrapper}>
                 <label className={styles.label}>{t('auth_files.prefix_proxy_info_label')}</label>
                 <textarea className={styles.textarea} rows={8} readOnly value={displayInfoText} />
