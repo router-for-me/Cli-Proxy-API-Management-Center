@@ -184,6 +184,28 @@
   overflow-y: auto;
 }
 
+.modelsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  max-width: 100%;
+
+  > button {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+
+.modelsActionLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
 .modelItem {
   padding: $spacing-sm $spacing-md;
   background-color: var(--bg-secondary);
