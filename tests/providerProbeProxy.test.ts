@@ -125,3 +125,106 @@ describe('provider probe proxy forwarding', () => {
     expect(sponsor).toContain('proxyUrl: entry.proxyUrl,\n    formHeaders: discoveryHeaders');
   });
 });
+
+describe('OpenAI connectivity token limits (#572)', () => {
+  const models = [
+    { name: 'reasoner', alias: 'reasoning-alias', useMaxCompletionTokens: true },
+    { name: 'legacy', alias: 'legacy-alias', useMaxCompletionTokens: false },
+    { name: 'default', alias: '' },
+    { name: 'alias-owner', alias: 'collision', useMaxCompletionTokens: true },
+    { name: 'collision', alias: '', useMaxCompletionTokens: false },
+    { name: ' Configured (high) ', alias: ' Friendly (low) ', useMaxCompletionTokens: true },
+  ];
+
+  test.each([
+    ['reasoner', true],
+    ['legacy', false],
+    ['default', false],
+    ['unknown', false],
+    ['reasoning-alias', true],
+    ['legacy-alias', false],
+    ['collision', false],
+    [' REASONER (high) ', true],
+    [' REASONING-ALIAS(anything) ', true],
+    ['configured', true],
+    ['friendly', true],
+    ['reasoner(unclosed', false],
+    ['(high)', false],
+    ['', true],
+    ['   ', true],
+    [undefined, true],
+  ] as const)('selected model %s uses completion tokens: %s', async (testModel, completion) => {
+    requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+    const hook = captureHook(() =>
+      useConnectivityTest(
+        {
+          ...args,
+          brand: 'openaiCompatibility',
+          testModel,
+          models: [{ name: ' ', alias: 'ignored' }, ...models],
+          apiKeyEntries: [{ apiKey: '', authIndex: 'fixture-auth', proxyUrl: ' direct ' }],
+          formHeaders: [{ key: 'X-Probe', value: 'fixture' }],
+        },
+        messages
+      )
+    );
+    expect(await hook.runOpenAIKey(0)).toBe(true);
+    const [request, options] = requestSpy.mock.calls[0];
+    expect(JSON.parse(request.data!)).toEqual({
+      model: testModel?.trim() || 'reasoner',
+      messages: [{ role: 'user', content: 'Hi' }],
+      stream: false,
+      ...(completion ? { max_completion_tokens: 5 } : { max_tokens: 5 }),
+    });
+    expect(request.authIndex).toBe('fixture-auth');
+    expect(request.proxy_url).toBe('direct');
+    expect(request.header).toEqual({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer $TOKEN$',
+      'X-Probe': 'fixture',
+    });
+    expect(options).toEqual({ timeout: 30_000 });
+  });
+
+  test('batch tests retain explicit authorization and use the selected model flag', async () => {
+    requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+    const hook = captureHook(() =>
+      useConnectivityTest(
+        {
+          ...args,
+          brand: 'openaiCompatibility',
+          models,
+          apiKeyEntries: [
+            { apiKey: 'fixture-key', proxyUrl: 'direct' },
+            { apiKey: '', existingApiKey: 'fixture-existing', proxyUrl: '' },
+          ],
+          formHeaders: [{ key: 'authorization', value: 'Bearer fixture-custom' }],
+        },
+        messages
+      )
+    );
+    await hook.runOpenAIAllKeys();
+    expect(requestSpy.mock.calls).toHaveLength(2);
+    for (const [request] of requestSpy.mock.calls) {
+      expect(request.header?.authorization).toBe('Bearer fixture-custom');
+      expect(request.header?.Authorization).toBeUndefined();
+      const body = JSON.parse(request.data!);
+      expect(body.max_completion_tokens).toBe(5);
+      expect(body).not.toHaveProperty('max_tokens');
+    }
+  });
+
+  test('model token preference participates in the status reset signature', () => {
+    // SSR does not run effects; guard the reset dependency with a source contract check.
+    const source = readFileSync(
+      'src/features/providers/sheets/forms/useConnectivityTest.ts',
+      'utf8'
+    );
+    const signature = source.slice(
+      source.indexOf('const signature = useMemo'),
+      source.indexOf('const lastSignatureRef')
+    );
+    expect(signature).toContain('it.useMaxCompletionTokens === true');
+    expect(source).toContain('if (lastSignatureRef.current === signature) return;');
+  });
+});
