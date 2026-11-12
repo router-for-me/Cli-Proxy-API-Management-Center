@@ -604,7 +604,7 @@ export function AuthFilesPage() {
     .join(' ');
 
   // Credentials whose quota is loading, joined into one string so the selector result compares
-  // by value. Stacked keeps a loading card's last height, so a refresh doesn't move cards.
+  // by value. Stacked prevents loading cards from shrinking, but allows growth to avoid overlap.
   const loadingQuotaKeys = useQuotaStore((state) =>
     Object.values(QUOTA_ADAPTERS)
       .flatMap((adapter) =>

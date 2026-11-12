@@ -37,7 +37,7 @@ export const writeCardLayout = (storageKey: string, layout: CardLayout) => {
   }
 };
 
-/** Keep settled heights during refresh, but measure loading cards without a cached height. */
+/** Loading cards may grow to avoid overlap, but only settled cards may shrink. */
 export const updateStackedHeights = (
   previous: ReadonlyMap<string, number>,
   measured: readonly { key: string; height: number; settled: boolean }[]
@@ -46,7 +46,7 @@ export const updateStackedHeights = (
   for (const { key, height, settled } of measured) {
     if (!Number.isFinite(height) || height <= 0) continue;
     const cached = previous.get(key);
-    if (!settled && cached !== undefined) continue;
+    if (!settled && cached !== undefined && height < cached) continue;
     if (cached !== undefined && Math.abs(cached - height) <= 1) continue;
     next ??= new Map(previous);
     next.set(key, height);

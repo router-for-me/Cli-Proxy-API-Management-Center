@@ -93,6 +93,26 @@ describe('stacked height measurements', () => {
     expect([...previous]).toEqual([['a', 300]]);
   });
 
+  test('allows loading cards to grow without overlapping the next card', () => {
+    const previous = new Map([
+      ['a', 287],
+      ['b', 287],
+    ]);
+    const grown = updateStackedHeights(previous, [{ key: 'a', height: 335, settled: false }]);
+    expect(grown.get('a')).toBe(335);
+    expect(packColumns([...grown.values()], 1, 16)).toEqual({
+      positions: [
+        { column: 0, top: 0 },
+        { column: 0, top: 351 },
+      ],
+      height: 638,
+    });
+    expect(updateStackedHeights(grown, [{ key: 'a', height: 300, settled: false }])).toBe(grown);
+    const settled = updateStackedHeights(grown, [{ key: 'a', height: 300, settled: true }]);
+    expect(settled.get('a')).toBe(300);
+    expect(previous.get('a')).toBe(287);
+  });
+
   test('ignores hidden cards, invalid heights and subpixel changes', () => {
     const previous = new Map([['a', 169]]);
     expect(

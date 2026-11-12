@@ -13,8 +13,8 @@ export interface StackedColumnsItem {
   key: string;
   node: ReactNode;
   /**
-   * False while the card's content is still loading: its last settled height is kept, so a
-   * refresh does not move cards between columns.
+   * False while the card's content is loading: preserve its height unless it grows, so a
+   * refresh does not collapse the layout and taller loading content cannot overlap cards.
    */
   settled: boolean;
 }
@@ -47,7 +47,7 @@ export function StackedColumns({
   const [width, setWidth] = useState(0);
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(() => new Map());
 
-  // Loading cards need an initial measurement too; retain cached heights on later refreshes.
+  // Measure loading cards too: cached heights prevent shrinking, but growth must be packed.
   const recordHeights = useCallback((elements: Iterable<HTMLElement>) => {
     const measured: { key: string; height: number; settled: boolean }[] = [];
     for (const element of elements) {
