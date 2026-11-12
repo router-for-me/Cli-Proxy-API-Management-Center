@@ -130,6 +130,11 @@ export const CODEX_RATE_LIMIT_RESET_CREDITS_URL =
   'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits';
 export const CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL =
   'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume';
+/** Account-user setting write endpoint reported in issue #551; never probed for reads. */
+export const CODEX_ACCOUNT_USER_SETTING_URL =
+  'https://chatgpt.com/backend-api/settings/account_user_setting';
+/** Lets apps authorized to use the ChatGPT plan spend credits after the plan limit. */
+export const CODEX_CREDIT_OVERAGE_FEATURE = 'can_consume_personal_credits_chatpass';
 
 export const CODEX_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
@@ -154,7 +159,7 @@ export const XAI_API_ME_URL = 'https://api.x.ai/v1/me';
 export const XAI_API_CHAT_URL = 'https://api.x.ai/v1/chat/completions';
 export const XAI_PAID_HEALTH_MODEL = 'grok-4.5';
 // Keep aligned with the backend fallback; Grok rejects versions older than 1.0.13.
-export const XAI_GROK_CLIENT_VERSION = '1.0.46';
+export const XAI_GROK_CLIENT_VERSION = '1.0.70';
 export const XAI_GROK_USER_AGENT = `grok-pager/${XAI_GROK_CLIENT_VERSION} grok-shell/${XAI_GROK_CLIENT_VERSION} (macos; aarch64)`;
 
 export const XAI_REQUEST_HEADERS = {

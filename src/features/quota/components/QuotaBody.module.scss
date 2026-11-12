@@ -35,6 +35,33 @@
   @include text-ellipsis;
 }
 
+/* The extra-usage state describes this label, not the credential. */
+.claudeExtraUsageTitle {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+
+  // Override the mobile label width so the state can stay alongside it.
+  .quotaModel {
+    width: auto;
+  }
+}
+
+.claudeExtraUsageStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 /* 遥测：mono + 等宽数字，刷新时数字不跳位 */
 .quotaMeta {
   display: inline-flex;

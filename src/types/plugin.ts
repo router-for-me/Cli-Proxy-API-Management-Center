@@ -31,6 +31,13 @@ export interface PluginMenu {
   description: string;
 }
 
+/** 插件为某个登录入口单独发布的展示信息。 */
+export interface PluginOAuthProviderEntry {
+  identifier: string;
+  name?: string;
+  logo?: string;
+}
+
 export interface PluginListEntry {
   id: string;
   path: string;
@@ -40,6 +47,9 @@ export interface PluginListEntry {
   effectiveEnabled: boolean;
   supportsOAuth: boolean;
   oauthProvider?: string;
+  /** 声明的全部登录入口；旧后端只发单个 `oauth_provider` 时为空。 */
+  oauthProviders?: string[];
+  oauthProviderEntries?: PluginOAuthProviderEntry[];
   supportsQuota: boolean;
   quotaProvider?: string;
   logo: string;
@@ -82,6 +92,8 @@ export interface PluginStoreEntry {
   homepage: string;
   license: string;
   tags: string[];
+  /** 后端已把键归一化为 BCP-47 形式（如 `zh-CN`），无匹配语言时为空。 */
+  locales?: Record<string, PluginStoreLocale>;
   installed: boolean;
   installedVersion: string;
   path: string;
@@ -95,6 +107,16 @@ export interface PluginStoreEntry {
 export interface PluginStorePlatform {
   goos: string;
   goarch: string;
+}
+
+/** 插件商店条目的单语言展示信息；字段均可缺省，缺失时逐字段回退到根字段。 */
+export interface PluginStoreLocale {
+  name?: string;
+  description?: string;
+  author?: string;
+  homepage?: string;
+  license?: string;
+  tags?: string[];
 }
 
 export interface PluginStoreSourceError {

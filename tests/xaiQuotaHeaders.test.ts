@@ -6,6 +6,10 @@ import {
 } from '@/utils/quota/constants';
 
 describe('Grok quota client headers', () => {
+  test('uses Grok CLI version 1.0.70 for quota requests', () => {
+    expect(XAI_GROK_CLIENT_VERSION).toBe('1.0.70');
+  });
+
   test('meets the upstream minimum client version of 1.0.13', () => {
     expect(XAI_GROK_CLIENT_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
     const [major, minor, patch] = XAI_GROK_CLIENT_VERSION.split('.').map(Number);

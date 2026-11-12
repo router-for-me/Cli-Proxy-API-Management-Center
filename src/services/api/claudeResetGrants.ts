@@ -47,7 +47,9 @@ export interface AnthropicResetGrant {
   paused: boolean;
   usableNow: boolean;
   useRequiresLimit: boolean;
-  percentUsed: Partial<Record<AnthropicResetWindow, number>>;
+  percentUsed: Record<string, number>;
+  resetType?: 'weekly' | 'session' | 'full' | null;
+  givesBackWeekly?: boolean;
 }
 
 export interface AnthropicResetGrantStatus {
@@ -132,13 +134,14 @@ function parseWindows(value: unknown): AnthropicResetWindow[] | undefined {
   return ANTHROPIC_RESET_WINDOWS.filter((window) => value.includes(window));
 }
 
-function parsePercentUsed(value: unknown): Partial<Record<AnthropicResetWindow, number>> {
-  const out: Partial<Record<AnthropicResetWindow, number>> = {};
+function parsePercentUsed(value: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
   if (!isRecord(value)) return out;
-  for (const window of ANTHROPIC_RESET_WINDOWS) {
-    const percent = value[window];
-    if (typeof percent === 'number' && Number.isInteger(percent) && percent >= 0 && percent <= 100)
-      out[window] = percent;
+  for (const [window, percent] of Object.entries(value)) {
+    // Preserve model-specific windows. Dropping one could mistake a refill for zero usage.
+    if (typeof percent !== 'number' || !Number.isFinite(percent) || percent < 0 || percent > 100)
+      return {};
+    Object.defineProperty(out, window, { value: percent, enumerable: true });
   }
   return out;
 }
@@ -156,13 +159,15 @@ function parseGrant(value: unknown): AnthropicResetGrant | null {
   // say it is usable is not offered for spending.
   const usableNow = optionalBoolean(value.usable_now, false);
   const useRequiresLimit = optionalBoolean(value.use_requires_limit, true);
+  const givesBackWeekly = optionalBoolean(value.gives_back_weekly, false);
   if (
     startsAt === undefined ||
     endsAt === undefined ||
     clears === undefined ||
     paused === undefined ||
     usableNow === undefined ||
-    useRequiresLimit === undefined
+    useRequiresLimit === undefined ||
+    givesBackWeekly === undefined
   )
     return null;
   return {
@@ -177,6 +182,11 @@ function parseGrant(value: unknown): AnthropicResetGrant | null {
     usableNow,
     useRequiresLimit,
     percentUsed: parsePercentUsed(value.percent_used),
+    resetType:
+      value.type === 'weekly' || value.type === 'session' || value.type === 'full'
+        ? value.type
+        : null,
+    givesBackWeekly,
   };
 }
 
@@ -224,7 +234,15 @@ export function parseAnthropicResetGrantStatus(block: unknown): AnthropicResetGr
 export function anthropicResetGrantBlocker(
   status: AnthropicResetGrantStatus,
   grantId: string
-): 'ineligible' | 'unknown_grant' | 'paused' | 'not_usable' | 'exhausted' | 'not_limited' | null {
+):
+  | 'ineligible'
+  | 'unknown_grant'
+  | 'paused'
+  | 'not_usable'
+  | 'exhausted'
+  | 'not_limited'
+  | 'no_usage'
+  | null {
   if (!status.eligible) return 'ineligible';
   const grant = status.grants.find((candidate) => candidate.id === grantId);
   if (!grant) return 'unknown_grant';
@@ -232,7 +250,16 @@ export function anthropicResetGrantBlocker(
   if (!grant.usableNow) return 'not_usable';
   if (grant.resetsLeft <= 0) return 'exhausted';
   if (grant.useRequiresLimit && !status.atLimit) return 'not_limited';
+  if (resetGrantHasNoUsage(grant)) return 'no_usage';
   return null;
+}
+
+/** Missing usage is unknown, not evidence that a model refill would be wasted. */
+export function resetGrantHasNoUsage(grant: AnthropicResetGrant): boolean {
+  const percentages = Object.values(grant.percentUsed);
+  return Boolean(
+    grant.givesBackWeekly && percentages.length > 0 && percentages.every((percent) => percent === 0)
+  );
 }
 
 async function readAccount(authIndex: string, path: string): Promise<Record<string, unknown>> {

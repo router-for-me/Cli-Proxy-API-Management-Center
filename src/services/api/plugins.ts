@@ -13,8 +13,10 @@ import type {
   PluginListResponse,
   PluginMetadata,
   PluginMenu,
+  PluginOAuthProviderEntry,
   PluginStoreEntry,
   PluginStoreInstallResult,
+  PluginStoreLocale,
   PluginStorePlatform,
   PluginStoreResponse,
   PluginStoreSourceError,
@@ -25,11 +27,56 @@ const asString = (value: unknown): string => {
   return String(value);
 };
 
+// Entry metadata is escaped by the backend's Go html.EscapeString. Undo only
+// that encoding in one pass: literal entity text must not be decoded twice.
+// These remain untrusted strings rendered through React text/attribute props.
+const pluginEntryEntities: Record<string, string> = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&#34;': '"',
+  '&#39;': "'",
+};
+const decodePluginEntryText = (value: unknown): string =>
+  asString(value)
+    .replace(/&(?:amp|lt|gt|#34|#39);/g, (entity) => pluginEntryEntities[entity])
+    .trim();
+
 const asBoolean = (value: unknown): boolean => value === true;
 
 const normalizePluginOAuthProvider = (value: unknown): string | undefined => {
   const provider = normalizeManagementOAuthProviderKey(asString(value));
   return isManagementOAuthProviderKey(provider) ? provider : undefined;
+};
+
+/** 同一插件可声明多个登录入口：按声明顺序去重，逐项做与单数字段相同的归一化。 */
+const normalizePluginOAuthProviders = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const providers: string[] = [];
+  for (const item of value) {
+    const provider = normalizePluginOAuthProvider(item);
+    if (provider && !providers.includes(provider)) providers.push(provider);
+  }
+  return providers;
+};
+
+/** 入口级名称与图标，只保留插件真正声明过的 identifier。 */
+const normalizePluginOAuthProviderEntries = (
+  value: unknown,
+  providers: readonly string[]
+): PluginOAuthProviderEntry[] => {
+  if (!Array.isArray(value) || providers.length === 0) return [];
+  const entries: PluginOAuthProviderEntry[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const identifier = normalizePluginOAuthProvider(item.identifier);
+    if (!identifier || !providers.includes(identifier)) continue;
+    if (entries.some((entry) => entry.identifier === identifier)) continue;
+    const name = decodePluginEntryText(item.name);
+    const logo = decodePluginEntryText(item.logo);
+    entries.push({ identifier, ...(name ? { name } : {}), ...(logo ? { logo } : {}) });
+  }
+  return entries;
 };
 
 const normalizeConfigField = (value: unknown): PluginConfigField | null => {
@@ -101,6 +148,12 @@ const normalizePluginEntry = (value: unknown): PluginListEntry | null => {
   const configFields = normalizeConfigFields(value.config_fields);
   const supportsOAuth = asBoolean(value.supports_oauth);
   const oauthProvider = normalizePluginOAuthProvider(value.oauth_provider);
+  // 旧后端只发单数 `oauth_provider`，单数字段原样保留，既有消费方行为不变。
+  const oauthProviders = normalizePluginOAuthProviders(value.oauth_providers);
+  const oauthProviderEntries = normalizePluginOAuthProviderEntries(
+    value.oauth_provider_entries,
+    oauthProviders
+  );
   const quotaProvider = asString(value.quota_provider).trim().toLowerCase();
 
   return {
@@ -112,6 +165,8 @@ const normalizePluginEntry = (value: unknown): PluginListEntry | null => {
     effectiveEnabled: asBoolean(value.effective_enabled),
     supportsOAuth,
     oauthProvider,
+    ...(oauthProviders.length > 0 ? { oauthProviders } : {}),
+    ...(oauthProviderEntries.length > 0 ? { oauthProviderEntries } : {}),
     supportsQuota: asBoolean(value.supports_quota),
     ...(quotaProvider ? { quotaProvider } : {}),
     logo: asString(value.logo || metadata?.logo).trim(),
@@ -151,6 +206,34 @@ const normalizeDeleteResult = (value: unknown): PluginDeleteResult => {
   };
 };
 
+/** 与后端 NormalizePluginLocales 一致：丢弃无法归一化或全空的 locale 块。 */
+const normalizeStoreLocales = (value: unknown): Record<string, PluginStoreLocale> | undefined => {
+  if (!isRecord(value)) return undefined;
+  const locales: Record<string, PluginStoreLocale> = {};
+  for (const [rawKey, rawLocale] of Object.entries(value)) {
+    const key = rawKey.trim();
+    const locale = isRecord(rawLocale) ? rawLocale : {};
+    const tags = Array.isArray(locale.tags)
+      ? locale.tags.map((item) => asString(item).trim()).filter(Boolean)
+      : [];
+    const name = asString(locale.name).trim();
+    const description = asString(locale.description).trim();
+    const author = asString(locale.author).trim();
+    const homepage = asString(locale.homepage).trim();
+    const license = asString(locale.license).trim();
+    const normalized: PluginStoreLocale = {
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      ...(author ? { author } : {}),
+      ...(homepage ? { homepage } : {}),
+      ...(license ? { license } : {}),
+      ...(tags.length > 0 ? { tags } : {}),
+    };
+    if (key && Object.keys(normalized).length > 0) locales[key] = normalized;
+  }
+  return Object.keys(locales).length > 0 ? locales : undefined;
+};
+
 const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   if (!isRecord(value)) return null;
   const id = asString(value.id).trim();
@@ -161,6 +244,7 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
   const tags = Array.isArray(value.tags)
     ? value.tags.map((item) => asString(item).trim()).filter(Boolean)
     : [];
+  const locales = normalizeStoreLocales(value.locales);
   const platforms = Array.isArray(value.platforms)
     ? (value.platforms
         .map((item): PluginStorePlatform | null => {
@@ -191,6 +275,7 @@ const normalizeStoreEntry = (value: unknown): PluginStoreEntry | null => {
     homepage: asString(value.homepage).trim(),
     license: asString(value.license).trim(),
     tags,
+    ...(locales ? { locales } : {}),
     installed: asBoolean(value.installed),
     installedVersion: asString(value.installed_version).trim(),
     path: asString(value.path).trim(),

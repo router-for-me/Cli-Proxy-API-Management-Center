@@ -41,11 +41,19 @@ export function ClaudeQuotaBody({
     }
   };
 
+  const hasUserDisabledReason =
+    extraUsage?.userDisabled === true || extraUsage?.disabledReason === 'user_disabled';
+  // Consolidate upstream off signals into the single state beside the label.
+  const extraUsageStatusKey =
+    extraUsage?.isEnabled === false || hasUserDisabledReason
+      ? 'claude_quota.extra_usage_disabled'
+      : extraUsage?.isEnabled === true
+        ? 'claude_quota.extra_usage_enabled'
+        : 'claude_quota.plan_unknown';
   const extraUsageNotes = extraUsage
     ? [
-        extraUsage.userDisabled ? t('claude_quota.extra_usage_user_disabled') : '',
         extraUsage.spendLimitReached ? t('claude_quota.extra_usage_spend_limit_reached') : '',
-        extraUsage.disabledReason
+        extraUsage.disabledReason && extraUsage.disabledReason !== 'user_disabled'
           ? t('claude_quota.extra_usage_disabled_reason', { reason: extraUsage.disabledReason })
           : '',
       ].filter(Boolean)
@@ -74,28 +82,21 @@ export function ClaudeQuotaBody({
         </div>
       )}
       {afterPlan}
-      {/* Extra usage and dollar balances share the window-row anatomy:
-          label + mono telemetry header, then one mono detail line. */}
+      {/* Keep the extra-usage state with its label; only numeric usage goes on the right. */}
       {extraUsage && (
         <div className={classes.quotaRow}>
           <div className={classes.quotaRowHeader}>
-            <span className={classes.quotaModel}>{t('claude_quota.extra_usage_label')}</span>
-            <div className={classes.quotaMeta}>
-              <span className={classes.quotaPercent}>
-                {t(
-                  extraUsage.isEnabled === null
-                    ? 'claude_quota.plan_unknown'
-                    : extraUsage.isEnabled
-                      ? 'claude_quota.extra_usage_enabled'
-                      : 'claude_quota.extra_usage_disabled'
-                )}
-              </span>
-              {extraUsage.utilization !== null && (
-                <span className={classes.quotaResetRelative}>
+            <div className={classes.claudeExtraUsageTitle}>
+              <span className={classes.quotaModel}>{t('claude_quota.extra_usage_label')}</span>
+              <span className={classes.claudeExtraUsageStatus}>{t(extraUsageStatusKey)}</span>
+            </div>
+            {extraUsage.utilization !== null && (
+              <div className={classes.quotaMeta}>
+                <span className={classes.quotaPercent}>
                   {t('claude_quota.usage_utilization', { percent: extraUsage.utilization })}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
           <div className={classes.quotaAmount}>
             {t('claude_quota.usage_spent_limit', {
