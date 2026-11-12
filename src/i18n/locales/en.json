@@ -1765,6 +1765,7 @@
     "resets_none": "None",
     "use_reset_general": "Use a general reset",
     "use_reset_fable": "Use a Fable reset",
+    "use_reset_fable_ready": "Fable is used up: use the Fable reset now",
     "resets_in": "Resets in {{duration}}",
     "pool_capacity": "of {{capacity}} pool"
   },

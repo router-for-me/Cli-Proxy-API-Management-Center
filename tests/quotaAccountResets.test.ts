@@ -3,7 +3,12 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
 import { ResetsCell, type ResetLine } from '@/features/quota/accounts/ResetsCell';
-import { compactRemaining, meterTone, timeLeftParts } from '@/features/quota/accounts/rowModel';
+import {
+  compactRemaining,
+  fableUsedUp,
+  meterTone,
+  timeLeftParts,
+} from '@/features/quota/accounts/rowModel';
 import { summarizePools, type ForecastPool } from '@/features/quota/forecast/pools';
 import type { PoolForecast } from '@/features/quota/forecast/model';
 import { resetGrantKind, resetGrantLines } from '@/features/quota/providers/claude/resetGrantKinds';
@@ -213,6 +218,35 @@ describe('resets cell', () => {
     expect(markup.indexOf('general')).toBeLessThan(markup.indexOf('Fable'));
   });
 
+  test('lights up a reset worth spending now', () => {
+    const ready = render([
+      line({
+        key: 'fable',
+        action: {
+          label: 'Use it now',
+          disabled: false,
+          busy: false,
+          ready: true,
+          onClick: () => {},
+        },
+      }),
+    ]);
+    expect(ready).toMatch(/<button[^>]*data-ready="true"[^>]*aria-label="Use it now"/);
+    expect(render([line()])).not.toContain('data-ready');
+  });
+
+  test('Fable counts as used up only when nothing is left', () => {
+    const cell = (remaining: number | null) => [
+      { id: 'seven-day', label: 'Weekly', remaining: 50, resetAtMs: null },
+      { id: 'seven-day-fable', label: 'Fable', remaining, resetAtMs: null },
+    ];
+    expect(fableUsedUp(cell(0))).toBe(true);
+    expect(fableUsedUp(cell(0.2))).toBe(true);
+    expect(fableUsedUp(cell(1))).toBe(false);
+    expect(fableUsedUp(cell(null))).toBe(false);
+    expect(fableUsedUp(cell(0).slice(0, 1))).toBe(false);
+  });
+
   test('tells "none banked" from "not read yet", and omits a passed expiry', () => {
     expect(render([], true)).toContain('None');
     expect(render([], false)).toContain('—');
@@ -236,6 +270,7 @@ describe('resets cell', () => {
         'use_reset',
         'use_reset_general',
         'use_reset_fable',
+        'use_reset_fable_ready',
         'next_expires',
         'pool_capacity',
       ]) {

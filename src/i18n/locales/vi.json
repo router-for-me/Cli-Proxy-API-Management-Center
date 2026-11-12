@@ -1710,6 +1710,7 @@
     "resets_none": "Không có",
     "use_reset_general": "Dùng một lượt đặt lại chung",
     "use_reset_fable": "Dùng một lượt đặt lại Fable",
+    "use_reset_fable_ready": "Đã dùng hết Fable: dùng lượt đặt lại Fable ngay",
     "resets_in": "Đặt lại sau {{duration}}",
     "pool_capacity": "trên {{capacity}} hạn mức chung"
   },

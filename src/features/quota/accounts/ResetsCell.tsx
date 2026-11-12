@@ -14,7 +14,14 @@ export type ResetLine = {
   count: number | null;
   label: string | null;
   expiresAtMs: number | null;
-  action: { label: string; disabled: boolean; busy: boolean; onClick: () => void } | null;
+  action: {
+    label: string;
+    disabled: boolean;
+    busy: boolean;
+    /** Now is the time to spend it; the button lights up. */
+    ready?: boolean;
+    onClick: () => void;
+  } | null;
 };
 
 export function ResetsCell({
@@ -65,7 +72,12 @@ export function ResetsCell({
             {line.action && (
               <button
                 type="button"
-                className={styles.iconButton}
+                className={
+                  line.action.ready
+                    ? `${styles.iconButton} ${styles.iconButtonReady}`
+                    : styles.iconButton
+                }
+                data-ready={line.action.ready ? 'true' : undefined}
                 onClick={line.action.onClick}
                 disabled={line.action.disabled}
                 aria-label={line.action.label}

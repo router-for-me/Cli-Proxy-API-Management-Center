@@ -219,6 +219,12 @@ export function sectionColumns(rows: AccountWindowCell[][]): AccountColumn[] {
   return columns.slice(0, MAX_WINDOW_COLUMNS);
 }
 
+/** Whether an account's weekly Fable limit is used up, so a Fable reset gives back the most. */
+export const fableUsedUp = (cells: AccountWindowCell[]): boolean => {
+  const remaining = cells.find((cell) => cell.id === 'seven-day-fable')?.remaining;
+  return typeof remaining === 'number' && remaining < 0.5;
+};
+
 /** The window the reset-aware routing watches. */
 const WEEKLY_WINDOW_ID: Partial<Record<QuotaProviderType, string>> = {
   claude: 'seven-day',

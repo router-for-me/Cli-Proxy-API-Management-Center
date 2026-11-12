@@ -1765,6 +1765,7 @@
     "resets_none": "Yok",
     "use_reset_general": "Genel bir sıfırlama kullan",
     "use_reset_fable": "Bir Fable sıfırlaması kullan",
+    "use_reset_fable_ready": "Fable tükendi: Fable sıfırlamasını şimdi kullan",
     "resets_in": "{{duration}} sonra sıfırlanır",
     "pool_capacity": "/ {{capacity}} havuz"
   },

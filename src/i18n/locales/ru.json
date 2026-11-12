@@ -1783,6 +1783,7 @@
     "resets_none": "Нет",
     "use_reset_general": "Использовать общий сброс",
     "use_reset_fable": "Использовать сброс Fable",
+    "use_reset_fable_ready": "Лимит Fable исчерпан: используйте сброс Fable сейчас",
     "resets_in": "Сброс через {{duration}}",
     "pool_capacity": "из {{capacity}} общей квоты"
   },

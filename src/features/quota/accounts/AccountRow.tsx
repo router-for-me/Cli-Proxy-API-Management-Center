@@ -22,6 +22,7 @@ import bodyStyles from '../components/QuotaBody.module.scss';
 import { ResetsCell, type ResetLine } from './ResetsCell';
 import {
   credentialStatus,
+  fableUsedUp,
   meterTone,
   timeLeftParts,
   weeklyResetMs,
@@ -193,7 +194,8 @@ export function AccountRow(props: AccountRowProps) {
   let resetsKnown = false;
   if (entry.type === 'claude' && loaded) {
     resetsKnown = claudeReset.known;
-    resetLines = claudeReset.lines.map((line) => claudeResetLine(line, t));
+    const fableReady = fableUsedUp(cells);
+    resetLines = claudeReset.lines.map((line) => claudeResetLine(line, t, fableReady));
   } else if (codex) {
     const available = codex.rateLimitResetCreditsAvailableCount ?? null;
     resetsKnown = available !== null;
@@ -316,21 +318,32 @@ export function AccountRow(props: AccountRowProps) {
   );
 }
 
-const claudeResetLine = (line: ClaudeResetLine, t: (key: string) => string): ResetLine => ({
-  key: line.kind ?? 'retry',
-  count: line.count,
-  label: line.kind ? t(`quota_accounts.reset_${line.kind}`) : null,
-  expiresAtMs: line.expiresAtMs,
-  action: {
-    label:
-      line.retry || !line.kind
-        ? t('claude_reset.retry')
-        : t(`quota_accounts.use_reset_${line.kind}`),
-    disabled: line.blocked,
-    busy: line.busy,
-    onClick: line.confirm,
-  },
-});
+/** A Fable reset lights up once Fable is used up: then it gives back the full 50 %. */
+const claudeResetLine = (
+  line: ClaudeResetLine,
+  t: (key: string) => string,
+  fableUsedUp: boolean
+): ResetLine => {
+  const ready = line.kind === 'fable' && fableUsedUp && !line.retry && !line.blocked;
+  return {
+    key: line.kind ?? 'retry',
+    count: line.count,
+    label: line.kind ? t(`quota_accounts.reset_${line.kind}`) : null,
+    expiresAtMs: line.expiresAtMs,
+    action: {
+      label:
+        line.retry || !line.kind
+          ? t('claude_reset.retry')
+          : ready
+            ? t('quota_accounts.use_reset_fable_ready')
+            : t(`quota_accounts.use_reset_${line.kind}`),
+      disabled: line.blocked,
+      busy: line.busy,
+      ready,
+      onClick: line.confirm,
+    },
+  };
+};
 
 /** When the first available Codex reset credit expires. */
 const nextCodexCreditExpiry = (codex: CodexQuotaState, now: number): number | null =>

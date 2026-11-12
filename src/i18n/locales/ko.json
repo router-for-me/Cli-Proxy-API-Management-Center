@@ -1765,6 +1765,7 @@
     "resets_none": "없음",
     "use_reset_general": "일반 초기화 사용",
     "use_reset_fable": "Fable 초기화 사용",
+    "use_reset_fable_ready": "Fable을 모두 사용했습니다: 지금 Fable 초기화를 사용하세요",
     "resets_in": "{{duration}} 후 초기화",
     "pool_capacity": "/ 풀 {{capacity}}"
   },

@@ -468,6 +468,17 @@
   }
 }
 
+// A reset worth spending now: tinted in the account's color.
+.iconButtonReady:not(:disabled) {
+  background: color-mix(in srgb, var(--account-color) 22%, transparent);
+  color: var(--account-color);
+
+  &:hover {
+    background: color-mix(in srgb, var(--account-color) 34%, transparent);
+    color: var(--account-color);
+  }
+}
+
 .spinning {
   animation: account-spin 0.8s linear infinite;
 }
