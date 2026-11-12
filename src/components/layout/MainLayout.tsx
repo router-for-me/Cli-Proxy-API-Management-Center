@@ -14,6 +14,7 @@ import {
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { keepInViewport } from '@/components/ui/keepInViewport';
 import { PageTransition } from '@/components/common/PageTransition';
 import { MainRoutes } from '@/router/MainRoutes';
 import { authFilesApi, pluginsApi } from '@/services/api';
@@ -1049,6 +1050,7 @@ export function MainLayout() {
             {languageMenuOpen && (
               <div
                 className="notification entering language-menu-popover"
+                ref={keepInViewport}
                 role="menu"
                 aria-label={t('language.switch')}
               >

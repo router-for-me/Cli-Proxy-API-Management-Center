@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconChevronUp, IconSlidersHorizontal } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { keepInViewport } from '@/components/ui/keepInViewport';
 import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ProviderResourceToolbar.module.scss';
 
@@ -112,7 +113,7 @@ export function ProviderResourceToolbar({
           <IconChevronDown size={12} />
         </button>
         {filterOpen ? (
-          <div className={styles.filterPanel}>
+          <div className={styles.filterPanel} ref={keepInViewport}>
             <div className={styles.filterToolbar}>
               <button
                 type="button"
