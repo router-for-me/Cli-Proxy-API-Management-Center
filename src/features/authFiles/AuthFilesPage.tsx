@@ -42,7 +42,7 @@ import {
   sortAuthFiles,
 } from '@/features/authFiles/logic';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
-import { useModelCatalogSync } from '@/hooks/useModelCatalogSync';
+import { useModelCatalogSync } from '@/features/authFiles/hooks/useModelCatalogSync';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
@@ -121,11 +121,11 @@ export function AuthFilesPage() {
   } = useAuthFilesModels();
 
   const [modelCatalogVersion, setModelCatalogVersion] = useState(0);
-  const { syncingModelCatalog, syncModelCatalog } = useModelCatalogSync(async () => {
+  const { syncingModelCatalog, syncModelCatalog } = useModelCatalogSync(() => {
     invalidateModels();
     setModelCatalogVersion((version) => version + 1);
     if (modelsModalOpen) {
-      await showModels({ name: modelsFileName, type: modelsFileType });
+      void showModels({ name: modelsFileName, type: modelsFileType });
     }
   });
 

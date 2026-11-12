@@ -16,14 +16,12 @@ interface ModelsCache {
 
 interface ModelsState {
   models: ModelInfo[];
-  scope: { apiBase: string; apiKey: string } | null;
   loading: boolean;
   error: string | null;
   cache: ModelsCache | null;
 
   fetchModels: (apiBase: string, apiKey?: string, forceRefresh?: boolean) => Promise<ModelInfo[]>;
   clearCache: () => void;
-  invalidateCache: () => void;
   isCacheValid: (apiBase: string, apiKey?: string) => boolean;
 }
 
@@ -31,30 +29,22 @@ let modelsRequestToken = 0;
 
 export const useModelsStore = create<ModelsState>((set, get) => ({
   models: [],
-  scope: null,
   loading: false,
   error: null,
   cache: null,
 
   fetchModels: async (apiBase, apiKey, forceRefresh = false) => {
     const requestId = (modelsRequestToken += 1);
-    const { cache, scope, isCacheValid } = get();
+    const { cache, isCacheValid } = get();
     const apiKeyScope = apiKey?.trim() || '';
-    const nextScope = { apiBase, apiKey: apiKeyScope };
-    const sameScope = scope?.apiBase === apiBase && scope.apiKey === apiKeyScope;
 
     // 检查缓存
     if (!forceRefresh && isCacheValid(apiBase, apiKeyScope) && cache) {
-      set({ models: cache.data, scope: nextScope, loading: false, error: null });
+      set({ models: cache.data, loading: false, error: null });
       return cache.data;
     }
 
-    set({
-      loading: true,
-      error: null,
-      scope: nextScope,
-      ...(sameScope ? {} : { models: [], cache: null }),
-    });
+    set({ loading: true, error: null });
 
     try {
       const list = await modelsApi.fetchModels(apiBase, apiKeyScope || undefined);
@@ -80,6 +70,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       set({
         error: message,
         loading: false,
+        models: [],
       });
       throw error;
     }
@@ -87,12 +78,7 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
   clearCache: () => {
     modelsRequestToken += 1;
-    set({ cache: null, models: [], scope: null, loading: false, error: null });
-  },
-
-  invalidateCache: () => {
-    modelsRequestToken += 1;
-    set({ cache: null, loading: false, error: null });
+    set({ cache: null, models: [], loading: false, error: null });
   },
 
   isCacheValid: (apiBase, apiKey) => {

@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "fill-first（優先填充）"
   },
   "auth_files": {
+    "sync_catalog_button": "同步模型目錄",
+    "sync_catalog_success": "模型目錄同步成功，已更新供應商：{{providers}}",
+    "sync_catalog_unchanged": "模型目錄同步成功，無變更。",
+    "sync_catalog_failed": "同步模型目錄失敗",
     "title": "驗證檔案管理",
     "meta_total": "{{count}} 個憑證",
     "meta_active": "{{count}} 個啟用",
@@ -1954,25 +1958,17 @@
     "empty_src": "插件頁面位址為空",
     "empty_src_desc": "此插件選單未提供可嵌入的頁面位址。"
   },
-  "model_catalog": {
-    "button": "更新模型目錄",
-    "hint": "更新所有使用者共用的模型目錄，取得最新模型資訊。",
-    "success": "模型目錄更新完成。",
-    "skipped": "已依伺服器更新策略略過模型目錄更新。",
-    "partial": "部分模型目錄更新失敗。",
-    "error": "模型目錄更新失敗",
-    "unsupported": "目前後端不支援更新模型目錄，請更新 CLI Proxy API 後重試。",
-    "changed_providers": "受影響的提供者：{{providers}}"
-  },
   "system_info": {
-    "version_release_notes": "查看版本說明",
-    "models_error_retained": "重新整理失敗，仍顯示上次成功取得的模型。",
-    "models_refresh_success": "可用模型清單已重新整理，共 {{count}} 個。",
+    "models_refresh_button": "重新整理清單",
     "models_refresh_hint": "重新取得最新的可用模型清單。",
+    "models_refresh_success": "可用模型清單已重新整理，共 {{count}} 個。",
+    "models_catalog_refresh_button": "更新模型目錄",
+    "models_catalog_refresh_hint": "更新所有使用者共用的模型目錄，取得最新模型資訊。",
+    "models_catalog_refresh_success": "模型目錄更新完成。",
+    "models_catalog_refresh_failed": "模型目錄更新失敗",
     "title": "管理中心資訊",
     "about_title": "CLI Proxy API Management Center",
     "models_title": "可用模型清單",
-    "models_refresh_button": "重新整理清單",
     "models_desc": "點選「重新整理清單」查看最新可用模型；找不到新模型時，可嘗試「更新模型目錄」。",
     "models_loading": "正在載入可用模型...",
     "models_empty": "目前沒有可用模型",

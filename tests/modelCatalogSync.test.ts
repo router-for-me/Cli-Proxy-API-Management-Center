@@ -1,62 +1,44 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
-import type { ModelCatalogRefreshResult } from '../src/services/api/modelCatalogs';
-import { getErrorMessage, isRecord } from '../src/utils/helpers';
+import { modelsApi } from '../src/services/api/models';
+import { apiClient } from '../src/services/api/client';
 
 const read = (path: string) => readFileSync(path, 'utf8');
-const hook = read('src/hooks/useModelCatalogSync.ts');
-const refreshed = (providers: string[] = []): ModelCatalogRefreshResult => ({
-  outcome: 'success',
-  catalogs: [
-    { kind: 'general', source: 'https://catalog.invalid', state: 'refreshed' },
-    { kind: 'codex', source: 'https://catalog.invalid', state: 'refreshed' },
-    { kind: 'devin', source: 'embed', state: 'skipped', skipReason: 'embedded' },
-  ],
-  changedProviders: providers,
-});
+const hook = read('src/features/authFiles/hooks/useModelCatalogSync.ts');
 
-// Execute the hook's actual async callback, following the existing source-harness test pattern.
 function harness() {
   let revision = 1;
-  let connected = true;
-  let resolve!: (value: ModelCatalogRefreshResult) => void;
-  let reject!: (error: Error & { status?: number }) => void;
+  let resolve!: (value: { changedProviders: string[] }) => void;
+  let reject!: (error: Error) => void;
   let calls = 0;
   let invalidations = 0;
   let refetches = 0;
   let loading = false;
-  const operationRef = { current: null as AbortController | null };
   const notifications: unknown[][] = [];
+  const mountedRef = { current: true };
   const env = {
     useCallback: (fn: unknown) => fn,
-    operationRef,
+    pendingRef: { current: false },
+    mountedRef,
     apiClient: { getConnectionRevision: () => revision },
-    useAuthStore: {
-      getState: () => ({ connectionStatus: connected ? 'connected' : 'disconnected' }),
-    },
+    useAuthStore: { getState: () => ({ connectionStatus: 'connected' }) },
     modelsApi: {
       refreshCatalog: () => {
         calls++;
-        return new Promise<ModelCatalogRefreshResult>((res, rej) => {
+        return new Promise((res, rej) => {
           resolve = res;
           reject = rej;
         });
       },
     },
-    useModelsStore: { getState: () => ({ invalidateCache: () => invalidations++ }) },
-    onSyncedRef: {
-      current: async () => {
-        refetches++;
-      },
-    },
+    useModelsStore: { getState: () => ({ clearCache: () => invalidations++ }) },
+    onSyncedRef: { current: () => refetches++ },
     setSyncingModelCatalog: (value: boolean) => {
       loading = value;
     },
     showNotification: (...args: unknown[]) => notifications.push(args),
     t: (key: string, params?: { providers: string }) => `${key}${params?.providers ?? ''}`,
-    getErrorMessage,
-    isRecord,
   };
   const block = hook.slice(hook.indexOf('  const syncModelCatalog ='), hook.indexOf('  return {'));
   const js = ts.transpileModule(`${block}\nreturn syncModelCatalog;`, {
@@ -64,15 +46,11 @@ function harness() {
   }).outputText;
   return {
     sync: new Function(...Object.keys(env), js)(...Object.values(env)) as () => Promise<void>,
-    resolve: (value: ModelCatalogRefreshResult = refreshed()) => resolve(value),
-    reject: (status?: number) => reject(Object.assign(new Error('fixture failure'), { status })),
+    resolve: (providers: string[]) => resolve({ changedProviders: providers }),
+    reject: () => reject(new Error('fixture failure')),
     switchConnection: () => revision++,
-    disconnect: () => {
-      connected = false;
-    },
     unmount: () => {
-      operationRef.current?.abort();
-      operationRef.current = null;
+      mountedRef.current = false;
     },
     notifications,
     get calls() {
@@ -90,121 +68,80 @@ function harness() {
   };
 }
 
-describe('shared model catalog sync', () => {
+describe('global model catalog sync', () => {
+  test('posts through the management client and normalizes null providers', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({ ok: true, changed_providers: null });
+    try {
+      expect(await modelsApi.refreshCatalog()).toEqual({ changedProviders: [] });
+      expect(post).toHaveBeenCalledWith('/models/refresh');
+      post.mockResolvedValue({ ok: true, changed_providers: ['claude'] });
+      expect(await modelsApi.refreshCatalog()).toEqual({ changedProviders: ['claude'] });
+    } finally {
+      post.mockRestore();
+    }
+  });
+
+  test('pins a scoped catalog update to its owning management connection', async () => {
+    const client = apiClient.captureConnection();
+    const post = spyOn(client, 'post').mockResolvedValue({ changed_providers: [] });
+    const capture = spyOn(apiClient, 'captureConnection').mockReturnValue(client);
+    const isCurrent = () => true;
+    try {
+      expect(await modelsApi.refreshCatalog(isCurrent)).toEqual({ changedProviders: [] });
+      expect(capture).toHaveBeenCalledWith(isCurrent);
+      expect(post).toHaveBeenCalledWith('/models/refresh');
+    } finally {
+      capture.mockRestore();
+      post.mockRestore();
+    }
+  });
+
   for (const providers of [[], ['claude', 'codex']]) {
-    test(`refreshes derived model data without interpreting empty providers as unchanged: ${providers}`, async () => {
+    test(`invalidates and refetches even when unchanged: ${providers}`, async () => {
       const h = harness();
       const pending = h.sync();
       await h.sync();
       expect(h.calls).toBe(1);
       expect(h.loading).toBe(true);
-      h.resolve(refreshed(providers));
+      h.resolve(providers);
       await pending;
       expect(h.loading).toBe(false);
       expect(h.invalidations).toBe(1);
       expect(h.refetches).toBe(1);
-      expect(h.notifications[0][1]).toBe('success');
-      expect(String(h.notifications[0][0])).toContain('model_catalog.success');
-      expect(String(h.notifications[0][0])).not.toContain('unchanged');
-      if (providers.length) {
-        expect(String(h.notifications[0][0])).toContain(providers.join(', '));
-      }
+      expect(h.notifications[0]).toEqual([
+        providers.length
+          ? 'auth_files.sync_catalog_successclaude, codex'
+          : 'auth_files.sync_catalog_unchanged',
+        'success',
+      ]);
     });
   }
-
-  test('keeps local model caches when the backend skips every catalog by policy', async () => {
-    const h = harness();
-    const pending = h.sync();
-    h.resolve({
-      ...refreshed(),
-      outcome: 'skipped',
-      catalogs: [
-        { kind: 'general', source: 'disabled', state: 'skipped', skipReason: 'disabled' },
-        { kind: 'codex', source: 'embed', state: 'skipped', skipReason: 'embedded' },
-        { kind: 'devin', source: 'disabled', state: 'skipped', skipReason: 'disabled' },
-      ],
-    });
-    await pending;
-    expect(h.invalidations).toBe(0);
-    expect(h.refetches).toBe(0);
-    expect(h.notifications[0]).toEqual(['model_catalog.skipped', 'info']);
-  });
-
-  test('reloads successful publications from a partial failure and reports a warning', async () => {
-    const h = harness();
-    const pending = h.sync();
-    h.resolve({
-      ...refreshed(['claude']),
-      outcome: 'partial',
-      catalogs: [
-        { kind: 'general', source: 'https://catalog.invalid', state: 'refreshed' },
-        {
-          kind: 'codex',
-          source: 'https://catalog.invalid',
-          state: 'failed',
-          error: 'fixture failure',
-        },
-      ],
-    });
-    await pending;
-    expect(h.invalidations).toBe(1);
-    expect(h.refetches).toBe(1);
-    expect(String(h.notifications[0][0])).toContain('fixture failure');
-    expect(h.notifications[0][1]).toBe('warning');
-  });
-
-  test('does not invalidate model caches after an entirely failed refresh', async () => {
-    const h = harness();
-    const pending = h.sync();
-    h.resolve({
-      ...refreshed(),
-      outcome: 'error',
-      catalogs: [
-        {
-          kind: 'general',
-          source: 'https://catalog.invalid',
-          state: 'failed',
-          error: 'fixture failure',
-        },
-      ],
-    });
-    await pending;
-    expect(h.invalidations).toBe(0);
-    expect(h.refetches).toBe(0);
-    expect(h.notifications[0]).toEqual(['model_catalog.error fixture failure', 'error']);
-  });
 
   test('reports errors without clearing valid caches and allows retry', async () => {
     const h = harness();
     const pending = h.sync();
     h.reject();
     await pending;
-    expect(h.notifications[0]).toEqual(['model_catalog.error: fixture failure', 'error']);
+    expect(h.notifications[0]).toEqual([
+      'auth_files.sync_catalog_failed: fixture failure',
+      'error',
+    ]);
     expect(h.invalidations).toBe(0);
     expect(h.loading).toBe(false);
     const retry = h.sync();
-    h.resolve();
+    h.resolve([]);
     await retry;
     expect(h.calls).toBe(2);
   });
 
-  test.each([404, 405])('explains an unsupported backend (%s)', async (status) => {
-    const h = harness();
-    const pending = h.sync();
-    h.reject(status);
-    await pending;
-    expect(h.invalidations).toBe(0);
-    expect(h.notifications[0]).toEqual(['model_catalog.unsupported', 'error']);
-  });
-
-  for (const stale of ['switchConnection', 'unmount', 'disconnect'] as const) {
+  for (const stale of ['switchConnection', 'unmount'] as const) {
     for (const fail of [false, true]) {
       test(`ignores stale ${fail ? 'error' : 'success'} after ${stale}`, async () => {
         const h = harness();
         const pending = h.sync();
         h[stale]();
         if (fail) h.reject();
-        else h.resolve(refreshed(['claude']));
+        else h.resolve(['claude']);
         await pending;
         expect(h.notifications).toEqual([]);
         expect(h.invalidations).toBe(0);
@@ -213,7 +150,7 @@ describe('shared model catalog sync', () => {
     }
   }
 
-  test('uses the same controller and copy in both entry points, preserving credential model invalidation', () => {
+  test('places secondary sync first and wires model-only cache refresh', () => {
     const header = read('src/features/authFiles/components/VaultHeader.tsx');
     const actions = header.slice(header.indexOf('<div className={styles.actions}'));
     expect(actions.indexOf('onClick={onSyncModelCatalog}')).toBeLessThan(
@@ -222,26 +159,29 @@ describe('shared model catalog sync', () => {
     expect(actions.slice(0, actions.indexOf('{onRefreshCredentials'))).toContain(
       'styles.ghostAction'
     );
-    expect(header).toContain("t('model_catalog.button')");
+    expect(actions.slice(0, actions.indexOf('{onRefreshCredentials'))).not.toContain('title=');
     const page = read('src/features/authFiles/AuthFilesPage.tsx');
-    expect(page).toContain("from '@/hooks/useModelCatalogSync'");
-    expect(page).toContain('invalidateModels()');
-    expect(page).toContain('setModelCatalogVersion');
-    expect(page).toContain('await showModels(');
-    expect(page).not.toContain('ModelCatalogSyncResult');
-    expect(read('src/pages/SystemModelsCard.tsx')).not.toContain('ModelCatalogSyncResult');
-    expect(read('src/pages/SystemModelsCard.tsx')).toContain(
-      'useModelCatalogSync(onCatalogsRefreshed)'
+    const callback = page.slice(
+      page.indexOf('useModelCatalogSync(() =>'),
+      page.indexOf('const invalidateDerivedCaches')
     );
-    expect(read('src/features/authFiles/hooks/useAuthFilesOauth.tsx')).toContain(
-      '[providerList, viewMode, modelCatalogVersion]'
-    );
-    expect(read('src/services/api/models.ts')).not.toContain('refreshCatalogs:');
+    expect(callback).toContain('invalidateModels()');
+    expect(callback).toContain('setModelCatalogVersion');
+    expect(callback).toContain('void showModels(');
+    expect(callback).not.toContain('invalidateDerivedCaches');
+    const oauth = read('src/features/authFiles/hooks/useAuthFilesOauth.tsx');
+    expect(oauth).toContain('[providerList, viewMode, modelCatalogVersion]');
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
-      const messages = JSON.parse(read(`src/i18n/locales/${locale}.json`));
-      expect(messages.model_catalog.button).toBeTruthy();
-      expect(messages.model_catalog.changed_providers).toContain('{{providers}}');
-      expect(messages.auth_files).not.toHaveProperty('sync_catalog_unchanged');
+      const translations = JSON.parse(read(`src/i18n/locales/${locale}.json`));
+      const system = translations.system_info;
+      expect(system.models_desc).toContain(system.models_refresh_button);
+      expect(system.models_desc).toContain(system.models_catalog_refresh_button);
+      const messages = translations.auth_files;
+      expect(messages).not.toHaveProperty('sync_catalog_tooltip');
+      for (const key of ['button', 'success', 'unchanged', 'failed']) {
+        expect(messages[`sync_catalog_${key}`]).toBeTruthy();
+      }
+      expect(messages.sync_catalog_success).toContain('{{providers}}');
     }
   });
 });

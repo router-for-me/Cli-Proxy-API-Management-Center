@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "Fill-First (Önceliklendir)"
   },
   "auth_files": {
+    "sync_catalog_button": "Model kataloğunu eşitle",
+    "sync_catalog_success": "Model kataloğu eşitlendi. Güncellenen sağlayıcılar: {{providers}}",
+    "sync_catalog_unchanged": "Model kataloğu eşitlendi. Değişiklik yok.",
+    "sync_catalog_failed": "Model kataloğu eşitlenemedi",
     "title": "Kimlik Dosyası Yönetimi",
     "meta_total": "{{count}} Kimlik Bilgisi",
     "meta_active": "{{count}} Aktif",
@@ -1927,25 +1931,17 @@
     "empty_src": "Eklenti Sayfası URL'si Boş",
     "empty_src_desc": "Bu Eklenti Menüsü Gömülebilir Bir Sayfa URL'si Sağlamıyor."
   },
-  "model_catalog": {
-    "button": "Model kataloğunu güncelle",
-    "hint": "En son model bilgilerini almak için tüm kullanıcıların paylaştığı model kataloğunu güncelleyin.",
-    "success": "Model kataloğu güncellendi.",
-    "skipped": "Model kataloğu güncellemesi sunucu politikası gereği atlandı.",
-    "partial": "Bazı model katalogları güncellenemedi.",
-    "error": "Model kataloğu güncellenemedi",
-    "unsupported": "Bu sunucu model kataloğu güncellemelerini desteklemiyor. CLI Proxy API sürümünü güncelleyip tekrar deneyin.",
-    "changed_providers": "Etkilenen sağlayıcılar: {{providers}}"
-  },
   "system_info": {
-    "version_release_notes": "Sürüm notlarını görüntüle",
-    "models_error_retained": "Modeller yenilenemedi. Son başarıyla yüklenen liste gösteriliyor.",
-    "models_refresh_success": "Kullanılabilir model listesi yenilendi: {{count}}.",
+    "models_refresh_button": "Listeyi yenile",
     "models_refresh_hint": "Güncel kullanılabilir modelleri alıp listeyi yenileyin.",
+    "models_refresh_success": "Kullanılabilir model listesi yenilendi: {{count}}.",
+    "models_catalog_refresh_button": "Model kataloğunu güncelle",
+    "models_catalog_refresh_hint": "En son model bilgilerini almak için tüm kullanıcıların paylaştığı model kataloğunu güncelleyin.",
+    "models_catalog_refresh_success": "Model kataloğu güncellendi.",
+    "models_catalog_refresh_failed": "Model kataloğu güncellenemedi",
     "title": "Yönetim Merkezi Bilgisi",
     "about_title": "CLIProxyAPI Yönetim Merkezi",
     "models_title": "Kullanılabilir Modeller",
-    "models_refresh_button": "Listeyi yenile",
     "models_desc": "“Listeyi yenile”ye tıklayarak güncel kullanılabilir modelleri görüntüleyin. Yeni bir model görünmüyorsa “Model kataloğunu güncelle”yi deneyin.",
     "models_loading": "Kullanılabilir Modeller Yükleniyor...",
     "models_empty": "Henüz kullanılabilir model yok.",

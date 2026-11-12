@@ -35,7 +35,6 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
   const modelsConnectionRef = useRef(apiClient.getConnectionRevision());
   const modelsFileVersionRef = useRef<Map<string, number>>(new Map());
   const activeModelsRequestIdRef = useRef(0);
-  const activeModelsFileRef = useRef('');
 
   const closeModelsModal = useCallback(() => {
     activeModelsRequestIdRef.current += 1;
@@ -62,16 +61,13 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
       if (modelsConnectionRef.current !== revision) {
         invalidateModels();
         modelsConnectionRef.current = revision;
-        activeModelsFileRef.current = '';
       }
       const cacheKey = item.name.trim();
       const requestId = ++activeModelsRequestIdRef.current;
-      const sameFile = activeModelsFileRef.current === cacheKey;
-      activeModelsFileRef.current = cacheKey;
 
       setModelsFileName(item.name);
       setModelsFileType(item.type || '');
-      if (!sameFile) setModelsList([]);
+      setModelsList([]);
       setModelsError(null);
       setModelsModalOpen(true);
 
@@ -92,10 +88,7 @@ export function useAuthFilesModels(): UseAuthFilesModelsResult {
 
       setModelsLoading(true);
       try {
-        const models = await authFilesApi.getModelsForAuthFile(
-          item.name,
-          () => isCacheCurrent() && isRequestCurrent()
-        );
+        const models = await authFilesApi.getModelsForAuthFile(item.name);
         if (isCacheCurrent()) {
           modelsCacheRef.current.set(cacheKey, models);
           if (isRequestCurrent()) setModelsList(models);

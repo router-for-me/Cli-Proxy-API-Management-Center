@@ -222,6 +222,10 @@
     "routing_strategy_fill_first": "fill-first (ưu tiên lấp đầy)"
   },
   "auth_files": {
+    "sync_catalog_button": "Đồng bộ danh mục mô hình",
+    "sync_catalog_success": "Đã đồng bộ danh mục mô hình. Nhà cung cấp được cập nhật: {{providers}}",
+    "sync_catalog_unchanged": "Đã đồng bộ danh mục mô hình. Không có thay đổi.",
+    "sync_catalog_failed": "Không thể đồng bộ danh mục mô hình",
     "title": "Quản lý File xác thực",
     "meta_total": "{{count}} credential",
     "meta_active": "{{count}} đang hoạt động",
@@ -1883,25 +1887,17 @@
     "empty_src": "URL trang plugin trống",
     "empty_src_desc": "Menu plugin này không cung cấp URL trang nhúng được."
   },
-  "model_catalog": {
-    "button": "Cập nhật danh mục mô hình",
-    "hint": "Cập nhật danh mục mô hình dùng chung cho mọi người để lấy thông tin mô hình mới nhất.",
-    "success": "Đã cập nhật danh mục mô hình.",
-    "skipped": "Đã bỏ qua cập nhật danh mục mô hình theo chính sách máy chủ.",
-    "partial": "Không thể cập nhật một số danh mục mô hình.",
-    "error": "Cập nhật danh mục mô hình thất bại",
-    "unsupported": "Máy chủ hiện tại không hỗ trợ cập nhật danh mục mô hình. Hãy cập nhật CLI Proxy API rồi thử lại.",
-    "changed_providers": "Nhà cung cấp bị ảnh hưởng: {{providers}}"
-  },
   "system_info": {
-    "version_release_notes": "Xem ghi chú phát hành",
-    "models_error_retained": "Không thể làm mới mô hình. Đang hiển thị danh sách tải thành công gần nhất.",
-    "models_refresh_success": "Đã làm mới danh sách mô hình khả dụng: {{count}}.",
+    "models_refresh_button": "Làm mới danh sách",
     "models_refresh_hint": "Lấy các mô hình khả dụng mới nhất và làm mới danh sách.",
+    "models_refresh_success": "Đã làm mới danh sách mô hình khả dụng: {{count}}.",
+    "models_catalog_refresh_button": "Cập nhật danh mục mô hình",
+    "models_catalog_refresh_hint": "Cập nhật danh mục mô hình dùng chung cho mọi người để lấy thông tin mô hình mới nhất.",
+    "models_catalog_refresh_success": "Đã cập nhật danh mục mô hình.",
+    "models_catalog_refresh_failed": "Cập nhật danh mục mô hình thất bại",
     "title": "Thông tin Trung tâm Quản lý",
     "about_title": "Trung tâm Quản lý CLI Proxy API",
     "models_title": "Model khả dụng",
-    "models_refresh_button": "Làm mới danh sách",
     "models_desc": "Nhấn “Làm mới danh sách” để xem các mô hình khả dụng mới nhất. Nếu thiếu mô hình mới, hãy thử “Cập nhật danh mục mô hình”.",
     "models_loading": "Đang tải model khả dụng...",
     "models_empty": "Chưa có mô hình khả dụng.",
