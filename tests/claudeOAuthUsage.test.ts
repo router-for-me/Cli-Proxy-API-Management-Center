@@ -451,7 +451,7 @@ describe('Claude usage snapshot rendering and retention', () => {
     expect(markup).not.toMatch(/<div class="quotaRow"><span class="quotaReset">/);
     expect(markup).not.toContain('codexResetCreditLabel');
     expect(markup).toContain(
-      '<span class="codexPlanItem"><span class="codexPlanLabel">Plan</span>'
+      '<span class="codexPlanItem" data-quota-plan=""><span class="codexPlanLabel">Plan</span>'
     );
   });
 

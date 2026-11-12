@@ -119,6 +119,14 @@
   }
 }
 
+.viewControls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
 .sort {
   flex: 0 0 auto;
   min-width: 148px;

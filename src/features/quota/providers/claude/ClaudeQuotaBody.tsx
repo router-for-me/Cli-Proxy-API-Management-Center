@@ -71,7 +71,7 @@ export function ClaudeQuotaBody({
       {(planType || planItems) && (
         <div className={classes.codexPlan}>
           {planType && (
-            <span className={classes.codexPlanItem}>
+            <span className={classes.codexPlanItem} data-quota-plan="">
               <span className={classes.codexPlanLabel}>{t('claude_quota.plan_label')}</span>
               <span className={planValueClassForTier(resolveClaudeCardTier(planType), classes)}>
                 {t(`claude_quota.${planType}`)}
