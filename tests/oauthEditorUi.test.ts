@@ -3,13 +3,19 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nextProvider } from 'react-i18next';
 import { createInstance } from 'i18next';
-import { OAuthEditorProviderCard } from '../src/features/authFiles/components/OAuthEditorProviderCard';
-import { OAuthAliasMappingRow } from '../src/features/authFiles/components/OAuthAliasMappingRow';
-import { SecondaryScreenShell } from '../src/components/common/SecondaryScreenShell';
+import { AliasLedgerRow } from '../src/features/authFiles/modelRules/AliasLedger';
+import {
+  ModelRulesWorkspace,
+  ProviderRail,
+  type ModelRulesWorkspaceProps,
+} from '../src/features/authFiles/modelRules/ModelRulesWorkspace';
 import en from '../src/i18n/locales/en.json';
 import zhCN from '../src/i18n/locales/zh-CN.json';
 import zhTW from '../src/i18n/locales/zh-TW.json';
 import ru from '../src/i18n/locales/ru.json';
+import vi from '../src/i18n/locales/vi.json';
+import ko from '../src/i18n/locales/ko.json';
+import tr from '../src/i18n/locales/tr.json';
 
 const i18n = createInstance();
 await i18n.init({ lng: 'en', resources: { en: { translation: en } } });
@@ -17,14 +23,15 @@ const noop = () => {};
 const render = (element: ReturnType<typeof createElement>) =>
   renderToStaticMarkup(createElement(I18nextProvider, { i18n }, element));
 
-function renderMapping(overrides: { disabled?: boolean; canRemove?: boolean } = {}) {
+function renderRow(
+  overrides: { disabled?: boolean; issue?: 'incomplete' | 'same' | 'duplicate' } = {}
+) {
   return render(
-    createElement(OAuthAliasMappingRow, {
-      entry: { name: 'source-model', alias: 'client-model', fork: true },
+    createElement(AliasLedgerRow, {
+      entry: { id: 'row', name: 'source-model', alias: 'client-model', fork: true },
       index: 1,
       options: [{ value: 'source-model' }],
       disabled: false,
-      canRemove: true,
       onChange: noop,
       onRemove: noop,
       ...overrides,
@@ -32,55 +39,35 @@ function renderMapping(overrides: { disabled?: boolean; canRemove?: boolean } = 
   );
 }
 
-describe('OAuth editor UI', () => {
-  test('allows scoped toolbar styling without losing the full title or actions', () => {
-    const markup = render(
-      createElement(SecondaryScreenShell, {
-        title: 'Edit model aliases for a-long-provider-name',
-        onBack: noop,
-        topBarClassName: 'oauth-toolbar',
-        rightAction: createElement('button', null, 'Save'),
-      })
-    );
-    expect(markup).toContain('class="oauth-toolbar"');
-    expect(markup).toContain('title="Edit model aliases for a-long-provider-name"');
-    expect(markup).toContain('<button>Save</button>');
-    expect(markup).toContain('aria-label="Back"');
-  });
+function renderWorkspace(overrides: Partial<ModelRulesWorkspaceProps> = {}) {
+  return render(
+    createElement(ModelRulesWorkspace, {
+      kind: 'alias',
+      title: 'OAuth Model Aliases',
+      description: 'Describe',
+      meta: ['2 providers', '5 mappings'],
+      status: 'ready',
+      errorMessage: '',
+      unsupportedTitle: 'Upgrade required',
+      unsupportedDescription: 'Upgrade the server',
+      onRetry: noop,
+      onBack: noop,
+      onSwitchKind: noop,
+      rail: createElement('nav', { id: 'rail' }),
+      dirtyCount: 0,
+      saving: false,
+      canSave: false,
+      onSave: noop,
+      onDiscard: noop,
+      children: createElement('div', { id: 'stage-content' }),
+      ...overrides,
+    })
+  );
+}
 
-  test('provider shortcuts expose normalized selection and an associated input label', () => {
-    const markup = render(
-      createElement(OAuthEditorProviderCard, {
-        provider: ' CODEX ',
-        options: ['codex', 'claude', 'custom-provider'],
-        onChange: noop,
-        disabled: false,
-        translationPrefix: 'oauth_excluded',
-      })
-    );
-    expect(markup.match(/aria-pressed="true"/g)).toHaveLength(1);
-    expect(markup.match(/aria-pressed="false"/g)).toHaveLength(2);
-    const inputId = markup.match(/<input id="([^"]+)"/)?.[1];
-    expect(inputId).toBeDefined();
-    expect(markup).toContain(`for="${inputId}"`);
-    expect(markup).toContain('Custom-provider');
-  });
-
-  test('disables provider input and every shortcut while saving or disconnected', () => {
-    const markup = render(
-      createElement(OAuthEditorProviderCard, {
-        provider: 'codex',
-        options: ['codex', 'claude'],
-        onChange: noop,
-        disabled: true,
-        translationPrefix: 'oauth_model_alias',
-      })
-    );
-    expect(markup.match(/disabled=""/g)).toHaveLength(3);
-  });
-
-  test('mapping fields have persistent associated labels and a contextual delete name', () => {
-    const markup = renderMapping();
+describe('model rules workspace UI', () => {
+  test('mapping fields keep associated labels and a contextual delete name', () => {
+    const markup = renderRow();
     expect(markup).toContain('aria-label="Alias mapping 2"');
     expect(markup).toContain('aria-label="Delete alias mapping 2"');
     expect(markup).toContain('value="source-model"');
@@ -91,22 +78,83 @@ describe('OAuth editor UI', () => {
       expect(markup).toContain(`for="${id}"`);
     }
     expect(markup).toContain('checked=""');
+    expect(markup).not.toContain('aria-invalid');
   });
 
-  test('preserves the last-row delete guard and disabled editing state', () => {
-    const lastRow = renderMapping({ canRemove: false });
-    expect(lastRow.match(/disabled=""/g)).toHaveLength(1);
-    const disabledRow = renderMapping({ disabled: true });
-    expect(disabledRow.match(/disabled=""/g)).toHaveLength(4);
+  test('disables every control of a row while saving or disconnected', () => {
+    // source input, alias input, keep-original switch, delete button
+    expect(renderRow({ disabled: true }).match(/disabled=""/g)).toHaveLength(4);
+    expect(renderRow()).not.toContain('disabled=""');
   });
 
-  test('all four locales include editor guidance and accessible row labels', () => {
-    for (const locale of [en, zhCN, zhTW, ru]) {
+  test('explains a row the backend would silently drop', () => {
+    const markup = renderRow({ issue: 'incomplete' });
+    const issueId = markup.match(/aria-describedby="([^"]+)"/)?.[1];
+    expect(issueId).toBeDefined();
+    expect(markup).toContain(`id="${issueId}"`);
+    expect(markup).toContain(en.model_rules.row_incomplete);
+    expect(markup).toContain('aria-invalid="true"');
+    expect(renderRow({ issue: 'duplicate' })).toContain(en.oauth_model_alias.duplicate_alias);
+    expect(renderRow({ issue: 'same' })).toContain(en.model_rules.row_same);
+  });
+
+  test('rail marks exactly one current scope and flags unsaved providers', () => {
+    const markup = render(
+      createElement(ProviderRail, {
+        items: [
+          { key: 'codex', label: 'Codex', icon: null, count: 3, dirty: true },
+          { key: 'claude', label: 'Claude', icon: null, count: 0, dirty: false },
+        ],
+        selected: 'codex',
+        total: 3,
+        disabled: false,
+        onSelect: noop,
+      })
+    );
+    expect(markup.match(/aria-current="true"/g)).toHaveLength(1);
+    expect(markup).toContain(`aria-label="${en.model_rules.unsaved_mark}"`);
+    expect(markup).toContain(`aria-label="${en.model_rules.custom_provider_label}"`);
+    expect(markup).toContain(`aria-label="${en.model_rules.rail_label}"`);
+  });
+
+  test('shows the workspace only once the baseline is ready', () => {
+    const ready = renderWorkspace();
+    expect(ready).toContain('id="rail"');
+    expect(ready).toContain('id="stage-content"');
+    expect(ready).toContain('2 providers');
+    expect(ready.match(/aria-pressed="true"/g)).toHaveLength(1);
+
+    const loading = renderWorkspace({ status: 'loading' });
+    expect(loading).toContain('aria-busy="true"');
+    expect(loading).not.toContain('id="stage-content"');
+
+    const unsupported = renderWorkspace({ status: 'unsupported' });
+    expect(unsupported).toContain('Upgrade required');
+    expect(unsupported).not.toContain('id="stage-content"');
+
+    const failed = renderWorkspace({ status: 'error', errorMessage: 'boom' });
+    expect(failed).toContain('boom');
+    expect(failed).toContain('empty-action');
+    expect(failed).not.toContain('id="stage-content"');
+  });
+
+  test('all seven locales cover the workspace copy with matching placeholders', () => {
+    const base = en.model_rules as Record<string, string>;
+    for (const locale of [en, zhCN, zhTW, ru, vi, ko, tr]) {
+      const rules = locale.model_rules as Record<string, string>;
+      for (const [key, value] of Object.entries(rules)) {
+        expect(value.trim().length).toBeGreaterThan(0);
+        expect(value.includes('{{count}}')).toBe(/^(meta_(?!empty)|unsaved_count)/.test(key));
+      }
+      for (const key of Object.keys(base)) {
+        const stem = key.replace(/_(one|other)$/, '');
+        expect(
+          Object.keys(rules).some((name) => name === stem || name.startsWith(`${stem}_`))
+        ).toBe(true);
+      }
       expect(locale.oauth_excluded.editor_description.length).toBeGreaterThan(0);
       expect(locale.oauth_excluded.models_hint.length).toBeGreaterThan(0);
       expect(locale.oauth_model_alias.editor_description.length).toBeGreaterThan(0);
-      expect(locale.oauth_model_alias.mapping_hint.length).toBeGreaterThan(0);
-      expect(locale.oauth_model_alias.edit_title).toContain('{{provider}}');
       expect(locale.oauth_model_alias.mapping_row).toContain('{{number}}');
       expect(locale.oauth_model_alias.remove_mapping).toContain('{{number}}');
     }

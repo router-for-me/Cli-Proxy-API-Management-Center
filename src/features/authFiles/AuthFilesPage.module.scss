@@ -83,18 +83,6 @@
   white-space: nowrap;
 }
 
-/* ---------- OAuth 配置双卡 ---------- */
-
-.configGrid {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(0, 1fr);
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @include mobile {
   .page {
     gap: 16px;

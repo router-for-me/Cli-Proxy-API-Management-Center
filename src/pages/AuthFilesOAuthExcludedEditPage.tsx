@@ -1,431 +1,305 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconEyeOff, IconNetwork } from '@/components/ui/icons';
-import { OAuthEditorProviderCard } from '@/features/authFiles/components/OAuthEditorProviderCard';
 import {
+  ExcludedModelChipRow,
+  ExcludedModelRuleChip,
   ExcludedModelsPicker,
+  isWildcardRule,
   normalizeExcludedRules,
-  type ExcludedModelsCatalogState,
 } from '@/components/excludedModels';
-import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { useAuthStore, useNotificationStore } from '@/stores';
+import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
-import { buildOAuthProviderOptions, normalizeProviderKey } from '@/features/authFiles/constants';
-import { getStringSetSignature, isOAuthEditorDirty } from '@/features/authFiles/oauthEditorState';
-import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
-import { getErrorMessage } from '@/utils/helpers';
-import styles from '@/features/authFiles/components/OAuthEditor.module.scss';
-
-type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
-
-type LocationState = { fromAuthFiles?: boolean } | null;
+import {
+  getAuthFileIcon,
+  getTypeLabel,
+  normalizeProviderKey,
+} from '@/features/authFiles/constants';
+import {
+  ModelRulesWorkspace,
+  ProviderRail,
+} from '@/features/authFiles/modelRules/ModelRulesWorkspace';
+import { RuleGroup } from '@/features/authFiles/modelRules/RuleGroup';
+import {
+  buildExcludedDraft,
+  buildExcludedSavePlan,
+  getDirtyExcludedProviders,
+  getExcludedStats,
+  rebaseDraft,
+  setExcludedRules,
+  type ExcludedDraft,
+} from '@/features/authFiles/modelRules/draft';
+import {
+  runSavePlan,
+  useModelRulesData,
+  useProviderModelCatalog,
+} from '@/features/authFiles/modelRules/useModelRulesData';
+import {
+  buildRailItems,
+  useModelRulesRoute,
+} from '@/features/authFiles/modelRules/useModelRulesRoute';
+import styles from '@/features/authFiles/modelRules/ModelRules.module.scss';
 
 export function AuthFilesOAuthExcludedEditPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { showConfirmation, showNotification } = useNotificationStore();
+  const pickerLabelId = useId();
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const disableControls = connectionStatus !== 'connected';
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const providerFromParams = searchParams.get('provider') ?? '';
-  const [initialProviderKey] = useState(() => normalizeProviderKey(providerFromParams));
+  const data = useModelRulesData('excluded');
+  const baseline = data.excluded;
 
-  const [provider, setProvider] = useState(providerFromParams);
-  const [files, setFiles] = useState<AuthFileItem[]>([]);
-  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
-  const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
-  const [baselineReady, setBaselineReady] = useState(false);
-  const [excludedUnsupported, setExcludedUnsupported] = useState(false);
-  const loadRequestRef = useRef(0);
-
-  const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set());
-  const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
+  const [draftState, setDraftState] = useState<{ revision: number; draft: ExcludedDraft }>({
+    revision: 0,
+    draft: {},
+  });
+  const [keepProviders, setKeepProviders] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setProvider(providerFromParams);
-  }, [providerFromParams]);
+  const draft = draftState.draft;
+  const dirtyProviders = useMemo(
+    () => getDirtyExcludedProviders(baseline, draft),
+    [baseline, draft]
+  );
+  const isDirty = data.status === 'ready' && dirtyProviders.length > 0;
 
-  const providerOptions = useMemo(() => {
-    const extraProviders = new Set<string>();
-    Object.keys(excluded).forEach((value) => extraProviders.add(value));
-    Object.keys(modelAlias).forEach((value) => extraProviders.add(value));
-    files.forEach((file) => {
-      if (typeof file.type === 'string') {
-        extraProviders.add(file.type);
-      }
-      if (typeof file.provider === 'string') {
-        extraProviders.add(file.provider);
-      }
+  const route = useModelRulesRoute('excluded', isDirty);
+  const selected = route.provider;
+
+  // 与别名工作台相同：基线到达的同一次渲染里对齐草稿，保存失败的 provider 保留输入。
+  if (draftState.revision !== data.revision) {
+    setDraftState({
+      revision: data.revision,
+      draft: rebaseDraft(buildExcludedDraft(baseline), draft, keepProviders),
     });
+    if (keepProviders.length) setKeepProviders([]);
+  }
 
-    return buildOAuthProviderOptions(extraProviders);
-  }, [excluded, files, modelAlias]);
+  const setDraft = useCallback((update: (current: ExcludedDraft) => ExcludedDraft) => {
+    setDraftState((current) => ({ ...current, draft: update(current.draft) }));
+  }, []);
 
-  const resolvedProviderKey = useMemo(() => normalizeProviderKey(provider), [provider]);
-  const isEditing = useMemo(() => {
-    if (!resolvedProviderKey) return false;
-    return Object.prototype.hasOwnProperty.call(excluded, resolvedProviderKey);
-  }, [excluded, resolvedProviderKey]);
-  const baselineModelsSignature = useMemo(
-    () => getStringSetSignature(normalizeExcludedRules(excluded[resolvedProviderKey] ?? [])),
-    [excluded, resolvedProviderKey]
+  const disabled = connectionStatus !== 'connected' || saving;
+
+  const counts = useMemo(() => {
+    const result: Record<string, number> = {};
+    Object.entries(draft).forEach(([provider, rules]) => {
+      if (rules.length) result[provider] = rules.length;
+    });
+    return result;
+  }, [draft]);
+  const stats = useMemo(() => getExcludedStats(draft), [draft]);
+
+  const railItems = useMemo(
+    () =>
+      buildRailItems(
+        {
+          files: data.files,
+          excluded: baseline,
+          modelAlias: data.modelAlias,
+          configured: Object.keys(baseline),
+          counts,
+          dirtyProviders,
+          selected,
+        },
+        t,
+        resolvedTheme
+      ),
+    [baseline, counts, data.files, data.modelAlias, dirtyProviders, resolvedTheme, selected, t]
   );
-  /** 规则集就是选中集本身——「待添加的自定义规则」随 Add 按钮一起消失了。 */
-  const effectiveRules = useMemo(() => normalizeExcludedRules(selectedModels), [selectedModels]);
-  const effectiveRulesSignature = useMemo(
-    () => getStringSetSignature(effectiveRules),
-    [effectiveRules]
+
+  const overviewProviders = useMemo(
+    () => railItems.filter((item) => item.count > 0).map((item) => item.key),
+    [railItems]
   );
-  const contentDirty = baselineModelsSignature !== effectiveRulesSignature;
+
+  // 目录只为正在编辑的那个 provider 加载；概览只读规则本身，不需要目录。
+  const catalogProviders = useMemo(() => (selected ? [selected] : []), [selected]);
+  const { catalog, retry: retryCatalog } = useProviderModelCatalog(
+    catalogProviders,
+    data.status === 'ready'
+  );
+  const selectedCatalog = selected ? catalog[selected] : undefined;
   const candidates = useMemo(
-    () => modelsList.map((model) => ({ id: model.id, displayName: model.display_name })),
-    [modelsList]
-  );
-  const catalogState: ExcludedModelsCatalogState = modelsLoading
-    ? 'loading'
-    : modelsError === 'unsupported'
-      ? 'unavailable'
-      : 'ready';
-  const isDirty = isOAuthEditorDirty(
-    initialProviderKey,
-    provider,
-    baselineModelsSignature,
-    effectiveRulesSignature
-  );
-  const unsavedChangesDialog = useMemo(
-    () => ({
-      title: t('common.unsaved_changes_title'),
-      message: t('common.unsaved_changes_message'),
-      confirmText: t('common.leave'),
-      cancelText: t('common.stay'),
-    }),
-    [t]
-  );
-  const { allowNextNavigation, allowNavigationTo } = useUnsavedChangesGuard({
-    shouldBlock: isDirty,
-    dialog: unsavedChangesDialog,
-  });
-
-  const title = useMemo(() => {
-    if (isEditing) {
-      return t('oauth_excluded.edit_title', { provider: provider.trim() || resolvedProviderKey });
-    }
-    return t('oauth_excluded.add_title');
-  }, [isEditing, provider, resolvedProviderKey, t]);
-
-  const handleBack = useCallback(() => {
-    const state = location.state as LocationState;
-    if (state?.fromAuthFiles) {
-      navigate(-1);
-      return;
-    }
-    navigate('/auth-files', { replace: true });
-  }, [location.state, navigate]);
-
-  const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleBack();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBack]);
-
-  const loadInitialData = useCallback(async () => {
-    const requestId = ++loadRequestRef.current;
-    setInitialLoading(true);
-    setInitialLoadError(null);
-    setBaselineReady(false);
-    setExcludedUnsupported(false);
-
-    try {
-      const [filesResult, excludedResult, aliasResult] = await Promise.allSettled([
-        authFilesApi.list(),
-        authFilesApi.getOauthExcludedModels(),
-        authFilesApi.getOauthModelAlias(),
-      ]);
-
-      if (requestId !== loadRequestRef.current) return;
-
-      if (filesResult.status === 'fulfilled') {
-        setFiles(filesResult.value?.files ?? []);
-      }
-
-      if (aliasResult.status === 'fulfilled') {
-        setModelAlias(aliasResult.value ?? {});
-      }
-
-      if (excludedResult.status === 'fulfilled') {
-        setExcluded(excludedResult.value ?? {});
-        setBaselineReady(true);
-        return;
-      }
-
-      const err = excludedResult.reason;
-      const status =
-        typeof err === 'object' && err !== null && 'status' in err
-          ? (err as { status?: unknown }).status
-          : undefined;
-
-      if (status === 404) {
-        setExcludedUnsupported(true);
-        return;
-      }
-      setInitialLoadError(getErrorMessage(err));
-    } catch (err: unknown) {
-      if (requestId === loadRequestRef.current) {
-        setInitialLoadError(getErrorMessage(err));
-      }
-    } finally {
-      if (requestId === loadRequestRef.current) {
-        setInitialLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadInitialData();
-    return () => {
-      loadRequestRef.current += 1;
-    };
-  }, [loadInitialData]);
-
-  useEffect(() => {
-    if (!resolvedProviderKey) {
-      setSelectedModels(new Set());
-      return;
-    }
-    const existing = excluded[resolvedProviderKey] ?? [];
-    setSelectedModels(new Set(normalizeExcludedRules(existing)));
-  }, [excluded, resolvedProviderKey]);
-
-  useEffect(() => {
-    if (!resolvedProviderKey || excludedUnsupported) {
-      setModelsList([]);
-      setModelsError(null);
-      setModelsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setModelsList([]);
-    setModelsLoading(true);
-    setModelsError(null);
-
-    authFilesApi
-      .getModelDefinitions(resolvedProviderKey)
-      .then((models) => {
-        if (cancelled) return;
-        setModelsList(models);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        const status =
-          typeof err === 'object' && err !== null && 'status' in err
-            ? (err as { status?: unknown }).status
-            : undefined;
-
-        if (status === 400 || status === 404) {
-          setModelsList([]);
-          setModelsError('unsupported');
-          return;
-        }
-
-        const errorMessage = err instanceof Error ? err.message : '';
-        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setModelsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [excludedUnsupported, resolvedProviderKey, showNotification, t]);
-
-  const applyProviderChange = useCallback(
-    (value: string) => {
-      setProvider(value);
-      const next = new URLSearchParams(searchParams);
-      const trimmed = value.trim();
-      if (trimmed) {
-        next.set('provider', trimmed);
-      } else {
-        next.delete('provider');
-      }
-      const nextSearch = next.toString();
-      allowNavigationTo(
-        `${location.pathname}${nextSearch ? `?${nextSearch}` : ''}${location.hash}`
-      );
-      setSearchParams(next, { replace: true });
-    },
-    [allowNavigationTo, location.hash, location.pathname, searchParams, setSearchParams]
+    () =>
+      (selectedCatalog?.models ?? []).map((model) => ({
+        id: model.id,
+        displayName: model.display_name,
+      })),
+    [selectedCatalog]
   );
 
-  const updateProvider = useCallback(
-    (value: string) => {
-      if (!contentDirty || normalizeProviderKey(value) === resolvedProviderKey) {
-        applyProviderChange(value);
-        return;
-      }
-      showConfirmation({
-        ...unsavedChangesDialog,
-        variant: 'danger',
-        onConfirm: () => applyProviderChange(value),
-      });
-    },
-    [applyProviderChange, contentDirty, resolvedProviderKey, showConfirmation, unsavedChangesDialog]
+  const selectProvider = useCallback(
+    (value: string) => route.openProvider(normalizeProviderKey(value)),
+    [route]
   );
 
-  const handleRulesChange = useCallback((next: string[]) => {
-    setSelectedModels(new Set(next));
-  }, []);
+  const handleDiscard = useCallback(() => {
+    setDraft(() => buildExcludedDraft(baseline));
+  }, [baseline, setDraft]);
 
   const handleSave = useCallback(async () => {
-    const normalizedProvider = normalizeProviderKey(provider);
-    if (!normalizedProvider) {
-      showNotification(t('oauth_excluded.provider_required'), 'error');
-      return;
-    }
-
-    const models = effectiveRules;
+    if (saving) return;
     setSaving(true);
     try {
-      if (models.length) {
-        await authFilesApi.saveOauthExcludedModels(normalizedProvider, models);
-      } else if (isEditing) {
-        await authFilesApi.deleteOauthExcludedEntry(normalizedProvider);
+      const outcome = await runSavePlan(
+        buildExcludedSavePlan(baseline, draft),
+        authFilesApi.saveOauthExcludedModels,
+        authFilesApi.deleteOauthExcludedEntry
+      );
+      setKeepProviders(outcome.failed);
+      const current = await data.reload();
+      if (!current) return;
+      if (outcome.failed.length) {
+        showNotification(
+          outcome.message
+            ? `${t('oauth_excluded.save_failed')}: ${outcome.message}`
+            : t('oauth_excluded.save_failed'),
+          'error'
+        );
+      } else {
+        showNotification(t('oauth_excluded.save_success'), 'success');
       }
-      showNotification(t('oauth_excluded.save_success'), 'success');
-      allowNextNavigation();
-      handleBack();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_excluded.save_failed')}: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
     }
-  }, [allowNextNavigation, effectiveRules, handleBack, isEditing, provider, showNotification, t]);
+  }, [baseline, data, draft, saving, showNotification, t]);
 
-  const canSave =
-    !disableControls &&
-    !saving &&
-    baselineReady &&
-    !excludedUnsupported &&
-    initialLoadError === null;
+  const summaryFor = (provider: string) =>
+    counts[provider]
+      ? t('model_rules.meta_rules', { count: counts[provider] })
+      : t('oauth_excluded.no_models');
+
+  const clearAction = (provider: string) =>
+    counts[provider] ? (
+      <button
+        type="button"
+        className={styles.quietDanger}
+        onClick={() => setDraft((current) => setExcludedRules(current, provider, []))}
+        disabled={disabled}
+      >
+        {t('model_rules.clear_provider')}
+      </button>
+    ) : null;
+
+  const meta =
+    stats.rules > 0
+      ? [
+          t('model_rules.meta_providers', { count: stats.providers }),
+          t('model_rules.meta_rules', { count: stats.rules }),
+        ]
+      : [t('model_rules.meta_empty')];
 
   return (
-    <SecondaryScreenShell
-      ref={swipeRef}
-      title={title}
-      onBack={handleBack}
-      backLabel={t('common.back')}
-      backAriaLabel={t('common.back')}
-      contentClassName={styles.pageContent}
-      topBarClassName={styles.topBar}
-      rightAction={
-        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
-          {t('oauth_excluded.save')}
-        </Button>
+    <ModelRulesWorkspace
+      kind="excluded"
+      title={t('oauth_excluded.title')}
+      description={t('oauth_excluded.editor_description')}
+      meta={data.status === 'ready' ? meta : []}
+      status={data.status}
+      errorMessage={data.errorMessage}
+      unsupportedTitle={t('oauth_excluded.upgrade_required_title')}
+      unsupportedDescription={t('oauth_excluded.upgrade_required_desc')}
+      onRetry={() => void data.reload()}
+      onBack={route.goBack}
+      onSwitchKind={route.switchKind}
+      rail={
+        <ProviderRail
+          items={railItems}
+          selected={selected}
+          total={stats.rules}
+          disabled={disabled}
+          onSelect={selectProvider}
+        />
       }
-      isLoading={initialLoading}
-      loadingLabel={t('common.loading')}
+      dirtyCount={isDirty ? dirtyProviders.length : 0}
+      saving={saving}
+      canSave={isDirty && !disabled}
+      onSave={() => void handleSave()}
+      onDiscard={handleDiscard}
     >
-      {excludedUnsupported ? (
-        <Card>
-          <EmptyState
-            title={t('oauth_excluded.upgrade_required_title')}
-            description={t('oauth_excluded.upgrade_required_desc')}
-          />
-        </Card>
-      ) : initialLoadError !== null ? (
-        <Card>
-          <EmptyState
-            title={t('notification.refresh_failed')}
-            description={initialLoadError || t('notification.refresh_failed')}
-            action={
-              <Button variant="secondary" size="sm" onClick={() => void loadInitialData()}>
-                {t('common.refresh')}
-              </Button>
-            }
-          />
-        </Card>
-      ) : (
-        <>
-          <div className={styles.intro}>
-            <span className={styles.introIcon}>
-              <IconEyeOff size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <h1 className={styles.introTitle}>{t('oauth_excluded.title')}</h1>
-              <p className={styles.description}>{t('oauth_excluded.editor_description')}</p>
-            </div>
+      {selected ? (
+        <RuleGroup
+          provider={selected}
+          label={getTypeLabel(t, selected)}
+          icon={getAuthFileIcon(selected, resolvedTheme)}
+          summary={summaryFor(selected)}
+          dirty={dirtyProviders.includes(selected)}
+          dirtyLabel={t('model_rules.unsaved_mark')}
+          actions={clearAction(selected)}
+        >
+          <div className={styles.groupBody}>
+            <p className={styles.fieldLabel} id={pickerLabelId}>
+              {t('oauth_excluded.models_label')}
+            </p>
+            <p className={styles.fieldHint}>{t('oauth_excluded.models_hint')}</p>
+            <ExcludedModelsPicker
+              value={draft[selected] ?? []}
+              onChange={(next) => setDraft((current) => setExcludedRules(current, selected, next))}
+              candidates={candidates}
+              catalogState={selectedCatalog?.state ?? 'loading'}
+              onRetryCatalog={() => retryCatalog(selected)}
+              disabled={disabled}
+              labelledBy={pickerLabelId}
+            />
           </div>
-
-          <OAuthEditorProviderCard
-            provider={provider}
-            options={providerOptions}
-            onChange={updateProvider}
-            disabled={disableControls || saving}
-            translationPrefix="oauth_excluded"
-          />
-
-          <Card className={styles.settingsCard}>
-            <div className={styles.editorHeader}>
-              <div className={styles.sectionHeading}>
-                <span className={styles.stepNumber} aria-hidden="true">
-                  02
-                </span>
-                <div className={styles.headingCopy}>
-                  <h2 className={styles.sectionTitle} id="oauth-excluded-models-label">
-                    {t('oauth_excluded.models_label')}
-                  </h2>
-                  <p className={styles.description}>{t('oauth_excluded.models_hint')}</p>
-                </div>
+        </RuleGroup>
+      ) : overviewProviders.length > 0 ? (
+        overviewProviders.map((provider) => {
+          const rules = normalizeExcludedRules(draft[provider] ?? []);
+          return (
+            <RuleGroup
+              key={provider}
+              provider={provider}
+              label={getTypeLabel(t, provider)}
+              icon={getAuthFileIcon(provider, resolvedTheme)}
+              summary={summaryFor(provider)}
+              dirty={dirtyProviders.includes(provider)}
+              dirtyLabel={t('model_rules.unsaved_mark')}
+              actions={
+                <>
+                  <button
+                    type="button"
+                    className={styles.quietAction}
+                    onClick={() => selectProvider(provider)}
+                  >
+                    {t('common.edit')}
+                  </button>
+                  {clearAction(provider)}
+                </>
+              }
+            >
+              <div className={styles.groupBody}>
+                <ExcludedModelChipRow>
+                  {rules.map((rule) => (
+                    <ExcludedModelRuleChip
+                      key={rule.toLowerCase()}
+                      label={rule}
+                      variant={isWildcardRule(rule) ? 'wildcard' : 'exact'}
+                      onRemove={() =>
+                        setDraft((current) =>
+                          setExcludedRules(
+                            current,
+                            provider,
+                            rules.filter((item) => item !== rule)
+                          )
+                        )
+                      }
+                      removeAriaLabel={t('excluded_models.chip_remove', { rule })}
+                      disabled={disabled}
+                    />
+                  ))}
+                </ExcludedModelChipRow>
               </div>
-              {resolvedProviderKey && (
-                <span className={styles.countBadge}>
-                  {t('excluded_models.trigger_summary_rules', { n: effectiveRules.length })}
-                </span>
-              )}
-            </div>
-            <div className={styles.editorBody}>
-              {resolvedProviderKey ? (
-                <ExcludedModelsPicker
-                  value={effectiveRules}
-                  onChange={handleRulesChange}
-                  candidates={candidates}
-                  catalogState={catalogState}
-                  disabled={disableControls || saving}
-                  labelledBy="oauth-excluded-models-label"
-                />
-              ) : (
-                <div className={styles.emptyModels}>
-                  <IconNetwork size={24} aria-hidden="true" />
-                  {t('oauth_excluded.provider_required')}
-                </div>
-              )}
-            </div>
-          </Card>
-        </>
+            </RuleGroup>
+          );
+        })
+      ) : (
+        <div className={styles.notice}>
+          <EmptyState title={t('oauth_excluded.list_empty_all')} />
+        </div>
       )}
-    </SecondaryScreenShell>
+    </ModelRulesWorkspace>
   );
 }

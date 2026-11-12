@@ -1,5 +1,3 @@
-import { normalizeProviderKey } from './constants';
-
 type ModelAliasDraftEntry = {
   id?: string;
   name?: string;
@@ -32,12 +30,3 @@ export const getModelAliasDraftSignature = (entries: ModelAliasDraftEntry[]): st
           entry.forceMapping !== undefined
       )
   );
-
-export const isOAuthEditorDirty = (
-  initialProvider: string,
-  currentProvider: string,
-  baselineContentSignature: string,
-  currentContentSignature: string
-): boolean =>
-  normalizeProviderKey(initialProvider) !== normalizeProviderKey(currentProvider) ||
-  baselineContentSignature !== currentContentSignature;

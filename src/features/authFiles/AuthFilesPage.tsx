@@ -30,8 +30,7 @@ import { AuthFileRefreshResults } from '@/features/authFiles/components/AuthFile
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesToolbar } from '@/features/authFiles/components/AuthFilesToolbar';
 import { BatchActionBar } from '@/features/authFiles/components/BatchActionBar';
-import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
-import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
+import { ModelRulesEntry } from '@/features/authFiles/components/ModelRulesEntry';
 import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { VaultHeader } from '@/features/authFiles/components/VaultHeader';
 import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
@@ -45,6 +44,8 @@ import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useModelCatalogSync } from '@/features/authFiles/hooks/useModelCatalogSync';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
 import { useAuthFilesOauth } from '@/features/authFiles/hooks/useAuthFilesOauth';
+import { buildModelRulesPath } from '@/features/authFiles/modelRules/useModelRulesRoute';
+import type { ModelRulesKind } from '@/features/authFiles/modelRules/useModelRulesData';
 import { useAuthFilesPrefixProxyEditor } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
 import { useAuthFilesStatusBarCache } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
 import {
@@ -104,7 +105,6 @@ export function AuthFilesPage() {
     compact: DEFAULT_COMPACT_PAGE_SIZE,
   });
   const [pageSizeInput, setPageSizeInput] = useState('9');
-  const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
 
@@ -120,10 +120,8 @@ export function AuthFilesPage() {
     invalidateModels,
   } = useAuthFilesModels();
 
-  const [modelCatalogVersion, setModelCatalogVersion] = useState(0);
   const { syncingModelCatalog, syncModelCatalog } = useModelCatalogSync(() => {
     invalidateModels();
-    setModelCatalogVersion((version) => version + 1);
     if (modelsModalOpen) {
       void showModels({ name: modelsFileName, type: modelsFileType });
     }
@@ -173,22 +171,8 @@ export function AuthFilesPage() {
 
   const statusBarCache = useAuthFilesStatusBarCache(files);
 
-  const {
-    excluded,
-    excludedError,
-    modelAlias,
-    modelAliasError,
-    allProviderModels,
-    loadExcluded,
-    loadModelAlias,
-    deleteExcluded,
-    deleteModelAlias,
-    handleMappingUpdate,
-    handleDeleteLink,
-    handleToggleFork,
-    handleRenameAlias,
-    handleDeleteAlias,
-  } = useAuthFilesOauth({ viewMode, files, modelCatalogVersion });
+  const { excluded, excludedError, modelAlias, modelAliasError, loadExcluded, loadModelAlias } =
+    useAuthFilesOauth();
 
   const {
     prefixProxyEditor,
@@ -537,34 +521,11 @@ export function AuthFilesPage() {
     [showNotification, t]
   );
 
-  const openExcludedEditor = useCallback(
-    (provider?: string) => {
-      const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
-      const params = new URLSearchParams();
-      if (providerValue) {
-        params.set('provider', providerValue);
-      }
-      const nextSearch = params.toString();
-      navigate(`/auth-files/oauth-excluded${nextSearch ? `?${nextSearch}` : ''}`, {
-        state: { fromAuthFiles: true },
-      });
+  const openModelRules = useCallback(
+    (kind: ModelRulesKind, provider?: string) => {
+      navigate(buildModelRulesPath(kind, provider), { state: { fromAuthFiles: true } });
     },
-    [filter, navigate]
-  );
-
-  const openModelAliasEditor = useCallback(
-    (provider?: string) => {
-      const providerValue = (provider || (filter !== 'all' ? String(filter) : '')).trim();
-      const params = new URLSearchParams();
-      if (providerValue) {
-        params.set('provider', providerValue);
-      }
-      const nextSearch = params.toString();
-      navigate(`/auth-files/oauth-model-alias${nextSearch ? `?${nextSearch}` : ''}`, {
-        state: { fromAuthFiles: true },
-      });
-    },
-    [filter, navigate]
+    [navigate]
   );
 
   const clearFilters = useCallback(() => {
@@ -804,33 +765,18 @@ export function AuthFilesPage() {
         )}
       </section>
 
-      <div className={styles.configGrid} ref={oauthSectionRef}>
-        <OAuthExcludedCard
-          disableControls={disableControls}
-          excludedError={excludedError}
+      <div ref={oauthSectionRef}>
+        <ModelRulesEntry
           excluded={excluded}
-          onRetry={loadExcluded}
-          onAdd={() => openExcludedEditor()}
-          onEdit={openExcludedEditor}
-          onDelete={deleteExcluded}
-        />
-
-        <OAuthModelAliasCard
-          disableControls={disableControls}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onRetry={loadModelAlias}
-          onAdd={() => openModelAliasEditor()}
-          onEditProvider={openModelAliasEditor}
-          onDeleteProvider={deleteModelAlias}
-          modelAliasError={modelAliasError}
+          excludedError={excludedError}
           modelAlias={modelAlias}
-          allProviderModels={allProviderModels}
-          onUpdate={handleMappingUpdate}
-          onDeleteLink={handleDeleteLink}
-          onToggleFork={handleToggleFork}
-          onRenameAlias={handleRenameAlias}
-          onDeleteAlias={handleDeleteAlias}
+          modelAliasError={modelAliasError}
+          scope={normalizedFilter}
+          resolvedTheme={resolvedTheme}
+          onOpenExcluded={(provider) => openModelRules('excluded', provider)}
+          onOpenAlias={(provider) => openModelRules('alias', provider)}
+          onRetryExcluded={loadExcluded}
+          onRetryAlias={loadModelAlias}
         />
       </div>
 

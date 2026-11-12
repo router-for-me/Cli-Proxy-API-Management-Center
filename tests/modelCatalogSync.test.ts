@@ -166,11 +166,11 @@ describe('global model catalog sync', () => {
       page.indexOf('const invalidateDerivedCaches')
     );
     expect(callback).toContain('invalidateModels()');
-    expect(callback).toContain('setModelCatalogVersion');
     expect(callback).toContain('void showModels(');
     expect(callback).not.toContain('invalidateDerivedCaches');
-    const oauth = read('src/features/authFiles/hooks/useAuthFilesOauth.tsx');
-    expect(oauth).toContain('[providerList, viewMode, modelCatalogVersion]');
+    // The alias diagram left this page: the model rules workspace fetches provider catalogs
+    // fresh on mount, so the page no longer keeps a catalog version to re-trigger them.
+    expect(page).not.toContain('modelCatalogVersion');
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
       const translations = JSON.parse(read(`src/i18n/locales/${locale}.json`));
       const system = translations.system_info;

@@ -1,502 +1,433 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { IconInfo, IconNetwork, IconPlus } from '@/components/ui/icons';
-import { OAuthEditorProviderCard } from '@/features/authFiles/components/OAuthEditorProviderCard';
-import { OAuthAliasMappingRow } from '@/features/authFiles/components/OAuthAliasMappingRow';
-import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
-import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { useAuthStore, useNotificationStore } from '@/stores';
+import { IconChevronUp, IconSearch } from '@/components/ui/icons';
+import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
+import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
-import { buildOAuthProviderOptions, normalizeProviderKey } from '@/features/authFiles/constants';
 import {
-  getModelAliasDraftSignature,
-  isOAuthEditorDirty,
-} from '@/features/authFiles/oauthEditorState';
-import type { AuthFileItem, OAuthModelAliasEntry } from '@/types';
-import { generateId, getErrorMessage } from '@/utils/helpers';
-import styles from '@/features/authFiles/components/OAuthEditor.module.scss';
+  getAuthFileIcon,
+  getTypeLabel,
+  normalizeProviderKey,
+  type AuthFileModelItem,
+} from '@/features/authFiles/constants';
+import { AliasLedger, type AliasLedgerGroup } from '@/features/authFiles/modelRules/AliasLedger';
+import {
+  ModelRulesWorkspace,
+  ProviderRail,
+  Segmented,
+} from '@/features/authFiles/modelRules/ModelRulesWorkspace';
+import {
+  addAliasLink,
+  addAliasRow,
+  buildAliasDraft,
+  buildAliasSavePlan,
+  clearAliasProvider,
+  deleteAlias,
+  ensureAliasRow,
+  findAliasDraftIssue,
+  getAliasRowIssues,
+  getAliasStats,
+  getDirtyAliasProviders,
+  rebaseDraft,
+  removeAliasLink,
+  removeAliasRow,
+  renameAlias,
+  setAliasLinkFork,
+  toAliasEntries,
+  toAliasMap,
+  updateAliasRow,
+  type AliasDraft,
+} from '@/features/authFiles/modelRules/draft';
+import {
+  runSavePlan,
+  useModelRulesData,
+  useProviderModelCatalog,
+} from '@/features/authFiles/modelRules/useModelRulesData';
+import {
+  buildRailItems,
+  useModelRulesRoute,
+} from '@/features/authFiles/modelRules/useModelRulesRoute';
+import { generateId } from '@/utils/helpers';
+import styles from '@/features/authFiles/modelRules/ModelRules.module.scss';
 
-type AuthFileModelItem = { id: string; display_name?: string; type?: string; owned_by?: string };
+type AliasView = 'ledger' | 'graph';
 
-type LocationState = { fromAuthFiles?: boolean } | null;
-
-type OAuthModelMappingFormEntry = OAuthModelAliasEntry & { id: string };
-
-const buildEmptyMappingEntry = (): OAuthModelMappingFormEntry => ({
-  id: generateId(),
-  name: '',
-  alias: '',
-  fork: true,
-});
-
-const normalizeMappingEntries = (
-  entries?: OAuthModelAliasEntry[]
-): OAuthModelMappingFormEntry[] => {
-  if (!Array.isArray(entries) || entries.length === 0) {
-    return [buildEmptyMappingEntry()];
-  }
-  return entries.map((entry) => ({
-    id: generateId(),
-    name: entry.name ?? '',
-    alias: entry.alias ?? '',
-    fork: Boolean(entry.fork),
-    forceMapping: entry.forceMapping,
-  }));
-};
+const ISSUE_MESSAGE_KEYS = {
+  incomplete: 'model_rules.row_incomplete',
+  same: 'model_rules.row_same',
+  duplicate: 'oauth_model_alias.duplicate_alias',
+} as const;
 
 export function AuthFilesOAuthModelAliasEditPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { showConfirmation, showNotification } = useNotificationStore();
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
-  const disableControls = connectionStatus !== 'connected';
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const diagramRef = useRef<ModelMappingDiagramRef | null>(null);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const providerFromParams = searchParams.get('provider') ?? '';
-  const [initialProviderKey] = useState(() => normalizeProviderKey(providerFromParams));
+  const data = useModelRulesData('alias');
+  const baseline = data.modelAlias;
 
-  const [provider, setProvider] = useState(providerFromParams);
-  const [files, setFiles] = useState<AuthFileItem[]>([]);
-  const [excluded, setExcluded] = useState<Record<string, string[]>>({});
-  const [modelAlias, setModelAlias] = useState<Record<string, OAuthModelAliasEntry[]>>({});
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [initialLoadError, setInitialLoadError] = useState<string | null>(null);
-  const [baselineReady, setBaselineReady] = useState(false);
-  const [modelAliasUnsupported, setModelAliasUnsupported] = useState(false);
-  const loadRequestRef = useRef(0);
-
-  const [mappings, setMappings] = useState<OAuthModelMappingFormEntry[]>([
-    buildEmptyMappingEntry(),
-  ]);
-  const [modelsList, setModelsList] = useState<AuthFileModelItem[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
-  const [modelsError, setModelsError] = useState<'unsupported' | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setProvider(providerFromParams);
-  }, [providerFromParams]);
-
-  const providerOptions = useMemo(() => {
-    const extraProviders = new Set<string>();
-    Object.keys(excluded).forEach((value) => extraProviders.add(value));
-    Object.keys(modelAlias).forEach((value) => extraProviders.add(value));
-    files.forEach((file) => {
-      if (typeof file.type === 'string') {
-        extraProviders.add(file.type);
-      }
-      if (typeof file.provider === 'string') {
-        extraProviders.add(file.provider);
-      }
-    });
-
-    return buildOAuthProviderOptions(extraProviders);
-  }, [excluded, files, modelAlias]);
-
-  const resolvedProviderKey = useMemo(() => normalizeProviderKey(provider), [provider]);
-  const isEditing = useMemo(() => {
-    if (!resolvedProviderKey) return false;
-    return Object.prototype.hasOwnProperty.call(modelAlias, resolvedProviderKey);
-  }, [modelAlias, resolvedProviderKey]);
-  const baselineMappingsSignature = useMemo(
-    () => getModelAliasDraftSignature(modelAlias[resolvedProviderKey] ?? []),
-    [modelAlias, resolvedProviderKey]
-  );
-  const mappingsSignature = useMemo(() => getModelAliasDraftSignature(mappings), [mappings]);
-  const contentDirty = baselineMappingsSignature !== mappingsSignature;
-  const isDirty = isOAuthEditorDirty(
-    initialProviderKey,
-    provider,
-    baselineMappingsSignature,
-    mappingsSignature
-  );
-  const unsavedChangesDialog = useMemo(
-    () => ({
-      title: t('common.unsaved_changes_title'),
-      message: t('common.unsaved_changes_message'),
-      confirmText: t('common.leave'),
-      cancelText: t('common.stay'),
-    }),
-    [t]
-  );
-  const { allowNextNavigation, allowNavigationTo } = useUnsavedChangesGuard({
-    shouldBlock: isDirty,
-    dialog: unsavedChangesDialog,
+  const [draftState, setDraftState] = useState<{ revision: number; draft: AliasDraft }>({
+    revision: 0,
+    draft: {},
   });
-  const title = isEditing
-    ? t('oauth_model_alias.edit_title', { provider: provider.trim() || resolvedProviderKey })
-    : t('oauth_model_alias.add_title');
-  const headerHint = useMemo(() => {
-    if (!provider.trim()) {
-      return t('oauth_model_alias.provider_hint');
-    }
-    if (modelsLoading) {
-      return t('oauth_model_alias.model_source_loading');
-    }
-    if (modelsError === 'unsupported') {
-      return t('oauth_model_alias.model_source_unsupported');
-    }
-    return t('oauth_model_alias.model_source_loaded', { count: modelsList.length });
-  }, [modelsError, modelsList.length, modelsLoading, provider, t]);
+  const [keepProviders, setKeepProviders] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  // 「只填了一半」在输入过程中是常态，不是错误：等用户尝试保存之后才标出来。
+  // 重复别名 / 与原名相同是确定的错误，随时标出。
+  const [saveAttempted, setSaveAttempted] = useState(false);
 
-  const handleBack = useCallback(() => {
-    const state = location.state as LocationState;
-    if (state?.fromAuthFiles) {
-      navigate(-1);
-      return;
-    }
-    navigate('/auth-files', { replace: true });
-  }, [location.state, navigate]);
+  const draft = draftState.draft;
+  const dirtyProviders = useMemo(() => getDirtyAliasProviders(baseline, draft), [baseline, draft]);
+  const isDirty = data.status === 'ready' && dirtyProviders.length > 0;
 
-  const swipeRef = useEdgeSwipeBack({ onBack: handleBack });
+  const route = useModelRulesRoute('alias', isDirty);
+  const { provider: selected, view } = route;
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleBack();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBack]);
+  // 基线每次（重新）载入后把草稿对齐过去；保存失败的 provider 保留用户输入。
+  // 在渲染期间同步完成，避免出现「基线已到、草稿还是空」的一帧（那一帧会被误判为有改动）。
+  if (draftState.revision !== data.revision) {
+    setDraftState({
+      revision: data.revision,
+      draft: ensureAliasRow(
+        rebaseDraft(buildAliasDraft(baseline, generateId), draft, keepProviders),
+        selected,
+        generateId
+      ),
+    });
+    if (keepProviders.length) setKeepProviders([]);
+  }
 
-  const loadInitialData = useCallback(async () => {
-    const requestId = ++loadRequestRef.current;
-    setInitialLoading(true);
-    setInitialLoadError(null);
-    setBaselineReady(false);
-    setModelAliasUnsupported(false);
-
-    try {
-      const [filesResult, excludedResult, aliasResult] = await Promise.allSettled([
-        authFilesApi.list(),
-        authFilesApi.getOauthExcludedModels(),
-        authFilesApi.getOauthModelAlias(),
-      ]);
-
-      if (requestId !== loadRequestRef.current) return;
-
-      if (filesResult.status === 'fulfilled') {
-        setFiles(filesResult.value?.files ?? []);
-      }
-
-      if (excludedResult.status === 'fulfilled') {
-        setExcluded(excludedResult.value ?? {});
-      }
-
-      if (aliasResult.status === 'fulfilled') {
-        setModelAlias(aliasResult.value ?? {});
-        setBaselineReady(true);
-        return;
-      }
-
-      const err = aliasResult.reason;
-      const status =
-        typeof err === 'object' && err !== null && 'status' in err
-          ? (err as { status?: unknown }).status
-          : undefined;
-
-      if (status === 404) {
-        setModelAliasUnsupported(true);
-        return;
-      }
-      setInitialLoadError(getErrorMessage(err));
-    } catch (err: unknown) {
-      if (requestId === loadRequestRef.current) {
-        setInitialLoadError(getErrorMessage(err));
-      }
-    } finally {
-      if (requestId === loadRequestRef.current) {
-        setInitialLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadInitialData();
-    return () => {
-      loadRequestRef.current += 1;
-    };
-  }, [loadInitialData]);
-
-  useEffect(() => {
-    if (!resolvedProviderKey) {
-      setMappings([buildEmptyMappingEntry()]);
-      return;
-    }
-    const existing = modelAlias[resolvedProviderKey] ?? [];
-    setMappings(normalizeMappingEntries(existing));
-  }, [modelAlias, resolvedProviderKey]);
-
-  useEffect(() => {
-    if (!resolvedProviderKey || modelAliasUnsupported) {
-      setModelsList([]);
-      setModelsError(null);
-      setModelsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    setModelsLoading(true);
-    setModelsError(null);
-
-    authFilesApi
-      .getModelDefinitions(resolvedProviderKey)
-      .then((models) => {
-        if (cancelled) return;
-        setModelsList(models);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        const status =
-          typeof err === 'object' && err !== null && 'status' in err
-            ? (err as { status?: unknown }).status
-            : undefined;
-
-        if (status === 400 || status === 404) {
-          setModelsList([]);
-          setModelsError('unsupported');
-          return;
-        }
-
-        const errorMessage = err instanceof Error ? err.message : '';
-        showNotification(`${t('notification.load_failed')}: ${errorMessage}`, 'error');
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setModelsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [modelAliasUnsupported, resolvedProviderKey, showNotification, t]);
-
-  const applyProviderChange = useCallback(
-    (value: string) => {
-      setProvider(value);
-      const next = new URLSearchParams(searchParams);
-      const trimmed = value.trim();
-      if (trimmed) {
-        next.set('provider', trimmed);
-      } else {
-        next.delete('provider');
-      }
-      const nextSearch = next.toString();
-      allowNavigationTo(
-        `${location.pathname}${nextSearch ? `?${nextSearch}` : ''}${location.hash}`
-      );
-      setSearchParams(next, { replace: true });
-    },
-    [allowNavigationTo, location.hash, location.pathname, searchParams, setSearchParams]
-  );
-
-  const updateProvider = useCallback(
-    (value: string) => {
-      if (!contentDirty || normalizeProviderKey(value) === resolvedProviderKey) {
-        applyProviderChange(value);
-        return;
-      }
-      showConfirmation({
-        ...unsavedChangesDialog,
-        variant: 'danger',
-        onConfirm: () => applyProviderChange(value),
-      });
-    },
-    [applyProviderChange, contentDirty, resolvedProviderKey, showConfirmation, unsavedChangesDialog]
-  );
-
-  const updateMappingEntry = useCallback(
-    (index: number, field: keyof OAuthModelAliasEntry, value: string | boolean) => {
-      setMappings((prev) =>
-        prev.map((entry, idx) => (idx === index ? { ...entry, [field]: value } : entry))
-      );
-    },
-    []
-  );
-
-  const addMappingEntry = useCallback(() => {
-    setMappings((prev) => [...prev, buildEmptyMappingEntry()]);
-  }, []);
-
-  const removeMappingEntry = useCallback((index: number) => {
-    setMappings((prev) => {
-      const next = prev.filter((_, idx) => idx !== index);
-      return next.length ? next : [buildEmptyMappingEntry()];
+  const setDraft = useCallback((update: (current: AliasDraft) => AliasDraft) => {
+    setDraftState((current) => {
+      const next = update(current.draft);
+      return next === current.draft ? current : { ...current, draft: next };
     });
   }, []);
+
+  const disabled = connectionStatus !== 'connected' || saving;
+
+  const counts = useMemo(() => {
+    const result: Record<string, number> = {};
+    Object.entries(draft).forEach(([provider, entries]) => {
+      const count = toAliasEntries(entries).length;
+      if (count) result[provider] = count;
+    });
+    return result;
+  }, [draft]);
+  const stats = useMemo(() => getAliasStats(draft), [draft]);
+
+  const railItems = useMemo(
+    () =>
+      buildRailItems(
+        {
+          files: data.files,
+          excluded: data.excluded,
+          modelAlias: baseline,
+          configured: Object.keys(baseline),
+          counts,
+          dirtyProviders,
+          selected,
+        },
+        t,
+        resolvedTheme
+      ),
+    [baseline, counts, data.excluded, data.files, dirtyProviders, resolvedTheme, selected, t]
+  );
+
+  /** 清单里出现的 provider：聚焦时只有它自己，否则是所有有行的 provider（顺序跟随导轨）。 */
+  const groupProviders = useMemo(() => {
+    if (selected) return [selected];
+    const order = railItems.map((item) => item.key);
+    return Object.keys(draft)
+      .filter((provider) => draft[provider].some((entry) => entry.name || entry.alias))
+      .sort((a, b) => {
+        const ai = order.indexOf(a);
+        const bi = order.indexOf(b);
+        return (ai === -1 ? order.length : ai) - (bi === -1 ? order.length : bi);
+      });
+  }, [draft, railItems, selected]);
+
+  /** 图谱需要「尚未映射的源模型」，因此额外把有凭证的 provider 也算进来。 */
+  const graphProviders = useMemo(() => {
+    const providers = new Set(Object.keys(counts));
+    data.files.forEach((file) => {
+      [file.type, file.provider].forEach((value) => {
+        const key = typeof value === 'string' ? normalizeProviderKey(value) : '';
+        if (key) providers.add(key);
+      });
+    });
+    return Array.from(providers);
+  }, [counts, data.files]);
+
+  const { catalog } = useProviderModelCatalog(
+    view === 'graph' ? graphProviders : groupProviders,
+    data.status === 'ready'
+  );
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const groups = useMemo<AliasLedgerGroup[]>(
+    () =>
+      groupProviders.flatMap((provider) => {
+        const entries = draft[provider] ?? [];
+        const visibleEntries = normalizedQuery
+          ? entries.filter(
+              (entry) =>
+                entry.name.toLowerCase().includes(normalizedQuery) ||
+                entry.alias.toLowerCase().includes(normalizedQuery)
+            )
+          : entries;
+        if (normalizedQuery && !selected && visibleEntries.length === 0) return [];
+        return [
+          {
+            provider,
+            label: getTypeLabel(t, provider),
+            icon: getAuthFileIcon(provider, resolvedTheme),
+            entries,
+            visibleEntries,
+            issues: Object.fromEntries(
+              Object.entries(getAliasRowIssues(entries)).filter(
+                ([, issue]) => saveAttempted || issue !== 'incomplete'
+              )
+            ),
+            mappingCount: counts[provider] ?? 0,
+            dirty: dirtyProviders.includes(provider),
+            models: catalog[provider]?.models ?? [],
+            catalogState: catalog[provider]?.state,
+          },
+        ];
+      }),
+    [
+      catalog,
+      counts,
+      dirtyProviders,
+      draft,
+      groupProviders,
+      normalizedQuery,
+      resolvedTheme,
+      saveAttempted,
+      selected,
+      t,
+    ]
+  );
+
+  const graphAlias = useMemo(() => toAliasMap(draft), [draft]);
+  const graphModels = useMemo(() => {
+    const result: Record<string, AuthFileModelItem[]> = {};
+    graphProviders.forEach((provider) => {
+      const models = catalog[provider]?.models;
+      if (models?.length) result[provider] = models;
+    });
+    return result;
+  }, [catalog, graphProviders]);
+
+  const selectProvider = useCallback(
+    (value: string) => {
+      const key = normalizeProviderKey(value);
+      if (key) setDraft((current) => ensureAliasRow(current, key, generateId));
+      setQuery('');
+      // 从图谱里「编辑提供商」会落到这里：选中它的同时回到清单视图。
+      route.openProvider(key);
+    },
+    [route, setDraft]
+  );
+
+  const handleDiscard = useCallback(() => {
+    setSaveAttempted(false);
+    setDraft(() => ensureAliasRow(buildAliasDraft(baseline, generateId), selected, generateId));
+  }, [baseline, selected, setDraft]);
 
   const handleSave = useCallback(async () => {
-    const channel = normalizeProviderKey(provider);
-    if (!channel) {
-      showNotification(t('oauth_model_alias.provider_required'), 'error');
-      return;
-    }
-
-    const seenAlias = new Set<string>();
-    let hasDuplicateAlias = false;
-    const normalized = mappings
-      .map((entry) => {
-        const name = String(entry.name ?? '').trim();
-        const alias = String(entry.alias ?? '').trim();
-        if (!name || !alias) return null;
-        const aliasKey = alias.toLowerCase();
-        if (seenAlias.has(aliasKey)) {
-          hasDuplicateAlias = true;
-          return null;
-        }
-        seenAlias.add(aliasKey);
-        const normalizedEntry: OAuthModelAliasEntry = { name, alias };
-        if (entry.fork) normalizedEntry.fork = true;
-        if (typeof entry.forceMapping === 'boolean') {
-          normalizedEntry.forceMapping = entry.forceMapping;
-        }
-        return normalizedEntry;
-      })
-      .filter(Boolean) as OAuthModelAliasEntry[];
-
-    if (hasDuplicateAlias) {
-      showNotification(t('oauth_model_alias.duplicate_alias'), 'error');
+    if (saving) return;
+    const problem = findAliasDraftIssue(draft, dirtyProviders);
+    if (problem) {
+      setSaveAttempted(true);
+      showNotification(
+        `${getTypeLabel(t, problem.provider)}: ${t(ISSUE_MESSAGE_KEYS[problem.issue])}`,
+        'error'
+      );
       return;
     }
 
     setSaving(true);
     try {
-      if (normalized.length) {
-        await authFilesApi.saveOauthModelAlias(channel, normalized);
-      } else if (isEditing) {
-        await authFilesApi.deleteOauthModelAlias(channel);
+      const outcome = await runSavePlan(
+        buildAliasSavePlan(baseline, draft),
+        authFilesApi.saveOauthModelAlias,
+        authFilesApi.deleteOauthModelAlias
+      );
+      setKeepProviders(outcome.failed);
+      const current = await data.reload();
+      if (!current) return;
+      if (outcome.failed.length) {
+        showNotification(
+          outcome.message
+            ? `${t('oauth_model_alias.save_failed')}: ${outcome.message}`
+            : t('oauth_model_alias.save_failed'),
+          'error'
+        );
+      } else {
+        setSaveAttempted(false);
+        showNotification(t('oauth_model_alias.save_success'), 'success');
       }
-      showNotification(t('oauth_model_alias.save_success'), 'success');
-      allowNextNavigation();
-      handleBack();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '';
-      showNotification(`${t('oauth_model_alias.save_failed')}: ${errorMessage}`, 'error');
     } finally {
       setSaving(false);
     }
-  }, [allowNextNavigation, handleBack, isEditing, mappings, provider, showNotification, t]);
+  }, [baseline, data, dirtyProviders, draft, saving, showNotification, t]);
 
-  const canSave =
-    !disableControls &&
-    !saving &&
-    baselineReady &&
-    !modelAliasUnsupported &&
-    initialLoadError === null;
+  const hasMappings = stats.mappings > 0;
+  const meta = hasMappings
+    ? [
+        t('model_rules.meta_providers', { count: stats.providers }),
+        t('model_rules.meta_mappings', { count: stats.mappings }),
+        t('model_rules.meta_aliases', { count: stats.aliases }),
+      ]
+    : [t('model_rules.meta_empty')];
 
   return (
-    <SecondaryScreenShell
-      ref={swipeRef}
-      title={title}
-      onBack={handleBack}
-      backLabel={t('common.back')}
-      backAriaLabel={t('common.back')}
-      contentClassName={styles.pageContent}
-      topBarClassName={styles.topBar}
-      rightAction={
-        <Button size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
-          {t('oauth_model_alias.save')}
-        </Button>
+    <ModelRulesWorkspace
+      kind="alias"
+      title={t('oauth_model_alias.title')}
+      description={t('oauth_model_alias.editor_description')}
+      meta={data.status === 'ready' ? meta : []}
+      status={data.status}
+      errorMessage={data.errorMessage}
+      unsupportedTitle={t('oauth_model_alias.upgrade_required_title')}
+      unsupportedDescription={t('oauth_model_alias.upgrade_required_desc')}
+      onRetry={() => void data.reload()}
+      onBack={route.goBack}
+      onSwitchKind={route.switchKind}
+      headerExtra={
+        <Segmented<AliasView>
+          label={t('model_rules.view_label')}
+          value={view}
+          onChange={route.setView}
+          options={[
+            { value: 'ledger', label: t('oauth_model_alias.view_mode_list') },
+            { value: 'graph', label: t('oauth_model_alias.view_mode_diagram') },
+          ]}
+        />
       }
-      isLoading={initialLoading}
-      loadingLabel={t('common.loading')}
+      rail={
+        view === 'ledger' ? (
+          <ProviderRail
+            items={railItems}
+            selected={selected}
+            total={stats.mappings}
+            disabled={disabled}
+            onSelect={selectProvider}
+          />
+        ) : undefined
+      }
+      dirtyCount={isDirty ? dirtyProviders.length : 0}
+      saving={saving}
+      canSave={isDirty && !disabled}
+      onSave={() => void handleSave()}
+      onDiscard={handleDiscard}
     >
-      {modelAliasUnsupported ? (
-        <Card>
-          <EmptyState
-            title={t('oauth_model_alias.upgrade_required_title')}
-            description={t('oauth_model_alias.upgrade_required_desc')}
-          />
-        </Card>
-      ) : initialLoadError !== null ? (
-        <Card>
-          <EmptyState
-            title={t('notification.refresh_failed')}
-            description={initialLoadError || t('notification.refresh_failed')}
-            action={
-              <Button variant="secondary" size="sm" onClick={() => void loadInitialData()}>
-                {t('common.refresh')}
-              </Button>
-            }
-          />
-        </Card>
+      {view === 'graph' ? (
+        hasMappings ? (
+          <section className={styles.graph} aria-label={t('oauth_model_alias.chart_title')}>
+            <header className={styles.graphBar}>
+              <p className={styles.graphHint}>{t('model_rules.graph_hint')}</p>
+              <button
+                type="button"
+                className={styles.quietAction}
+                onClick={() => diagramRef.current?.collapseAll()}
+              >
+                <IconChevronUp size={14} aria-hidden="true" />
+                {t('oauth_model_alias.diagram_collapse')}
+              </button>
+            </header>
+            <ModelMappingDiagram
+              ref={diagramRef}
+              modelAlias={graphAlias}
+              allProviderModels={graphModels}
+              onUpdate={
+                disabled
+                  ? undefined
+                  : (provider, name, alias) =>
+                      setDraft((current) =>
+                        addAliasLink(current, provider, name, alias, generateId)
+                      )
+              }
+              onDeleteLink={(provider, name, alias) =>
+                setDraft((current) => removeAliasLink(current, provider, name, alias))
+              }
+              onToggleFork={(provider, name, alias, fork) =>
+                setDraft((current) => setAliasLinkFork(current, provider, name, alias, fork))
+              }
+              onRenameAlias={(oldAlias, newAlias) =>
+                setDraft((current) => renameAlias(current, oldAlias, newAlias))
+              }
+              onDeleteAlias={(alias) => setDraft((current) => deleteAlias(current, alias))}
+              onEditProvider={selectProvider}
+              onDeleteProvider={(provider) =>
+                setDraft((current) => clearAliasProvider(current, provider))
+              }
+              className={styles.graphCanvas}
+            />
+          </section>
+        ) : (
+          <div className={styles.notice}>
+            <EmptyState
+              title={t('oauth_model_alias.list_empty_all')}
+              description={t('model_rules.graph_empty_hint')}
+            />
+          </div>
+        )
       ) : (
         <>
-          <div className={styles.intro}>
-            <span className={styles.introIcon}>
-              <IconNetwork size={22} aria-hidden="true" />
-            </span>
-            <div>
-              <h1 className={styles.introTitle}>{t('oauth_model_alias.title')}</h1>
-              <p className={styles.description}>{t('oauth_model_alias.editor_description')}</p>
-            </div>
-          </div>
-
-          <OAuthEditorProviderCard
-            provider={provider}
-            options={providerOptions}
-            onChange={updateProvider}
-            disabled={disableControls || saving}
-            translationPrefix="oauth_model_alias"
-          />
-
-          <Card className={styles.settingsCard}>
-            <div className={styles.editorHeader}>
-              <div className={styles.sectionHeading}>
-                <span className={styles.stepNumber} aria-hidden="true">
-                  02
-                </span>
-                <div className={styles.headingCopy}>
-                  <h2 className={styles.sectionTitle}>{t('oauth_model_alias.alias_label')}</h2>
-                  <p className={styles.description}>{t('oauth_model_alias.mapping_hint')}</p>
-                </div>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={addMappingEntry}
-                disabled={disableControls || saving || modelAliasUnsupported}
-              >
-                <IconPlus size={14} aria-hidden="true" />
-                {t('oauth_model_alias.add_alias')}
-              </Button>
-            </div>
-
-            <div className={styles.catalogHint}>
-              <IconInfo size={15} aria-hidden="true" />
-              <p className={styles.description}>{headerHint}</p>
-            </div>
-
-            <div className={styles.mappingsBody}>
-              {mappings.map((entry, index) => (
-                <OAuthAliasMappingRow
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                  options={modelsList.map((model) => ({
-                    value: model.id,
-                    label:
-                      model.display_name && model.display_name !== model.id
-                        ? model.display_name
-                        : undefined,
-                  }))}
-                  disabled={disableControls || saving}
-                  canRemove={mappings.length > 1}
-                  onChange={(field, value) => updateMappingEntry(index, field, value)}
-                  onRemove={() => removeMappingEntry(index)}
+          {hasMappings ? (
+            <div className={styles.stageBar}>
+              <label className={styles.search}>
+                <IconSearch size={15} aria-hidden="true" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t('model_rules.search_alias_placeholder')}
+                  aria-label={t('model_rules.search_alias_placeholder')}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
-              ))}
+              </label>
             </div>
-          </Card>
+          ) : null}
+          {groups.length > 0 ? (
+            <AliasLedger
+              groups={groups}
+              focused={Boolean(selected)}
+              disabled={disabled}
+              onChangeRow={(provider, id, patch) =>
+                setDraft((current) => updateAliasRow(current, provider, id, patch))
+              }
+              onAddRow={(provider) =>
+                setDraft((current) => addAliasRow(current, provider, generateId))
+              }
+              onRemoveRow={(provider, id) =>
+                setDraft((current) => removeAliasRow(current, provider, id))
+              }
+              onClearProvider={(provider) =>
+                setDraft((current) => clearAliasProvider(current, provider))
+              }
+            />
+          ) : (
+            <div className={styles.notice}>
+              <EmptyState
+                title={
+                  normalizedQuery
+                    ? t('model_rules.search_empty')
+                    : t('oauth_model_alias.list_empty_all')
+                }
+              />
+            </div>
+          )}
         </>
       )}
-    </SecondaryScreenShell>
+    </ModelRulesWorkspace>
   );
 }

@@ -2,7 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import {
   getModelAliasDraftSignature,
   getStringSetSignature,
-  isOAuthEditorDirty,
 } from '../src/features/authFiles/oauthEditorState';
 
 describe('OAuth editor dirty state', () => {
@@ -17,11 +16,5 @@ describe('OAuth editor dirty state', () => {
     expect(
       getModelAliasDraftSignature([{ id: 'one', name: 'partial', alias: '', fork: true }])
     ).not.toBe(getModelAliasDraftSignature([]));
-  });
-
-  test('marks provider or content changes as dirty', () => {
-    expect(isOAuthEditorDirty('codex', 'codex', 'same', 'same')).toBe(false);
-    expect(isOAuthEditorDirty('codex', 'claude', 'same', 'same')).toBe(true);
-    expect(isOAuthEditorDirty('codex', 'codex', 'before', 'after')).toBe(true);
   });
 });
