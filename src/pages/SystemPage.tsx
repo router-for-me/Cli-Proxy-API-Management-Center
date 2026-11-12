@@ -12,7 +12,7 @@ import {
   useModelsStore,
   useThemeStore,
 } from '@/stores';
-import { configApi, versionApi } from '@/services/api';
+import { apiClient, configApi, versionApi } from '@/services/api';
 import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
@@ -36,6 +36,8 @@ import iconMinimax from '@/assets/icons/minimax.svg';
 import iconXiaomi from '@/assets/icons/xiaomi.svg';
 import iconStepfun from '@/assets/icons/stepfun.svg';
 import iconStepfunDark from '@/assets/icons/stepfun-dark.svg';
+import { ModelListFeedback, SystemModelsCard, type ModelListStatus } from './SystemModelsCard';
+import { getVersionCheckResult, type VersionCheckResult } from './systemVersion';
 import styles from './SystemPage.module.scss';
 
 const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: string }> = {
@@ -54,32 +56,6 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   stepfun: { light: iconStepfun, dark: iconStepfunDark },
 };
 
-const parseVersionSegments = (version?: string | null) => {
-  if (!version) return null;
-  const cleaned = version.trim().replace(/^v/i, '');
-  if (!cleaned) return null;
-  const parts = cleaned
-    .split(/[^0-9]+/)
-    .filter(Boolean)
-    .map((segment) => Number.parseInt(segment, 10))
-    .filter(Number.isFinite);
-  return parts.length ? parts : null;
-};
-
-const compareVersions = (latest?: string | null, current?: string | null) => {
-  const latestParts = parseVersionSegments(latest);
-  const currentParts = parseVersionSegments(current);
-  if (!latestParts || !currentParts) return null;
-  const length = Math.max(latestParts.length, currentParts.length);
-  for (let i = 0; i < length; i++) {
-    const l = latestParts[i] || 0;
-    const c = currentParts[i] || 0;
-    if (l > c) return 1;
-    if (l < c) return -1;
-  }
-  return 0;
-};
-
 export function SystemPage() {
   const { t, i18n } = useTranslation();
   const { showNotification, showConfirmation } = useNotificationStore();
@@ -91,21 +67,21 @@ export function SystemPage() {
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
 
   const models = useModelsStore((state) => state.models);
-  const modelsLoading = useModelsStore((state) => state.loading);
-  const modelsError = useModelsStore((state) => state.error);
+  const modelsStoreLoading = useModelsStore((state) => state.loading);
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
-  const [modelStatus, setModelStatus] = useState<{
-    type: 'success' | 'warning' | 'error' | 'muted';
-    message: string;
-  }>();
+  const [modelStatus, setModelStatus] = useState<ModelListStatus>();
+  const modelsLoading = modelsStoreLoading || modelStatus?.kind === 'loading';
   const [requestLogModalOpen, setRequestLogModalOpen] = useState(false);
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [versionCheckResult, setVersionCheckResult] = useState<VersionCheckResult>();
 
   const versionTapCount = useRef(0);
+  const modelsRequestId = useRef(0);
+  const versionRequestId = useRef(0);
   const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const otherLabel = useMemo(
@@ -131,12 +107,16 @@ export function SystemPage() {
 
   const resolveApiKeysForModels = useApiKeysForModels();
 
-  const fetchModels = async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
+  const fetchModels = async ({
+    forceRefresh = false,
+    notify = false,
+  }: { forceRefresh?: boolean; notify?: boolean } = {}) => {
+    const requestId = ++modelsRequestId.current;
+    const revision = apiClient.getConnectionRevision();
+    const isCurrent = () =>
+      requestId === modelsRequestId.current && revision === apiClient.getConnectionRevision();
     if (auth.connectionStatus !== 'connected') {
-      setModelStatus({
-        type: 'warning',
-        message: t('notification.connection_required'),
-      });
+      setModelStatus({ kind: 'disconnected' });
       return;
     }
 
@@ -145,23 +125,29 @@ export function SystemPage() {
       return;
     }
 
-    setModelStatus({ type: 'muted', message: t('system_info.models_loading') });
+    setModelStatus({ kind: 'loading' });
     try {
       const apiKeys = await resolveApiKeysForModels({ force: forceRefresh });
+      if (!isCurrent()) return;
       const primaryKey = apiKeys[0];
       const list = await fetchModelsFromStore(auth.apiBase, primaryKey, forceRefresh);
-      const hasModels = list.length > 0;
-      setModelStatus({
-        type: hasModels ? 'success' : 'warning',
-        message: hasModels
-          ? t('system_info.models_count', { count: list.length })
-          : t('system_info.models_empty'),
-      });
+      if (!isCurrent()) return;
+      setModelStatus({ kind: 'loaded' });
+      if (notify)
+        showNotification(
+          t('system_info.models_refresh_success', { count: list.length }),
+          'success'
+        );
     } catch (err: unknown) {
+      if (!isCurrent()) return;
       const message = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
-      const suffix = message ? `: ${message}` : '';
-      const text = `${t('system_info.models_error')}${suffix}`;
-      setModelStatus({ type: 'error', message: text });
+      const retained = useModelsStore.getState().models.length > 0;
+      setModelStatus({ kind: 'error', detail: message, retained });
+      if (notify || retained)
+        showNotification(
+          t(retained ? 'system_info.models_error_retained' : 'system_info.models_error'),
+          'error'
+        );
     }
   };
 
@@ -241,37 +227,36 @@ export function SystemPage() {
   };
 
   const handleVersionCheck = useCallback(async () => {
+    if (checkingVersion) return;
+    const requestId = ++versionRequestId.current;
+    const revision = apiClient.getConnectionRevision();
+    const isCurrent = () =>
+      requestId === versionRequestId.current && revision === apiClient.getConnectionRevision();
     setCheckingVersion(true);
+    setVersionCheckResult(undefined);
     try {
-      const data = await versionApi.checkLatest();
+      const data = await versionApi.checkLatest(isCurrent);
+      if (!isCurrent()) return;
       const latestRaw = data?.['latest-version'] ?? data?.latest_version ?? data?.latest ?? '';
       const latest = typeof latestRaw === 'string' ? latestRaw : String(latestRaw ?? '');
-      const comparison = compareVersions(latest, auth.serverVersion);
-
-      if (!latest) {
-        showNotification(t('system_info.version_check_error'), 'error');
-        return;
-      }
-
-      if (comparison === null) {
-        showNotification(t('system_info.version_current_missing'), 'warning');
-        return;
-      }
-
-      if (comparison > 0) {
-        showNotification(t('system_info.version_update_available', { version: latest }), 'warning');
-      } else {
-        showNotification(t('system_info.version_is_latest'), 'success');
-      }
+      const result = getVersionCheckResult(latest, useAuthStore.getState().serverVersion);
+      setVersionCheckResult(result);
+      showNotification(t(result.messageKey, { version: result.version }), result.type);
     } catch (error: unknown) {
+      if (!isCurrent()) return;
       const message =
         error instanceof Error ? error.message : typeof error === 'string' ? error : '';
       const suffix = message ? `: ${message}` : '';
+      setVersionCheckResult({
+        type: 'error',
+        messageKey: 'system_info.version_check_error',
+        detail: message,
+      });
       showNotification(`${t('system_info.version_check_error')}${suffix}`, 'error');
     } finally {
-      setCheckingVersion(false);
+      if (isCurrent()) setCheckingVersion(false);
     }
-  }, [auth.serverVersion, showNotification, t]);
+  }, [checkingVersion, showNotification, t]);
 
   useEffect(() => {
     fetchConfig().catch(() => {
@@ -294,9 +279,16 @@ export function SystemPage() {
   }, []);
 
   useEffect(() => {
+    versionRequestId.current += 1;
+    setCheckingVersion(false);
+    setVersionCheckResult(undefined);
     fetchModels();
+    return () => {
+      modelsRequestId.current += 1;
+      versionRequestId.current += 1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.connectionStatus, auth.apiBase]);
+  }, [auth.connectionStatus, auth.apiBase, auth.managementKey]);
 
   return (
     <div className={styles.container}>
@@ -337,6 +329,27 @@ export function SystemPage() {
                 </Button>
               </div>
               <div className={styles.tileValue}>{apiVersion}</div>
+              {versionCheckResult && (
+                <div
+                  className={styles.versionFeedback}
+                  role={versionCheckResult.type === 'error' ? 'alert' : 'status'}
+                >
+                  <span>
+                    {t(versionCheckResult.messageKey, { version: versionCheckResult.version })}
+                    {versionCheckResult.detail ? `: ${versionCheckResult.detail}` : ''}
+                  </span>
+                  {versionCheckResult.version && (
+                    <a
+                      href="https://github.com/router-for-me/CLIProxyAPI/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('system_info.version_release_notes')}
+                      <IconExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className={styles.infoTile}>
@@ -411,61 +424,57 @@ export function SystemPage() {
           </div>
         </Card>
 
-        <Card
-          title={t('system_info.models_title')}
-          extra={
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => fetchModels({ forceRefresh: true })}
-              loading={modelsLoading}
-            >
-              {t('common.refresh')}
-            </Button>
-          }
+        <SystemModelsCard
+          modelsLoading={modelsLoading}
+          onRefreshModels={() => fetchModels({ forceRefresh: true, notify: true })}
+          onCatalogsRefreshed={async () => {
+            await fetchModels({ forceRefresh: true });
+          }}
         >
-          <p className={styles.sectionDescription}>{t('system_info.models_desc')}</p>
-          {modelStatus && (
-            <div className={`status-badge ${modelStatus.type}`}>{modelStatus.message}</div>
-          )}
-          {modelsError && <div className="error-box">{modelsError}</div>}
-          {modelsLoading ? (
-            <div className="hint">{t('common.loading')}</div>
-          ) : models.length === 0 ? (
-            <div className="hint">{t('system_info.models_empty')}</div>
-          ) : (
-            <div className="item-list">
-              {groupedModels.map((group) => {
-                const iconSrc = getIconForCategory(group.id);
-                return (
-                  <div key={group.id} className="item-row">
-                    <div className="item-meta">
-                      <div className={styles.groupTitle}>
-                        {iconSrc && <img src={iconSrc} alt="" className={styles.groupIcon} />}
-                        <span className="item-title">{group.label}</span>
+          {models.length === 0 && <ModelListFeedback status={modelStatus} />}
+          <div aria-busy={modelsLoading}>
+            {models.length === 0 ? (
+              modelsLoading ||
+              modelStatus?.kind === 'error' ||
+              modelStatus?.kind === 'disconnected' ? null : (
+                <div className="hint">{t('system_info.models_empty')}</div>
+              )
+            ) : (
+              <div className="item-list">
+                {groupedModels.map((group) => {
+                  const iconSrc = getIconForCategory(group.id);
+                  return (
+                    <div key={group.id} className="item-row">
+                      <div className="item-meta">
+                        <div className={styles.groupTitle}>
+                          {iconSrc && <img src={iconSrc} alt="" className={styles.groupIcon} />}
+                          <span className="item-title">{group.label}</span>
+                        </div>
+                        <div className="item-subtitle">
+                          {t('system_info.models_count', { count: group.items.length })}
+                        </div>
                       </div>
-                      <div className="item-subtitle">
-                        {t('system_info.models_count', { count: group.items.length })}
+                      <div className={styles.modelTags}>
+                        {group.items.map((model) => (
+                          <span
+                            key={`${model.name}-${model.alias ?? 'default'}`}
+                            className={styles.modelTag}
+                            title={model.description || ''}
+                          >
+                            <span className={styles.modelName}>{model.name}</span>
+                            {model.alias && (
+                              <span className={styles.modelAlias}>{model.alias}</span>
+                            )}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className={styles.modelTags}>
-                      {group.items.map((model) => (
-                        <span
-                          key={`${model.name}-${model.alias ?? 'default'}`}
-                          className={styles.modelTag}
-                          title={model.description || ''}
-                        >
-                          <span className={styles.modelName}>{model.name}</span>
-                          {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </SystemModelsCard>
 
         <Card title={t('system_info.clear_login_title')}>
           <p className={styles.sectionDescription}>{t('system_info.clear_login_desc')}</p>

@@ -222,10 +222,6 @@
     "routing_strategy_fill_first": "fill-first (우선 채우기)"
   },
   "auth_files": {
-    "sync_catalog_button": "모델 카탈로그 동기화",
-    "sync_catalog_success": "모델 카탈로그가 동기화되었습니다. 업데이트된 제공업체: {{providers}}",
-    "sync_catalog_unchanged": "모델 카탈로그가 동기화되었습니다. 변경 사항이 없습니다.",
-    "sync_catalog_failed": "모델 카탈로그 동기화 실패",
     "title": "인증 파일 관리",
     "meta_total": "자격 증명 {{count}}개",
     "meta_active": "활성 {{count}}개",
@@ -1931,13 +1927,28 @@
     "empty_src": "플러그인 페이지 URL이 비어 있습니다",
     "empty_src_desc": "이 플러그인 메뉴는 포함 가능한 페이지 URL을 제공하지 않습니다."
   },
+  "model_catalog": {
+    "button": "모델 카탈로그 업데이트",
+    "hint": "모든 사용자가 공유하는 모델 카탈로그를 업데이트하여 최신 모델 정보를 가져옵니다.",
+    "success": "모델 카탈로그가 업데이트되었습니다.",
+    "skipped": "서버 정책에 따라 모델 카탈로그 업데이트를 건너뛰었습니다.",
+    "partial": "일부 모델 카탈로그를 업데이트하지 못했습니다.",
+    "error": "모델 카탈로그 업데이트 실패",
+    "unsupported": "현재 백엔드는 모델 카탈로그 업데이트를 지원하지 않습니다. CLI Proxy API를 업데이트한 후 다시 시도하세요.",
+    "changed_providers": "영향을 받은 제공업체: {{providers}}"
+  },
   "system_info": {
+    "version_release_notes": "릴리스 노트 보기",
+    "models_error_retained": "모델을 새로고침하지 못했습니다. 마지막으로 가져온 목록을 표시합니다.",
+    "models_refresh_success": "사용 가능한 모델 목록을 새로고침했습니다: {{count}}개.",
+    "models_refresh_hint": "최신 사용 가능한 모델을 가져와 목록을 새로고침합니다.",
     "title": "관리 센터 정보",
     "about_title": "CLI Proxy API 관리 센터",
     "models_title": "사용 가능한 모델",
-    "models_desc": "/models 응답을 표시하며 저장된 API 키를 사용하여 자동으로 인증합니다.",
+    "models_refresh_button": "목록 새로고침",
+    "models_desc": "“목록 새로고침”을 눌러 최신 사용 가능한 모델을 확인하세요. 새 모델이 보이지 않으면 “모델 카탈로그 업데이트”를 시도하세요.",
     "models_loading": "사용 가능한 모델을 불러오는 중...",
-    "models_empty": "/models에서 반환된 모델이 없습니다",
+    "models_empty": "아직 사용 가능한 모델이 없습니다.",
     "models_error": "모델 목록을 불러오지 못했습니다",
     "models_count": "사용 가능한 모델 {{count}}개",
     "version_check_button": "업데이트 확인",

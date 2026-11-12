@@ -222,10 +222,6 @@
     "routing_strategy_fill_first": "fill-first (prioritize)"
   },
   "auth_files": {
-    "sync_catalog_button": "Sync model catalog",
-    "sync_catalog_success": "Model catalog synced. Updated providers: {{providers}}",
-    "sync_catalog_unchanged": "Model catalog synced. No changes.",
-    "sync_catalog_failed": "Failed to sync model catalog",
     "title": "Auth Files Management",
     "meta_total": "{{count}} credentials",
     "meta_active": "{{count}} active",
@@ -1931,13 +1927,28 @@
     "empty_src": "Plugin page URL is empty",
     "empty_src_desc": "This plugin menu does not provide an embeddable page URL."
   },
+  "model_catalog": {
+    "button": "Update model catalog",
+    "hint": "Update the shared model catalog to get the latest model information.",
+    "success": "Model catalog updated.",
+    "skipped": "Model catalog update skipped by server policy.",
+    "partial": "Some model catalogs could not be updated.",
+    "error": "Model catalog update failed",
+    "unsupported": "This backend does not support model catalog updates. Update CLI Proxy API and try again.",
+    "changed_providers": "Affected providers: {{providers}}"
+  },
   "system_info": {
+    "version_release_notes": "View release notes",
+    "models_error_retained": "Could not refresh available models. Showing the last successful result.",
+    "models_refresh_success": "Available models refreshed: {{count}}.",
+    "models_refresh_hint": "Fetch the latest available models and refresh the list.",
     "title": "Management Center Info",
     "about_title": "CLI Proxy API Management Center",
     "models_title": "Available Models",
-    "models_desc": "Shows the /models response and uses saved API keys for auth automatically.",
+    "models_refresh_button": "Refresh list",
+    "models_desc": "Click “Refresh list” to see the latest available models. If a new model is missing, try “Update model catalog”.",
     "models_loading": "Loading available models...",
-    "models_empty": "No models returned by /models",
+    "models_empty": "No models available yet.",
     "models_error": "Failed to load model list",
     "models_count": "{{count}} available models",
     "version_check_button": "Check for updates",

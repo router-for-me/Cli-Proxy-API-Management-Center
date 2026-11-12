@@ -3,11 +3,11 @@
  */
 
 import axios from 'axios';
-import { apiClient } from './client';
 import { normalizeModelList } from '@/utils/models';
 import { normalizeApiBase } from '@/utils/connection';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 import { isRecord } from '@/utils/helpers';
+import { refreshModelCatalogs } from './modelCatalogs';
 
 const DEFAULT_CLAUDE_BASE_URL = 'https://api.anthropic.com';
 const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com';
@@ -84,13 +84,8 @@ const resolveBearerTokenFromAuthorization = (headers: Record<string, string>): s
 };
 
 export const modelsApi = {
-  /** Refresh the global backend catalogs, not auth-file credentials. */
-  async refreshCatalog(): Promise<{ changedProviders: string[] }> {
-    const response = await apiClient.post<{ changed_providers: string[] | null }>(
-      '/models/refresh'
-    );
-    return { changedProviders: response.changed_providers ?? [] };
-  },
+  /** Refresh global model information independently of auth-file credentials. */
+  refreshCatalog: refreshModelCatalogs,
 
   /**
    * Fetch available models from /v1/models endpoint (for system info page)

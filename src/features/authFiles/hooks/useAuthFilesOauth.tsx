@@ -55,6 +55,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
   const modelAliasReadyRef = useRef(false);
   const excludedLoadRequestRef = useRef(0);
   const modelAliasLoadRequestRef = useRef(0);
+  const providerModelsConnectionRef = useRef(apiClient.getConnectionRevision());
 
   useEffect(
     () => () => {
@@ -92,7 +93,11 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
 
     let cancelled = false;
     const revision = apiClient.getConnectionRevision();
-    setAllProviderModels({});
+    if (providerModelsConnectionRef.current !== revision) {
+      providerModelsConnectionRef.current = revision;
+      setAllProviderModels({});
+    }
+    const isCurrent = () => !cancelled && revision === apiClient.getConnectionRevision();
 
     const loadAllModels = async () => {
       if (providerList.length === 0) {
@@ -103,7 +108,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
       const results = await Promise.all(
         providerList.map(async (provider) => {
           try {
-            const models = await authFilesApi.getModelDefinitions(provider);
+            const models = await authFilesApi.getModelDefinitions(provider, isCurrent);
             return { provider, models };
           } catch {
             return { provider, models: [] as AuthFileModelItem[] };
@@ -111,7 +116,7 @@ export function useAuthFilesOauth(options: UseAuthFilesOauthOptions): UseAuthFil
         })
       );
 
-      if (cancelled || revision !== apiClient.getConnectionRevision()) return;
+      if (!isCurrent()) return;
 
       const nextModels: Record<string, AuthFileModelItem[]> = {};
       results.forEach(({ provider, models }) => {

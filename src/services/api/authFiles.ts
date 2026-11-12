@@ -667,9 +667,11 @@ export const authFilesApi = {
 
   // Get models supported by the credential
   async getModelsForAuthFile(
-    name: string
+    name: string,
+    isCurrent?: () => boolean
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
-    const data = await apiClient.get<Record<string, unknown>>(
+    const client = isCurrent ? apiClient.captureConnection(isCurrent) : apiClient;
+    const data = await client.get<Record<string, unknown>>(
       `/credentials/models?name=${encodeURIComponent(name)}`
     );
     const models = data.models ?? data['models'];
@@ -680,11 +682,13 @@ export const authFilesApi = {
 
   // Get model definitions for the specified channel
   async getModelDefinitions(
-    channel: string
+    channel: string,
+    isCurrent?: () => boolean
   ): Promise<{ id: string; display_name?: string; type?: string; owned_by?: string }[]> {
     const normalizedChannel = normalizeOAuthProviderKey(String(channel ?? ''));
     if (!normalizedChannel) return [];
-    const data = await apiClient.get<Record<string, unknown>>(
+    const client = isCurrent ? apiClient.captureConnection(isCurrent) : apiClient;
+    const data = await client.get<Record<string, unknown>>(
       `/routing/model-definitions/${encodeURIComponent(normalizedChannel)}`
     );
     const models = data.models ?? data['models'];

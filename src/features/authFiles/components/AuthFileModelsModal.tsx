@@ -33,11 +33,12 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
         </Button>
       }
     >
-      {loading ? (
-        <div className="hint">
+      {loading && (
+        <div className="hint" role="status">
           {t('auth_files.models_loading', { defaultValue: '正在加载模型列表...' })}
         </div>
-      ) : error === 'unsupported' ? (
+      )}
+      {error === 'unsupported' ? (
         <EmptyState
           title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
           description={t('auth_files.models_unsupported_desc', {
@@ -45,14 +46,16 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
           })}
         />
       ) : models.length === 0 ? (
-        <EmptyState
-          title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
-          description={t('auth_files.models_empty_desc', {
-            defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型',
-          })}
-        />
+        loading ? null : (
+          <EmptyState
+            title={t('auth_files.models_empty', { defaultValue: '该凭证暂无可用模型' })}
+            description={t('auth_files.models_empty_desc', {
+              defaultValue: '该认证凭证可能尚未被服务器加载或没有绑定任何模型',
+            })}
+          />
+        )
       ) : (
-        <div className={styles.list}>
+        <div className={styles.list} aria-busy={loading}>
           {models.map((model) => {
             const excludedModel = isModelExcluded(model.id, fileType, excluded);
             return (

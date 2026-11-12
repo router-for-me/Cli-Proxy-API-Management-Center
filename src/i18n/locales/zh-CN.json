@@ -222,10 +222,6 @@
     "routing_strategy_fill_first": "fill-first (优先填充)"
   },
   "auth_files": {
-    "sync_catalog_button": "同步模型目录",
-    "sync_catalog_success": "模型目录同步成功，已更新提供商：{{providers}}",
-    "sync_catalog_unchanged": "模型目录同步成功，无变化。",
-    "sync_catalog_failed": "同步模型目录失败",
     "title": "认证文件管理",
     "meta_total": "{{count}} 个凭证",
     "meta_active": "{{count}} 个启用",
@@ -1930,13 +1926,28 @@
     "empty_src": "插件页面地址为空",
     "empty_src_desc": "该插件菜单未提供可嵌入的页面地址。"
   },
+  "model_catalog": {
+    "button": "更新模型目录",
+    "hint": "更新所有用户共用的模型目录，获取最新模型信息。",
+    "success": "模型目录更新完成。",
+    "skipped": "已按服务端更新策略跳过模型目录更新。",
+    "partial": "部分模型目录更新失败。",
+    "error": "模型目录更新失败",
+    "unsupported": "当前后端不支持更新模型目录，请更新 CLI Proxy API 后重试。",
+    "changed_providers": "受影响的提供商：{{providers}}"
+  },
   "system_info": {
+    "version_release_notes": "查看发行说明",
+    "models_error_retained": "刷新失败，仍显示上次成功获取的模型。",
+    "models_refresh_success": "可用模型列表已刷新，共 {{count}} 个。",
+    "models_refresh_hint": "重新获取最新的可用模型列表。",
     "title": "管理中心信息",
     "about_title": "CLI Proxy API Management Center",
     "models_title": "可用模型列表",
-    "models_desc": "展示 /models 返回的模型，并自动使用服务器保存的 API Key 进行鉴权。",
+    "models_refresh_button": "刷新列表",
+    "models_desc": "点击“刷新列表”查看最新可用模型；找不到新模型时，可尝试“更新模型目录”。",
     "models_loading": "正在加载可用模型...",
-    "models_empty": "未从 /models 获取到模型数据",
+    "models_empty": "暂无可用模型",
     "models_error": "获取模型列表失败",
     "models_count": "可用模型 {{count}} 个",
     "version_check_button": "检查更新",

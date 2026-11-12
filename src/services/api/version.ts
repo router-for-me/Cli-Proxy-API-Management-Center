@@ -5,5 +5,8 @@
 import { apiClient } from './client';
 
 export const versionApi = {
-  checkLatest: () => apiClient.get<Record<string, unknown>>('/server/latest-version'),
+  checkLatest: (isCurrent?: () => boolean) =>
+    (isCurrent ? apiClient.captureConnection(isCurrent) : apiClient).get<Record<string, unknown>>(
+      '/server/latest-version'
+    ),
 };

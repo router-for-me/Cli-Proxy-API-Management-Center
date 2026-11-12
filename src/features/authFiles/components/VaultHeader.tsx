@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { IconRefreshCw, IconUpload } from '@/components/ui/icons';
+import { IconDownload, IconRefreshCw, IconUpload } from '@/components/ui/icons';
 import { useRevealGroup } from '@/hooks/motion';
 import styles from './VaultHeader.module.scss';
 
@@ -83,9 +83,10 @@ export function VaultHeader(props: VaultHeaderProps) {
             onClick={onSyncModelCatalog}
             disabled={modelCatalogSyncDisabled || syncingModelCatalog}
             aria-busy={syncingModelCatalog}
+            title={t('model_catalog.hint')}
           >
-            {syncingModelCatalog ? <LoadingSpinner size={14} /> : <IconRefreshCw size={14} />}
-            {t('auth_files.sync_catalog_button')}
+            {syncingModelCatalog ? <LoadingSpinner size={14} /> : <IconDownload size={14} />}
+            {t('model_catalog.button')}
           </button>
         )}
         {onRefreshCredentials && (

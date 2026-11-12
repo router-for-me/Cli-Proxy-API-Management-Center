@@ -75,9 +75,21 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+
+  > button {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 /* 墨色药丸主按钮（深色主题下自动反相：text-primary on bg-secondary） */
