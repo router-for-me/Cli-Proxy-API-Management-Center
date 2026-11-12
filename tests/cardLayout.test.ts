@@ -8,6 +8,7 @@ import {
   packColumns,
   readCardLayout,
   stackedColumnCount,
+  updateStackedHeights,
   writeCardLayout,
 } from '@/components/ui/cardLayout';
 import { ClaudeQuotaBody } from '@/features/quota/providers/claude/ClaudeQuotaBody';
@@ -61,6 +62,69 @@ describe('stacked packing', () => {
   });
 });
 
+describe('stacked height measurements', () => {
+  test('measures uncached loading cards before packing them', () => {
+    const measured = ['a', 'b', 'c'].map((key) => ({ key, height: 169, settled: false }));
+    const heights = updateStackedHeights(new Map(), measured);
+    expect([...heights.values()]).toEqual([169, 169, 169]);
+    expect(packColumns([...heights.values()], 2, 16)).toEqual({
+      positions: [
+        { column: 0, top: 0 },
+        { column: 1, top: 0 },
+        { column: 0, top: 185 },
+      ],
+      height: 354,
+    });
+  });
+
+  test('retains cached heights while loading and updates them when settled', () => {
+    const previous = new Map([['a', 300]]);
+    expect(updateStackedHeights(previous, [{ key: 'a', height: 169, settled: false }])).toBe(
+      previous
+    );
+    const next = updateStackedHeights(previous, [
+      { key: 'a', height: 250, settled: true },
+      { key: 'b', height: 169, settled: false },
+    ]);
+    expect([...next]).toEqual([
+      ['a', 250],
+      ['b', 169],
+    ]);
+    expect([...previous]).toEqual([['a', 300]]);
+  });
+
+  test('allows loading cards to grow without overlapping the next card', () => {
+    const previous = new Map([
+      ['a', 287],
+      ['b', 287],
+    ]);
+    const grown = updateStackedHeights(previous, [{ key: 'a', height: 335, settled: false }]);
+    expect(grown.get('a')).toBe(335);
+    expect(packColumns([...grown.values()], 1, 16)).toEqual({
+      positions: [
+        { column: 0, top: 0 },
+        { column: 0, top: 351 },
+      ],
+      height: 638,
+    });
+    expect(updateStackedHeights(grown, [{ key: 'a', height: 300, settled: false }])).toBe(grown);
+    const settled = updateStackedHeights(grown, [{ key: 'a', height: 300, settled: true }]);
+    expect(settled.get('a')).toBe(300);
+    expect(previous.get('a')).toBe(287);
+  });
+
+  test('ignores hidden cards, invalid heights and subpixel changes', () => {
+    const previous = new Map([['a', 169]]);
+    expect(
+      updateStackedHeights(previous, [
+        { key: 'a', height: 169.5, settled: true },
+        { key: 'hidden', height: 0, settled: false },
+        { key: 'invalid', height: NaN, settled: true },
+      ])
+    ).toBe(previous);
+  });
+});
+
 describe('stored layout choice', () => {
   const originalWindow = globalThis.window;
   afterEach(() => {
@@ -84,6 +148,14 @@ describe('stored layout choice', () => {
       throw new Error('storage blocked');
     });
     expect(readCardLayout('a')).toBe('even');
+  });
+
+  test('uses the caller fallback only when nothing valid is stored', () => {
+    // Auth Files passes 'compact' for users who had the old compact switch on.
+    withStorage((key) => (key === 'set' ? 'stacked' : key === 'bad' ? 'grid' : null));
+    expect(readCardLayout('set', 'compact')).toBe('stacked');
+    expect(readCardLayout('bad', 'compact')).toBe('compact');
+    expect(readCardLayout('missing', 'compact')).toBe('compact');
   });
 
   test('writes the choice under the page key', () => {
@@ -155,6 +227,29 @@ describe('plan chip marker (kept on Compact glance cards)', () => {
     );
     expect(markup.match(/data-quota-plan=""/g)).toHaveLength(1);
     expect(markup).toContain('<span class="codexPlanItem">host chip</span>');
+  });
+});
+
+describe('Compact status notices', () => {
+  test('retained Claude quotas include the stale snapshot warning', () => {
+    const quota = {
+      status: 'error',
+      stale: true,
+      observedAt: '2026-01-01T00:00:00Z',
+      windows: [],
+    } as unknown as ClaudeQuotaState;
+    const markup = renderToStaticMarkup(createElement(ClaudeQuotaBody, { quota, classes }));
+    expect(markup).toContain('role="status" class="codexResetCreditsError"');
+    expect(markup).toContain('Refresh failed. Showing last successful check:');
+  });
+
+  test('Compact hide rules do not suppress quota status/error notices', async () => {
+    const css = await Bun.file('src/features/quota/components/QuotaBody.module.scss').text();
+    const hiddenRules = [...css.matchAll(/([^{}]+)\{\s*display:\s*none;/g)];
+    expect(hiddenRules.length).toBeGreaterThan(0);
+    for (const rule of hiddenRules) {
+      expect(rule[1]).not.toContain('.codexResetCreditsError');
+    }
   });
 });
 

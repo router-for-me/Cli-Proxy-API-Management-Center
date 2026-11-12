@@ -189,6 +189,10 @@
   color: var(--text-secondary);
 }
 
+.popoverRow > span {
+  white-space: nowrap;
+}
+
 .pageSizeInput {
   width: 64px;
   height: 30px;

@@ -239,11 +239,11 @@
     @include text-ellipsis;
   }
 
+  // Keep status/error notices visible: they can warn that displayed quotas are stale.
   .quotaReset,
   .quotaResetRelative,
   .quotaAmount,
   .codexResetCredits,
-  .codexResetCreditsError,
   .antigravityQuotaGroupDescription,
   .codexPlanLabel,
   .codexPlanItem:not([data-quota-plan]) {

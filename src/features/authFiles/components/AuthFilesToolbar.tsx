@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { CardLayoutSwitch } from '@/components/ui/CardLayoutSwitch';
+import type { CardLayout } from '@/components/ui/cardLayout';
 import { IconSearch, IconSlidersHorizontal, IconTrash2 } from '@/components/ui/icons';
 import {
   MAX_CARD_PAGE_SIZE,
@@ -27,8 +28,8 @@ export type AuthFilesToolbarProps = {
   pageSizeInput: string;
   onPageSizeInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onPageSizeCommit: (rawValue: string) => void;
-  compactMode: boolean;
-  onCompactModeChange: (value: boolean) => void;
+  layout: CardLayout;
+  onLayoutChange: (layout: CardLayout) => void;
   deleteLabel: string;
   deleteDisabled: boolean;
   deleteLoading: boolean;
@@ -52,8 +53,8 @@ export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
     pageSizeInput,
     onPageSizeInputChange,
     onPageSizeCommit,
-    compactMode,
-    onCompactModeChange,
+    layout,
+    onLayoutChange,
     deleteLabel,
     deleteDisabled,
     deleteLoading,
@@ -166,12 +167,8 @@ export function AuthFilesToolbar(props: AuthFilesToolbarProps) {
               />
             </div>
             <div className={styles.popoverRow}>
-              <span>{t('auth_files.compact_mode_label')}</span>
-              <ToggleSwitch
-                checked={compactMode}
-                onChange={onCompactModeChange}
-                ariaLabel={t('auth_files.compact_mode_label')}
-              />
+              <span>{t('card_layout.label')}</span>
+              <CardLayoutSwitch value={layout} onChange={onLayoutChange} />
             </div>
           </div>
         )}

@@ -6,15 +6,15 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import { packColumns, stackedColumnCount } from './cardLayout';
+import { packColumns, stackedColumnCount, updateStackedHeights } from './cardLayout';
 import styles from './StackedColumns.module.scss';
 
 export interface StackedColumnsItem {
   key: string;
   node: ReactNode;
   /**
-   * False while the card's content is still loading: its last settled height is kept, so a
-   * refresh does not move cards between columns.
+   * False while the card's content is loading: preserve its height unless it grows, so a
+   * refresh does not collapse the layout and taller loading content cannot overlap cards.
    */
   settled: boolean;
 }
@@ -47,25 +47,20 @@ export function StackedColumns({
   const [width, setWidth] = useState(0);
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(() => new Map());
 
-  // Record settled heights that changed. A hidden container reports 0; ignore it.
+  // Measure loading cards too: cached heights prevent shrinking, but growth must be packed.
   const recordHeights = useCallback((elements: Iterable<HTMLElement>) => {
-    const measured: [string, number][] = [];
+    const measured: { key: string; height: number; settled: boolean }[] = [];
     for (const element of elements) {
       const key = element.dataset.stackedKey;
-      if (!key || settledRef.current.get(key) === false) continue;
-      const height = element.getBoundingClientRect().height;
-      if (height > 0) measured.push([key, height]);
+      if (!key) continue;
+      measured.push({
+        key,
+        height: element.getBoundingClientRect().height,
+        settled: settledRef.current.get(key) !== false,
+      });
     }
     if (measured.length === 0) return;
-    setHeights((previous) => {
-      let next: Map<string, number> | null = null;
-      for (const [key, height] of measured) {
-        if (Math.abs((previous.get(key) ?? -1) - height) <= 1) continue;
-        next ??= new Map(previous);
-        next.set(key, height);
-      }
-      return next ?? previous;
-    });
+    setHeights((previous) => updateStackedHeights(previous, measured));
   }, []);
 
   // After every render, before paint: refresh the settled flags and measure the cards, so a

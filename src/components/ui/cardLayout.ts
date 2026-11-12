@@ -14,14 +14,17 @@ export const DEFAULT_CARD_LAYOUT: CardLayout = 'even';
 export const isCardLayout = (value: unknown): value is CardLayout =>
   typeof value === 'string' && (CARD_LAYOUTS as readonly string[]).includes(value);
 
-/** Each page keeps its own choice in localStorage; unknown or unreadable values give the default. */
-export const readCardLayout = (storageKey: string): CardLayout => {
-  if (typeof window === 'undefined') return DEFAULT_CARD_LAYOUT;
+/** Each page keeps its own choice in localStorage; unknown or unreadable values give `fallback`. */
+export const readCardLayout = (
+  storageKey: string,
+  fallback: CardLayout = DEFAULT_CARD_LAYOUT
+): CardLayout => {
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = window.localStorage.getItem(storageKey);
-    return isCardLayout(stored) ? stored : DEFAULT_CARD_LAYOUT;
+    return isCardLayout(stored) ? stored : fallback;
   } catch {
-    return DEFAULT_CARD_LAYOUT;
+    return fallback;
   }
 };
 
@@ -32,6 +35,23 @@ export const writeCardLayout = (storageKey: string, layout: CardLayout) => {
   } catch {
     // ignore
   }
+};
+
+/** Loading cards may grow to avoid overlap, but only settled cards may shrink. */
+export const updateStackedHeights = (
+  previous: ReadonlyMap<string, number>,
+  measured: readonly { key: string; height: number; settled: boolean }[]
+): ReadonlyMap<string, number> => {
+  let next: Map<string, number> | null = null;
+  for (const { key, height, settled } of measured) {
+    if (!Number.isFinite(height) || height <= 0) continue;
+    const cached = previous.get(key);
+    if (!settled && cached !== undefined && height < cached) continue;
+    if (cached !== undefined && Math.abs(cached - height) <= 1) continue;
+    next ??= new Map(previous);
+    next.set(key, height);
+  }
+  return next ?? previous;
 };
 
 /** How many columns of at least `minWidth` fit in `width`, with `gap` between them. */
