@@ -1,4 +1,7 @@
-import { selectResetGrant } from '../src/features/quota/providers/claude/selectResetGrant';
+import {
+  canChooseResetGrant,
+  resetGrantKind,
+} from '../src/features/quota/providers/claude/resetGrantChoice';
 
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { apiClient } from '../src/services/api/client';
@@ -646,19 +649,15 @@ test('all grant messages and confirmation are translated in six locales', async 
   }
 });
 
-test('card selection prefers usable recommendation and has deterministic fallback', () => {
+test('card requires an explicit usable grant without recommendation or fallback', () => {
   const base = status();
   const a = { ...base.grants[0], id: 'a' };
   const b = { ...a, id: 'b' };
   const multiple = { ...base, grants: [b, a], nextGrantId: 'b' };
-  expect(selectResetGrant(multiple, 0)?.id).toBe('b');
-  expect(selectResetGrant({ ...multiple, nextGrantId: null }, 0)?.id).toBe('a');
-  expect(selectResetGrant({ ...multiple, grants: [a, { ...b, paused: true }] }, 0)?.id).toBe('a');
-  expect(selectResetGrant({ ...multiple, eligible: false }, 0)).toBeUndefined();
-  expect(selectResetGrant({ ...multiple, atLimit: false }, 0)).toBeUndefined();
-  expect(
-    selectResetGrant({ ...multiple, cooldownUntil: new Date(1000).toISOString() }, 0)
-  ).toBeUndefined();
+  for (const id of ['a', 'b']) expect(canChooseResetGrant(multiple, undefined, id, 0)).toBe(true);
+  for (const id of [undefined, 'missing', { type: 'click' }, '']) {
+    expect(canChooseResetGrant(multiple, undefined, id, 0)).toBe(false);
+  }
   for (const changed of [
     { resetsLeft: 0 },
     { usableNow: false },
@@ -666,20 +665,42 @@ test('card selection prefers usable recommendation and has deterministic fallbac
     { startsAt: new Date(1000).toISOString() },
     { endsAt: new Date(0).toISOString() },
   ]) {
-    expect(selectResetGrant({ ...base, grants: [{ ...a, ...changed }] }, 0)).toBeUndefined();
+    expect(
+      canChooseResetGrant({ ...base, grants: [{ ...a, ...changed }] }, undefined, 'a', 0)
+    ).toBe(false);
   }
+  for (const changed of [
+    { eligible: false },
+    { atLimit: false },
+    { cooldownUntil: new Date(1000).toISOString() },
+  ]) {
+    expect(canChooseResetGrant({ ...multiple, ...changed }, undefined, 'a', 0)).toBe(false);
+  }
+  expect(canChooseResetGrant(null, undefined, 'a', 0)).toBe(false);
+  expect(canChooseResetGrant(null, 'a', 'a', 0)).toBe(true);
+  expect(canChooseResetGrant(multiple, 'a', 'b', 0)).toBe(false);
 });
 
-test('Claude card uses Codex count and action styles and shared confirmation, not a grant dialog', async () => {
+test('card retains one dialog trigger with explicit selection and no second confirmation', async () => {
   const card = await Bun.file('src/features/quota/components/QuotaCard.tsx').text();
   const hook = await Bun.file('src/features/quota/providers/claude/ClaudeResetGrants.tsx').text();
+  const dialog = await Bun.file(
+    'src/features/quota/providers/claude/ClaudeResetGrantDialog.tsx'
+  ).text();
   expect(card).toContain('quotaClasses.codexPlanValue}>{claudeReset.count');
-  expect(card).toContain('disabled={claudeReset.blocked}');
-  expect(card).toContain('onClick={claudeReset.confirm}');
-  expect(hook).toContain('showConfirmation({');
-  expect(hook).toContain("pending ? 'claude_reset.retry_confirm'");
-  expect(hook).not.toContain('<Modal');
-  expect(hook).not.toContain('status.grants.map');
+  expect(card.match(/onClick=\{claudeReset.openDialog\}/g)).toHaveLength(1);
+  expect(card).toContain('<ClaudeResetGrantDialog');
+  expect(card).not.toContain('onRedeem=');
+  expect(hook).not.toContain('showConfirmation');
+  expect(hook).not.toContain('selectResetGrant');
+  expect(hook).toContain('setDialog({ key, selected: null })');
+  expect(hook).toContain('if (!open || !selected || !canRedeemGrant(selected) || lock.current');
+  expect(hook).toContain(
+    "if (!current() || useAuthStore.getState().connectionStatus !== 'connected') return"
+  );
+  expect(dialog).toContain('<Modal');
+  expect(dialog).toContain('closeDisabled={props.busy}');
+  expect(dialog).toContain('!props.selected || !props.canRedeemGrant(props.selected)');
 });
 
 test('cooldown clear failures reuse existing messages without new locale keys', async () => {
@@ -710,4 +731,137 @@ test('account reads map upstream 429 to a sanitized typed rate-limit failure', a
     });
   }
   expect(calls).toBe(2); // Neither read retries.
+});
+
+describe('explicit reset kinds and model refill usage', () => {
+  test('preserves type and weekly give-back without treating it as a full reset', () => {
+    for (const type of ['weekly', 'session', 'full']) {
+      const parsed = parseAnthropicResetGrantStatus({
+        ...block,
+        grants: [{ ...grant, type, gives_back_weekly: false }],
+      })!;
+      expect(resetGrantKind(parsed.grants[0])).toBe(type);
+      expect(parsed.grants[0].givesBackWeekly).toBe(false);
+    }
+    const parsed = parseAnthropicResetGrantStatus({
+      ...block,
+      grants: [{ ...grant, type: 'full', gives_back_weekly: true }],
+    })!;
+    expect(resetGrantKind(parsed.grants[0])).toBe('fable');
+    expect(resetGrantKind(status().grants[0])).toBe('unknown');
+    expect(
+      parseAnthropicResetGrantStatus({
+        ...block,
+        grants: [{ ...grant, gives_back_weekly: 'true' }],
+      })
+    ).toBeNull();
+  });
+
+  test('only known zero usage blocks a model refill, including future model windows', () => {
+    for (const [percent_used, blocked] of [
+      [{ seven_day_overage_included: 0 }, true],
+      [{ seven_day: 0, future_model: 0 }, true],
+      [{ seven_day: 0, future_model: 0.5 }, false],
+      [{ seven_day: 0, future_model: null }, false],
+      [{}, false],
+      [undefined, false],
+    ] as const) {
+      const parsed = parseAnthropicResetGrantStatus({
+        ...block,
+        grants: [{ ...grant, gives_back_weekly: true, percent_used }],
+      })!;
+      expect(anthropicResetGrantBlocker(parsed, grant.id)).toBe(blocked ? 'no_usage' : null);
+    }
+    const weekly = parseAnthropicResetGrantStatus({
+      ...block,
+      grants: [{ ...grant, type: 'weekly', percent_used: { seven_day: 0 } }],
+    })!;
+    expect(anthropicResetGrantBlocker(weekly, grant.id)).toBeNull();
+  });
+
+  test.each(['weekly-choice', 'model-choice'])(
+    'preflight and mock claim spend exactly %s even when another grant is recommended',
+    async (chosen) => {
+      const calls: ApiCallRequest[] = [];
+      const grants = [
+        { ...grant, id: 'weekly-choice', type: 'weekly' },
+        {
+          ...grant,
+          id: 'model-choice',
+          type: 'full',
+          gives_back_weekly: true,
+          percent_used: { seven_day_overage_included: 35 },
+        },
+      ];
+      apiCallApi.request = async (request) => {
+        calls.push(request);
+        return {
+          statusCode: 200,
+          header: {},
+          bodyText: '',
+          body:
+            request.method === 'POST'
+              ? { result: 'reset' }
+              : request.url.endsWith('profile')
+                ? { organization: { uuid: organization } }
+                : { cedar_ember: { ...block, next_grant_id: 'weekly-choice', grants } },
+        };
+      };
+      const operations = createResetGrantOperations({
+        ...setup().deps,
+        readOrganization: readClaudeOrganization,
+        readStatus: readClaudeResetGrants,
+        claim: claimClaudeResetGrant,
+      });
+      expect(calls).toHaveLength(0);
+      await operations.run('account', 'index', chosen);
+      const posts = calls.filter((call) => call.method === 'POST');
+      expect(posts).toHaveLength(1);
+      expect(JSON.parse(posts[0].data!)).toEqual({
+        program: 'cedar_ember',
+        grant_id: chosen,
+        request_id: 'request-1',
+      });
+    }
+  );
+
+  test('fresh preflight refuses a now-empty model refill before any claim', async () => {
+    const h = setup();
+    h.deps.readStatus = async () =>
+      parseAnthropicResetGrantStatus({
+        ...block,
+        grants: [
+          { ...grant, gives_back_weekly: true, percent_used: { seven_day_overage_included: 0 } },
+        ],
+      })!;
+    await expect(
+      createResetGrantOperations(h.deps).run('account', 'index', grant.id)
+    ).rejects.toMatchObject({ stage: 'eligibility', reason: 'blocked_no_usage' });
+    expect(h.ids).toEqual([]);
+  });
+
+  test('uncertain model refill retains type and retries the same grant/request after discovery loses it', async () => {
+    const h = setup();
+    const refill = parseAnthropicResetGrantStatus({
+      ...block,
+      grants: [{ ...grant, type: 'full', gives_back_weekly: true }],
+    })!;
+    h.deps.readStatus = async () => refill;
+    const claims: string[][] = [];
+    h.deps.claim = async (_auth, _org, selected, requestId) => {
+      claims.push([selected, requestId]);
+      throw new AnthropicResetGrantUnknownOutcome();
+    };
+    const operations = createResetGrantOperations(h.deps);
+    await expect(operations.run('account', 'index', grant.id)).rejects.toThrow();
+    const pending = operations.inspect('account')!;
+    expect(resetGrantKind(pending.grant)).toBe('fable');
+    h.deps.readStatus = async () => ({ ...status(), grants: [] });
+    await expect(operations.run('account', 'index', 'another-grant')).rejects.toThrow();
+    await expect(operations.run('account', 'index', grant.id)).rejects.toThrow();
+    expect(claims).toEqual([
+      [grant.id, 'request-1'],
+      [grant.id, 'request-1'],
+    ]);
+  });
 });

@@ -37,6 +37,23 @@ export const writeCardLayout = (storageKey: string, layout: CardLayout) => {
   }
 };
 
+/** Keep settled heights during refresh, but measure loading cards without a cached height. */
+export const updateStackedHeights = (
+  previous: ReadonlyMap<string, number>,
+  measured: readonly { key: string; height: number; settled: boolean }[]
+): ReadonlyMap<string, number> => {
+  let next: Map<string, number> | null = null;
+  for (const { key, height, settled } of measured) {
+    if (!Number.isFinite(height) || height <= 0) continue;
+    const cached = previous.get(key);
+    if (!settled && cached !== undefined) continue;
+    if (cached !== undefined && Math.abs(cached - height) <= 1) continue;
+    next ??= new Map(previous);
+    next.set(key, height);
+  }
+  return next ?? previous;
+};
+
 /** How many columns of at least `minWidth` fit in `width`, with `gap` between them. */
 export const stackedColumnCount = (width: number, minWidth: number, gap: number): number =>
   Math.max(1, Math.floor((width + gap) / (minWidth + gap)));

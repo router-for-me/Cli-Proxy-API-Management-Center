@@ -101,6 +101,32 @@ button.quotaMessageAction {
   @include text-ellipsis;
 }
 
+/* Match the quota-page grouping without changing other providers' rows. */
+.claudeExtraUsageTitle {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+
+  .quotaModel {
+    width: auto;
+  }
+}
+
+.claudeExtraUsageStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
+  font-size: $quota-font-size;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
 .quotaMeta {
   display: inline-flex;
   align-items: baseline;
