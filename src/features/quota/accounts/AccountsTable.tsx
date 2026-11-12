@@ -144,6 +144,7 @@ export function AccountsTable(props: AccountsTableProps) {
           quota,
           cells,
           recordedAtMs,
+          savedResetGrants: recorded?.resetGrants ?? null,
           placement,
           plan: planOf(entry, quota, recorded?.plan, t),
         };
@@ -245,6 +246,7 @@ export function AccountsTable(props: AccountsTableProps) {
                   columns={section.columns}
                   cells={row.cells}
                   recordedAtMs={row.recordedAtMs}
+                  savedResetGrants={row.savedResetGrants}
                   showBank={section.showBank}
                   boosted={section.boosted.has(getQuotaCacheKey(row.entry.file))}
                   color={color}

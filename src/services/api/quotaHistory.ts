@@ -8,6 +8,7 @@
 
 import { isRecord } from '@/utils/helpers';
 import { apiClient } from './client';
+import { parseSavedResetGrantStatus, type AnthropicResetGrantStatus } from './claudeResetGrants';
 
 const QUOTA_HISTORY_TIMEOUT_MS = 20 * 1000;
 
@@ -56,6 +57,8 @@ export type QuotaHistoryAccount = {
   windows: QuotaHistoryWindow[];
   /** Null on backends without the routing report. */
   routing?: QuotaHistoryRouting | null;
+  /** Banked Claude resets the backend saved; null when none are saved or out of date. */
+  resetGrants?: AnthropicResetGrantStatus | null;
 };
 
 export type QuotaHistory = {
@@ -133,6 +136,7 @@ const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {
       .map(normalizeWindow)
       .filter((window): window is QuotaHistoryWindow => window !== null),
     routing: normalizeRouting(raw.routing),
+    resetGrants: parseSavedResetGrantStatus(raw.reset_grants),
   };
 };
 

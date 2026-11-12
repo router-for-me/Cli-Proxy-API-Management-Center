@@ -230,6 +230,41 @@ export function parseAnthropicResetGrantStatus(block: unknown): AnthropicResetGr
   };
 }
 
+/**
+ * Parses the banked resets the backend saved for an account (`reset_grants` in quota
+ * history), or null when there is none or it is out of date after a claim. The saved
+ * record has no live usability flags, so a grant counts as usable unless paused; a
+ * claim still runs its own fresh preflight read.
+ */
+export function parseSavedResetGrantStatus(raw: unknown): AnthropicResetGrantStatus | null {
+  if (!isRecord(raw) || raw.stale === true) return null;
+  const iso = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0
+      ? new Date(value).toISOString()
+      : value === undefined || value === null || value === 0
+        ? null
+        : value;
+  const grants = Array.isArray(raw.grants)
+    ? raw.grants.map((grant) =>
+        isRecord(grant)
+          ? {
+              ...grant,
+              starts_at: iso(grant.starts_at),
+              ends_at: iso(grant.ends_at),
+              usable_now: grant.paused !== true,
+              use_requires_limit: false,
+            }
+          : grant
+      )
+    : raw.grants;
+  return parseAnthropicResetGrantStatus({
+    eligible: raw.eligible,
+    ineligible_reason: raw.ineligible_reason,
+    cooldown_until: iso(raw.cooldown_until),
+    grants,
+  });
+}
+
 /** Why a grant cannot be spent right now, or null when it can. */
 export function anthropicResetGrantBlocker(
   status: AnthropicResetGrantStatus,

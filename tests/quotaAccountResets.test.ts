@@ -15,6 +15,7 @@ import { resetGrantKind, resetGrantLines } from '@/features/quota/providers/clau
 import { selectResetGrant } from '@/features/quota/providers/claude/selectResetGrant';
 import {
   parseAnthropicResetGrantStatus,
+  parseSavedResetGrantStatus,
   type AnthropicResetGrant,
 } from '@/services/api/claudeResetGrants';
 
@@ -103,6 +104,48 @@ describe('Claude reset kinds', () => {
     expect(
       selectResetGrant({ ...status, grants: [grant()], nextGrantId: null }, NOW, 'fable')
     ).toBeUndefined();
+  });
+});
+
+describe('saved reset grants', () => {
+  // The backend's reset-grants.json record: times in Unix ms, no live usability flags.
+  const saved = {
+    checked_at: NOW,
+    eligible: true,
+    cooldown_until: 0,
+    grants: [
+      {
+        id: 'general-a',
+        resets_total: 1,
+        resets_left: 1,
+        ends_at: NOW + 35 * D,
+        clears: ['seven_day'],
+      },
+      {
+        id: 'fable-a',
+        resets_total: 1,
+        resets_left: 1,
+        ends_at: NOW + 118 * D,
+        gives_back_weekly: true,
+      },
+      { id: 'fable-b', resets_total: 1, resets_left: 0, gives_back_weekly: true, paused: true },
+    ],
+  };
+
+  test('shows the saved grants by kind before any live read', () => {
+    const status = parseSavedResetGrantStatus(saved);
+    expect(status).not.toBeNull();
+    expect(resetGrantLines(status!.grants, NOW)).toEqual([
+      { kind: 'general', count: 1, expiresAtMs: NOW + 35 * D },
+      { kind: 'fable', count: 1, expiresAtMs: NOW + 118 * D },
+    ]);
+    expect(selectResetGrant(status!, NOW, 'fable')?.id).toBe('fable-a');
+  });
+
+  test('ignores a record a claim made out of date, and malformed ones', () => {
+    expect(parseSavedResetGrantStatus({ ...saved, stale: true })).toBeNull();
+    expect(parseSavedResetGrantStatus(undefined)).toBeNull();
+    expect(parseSavedResetGrantStatus({ ...saved, grants: [{ id: 'BAD ID' }] })).toBeNull();
   });
 });
 

@@ -8,6 +8,7 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { IconAlertTriangle, IconRefreshCw } from '@/components/ui/icons';
 import type { CodexQuotaState } from '@/types';
+import type { AnthropicResetGrantStatus } from '@/services/api/claudeResetGrants';
 import { resolveQuotaErrorMessage, resolveResetMs } from '@/utils/quota';
 import { formatInstantShort, formatRelativeInstant } from '@/utils/quota/relativeTime';
 import { MINUTE_MS } from '@/utils/time/durations';
@@ -44,6 +45,8 @@ export type AccountRowProps = {
   /** Set when `cells` come from recorded history rather than a live read. */
   recordedAtMs: number | null;
   showBank: boolean;
+  /** Banked resets the backend saved, shown until a live read. */
+  savedResetGrants: AnthropicResetGrantStatus | null;
   /** The weekly-reset router boosts this credential now. */
   boosted: boolean;
   color: string;
@@ -59,7 +62,8 @@ export type AccountRowProps = {
 };
 
 export function AccountRow(props: AccountRowProps) {
-  const { entry, quota, name, plan, columns, cells, recordedAtMs, showBank } = props;
+  const { entry, quota, name, plan, columns, cells, recordedAtMs, showBank, savedResetGrants } =
+    props;
   const { boosted, color, gridTemplate, now, locale, canRefresh, resetting } = props;
   const { creditOverageSharedCount = 1, onRefresh, onReset } = props;
   const { t } = useTranslation();
@@ -74,7 +78,8 @@ export function AccountRow(props: AccountRowProps) {
     entry.type === 'claude' && status !== 'idle',
     !canRefresh || loading || resetting,
     quota,
-    onRefresh
+    onRefresh,
+    savedResetGrants
   );
   // QuotaCard's Codex credit setting, on the row like the card's other actions.
   const creditOverage = useCodexCreditOverage(
@@ -192,7 +197,7 @@ export function AccountRow(props: AccountRowProps) {
 
   let resetLines: ResetLine[] = [];
   let resetsKnown = false;
-  if (entry.type === 'claude' && loaded) {
+  if (entry.type === 'claude' && (loaded || claudeReset.known)) {
     resetsKnown = claudeReset.known;
     const fableReady = fableUsedUp(cells);
     resetLines = claudeReset.lines.map((line) => claudeResetLine(line, t, fableReady));
