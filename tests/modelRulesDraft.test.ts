@@ -228,6 +228,7 @@ describe('saving', () => {
     expect(calls).toEqual(['delete:claude', 'save:codex', 'save:gemini']);
     expect(outcome).toEqual({ failed: ['codex'], message: 'rejected' });
 
+    if (!outcome) throw new Error('The unchanged connection must finish saving');
     const fresh = { codex: ['server'], gemini: ['b'] };
     const previous = { codex: ['a'], gemini: ['stale'], claude: [] as string[] };
     expect(rebaseDraft(fresh, previous, outcome.failed)).toEqual({ codex: ['a'], gemini: ['b'] });

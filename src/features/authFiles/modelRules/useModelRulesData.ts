@@ -153,15 +153,18 @@ export function useProviderModelCatalog(providers: readonly string[], enabled = 
 
 export type SaveOutcome = { failed: string[]; message: string };
 
-/** 逐个 provider 提交保存计划；单个失败不影响其余 provider。 */
+/** 逐个 provider 提交；单个失败不影响其余项，连接变化则返回 null 并终止整个批次。 */
 export async function runSavePlan<T>(
   plan: readonly { provider: string; value: T | null }[],
   save: (provider: string, value: T) => Promise<unknown>,
   remove: (provider: string) => Promise<unknown>
-): Promise<SaveOutcome> {
+): Promise<SaveOutcome | null> {
+  const connection = apiClient.getConnectionRevision();
+  const isCurrent = () => connection === apiClient.getConnectionRevision();
   const failed: string[] = [];
   let message = '';
   for (const { provider, value } of plan) {
+    if (!isCurrent()) return null;
     try {
       if (value === null) await remove(provider);
       else await save(provider, value);
@@ -170,5 +173,5 @@ export async function runSavePlan<T>(
       if (!message) message = getErrorMessage(err);
     }
   }
-  return { failed, message };
+  return isCurrent() ? { failed, message } : null;
 }

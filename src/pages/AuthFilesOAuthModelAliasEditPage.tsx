@@ -82,7 +82,8 @@ export function AuthFilesOAuthModelAliasEditPage() {
 
   const draft = draftState.draft;
   const dirtyProviders = useMemo(() => getDirtyAliasProviders(baseline, draft), [baseline, draft]);
-  const isDirty = data.status === 'ready' && dirtyProviders.length > 0;
+  // Once initialized, a failed reload must not disable the unsaved-navigation guard.
+  const isDirty = data.revision > 0 && dirtyProviders.length > 0;
 
   const route = useModelRulesRoute('alias', isDirty);
   const { provider: selected, view } = route;
@@ -259,6 +260,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
         authFilesApi.saveOauthModelAlias,
         authFilesApi.deleteOauthModelAlias
       );
+      if (!outcome) return;
       setKeepProviders(outcome.failed);
       const current = await data.reload();
       if (!current) return;
@@ -324,7 +326,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
       }
       dirtyCount={isDirty ? dirtyProviders.length : 0}
       saving={saving}
-      canSave={isDirty && !disabled}
+      canSave={data.status === 'ready' && isDirty && !disabled}
       onSave={() => void handleSave()}
       onDiscard={handleDiscard}
     >
