@@ -1006,7 +1006,6 @@
     "login_proxy_status_invalid": "Invalid",
     "login_proxy_label": "Proxy for new logins",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
-    "login_proxy_hint": "Applies only to logins started from this page and is saved on the credential they create. Not stored in the browser, and not used for plugin providers.",
     "login_proxy_clear": "Clear",
     "login_proxy_invalid": "Invalid proxy URL. Use http, https, socks5 or socks5h with a host (socks5 needs a port), and no path or query.",
     "login_proxy_in_use": "Signing in through proxy",

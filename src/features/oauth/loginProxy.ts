@@ -192,12 +192,10 @@ export type LoginProxyPlan =
   { kind: 'none' } | { kind: 'proxy'; url: string } | { kind: 'invalid' };
 
 /**
- * Decides what a login start does with the page-level proxy value. Plugin providers never send a
- * proxy (out of scope), whatever the field holds; built-in providers either send it, or refuse to
- * start when it is invalid. There is no fallback to a login without the proxy.
+ * Decides what any OAuth login start does with the page-level proxy value, including plugins.
+ * Invalid proxies block login; there is no fallback to a login without the proxy.
  */
-export function planLoginProxy(raw: string, providerKind: 'builtin' | 'plugin'): LoginProxyPlan {
-  if (providerKind === 'plugin') return { kind: 'none' };
+export function planLoginProxy(raw: string): LoginProxyPlan {
   const check = checkLoginProxyUrl(raw);
   if (check.kind === 'empty') return { kind: 'none' };
   if (check.kind === 'invalid') return { kind: 'invalid' };

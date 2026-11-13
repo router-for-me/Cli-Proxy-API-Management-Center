@@ -12,7 +12,7 @@ export interface LoginProxyFieldProps {
 }
 
 /**
- * Optional page-level proxy for built-in OAuth logins. Collapsed by default so the one-click
+ * Optional page-level proxy for built-in and plugin OAuth logins. Collapsed by default so the one-click
  * tile flow stays the obvious path; while a value is set the collapsed row keeps showing it,
  * so an active proxy cannot be forgotten.
  */
@@ -20,7 +20,6 @@ export function LoginProxyField({ value, rejectedValue, onChange }: LoginProxyFi
   const { t } = useTranslation();
   const panelId = useId();
   const inputId = useId();
-  const hintId = useId();
   const errorId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(rejectedValue !== null);
@@ -106,7 +105,7 @@ export function LoginProxyField({ value, rejectedValue, onChange }: LoginProxyFi
             autoCorrect="off"
             spellCheck={false}
             aria-invalid={showError}
-            aria-describedby={showError ? `${errorId} ${hintId}` : hintId}
+            aria-describedby={showError ? errorId : undefined}
           />
           {value && (
             <button type="button" className={styles.clear} onClick={clear}>
@@ -119,9 +118,6 @@ export function LoginProxyField({ value, rejectedValue, onChange }: LoginProxyFi
             {t('auth_login.login_proxy_invalid')}
           </p>
         )}
-        <p id={hintId} className={styles.hint}>
-          {t('auth_login.login_proxy_hint')}
-        </p>
       </div>
     </div>
   );

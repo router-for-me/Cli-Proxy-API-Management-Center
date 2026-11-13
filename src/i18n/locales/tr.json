@@ -1006,7 +1006,6 @@
     "login_proxy_status_invalid": "Geçersiz",
     "login_proxy_label": "Yeni girişler için proxy",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
-    "login_proxy_hint": "Yalnızca bu sayfadan başlatılan girişlere uygulanır ve oluşturulan kimlik bilgisine kaydedilir. Tarayıcıda saklanmaz ve eklenti sağlayıcıları için kullanılmaz.",
     "login_proxy_clear": "Temizle",
     "login_proxy_invalid": "Geçersiz proxy URL'si. Bir ana bilgisayarla birlikte http, https, socks5 veya socks5h kullanın (socks5 için port gerekir); yol veya sorgu eklemeyin.",
     "login_proxy_in_use": "Giriş proxy üzerinden yapılıyor",

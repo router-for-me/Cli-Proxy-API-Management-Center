@@ -1026,7 +1026,6 @@
     "login_proxy_status_invalid": "無效",
     "login_proxy_label": "新登入使用的代理",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
-    "login_proxy_hint": "僅用於從本頁發起的登入，並會儲存到產生的憑證上。不會儲存在瀏覽器中，也不適用於外掛提供者。",
     "login_proxy_clear": "清除",
     "login_proxy_invalid": "代理 URL 無效。請使用 http、https、socks5 或 socks5h 並填寫主機（socks5 需要連接埠），不能包含路徑或查詢參數。",
     "login_proxy_in_use": "本次登入透過代理",

@@ -88,7 +88,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
   const [addedCount, setAddedCount] = useState(0);
   const recordCredentialAdded = useCallback(() => setAddedCount((count) => count + 1), []);
   /**
-   * 页面级登录代理：只作用于从本页发起的内置提供商登录。仅存于内存，
+   * 页面级登录代理：作用于从本页发起的内置及插件提供商登录。仅存于内存，
    * 不写 storage / URL；换连接或登出时清空。
    */
   const [loginProxy, setLoginProxyValue] = useState('');
@@ -264,8 +264,7 @@ export function useOAuthFlows({ providerCards, isFocused }: UseOAuthFlowsOptions
     // explicit cancellation before replacing that Devin session.
     if (provider === 'devin' && states[provider]?.state) return;
     const attempt = attempts.current.begin(provider);
-    const card = providerCards.find((item) => item.id === provider);
-    const proxyPlan = planLoginProxy(loginProxy, card?.kind === 'plugin' ? 'plugin' : 'builtin');
+    const proxyPlan = planLoginProxy(loginProxy);
     const resetFields: Partial<ProviderFlowState> = {
       url: undefined,
       userCode: undefined,

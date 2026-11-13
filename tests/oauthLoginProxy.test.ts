@@ -256,17 +256,41 @@ describe('login proxy validation mirrors the backend', () => {
 });
 
 describe('login proxy request planning', () => {
-  test('built-in providers send a valid proxy and refuse an invalid one', () => {
-    expect(planLoginProxy('', 'builtin')).toEqual({ kind: 'none' });
-    expect(planLoginProxy('   ', 'builtin')).toEqual({ kind: 'none' });
-    expect(planLoginProxy(` ${PROXY} `, 'builtin')).toEqual({ kind: 'proxy', url: PROXY });
-    // Never silently degrade to a login without the proxy.
-    expect(planLoginProxy('socks5://host', 'builtin')).toEqual({ kind: 'invalid' });
+  test('all providers send a valid proxy and refuse an invalid one', () => {
+    expect(planLoginProxy('')).toEqual({ kind: 'none' });
+    expect(planLoginProxy('   ')).toEqual({ kind: 'none' });
+    expect(planLoginProxy(` ${PROXY} `)).toEqual({ kind: 'proxy', url: PROXY });
+    // Never silently degrade to a login without the proxy, including plugin logins.
+    expect(planLoginProxy('socks5://host')).toEqual({ kind: 'invalid' });
   });
 
-  test('plugin providers never send the proxy, whatever the field holds', () => {
-    expect(planLoginProxy(PROXY, 'plugin')).toEqual({ kind: 'none' });
-    expect(planLoginProxy('not a proxy', 'plugin')).toEqual({ kind: 'none' });
+  test('plugin provider IDs use POST with a proxy and retain GET without one', async () => {
+    const { sent } = captureTransport(ok);
+    const signal = new AbortController().signal;
+    for (const value of [` ${PROXY} `, '']) {
+      const plan = planLoginProxy(value);
+      await oauthApi.startAuth(
+        'custom-sso',
+        signal,
+        plan.kind === 'proxy' ? { proxyUrl: plan.url } : undefined
+      );
+    }
+    expect(sent).toEqual([
+      {
+        method: 'POST',
+        uri: '/oauth/auth-url',
+        params: undefined,
+        body: { provider: 'custom-sso', proxy_url: PROXY },
+      },
+      {
+        method: 'GET',
+        uri: '/oauth/auth-url?provider=custom-sso',
+        params: { provider: 'custom-sso' },
+        body: undefined,
+      },
+    ]);
+    const hook = readFileSync('src/features/oauth/hooks/useOAuthFlows.ts', 'utf8');
+    expect(hook).toContain('const proxyPlan = planLoginProxy(loginProxy);');
   });
 
   test('the inline error appears after blur or a refused login, and tracks the refused value', () => {
@@ -309,7 +333,6 @@ const KEYS = [
   'login_proxy_status_invalid',
   'login_proxy_label',
   'login_proxy_placeholder',
-  'login_proxy_hint',
   'login_proxy_clear',
   'login_proxy_invalid',
   'login_proxy_in_use',
@@ -377,9 +400,8 @@ describe('login proxy field', () => {
     expect(input).toContain('aria-invalid="false"');
     const inputId = /id="([^"]+)"/.exec(input)![1];
     expect(markup).toContain(`for="${inputId}"`);
-    const hintId = /aria-describedby="([^"]+)"/.exec(input)![1];
-    expect(markup).toContain(`id="${hintId}"`);
-    expect(markup).toContain('Not stored in the browser');
+    expect(input).not.toContain('aria-describedby');
+    expect(markup).not.toContain('Not stored in the browser');
     // No clear button without a value.
     expect(markup).not.toContain('>Clear<');
   });
@@ -411,9 +433,8 @@ describe('login proxy field', () => {
     expect(markup).not.toContain('hidden=""');
     const input = /<input[^>]*>/.exec(markup)![0];
     expect(input).toContain('aria-invalid="true"');
-    const [errorId, hintId] = /aria-describedby="([^"]+)"/.exec(input)![1].split(' ');
+    const errorId = /aria-describedby="([^"]+)"/.exec(input)![1];
     expect(markup).toMatch(new RegExp(`id="${errorId}"[^>]*role="alert"`));
-    expect(markup).toContain(`id="${hintId}"`);
     expect(markup).toContain(en.auth_login.login_proxy_invalid);
   });
 });

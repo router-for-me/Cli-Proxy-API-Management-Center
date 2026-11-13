@@ -224,20 +224,12 @@
   }
 }
 
-.error,
-.hint {
+.error {
   margin: 0;
   font-size: 12px;
   line-height: 1.55;
   overflow-wrap: anywhere;
-}
-
-.error {
   color: var(--viz-failure);
-}
-
-.hint {
-  color: var(--text-tertiary);
 }
 
 @keyframes login-proxy-fade {
