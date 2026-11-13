@@ -7,6 +7,7 @@ import iconVertex from '@/assets/icons/vertex.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import { KIMI_DISPLAY_NAME } from '@/features/providers/kimi';
 import { OAuthHeader } from './components/OAuthHeader';
+import { LoginProxyField } from './components/LoginProxyField';
 import { ProviderTile } from './components/ProviderTile';
 import { SponsorCard, type SponsorCardSite } from './components/SponsorCard';
 import { OAuthFlowDialog, type DialogHeading } from './components/OAuthFlowDialog';
@@ -183,6 +184,13 @@ export function OAuthPage() {
         providerCount={providerCount}
         waitingCount={waitingCount}
         addedCount={flows.addedCount}
+      />
+
+      {/* 可选登录代理：在点磁贴之前设好，不改变一键登录的快路径 */}
+      <LoginProxyField
+        value={flows.loginProxy}
+        rejectedValue={flows.loginProxyRejected}
+        onChange={flows.setLoginProxy}
       />
 
       {/* 赞助商独占首行：一张品牌卡收拢两站入口，其余提供商在下方紧凑网格 */}

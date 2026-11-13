@@ -4,6 +4,7 @@ import { Modal } from '@/components/ui/Modal';
 import { IconExternalLink, IconLoader2 } from '@/components/ui/icons';
 import type { ProviderFlowState } from '../hooks/useOAuthFlows';
 import { resolveFlowView, splitAuthUrl, type FlowView } from '../flowView';
+import { maskProxyUrl } from '../loginProxy';
 import { BrandGlyph } from './BrandGlyph';
 import { CopyButton } from './CopyButton';
 import styles from './OAuthFlowDialog.module.scss';
@@ -116,6 +117,12 @@ function FlowBody(props: OAuthFlowDialogProps & { view: Exclude<FlowView, 'succe
   return (
     <div className={styles.stack}>
       <ProviderHint text={text} sponsor={props.sponsor} />
+      {state.proxyUrl && (
+        <p className={styles.proxyNote}>
+          <span>{t('auth_login.login_proxy_in_use')}</span>
+          <code className={styles.proxyValue}>{maskProxyUrl(state.proxyUrl)}</code>
+        </p>
+      )}
       {isDevin && state.state && state.status === 'error' && (
         <div className={styles.alert} role="alert">
           {t('auth_login.devin_oauth_retry_hint')}
