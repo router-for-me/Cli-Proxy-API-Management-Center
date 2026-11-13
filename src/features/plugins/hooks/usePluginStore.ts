@@ -32,6 +32,8 @@ const getErrorDetailMessage = (error: unknown): string => {
 
 interface UsePluginStoreOptions {
   connected: boolean;
+  /** Installed-plugin mutations also lock store installation and updates. */
+  actionBusy: boolean;
   /** Called once an install or update has settled, successful or not. */
   onInstallSettled: () => void;
 }
@@ -43,7 +45,7 @@ interface UsePluginStoreOptions {
  * after a connection switch is never shown; a sequence number drops responses overtaken by a
  * newer load.
  */
-export function usePluginStore({ connected, onInstallSettled }: UsePluginStoreOptions) {
+export function usePluginStore({ connected, actionBusy, onInstallSettled }: UsePluginStoreOptions) {
   const { t } = useTranslation();
   const apiBase = useAuthStore((state) => state.apiBase);
   const managementKey = useAuthStore((state) => state.managementKey);
@@ -121,8 +123,11 @@ export function usePluginStore({ connected, onInstallSettled }: UsePluginStoreOp
     }
   }, [apiBase, connected, managementKey, t]);
 
+  const installBlocked = !connected || actionBusy || Boolean(installingKey);
+
   const runInstall = useCallback(
     async (entry: PluginStoreEntry, isUpdate: boolean, requestedVersion = '') => {
+      if (installBlocked) return;
       const session = { apiBase, managementKey };
       const applyResponse = (response: PluginStoreResponse) => {
         // Polling results are the freshest store state; supersede any in-flight load.
@@ -212,14 +217,18 @@ export function usePluginStore({ connected, onInstallSettled }: UsePluginStoreOp
         onInstallSettledRef.current();
       }
     },
-    [apiBase, clearConfigCache, managementKey, showNotification, t]
+    [apiBase, clearConfigCache, installBlocked, managementKey, showNotification, t]
   );
 
-  const openInstall = useCallback((entry: PluginStoreEntry) => {
-    setInstallOptionsEntry(entry);
-    setInstallOptionsIsUpdate(entry.installed && entry.updateAvailable);
-    setInstallVersion('');
-  }, []);
+  const openInstall = useCallback(
+    (entry: PluginStoreEntry) => {
+      if (installBlocked) return;
+      setInstallOptionsEntry(entry);
+      setInstallOptionsIsUpdate(entry.installed && entry.updateAvailable);
+      setInstallVersion('');
+    },
+    [installBlocked]
+  );
 
   const handleInstallOptionsClose = useCallback(() => {
     if (installingKey) return;
@@ -228,7 +237,7 @@ export function usePluginStore({ connected, onInstallSettled }: UsePluginStoreOp
   }, [installingKey]);
 
   const handleInstallOptionsConfirm = useCallback(async () => {
-    if (!installOptionsEntry) return;
+    if (installBlocked || !installOptionsEntry) return;
     const requestedVersion = installVersion.trim();
 
     // Third-party plugins must clear the multi-step confirmation gauntlet first.
@@ -249,14 +258,14 @@ export function usePluginStore({ connected, onInstallSettled }: UsePluginStoreOp
     } catch {
       // runInstall already surfaced a notification; keep the modal available for correction.
     }
-  }, [installOptionsEntry, installOptionsIsUpdate, installVersion, runInstall]);
+  }, [installBlocked, installOptionsEntry, installOptionsIsUpdate, installVersion, runInstall]);
 
   const handleGateConfirm = useCallback(async () => {
-    if (!gateEntry) return;
+    if (installBlocked || !gateEntry) return;
     await runInstall(gateEntry, gateIsUpdate, gateRequestedVersion);
     setGateOpen(false);
     setGateRequestedVersion('');
-  }, [gateEntry, gateIsUpdate, gateRequestedVersion, runInstall]);
+  }, [gateEntry, gateIsUpdate, gateRequestedVersion, installBlocked, runInstall]);
 
   const handleGateClose = useCallback(() => {
     setGateOpen(false);

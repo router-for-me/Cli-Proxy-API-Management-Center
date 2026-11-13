@@ -1,4 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { PluginStoreView } from '@/features/plugins/components/PluginStoreView';
 import {
   findPluginUpdate,
   formatPluginVersion,
@@ -63,6 +67,54 @@ const storeEntry = (overrides: Partial<PluginStoreEntry> = {}): PluginStoreEntry
   effectiveEnabled: true,
   updateAvailable: true,
   ...overrides,
+});
+
+describe('shared plugin mutation lock', () => {
+  for (const kind of ['install', 'update'] as const) {
+    test(`${kind} is disabled during installed-plugin mutations and unlocked afterward`, () => {
+      const entry = storeEntry({ installed: kind === 'update' });
+      const render = (actionBusy: boolean) =>
+        renderToStaticMarkup(
+          createElement(PluginStoreView, {
+            data: {
+              plugins: [entry],
+              pluginsEnabled: true,
+              pluginsDir: 'plugins',
+              sourceErrors: [],
+            },
+            error: null,
+            loading: false,
+            entries: [entry],
+            layout: 'list',
+            query: '',
+            connected: true,
+            actionBusy,
+            installingKey: '',
+            getLogo: () => '',
+            getAction: () => ({ kind }),
+            onInstall: () => {},
+            onRetry: () => {},
+            onClearSearch: () => {},
+          })
+        );
+      expect(render(true)).toMatch(/<button[^>]*disabled=""[^>]*>/);
+      expect(render(false)).not.toMatch(/<button[^>]*disabled=""[^>]*>/);
+    });
+  }
+
+  test('the page shares its lock with the store UI and all install entry points', () => {
+    const page = readFileSync('src/features/plugins/PluginsPage.tsx', 'utf8');
+    const hook = readFileSync('src/features/plugins/hooks/usePluginStore.ts', 'utf8');
+    expect(page).toContain('actionBusy: installed.actionBusy');
+    expect(page).toContain('actionBusy={installed.actionBusy}');
+    expect(hook).toContain(
+      'const installBlocked = !connected || actionBusy || Boolean(installingKey)'
+    );
+    expect(hook).toMatch(/async \(entry:[\s\S]*?if \(installBlocked\) return;/);
+    expect(hook).toMatch(/const openInstall[\s\S]*?if \(installBlocked\) return;/);
+    expect(hook).toContain('if (installBlocked || !installOptionsEntry) return;');
+    expect(hook).toContain('if (installBlocked || !gateEntry) return;');
+  });
 });
 
 describe('installed plugin to registry update match', () => {

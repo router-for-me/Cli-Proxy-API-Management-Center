@@ -20,6 +20,7 @@ interface PluginStoreViewProps {
   layout: StoreLayout;
   query: string;
   connected: boolean;
+  actionBusy: boolean;
   installingKey: string;
   getLogo: (entry: PluginStoreEntry) => string;
   getAction: (entry: PluginStoreEntry) => StoreRowAction;
@@ -36,6 +37,7 @@ export function PluginStoreView({
   layout,
   query,
   connected,
+  actionBusy,
   installingKey,
   getLogo,
   getAction,
@@ -93,7 +95,7 @@ export function PluginStoreView({
               logo={getLogo(entry)}
               action={getAction(entry)}
               installing={installing}
-              disabled={!connected || (Boolean(installingKey) && !installing)}
+              disabled={!connected || actionBusy || (Boolean(installingKey) && !installing)}
               onInstall={() => onInstall(entry)}
             />
           );

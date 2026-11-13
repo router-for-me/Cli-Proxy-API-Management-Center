@@ -58,6 +58,7 @@ export function PluginsPage() {
   });
   const store = usePluginStore({
     connected,
+    actionBusy: installed.actionBusy,
     onInstallSettled: () => reloaders.current.installed(),
   });
   const loadInstalled = installed.load;
@@ -304,6 +305,7 @@ export function PluginsPage() {
             layout={storeLayout}
             query={query}
             connected={connected}
+            actionBusy={installed.actionBusy}
             installingKey={installingKey}
             getLogo={(entry) => resolveAsset(entry.logo)}
             getAction={storeAction}
