@@ -9,7 +9,7 @@ import { QuotaPage } from '@/features/quota/QuotaPage';
 import { RoutingPage } from '@/features/routing/RoutingPage';
 import { PluginResourcePage } from '@/features/plugins/PluginResourcePage';
 import { PluginsPage } from '@/features/plugins/PluginsPage';
-import { PluginStorePage } from '@/features/plugins/PluginStorePage';
+import { PLUGINS_STORE_PATH } from '@/features/plugins/pluginsView';
 import { ConfigPage } from '@/features/config/ConfigPage';
 import { LogsPage } from '@/features/logs/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
@@ -34,7 +34,8 @@ const createMainRoutes = (supportsPlugin: boolean) => [
     ? [
         { path: '/plugin-pages/:pluginId/:menuIndex', element: <PluginResourcePage /> },
         { path: '/plugins', element: <PluginsPage /> },
-        { path: '/plugin-store', element: <PluginStorePage /> },
+        // The store is now the Store view of the plugins page; keep old links working.
+        { path: '/plugin-store', element: <Navigate to={PLUGINS_STORE_PATH} replace /> },
         { path: '/plugins/*', element: <Navigate to="/plugins" replace /> },
       ]
     : [

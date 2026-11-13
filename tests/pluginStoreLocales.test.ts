@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { apiClient } from '@/services/api/client';
 import { pluginStoreApi } from '@/services/api/plugins';
 import { getStoreEntryDisplay } from '@/features/plugins/pluginStoreMetadata';
+import { filterStoreEntries, getStoreSearchText } from '@/features/plugins/pluginSearch';
 import type { PluginStoreEntry } from '@/types';
 
 const spies: Array<{ mockRestore(): void }> = [];
@@ -44,6 +45,18 @@ const storeEntry = (overrides: Partial<PluginStoreEntry>): PluginStoreEntry => (
   updateAvailable: false,
   ...overrides,
 });
+
+const unrelatedEntry = (id: string) =>
+  storeEntry({
+    storeId: `official/${id}`,
+    id,
+    name: id.toUpperCase(),
+    description: 'Unrelated.',
+    author: 'nobody',
+    repository: `router-for-me/${id}`,
+    license: 'Apache-2.0',
+    tags: [],
+  });
 
 describe('plugin store entry normalization', () => {
   test('keeps backend locales on normalized entries', async () => {
@@ -134,8 +147,10 @@ describe('store entry display metadata', () => {
   test('tags only switch when the matched locale carries its own list', () => {
     expect(getStoreEntryDisplay(entry, 'zh-CN').tags).toEqual(['Interceptor']);
     expect(
-      getStoreEntryDisplay(storeEntry({ locales: { 'zh-CN': { tags: [' 拦截器 ', ''] } } }), 'zh-CN')
-        .tags
+      getStoreEntryDisplay(
+        storeEntry({ locales: { 'zh-CN': { tags: [' 拦截器 ', ''] } } }),
+        'zh-CN'
+      ).tags
     ).toEqual(['拦截器']);
   });
 
@@ -147,11 +162,36 @@ describe('store entry display metadata', () => {
   });
 
   test('localized names stay searchable next to their root values', () => {
-    const page = readSource('src/features/plugins/PluginStorePage.tsx');
-    const haystack = page.match(/const haystack = \[([\s\S]*?)\];/)?.[1] ?? '';
-    for (const field of ['plugin.name', 'display.name', 'plugin.description', 'display.tags']) {
-      expect(haystack).toContain(field);
+    const localized = storeEntry({
+      tags: ['Interceptor'],
+      locales: { 'zh-CN': { name: '示例插件', description: '中文描述。', tags: ['拦截器'] } },
+    });
+    const other = unrelatedEntry('other');
+    const search = (query: string, language = 'zh-CN') =>
+      filterStoreEntries([localized, other], query, language).map((entry) => entry.id);
+
+    // 根字段与当前语言的翻译都进入检索文本，切语言后原文仍可搜到。
+    expect(search('Example')).toEqual(['example']);
+    expect(search('示例插件')).toEqual(['example']);
+    expect(search('english description')).toEqual(['example']);
+    expect(search('中文描述')).toEqual(['example']);
+    expect(search('interceptor')).toEqual(['example']);
+    expect(search('拦截器')).toEqual(['example']);
+    // 另一种语言不会带入不匹配的翻译。
+    expect(search('示例插件', 'en')).toEqual([]);
+
+    const text = getStoreSearchText(localized, 'zh-CN');
+    for (const field of ['example', 'someone', 'router-for-me/example-plugin', 'mit', 'official']) {
+      expect(text).toContain(field);
     }
+  });
+
+  test('an empty query keeps every entry and the search ignores case and padding', () => {
+    const entries = [storeEntry({}), unrelatedEntry('b')];
+    expect(filterStoreEntries(entries, '   ', 'en')).toHaveLength(2);
+    expect(filterStoreEntries(entries, '  EXAMPLE ', 'en').map((entry) => entry.id)).toEqual([
+      'example',
+    ]);
   });
 
   test('unknown languages and missing locales keep the root fields', () => {
@@ -164,26 +204,50 @@ describe('store entry display metadata', () => {
       license: 'MIT',
       tags: ['Interceptor'],
     });
-    expect(getStoreEntryDisplay(entry, 'xx')).toEqual(
-      getStoreEntryDisplay(storeEntry({}), 'en')
-    );
+    expect(getStoreEntryDisplay(entry, 'xx')).toEqual(getStoreEntryDisplay(storeEntry({}), 'en'));
   });
 });
 
 // Source contract only: there is no browser DOM harness, so this pins that every
-// store surface reads the localized display fields instead of the root ones.
+// store surface reads the localized display fields instead of the root ones. The registry
+// search in `pluginSearch.ts` is the one deliberate exception and is tested directly above.
 describe('plugin store locale wiring', () => {
-  test('cards, search and the install gate resolve metadata through one selector', () => {
-    const page = readSource('src/features/plugins/PluginStorePage.tsx');
-    const gate = readSource('src/features/plugins/components/PluginInstallGateModal.tsx');
+  const ROOT_FIELD_READ = /\b(entry|plugin|item)\.(description|author|license|tags|name)\b/;
 
-    for (const source of [page, gate]) {
-      expect(source).toContain('getStoreEntryDisplay');
+  test('rows, the install flow and the gate resolve metadata through one selector', () => {
+    const selectorUsers = [
+      'src/features/plugins/components/StorePluginRow.tsx',
+      'src/features/plugins/components/PluginInstallGateModal.tsx',
+      'src/features/plugins/pluginStoreEntries.ts',
+    ];
+    const titleUsers = [
+      'src/features/plugins/components/PluginInstallOptionsModal.tsx',
+      'src/features/plugins/PluginsPage.tsx',
+    ];
+    const otherSurfaces = [
+      'src/features/plugins/components/PluginStoreView.tsx',
+      'src/features/plugins/hooks/usePluginStore.ts',
+    ];
+
+    for (const path of selectorUsers) {
+      expect(readSource(path)).toContain('getStoreEntryDisplay');
+    }
+    // getStoreEntryTitle is a thin wrapper over getStoreEntryDisplay in pluginStoreEntries.ts.
+    expect(readSource('src/features/plugins/pluginStoreEntries.ts')).toMatch(
+      /getStoreEntryTitle = [\s\S]*?getStoreEntryDisplay\(entry, language\)\.name/
+    );
+    for (const path of titleUsers) {
+      expect(readSource(path)).toContain('getStoreEntryTitle');
+    }
+
+    for (const path of [...selectorUsers, ...titleUsers, ...otherSurfaces]) {
+      const source = readSource(path);
       expect(source).not.toMatch(/entry\.description/);
       expect(source).not.toMatch(/entry\.author/);
       expect(source).not.toMatch(/entry\.license/);
       expect(source).not.toMatch(/entry\.tags/);
       expect(source).not.toMatch(/entry\.name/);
+      expect(source).not.toMatch(ROOT_FIELD_READ);
     }
   });
 });

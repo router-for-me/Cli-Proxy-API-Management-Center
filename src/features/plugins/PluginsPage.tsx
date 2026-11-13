@@ -1,792 +1,329 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Sheet } from '@/components/ui/Sheet';
-import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import {
-  IconGithub,
-  IconPlug,
-  IconRefreshCw,
-  IconSearch,
-  IconSettings,
-  IconSidebarStore,
-  IconTrash2,
-} from '@/components/ui/icons';
+import { IconAlertTriangle, IconSearch } from '@/components/ui/icons';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { pluginsApi, pluginStoreApi } from '@/services/api';
-import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { getErrorMessage, isRecord } from '@/utils/helpers';
-import type {
-  PluginConfigField,
-  PluginListEntry,
-  PluginListResponse,
-  PluginStoreEntry,
-} from '@/types';
-import {
-  buildPluginConfigDraft,
-  buildPluginConfigPatch,
-  normalizePluginConfigFieldType,
-  type PluginConfigDraft,
-} from './pluginConfigDraft';
-import {
-  getPluginTitle,
-  notifyPluginResourcesChanged,
-  resolvePluginAssetURL,
-} from './pluginResources';
-import { waitForPluginState } from './pluginPolling';
+import { useAuthStore } from '@/stores';
+import type { PluginListEntry, PluginStoreEntry } from '@/types';
+import { resolvePluginAssetURL } from './pluginResources';
 import { getPluginLogo } from './pluginLogo';
+import { getPluginStatus, type PluginRowStatus } from './pluginStatus';
+import { filterInstalledPlugins, filterStoreEntries } from './pluginSearch';
+import { findPluginUpdate, getStoreEntryKey, getStoreEntryTitle } from './pluginStoreEntries';
+import { useInstalledPlugins } from './hooks/useInstalledPlugins';
+import { usePluginStore } from './hooks/usePluginStore';
+import { usePluginsView } from './hooks/usePluginsView';
+import { InstalledPluginsView } from './components/InstalledPluginsView';
+import { PluginStoreView } from './components/PluginStoreView';
+import { PluginConfigSheet } from './components/PluginConfigSheet';
+import { PluginInstallGateModal } from './components/PluginInstallGateModal';
+import { PluginInstallOptionsModal } from './components/PluginInstallOptionsModal';
+import { PluginViewSwitch } from './components/PluginViewSwitch';
+import { StoreLayoutSwitch } from './components/StoreLayoutSwitch';
+import {
+  pluginViewPanelId,
+  pluginViewTabId,
+  readStoreLayout,
+  writeStoreLayout,
+  type StoreLayout,
+} from './pluginsView';
+import type { PluginRowUpdate } from './components/PluginRow';
+import type { StoreRowAction } from './components/StorePluginRow';
 import styles from './PluginsPage.module.scss';
 
-type PluginRuntimeWaitStatus = 'ready' | 'globalDisabled' | 'timeout';
-
-function PluginCardLogo({ src }: { src: string }) {
-  const [failed, setFailed] = useState(false);
-  const showImage = Boolean(src) && !failed;
-
-  return showImage ? (
-    <img src={src} alt="" onError={() => setFailed(true)} />
-  ) : (
-    <IconPlug size={18} />
-  );
-}
-
-const hasStatus = (error: unknown, status: number) => isRecord(error) && error.status === status;
-
-const hasRestartRequired = (value: unknown) => isRecord(value) && value.restart_required === true;
-
-const hasRestartRequiredError = (error: unknown) =>
-  isRecord(error) && (hasRestartRequired(error.details) || hasRestartRequired(error.data));
-
 export function PluginsPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
-  const managementKey = useAuthStore((state) => state.managementKey);
-  const clearConfigCache = useConfigStore((state) => state.clearCache);
-  const showNotification = useNotificationStore((state) => state.showNotification);
-  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
-
-  const [data, setData] = useState<PluginListResponse | null>(null);
-  const [storeLogos, setStoreLogos] = useState<{
-    apiBase: string;
-    managementKey: string;
-    entries: PluginStoreEntry[];
-  } | null>(null);
-  const [filter, setFilter] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [editingPlugin, setEditingPlugin] = useState<PluginListEntry | null>(null);
-  const [draft, setDraft] = useState<PluginConfigDraft | null>(null);
-  const [mutatingID, setMutatingID] = useState('');
-  const [deletingID, setDeletingID] = useState('');
-  const [openingConfigID, setOpeningConfigID] = useState('');
-  const configRequestSeq = useRef(0);
-
   const connected = connectionStatus === 'connected';
 
-  const loadPlugins = useCallback(async () => {
-    if (!connected) {
-      setLoading(false);
-      setError(t('notification.connection_required'));
-      return;
-    }
+  const [view, setView] = usePluginsView();
+  // The store view mounts on first visit and then stays mounted (hidden), so switching back
+  // and forth never replays its first-load stagger or loses expanded descriptions.
+  const [storeVisited, setStoreVisited] = useState(view === 'store');
+  if (view === 'store' && !storeVisited) setStoreVisited(true);
+  const [filter, setFilter] = useState('');
+  const [storeLayout, setStoreLayout] = useState<StoreLayout>(readStoreLayout);
+  const handleStoreLayoutChange = (layout: StoreLayout) => {
+    setStoreLayout(layout);
+    writeStoreLayout(layout);
+  };
 
-    setLoading(true);
-    setError('');
-    try {
-      const plugins = await pluginsApi.list();
-      setData(plugins);
-    } catch (err: unknown) {
-      setError(
-        hasStatus(err, 404)
-          ? t('plugin_management.unsupported_backend')
-          : getErrorMessage(err, t('plugin_management.load_failed'))
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [connected, t]);
+  // Each hook refreshes the other's data after a mutation. The hooks are created in sequence,
+  // so the cross-calls go through a ref that is filled in once both exist.
+  const reloaders = useRef({ installed: () => {}, store: () => {} });
+  const installed = useInstalledPlugins({
+    connected,
+    onMutated: () => reloaders.current.store(),
+  });
+  const store = usePluginStore({
+    connected,
+    onInstallSettled: () => reloaders.current.installed(),
+  });
+  const loadInstalled = installed.load;
+  const loadStore = store.load;
+  useEffect(() => {
+    reloaders.current = {
+      installed: () => void loadInstalled(),
+      store: () => void loadStore(),
+    };
+  }, [loadInstalled, loadStore]);
 
-  const waitForPluginRuntimeState = useCallback(
-    async (id: string, enabled: boolean): Promise<PluginRuntimeWaitStatus> => {
-      const result = await waitForPluginState(id, (item, response) =>
-        enabled
-          ? !response.pluginsEnabled || (item.registered && item.effectiveEnabled)
-          : !item.effectiveEnabled
-      );
-      setData(result.response);
-      if (enabled && !result.response.pluginsEnabled) {
-        return 'globalDisabled';
-      }
-      return result.timedOut ? 'timeout' : 'ready';
-    },
-    []
+  const loadAll = useCallback(async () => {
+    await Promise.all([loadInstalled(), loadStore()]);
+  }, [loadInstalled, loadStore]);
+
+  useHeaderRefresh(loadAll, connected);
+
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
+
+  const data = installed.data;
+  // Store data feeds the installed view only when the registry answered; a failed request
+  // leaves that view exactly as it is without a store.
+  const storeEntries = useMemo(
+    () => (store.data && !store.error ? store.data.plugins : []),
+    [store.data, store.error]
   );
 
-  useHeaderRefresh(loadPlugins, connected);
+  const updatesByID = useMemo(() => {
+    const map = new Map<string, PluginStoreEntry>();
+    for (const plugin of data?.plugins ?? []) {
+      const entry = findPluginUpdate(plugin, storeEntries);
+      if (entry) map.set(plugin.id, entry);
+    }
+    return map;
+  }, [data?.plugins, storeEntries]);
 
-  useEffect(() => {
-    void loadPlugins();
-  }, [loadPlugins]);
+  const query = filter.trim();
+  const visiblePlugins = useMemo(
+    () => filterInstalledPlugins(data?.plugins ?? [], query),
+    [data?.plugins, query]
+  );
+  const visibleEntries = useMemo(
+    () => filterStoreEntries(store.data?.plugins ?? [], query, i18n.language),
+    [store.data?.plugins, query, i18n.language]
+  );
 
-  useEffect(() => {
-    setStoreLogos(null);
-    if (!connected || !data) return;
-    let cancelled = false;
-    void pluginStoreApi.list().then(
-      (response) => {
-        if (!cancelled) {
-          setStoreLogos({ apiBase, managementKey, entries: response.plugins });
-        }
-      },
-      () => {
-        // Store metadata is optional; its failure must not block plugin management.
-      }
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [connected, apiBase, managementKey, data]);
-
-  const logoEntries =
-    connected && storeLogos?.apiBase === apiBase && storeLogos.managementKey === managementKey
-      ? storeLogos.entries
-      : [];
-
-  const pluginStats = useMemo(() => {
-    const plugins = data?.plugins ?? [];
-    return {
-      discovered: plugins.length,
-      registered: plugins.filter((plugin) => plugin.registered).length,
-      configured: plugins.filter((plugin) => plugin.configured).length,
-      effective: plugins.filter((plugin) => plugin.effectiveEnabled).length,
-    };
-  }, [data?.plugins]);
-
-  const visiblePlugins = useMemo(() => {
-    const query = filter.trim().toLowerCase();
-    const plugins = data?.plugins ?? [];
-    if (!query) return plugins;
-
-    return plugins.filter((plugin) => {
-      const haystack = [
-        plugin.id,
-        plugin.path,
-        plugin.metadata?.name,
-        plugin.metadata?.author,
-        plugin.metadata?.version,
-        plugin.metadata?.githubRepository,
-        ...plugin.menus.map((menu) => `${menu.menu} ${menu.path} ${menu.description}`),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [data?.plugins, filter]);
-
-  const resolvePluginAsset = useCallback(
+  const resolveAsset = useCallback(
     (value: string) => resolvePluginAssetURL(value, apiBase),
     [apiBase]
   );
 
-  const openConfigSheet = async (plugin: PluginListEntry) => {
-    if (openingConfigID || mutatingID || deletingID) return;
+  const installingKey = store.installingKey;
+  const installingEntry = installingKey
+    ? store.data?.plugins.find((entry) => getStoreEntryKey(entry) === installingKey)
+    : undefined;
+  const installingID = installingEntry?.id ?? '';
 
-    const requestSeq = configRequestSeq.current + 1;
-    configRequestSeq.current = requestSeq;
-    setOpeningConfigID(plugin.id);
-    setEditingPlugin(plugin);
-    setDraft(null);
-
-    try {
-      const currentConfig = await pluginsApi.getConfig(plugin.id);
-      if (configRequestSeq.current !== requestSeq) return;
-
-      setDraft(buildPluginConfigDraft(plugin, currentConfig));
-    } catch (err: unknown) {
-      if (configRequestSeq.current !== requestSeq) return;
-
-      setEditingPlugin(null);
-      setDraft(null);
-      showNotification(
-        hasStatus(err, 404)
-          ? t('plugin_management.config_not_found')
-          : `${t('plugin_management.config_load_failed')}: ${getErrorMessage(
-              err,
-              t('plugin_management.config_load_failed')
-            )}`,
-        'error'
-      );
-    } finally {
-      if (configRequestSeq.current === requestSeq) {
-        setOpeningConfigID('');
-      }
-    }
+  const rowStatus = (plugin: PluginListEntry, pluginsEnabled: boolean): PluginRowStatus => {
+    if (installed.deletingID === plugin.id) return 'removing';
+    if (installed.mutatingID === plugin.id || installingID === plugin.id) return 'applying';
+    return getPluginStatus(plugin, pluginsEnabled);
   };
 
-  const closeConfigSheet = () => {
-    if (mutatingID || openingConfigID || deletingID) return;
-    setEditingPlugin(null);
-    setDraft(null);
+  const rowUpdate = (plugin: PluginListEntry): PluginRowUpdate | null => {
+    const entry = updatesByID.get(plugin.id);
+    if (!entry) return null;
+    const entryKey = getStoreEntryKey(entry);
+    const missingAuth = entry.authRequired && !entry.authConfigured;
+    return {
+      from: entry.installedVersion,
+      to: entry.version,
+      blockedReason: missingAuth ? t('plugin_store.auth_required_hint') : '',
+      installing: installingKey === entryKey,
+      disabled:
+        !connected ||
+        missingAuth ||
+        installed.actionBusy ||
+        (Boolean(installingKey) && installingKey !== entryKey),
+      onUpdate: () => store.openInstall(entry),
+    };
   };
 
-  const updateDraft = (updater: (current: PluginConfigDraft) => PluginConfigDraft) => {
-    setDraft((current) => (current ? updater(current) : current));
-  };
-
-  const handleTogglePlugin = async (plugin: PluginListEntry, enabled: boolean) => {
-    if (deletingID) return;
-    setMutatingID(plugin.id);
-    try {
-      await pluginsApi.updateEnabled(plugin.id, enabled);
-      clearConfigCache();
-      const status = await waitForPluginRuntimeState(plugin.id, enabled);
-      if (status === 'ready') {
-        notifyPluginResourcesChanged();
-        showNotification(t('plugin_management.toggle_success'), 'success');
-      } else {
-        showNotification(
-          t(
-            status === 'globalDisabled'
-              ? 'plugin_management.global_disabled_hint'
-              : 'plugin_management.runtime_pending'
-          ),
-          'warning'
-        );
-      }
-    } catch (err: unknown) {
-      showNotification(
-        `${t('plugin_management.toggle_failed')}: ${getErrorMessage(
-          err,
-          t('plugin_management.toggle_failed')
-        )}`,
-        'error'
-      );
-    } finally {
-      setMutatingID('');
-    }
-  };
-
-  const handleDeletePlugin = (plugin: PluginListEntry) => {
-    if (!connected || mutatingID || openingConfigID || deletingID) return;
-
-    const name = getPluginTitle(plugin);
-    showConfirmation({
-      title: t('plugin_management.delete_confirm_title'),
-      message: t('plugin_management.delete_confirm_message', { name, id: plugin.id }),
-      variant: 'danger',
-      confirmText: t('plugin_management.delete_plugin'),
-      onConfirm: async () => {
-        setDeletingID(plugin.id);
-        setMutatingID(plugin.id);
-        try {
-          const result = await pluginsApi.deletePlugin(plugin.id);
-          clearConfigCache();
-          if (editingPlugin?.id === plugin.id) {
-            setEditingPlugin(null);
-            setDraft(null);
-          }
-          await loadPlugins();
-          notifyPluginResourcesChanged();
-          showNotification(t('plugin_management.delete_success'), 'success');
-          if (result.restartRequired) {
-            showNotification(t('plugin_management.delete_restart_required'), 'warning');
-          }
-        } catch (err: unknown) {
-          const restartRequired = hasRestartRequiredError(err);
-          const fallback = restartRequired
-            ? t('plugin_management.delete_restart_required')
-            : t('plugin_management.delete_failed');
-          showNotification(
-            `${t('plugin_management.delete_failed')}: ${getErrorMessage(err, fallback)}`,
-            restartRequired ? 'warning' : 'error'
-          );
-        } finally {
-          setDeletingID('');
-          setMutatingID('');
+  const storeAction = (entry: PluginStoreEntry): StoreRowAction => {
+    if (!entry.installed) return { kind: 'install' };
+    if (entry.updateAvailable) return { kind: 'update' };
+    const plugin = data?.plugins.find((item) => item.id === entry.id);
+    return {
+      kind: 'installed',
+      configureDisabled: Boolean(plugin) && (!connected || installed.actionBusy),
+      onConfigure: () => {
+        if (plugin) {
+          void installed.openConfigSheet(plugin);
+        } else {
+          setView('installed');
         }
       },
-    });
-  };
-
-  const handleSaveConfig = async () => {
-    if (!editingPlugin || !draft || openingConfigID || mutatingID || deletingID) return;
-    const { patch, errors } = buildPluginConfigPatch(draft, editingPlugin.configFields, t);
-
-    if (Object.keys(errors).length > 0) {
-      setDraft({ ...draft, errors });
-      showNotification(t('plugin_management.validation_failed'), 'warning');
-      return;
-    }
-
-    if (Object.keys(patch).length === 0) {
-      setEditingPlugin(null);
-      setDraft(null);
-      showNotification(t('plugin_management.save_success'), 'success');
-      return;
-    }
-
-    setMutatingID(editingPlugin.id);
-    try {
-      await pluginsApi.patchConfig(editingPlugin.id, patch);
-      clearConfigCache();
-      const enabledChanged =
-        typeof patch.enabled === 'boolean' && patch.enabled !== editingPlugin.enabled;
-      const status = enabledChanged
-        ? await waitForPluginRuntimeState(editingPlugin.id, patch.enabled === true)
-        : await loadPlugins().then((): PluginRuntimeWaitStatus => 'ready');
-      if (status === 'ready') {
-        notifyPluginResourcesChanged();
-      }
-      setEditingPlugin(null);
-      setDraft(null);
-      if (status === 'ready') {
-        showNotification(t('plugin_management.save_success'), 'success');
-      } else {
-        showNotification(
-          t(
-            status === 'globalDisabled'
-              ? 'plugin_management.global_disabled_hint'
-              : 'plugin_management.runtime_pending'
-          ),
-          'warning'
-        );
-      }
-    } catch (err: unknown) {
-      showNotification(
-        `${t('plugin_management.save_failed')}: ${getErrorMessage(
-          err,
-          t('plugin_management.save_failed')
-        )}`,
-        'error'
-      );
-    } finally {
-      setMutatingID('');
-    }
-  };
-
-  const handleFieldTextChange =
-    (fieldName: string) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const value = event.target.value;
-      updateDraft((current) => ({
-        ...current,
-        values: { ...current.values, [fieldName]: value },
-        errors: { ...current.errors, [fieldName]: '' },
-        touchedFields: { ...current.touchedFields, [fieldName]: true },
-      }));
     };
-
-  const handleFieldBooleanChange = (fieldName: string, value: boolean) => {
-    updateDraft((current) => ({
-      ...current,
-      values: { ...current.values, [fieldName]: value },
-      errors: { ...current.errors, [fieldName]: '' },
-      touchedFields: { ...current.touchedFields, [fieldName]: true },
-    }));
   };
 
-  const handlePriorityChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    updateDraft((current) => ({
-      ...current,
-      priority: value,
-      errors: { ...current.errors, priority: '' },
-      priorityTouched: true,
-    }));
-  };
+  const restartNames = store.restartRequiredKeys.map((key) => {
+    const entry = store.data?.plugins.find((plugin) => getStoreEntryKey(plugin) === key);
+    return entry ? getStoreEntryTitle(entry, i18n.language) : key;
+  });
 
-  const renderFieldEditor = (field: PluginConfigField) => {
-    if (!draft) return null;
-    const fieldType = normalizePluginConfigFieldType(field);
-    const value = draft.values[field.name];
-    const textValue = typeof value === 'string' ? value : '';
-    const errorText = draft.errors[field.name];
-
-    if (fieldType === 'boolean') {
-      return (
-        <div key={field.name} className={styles.fieldRow}>
-          <div className={styles.fieldText}>
-            <div className={styles.fieldLabel}>{field.name}</div>
-            {field.description ? (
-              <div className={styles.fieldDescription}>{field.description}</div>
-            ) : null}
-          </div>
-          <ToggleSwitch
-            checked={value === true}
-            onChange={(nextValue) => handleFieldBooleanChange(field.name, nextValue)}
-            ariaLabel={field.name}
-          />
-        </div>
-      );
-    }
-
-    if (fieldType === 'enum' && field.enumValues.length > 0) {
-      return (
-        <div key={field.name} className={styles.formField}>
-          <label htmlFor={`plugin-field-${field.name}`}>{field.name}</label>
-          <Select
-            id={`plugin-field-${field.name}`}
-            value={textValue}
-            options={field.enumValues.map((item) => ({ value: item, label: item }))}
-            onChange={(nextValue) =>
-              updateDraft((current) => ({
-                ...current,
-                values: { ...current.values, [field.name]: nextValue },
-                errors: { ...current.errors, [field.name]: '' },
-                touchedFields: { ...current.touchedFields, [field.name]: true },
-              }))
-            }
-            placeholder={t('plugin_management.select_placeholder')}
-          />
-          {field.description ? <div className={styles.fieldHint}>{field.description}</div> : null}
-          {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
-        </div>
-      );
-    }
-
-    if (fieldType === 'array' || fieldType === 'object') {
-      return (
-        <div key={field.name} className={styles.formField}>
-          <label htmlFor={`plugin-field-${field.name}`}>{field.name}</label>
-          <textarea
-            id={`plugin-field-${field.name}`}
-            className={styles.textarea}
-            value={textValue}
-            onChange={handleFieldTextChange(field.name)}
-            placeholder={fieldType === 'array' ? '[]' : '{}'}
-            spellCheck={false}
-          />
-          {field.description ? <div className={styles.fieldHint}>{field.description}</div> : null}
-          {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
-        </div>
-      );
-    }
-
-    return (
-      <Input
-        key={field.name}
-        id={`plugin-field-${field.name}`}
-        label={field.name}
-        value={textValue}
-        onChange={handleFieldTextChange(field.name)}
-        inputMode={fieldType === 'integer' || fieldType === 'number' ? 'decimal' : undefined}
-        hint={field.description || undefined}
-        error={errorText || undefined}
-      />
-    );
-  };
-
-  const savingConfig = Boolean(editingPlugin && mutatingID === editingPlugin.id);
+  const pluginsEnabled = data?.pluginsEnabled ?? store.data?.pluginsEnabled ?? true;
+  const effectiveCount = data?.plugins.filter((plugin) => plugin.effectiveEnabled).length ?? 0;
+  const pluginsDir = data?.pluginsDir || 'plugins';
 
   return (
     <div className={styles.page}>
-      {/* ── Page Header ── */}
-      <div className={styles.pageHeader}>
+      <header className={styles.header}>
         <h1 className={styles.title}>{t('plugin_management.title')}</h1>
         <p className={styles.description}>{t('plugin_management.description')}</p>
-      </div>
+      </header>
 
-      {/* ── Alerts ── */}
-      {error ? <div className={styles.errorBox}>{error}</div> : null}
-
-      {data && !data.pluginsEnabled ? (
-        <div className={styles.warningBox}>{t('plugin_management.global_disabled_hint')}</div>
-      ) : null}
-
-      {/* ── Status Bar ── */}
-      {data ? (
-        <div className={styles.statusBar}>
-          <div className={styles.statusPill}>
-            <span
-              className={`${styles.statusDot} ${
-                data.pluginsEnabled ? styles.statusDotOn : styles.statusDotOff
-              }`}
-            />
-            <span className={styles.statusLabel}>{t('plugin_management.global_status')}</span>
-            <span className={styles.statusValue}>
-              {data.pluginsEnabled
-                ? t('plugin_management.global_enabled')
-                : t('plugin_management.global_disabled')}
-            </span>
-          </div>
-
-          <span className={styles.statusDivider} />
-
-          <div className={styles.statusPill}>
-            <span className={styles.statusLabel}>{t('plugin_management.plugins_dir')}</span>
-            <span
-              className={`${styles.statusValue} ${styles.statusPathValue}`}
-              title={data.pluginsDir || 'plugins'}
-            >
-              {data.pluginsDir || 'plugins'}
-            </span>
-          </div>
-
-          <span className={styles.statusDivider} />
-
-          <div className={styles.statusPill}>
-            <span className={styles.statusLabel}>{t('plugin_management.discovered')}</span>
-            <span className={styles.statusValue}>{pluginStats.discovered}</span>
-          </div>
-
-          <span className={styles.statusDivider} />
-
-          <div className={styles.statusPill}>
-            <span className={styles.statusLabel}>{t('plugin_management.effective')}</span>
-            <span className={styles.statusValue}>
-              {pluginStats.effective}/{pluginStats.registered}
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ── Toolbar ── */}
-      <div className={styles.toolbar}>
-        <Input
-          type="search"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          placeholder={t('plugin_management.search_placeholder')}
-          aria-label={t('plugin_management.search_label')}
-          rightElement={<IconSearch size={16} />}
-        />
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={loadPlugins}
-          disabled={!connected || loading || Boolean(mutatingID || deletingID)}
-          loading={loading}
-        >
-          <IconRefreshCw size={16} />
-          {t('plugin_management.refresh')}
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => navigate('/plugin-store')}>
-          <IconSidebarStore size={16} />
-          {t('plugin_store.title')}
-        </Button>
-      </div>
-
-      {/* ── Plugin List ── */}
-      {loading ? (
-        <div className={styles.pluginList}>
-          {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className={styles.skeletonRow}>
-              <div className={styles.skeletonAvatar} />
-              <div className={styles.skeletonText}>
-                <div className={styles.skeletonLine} />
-                <div className={styles.skeletonLine} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : visiblePlugins.length === 0 ? (
-        <EmptyState
-          title={t('plugin_management.no_plugins')}
-          description={t('plugin_management.no_plugins_desc')}
-          action={
-            <Button variant="secondary" size="sm" onClick={loadPlugins} disabled={!connected}>
-              <IconRefreshCw size={16} />
-              {t('plugin_management.refresh')}
-            </Button>
-          }
-        />
-      ) : (
-        <div className={styles.pluginList}>
-          {visiblePlugins.map((plugin) => {
-            const logo = resolvePluginAsset(getPluginLogo(plugin, logoEntries));
-            const github = plugin.metadata?.githubRepository.trim();
-            const openingConfig = openingConfigID === plugin.id;
-            const deletingPlugin = deletingID === plugin.id;
-            const actionBusy = Boolean(mutatingID || openingConfigID || deletingID);
-            const version = plugin.metadata?.version;
-            const author = plugin.metadata?.author;
-
-            return (
-              <article key={plugin.id} className={styles.pluginRow}>
-                {/* Logo */}
-                <div className={styles.logoBox} aria-hidden="true">
-                  <PluginCardLogo key={logo} src={logo} />
-                </div>
-
-                {/* Info */}
-                <div className={styles.pluginInfo}>
-                  <div className={styles.pluginName}>
-                    <h2>{getPluginTitle(plugin)}</h2>
-                    <div className={styles.badgeRow}>
-                      <span
-                        className={
-                          plugin.effectiveEnabled ? styles.badgeSuccess : styles.badgeMuted
-                        }
-                      >
-                        {plugin.effectiveEnabled
-                          ? t('plugin_management.status_effective')
-                          : t('plugin_management.status_inactive')}
-                      </span>
-                      <span className={plugin.registered ? styles.badge : styles.badgeWarning}>
-                        {plugin.registered
-                          ? t('plugin_management.registered')
-                          : t('plugin_management.not_registered')}
-                      </span>
-                      <span className={plugin.configured ? styles.badge : styles.badgeMuted}>
-                        {plugin.configured
-                          ? t('plugin_management.configured')
-                          : t('plugin_management.not_configured')}
-                      </span>
-                      {plugin.supportsOAuth ? (
-                        <span className={styles.badge}>{t('plugin_management.oauth')}</span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <span className={styles.pluginId}>{plugin.id}</span>
-
-                  {version || author || plugin.path ? (
-                    <div className={styles.pluginMeta}>
-                      {version ? (
-                        <span className={styles.metaItem}>
-                          <strong>{version}</strong>
-                        </span>
-                      ) : null}
-                      {version && author ? (
-                        <span className={styles.metaDot} aria-hidden="true" />
-                      ) : null}
-                      {author ? <span className={styles.metaItem}>{author}</span> : null}
-                      {(version || author) && plugin.path ? (
-                        <span className={styles.metaDot} aria-hidden="true" />
-                      ) : null}
-                      {plugin.path ? (
-                        <span
-                          className={`${styles.metaItem} ${styles.metaPath}`}
-                          title={plugin.path}
-                        >
-                          {plugin.path}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Actions */}
-                <div className={styles.rowActions}>
-                  <ToggleSwitch
-                    checked={plugin.enabled}
-                    onChange={(enabled) => handleTogglePlugin(plugin, enabled)}
-                    disabled={!connected || actionBusy}
-                    ariaLabel={t('plugin_management.enabled')}
-                  />
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => openConfigSheet(plugin)}
-                    disabled={!connected || actionBusy}
-                    loading={openingConfig}
-                  >
-                    <IconSettings size={14} />
-                    {t('plugin_management.edit_config')}
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDeletePlugin(plugin)}
-                    disabled={!connected || actionBusy}
-                    loading={deletingPlugin}
-                    title={t('plugin_management.delete_plugin')}
-                    aria-label={t('plugin_management.delete_plugin')}
-                  >
-                    <IconTrash2 size={14} />
-                    {t('plugin_management.delete_plugin')}
-                  </Button>
-                  {github ? (
-                    <a
-                      className={styles.iconLink}
-                      href={github}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={t('plugin_management.open_repository')}
-                      aria-label={t('plugin_management.open_repository')}
-                    >
-                      <IconGithub size={14} />
-                    </a>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Config Sheet ── */}
-      <Sheet
-        open={Boolean(editingPlugin && draft)}
-        onClose={closeConfigSheet}
-        size="lg"
-        title={
-          editingPlugin
-            ? t('plugin_management.config_title', { name: getPluginTitle(editingPlugin) })
-            : t('plugin_management.edit_config')
-        }
-        description={editingPlugin?.id}
-        closeDisabled={savingConfig}
-        footer={
-          <div className={styles.sheetFooter}>
-            <Button variant="secondary" onClick={closeConfigSheet} disabled={savingConfig}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleSaveConfig} loading={savingConfig}>
-              {t('common.save')}
-            </Button>
-          </div>
-        }
-      >
-        {draft && editingPlugin ? (
-          <div className={styles.configForm}>
-            <section className={styles.formSection}>
-              <h3>{t('plugin_management.base_settings')}</h3>
-              <div className={styles.fieldRow}>
-                <div className={styles.fieldText}>
-                  <div className={styles.fieldLabel}>{t('plugin_management.enabled')}</div>
-                  <div className={styles.fieldDescription}>
-                    {t('plugin_management.enabled_hint')}
-                  </div>
-                </div>
-                <ToggleSwitch
-                  checked={draft.enabled}
-                  onChange={(enabled) =>
-                    updateDraft((current) => ({
-                      ...current,
-                      enabled,
-                      enabledTouched: true,
-                    }))
-                  }
-                  ariaLabel={t('plugin_management.enabled')}
+      {data || !pluginsEnabled || restartNames.length > 0 ? (
+        <div className={styles.summary}>
+          {data ? (
+            <p className={styles.summaryLine}>
+              <span className={styles.summaryItem}>
+                <span
+                  className={`${styles.summaryDot} ${
+                    data.pluginsEnabled ? styles.summaryDotOn : ''
+                  }`}
+                  aria-hidden="true"
                 />
-              </div>
-              <Input
-                label={t('plugin_management.priority')}
-                value={draft.priority}
-                onChange={handlePriorityChange}
-                inputMode="numeric"
-                error={draft.errors.priority || undefined}
-              />
-            </section>
+                {data.pluginsEnabled
+                  ? t('plugin_management.global_on')
+                  : t('plugin_management.global_off')}
+              </span>
+              <span className={styles.summarySep} aria-hidden="true">
+                ·
+              </span>
+              <span className={styles.summaryItem}>
+                {t('plugin_management.summary_effective', {
+                  effective: effectiveCount,
+                  total: data.plugins.length,
+                })}
+              </span>
+              <span className={styles.summarySep} aria-hidden="true">
+                ·
+              </span>
+              <span
+                className={`${styles.summaryItem} ${styles.summaryPath}`}
+                title={`${t('plugin_management.plugins_dir')}: ${pluginsDir}`}
+              >
+                {pluginsDir}
+              </span>
+            </p>
+          ) : null}
+          {!pluginsEnabled ? (
+            <p className={styles.notice}>
+              <IconAlertTriangle size={14} />
+              <span>{t('plugin_management.global_disabled_hint')}</span>
+            </p>
+          ) : null}
+          {restartNames.length > 0 ? (
+            <p className={styles.notice} role="status">
+              <IconAlertTriangle size={14} />
+              <span>
+                {t('plugin_store.restart_required_banner', { plugins: restartNames.join(', ') })}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
-            <section className={styles.formSection}>
-              <h3>{t('plugin_management.config_fields')}</h3>
-              {editingPlugin.configFields.length > 0 ? (
-                editingPlugin.configFields.map((field) => renderFieldEditor(field))
-              ) : (
-                <div className={styles.emptyConfig}>{t('plugin_management.no_config_fields')}</div>
-              )}
-            </section>
-          </div>
+      <div className={styles.toolbar}>
+        <PluginViewSwitch
+          view={view}
+          counts={{
+            installed: data ? data.plugins.length : null,
+            store: store.data ? store.data.plugins.length : null,
+          }}
+          updatesAvailable={updatesByID.size > 0}
+          onChange={setView}
+        />
+        {view === 'store' ? (
+          <StoreLayoutSwitch
+            value={storeLayout}
+            onChange={handleStoreLayoutChange}
+            className={styles.layoutSwitch}
+          />
         ) : null}
-      </Sheet>
+        <div className={styles.search}>
+          <Input
+            type="search"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value)}
+            placeholder={t('plugin_management.search_placeholder')}
+            aria-label={t('plugin_management.search_label')}
+            rightElement={<IconSearch size={16} />}
+          />
+        </div>
+      </div>
+
+      <section
+        id={pluginViewPanelId('installed')}
+        role="tabpanel"
+        aria-labelledby={pluginViewTabId('installed')}
+        className={styles.panel}
+        hidden={view !== 'installed'}
+      >
+        <InstalledPluginsView
+          data={data}
+          loading={installed.loading}
+          error={installed.error}
+          plugins={visiblePlugins}
+          query={query}
+          getLogo={(plugin) => resolveAsset(getPluginLogo(plugin, storeEntries))}
+          getStatus={rowStatus}
+          getChecked={(plugin) =>
+            installed.pendingToggle?.id === plugin.id
+              ? installed.pendingToggle.enabled
+              : plugin.enabled
+          }
+          getUpdate={rowUpdate}
+          isRowDisabled={(plugin) =>
+            !connected || installed.actionBusy || installingID === plugin.id
+          }
+          onToggle={installed.togglePlugin}
+          onConfigure={installed.openConfigSheet}
+          onDelete={installed.deletePlugin}
+          onClearSearch={() => setFilter('')}
+          onBrowseStore={() => setView('store')}
+        />
+      </section>
+
+      {storeVisited ? (
+        <section
+          id={pluginViewPanelId('store')}
+          role="tabpanel"
+          aria-labelledby={pluginViewTabId('store')}
+          className={styles.panel}
+          hidden={view !== 'store'}
+        >
+          <PluginStoreView
+            data={store.data}
+            error={store.error}
+            loading={store.loading}
+            entries={visibleEntries}
+            layout={storeLayout}
+            query={query}
+            connected={connected}
+            installingKey={installingKey}
+            getLogo={(entry) => resolveAsset(entry.logo)}
+            getAction={storeAction}
+            onInstall={store.openInstall}
+            onRetry={() => void loadStore()}
+            onClearSearch={() => setFilter('')}
+          />
+        </section>
+      ) : null}
+
+      <PluginConfigSheet
+        plugin={installed.editingPlugin}
+        draft={installed.draft}
+        saving={installed.savingConfig}
+        onClose={installed.closeConfigSheet}
+        onSave={installed.saveConfig}
+        onDraftChange={installed.updateDraft}
+      />
+      <PluginInstallGateModal {...store.gateProps} />
+      <PluginInstallOptionsModal {...store.installOptionsProps} />
     </div>
   );
 }

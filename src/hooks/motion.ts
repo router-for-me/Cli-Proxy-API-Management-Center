@@ -150,7 +150,8 @@ export function useRevealGroup<T extends HTMLElement>(baseDelaySeconds = 0) {
           });
         });
       },
-      { rootMargin: '0px 0px -12% 0px', threshold: 0.05 }
+      // threshold 0：容器高于视口约 20 倍时永远达不到 5% 可见，子项会一直停在 opacity 0。
+      { rootMargin: '0px 0px -12% 0px', threshold: 0 }
     );
 
     observer.observe(container);
