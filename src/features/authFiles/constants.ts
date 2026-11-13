@@ -34,6 +34,7 @@ export type QuotaProviderType =
   | 'devin'
   | 'kimi'
   | 'meta'
+  | 'opencode'
   | 'plugin'
   | 'xai';
 export type AuthFileQuotaFilter = string | null;
@@ -46,6 +47,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
   'codex',
   'devin',
   'kimi',
+  'opencode',
   'plugin',
   'xai',
 ]);

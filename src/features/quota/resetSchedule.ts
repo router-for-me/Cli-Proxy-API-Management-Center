@@ -145,6 +145,21 @@ export function collectQuotaRowInstants(
     return collectRows((quota as { rows?: WindowLike[] }).rows ?? [], 'row');
   }
 
+  if (provider === 'opencode') {
+    // Only a window with capacity used up reports recovery: a rolling window
+    // that resets while still mostly full is not capacity coming back, and
+    // ranking by it would push healthy subscriptions up the soonest sort.
+    const windows = (
+      (quota as { windows?: (WindowLike & { usedPercent?: number | null })[] }).windows ?? []
+    ).filter(
+      (window) =>
+        typeof window.usedPercent === 'number' &&
+        Number.isFinite(window.usedPercent) &&
+        window.usedPercent > 0
+    );
+    return collectRows(windows, 'window');
+  }
+
   if (provider === 'meta') {
     const windows =
       (

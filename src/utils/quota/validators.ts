@@ -37,6 +37,10 @@ export function isXaiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'xai';
 }
 
+export function isOpenCodeFile(file: AuthFileItem): boolean {
+  return resolveAuthProvider(file) === 'opencode';
+}
+
 /** Providers rendered by a dedicated built-in quota card. */
 export const BUILT_IN_QUOTA_PROVIDERS: ReadonlySet<string> = new Set([
   'antigravity',
@@ -45,6 +49,7 @@ export const BUILT_IN_QUOTA_PROVIDERS: ReadonlySet<string> = new Set([
   'devin',
   'kimi',
   'meta',
+  'opencode',
   'xai',
 ]);
 

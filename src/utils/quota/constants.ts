@@ -38,6 +38,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
   },
+  opencode: {
+    light: { bg: '#eceff1', text: '#263238' },
+    dark: { bg: '#37474f', text: '#cfd8dc' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },

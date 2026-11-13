@@ -582,6 +582,39 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
     };
   }
 
+  if (provider === 'opencode') {
+    // Weekly and monthly carry a published period; the rolling window's period
+    // is not reported upstream, so it contributes to the legend but never
+    // anchors a lane (pickLaneWindow needs a real period to draw a bar).
+    const windows = ((quota as { windows?: WindowLike[] }).windows ?? []).filter(
+      (window) => typeof window.resetAtMs === 'number' && Number.isFinite(window.resetAtMs)
+    );
+    const chosen = pickLaneWindow(
+      windows.filter(
+        (window) =>
+          typeof window.periodHours === 'number' && (window.periodHours as number) > 0
+      ),
+      maxPeriodHours
+    );
+    if (!chosen) return empty;
+    const remainingOf = (window: WindowLike) =>
+      typeof window.usedPercent === 'number' && Number.isFinite(window.usedPercent)
+        ? clampPercent(100 - window.usedPercent)
+        : null;
+    return {
+      ...empty,
+      anchorMs: chosen.resetAtMs as number,
+      periodHours: (chosen.periodHours as number) ?? null,
+      remaining: remainingOf(chosen),
+      limits: windows
+        .filter((window) => typeof window.usedPercent === 'number')
+        .map((window) => ({
+          label: `opencode_quota.window_${window.id ?? ''}`,
+          remaining: remainingOf(window) as number,
+        })),
+    };
+  }
+
   if (provider === 'meta') {
     const sourceWindows = (quota as { data?: { windows?: MetaWindowLike[] } }).data?.windows ?? [];
     const windows = sourceWindows

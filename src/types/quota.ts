@@ -446,6 +446,36 @@ export interface KimiQuotaState {
   errorStatus?: number;
 }
 
+// OpenCode Go subscription quota (CLIProxyAPI /quota/opencode report)
+export interface OpenCodeQuotaWindow {
+  /** Window name as the usage endpoint reports it: rolling / weekly / monthly. */
+  id: string;
+  /** Endpoint status for this window: ok, rate-limited, ... absent when unknown. */
+  status?: string;
+  /** Percent USED of the window (the endpoint's percent, not the remainder). */
+  usedPercent: number | null;
+  /** Reset instant in epoch ms; null when the endpoint reported none. */
+  resetAtMs: number | null;
+  /** Nominal window length in hours, for the timeline chart (rolling is unknown upstream). */
+  periodHours: number | null;
+}
+
+export interface OpenCodeQuotaData {
+  /** Usage-book state: pending | ok | near-limit | exhausted | unknown. */
+  state: string;
+  windows: OpenCodeQuotaWindow[];
+  /** When the windows were polled; null for a never-polled subscription. */
+  fetchedAtMs: number | null;
+  /** The book's failure message when the last poll failed. */
+  lastError?: string | null;
+}
+
+export interface OpenCodeQuotaState extends OpenCodeQuotaData {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  error?: string;
+  errorStatus?: number;
+}
+
 // xAI/Grok API payload types
 export interface XaiBillingCent {
   val?: number | string;

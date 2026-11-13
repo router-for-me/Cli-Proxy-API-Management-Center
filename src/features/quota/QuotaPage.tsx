@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
+import { opencodeUsageApi } from '@/services/api/opencodeQuota';
 import { Button } from '@/components/ui/Button';
 import { CardLayoutSwitch } from '@/components/ui/CardLayoutSwitch';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -52,6 +53,7 @@ import {
 } from './logic';
 import { nextRecoveryMs } from './resetSchedule';
 import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from './providers';
+import { buildOpenCodeQuotaFiles } from './providers/opencode/data';
 import {
   codexCreditOverageKey,
   countCodexCreditOverageKeys,
@@ -116,7 +118,17 @@ export function QuotaPage() {
     try {
       const data = await authFilesApi.list();
       if (!isCurrent()) return;
-      setFiles(data?.files || []);
+      // OpenCode Go subscriptions are config api-key legs with no auth file of
+      // their own; they enter the quota page from the usage report instead.
+      // A server without the report (or a failed read) simply shows no cards.
+      let openCodeFiles: AuthFileItem[] = [];
+      try {
+        openCodeFiles = buildOpenCodeQuotaFiles(await opencodeUsageApi.list());
+      } catch {
+        openCodeFiles = [];
+      }
+      if (!isCurrent()) return;
+      setFiles([...(data?.files || []), ...openCodeFiles]);
       setFilesGeneration(sessionGeneration);
     } catch (err: unknown) {
       if (!isCurrent()) return;
@@ -145,6 +157,7 @@ export function QuotaPage() {
   const devinQuota = useQuotaStore((state) => state.devinQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
   const metaQuota = useQuotaStore((state) => state.metaQuota);
+  const opencodeQuota = useQuotaStore((state) => state.opencodeQuota);
   const pluginQuota = useQuotaStore((state) => state.pluginQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
@@ -157,6 +170,7 @@ export function QuotaPage() {
         devin: devinQuota,
         kimi: kimiQuota,
         meta: metaQuota,
+        opencode: opencodeQuota,
         plugin: pluginQuota,
         xai: xaiQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
@@ -167,6 +181,7 @@ export function QuotaPage() {
       devinQuota,
       kimiQuota,
       metaQuota,
+      opencodeQuota,
       pluginQuota,
       xaiQuota,
     ]
