@@ -1,13 +1,12 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PluginQuotaMetric, PluginQuotaState } from '@/types';
+import { useNow } from '@/hooks/useNow';
+import { buildResetDisplay, formatQuotaResetTime } from '@/utils/quota';
 import { QuotaMeter } from '../../components/QuotaMeter';
+import { QuotaResetLabel } from '../../components/QuotaResetLabel';
+import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
 import type { QuotaBodyProps } from '../../types';
-
-const formatReset = (value: string | undefined): string => {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-};
 
 const formatMetric = (metric: PluginQuotaMetric): string => {
   const value =
@@ -18,7 +17,12 @@ const formatMetric = (metric: PluginQuotaMetric): string => {
 };
 
 export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaState>) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const now = useNow();
+  const soonestRowId = useMemo(
+    () => pickUrgentRowId(collectQuotaRowInstants('plugin', quota), now),
+    [quota, now]
+  );
   const plan = quota.subscription?.tierName || quota.subscription?.plan || quota.subscription?.tierId;
 
   return (
@@ -52,8 +56,19 @@ export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaSt
             </div>
             {group.buckets.map((bucket, index) => {
               const percent = Math.round(Math.max(0, Math.min(1, bucket.remainingFraction)) * 100);
+              const resetDisplay = buildResetDisplay(
+                formatQuotaResetTime(bucket.resetTime),
+                bucket.resetAtMs,
+                now,
+                i18n.resolvedLanguage
+              );
+              const soon = bucket.id === soonestRowId;
               return (
-                <div key={bucket.id} className={classes.quotaRow}>
+                <div
+                  key={bucket.id}
+                  className={classes.quotaRow}
+                  title={soon ? t('quota_management.soonest_row_hint') : undefined}
+                >
                   <div className={classes.quotaRowHeader}>
                     <span className={classes.quotaModel} title={bucket.description}>
                       {bucket.label}
@@ -62,7 +77,11 @@ export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaSt
                       <span className={classes.quotaPercent}>
                         {t('plugin_quota.remaining_percent', { percent })}
                       </span>
-                      <span className={classes.quotaReset}>{formatReset(bucket.resetTime)}</span>
+                      {resetDisplay ? (
+                        <QuotaResetLabel display={resetDisplay} classes={classes} soon={soon} />
+                      ) : (
+                        <span className={classes.quotaReset}>-</span>
+                      )}
                     </div>
                   </div>
                   <QuotaMeter percent={percent} classes={classes} index={index} />
