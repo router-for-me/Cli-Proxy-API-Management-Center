@@ -20,7 +20,7 @@ import { getQuotaCacheKey, getQuotaDisplayName } from '@/utils/quota/identity';
 import { useNow } from '@/hooks/useNow';
 import type { ResolvedTheme, ThemeColors } from '@/types';
 import {
-  buildTimelineLane,
+  buildTimelineLanes,
   laneHasWindow,
   projectLane,
   projectResetCredits,
@@ -31,6 +31,7 @@ import {
 import type { TimelineLane, TimelineMode } from '../quotaTimelineModel';
 import type { QuotaFileEntry } from '../logic';
 import type { QuotaCardState } from '../providers';
+import { resolveAntigravityGroupLabelKey } from '../providers/antigravity/labels';
 import styles from './QuotaTimeline.module.scss';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -108,24 +109,29 @@ export function QuotaTimeline({
   // real quota window. Once there is timeline data, however, changing zoom must
   // never remove the whole panel just because that mode has no matching lanes.
   const hasAnyLane = useMemo(
-    () => laneInputs.some((input) => laneHasWindow(buildTimelineLane(input))),
+    () => laneInputs.some((input) => buildTimelineLanes(input).some(laneHasWindow)),
     [laneInputs]
   );
 
   const lanes = useMemo(
     () =>
       laneInputs
-        .map((input) =>
-          buildTimelineLane({
-            ...input,
-            // Weekly mode prefers the longest readable window. Session mode
-            // asks specifically for a real 5-hour window; longer periods must
-            // not be reinterpreted as 5-hour resets.
-            maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
-          })
+        .flatMap((input) =>
+          buildTimelineLanes(
+            {
+              ...input,
+              // Select a window independently within each quota group.
+              // Session mode must not reinterpret longer periods as 5-hour resets.
+              maxPeriodHours: mode === 'session' ? 5 : span.days * 24,
+            },
+            (label) => {
+              const key = resolveAntigravityGroupLabelKey(label);
+              return key ? t(`antigravity_quota.${key}`, { defaultValue: label }) : label;
+            }
+          )
         )
         .filter((lane) => laneHasWindow(lane) && (mode !== 'session' || lane.periodHours === 5)),
-    [laneInputs, mode, span.days]
+    [laneInputs, mode, span.days, t]
   );
 
   /** Weekly: one cell per day. Session: one per 6 hours. */
@@ -357,11 +363,16 @@ function Lane({ lane, span, now, mode, cells, nowPercent, resolvedTheme }: LaneP
       <div className={styles.laneHead}>
         <div className={styles.laneTop}>
           <span className={styles.laneDot} />
-          <span className={styles.laneName} title={lane.displayName}>
-            {lane.displayName}
+          <span className={styles.laneName} title={lane.accountName ?? lane.displayName}>
+            {lane.accountName ?? lane.displayName}
           </span>
           {periodLabel && <span className={styles.lanePeriod}>{periodLabel}</span>}
         </div>
+        {lane.groupName && (
+          <span className={styles.laneGroupName} title={lane.groupName}>
+            {lane.groupName}
+          </span>
+        )}
         <div className={styles.laneLimits}>
           {lane.limits.map((limit) => (
             <span key={limit.label} className={styles.laneLimit}>

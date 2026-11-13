@@ -45,10 +45,13 @@ export interface TimelineResetCreditMark extends TimelineResetCredit {
   leftPercent: number;
 }
 
-/** One credential's row in the chart. */
+/** One credential or independent quota group's row in the chart. */
 export interface TimelineLane {
   name: string;
   displayName: string;
+  /** Separate identity lines keep group labels visible even for long account names. */
+  groupName?: string;
+  accountName?: string;
   provider: QuotaProviderType;
   /** Instant a window boundary falls on; all other boundaries derive from it. */
   anchorMs: number | null;
@@ -394,6 +397,33 @@ export interface TimelineLaneInput {
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
 
+/** Independent Antigravity pools must not compete for a single account lane. */
+export function buildTimelineLanes(
+  input: TimelineLaneInput,
+  groupLabelFor: (label: string) => string = (label) => label
+): TimelineLane[] {
+  if (input.provider !== 'antigravity' || input.quota?.status !== 'success') {
+    return [buildTimelineLane(input)];
+  }
+
+  const groups =
+    (input.quota as { groups?: { id: string; label: string; buckets: AntigravityBucketLike[] }[] })
+      .groups ?? [];
+  return groups.map((group) => {
+    const groupName = groupLabelFor(group.label);
+    return {
+      ...buildTimelineLane({
+        ...input,
+        name: JSON.stringify([input.name, group.id]),
+        displayName: `${input.displayName} · ${groupName}`,
+        quota: { ...input.quota, groups: [group] } as TimelineLaneInput['quota'],
+      }),
+      groupName,
+      accountName: input.displayName,
+    };
+  });
+}
+
 /**
  * Build a lane for one credential.
  *
@@ -535,8 +565,8 @@ export function buildTimelineLane(input: TimelineLaneInput): TimelineLane {
   }
 
   if (provider === 'antigravity' || provider === 'plugin') {
-    // Buckets live one level down, inside groups, and the groups are a display
-    // concern the chart doesn't care about — flatten them.
+    // Antigravity inputs from buildTimelineLanes contain one independent group.
+    // Plugins retain their existing account-level window selection.
     const buckets = ((quota as { groups?: { buckets?: AntigravityBucketLike[] }[] }).groups ?? [])
       .flatMap((group) => group.buckets ?? [])
       .filter((bucket) => typeof bucket.resetAtMs === 'number');
