@@ -54,6 +54,8 @@ export type QuotaHistoryAccount = {
   label: string;
   email: string;
   plan: string;
+  /** Each plan from its first sample on, oldest first; absent on older backends. */
+  plans?: { t: number; plan: string }[];
   windows: QuotaHistoryWindow[];
   /** Null on backends without the routing report. */
   routing?: QuotaHistoryRouting | null;
@@ -119,6 +121,13 @@ const normalizeRouting = (raw: unknown): QuotaHistoryRouting | null => {
   };
 };
 
+const normalizePlanChange = (raw: unknown): { t: number; plan: string } | null => {
+  if (!Array.isArray(raw) || raw.length < 2) return null;
+  const t = toFiniteNumber(raw[0]);
+  const plan = toText(raw[1]).toLowerCase();
+  return t === null || !plan ? null : { t, plan };
+};
+
 const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {
   if (!isRecord(raw)) return null;
   const provider = toText(raw.provider).toLowerCase();
@@ -132,6 +141,10 @@ const normalizeAccount = (raw: unknown): QuotaHistoryAccount | null => {
     label: toText(raw.label),
     email: toText(raw.email),
     plan: toText(raw.plan).toLowerCase(),
+    plans: (Array.isArray(raw.plans) ? raw.plans : [])
+      .map(normalizePlanChange)
+      .filter((change): change is { t: number; plan: string } => change !== null)
+      .sort((a, b) => a.t - b.t),
     windows: (Array.isArray(raw.windows) ? raw.windows : [])
       .map(normalizeWindow)
       .filter((window): window is QuotaHistoryWindow => window !== null),

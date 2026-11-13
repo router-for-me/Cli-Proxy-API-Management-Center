@@ -360,6 +360,45 @@ describe('pool forecast', () => {
     expect(routed.nextReset?.amount).toBeCloseTo(22 + 7 * 10);
   });
 
+  test('weighs samples by the plan they were recorded under', () => {
+    const now = T0 + 3 * H;
+    const forecast = buildPoolForecast(
+      [
+        // Pro (0.1) upgraded to Max 5x (0.5) at 2 h: its week starts over.
+        {
+          ...account('up', 0.5, [
+            point(0, 50, 100),
+            point(1, 54, 100),
+            point(2, 0, 100),
+            point(3, 2, 100),
+          ]),
+          earlierWeights: [{ until: T0 + 2 * H, weight: 0.1 }],
+        },
+        account('u', 1, [point(0, 10, 200), point(3, 13, 200)]),
+      ],
+      {
+        now,
+        from: T0 - H,
+        to: T0 + 24 * H,
+        burnWindowHours: 3,
+        futureUsage: 'same',
+        horizon: now,
+      }
+    );
+    expect(forecast.capacity).toBe(150);
+    expect(forecast.remaining).toBeCloseTo(0.5 * 98 + 87);
+    // The upgrade adds what the Max week holds beyond the Pro week's rest.
+    expect(forecast.recordedResets).toHaveLength(1);
+    expect(forecast.recordedResets[0].t).toBe(T0 + 2 * H);
+    expect(forecast.recordedResets[0].amount).toBeCloseTo(0.5 * 100 - 0.1 * 46);
+    expect(valueAt(forecast.recorded, T0 + 2 * H, 'pre')).toBeCloseTo(0.1 * 46 + 88);
+    expect(valueAt(forecast.recorded, T0 + 2 * H, 'post')).toBeCloseTo(0.5 * 100 + 88);
+    // Pro use counts at the Pro size: 0.4 + 1 pool points in 3 h, plus u's 1 %/h.
+    expect(forecast.burnRate).toBeCloseTo(1.4 / 3 + 1);
+    const up = forecast.accounts.find((item) => item.key === 'up');
+    expect(0.5 * valueAt(up?.recorded ?? [], T0 + H)).toBeCloseTo(0.1 * 46);
+  });
+
   test('a paused future keeps the pool flat apart from resets', () => {
     const now = T0 + 3 * H;
     const forecast = buildPoolForecast([account('a', 1, [point(0, 0), point(3, 30)])], {
@@ -389,6 +428,7 @@ describe('history normalization', () => {
           provider: 'Claude',
           email: 'a@example.com',
           plan: 'MAX',
+          plans: [[4000, 'MAX5'], [2000, 'pro'], ['bad']],
           windows: [
             {
               id: 'seven_day',
@@ -404,6 +444,10 @@ describe('history normalization', () => {
     expect(history.accounts).toHaveLength(1);
     expect(history.accounts[0].provider).toBe('claude');
     expect(history.accounts[0].plan).toBe('max');
+    expect(history.accounts[0].plans).toEqual([
+      { t: 2000, plan: 'pro' },
+      { t: 4000, plan: 'max5' },
+    ]);
     expect(history.accounts[0].windows[0].points).toEqual([
       { t: 1, used: 10, resetAt: 9 },
       { t: 2, used: 100, resetAt: null },

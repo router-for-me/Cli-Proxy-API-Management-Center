@@ -40,13 +40,21 @@ export const PLAN_WEEKLY_UNITS: Partial<Record<string, Record<string, number>>> 
 
 /**
  * Default capacity weight of each plan in a pool, relative to the largest
- * plan with known units. Plans without known units count as 1.
+ * plan with known units. Plans without known units count as 1. `pastPlans`
+ * (plans accounts had before a change) get weights on the same scale without
+ * moving the reference.
  */
-export const defaultPlanWeights = (provider: string, plans: string[]): Map<string, number> => {
+export const defaultPlanWeights = (
+  provider: string,
+  plans: string[],
+  pastPlans: string[] = []
+): Map<string, number> => {
   const units = PLAN_WEEKLY_UNITS[provider] ?? {};
   const known = plans.map((plan) => units[plan]).filter((value) => value !== undefined);
   const reference = known.length > 0 ? Math.max(...known) : 1;
-  return new Map(plans.map((plan) => [plan, units[plan] ? units[plan] / reference : 1]));
+  return new Map(
+    [...pastPlans, ...plans].map((plan) => [plan, units[plan] ? units[plan] / reference : 1])
+  );
 };
 
 export type ForecastPool = {
@@ -146,13 +154,16 @@ export function buildForecastPools(
     });
     const defaults = defaultPlanWeights(
       provider,
-      recorded.map(({ account }) => account.plan)
+      recorded.map(({ account }) => account.plan),
+      recorded.flatMap(({ account }) => (account.plans ?? []).map((change) => change.plan))
     );
+    const weightOf = (plan: string) =>
+      options.planWeights[planWeightKey(provider, plan)] ?? defaults.get(plan) ?? 1;
 
     recorded.forEach(({ file, account, window }) => {
       const key = planWeightKey(provider, account.plan);
       const defaultWeight = defaults.get(account.plan) ?? 1;
-      const weight = options.planWeights[key] ?? defaultWeight;
+      const weight = weightOf(account.plan);
       const plan = plans.get(key) ?? {
         key,
         plan: account.plan,
@@ -166,6 +177,12 @@ export function buildForecastPools(
         key: String(file.name ?? account.authId),
         name: accountDisplayName(account, file, options.showEmails),
         weight,
+        // Samples taken under an earlier plan count with that plan's weight, up to
+        // the first sample of the next plan.
+        earlierWeights: (account.plans ?? []).slice(1).map((next, index) => ({
+          until: next.t,
+          weight: weightOf((account.plans ?? [])[index].plan),
+        })),
         periodMs: window.periodSeconds ? window.periodSeconds * 1000 : 7 * 24 * 60 * 60 * 1000,
         samples: window.points,
         sessionLimited:

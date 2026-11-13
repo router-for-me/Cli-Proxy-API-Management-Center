@@ -21,7 +21,13 @@ export type ResetJump = { t: number; amount: number };
 export type ForecastAccountInput = {
   key: string;
   name: string;
+  /** Weight of the account's current plan. */
   weight: number;
+  /**
+   * Weights of earlier plans, oldest first: each applies before `until` (and after
+   * the previous entry's), so a plan change shows as a jump in the pool.
+   */
+  earlierWeights?: { until: number; weight: number }[];
   /** Window length, used to schedule resets after the next known one. */
   periodMs: number | null;
   /** Samples of the forecast window, sorted by time. */
@@ -261,6 +267,49 @@ export function sumSeries(inputs: { series: SeriesPoint[]; weight: number }[]): 
   });
   return out;
 }
+
+/**
+ * Pool-percent series of one account: its own percent times the weight in force at
+ * each instant (`weight` after the last of `earlierWeights`). A weight change is a
+ * jump at its instant.
+ */
+export function weighSeries(
+  series: SeriesPoint[],
+  weight: number,
+  earlierWeights: { until: number; weight: number }[] = []
+): SeriesPoint[] {
+  if (series.length === 0 || earlierWeights.length === 0) {
+    return series.map((point) => ({ t: point.t, v: weight * point.v }));
+  }
+  const weightAt = (t: number, side: 'pre' | 'post') =>
+    earlierWeights.find((entry) => (side === 'pre' ? t <= entry.until : t < entry.until))?.weight ??
+    weight;
+  const first = series[0].t;
+  const last = series[series.length - 1].t;
+  const changes = new Set(
+    earlierWeights.map((entry) => entry.until).filter((t) => t > first && t <= last)
+  );
+  const jumps = new Set(
+    series.filter((point, index) => index > 0 && series[index - 1].t === point.t).map((p) => p.t)
+  );
+  const times = Array.from(new Set([...series.map((point) => point.t), ...changes])).sort(
+    (a, b) => a - b
+  );
+  return times.flatMap((t) => {
+    const after = { t, v: weightAt(t, 'post') * valueAt(series, t, 'post') };
+    if (!changes.has(t) && !jumps.has(t)) return [after];
+    return [{ t, v: weightAt(t, 'pre') * valueAt(series, t, 'pre') }, after];
+  });
+}
+
+/** Upward jumps of a series (resets), as in `buildRecordedSeries`. */
+const upwardJumps = (series: SeriesPoint[]): ResetJump[] =>
+  series.flatMap((point, index) => {
+    const previous = series[index - 1];
+    return previous && previous.t === point.t && point.v > previous.v
+      ? [{ t: point.t, amount: point.v - previous.v }]
+      : [];
+  });
 
 /** Total decrease of a series between `a` and `b`; increases (resets) are ignored. */
 export function consumedBetween(series: SeriesPoint[], a: number, b: number): number {
@@ -584,12 +633,16 @@ export function buildPoolForecast(
   const accounts = inputs.filter((input) => input.samples.length > 0 && input.weight > 0);
 
   const prepared = accounts.map((input) => {
-    const { series, resets } = buildRecordedSeries(input.samples, historyFrom, now);
+    const { series } = buildRecordedSeries(input.samples, historyFrom, now);
+    // In pool percent, each stretch weighed by the plan it was recorded under.
+    const pooled = weighSeries(series, input.weight, input.earlierWeights);
     const remaining = series.length > 0 ? valueAt(series, now, 'post') : 0;
-    const burnRate = accountBurnRate(series, input.samples, now, burnWindowHours);
+    // Own percent per hour at the current plan's size.
+    const pooledBurn = accountBurnRate(pooled, input.samples, now, burnWindowHours);
+    const burnRate = pooledBurn === null ? null : pooledBurn / input.weight;
     const latest = input.samples[input.samples.length - 1];
     const nextReset = upcomingReset(latest.resetAt, input.periodMs, now);
-    return { input, series, resets, remaining, burnRate, nextReset };
+    return { input, pooled, remaining, burnRate, nextReset };
   });
 
   const capacity = accounts.reduce((sum, input) => sum + input.weight * 100, 0);
@@ -601,17 +654,12 @@ export function buildPoolForecast(
       : null;
 
   const visibleRecorded = prepared.map((item) => ({
-    series: from < recordedEnd ? clipSeries(item.series, from, recordedEnd) : [],
-    weight: item.input.weight,
+    series: from < recordedEnd ? clipSeries(item.pooled, from, recordedEnd) : [],
+    weight: 1,
   }));
   const recorded = sumSeries(visibleRecorded);
-  const recordedResets = mergeResets(
-    prepared.flatMap((item) =>
-      item.resets
-        .filter((reset) => reset.t >= from && reset.t <= recordedEnd)
-        .map((reset) => ({ t: reset.t, amount: reset.amount * item.input.weight }))
-    )
-  );
+  // Resets and plan upgrades both raise the pool.
+  const recordedResets = mergeResets(visibleRecorded.flatMap((item) => upwardJumps(item.series)));
 
   const projectionEnd = Math.max(to, options.horizon);
   const projection = projectPool(
@@ -657,7 +705,14 @@ export function buildPoolForecast(
       weight: item.input.weight,
       remaining: item.remaining,
       burnRate: item.burnRate,
-      recorded: from < recordedEnd ? clipSeries(item.series, from, recordedEnd) : [],
+      // Scaled to the current plan, so `weight × recorded` is the account's pool share.
+      recorded:
+        from < recordedEnd
+          ? clipSeries(item.pooled, from, recordedEnd).map((point) => ({
+              t: point.t,
+              v: point.v / item.input.weight,
+            }))
+          : [],
       projected: projectedVisible
         ? clipSeries(projection.accounts.get(item.input.key) ?? [], projectedFrom, to)
         : [],
@@ -667,7 +722,7 @@ export function buildPoolForecast(
 
 /** Pool burn rate (pool %/h) over a rolling lookback, sampled on a fixed grid. */
 function buildDrainSeries(
-  prepared: { input: ForecastAccountInput; series: SeriesPoint[] }[],
+  prepared: { input: ForecastAccountInput; pooled: SeriesPoint[] }[],
   from: number,
   to: number,
   windowHours: number
@@ -683,8 +738,7 @@ function buildDrainSeries(
     const span = t - a;
     if (span < MIN_BURN_SPAN_MS) return 0;
     return prepared.reduce(
-      (sum, item) =>
-        sum + (item.input.weight * consumedBetween(item.series, a, t)) / (span / HOUR_MS),
+      (sum, item) => sum + consumedBetween(item.pooled, a, t) / (span / HOUR_MS),
       0
     );
   };

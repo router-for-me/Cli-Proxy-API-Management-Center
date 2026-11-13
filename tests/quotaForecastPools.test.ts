@@ -128,6 +128,28 @@ describe('forecast pools', () => {
     expect(maxPool.plans.find((plan) => plan.plan === 'pro')?.defaultWeight).toBe(0.2);
   });
 
+  test('weigh samples taken before a plan change by the earlier plan', () => {
+    const claudeEntries = ['u', 'p'].map((name) => entry(`${name}.json`, 'claude'));
+    const [pool] = buildForecastPools(
+      history([
+        account('u.json', 'claude', { plan: 'max20' }),
+        account('p.json', 'claude', {
+          plan: 'max5',
+          plans: [
+            { t: 1, plan: 'pro' },
+            { t: 5, plan: 'max5' },
+          ],
+        }),
+      ]),
+      claudeEntries,
+      { planWeights: {}, showEmails: false }
+    );
+    const upgraded = pool.accounts.find((input) => input.key === 'p.json');
+    expect(upgraded?.weight).toBe(0.5);
+    expect(upgraded?.earlierWeights).toEqual([{ until: 5, weight: 0.1 }]);
+    expect(pool.plans.map((plan) => plan.plan).sort()).toEqual(['max20', 'max5']);
+  });
+
   test('mask emails until shown and keep non-email labels', () => {
     const recorded = history([
       account('claude-a@x.com.json', 'claude', { email: 'a@x.com' }),
