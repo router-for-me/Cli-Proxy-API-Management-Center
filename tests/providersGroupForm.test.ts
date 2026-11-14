@@ -5,7 +5,10 @@ import { createInstance } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
 import { getProviderCapabilities } from '@/features/providers/descriptors';
 import { buildGeminiGroupConfig } from '@/features/providers/useProviderWorkbench';
-import { BaseProviderForm } from '@/features/providers/sheets/forms/BaseProviderForm';
+import {
+  BaseProviderForm,
+  buildGroupInitialForm,
+} from '@/features/providers/sheets/forms/BaseProviderForm';
 import type { ProviderResource } from '@/features/providers/types';
 import en from '@/i18n/locales/en.json';
 
@@ -107,5 +110,37 @@ describe('group form rendering', () => {
     expect(html).toContain('team-a');
     expect(html).toContain(String(en.providersPage.form.apiKeyEntriesSection));
     expect(html).toContain(String(en.providersPage.form.modelsSection));
+  });
+});
+
+describe('group form model normalization', () => {
+  test('keeps advanced model fields when loading a stored group', () => {
+    const resource = {
+      kind: 'group',
+      raw: {
+        name: 'team-a',
+        models: [
+          {
+            name: 'gemini-2.5-flash',
+            alias: 'flash',
+            'display-name': 'Flash Display',
+            'max-context-length': 1048576,
+            'is-compat': true,
+            thinking: { levels: ['high'], 'zero-allowed': true },
+          },
+        ],
+        keys: [{ 'api-key': 'key-1' }],
+      },
+    } as unknown as ProviderResource;
+    const form = buildGroupInitialForm(resource, 'edit');
+    expect(form.models[0]).toMatchObject({
+      name: 'gemini-2.5-flash',
+      displayName: 'Flash Display',
+      maxContextLength: '1048576',
+      isCompat: true,
+      thinkingLevels: ['high'],
+      thinkingZeroAllowed: true,
+    });
+    expect(form.models[0].thinkingJson).toContain('zero_allowed');
   });
 });

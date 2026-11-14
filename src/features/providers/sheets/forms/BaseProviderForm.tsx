@@ -26,6 +26,7 @@ import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@
 import type { ModelInfo } from '@/utils/models';
 import { getProviderCapabilities, type ProviderFormVariant } from '../../descriptors';
 import { removeModelAt } from '../../modelEntries';
+import { normalizeModelOptions, normalizeModelThinking } from '@/services/api/providerModels';
 import { syncDiscoveredModels } from '../../discoverySelection';
 import type {
   ApiKeyEntryInput,
@@ -91,27 +92,34 @@ const readGroupModels = (group: RawGroup): ModelEntryInput[] => {
   const models = Array.isArray(group.models) ? group.models : [];
   const entries = models.flatMap((value) => {
     if (value === null || typeof value !== 'object') return [];
-    const model = value as Record<string, unknown> & { name?: string; alias?: string };
-    if (!model.name) return [];
+    const raw = value as Record<string, unknown>;
+    if (!raw.name) return [];
+    // Raw group models use YAML field names; normalize them the same way the
+    // per-key readers do so editing a group never drops advanced model fields.
+    const normalized = {
+      ...raw,
+      ...normalizeModelOptions(raw),
+      thinking: normalizeModelThinking(raw.thinking),
+    } as Record<string, unknown> & { name?: string; alias?: string };
     return [
       {
-        name: String(model.name),
-        alias: model.alias === undefined ? '' : String(model.alias),
-        priority: typeof model.priority === 'number' ? model.priority : undefined,
-        image: model.image === true,
+        name: String(normalized.name),
+        alias: normalized.alias === undefined ? '' : String(normalized.alias),
+        priority: typeof normalized.priority === 'number' ? normalized.priority : undefined,
+        image: normalized.image === true,
         thinkingJson: formatJsonObject(
-          model.thinking !== undefined && model.thinking !== null
-            ? (model.thinking as Record<string, unknown>)
+          normalized.thinking !== undefined && normalized.thinking !== null
+            ? (normalized.thinking as Record<string, unknown>)
             : undefined
         ),
-        ...readModelOptions(model as never),
+        ...readModelOptions(normalized as never),
       },
     ];
   });
   return entries.length ? entries : [emptyModel()];
 };
 
-function buildGroupInitialForm(
+export function buildGroupInitialForm(
   resource: ProviderResource | null,
   mode: 'create' | 'edit'
 ): ProviderEntryFormInput {
