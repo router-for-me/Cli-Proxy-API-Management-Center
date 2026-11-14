@@ -26,6 +26,7 @@ export const CPAMP_COLUMNS = {
   header_error_kind: 'TEXT',
   header_error_code: 'TEXT',
   auth_type: 'TEXT',
+  source_hash: 'TEXT',
   api_key_hash: 'TEXT',
   user_agent: 'TEXT',
   client_ip: 'TEXT',
@@ -80,6 +81,8 @@ export function cpampRow(index: number, overrides: Record<string, string | numbe
     header_error_kind: 'rate_limit',
     header_error_code: 'retry_after',
     auth_type: 'oauth',
+    // The SHA-256 of the raw source, which is not the masked source stored above.
+    source_hash: 'b'.repeat(64),
     api_key_hash: 'a'.repeat(64),
     user_agent: 'test-client/1.0',
     client_ip: '192.0.2.10',

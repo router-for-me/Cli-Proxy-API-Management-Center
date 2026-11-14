@@ -425,15 +425,25 @@ export function isKeySource(source: string, authType: string, apiKey: string): b
  * persisted `api_key_hash` is the client's key whatever it looks like, and an API-key
  * credential's unmasked value is hashed.
  */
-export function maskPersistedSource(source: string, authType: string, apiKeyHash: string): string {
+export function maskPersistedSource(
+  source: string,
+  authType: string,
+  apiKeyHash: string,
+  sourceHash: string
+): string {
   const trimmed = source.trim();
   if (!trimmed) return '';
   const hash = createHash('sha256').update(trimmed).digest('hex');
   if (apiKeyHash && hash === apiKeyHash.trim().toLowerCase()) return `h:${hash}`;
+  // CPAMP's `source_hash` is the SHA-256 of the raw source. A persisted value with that hash was
+  // stored raw (CPAMP keeps a short key as it is, even `m:****`), so it is not a mask whatever
+  // it looks like; any other value is CPAMP's mask of the raw source.
+  const storedRaw = !!sourceHash && hash === sourceHash.trim().toLowerCase();
   if (
-    /^h:[0-9a-f]{64}$/.test(trimmed) ||
-    /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed) ||
-    /^[^@]{0,3}\*\*\*@/.test(trimmed)
+    !storedRaw &&
+    (/^h:[0-9a-f]{64}$/.test(trimmed) ||
+      /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed) ||
+      /^[^@]{0,3}\*\*\*@/.test(trimmed))
   )
     return trimmed;
   return maskSource(trimmed, isApiKeyAuth(authType));

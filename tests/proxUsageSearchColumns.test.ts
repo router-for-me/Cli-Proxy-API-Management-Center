@@ -30,6 +30,7 @@ function normalized(overrides: Record<string, unknown> = {}, label?: AccountLabe
   return result.event;
 }
 const headers = (value: Record<string, unknown>) => normalized({ response_headers: value });
+const sha = (value: string) => createHash('sha256').update(value).digest('hex');
 
 describe('normalizer: endpoint', () => {
   test('is the proxy endpoint text as CPAMP stores it, and "-" when the record has none', () => {
@@ -74,11 +75,21 @@ describe('normalizer: source', () => {
   });
   test('a persisted masked e-mail imports unchanged, including one- and two-character locals', () => {
     for (const masked of ['a***@x.test', 'ab***@x.test', 'abc***@x.test', 'a***@b@c.test'])
-      expect(maskPersistedSource(masked, 'oauth', '')).toBe(masked);
+      expect(maskPersistedSource(masked, 'oauth', '', sha('raw-source'))).toBe(masked);
     expect(maskSource('ab@x.test')).toBe('ab***@x.test');
     const h = `h:${'a'.repeat(64)}`;
-    expect(maskPersistedSource(h, 'apikey', '')).toBe(h);
-    expect(maskPersistedSource('m:****', 'oauth', '')).toBe('m:****');
+    expect(maskPersistedSource(h, 'apikey', '', sha('raw-source'))).toBe(h);
+    expect(maskPersistedSource('m:****', 'oauth', '', sha('sk-abcd'))).toBe('m:****');
+  });
+  test('a raw upstream key that looks like a mask is hashed: CPAMP kept it, its source hash proves it', () => {
+    const clientHash = sha('a-different-client-key');
+    for (const key of ['m:****', 'ab***@x.test', `h:${'a'.repeat(64)}`]) {
+      const stored = maskPersistedSource(key, 'apikey', clientHash, sha(key));
+      expect(stored).toBe(`h:${sha(key)}`);
+      expect(stored).not.toBe(key);
+    }
+    // Without a source hash nothing says the value was raw, so a mask shape is kept (as CPAMP's own mask).
+    expect(maskPersistedSource('m:****', 'apikey', clientHash, '')).toBe('m:****');
   });
   test('a key is hashed even when it looks like a mask, live or persisted', () => {
     for (const lookalike of ['ab***@x.test', 'm:****', `h:${'a'.repeat(64)}`]) {
@@ -86,11 +97,11 @@ describe('normalizer: source', () => {
       expect(stored).toMatch(/^h:[0-9a-f]{64}$/);
       expect(stored).not.toBe(lookalike);
       // CPAMP persisted the raw key and its hash: the key wins over the mask shape.
-      const hash = createHash('sha256').update(lookalike).digest('hex');
-      expect(maskPersistedSource(lookalike, 'oauth', hash)).toBe(`h:${hash}`);
+      const hash = sha(lookalike);
+      expect(maskPersistedSource(lookalike, 'oauth', hash, '')).toBe(`h:${hash}`);
     }
     // A live API-key credential's unmasked persisted value is hashed too.
-    expect(maskPersistedSource('upstreamkey1', 'apikey', '')).toMatch(/^h:[0-9a-f]{64}$/);
+    expect(maskPersistedSource('upstreamkey1', 'apikey', '', '')).toMatch(/^h:[0-9a-f]{64}$/);
   });
   test('a source that is a key is hashed, whatever its length or shape', () => {
     const short = 'synthetic-client-key';
@@ -398,8 +409,8 @@ describe('CPAMP import, reconcile and backfill', () => {
     const key = 'synthetic-client-key';
     f.writable.db.exec(`UPDATE usage_events SET source = 'ab***@x.test' WHERE id = 1`);
     f.writable.db
-      .query(`UPDATE usage_events SET source = ?, api_key_hash = ? WHERE id = 2`)
-      .run(key, createHash('sha256').update(key).digest('hex'));
+      .query(`UPDATE usage_events SET source = ?, api_key_hash = ?, source_hash = ? WHERE id = 2`)
+      .run(key, sha(key), sha(key));
     const report = await run(f);
     expect(report.verification).toMatchObject({ different: 0, exact: true });
     const sources = (stored(f.reader) as { source: string }[]).map((row) => row.source);

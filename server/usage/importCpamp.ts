@@ -90,7 +90,7 @@ export const CPAMP_EVENT_COLUMNS = `
   auth_index, account_snapshot, auth_label_snapshot, auth_file_snapshot, fail_summary,
   header_trace_id, endpoint, x_forwarded_for, source, auth_provider_snapshot,
   auth_project_id_snapshot, header_quota_plan_type, header_error_kind, header_error_code,
-  auth_type, api_key_hash, user_agent, client_ip,
+  auth_type, source_hash, api_key_hash, user_agent, client_ip,
   path, method, reasoning_effort, executor_type, request_id, session_id, parent_session_id,
   stream, failed, fail_status_code, latency_ms, ttft_ms,
   normalized_total_input_tokens AS input_total,
@@ -207,7 +207,8 @@ export function mapCpampRow(
     maskPersistedSource(
       String(row.source ?? ''),
       String(row.auth_type ?? ''),
-      String(row.api_key_hash ?? '')
+      String(row.api_key_hash ?? ''),
+      String(row.source_hash ?? '')
     ) || null;
   event.authProvider = nonempty(row.auth_provider_snapshot);
   event.authProject = projectSnapshot(
