@@ -190,14 +190,18 @@ async function compareTable(
   // Without a seq mark, an empty table has no high-water mark; live may hold anything newer.
   if (highWater === null) return verdict;
   const cuts = boundaries(backup, table, options.rangeRows ?? RANGE_ROWS);
-  // When the slice column is the mark itself, the high-water mark is the last slice's upper edge.
-  // A second, looser bound on the same rowid makes SQLite scan to the end of the table per slice
-  // (measured: ~100 MB read per 20,000-row slice of event_detail).
+  // When the slice column is the mark itself, the high-water mark is the last slice's inclusive
+  // upper edge. A second, looser bound on the same rowid makes SQLite scan to the end of the table
+  // per slice (measured: ~100 MB read per 20,000-row slice of event_detail).
   const same = range === mark;
-  const edges: (number | null)[] = [null, ...cuts, same ? highWater + 1 : null];
-  const sql = (low: boolean, high: boolean) =>
+  const edges: (number | null)[] = [null, ...cuts, same ? highWater : null];
+  const sql = (low: boolean, high: boolean, inclusive: boolean) =>
     `SELECT count(*) AS v FROM ${table} WHERE ` +
-    [same ? '' : `${mark} <= ?`, low ? `${range} >= ?` : '', high ? `${range} < ?` : '']
+    [
+      same ? '' : `${mark} <= ?`,
+      low ? `${range} >= ?` : '',
+      high ? `${range} ${inclusive ? '<=' : '<'} ?` : '',
+    ]
       .filter(Boolean)
       .join(' AND ');
   let liveRows = 0;
@@ -208,7 +212,7 @@ async function compareTable(
       ...(low === null ? [] : [low]),
       ...(high === null ? [] : [high]),
     ];
-    const query = sql(low !== null, high !== null);
+    const query = sql(low !== null, high !== null, same && i + 2 === edges.length);
     const want = backup.query<{ v: number }, number[]>(query).get(...params)!.v;
     const got = await runIoChunk(
       'restore-check',

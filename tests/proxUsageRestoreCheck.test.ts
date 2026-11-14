@@ -180,6 +180,26 @@ describe('usage restore check', () => {
     }
   });
 
+  test('slice edges are exact even at the largest integer a JS number holds', async () => {
+    const f = fixture();
+    const other = new Database(f.livePath);
+    cleanups.push(() => other.close());
+    // High-water + 1 would round back to the high-water mark here.
+    other.exec(
+      `INSERT INTO import_conflicts (rowid, execution_id, field, seen_at_ms)
+       VALUES (9007199254740992, 'e', 'f', 1), (7, 'e', 'g', 1)`
+    );
+    await f.backup(15);
+    for (const rangeRows of [1, 2, 20_000]) {
+      const verdict = await f.check({ rangeRows });
+      expect(verdict.failures).toEqual([]);
+      expect(verdict.tables.find((t) => t.name === 'import_conflicts')).toMatchObject({
+        backupRows: 2,
+        liveRowsAtHighWater: 2,
+      });
+    }
+  });
+
   test('an explicit key is honoured', async () => {
     const f = fixture();
     await f.backup(15);
