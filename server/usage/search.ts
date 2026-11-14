@@ -37,6 +37,16 @@ const SEARCH_DIMS = [
   'effort_id',
   'executor_id',
   'auth_file_id',
+  // CPAMP's endpoint, forwarded-for, source, credential provider and project, quota plan and
+  // header error kind and code. Dictionary ids like the rest, so a term costs one integer test.
+  'endpoint_id',
+  'x_forwarded_for_id',
+  'source_id',
+  'auth_provider_id',
+  'auth_project_id',
+  'quota_plan_id',
+  'error_kind_id',
+  'error_code_id',
 ];
 /** Fields CPAMP's search document holds that Prox keeps as event_detail text. */
 const DOCUMENT_TEXT = ['header_trace_id', 'fail_summary'];

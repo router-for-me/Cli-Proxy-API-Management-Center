@@ -106,6 +106,15 @@ describe('usage store schema', () => {
       'auth_index_id INTEGER',
       'ingest INTEGER NOT NULL',
       'auth_file_id INTEGER', // migration 4 appends it
+      // migration 5 appends the eight CPAMP search columns
+      'endpoint_id INTEGER',
+      'x_forwarded_for_id INTEGER',
+      'source_id INTEGER',
+      'auth_provider_id INTEGER',
+      'auth_project_id INTEGER',
+      'quota_plan_id INTEGER',
+      'error_kind_id INTEGER',
+      'error_code_id INTEGER',
     ]);
     expect(columns('event_detail')).toEqual([
       'seq INTEGER PK1',
@@ -618,7 +627,7 @@ describe('usage store migrations', () => {
     const db = database();
     migrateUsageDatabase(db);
     expect(version(db)).toBe(String(USAGE_MIGRATIONS.length));
-    expect(USAGE_MIGRATIONS).toHaveLength(4);
+    expect(USAGE_MIGRATIONS).toHaveLength(5);
     const before = tables(db);
     expect(before).toContain('events');
     // Migration 1 is plain CREATE TABLE: a second run of it would fail, so it did not run.

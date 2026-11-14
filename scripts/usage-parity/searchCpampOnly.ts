@@ -14,11 +14,17 @@ import type { UsageAnalyticsQuery } from '../../server/usage/validate';
  */
 export const SEARCH_SEGMENTS = 29;
 /**
- * Fields in that document that Prox does not store: only the event hash, CPAMP's own internal
- * identity. The failure text (24), credential file (18) and response trace id (28) have stored,
- * searchable counterparts, so a match there that Prox misses stays a failure.
+ * Fields in that document that Prox does not store: the three internal hashes CPAMP derives
+ * itself, the event hash (1), the source hash (13) and the API key hash (14). Every other field
+ * has a stored, searchable counterpart, so a match there that Prox misses stays a failure.
+ * (Prox does keep the API key hash, as the `api_key` dictionary value, and searches it; the
+ * entry only means a difference there would not be a failure of a missing field.)
  */
-export const CPAMP_ONLY_SEGMENTS: ReadonlyMap<number, string> = new Map([[1, 'event_hash']]);
+export const CPAMP_ONLY_SEGMENTS: ReadonlyMap<number, string> = new Map([
+  [1, 'event_hash'],
+  [13, 'source_hash'],
+  [14, 'api_key_hash'],
+]);
 
 /** SQLite's LIKE without ESCAPE: `%` any run, `_` one character, everything else literal. */
 export function likePattern(pattern: string): RegExp {

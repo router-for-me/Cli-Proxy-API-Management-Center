@@ -196,7 +196,7 @@ function truncateUtf8(value: string, maxBytes: number): string {
 }
 
 /** Client-supplied request metadata: one line of printable text, bounded. */
-function requestMetadata(value: unknown, maxBytes: number): string | null {
+export function requestMetadata(value: unknown, maxBytes: number): string | null {
   const cleaned = text(value)
     .replace(/[\s\p{C}\p{Zl}\p{Zp}]+/gu, ' ')
     .trim();
@@ -267,15 +267,13 @@ const TRACEPARENT = /^[0-9a-f]{2}-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/;
 
 const headerValue = (value: string): string =>
   truncateUtf8(failSummaryFromBody(value) ?? '', HEADER_VALUE_MAX_BYTES);
+/** A response-header value as stored, live or imported: scrubbed and capped; '' when empty. */
+export const scrubHeaderValue = headerValue;
 
-/**
- * The event's `header_trace_id`, derived like CPAMP's PrimaryTraceID: the first present trace
- * header in a fixed order, else the trace-id of a valid W3C traceparent. Only those nine header
- * names are read; no other response header is kept.
- */
-export function headerTraceId(headers: unknown): string | null {
-  if (!isObject(headers)) return null;
+/** CPAMP's normalizeResponseHeaders: lowercase names, trimmed non-empty values, keys in order. */
+function headersByName(headers: unknown): Map<string, string[]> {
   const byName = new Map<string, string[]>();
+  if (!isObject(headers)) return byName;
   for (const key of Object.keys(headers).sort()) {
     const name = key.trim().toLowerCase();
     const value = headers[key];
@@ -285,6 +283,17 @@ export function headerTraceId(headers: unknown): string | null {
       .filter(Boolean);
     if (values.length) byName.set(name, [...(byName.get(name) ?? []), ...values]);
   }
+  return byName;
+}
+
+/**
+ * The event's `header_trace_id`, derived like CPAMP's PrimaryTraceID: the first present trace
+ * header in a fixed order, else the trace-id of a valid W3C traceparent. Only those nine header
+ * names are read; no other response header is kept.
+ */
+export function headerTraceId(headers: unknown): string | null {
+  if (!isObject(headers)) return null;
+  const byName = headersByName(headers);
   const first = (name: string) => headerValue(byName.get(name)?.[0] ?? '');
   const parts = TRACEPARENT.exec(first('traceparent').toLowerCase());
   const traceparentId =
@@ -301,6 +310,86 @@ export function scrubTraceId(value: string): string | null {
   return orNull(truncateUtf8(sanitizeCredentialText(headerValue(value)).trim(), HEADER_VALUE_MAX_BYTES));
 }
 
+const FLOAT_HEADER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+const DATE_HEADERS = [
+  // RFC 3339 and the two "2006-01-02 15:04:05" layouts CPAMP's parseHeaderCommonTime accepts.
+  /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])[T ](?:[01]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}| [A-Z]{3,5})?$/,
+  // RFC 1123 with a zone name or a numeric offset (an HTTP-date).
+  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (?:0[1-9]|[12]\d|3[01]) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} (?:[01]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60) (?:[A-Z]{3,5}|[+-]\d{4})$/,
+];
+/** CPAMP's parseRetryAfter succeeds: a non-negative number of seconds, or a date in a known layout. */
+function retryAfterParses(value: string): boolean {
+  const number = value.endsWith('%') ? value.slice(0, -1).trim() : value;
+  if (FLOAT_HEADER.test(number)) return Number.isFinite(Number(number)) && Number(number) >= 0;
+  return DATE_HEADERS.some((pattern) => pattern.test(value));
+}
+const AUTH_ERROR_CODES = ['token_revoked', 'token_invalidated', 'account_deactivated', '401'];
+
+/**
+ * The three search columns CPAMP derives from the response headers (response_headers.go,
+ * parseQuotaHeaders and classifyHeaderError): the Codex plan type, and an error kind and code.
+ * An auth or identity code outranks the rate-limit bypass header, which outranks Retry-After.
+ */
+export function headerSearchValues(headers: unknown): {
+  quotaPlan: string | null;
+  errorKind: string | null;
+  errorCode: string | null;
+} {
+  const byName = headersByName(headers);
+  const raw = (name: string) => byName.get(name)?.[0] ?? '';
+  const value = (name: string) => headerValue(raw(name));
+  let kind = '';
+  let code = '';
+  for (const name of ['x-openai-ide-root-error-code', 'x-openai-ide-error-code', 'x-openai-authorization-error']) {
+    const normalized = value(name).trim().toLowerCase();
+    if (AUTH_ERROR_CODES.includes(normalized)) [kind, code] = ['auth', normalized];
+    else if (normalized === 'identity_edge_internal_error') [kind, code] = ['identity', normalized];
+    if (kind) break;
+  }
+  if (!kind && value('x-ratelimit-bypass')) [kind, code] = ['rate_limit', value('x-ratelimit-bypass')];
+  else if (!kind && raw('retry-after') && retryAfterParses(raw('retry-after')))
+    [kind, code] = ['rate_limit', 'retry_after'];
+  return {
+    quotaPlan: orNull(value('x-codex-plan-type')),
+    errorKind: orNull(kind),
+    errorCode: orNull(code),
+  };
+}
+
+/**
+ * CPAMP's maskSource: the stored `source`. An e-mail keeps its first three bytes and its domain;
+ * a value holding a credential is replaced by its SHA-256; a long opaque value shows only its
+ * first and last four characters. Anything else (a project id, an account name) is kept.
+ */
+export function maskSource(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  // A value CPAMP already masked this way stays as it is, so masking an imported value is exact.
+  if (/^h:[0-9a-f]{64}$/.test(trimmed) || /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed)) return trimmed;
+  const at = trimmed.indexOf('@');
+  if (at !== -1) {
+    const prefix = Buffer.from(trimmed.slice(0, at));
+    return `${prefix.length > 3 ? prefix.subarray(0, 3).toString() : prefix.toString()}***@${trimmed.slice(at + 1)}`;
+  }
+  if (sanitizeCredentialText(trimmed) !== trimmed) {
+    return `h:${createHash('sha256').update(trimmed).digest('hex')}`;
+  }
+  const looksSecret =
+    !/[ /\\]/.test(trimmed) &&
+    (trimmed.startsWith('sk-') || trimmed.startsWith('AIza') || Buffer.byteLength(trimmed) >= 32);
+  if (!looksSecret) return trimmed;
+  return Buffer.byteLength(trimmed) <= 8 ? 'm:****' : `m:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+}
+
+/** The marker CPAMP gives a Codex account id it stores where a project id would go. */
+const CODEX_ACCOUNT_MARKER = 'codex-account-id:v1:';
+/** CPAMP's ProjectIDSnapshot: that marker is not a project id, so it is never searchable text. */
+export function projectSnapshot(provider: string | null, project: string | null): string | null {
+  const trimmed = (project ?? '').trim();
+  const codex = (provider ?? '').trim().toLowerCase().replace(/_/g, '-') === 'codex';
+  return orNull(codex && trimmed.startsWith(CODEX_ACCOUNT_MARKER) ? '' : trimmed);
+}
+
 const UUID_VERSION =/^[0-9a-f]{8}-[0-9a-f]{4}-([0-9a-f])[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** The proxy projects every id it derives itself to a version 8 UUID (session/identity.go). */
@@ -312,6 +401,8 @@ function eventSession(value: unknown): EventSession | null {
 const ENDPOINT = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)/;
 /** Query strings can carry client credentials, so they are never kept. */
 const withoutQuery = (value: string): string => value.split('?')[0];
+/** CPAMP's `endpoint`: the proxy's "METHOD /route" text, "-" when the record has none. */
+export const endpointText = (value: string): string => withoutQuery(value.trim()) || '-';
 
 // The raw buffer keeps only what an event could be re-derived from. `true` keeps a scalar,
 // `false` names a field the proxy is known to send that is deliberately not kept (secrets,
@@ -572,6 +663,13 @@ export function normalizeUsagePayload(
       failSummary: failSummaryFromBody(text(fail.body)),
       headerTraceId: headerTraceId(record.response_headers),
       authFile: orNull(text(label?.file)),
+      // The proxy's route pattern, "METHOD /route": no query string, so none is kept either.
+      endpoint: endpointText(text(record.endpoint)),
+      xForwardedFor: requestMetadata(record.x_forwarded_for, 2048),
+      source: orNull(maskSource(text(record.source))),
+      authProvider: orNull(text(label?.provider)),
+      authProject: projectSnapshot(text(label?.provider) || provider, text(label?.project)),
+      ...headerSearchValues(record.response_headers),
     },
   };
 }

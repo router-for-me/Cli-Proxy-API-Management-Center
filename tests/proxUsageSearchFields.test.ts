@@ -197,13 +197,13 @@ describe('store: schema and search', () => {
   }
 
   test('migration 4 adds nullable columns and rewinds only an existing import cursor', () => {
-    expect(USAGE_MIGRATIONS).toHaveLength(4);
     for (const [cursor, expected] of [['731000', '0'], [null, null]] as const) {
       const db = new Database(':memory:');
       migrateUsageDatabase(db, USAGE_MIGRATIONS.slice(0, 3));
       if (cursor) db.query(`INSERT INTO meta VALUES ('import:cpamp:last_id', ?)`).run(cursor);
       db.exec(`INSERT INTO event_detail (seq, execution_id, ts_ms, ingested_at_ms) VALUES (1, 'old', 1, 1)`);
-      migrateUsageDatabase(db);
+      // Migration 4 alone: migration 5 rewinds the cursor again (proxUsageSearchColumns).
+      migrateUsageDatabase(db, USAGE_MIGRATIONS.slice(0, 4));
       expect(
         db.query<{ value: string }, []>(`SELECT value FROM meta WHERE key='import:cpamp:last_id'`).get()?.value ?? null
       ).toBe(expected);

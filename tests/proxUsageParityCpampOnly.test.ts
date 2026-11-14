@@ -212,9 +212,9 @@ describe('CPAMP events that only CPAMP can match', () => {
     }).join(separator);
   const range = { from_ms: 1000, to_ms: 2000 };
 
-  test('the unsearchable fields are a closed, explicit list: only the event hash', () => {
-    expect([...CPAMP_ONLY_SEGMENTS.values()]).toEqual(['event_hash']);
-    expect([...CPAMP_ONLY_SEGMENTS.keys()]).toEqual([1]);
+  test('the unsearchable fields are a closed, explicit list: the three internal hashes', () => {
+    expect([...CPAMP_ONLY_SEGMENTS.values()]).toEqual(['event_hash', 'source_hash', 'api_key_hash']);
+    expect([...CPAMP_ONLY_SEGMENTS.keys()]).toEqual([1, 13, 14]);
   });
 
   test('lists events matched only through the event hash, within the range', () => {

@@ -18,6 +18,14 @@ export const DIM_KINDS = [
   'executor',
   'timing',
   'auth_file',
+  'endpoint',
+  'x_forwarded_for',
+  'source',
+  'auth_provider',
+  'auth_project',
+  'quota_plan',
+  'error_kind',
+  'error_code',
 ] as const;
 export type DimKind = (typeof DIM_KINDS)[number];
 
@@ -145,6 +153,22 @@ export interface NormalizedEvent {
   headerTraceId: string | null;
   /** The credential file that served the request, as the listing named it (CPAMP `auth_file_snapshot`). */
   authFile: string | null;
+  // The CPAMP search columns below are stored as dictionary ids and only searched.
+  /** CPAMP `endpoint`: the proxy's "METHOD /route" text, without a query string; "-" when absent. */
+  endpoint: string;
+  /** CPAMP `x_forwarded_for`: the request header value, one printable line. */
+  xForwardedFor: string | null;
+  /** CPAMP `source`: the credential's account identifier, masked as CPAMP masks it. Never raw. */
+  source: string | null;
+  /** CPAMP `auth_provider_snapshot`: the listing's provider for the credential. */
+  authProvider: string | null;
+  /** CPAMP `auth_project_id_snapshot`: the listing's project id, unless it is a Codex account marker. */
+  authProject: string | null;
+  /** CPAMP `header_quota_plan_type`: the x-codex-plan-type response header. */
+  quotaPlan: string | null;
+  /** CPAMP `header_error_kind` and `header_error_code`: classified from the response headers. */
+  errorKind: string | null;
+  errorCode: string | null;
 }
 
 /** The label of a credential in force at ingestion, from the proxy's credential listing. */
@@ -153,6 +177,9 @@ export interface AccountLabel {
   label: string;
   /** The listing's file name for the credential; absent when the listing has none. */
   file?: string;
+  /** The listing's provider (CPAMP's normalized form) and project id; absent when it has none. */
+  provider?: string;
+  project?: string;
 }
 export type AccountLabelLookup = (authIndex: string) => AccountLabel | undefined;
 

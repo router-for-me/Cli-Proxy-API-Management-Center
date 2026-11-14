@@ -2,7 +2,16 @@
 import type { Database } from 'bun:sqlite';
 import { checkCpampRollups } from './cpampRollupCheck';
 import { IoGovernor, runIoChunk, type ChunkScheduler, type IoBytes } from './ioGovernor';
-import { failSummaryFromBody, normalizeUsagePayload, scrubTraceId } from './normalize';
+import {
+  endpointText,
+  failSummaryFromBody,
+  maskSource,
+  normalizeUsagePayload,
+  projectSnapshot,
+  requestMetadata,
+  scrubHeaderValue,
+  scrubTraceId,
+} from './normalize';
 import type { ImportValues, UsageStore } from './store';
 import { INGEST, USAGE_FLAG, type NormalizedEvent } from './types';
 
@@ -79,7 +88,9 @@ const metadataSql = `json_extract(
 export const CPAMP_EVENT_COLUMNS = `
   id, timestamp_ms, provider, model, requested_model, resolved_model, response_model,
   auth_index, account_snapshot, auth_label_snapshot, auth_file_snapshot, fail_summary,
-  header_trace_id, api_key_hash, user_agent, client_ip,
+  header_trace_id, endpoint, x_forwarded_for, source, auth_provider_snapshot,
+  auth_project_id_snapshot, header_quota_plan_type, header_error_kind, header_error_code,
+  api_key_hash, user_agent, client_ip,
   path, method, reasoning_effort, executor_type, request_id, session_id, parent_session_id,
   stream, failed, fail_status_code, latency_ms, ttft_ms,
   normalized_total_input_tokens AS input_total,
@@ -187,6 +198,20 @@ export function mapCpampRow(
   const traceText = nonempty(row.header_trace_id);
   event.headerTraceId = traceText === null ? null : scrubTraceId(traceText);
   event.authFile = nonempty(row.auth_file_snapshot);
+  // The eight other search columns, as CPAMP persisted them, through the same functions the live
+  // path uses. The source passes the mask again (it keeps a value that is already masked), and
+  // the header values pass the scrubber again, so nothing unmasked or unscrubbed can enter.
+  event.endpoint = endpointText(String(row.endpoint ?? ''));
+  event.xForwardedFor = requestMetadata(row.x_forwarded_for, 2048);
+  event.source = maskSource(String(row.source ?? '')) || null;
+  event.authProvider = nonempty(row.auth_provider_snapshot);
+  event.authProject = projectSnapshot(
+    event.authProvider ?? event.provider,
+    nonempty(row.auth_project_id_snapshot)
+  );
+  event.quotaPlan = scrubHeaderValue(String(row.header_quota_plan_type ?? '')) || null;
+  event.errorKind = scrubHeaderValue(String(row.header_error_kind ?? '')) || null;
+  event.errorCode = scrubHeaderValue(String(row.header_error_code ?? '')) || null;
   event.account = nonempty(row.account_snapshot) ?? event.accountLabel ?? event.authIndex;
   // Accept only the persisted SHA-256, never a key or a source identity from raw_json.
   const hash = nonempty(row.api_key_hash);

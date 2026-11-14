@@ -153,11 +153,28 @@ const MIGRATION_4_SQL = `
   -- governed, paced chunks as any other pass. Duplicates write nothing but those NULL fields.
   UPDATE meta SET value = '0' WHERE key = 'import:cpamp:last_id';
 `;
+const MIGRATION_5_SQL = `
+  -- Eight more searchable CPAMP fields, each a dictionary id like every repeated string:
+  -- the endpoint text, the forwarded-for header, the masked source, the credential's provider
+  -- and project, and the quota plan and error kind and code from the response headers.
+  -- Nullable, no table rewrite: existing rows read NULL until an exact CPAMP reconcile fills them.
+  ALTER TABLE events ADD COLUMN endpoint_id INTEGER;
+  ALTER TABLE events ADD COLUMN x_forwarded_for_id INTEGER;
+  ALTER TABLE events ADD COLUMN source_id INTEGER;
+  ALTER TABLE events ADD COLUMN auth_provider_id INTEGER;
+  ALTER TABLE events ADD COLUMN auth_project_id INTEGER;
+  ALTER TABLE events ADD COLUMN quota_plan_id INTEGER;
+  ALTER TABLE events ADD COLUMN error_kind_id INTEGER;
+  ALTER TABLE events ADD COLUMN error_code_id INTEGER;
+  -- The reconcile cursor restarts, as in migration 4, so that pass reads every CPAMP row once.
+  UPDATE meta SET value = '0' WHERE key = 'import:cpamp:last_id';
+`;
 export const USAGE_MIGRATIONS: readonly string[] = [
   MIGRATION_1_SQL,
   MIGRATION_2_SQL,
   MIGRATION_3_SQL,
   MIGRATION_4_SQL,
+  MIGRATION_5_SQL,
 ];
 
 /** usage-raw.sqlite: a 30-day buffer for re-deriving events. Analytics never reads it. It has
