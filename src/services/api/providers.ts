@@ -191,6 +191,128 @@ const serializeGeminiKey = (config: GeminiKeyConfig) => {
   return payload;
 };
 
+export interface GeminiGroupKeyDraft {
+  apiKey: string;
+  weight?: number;
+  proxyUrl?: string;
+  /** Persisted key snapshot; overrides inside it are preserved verbatim. */
+  raw?: Record<string, unknown>;
+}
+
+export interface GeminiGroupDraft {
+  name?: string | null;
+  baseUrl?: string | null;
+  prefix?: string | null;
+  priority?: number | null;
+  proxyUrl?: string | null;
+  headers?: Record<string, string> | null;
+  models?: ModelAlias[] | null;
+  excludedModels?: string[] | null;
+  disableCooling?: boolean | null;
+  requestRetry?: number | null;
+  requestScopedErrors?: unknown[] | null;
+  keys: GeminiGroupKeyDraft[];
+}
+
+const stripCredentialIndexes = (node: Record<string, unknown>) => {
+  delete node['auth-index'];
+  delete node.auth_index;
+};
+
+const serializeGroupModels = (models: ModelAlias[]): Record<string, unknown>[] =>
+  models.flatMap((model) => {
+    const name = typeof model.name === 'string' ? model.name.trim() : '';
+    if (!name) return [];
+    const entry: Record<string, unknown> = { name };
+    if (model.alias?.trim()) entry.alias = model.alias.trim();
+    if (model.priority !== undefined) entry.priority = model.priority;
+    if (model.thinking !== undefined) entry.thinking = model.thinking;
+    if (model.image === true) entry.image = true;
+    return [entry];
+  });
+
+/**
+ * Serialize one upstream group. Shared settings stay on the group; each key keeps
+ * only its api-key plus the overrides it already had, so omitted fields keep
+ * inheriting through CLIProxyAPI's expandV8Groups.
+ */
+export const serializeGeminiGroup = (
+  draft: GeminiGroupDraft,
+  existing?: Record<string, unknown>
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = existing ? { ...existing } : {};
+  const setOptional = (field: string, value: unknown) => {
+    if (value === undefined) return;
+    if (value === null || value === '') {
+      delete next[field];
+      return;
+    }
+    next[field] = value;
+  };
+
+  setOptional('name', draft.name?.trim());
+  setOptional('base-url', draft.baseUrl?.trim());
+  setOptional('prefix', draft.prefix?.trim());
+  setOptional('priority', draft.priority);
+  setOptional('proxy-url', draft.proxyUrl?.trim());
+  setOptional('disable-cooling', draft.disableCooling);
+  setOptional('request-retry', draft.requestRetry);
+
+  if (draft.headers !== undefined) {
+    if (draft.headers === null || Object.keys(draft.headers).length === 0) delete next.headers;
+    else next.headers = draft.headers;
+  }
+  if (draft.models !== undefined) {
+    const models = draft.models === null ? [] : serializeGroupModels(draft.models);
+    if (models.length === 0) delete next.models;
+    else next.models = models;
+  }
+  if (draft.excludedModels !== undefined) {
+    // [] is an explicit "clear the inherited exclusions", not an omission.
+    next['excluded-models'] = draft.excludedModels === null ? [] : draft.excludedModels;
+  }
+  if (draft.requestScopedErrors !== undefined) {
+    if (draft.requestScopedErrors === null || draft.requestScopedErrors.length === 0) {
+      delete next['request-scoped-errors'];
+    } else {
+      next['request-scoped-errors'] = draft.requestScopedErrors;
+    }
+  }
+
+  next.keys = draft.keys.map((key) => {
+    const raw: Record<string, unknown> = key.raw ? { ...key.raw } : {};
+    raw['api-key'] = key.apiKey;
+    delete raw.sourceIndex;
+    delete raw.authIndex;
+    delete raw.existingApiKey;
+    if (key.weight === undefined) delete raw.weight;
+    else raw.weight = key.weight;
+    if (key.proxyUrl === undefined) {
+      // Keep an inherited or previously stored proxy override untouched.
+    } else if (key.proxyUrl.trim()) {
+      raw['proxy-url'] = key.proxyUrl.trim();
+    } else {
+      delete raw['proxy-url'];
+    }
+    stripCredentialIndexes(raw);
+    return raw;
+  });
+  stripCredentialIndexes(next);
+  return next;
+};
+
+const uniqueGeminiGroupName = (
+  groups: Record<string, unknown>[],
+  desired: string | null | undefined
+): string => {
+  const names = new Set(groups.map((group) => String(group.name ?? '').trim()));
+  const base = (desired ?? '').trim();
+  if (base && !names.has(base)) return base;
+  let index = groups.length + 1;
+  while (names.has(`gemini-${index}`)) index += 1;
+  return base ? `${base}-${index}` : `gemini-${index}`;
+};
+
 const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   const payload: Record<string, unknown> = {
     name: provider.name,
@@ -526,6 +648,26 @@ export const providersApi = {
     updateKey('gemini', apiKey, baseUrl, config),
   deleteGeminiKey: (apiKey: string, baseUrl?: string, source?: ProviderSource) =>
     deleteKey('gemini', apiKey, baseUrl, source),
+  async createGeminiGroup(draft: GeminiGroupDraft) {
+    const groups = await getGroups('gemini');
+    const name = uniqueGeminiGroupName(groups, draft.name);
+    await putGroups('gemini', [...groups, serializeGeminiGroup({ ...draft, name })]);
+  },
+  async updateGeminiGroup(source: ProviderSource, draft: GeminiGroupDraft) {
+    const groups = await getGroups('gemini');
+    const index = locateProviderGroup(groups, source);
+    const next = groups.slice();
+    next[index] = serializeGeminiGroup(draft, groups[index]);
+    await putGroups('gemini', next);
+  },
+  async deleteGeminiGroup(source: ProviderSource) {
+    const groups = await getGroups('gemini');
+    const index = locateProviderGroup(groups, source);
+    await putGroups(
+      'gemini',
+      groups.filter((_, current) => current !== index)
+    );
+  },
   createInteractionsKey: (config: GeminiKeyConfig) => createKey('interactions', config),
   updateInteractionsKey: (apiKey: string, baseUrl: string | undefined, config: GeminiKeyConfig) =>
     updateKey('interactions', apiKey, baseUrl, config),
