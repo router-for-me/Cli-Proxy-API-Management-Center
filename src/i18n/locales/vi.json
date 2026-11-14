@@ -2422,5 +2422,29 @@
     "error": "Liên kết thất bại. Hãy bắt đầu lại.",
     "unsupported": "Máy chủ này không hỗ trợ liên kết SIWC.",
     "expired": "Phiên liên kết đã hết hạn. Hãy bắt đầu lại."
+  },
+  "sensitive_replacements": {
+    "literal_title": "Thay thế văn bản nguyên dạng",
+    "pattern_title": "Thay thế bằng biểu thức chính quy",
+    "group_title": "Thay thế nội dung nhạy cảm",
+    "literal_hint": "Các dòng chưa có văn bản nguyên dạng chỉ nằm trong bản nháp và không được lưu.",
+    "pattern_hint": "Các quy tắc chạy theo thứ tự với cú pháp Go RE2; không hỗ trợ lookaround và tham chiếu ngược trong mẫu. Máy chủ loại bỏ mẫu không hợp lệ hoặc trống.",
+    "literal_key": "Văn bản nguyên dạng",
+    "replacement": "Nội dung thay thế",
+    "replacement_placeholder": "Để trống để xóa phần khớp",
+    "pattern": "Mẫu",
+    "duplicate_key": "Khóa trùng lặp. Thay đổi thay thế nguyên dạng chưa được áp dụng cho đến khi xử lý các khóa trùng.",
+    "add_literal": "Thêm thay thế nguyên dạng",
+    "add_pattern": "Thêm quy tắc regex",
+    "empty_literal": "Chưa có thay thế nguyên dạng nào.",
+    "empty_pattern": "Chưa có quy tắc regex nào.",
+    "literal_key_row": "Văn bản nguyên dạng, dòng {{row}}",
+    "literal_value_row": "Thay thế nguyên dạng, dòng {{row}}",
+    "pattern_row": "Mẫu regex, dòng {{row}}",
+    "pattern_value_row": "Thay thế regex, dòng {{row}}",
+    "remove_literal": "Xóa thay thế nguyên dạng dòng {{row}}",
+    "remove_pattern": "Xóa quy tắc regex dòng {{row}}",
+    "move_up": "Chuyển quy tắc regex dòng {{row}} lên",
+    "move_down": "Chuyển quy tắc regex dòng {{row}} xuống"
   }
 }

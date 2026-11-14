@@ -2410,5 +2410,29 @@
     "error": "绑定失败，请重新开始。",
     "unsupported": "当前后端不支持 SIWC 绑定。",
     "expired": "绑定会话已过期，请重新开始。"
+  },
+  "sensitive_replacements": {
+    "literal_title": "字面文本替换",
+    "pattern_title": "正则表达式替换",
+    "group_title": "敏感内容替换",
+    "literal_hint": "未填写字面文本的行只保留在草稿中，不会保存。",
+    "pattern_hint": "规则按顺序执行，使用 Go RE2 语法，不支持环视和模式内的反向引用。后端会丢弃无效或空白模式。",
+    "literal_key": "字面文本",
+    "replacement": "替换内容",
+    "replacement_placeholder": "留空则删除匹配内容",
+    "pattern": "正则模式",
+    "duplicate_key": "键重复。解决重复键之前，字面替换的修改不会生效。",
+    "add_literal": "添加字面替换",
+    "add_pattern": "添加正则规则",
+    "empty_literal": "尚未添加字面替换。",
+    "empty_pattern": "尚未添加正则规则。",
+    "literal_key_row": "第 {{row}} 行字面文本",
+    "literal_value_row": "第 {{row}} 行字面替换内容",
+    "pattern_row": "第 {{row}} 行正则模式",
+    "pattern_value_row": "第 {{row}} 行正则替换内容",
+    "remove_literal": "删除第 {{row}} 行字面替换",
+    "remove_pattern": "删除第 {{row}} 行正则规则",
+    "move_up": "上移第 {{row}} 行正则规则",
+    "move_down": "下移第 {{row}} 行正则规则"
   }
 }

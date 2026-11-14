@@ -18,6 +18,10 @@ import {
   type ExcludedModelsCatalogState,
 } from '@/components/excludedModels';
 import { hasDisableAllModelsRule } from '@/components/providers/utils';
+import {
+  LiteralReplacementEditor,
+  PatternReplacementEditor,
+} from '@/components/providers/SensitiveReplacementEditor';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
 import { PROVIDER_DESCRIPTORS } from '../../descriptors';
@@ -101,7 +105,14 @@ function buildInitialForm(
       excludedModelsText: '',
       websockets: brand === 'codex' || brand === 'xai' ? false : undefined,
       cloak: isClaudeLikeBrand(brand)
-        ? { mode: '', strictMode: false, sensitiveWordsText: '', cacheUserId: false }
+        ? {
+            mode: '',
+            strictMode: false,
+            sensitiveWordsText: '',
+            sensitiveWordsReplace: {},
+            sensitivePatternsReplace: [],
+            cacheUserId: false,
+          }
         : undefined,
       fingerprintProfile: isClaudeLikeBrand(brand) ? '' : undefined,
       testModel:
@@ -203,6 +214,8 @@ function buildInitialForm(
           mode: (cfg as ProviderKeyConfig).cloak?.mode ?? '',
           strictMode: (cfg as ProviderKeyConfig).cloak?.strictMode === true,
           sensitiveWordsText: (cfg as ProviderKeyConfig).cloak?.sensitiveWords?.join('\n') ?? '',
+          sensitiveWordsReplace: cfg.cloak?.sensitiveWordsReplace ?? {},
+          sensitivePatternsReplace: cfg.cloak?.sensitivePatternsReplace ?? [],
           cacheUserId: (cfg as ProviderKeyConfig).cloak?.cacheUserId === true,
         }
       : undefined,
@@ -369,6 +382,8 @@ export function BaseProviderForm({
           mode: '',
           strictMode: false,
           sensitiveWordsText: '',
+          sensitiveWordsReplace: {},
+          sensitivePatternsReplace: [],
           cacheUserId: false,
         }),
         [key]: value,
@@ -983,6 +998,54 @@ export function BaseProviderForm({
                 value={form.cloak.sensitiveWordsText}
                 onChange={(e) => updateCloak('sensitiveWordsText', e.target.value)}
                 disabled={mutating}
+              />
+            </div>
+            <div
+              className={styles.field}
+              role="group"
+              aria-labelledby={`${fid}-cloak-literal-label`}
+            >
+              <FieldLabel
+                className={styles.labelLine}
+                labelClassName={styles.label}
+                id={`${fid}-cloak-literal-label`}
+                label={t('sensitive_replacements.literal_title')}
+                hint={t('sensitive_replacements.literal_hint')}
+                hintId={`${fid}-cloak-literal-hint`}
+              />
+              <LiteralReplacementEditor
+                value={form.cloak.sensitiveWordsReplace}
+                onChange={(value) => updateCloak('sensitiveWordsReplace', value)}
+                disabled={mutating}
+                describedBy={`${fid}-cloak-literal-hint`}
+                inputClassName={styles.input}
+                addButtonClassName={styles.addBtn}
+                addButtonIcon
+              />
+            </div>
+            <div
+              className={styles.field}
+              role="group"
+              aria-labelledby={`${fid}-cloak-pattern-label`}
+            >
+              <FieldLabel
+                className={styles.labelLine}
+                labelClassName={styles.label}
+                id={`${fid}-cloak-pattern-label`}
+                label={t('sensitive_replacements.pattern_title')}
+              />
+              {/* Evaluation order and silently dropped patterns: visible, not an InfoTip. */}
+              <p id={`${fid}-cloak-pattern-hint`} className={styles.sectionDesc}>
+                {t('sensitive_replacements.pattern_hint')}
+              </p>
+              <PatternReplacementEditor
+                value={form.cloak.sensitivePatternsReplace}
+                onChange={(value) => updateCloak('sensitivePatternsReplace', value)}
+                disabled={mutating}
+                describedBy={`${fid}-cloak-pattern-hint`}
+                inputClassName={styles.input}
+                addButtonClassName={styles.addBtn}
+                addButtonIcon
               />
             </div>
           </div>

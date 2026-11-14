@@ -2416,5 +2416,29 @@
     "error": "바인딩에 실패했습니다. 다시 시작하세요.",
     "unsupported": "이 서버는 SIWC 바인딩을 지원하지 않습니다.",
     "expired": "바인딩 세션이 만료되었습니다. 다시 시작하세요."
+  },
+  "sensitive_replacements": {
+    "literal_title": "일반 텍스트 치환",
+    "pattern_title": "정규 표현식 치환",
+    "group_title": "민감한 내용 치환",
+    "literal_hint": "일반 텍스트가 비어 있는 행은 초안에만 유지되며 저장되지 않습니다.",
+    "pattern_hint": "규칙은 Go RE2 문법으로 순서대로 실행되며, 패턴의 전후방 탐색과 역참조는 지원되지 않습니다. 백엔드는 유효하지 않거나 빈 패턴을 버립니다.",
+    "literal_key": "일반 텍스트",
+    "replacement": "치환 내용",
+    "replacement_placeholder": "비워 두면 일치하는 내용을 삭제합니다",
+    "pattern": "패턴",
+    "duplicate_key": "중복 키입니다. 중복 키를 해결할 때까지 일반 텍스트 치환 변경 사항이 적용되지 않습니다.",
+    "add_literal": "일반 텍스트 치환 추가",
+    "add_pattern": "정규식 규칙 추가",
+    "empty_literal": "아직 일반 텍스트 치환이 없습니다.",
+    "empty_pattern": "아직 정규식 규칙이 없습니다.",
+    "literal_key_row": "{{row}}행 일반 텍스트",
+    "literal_value_row": "{{row}}행 일반 텍스트 치환",
+    "pattern_row": "{{row}}행 정규식 패턴",
+    "pattern_value_row": "{{row}}행 정규식 치환",
+    "remove_literal": "{{row}}행 일반 텍스트 치환 삭제",
+    "remove_pattern": "{{row}}행 정규식 규칙 삭제",
+    "move_up": "{{row}}행 정규식 규칙 위로 이동",
+    "move_down": "{{row}}행 정규식 규칙 아래로 이동"
   }
 }

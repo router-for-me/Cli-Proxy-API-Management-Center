@@ -1,6 +1,10 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
+import {
+  LiteralReplacementEditor,
+  PatternReplacementEditor,
+} from '@/components/providers/SensitiveReplacementEditor';
 import type { PluginStoreAuthRule } from '@/types/visualConfig';
 import { CONFIG_TAB_ICONS, SECTION_INDEX_LABELS } from '../../constants';
 import type { ConfigSectionProps } from '../../types';
@@ -161,6 +165,43 @@ export function SectionAdvanced({
             </BlockSetting>
           </SettingList>
 
+          <SettingList title={t('sensitive_replacements.group_title')}>
+            <BlockSetting
+              fieldId="antigravitySensitiveWordsReplace"
+              label={t('sensitive_replacements.literal_title')}
+              description={t('sensitive_replacements.literal_hint')}
+            >
+              {({ describedBy }) => (
+                <LiteralReplacementEditor
+                  value={values.antigravitySensitiveWordsReplace}
+                  onChange={(antigravitySensitiveWordsReplace) =>
+                    onChange({ antigravitySensitiveWordsReplace })
+                  }
+                  disabled={disabled}
+                  describedBy={describedBy}
+                />
+              )}
+            </BlockSetting>
+            {/* 规则按序执行、无效模式被后端静默丢弃：不读就会配错，常驻可见。 */}
+            <BlockSetting
+              fieldId="antigravitySensitivePatternsReplace"
+              label={t('sensitive_replacements.pattern_title')}
+              description={t('sensitive_replacements.pattern_hint')}
+              keepDescriptionVisible
+            >
+              {({ describedBy }) => (
+                <PatternReplacementEditor
+                  value={values.antigravitySensitivePatternsReplace}
+                  onChange={(antigravitySensitivePatternsReplace) =>
+                    onChange({ antigravitySensitivePatternsReplace })
+                  }
+                  disabled={disabled}
+                  describedBy={describedBy}
+                />
+              )}
+            </BlockSetting>
+          </SettingList>
+
           <SettingList title={t('config_management.visual.sections.advanced.signature_title')}>
             <ToggleSetting
               fieldId="antigravitySignatureCacheEnabled"
@@ -194,30 +235,69 @@ export function SectionAdvanced({
         label={t('config_management.visual.sections.advanced.devin_title')}
         defaultOpen={false}
       >
-        <SettingList
-          title={t('config_management.visual.sections.system.devin_sensitive_words')}
-          description={t('config_management.visual.sections.system.devin_sensitive_words_desc')}
-        >
-          <BlockSetting
-            fieldId="devinSensitiveWords"
-            label={t('config_management.visual.sections.system.devin_sensitive_words_label')}
-            description={t('config_management.visual.sections.system.devin_sensitive_words_hint')}
-            // 命中即整行删除系统提示词：破坏性后果，常驻可见。
-            keepDescriptionVisible
+        <FieldStack>
+          <SettingList
+            title={t('config_management.visual.sections.system.devin_sensitive_words')}
+            description={t('config_management.visual.sections.system.devin_sensitive_words_desc')}
           >
-            <StringListEditor
-              value={values.devinSensitiveWords}
-              disabled={disabled}
-              placeholder={t(
-                'config_management.visual.sections.system.devin_sensitive_words_placeholder'
+            <BlockSetting
+              fieldId="devinSensitiveWords"
+              label={t('config_management.visual.sections.system.devin_sensitive_words_label')}
+              description={t('config_management.visual.sections.system.devin_sensitive_words_hint')}
+              // 命中即整行删除系统提示词：破坏性后果，常驻可见。
+              keepDescriptionVisible
+            >
+              <StringListEditor
+                value={values.devinSensitiveWords}
+                disabled={disabled}
+                placeholder={t(
+                  'config_management.visual.sections.system.devin_sensitive_words_placeholder'
+                )}
+                inputAriaLabel={t(
+                  'config_management.visual.sections.system.devin_sensitive_words_label'
+                )}
+                onChange={handleDevinSensitiveWordsChange}
+              />
+            </BlockSetting>
+          </SettingList>
+
+          <SettingList title={t('sensitive_replacements.group_title')}>
+            <BlockSetting
+              fieldId="devinSensitiveWordsReplace"
+              label={t('sensitive_replacements.literal_title')}
+              description={t('sensitive_replacements.literal_hint')}
+            >
+              {({ describedBy }) => (
+                <LiteralReplacementEditor
+                  value={values.devinSensitiveWordsReplace}
+                  onChange={(devinSensitiveWordsReplace) =>
+                    onChange({ devinSensitiveWordsReplace })
+                  }
+                  disabled={disabled}
+                  describedBy={describedBy}
+                />
               )}
-              inputAriaLabel={t(
-                'config_management.visual.sections.system.devin_sensitive_words_label'
+            </BlockSetting>
+            {/* 规则按序执行、无效模式被后端静默丢弃：不读就会配错，常驻可见。 */}
+            <BlockSetting
+              fieldId="devinSensitivePatternsReplace"
+              label={t('sensitive_replacements.pattern_title')}
+              description={t('sensitive_replacements.pattern_hint')}
+              keepDescriptionVisible
+            >
+              {({ describedBy }) => (
+                <PatternReplacementEditor
+                  value={values.devinSensitivePatternsReplace}
+                  onChange={(devinSensitivePatternsReplace) =>
+                    onChange({ devinSensitivePatternsReplace })
+                  }
+                  disabled={disabled}
+                  describedBy={describedBy}
+                />
               )}
-              onChange={handleDevinSensitiveWordsChange}
-            />
-          </BlockSetting>
-        </SettingList>
+            </BlockSetting>
+          </SettingList>
+        </FieldStack>
       </Collapsible>
 
       <Collapsible label={t('config_management.visual.sections.headers.title')} defaultOpen={false}>

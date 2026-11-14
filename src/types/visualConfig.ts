@@ -193,6 +193,10 @@ export type VisualConfigValues = {
   routingSessionAffinity: boolean;
   routingSessionAffinityTTL: string;
   wsAuth: boolean;
+  antigravitySensitiveWordsReplace: Record<string, string>;
+  devinSensitiveWordsReplace: Record<string, string>;
+  antigravitySensitivePatternsReplace: { pattern: string; replacement: string }[];
+  devinSensitivePatternsReplace: { pattern: string; replacement: string }[];
   antigravitySensitiveWords: string[];
   devinSensitiveWords: string[];
   antigravitySignatureCacheEnabled: boolean;
@@ -294,6 +298,10 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   routingSessionAffinity: false,
   routingSessionAffinityTTL: '',
   wsAuth: true,
+  antigravitySensitiveWordsReplace: {},
+  devinSensitiveWordsReplace: {},
+  antigravitySensitivePatternsReplace: [],
+  devinSensitivePatternsReplace: [],
   antigravitySensitiveWords: [],
   devinSensitiveWords: [],
   antigravitySignatureCacheEnabled: true,

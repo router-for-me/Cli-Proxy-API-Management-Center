@@ -39,6 +39,58 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+const SENSITIVE_REPLACEMENT_FIELDS = [
+  ['antigravitySensitiveWordsReplace', 'antigravity', 'sensitive-words-replace'],
+  ['devinSensitiveWordsReplace', 'devin', 'sensitive-words-replace'],
+  ['antigravitySensitivePatternsReplace', 'antigravity', 'sensitive-patterns-replace'],
+  ['devinSensitivePatternsReplace', 'devin', 'sensitive-patterns-replace'],
+] as const;
+
+type SensitivePatternReplacement =
+  VisualConfigValues['antigravitySensitivePatternsReplace'][number];
+
+function parseSensitiveWordsReplace(raw: unknown): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(asRecord(raw) ?? {}).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string'
+    )
+  );
+}
+
+function parseSensitivePatternsReplace(raw: unknown): SensitivePatternReplacement[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    const rule = asRecord(item);
+    // RE2 validation belongs to the backend; never trim regexes or replacement text.
+    return typeof rule?.pattern === 'string' && typeof rule.replacement === 'string'
+      ? [{ pattern: rule.pattern, replacement: rule.replacement }]
+      : [];
+  });
+}
+
+function areSensitiveReplacementsEqual(
+  left: Record<string, string> | SensitivePatternReplacement[],
+  right: Record<string, string> | SensitivePatternReplacement[]
+): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every(
+        (rule, index) =>
+          rule.pattern === right[index].pattern && rule.replacement === right[index].replacement
+      )
+    );
+  }
+  return (
+    Object.keys(left).length === Object.keys(right).length &&
+    Object.entries(left).every(
+      ([key, value]) => Object.prototype.hasOwnProperty.call(right, key) && right[key] === value
+    )
+  );
+}
+
 function parseApiKeysText(raw: unknown): string {
   if (!Array.isArray(raw)) return '';
 
@@ -1257,6 +1309,11 @@ function getNextDirtyFields(
     ] as Array<keyof VisualConfigValues>
   ).forEach(updateScalarDirty);
 
+  for (const [field] of SENSITIVE_REPLACEMENT_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(patch, field)) {
+      updateDirty(field, areSensitiveReplacementsEqual(nextValues[field], baselineValues[field]));
+    }
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreSources')) {
     updateDirty(
       'pluginStoreSources',
@@ -1485,6 +1542,16 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
         : '',
     authAutoRefreshWorkers: String(v8Oauth?.['auth-auto-refresh-workers'] ?? ''),
     wsAuth: Boolean(v8OauthProvidersAistudio?.['ws-auth'] ?? DEFAULT_VISUAL_VALUES.wsAuth),
+    antigravitySensitiveWordsReplace: parseSensitiveWordsReplace(
+      antigravity?.['sensitive-words-replace']
+    ),
+    antigravitySensitivePatternsReplace: parseSensitivePatternsReplace(
+      antigravity?.['sensitive-patterns-replace']
+    ),
+    devinSensitiveWordsReplace: parseSensitiveWordsReplace(devin?.['sensitive-words-replace']),
+    devinSensitivePatternsReplace: parseSensitivePatternsReplace(
+      devin?.['sensitive-patterns-replace']
+    ),
     antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
     devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
     antigravitySignatureCacheEnabled: Boolean(
@@ -1845,6 +1912,44 @@ export function useVisualConfig() {
         }
         if (dirtyFields.has('wsAuth'))
           setBooleanInDoc(doc, ['oauth', 'providers', 'aistudio', 'ws-auth'], values.wsAuth);
+        for (const [field, provider, key] of SENSITIVE_REPLACEMENT_FIELDS) {
+          if (!dirtyFields.has(field)) continue;
+          const path = ['oauth', 'providers', provider];
+          const desired = values[field];
+          if (Object.keys(desired).length === 0) {
+            if (doc.hasIn([...path, key])) deletePathInDoc(doc, [...path, key]);
+            continue;
+          }
+          ensureMapInDoc(doc, path);
+          const providerMap = doc.getIn(path, true);
+          if (!isMap(providerMap)) continue;
+          if (Array.isArray(desired)) {
+            const seq = ensureSeqValue(doc, providerMap, key);
+            const available = [...seq.items];
+            const items = desired.map((rule) => {
+              const index = available.findIndex(
+                (node) => isMap(node) && node.get('pattern') === rule.pattern
+              );
+              const node = index >= 0 ? available.splice(index, 1)[0] : doc.createNode(rule);
+              if (!isMap(node)) throw new Error('Expected replacement rule map');
+              setMapValue(doc, node, 'pattern', rule.pattern);
+              setMapValue(doc, node, 'replacement', rule.replacement);
+              return node;
+            });
+            replaceSequenceItems(seq, items);
+          } else {
+            const map = ensureMapValue(doc, providerMap, key);
+            map.items = map.items.filter((pair) =>
+              Object.prototype.hasOwnProperty.call(
+                desired,
+                String(isScalar(pair.key) ? pair.key.value : pair.key)
+              )
+            );
+            for (const [word, replacement] of Object.entries(desired)) {
+              setMapValue(doc, map, word, replacement);
+            }
+          }
+        }
         if (dirtyFields.has('antigravitySensitiveWords')) {
           ensureMapInDoc(doc, ['oauth', 'providers', 'antigravity']);
           setStringListInDoc(

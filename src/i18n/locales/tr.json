@@ -2416,5 +2416,29 @@
     "error": "Bağlama Başarısız Oldu. Lütfen Yeniden Başla.",
     "unsupported": "Bu Arka Uç SIWC Bağlamayı Desteklemiyor.",
     "expired": "Bağlama Oturumunun Süresi Doldu. Lütfen Yeniden Başla."
+  },
+  "sensitive_replacements": {
+    "literal_title": "Düz metin değiştirmeleri",
+    "pattern_title": "Düzenli ifade değiştirmeleri",
+    "group_title": "Hassas metin değiştirme",
+    "literal_hint": "Düz metni boş olan satırlar taslakta kalır ve kaydedilmez.",
+    "pattern_hint": "Kurallar Go RE2 sözdizimiyle sırayla çalışır; desenlerde ileri/geri bakış ve geri başvurular desteklenmez. Sunucu geçersiz veya boş desenleri atar.",
+    "literal_key": "Düz metin",
+    "replacement": "Değiştirme metni",
+    "replacement_placeholder": "Eşleşmeyi silmek için boş bırakın",
+    "pattern": "Desen",
+    "duplicate_key": "Yinelenen anahtar. Yinelenen anahtarlar düzeltilene kadar düz metin değişiklikleri uygulanmaz.",
+    "add_literal": "Düz metin değiştirmesi ekle",
+    "add_pattern": "Regex kuralı ekle",
+    "empty_literal": "Henüz düz metin değiştirmesi yok.",
+    "empty_pattern": "Henüz regex kuralı yok.",
+    "literal_key_row": "Düz metin, satır {{row}}",
+    "literal_value_row": "Düz metin değiştirmesi, satır {{row}}",
+    "pattern_row": "Regex deseni, satır {{row}}",
+    "pattern_value_row": "Regex değiştirmesi, satır {{row}}",
+    "remove_literal": "{{row}}. düz metin satırını sil",
+    "remove_pattern": "{{row}}. regex satırını sil",
+    "move_up": "{{row}}. regex satırını yukarı taşı",
+    "move_down": "{{row}}. regex satırını aşağı taşı"
   }
 }

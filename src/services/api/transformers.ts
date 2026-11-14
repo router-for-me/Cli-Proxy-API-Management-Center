@@ -198,6 +198,23 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     if (sensitiveWords.length) {
       cloak.sensitiveWords = sensitiveWords;
     }
+    const wordsReplace = cloakRaw['sensitive-words-replace'];
+    if (isRecord(wordsReplace)) {
+      cloak.sensitiveWordsReplace = Object.fromEntries(
+        Object.entries(wordsReplace).filter(
+          (entry): entry is [string, string] => typeof entry[1] === 'string'
+        )
+      );
+    }
+    const patternsReplace = cloakRaw['sensitive-patterns-replace'];
+    if (Array.isArray(patternsReplace)) {
+      // Go RE2 syntax belongs to the backend; preserve order and all string contents.
+      cloak.sensitivePatternsReplace = patternsReplace.flatMap((rule) =>
+        isRecord(rule) && typeof rule.pattern === 'string' && typeof rule.replacement === 'string'
+          ? [{ pattern: rule.pattern, replacement: rule.replacement }]
+          : []
+      );
+    }
     const cacheUserId = normalizeBoolean(cloakRaw['cache-user-id']);
     if (cacheUserId !== undefined) {
       cloak.cacheUserId = cacheUserId;

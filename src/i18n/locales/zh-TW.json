@@ -2438,5 +2438,29 @@
     "error": "綁定失敗，請重新開始。",
     "unsupported": "目前後端不支援 SIWC 綁定。",
     "expired": "綁定工作階段已過期，請重新開始。"
+  },
+  "sensitive_replacements": {
+    "literal_title": "字面文字取代",
+    "pattern_title": "正規表示式取代",
+    "group_title": "敏感內容取代",
+    "literal_hint": "未填寫字面文字的列只保留在草稿中，不會儲存。",
+    "pattern_hint": "規則依序執行，使用 Go RE2 語法，不支援環視和模式內的反向參照。後端會捨棄無效或空白模式。",
+    "literal_key": "字面文字",
+    "replacement": "取代內容",
+    "replacement_placeholder": "留空則刪除符合的內容",
+    "pattern": "正規模式",
+    "duplicate_key": "鍵重複。解決重複鍵之前，字面取代的修改不會生效。",
+    "add_literal": "新增字面取代",
+    "add_pattern": "新增正規規則",
+    "empty_literal": "尚未新增字面取代。",
+    "empty_pattern": "尚未新增正規規則。",
+    "literal_key_row": "第 {{row}} 列字面文字",
+    "literal_value_row": "第 {{row}} 列字面取代內容",
+    "pattern_row": "第 {{row}} 列正規模式",
+    "pattern_value_row": "第 {{row}} 列正規取代內容",
+    "remove_literal": "刪除第 {{row}} 列字面取代",
+    "remove_pattern": "刪除第 {{row}} 列正規規則",
+    "move_up": "上移第 {{row}} 列正規規則",
+    "move_down": "下移第 {{row}} 列正規規則"
   }
 }

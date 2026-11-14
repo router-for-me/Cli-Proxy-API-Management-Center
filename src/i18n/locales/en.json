@@ -2416,5 +2416,29 @@
     "error": "Binding failed. Please start over.",
     "unsupported": "This backend does not support SIWC binding.",
     "expired": "The binding session expired. Please start over."
+  },
+  "sensitive_replacements": {
+    "literal_title": "Literal replacements",
+    "pattern_title": "Regular expression replacements",
+    "group_title": "Sensitive text replacement",
+    "literal_hint": "Rows without literal text stay in the draft and are not saved.",
+    "pattern_hint": "Rules run in order using Go RE2 syntax; lookaround and backreferences in patterns are not supported. The backend discards invalid or blank patterns.",
+    "literal_key": "Literal text",
+    "replacement": "Replacement",
+    "replacement_placeholder": "Leave empty to delete the match",
+    "pattern": "Pattern",
+    "duplicate_key": "Duplicate key. Literal changes are not applied until duplicate keys are resolved.",
+    "add_literal": "Add literal replacement",
+    "add_pattern": "Add regex rule",
+    "empty_literal": "No literal replacements yet.",
+    "empty_pattern": "No regex rules yet.",
+    "literal_key_row": "Literal text, row {{row}}",
+    "literal_value_row": "Literal replacement, row {{row}}",
+    "pattern_row": "Regex pattern, row {{row}}",
+    "pattern_value_row": "Regex replacement, row {{row}}",
+    "remove_literal": "Remove literal row {{row}}",
+    "remove_pattern": "Remove regex row {{row}}",
+    "move_up": "Move regex row {{row}} up",
+    "move_down": "Move regex row {{row}} down"
   }
 }
