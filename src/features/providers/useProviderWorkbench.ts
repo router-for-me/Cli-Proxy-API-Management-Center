@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { providersApi } from '@/services/api';
+import type { GeminiGroupDraft } from '@/services/api/providers';
 import { getErrorMessage } from '@/utils/helpers';
 import { useAuthStore, useConfigStore } from '@/stores';
 import {
@@ -30,7 +31,11 @@ import {
   vertexToResource,
   xaiToResource,
 } from './adapters';
-import { PROVIDER_BRAND_ORDER, PROVIDER_DESCRIPTORS } from './descriptors';
+import {
+  PROVIDER_BRAND_ORDER,
+  PROVIDER_DESCRIPTORS,
+  type ProviderFormVariant,
+} from './descriptors';
 import { buildRuntimePolicy } from './runtimePolicy';
 import { buildModelOptions } from './modelOptions';
 import { pickProviderBehavior } from './providerBehavior';
@@ -84,7 +89,11 @@ export interface UseProviderWorkbenchResult {
   snapshot: ProviderSnapshot | null;
   refetch: () => Promise<void>;
 
-  createProvider: (brand: ProviderBrand, input: ProviderEntryFormInput) => Promise<void>;
+  createProvider: (
+    brand: ProviderBrand,
+    input: ProviderEntryFormInput,
+    variant?: ProviderFormVariant
+  ) => Promise<void>;
   updateProvider: (resource: ProviderResource, input: ProviderEntryFormInput) => Promise<void>;
   deleteProvider: (resource: ProviderResource) => Promise<void>;
   toggleDisabled: (resource: ProviderResource, disabled: boolean) => Promise<void>;
@@ -500,11 +509,114 @@ export const buildProviderGroups = (
     return groups;
   }, []);
 
+export interface GeminiGroupDraftInput {
+  name: string;
+  baseUrl: string;
+  proxyUrl: string;
+  prefix: string;
+  priority?: number;
+  headers: Array<{ key: string; value: string }>;
+  models: ProviderEntryFormInput['models'];
+  excludedModelsText: string;
+  disabled: boolean;
+  runtimePolicy?: ProviderEntryFormInput['runtimePolicy'];
+  apiKeyEntries?: ProviderEntryFormInput['apiKeyEntries'];
+}
+
+const existingGroupKeys = (group?: Record<string, unknown>): Record<string, unknown>[] =>
+  Array.isArray(group?.keys)
+    ? group!.keys.filter(
+        (entry): entry is Record<string, unknown> =>
+          entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+      )
+    : [];
+
+/** Build the group-level write payload from the shared provider form. */
+export const buildGeminiGroupConfig = (
+  input: GeminiGroupDraftInput,
+  existingGroup?: Record<string, unknown>
+): GeminiGroupDraft => {
+  const headers = headersFromEntries(input.headers);
+  const models = buildModelAliases(input.models);
+  const excluded = parseTextList(input.excludedModelsText).filter((rule) => rule !== '*');
+  const rawKeys = existingGroupKeys(existingGroup);
+  const keys = (input.apiKeyEntries ?? []).flatMap((entry) => {
+    const apiKey = entry.apiKey.trim() || entry.existingApiKey?.trim() || '';
+    if (!apiKey) return [];
+    return [
+      {
+        apiKey,
+        weight: entry.weight,
+        proxyUrl: entry.proxyUrl?.trim() || undefined,
+        raw:
+          (entry as { raw?: Record<string, unknown> }).raw ??
+          rawKeys.find((key) => String(key['api-key'] ?? '') === apiKey),
+      },
+    ];
+  });
+  const policy = input.runtimePolicy
+    ? buildRuntimePolicy(input.runtimePolicy, PROVIDER_DESCRIPTORS.gemini.supportsRequestScopedErrors)
+    : undefined;
+  const inherit = new Set(policy?.inheritFields ?? []);
+  return {
+    name: input.name.trim(),
+    baseUrl: input.baseUrl.trim() || null,
+    proxyUrl: input.proxyUrl.trim() || null,
+    prefix: input.prefix.trim() || null,
+    priority: input.priority ?? null,
+    headers: Object.keys(headers).length ? headers : null,
+    models: models.length ? models : null,
+    excludedModels: input.disabled ? withDisableAllModelsRule(excluded) : excluded,
+    disableCooling: inherit.has('disable-cooling') ? null : policy?.disableCooling,
+    requestRetry: inherit.has('request-retry') ? null : policy?.requestRetry,
+    requestScopedErrors: inherit.has('request-scoped-errors')
+      ? null
+      : (policy?.requestScopedErrors as unknown[] | undefined),
+    keys,
+  };
+};
+
+/** Convert a raw stored group into a draft without rewriting untouched model fields. */
+const draftFromStoredGroup = (group: Record<string, unknown>): GeminiGroupDraft => ({
+  name: typeof group.name === 'string' ? group.name : null,
+  baseUrl: typeof group['base-url'] === 'string' ? group['base-url'] : null,
+  proxyUrl: typeof group['proxy-url'] === 'string' ? group['proxy-url'] : null,
+  prefix: typeof group.prefix === 'string' ? group.prefix : null,
+  priority: typeof group.priority === 'number' ? group.priority : null,
+  headers:
+    group.headers !== null && typeof group.headers === 'object' && !Array.isArray(group.headers)
+      ? (group.headers as Record<string, string>)
+      : null,
+  models: undefined,
+  excludedModels: Array.isArray(group['excluded-models'])
+    ? (group['excluded-models'] as string[])
+    : [],
+  disableCooling: typeof group['disable-cooling'] === 'boolean' ? group['disable-cooling'] : null,
+  requestRetry: typeof group['request-retry'] === 'number' ? group['request-retry'] : null,
+  requestScopedErrors: Array.isArray(group['request-scoped-errors'])
+    ? (group['request-scoped-errors'] as unknown[])
+    : null,
+  keys: existingGroupKeys(group).map((key) => ({
+    apiKey: String(key['api-key'] ?? ''),
+    weight: typeof key.weight === 'number' ? key.weight : undefined,
+    proxyUrl: typeof key['proxy-url'] === 'string' ? key['proxy-url'] : undefined,
+    raw: key,
+  })),
+});
+
 /* -------------------------------------------------------------------------- */
 /* hook                                                                       */
 /* -------------------------------------------------------------------------- */
 
-export function useProviderWorkbench(): UseProviderWorkbenchResult {
+export interface UseProviderWorkbenchOptions {
+  /** Gemini list granularity; only affects which rows are built. */
+  geminiViewMode?: GeminiViewMode;
+}
+
+export function useProviderWorkbench(
+  options: UseProviderWorkbenchOptions = {}
+): UseProviderWorkbenchResult {
+  const { geminiViewMode = 'flat' } = options;
   const connectionStatus = useAuthStore((s) => s.connectionStatus);
   const config = useConfigStore((s) => s.config);
   const fetchConfig = useConfigStore((s) => s.fetchConfig);
@@ -565,9 +677,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
     if (!config) return null;
     return {
       fetchedAt,
-      groups: buildProviderGroups(config),
+      groups: buildProviderGroups(config, geminiViewMode),
     };
-  }, [config, fetchedAt]);
+  }, [config, fetchedAt, geminiViewMode]);
 
   /* ------------------- mutations ------------------- */
 
@@ -696,10 +808,16 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
   );
 
   const createProvider = useCallback(
-    async (brand: ProviderBrand, input: ProviderEntryFormInput) => {
+    async (
+      brand: ProviderBrand,
+      input: ProviderEntryFormInput,
+      variant: ProviderFormVariant = 'key'
+    ) => {
       setMutating(true);
       try {
-        if (brand === 'gemini') {
+        if (brand === 'gemini' && variant === 'group') {
+          await providersApi.createGeminiGroup(buildGeminiGroupConfig(input));
+        } else if (brand === 'gemini') {
           await providersApi.createGeminiKey(
             buildProviderKeyConfig('gemini', input) as GeminiKeyConfig
           );
@@ -752,7 +870,12 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const brand = resource.brand;
         const selector = resource.selector;
-        if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
+        if (brand === 'gemini' && resource.kind === 'group' && 'groups' in selector) {
+          await providersApi.updateGeminiGroup(
+            { groupIndex: selector.groupIndex, group: selector.group, groups: selector.groups },
+            buildGeminiGroupConfig(input, selector.group)
+          );
+        } else if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
           const existing = resource.raw as GeminiKeyConfig;
           await providersApi.updateGeminiKey(
             selector.apiKey,
@@ -829,7 +952,13 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       setMutating(true);
       try {
         const sel = resource.selector;
-        if (sel.brand === 'gemini' && 'apiKey' in sel) {
+        if (sel.brand === 'gemini' && 'groups' in sel) {
+          await providersApi.deleteGeminiGroup({
+            groupIndex: sel.groupIndex,
+            group: sel.group,
+            groups: sel.groups,
+          });
+        } else if (sel.brand === 'gemini' && 'apiKey' in sel) {
           await providersApi.deleteGeminiKey(
             sel.apiKey,
             sel.baseUrl,
@@ -949,7 +1078,33 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const brand = resource.brand;
         const selector = resource.selector;
-        if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
+        if (brand === 'gemini' && resource.kind === 'group' && 'groups' in selector) {
+          const group = selector.group;
+          const draft = draftFromStoredGroup(group);
+          draft.excludedModels = disabled
+            ? withDisableAllModelsRule(draft.excludedModels ?? [])
+            : withoutDisableAllModelsRule(draft.excludedModels ?? []);
+          // Key-level lists replace the group list, so a group-wide disable must
+          // reach every key that carries its own exclusions.
+          draft.keys = draft.keys.map((key) => {
+            const raw = key.raw ?? {};
+            if (!Array.isArray(raw['excluded-models'])) return key;
+            const list = (raw['excluded-models'] as string[]).map(String);
+            return {
+              ...key,
+              raw: {
+                ...raw,
+                'excluded-models': disabled
+                  ? withDisableAllModelsRule(list)
+                  : withoutDisableAllModelsRule(list),
+              },
+            };
+          });
+          await providersApi.updateGeminiGroup(
+            { groupIndex: selector.groupIndex, group, groups: selector.groups },
+            draft
+          );
+        } else if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
           const current = resource.raw as GeminiKeyConfig;
           const excluded = disabled
             ? withDisableAllModelsRule(current.excludedModels)

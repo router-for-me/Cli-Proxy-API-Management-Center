@@ -24,7 +24,7 @@ import {
 } from '@/components/providers/SensitiveReplacementEditor';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ModelInfo } from '@/utils/models';
-import { PROVIDER_DESCRIPTORS } from '../../descriptors';
+import { getProviderCapabilities, type ProviderFormVariant } from '../../descriptors';
 import { removeModelAt } from '../../modelEntries';
 import { syncDiscoveredModels } from '../../discoverySelection';
 import type {
@@ -57,6 +57,8 @@ interface BaseProviderFormProps {
   brand: ProviderBrand;
   resource: ProviderResource | null;
   mode: 'create' | 'edit';
+  /** 'group' edits one upstream group: shared settings on top, keys inside. */
+  variant?: ProviderFormVariant;
   mutating: boolean;
   formId: string;
   onSubmit: (input: ProviderEntryFormInput) => Promise<void>;
@@ -83,11 +85,92 @@ const formatJsonObject = (value?: Record<string, unknown>): string => {
 
 const isClaudeLikeBrand = (brand: ProviderBrand): boolean => brand === 'claude';
 
-function buildInitialForm(
-  brand: ProviderBrand,
+type RawGroup = Record<string, unknown>;
+
+const readGroupModels = (group: RawGroup): ModelEntryInput[] => {
+  const models = Array.isArray(group.models) ? group.models : [];
+  const entries = models.flatMap((value) => {
+    if (value === null || typeof value !== 'object') return [];
+    const model = value as Record<string, unknown> & { name?: string; alias?: string };
+    if (!model.name) return [];
+    return [
+      {
+        name: String(model.name),
+        alias: model.alias === undefined ? '' : String(model.alias),
+        priority: typeof model.priority === 'number' ? model.priority : undefined,
+        image: model.image === true,
+        thinkingJson: formatJsonObject(
+          model.thinking !== undefined && model.thinking !== null
+            ? (model.thinking as Record<string, unknown>)
+            : undefined
+        ),
+        ...readModelOptions(model as never),
+      },
+    ];
+  });
+  return entries.length ? entries : [emptyModel()];
+};
+
+function buildGroupInitialForm(
   resource: ProviderResource | null,
   mode: 'create' | 'edit'
 ): ProviderEntryFormInput {
+  const group: RawGroup =
+    mode === 'edit' && resource ? (resource.raw as RawGroup) : {};
+  const keys = Array.isArray(group.keys)
+    ? group.keys.flatMap((key) => {
+        if (key === null || typeof key !== 'object') return [];
+        const record = key as Record<string, unknown>;
+        const apiKey = typeof record['api-key'] === 'string' ? record['api-key'] : '';
+        return [
+          {
+            apiKey: '',
+            existingApiKey: apiKey,
+            proxyUrl: typeof record['proxy-url'] === 'string' ? record['proxy-url'] : '',
+            weight: typeof record.weight === 'number' ? record.weight : undefined,
+            authIndex: typeof record['auth-index'] === 'string' ? record['auth-index'] : undefined,
+          },
+        ];
+      })
+    : [];
+  const excluded = Array.isArray(group['excluded-models'])
+    ? group['excluded-models'].filter((rule): rule is string => typeof rule === 'string')
+    : [];
+  const headers =
+    group.headers !== null && typeof group.headers === 'object' && !Array.isArray(group.headers)
+      ? Object.entries(group.headers as Record<string, unknown>).map(([key, value]) => ({
+          key,
+          value: String(value),
+        }))
+      : [];
+  return {
+    apiKey: '',
+    name: typeof group.name === 'string' ? group.name : '',
+    baseUrl: typeof group['base-url'] === 'string' ? group['base-url'] : '',
+    proxyUrl: typeof group['proxy-url'] === 'string' ? group['proxy-url'] : '',
+    prefix: typeof group.prefix === 'string' ? group.prefix : '',
+    disabled: hasDisableAllModelsRule(excluded),
+    disableCooling:
+      typeof group['disable-cooling'] === 'boolean' ? group['disable-cooling'] : undefined,
+    runtimePolicy: readRuntimePolicy({
+      source: { groupIndex: 0, group },
+    } as unknown as GeminiKeyConfig),
+    priority: typeof group.priority === 'number' ? group.priority : undefined,
+    models: readGroupModels(group),
+    headers: headers.length ? headers : [emptyHeader()],
+    excludedModelsText: stripDisableAllRule(excluded).join('\n'),
+    testModel: '',
+    apiKeyEntries: keys.length ? keys : [emptyApiKeyEntry()],
+  };
+}
+
+function buildInitialForm(
+  brand: ProviderBrand,
+  resource: ProviderResource | null,
+  mode: 'create' | 'edit',
+  variant: ProviderFormVariant = 'key'
+): ProviderEntryFormInput {
+  if (variant === 'group') return buildGroupInitialForm(resource, mode);
   if (mode === 'create' || !resource) {
     return {
       apiKey: '',
@@ -238,19 +321,21 @@ export function BaseProviderForm({
   brand,
   resource,
   mode,
+  variant = 'key',
   mutating,
   formId,
   onSubmit,
   onDirtyChange,
 }: BaseProviderFormProps) {
   const { t } = useTranslation();
-  const descriptor = PROVIDER_DESCRIPTORS[brand];
+  const descriptor = getProviderCapabilities(brand, variant);
+  const isGroup = variant === 'group';
   const fid = useId();
   const [form, setForm] = useState<ProviderEntryFormInput>(() =>
-    buildInitialForm(brand, resource, mode)
+    buildInitialForm(brand, resource, mode, variant)
   );
   const [initialFormSignature] = useState<string>(() =>
-    JSON.stringify(buildInitialForm(brand, resource, mode))
+    JSON.stringify(buildInitialForm(brand, resource, mode, variant))
   );
   const [error, setError] = useState<string | null>(null);
   const [showSingleApiKey, setShowSingleApiKey] = useState(false);
@@ -267,8 +352,13 @@ export function BaseProviderForm({
   const fallbackApiKey = useMemo(() => {
     if (mode !== 'edit' || !resource) return '';
     if (brand === 'openaiCompatibility') return '';
+    if (isGroup) {
+      const keys = (resource.raw as { keys?: Array<Record<string, unknown>> }).keys;
+      const first = Array.isArray(keys) ? keys[0]?.['api-key'] : undefined;
+      return typeof first === 'string' ? first : '';
+    }
     return (resource.raw as { apiKey?: string } | undefined)?.apiKey ?? '';
-  }, [brand, mode, resource]);
+  }, [brand, isGroup, mode, resource]);
 
   const fallbackAuthIndex = useMemo(() => {
     if (mode !== 'edit' || !resource) return '';
@@ -644,7 +734,7 @@ export function BaseProviderForm({
           </div>
         ) : null}
 
-        {brand !== 'openaiCompatibility' ? (
+        {brand !== 'openaiCompatibility' && !isGroup ? (
           <div className={styles.field}>
             <FieldLabel
               className={styles.labelLine}

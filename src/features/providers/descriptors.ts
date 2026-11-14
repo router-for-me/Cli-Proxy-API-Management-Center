@@ -322,3 +322,20 @@ export const PROVIDER_BRAND_ORDER: ProviderBrand[] = [
   'qiniuCloud',
   'aiCodeMirror',
 ];
+
+export type ProviderFormVariant = 'key' | 'group';
+
+/**
+ * Group editing shares the key form but moves shared settings to the group row:
+ * name becomes editable, the single api-key input is replaced by the keys editor.
+ */
+export const getProviderCapabilities = (brand: ProviderBrand, variant: ProviderFormVariant) => {
+  const descriptor = PROVIDER_DESCRIPTORS[brand];
+  if (variant !== 'group') return descriptor;
+  return {
+    ...descriptor,
+    supportsName: true,
+    supportsApiKey: false,
+    supportsApiKeyEntries: true,
+  };
+};

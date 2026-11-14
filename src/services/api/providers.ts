@@ -219,18 +219,6 @@ const stripCredentialIndexes = (node: Record<string, unknown>) => {
   delete node.auth_index;
 };
 
-const serializeGroupModels = (models: ModelAlias[]): Record<string, unknown>[] =>
-  models.flatMap((model) => {
-    const name = typeof model.name === 'string' ? model.name.trim() : '';
-    if (!name) return [];
-    const entry: Record<string, unknown> = { name };
-    if (model.alias?.trim()) entry.alias = model.alias.trim();
-    if (model.priority !== undefined) entry.priority = model.priority;
-    if (model.thinking !== undefined) entry.thinking = model.thinking;
-    if (model.image === true) entry.image = true;
-    return [entry];
-  });
-
 /**
  * Serialize one upstream group. Shared settings stay on the group; each key keeps
  * only its api-key plus the overrides it already had, so omitted fields keep
@@ -263,7 +251,8 @@ export const serializeGeminiGroup = (
     else next.headers = draft.headers;
   }
   if (draft.models !== undefined) {
-    const models = draft.models === null ? [] : serializeGroupModels(draft.models);
+    const models: unknown[] =
+      draft.models === null ? [] : (serializeModelAliases(draft.models, false) ?? []);
     if (models.length === 0) delete next.models;
     else next.models = models;
   }
