@@ -172,6 +172,17 @@ export function geminiGroupToResource(
   const excluded = Array.isArray(group['excluded-models'])
     ? group['excluded-models'].map(readGroupString).filter(Boolean)
     : [];
+  const effectiveExclusions = keys.map((key) =>
+    Array.isArray(key['excluded-models'])
+      ? (key['excluded-models'] as unknown[]).map(String)
+      : excluded
+  );
+  // A key-level list replaces the group list, so the row is only disabled when
+  // every key actually inherits the disable rule.
+  const disabled =
+    keys.length > 0
+      ? effectiveExclusions.every((list) => hasDisableAllModelsRule(list))
+      : hasDisableAllModelsRule(excluded);
   const headers =
     group.headers !== null && typeof group.headers === 'object' && !Array.isArray(group.headers)
       ? Object.keys(group.headers as Record<string, unknown>).length
@@ -199,7 +210,7 @@ export function geminiGroupToResource(
     excludedModelCount: stripDisableAllModelsRule(excluded).length,
     apiKeyEntryCount: keys.length,
     overrideCount: countKeyOverrides(keys),
-    disabled: hasDisableAllModelsRule(excluded),
+    disabled,
     flags: {},
     selector: { brand: 'gemini', kind: 'group', groupIndex: index, group, groups },
     raw: group,

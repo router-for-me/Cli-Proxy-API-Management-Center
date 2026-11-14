@@ -34,3 +34,6 @@ settings.local.json
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent workspace (ledger, review packages, tool wrappers)
+.superpowers/

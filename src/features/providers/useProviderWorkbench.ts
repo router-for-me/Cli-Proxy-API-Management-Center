@@ -386,10 +386,17 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
 const readGeminiGroups = (config: Config): Record<string, unknown>[] => {
   const groups = config.providerGroups?.gemini;
   if (!Array.isArray(groups)) return [];
-  return groups.filter(
-    (entry): entry is Record<string, unknown> =>
-      entry !== null && typeof entry === 'object' && !Array.isArray(entry)
-  );
+  return groups.flatMap((entry) => {
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) return [];
+    const group = entry as Record<string, unknown>;
+    // Sponsor-managed groups are edited through their own flow, exactly like flat mode.
+    const candidate = {
+      apiKey: '',
+      baseUrl: typeof group['base-url'] === 'string' ? group['base-url'] : undefined,
+    } as GeminiKeyConfig;
+    if (isQiniuCloudGeminiProvider(candidate) || isAiCodeMirrorGeminiProvider(candidate)) return [];
+    return [group];
+  });
 };
 
 export const buildProviderGroups = (
@@ -541,18 +548,15 @@ export const buildGeminiGroupConfig = (
   const excluded = parseTextList(input.excludedModelsText).filter((rule) => rule !== '*');
   const rawKeys = existingGroupKeys(existingGroup);
   const keys = (input.apiKeyEntries ?? []).flatMap((entry) => {
-    const apiKey = entry.apiKey.trim() || entry.existingApiKey?.trim() || '';
+    const existingKey = entry.existingApiKey?.trim() ?? '';
+    const apiKey = entry.apiKey.trim() || existingKey;
     if (!apiKey) return [];
-    return [
-      {
-        apiKey,
-        weight: entry.weight,
-        proxyUrl: entry.proxyUrl?.trim() || undefined,
-        raw:
-          (entry as { raw?: Record<string, unknown> }).raw ??
-          rawKeys.find((key) => String(key['api-key'] ?? '') === apiKey),
-      },
-    ];
+    // Match by the key the group already stored, so editing the value keeps its overrides.
+    const rawMatch =
+      (entry as { raw?: Record<string, unknown> }).raw ??
+      (existingKey ? rawKeys.find((key) => String(key['api-key'] ?? '') === existingKey) : undefined) ??
+      rawKeys.find((key) => String(key['api-key'] ?? '') === apiKey);
+    return [{ apiKey, weight: entry.weight, proxyUrl: entry.proxyUrl?.trim() || undefined, raw: rawMatch }];
   });
   const policy = input.runtimePolicy
     ? buildRuntimePolicy(input.runtimePolicy, PROVIDER_DESCRIPTORS.gemini.supportsRequestScopedErrors)
@@ -566,7 +570,15 @@ export const buildGeminiGroupConfig = (
     priority: input.priority ?? null,
     headers: Object.keys(headers).length ? headers : null,
     models: models.length ? models : null,
-    excludedModels: input.disabled ? withDisableAllModelsRule(excluded) : excluded,
+    // Omit the field when nothing was configured, so an untouched group keeps
+    // inheriting; otherwise [] is the explicit "clear" the API expects.
+    excludedModels: input.disabled
+      ? withDisableAllModelsRule(excluded)
+      : excluded.length > 0 ||
+          (Array.isArray(existingGroup?.['excluded-models']) &&
+            existingGroup!['excluded-models'].length > 0)
+        ? excluded
+        : undefined,
     disableCooling: inherit.has('disable-cooling') ? null : policy?.disableCooling,
     requestRetry: inherit.has('request-retry') ? null : policy?.requestRetry,
     requestScopedErrors: inherit.has('request-scoped-errors')

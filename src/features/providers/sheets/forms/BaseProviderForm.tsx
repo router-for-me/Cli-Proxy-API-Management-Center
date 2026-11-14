@@ -27,6 +27,7 @@ import type { ModelInfo } from '@/utils/models';
 import { getProviderCapabilities, type ProviderFormVariant } from '../../descriptors';
 import { removeModelAt } from '../../modelEntries';
 import { normalizeModelOptions, normalizeModelThinking } from '@/services/api/providerModels';
+import { readErrorRules } from '../../errorRules';
 import { syncDiscoveredModels } from '../../discoverySelection';
 import type {
   ApiKeyEntryInput,
@@ -160,9 +161,21 @@ export function buildGroupInitialForm(
     disabled: hasDisableAllModelsRule(excluded),
     disableCooling:
       typeof group['disable-cooling'] === 'boolean' ? group['disable-cooling'] : undefined,
-    runtimePolicy: readRuntimePolicy({
-      source: { groupIndex: 0, group },
-    } as unknown as GeminiKeyConfig),
+    runtimePolicy: {
+      cooling:
+        typeof group['disable-cooling'] === 'boolean'
+          ? group['disable-cooling']
+            ? 'disabled'
+            : 'enabled'
+          : 'inherit',
+      retry: typeof group['request-retry'] === 'number' ? String(group['request-retry']) : '',
+      errorsMode: Array.isArray(group['request-scoped-errors']) ? 'override' : 'inherit',
+      errorRules: readErrorRules(
+        (Array.isArray(group['request-scoped-errors'])
+          ? group['request-scoped-errors']
+          : []) as never
+      ),
+    },
     priority: typeof group.priority === 'number' ? group.priority : undefined,
     models: readGroupModels(group),
     headers: headers.length ? headers : [emptyHeader()],
@@ -872,7 +885,11 @@ export function BaseProviderForm({
             entries={apiKeyEntries}
             removeDisabled={actualApiKeyEntries.length === 0}
             mutating={mutating}
-            statuses={connectivity.openaiStatuses}
+            statuses={
+              brand === 'openaiCompatibility'
+                ? connectivity.openaiStatuses
+                : connectivity.geminiKeyStatuses
+            }
             isTestingAny={connectivity.isTestingAny}
             onUpdate={(idx, patch) =>
               updateField(
@@ -891,8 +908,16 @@ export function BaseProviderForm({
                 actualApiKeyEntries.filter((_, i) => i !== idx)
               )
             }
-            onTest={(idx) => void connectivity.runOpenAIKey(idx)}
-            onTestAll={() => void connectivity.runOpenAIAllKeys()}
+            onTest={(idx) =>
+              void (brand === 'openaiCompatibility'
+                ? connectivity.runOpenAIKey(idx)
+                : connectivity.runGeminiKey(idx))
+            }
+            onTestAll={() =>
+              void (brand === 'openaiCompatibility'
+                ? connectivity.runOpenAIAllKeys()
+                : connectivity.runGeminiAllKeys())
+            }
           />
         </Collapsible>
       ) : null}

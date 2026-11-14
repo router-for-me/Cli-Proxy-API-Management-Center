@@ -64,6 +64,21 @@ describe('gemini group resources', () => {
     expect(resource.modelCount).toBe(1);
   });
 
+  test('a key-level exclusion list can keep a group effectively enabled', () => {
+    const mixed = {
+      name: 'mixed',
+      'excluded-models': ['*'],
+      keys: [{ 'api-key': 'k1' }, { 'api-key': 'k2', 'excluded-models': ['only-this'] }],
+    };
+    expect(geminiGroupToResource(mixed, 0, [mixed]).disabled).toBe(false);
+
+    const allDisabled = {
+      ...mixed,
+      keys: [{ 'api-key': 'k1' }, { 'api-key': 'k2', 'excluded-models': ['own', '*'] }],
+    };
+    expect(geminiGroupToResource(allDisabled, 0, [allDisabled]).disabled).toBe(true);
+  });
+
   test('group view exposes one row per group, flat view one row per key', () => {
     const groupRows = buildProviderGroups(config, 'group').find((group) => group.id === 'gemini');
     expect(groupRows?.resources).toHaveLength(2);
@@ -72,6 +87,21 @@ describe('gemini group resources', () => {
     const flatRows = buildProviderGroups(config, 'flat').find((group) => group.id === 'gemini');
     expect(flatRows?.resources).toHaveLength(4);
     expect(flatRows?.resources.every((row) => row.kind === 'key')).toBe(true);
+  });
+
+  test('sponsor-managed gemini groups stay out of the group view', () => {
+    const sponsorConfig = {
+      providerGroups: {
+        gemini: [
+          groups[0],
+          { name: 'qiniu', 'base-url': 'https://api.qnaigc.com', keys: [{ 'api-key': 'q' }] },
+        ],
+      },
+      geminiApiKeys: [{ apiKey: 'q' }],
+    } as unknown as Config;
+    const rows = buildProviderGroups(sponsorConfig, 'group').find((g) => g.id === 'gemini');
+    expect(rows?.resources).toHaveLength(1);
+    expect(rows?.resources[0].name).toBe('team-a');
   });
 
   test('other brands keep their resource count in both views', () => {

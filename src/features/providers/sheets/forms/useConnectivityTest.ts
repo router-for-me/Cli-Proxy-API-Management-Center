@@ -96,12 +96,15 @@ export interface ConnectivityErrorMessages {
 
 export interface UseConnectivityTestResult {
   openaiStatuses: ConnectivityStatus[];
+  geminiKeyStatuses: ConnectivityStatus[];
   codexStatus: ConnectivityStatus;
   geminiStatus: ConnectivityStatus;
   claudeStatus: ConnectivityStatus;
   isTestingAny: boolean;
   runOpenAIKey: (idx: number) => Promise<boolean>;
   runOpenAIAllKeys: () => Promise<void>;
+  runGeminiKey: (idx: number) => Promise<boolean>;
+  runGeminiAllKeys: () => Promise<void>;
   runCodex: () => Promise<void>;
   runGemini: () => Promise<void>;
   runClaude: () => Promise<void>;
@@ -129,6 +132,9 @@ export function useConnectivityTest(
   const [openaiStatuses, setOpenaiStatuses] = useState<ConnectivityStatus[]>(() =>
     Array.from({ length: entriesCount }, () => IDLE)
   );
+  const [geminiKeyStatuses, setGeminiKeyStatuses] = useState<ConnectivityStatus[]>(() =>
+    Array.from({ length: entriesCount }, () => IDLE)
+  );
   const [codexStatus, setCodexStatus] = useState<ConnectivityStatus>(IDLE);
   const [geminiStatus, setGeminiStatus] = useState<ConnectivityStatus>(IDLE);
   const [claudeStatus, setClaudeStatus] = useState<ConnectivityStatus>(IDLE);
@@ -153,7 +159,7 @@ export function useConnectivityTest(
     const curr = entrySignatures;
     lastEntrySignaturesRef.current = curr;
 
-    setOpenaiStatuses((statuses) => {
+    const reconcile = (statuses: ConnectivityStatus[]) => {
       const nextLen = curr.length;
       let mutated = statuses.length !== nextLen;
       const next = statuses.slice(0, nextLen);
@@ -165,7 +171,9 @@ export function useConnectivityTest(
         }
       }
       return mutated ? next : statuses;
-    });
+    };
+    setOpenaiStatuses(reconcile);
+    setGeminiKeyStatuses(reconcile);
   }, [entrySignatures]);
 
   const signature = useMemo(() => {
@@ -399,96 +407,123 @@ export function useConnectivityTest(
     proxyUrl,
   ]);
 
+  const runGeminiProbe = useCallback(
+    async (
+      target: { key: string; proxyUrl?: string; authIndex?: string },
+      apply: (status: ConnectivityStatus) => void
+    ): Promise<boolean> => {
+      if (brand !== 'gemini' && brand !== 'interactions') return false;
+
+      const model = pickModel(testModel, models);
+      if (!model) {
+        apply({ state: 'error', message: messages.modelRequired });
+        return false;
+      }
+
+      const endpoint =
+        brand === 'interactions'
+          ? buildInteractionsEndpoint(baseUrl ?? '')
+          : buildGeminiGenerateContentEndpoint(baseUrl ?? '', model);
+      if (!endpoint) {
+        apply({ state: 'error', message: messages.endpointInvalid });
+        return false;
+      }
+
+      const customHeaders = buildHeaderObject(formHeaders);
+      const hasApiKeyHeader = hasHeader(customHeaders, 'x-goog-api-key');
+      const resolvedKey = target.key.trim();
+      const resolvedAuthIndex = (target.authIndex ?? '').trim() || undefined;
+
+      if (!resolvedKey && !hasApiKeyHeader && !resolvedAuthIndex) {
+        apply({ state: 'error', message: messages.apiKeyRequired });
+        return false;
+      }
+
+      const headerObj: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...customHeaders,
+      };
+      if (!hasHeader(headerObj, 'x-goog-api-key')) {
+        if (resolvedKey) {
+          headerObj['x-goog-api-key'] = resolvedKey;
+        } else if (resolvedAuthIndex) {
+          headerObj['x-goog-api-key'] = '$TOKEN$';
+        }
+      }
+      if (brand === 'interactions' && !hasHeader(headerObj, 'api-revision')) {
+        headerObj['Api-Revision'] = INTERACTIONS_API_REVISION;
+      }
+
+      apply({ state: 'loading', message: '' });
+      setInFlight((n) => n + 1);
+      try {
+        const result = await apiCallApi.request(
+          {
+            authIndex: resolvedAuthIndex,
+            proxy_url: target.proxyUrl?.trim() || proxyUrl?.trim() || undefined,
+            method: 'POST',
+            url: endpoint,
+            header: headerObj,
+            data: JSON.stringify(
+              brand === 'interactions'
+                ? buildInteractionsProbePayload(model)
+                : {
+                    contents: [{ parts: [{ text: 'Hi' }] }],
+                    generationConfig: { maxOutputTokens: 8 },
+                  }
+            ),
+          },
+          { timeout: DEFAULT_TIMEOUT_MS }
+        );
+        if (result.statusCode < 200 || result.statusCode >= 300) {
+          throw new Error(getApiCallErrorMessage(result));
+        }
+        apply({ state: 'success', message: '' });
+        return true;
+      } catch (err) {
+        apply({ state: 'error', message: requestFailureMessage(err, messages) });
+        return false;
+      } finally {
+        setInFlight((n) => n - 1);
+      }
+    },
+    [baseUrl, brand, formHeaders, messages, models, proxyUrl, testModel]
+  );
+
   const runGemini = useCallback(async (): Promise<void> => {
-    if (brand !== 'gemini' && brand !== 'interactions') return;
+    await runGeminiProbe(
+      {
+        key: (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim(),
+        proxyUrl,
+        authIndex,
+      },
+      setGeminiStatus
+    );
+  }, [apiKey, authIndex, fallbackApiKey, proxyUrl, runGeminiProbe]);
 
-    const model = pickModel(testModel, models);
-    if (!model) {
-      setGeminiStatus({ state: 'error', message: messages.modelRequired });
-      return;
-    }
-
-    const endpoint =
-      brand === 'interactions'
-        ? buildInteractionsEndpoint(baseUrl ?? '')
-        : buildGeminiGenerateContentEndpoint(baseUrl ?? '', model);
-    if (!endpoint) {
-      setGeminiStatus({ state: 'error', message: messages.endpointInvalid });
-      return;
-    }
-
-    const customHeaders = buildHeaderObject(formHeaders);
-    const explicitKey = (apiKey ?? '').trim();
-    const persistedKey = (fallbackApiKey ?? '').trim();
-    const hasApiKeyHeader = hasHeader(customHeaders, 'x-goog-api-key');
-    const resolvedKey = explicitKey || persistedKey;
-    const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
-
-    if (!resolvedKey && !hasApiKeyHeader && !resolvedAuthIndex) {
-      setGeminiStatus({ state: 'error', message: messages.apiKeyRequired });
-      return;
-    }
-
-    const headerObj: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...customHeaders,
-    };
-    if (!hasHeader(headerObj, 'x-goog-api-key')) {
-      if (resolvedKey) {
-        headerObj['x-goog-api-key'] = resolvedKey;
-      } else if (resolvedAuthIndex) {
-        headerObj['x-goog-api-key'] = '$TOKEN$';
-      }
-    }
-    if (brand === 'interactions' && !hasHeader(headerObj, 'api-revision')) {
-      headerObj['Api-Revision'] = INTERACTIONS_API_REVISION;
-    }
-
-    setGeminiStatus({ state: 'loading', message: '' });
-    setInFlight((n) => n + 1);
-    try {
-      const result = await apiCallApi.request(
-        {
-          authIndex: resolvedAuthIndex,
-          proxy_url: proxyUrl?.trim() || undefined,
-          method: 'POST',
-          url: endpoint,
-          header: headerObj,
-          data: JSON.stringify(
-            brand === 'interactions'
-              ? buildInteractionsProbePayload(model)
-              : {
-                  contents: [{ parts: [{ text: 'Hi' }] }],
-                  generationConfig: { maxOutputTokens: 8 },
-                }
-          ),
-        },
-        { timeout: DEFAULT_TIMEOUT_MS }
+  const runGeminiKey = useCallback(
+    async (idx: number): Promise<boolean> => {
+      if (brand !== 'gemini' && brand !== 'interactions') return false;
+      const entry = apiKeyEntries?.[idx];
+      const key = (entry?.apiKey ?? '').trim() || (entry?.existingApiKey ?? '').trim();
+      const entryAuthIndex = (entry?.authIndex ?? '').trim() || authIndex;
+      return runGeminiProbe(
+        { key, proxyUrl: entry?.proxyUrl, authIndex: entryAuthIndex },
+        (status) =>
+          setGeminiKeyStatuses((prev) => {
+            const next = [...prev];
+            next[idx] = status;
+            return next;
+          })
       );
-      if (result.statusCode < 200 || result.statusCode >= 300) {
-        throw new Error(getApiCallErrorMessage(result));
-      }
-      setGeminiStatus({ state: 'success', message: '' });
-    } catch (err) {
-      setGeminiStatus({
-        state: 'error',
-        message: requestFailureMessage(err, messages),
-      });
-    } finally {
-      setInFlight((n) => n - 1);
-    }
-  }, [
-    apiKey,
-    authIndex,
-    baseUrl,
-    brand,
-    fallbackApiKey,
-    formHeaders,
-    messages,
-    models,
-    testModel,
-    proxyUrl,
-  ]);
+    },
+    [apiKeyEntries, authIndex, brand, runGeminiProbe]
+  );
+
+  const runGeminiAllKeys = useCallback(async (): Promise<void> => {
+    const entries = apiKeyEntries ?? [];
+    await Promise.all(entries.map((_, idx) => runGeminiKey(idx)));
+  }, [apiKeyEntries, runGeminiKey]);
 
   const runClaude = useCallback(async (): Promise<void> => {
     if (brand !== 'claude') return;
@@ -575,12 +610,15 @@ export function useConnectivityTest(
 
   return {
     openaiStatuses,
+    geminiKeyStatuses,
     codexStatus,
     geminiStatus,
     claudeStatus,
     isTestingAny: inFlight > 0,
     runOpenAIKey,
     runOpenAIAllKeys,
+    runGeminiKey,
+    runGeminiAllKeys,
     runCodex,
     runGemini,
     runClaude,
