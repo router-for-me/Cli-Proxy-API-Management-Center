@@ -1,0 +1,3 @@
+#!/bin/sh
+PATH=/home/eli/ai-tool/.tools/bun/bin:$PATH
+exec bun "$@"

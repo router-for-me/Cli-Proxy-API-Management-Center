@@ -19,6 +19,7 @@ import {
   claudeToResource,
   codexToResource,
   fennoAIToResource,
+  geminiGroupToResource,
   geminiToResource,
   interactionsToResource,
   metaToResource,
@@ -43,6 +44,7 @@ import type {
   SponsorProviderBrand,
   SponsorProviderRaw,
 } from './types';
+import type { GeminiViewMode } from './uiState';
 import {
   buildApiKeyFunRaw,
   isApiKeyFunClaudeProvider,
@@ -372,11 +374,30 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
   }
 };
 
-export const buildProviderGroups = (config: Config): ProviderGroup[] =>
+const readGeminiGroups = (config: Config): Record<string, unknown>[] => {
+  const groups = config.providerGroups?.gemini;
+  if (!Array.isArray(groups)) return [];
+  return groups.filter(
+    (entry): entry is Record<string, unknown> =>
+      entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+  );
+};
+
+export const buildProviderGroups = (
+  config: Config,
+  viewMode: GeminiViewMode = 'flat'
+): ProviderGroup[] =>
   PROVIDER_BRAND_ORDER.reduce<ProviderGroup[]>((groups, brand) => {
     let resources: ProviderResource[];
     switch (brand) {
       case 'gemini':
+        if (viewMode === 'group') {
+          const rawGroups = readGeminiGroups(config);
+          resources = rawGroups.map((group, index) =>
+            geminiGroupToResource(group, index, rawGroups)
+          );
+          break;
+        }
         resources = (config.geminiApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
           if (!isQiniuCloudGeminiProvider(item) && !isAiCodeMirrorGeminiProvider(item)) {
             out.push(geminiToResource(item, index));
@@ -731,7 +752,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const brand = resource.brand;
         const selector = resource.selector;
-        if (brand === 'gemini' && selector.brand === 'gemini') {
+        if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
           const existing = resource.raw as GeminiKeyConfig;
           await providersApi.updateGeminiKey(
             selector.apiKey,
@@ -808,7 +829,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       setMutating(true);
       try {
         const sel = resource.selector;
-        if (sel.brand === 'gemini') {
+        if (sel.brand === 'gemini' && 'apiKey' in sel) {
           await providersApi.deleteGeminiKey(
             sel.apiKey,
             sel.baseUrl,
@@ -928,7 +949,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       try {
         const brand = resource.brand;
         const selector = resource.selector;
-        if (brand === 'gemini' && selector.brand === 'gemini') {
+        if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
           const current = resource.raw as GeminiKeyConfig;
           const excluded = disabled
             ? withDisableAllModelsRule(current.excludedModels)
