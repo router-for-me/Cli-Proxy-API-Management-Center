@@ -142,9 +142,11 @@ payload provider and payload `trace_id`, not those two snapshots. P5 returns
 those stored values; its test names the provenance and makes no parity claim for
 rows where they differ. P6 must inspect the imported/live comparison.
 
-Search intentionally lacks CPAMP-only columns absent from P1: source/source hash,
-forwarded-for, auth-file/project fields, header diagnostics and failure text. It
-searches the shared stored fields and the requested execution/session ids; no
+Search was first limited to the columns P1 stored. Later migrations store the rest of
+CPAMP's search document (failure text, trace id, credential file, endpoint,
+forwarded-for, masked source, credential provider and project, quota plan, header error
+kind and code), so only CPAMP's three internal hashes are not searchable (`server/usage/RULES.md`,
+Search). It searches the stored fields and the requested execution/session ids; no
 trigram index, projection table or legacy adapter is added.
 
 Deployment must provide an approved rate file at `/data/usage-rates.json` or set

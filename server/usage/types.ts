@@ -29,6 +29,39 @@ export const DIM_KINDS = [
 ] as const;
 export type DimKind = (typeof DIM_KINDS)[number];
 
+/** The one mapping from event dictionary columns to their owning dimension kind. */
+export const EVENT_DIMENSIONS: Record<string, DimKind> = {
+  instance_id: 'instance',
+  provider_id: 'provider',
+  model_id: 'model',
+  requested_model_id: 'model',
+  billing_model_id: 'model',
+  response_model_id: 'model',
+  tier_id: 'tier',
+  timing_id: 'timing',
+  account_id: 'account',
+  account_label_id: 'account_label',
+  api_key_id: 'api_key',
+  user_agent_id: 'user_agent',
+  client_ip_id: 'client_ip',
+  path_id: 'path',
+  method_id: 'method',
+  effort_id: 'effort',
+  executor_id: 'executor',
+  requested_tier_id: 'tier',
+  effective_tier_id: 'tier',
+  auth_index_id: 'auth_index',
+  auth_file_id: 'auth_file',
+  endpoint_id: 'endpoint',
+  x_forwarded_for_id: 'x_forwarded_for',
+  source_id: 'source',
+  auth_provider_id: 'auth_provider',
+  auth_project_id: 'auth_project',
+  quota_plan_id: 'quota_plan',
+  error_kind_id: 'error_kind',
+  error_code_id: 'error_code',
+};
+
 /** Providers whose records the normalizer was checked against. Others are stored as reported. */
 export const KNOWN_PROVIDERS: readonly string[] = ['claude', 'codex'];
 

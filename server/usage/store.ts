@@ -3,7 +3,7 @@
 import { Database, type Statement } from 'bun:sqlite';
 import { chmodSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { INGEST } from './types';
+import { EVENT_DIMENSIONS, INGEST } from './types';
 import type { ExporterEvent } from './exporter';
 import { gzipSync } from 'node:zlib';
 import {
@@ -28,38 +28,6 @@ import type {
   SanitizedPayload,
 } from './types';
 
-/** The one mapping from event dictionary columns to their owning dimension kind. */
-const EVENT_DIMENSIONS: Record<string, DimKind> = {
-  instance_id: 'instance',
-  provider_id: 'provider',
-  model_id: 'model',
-  requested_model_id: 'model',
-  billing_model_id: 'model',
-  response_model_id: 'model',
-  tier_id: 'tier',
-  timing_id: 'timing',
-  account_id: 'account',
-  account_label_id: 'account_label',
-  api_key_id: 'api_key',
-  user_agent_id: 'user_agent',
-  client_ip_id: 'client_ip',
-  path_id: 'path',
-  method_id: 'method',
-  effort_id: 'effort',
-  executor_id: 'executor',
-  requested_tier_id: 'tier',
-  effective_tier_id: 'tier',
-  auth_index_id: 'auth_index',
-  auth_file_id: 'auth_file',
-  endpoint_id: 'endpoint',
-  x_forwarded_for_id: 'x_forwarded_for',
-  source_id: 'source',
-  auth_provider_id: 'auth_provider',
-  auth_project_id: 'auth_project',
-  quota_plan_id: 'quota_plan',
-  error_kind_id: 'error_kind',
-  error_code_id: 'error_code',
-};
 /** Search fields that are dictionary ids on `events`, NULL on rows that predate them. */
 const FILLABLE_IDS = [
   'auth_file_id',

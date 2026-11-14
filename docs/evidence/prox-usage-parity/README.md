@@ -130,12 +130,16 @@ Explicit counted rules:
 - `search-cpamp-only`: a deliberate product difference. CPAMP keeps one search document
   of 29 fields per event; a term matches one field at a time (a `%`/`_` wildcard never
   bridges two fields). Prox matches its stored fields, which now include the failure
-  text, the response-header trace id and the credential file name (`server/usage/RULES.md`,
-  Search). A user still cannot find an event in Prox by CPAMP's internal event hash.
+  text, the response-header trace id, the credential file name and eight more fields
+  (endpoint, forwarded-for, masked source, credential provider and project, quota plan,
+  header error kind and code; `server/usage/RULES.md`, Search). A user still cannot find
+  an event in Prox by CPAMP's internal hashes (event, source and API key hash).
   Conversely Prox also searches execution, session, parent-session
   and trace IDs by substring, which CPAMP's document lacks, so a hex-like or wildcard
-  term returns events in Prox that CPAMP does not. The one unsearchable field is a
-  closed list in `scripts/usage-parity/searchCpampOnly.ts`: `event_hash`, CPAMP's own.
+  term returns events in Prox that CPAMP does not. The unsearchable fields are a
+  closed list in `scripts/usage-parity/searchCpampOnly.ts`: `event_hash`, `source_hash`
+  and `api_key_hash`, CPAMP's own hashes (Prox does hold the API key hash and searches it).
+  `scripts/usage-search-probe.ts` proves the rest column by column.
   Adding a
   field needs a code change and a test. A search pair with unexplained differences is
   checked in three steps, all read-only. (1) CPAMP's own database lists the events in

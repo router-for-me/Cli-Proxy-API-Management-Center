@@ -127,12 +127,16 @@ export function deriveTerms(docs: readonly { text: string }[]): {
     const ranked = [...values].sort(
       (a, b) => a[1] - b[1] || b[0].length - a[0].length || (a[0] < b[0] ? -1 : 1)
     );
-    for (const [value, valueEvents] of ranked) {
+    // A term of three characters or more is far more selective than "-" or "1"; take a shorter
+    // one only when the column holds nothing longer.
+    const candidates = ranked.flatMap(([value, valueEvents]) => {
       const term = distinctiveSlice(value);
-      if (term) {
-        terms.push({ index, column: SEARCH_COLUMNS[index], term, valueEvents });
-        return;
-      }
+      return term ? [{ term, valueEvents }] : [];
+    });
+    const pick = candidates.find((c) => c.term.length >= 3) ?? candidates[0];
+    if (pick) {
+      terms.push({ index, column: SEARCH_COLUMNS[index], ...pick });
+      return;
     }
     skipped.set(
       index,

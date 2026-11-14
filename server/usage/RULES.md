@@ -648,27 +648,81 @@ separate nightly chain below serializes maintenance before invoking parity.
   with no new index. Measured on a 960,000-row synthetic 30-day store (tmpfs), a miss went
   from 2.07 s to 2.36 s (about +14%), a common dimension term from 1.50 s to 1.76 s and a
   long identifier from 2.31 s to 2.98 s; the search lane keeps its own limits.
-  Only `event_hash`, CPAMP's internal identity and not an event field, stays CPAMP-only.
+  Eight more document fields are stored (migration 5: eight nullable `events` columns, each
+  a dictionary id, no table rewrite). Each is searched with the other dictionary fields:
+  - `endpoint` (`endpoint_id`, kind `endpoint`): the proxy record's `endpoint`, the text
+    CPAMP stores, `METHOD /route` from the route pattern, so it has no query string (one is
+    cut if it ever appears); `-` when the record has none, as CPAMP stores it. `method`
+    and `path` stay the parsed halves, which cannot reproduce it where the endpoint has no
+    method or an unknown one.
+  - `x_forwarded_for` (`x_forwarded_for_id`): the record's header value, one printable line
+    capped at 2048 bytes, like `user_agent` and `client_ip`.
+  - `source` (`source_id`): the credential's account identifier, **masked as CPAMP masks
+    it**, never raw: an e-mail keeps its first three bytes and its domain
+    (`abc***@example.test`); a value that holds a credential is replaced by `h:` and its
+    SHA-256; a long opaque value shows `m:` and its first and last four characters; any
+    other value (a project id) is kept. The raw `source` can be an API key, so it never
+    reaches the store, the raw buffer or a log; `maskSource` runs on live and imported
+    values alike and keeps a value that is already masked. The e-mails are masked forms of
+    the account that `account` already holds in full.
+  - `auth_provider_snapshot` and `auth_project_id_snapshot` (`auth_provider_id`,
+    `auth_project_id`): from the management credential listing in force at ingestion, like
+    the file name: its `provider` (else `type`), lowercase with `_` as `-` and `x-ai` and
+    `grok` as `xai`, and its `project_id`, `projectId`, `gemini_virtual_project` or
+    `geminiVirtualProject`. A Codex account marker (`codex-account-id:v1:`) is not a
+    project id and is never stored as one, as in CPAMP's `ProjectIDSnapshot`. The record's
+    own `provider` stays what it was (`provider_id`).
+  - `header_quota_plan_type`, `header_error_kind`, `header_error_code` (`quota_plan_id`,
+    `error_kind_id`, `error_code_id`): from the record's `response_headers`, as CPAMP's
+    `parseQuotaHeaders` and `classifyHeaderError` do: the plan type is `x-codex-plan-type`;
+    the kind and code are `auth` and the code for a root, IDE or authorization error code
+    of `token_revoked`, `token_invalidated`, `account_deactivated` or `401`; `identity` for
+    `identity_edge_internal_error`; else `rate_limit` with `x-ratelimit-bypass` as the
+    code, else `rate_limit` and `retry_after` when `Retry-After` is a non-negative number
+    of seconds or a date in one of CPAMP's layouts. Each value passes the scrubber and the
+    1024-byte cap. No other response header is read or kept.
+  The other 17 document fields were already searched: `request_id`, `model`,
+  `requested_model`, `analytics_model` (`model_id`, the requested model without its
+  reasoning suffix), `resolved_model` (`billing_model_id`), `method`, `path`, `client_ip`,
+  `user_agent`, `auth_index`, `account_snapshot`, `auth_label_snapshot`, `reasoning_effort`,
+  `service_tier` (`tier_id`), `executor_type` and `api_key_hash` (`api_key_id`: the same
+  SHA-256 of the trimmed client key, so Prox stores and searches the value CPAMP's hash
+  column holds). `scripts/usage-search-probe.ts` checks the matching text of all 29, below.
+  Three document fields are CPAMP's own hashes and stay CPAMP-only: `event_hash`,
+  `source_hash` (a per-account SHA-256 derived from the raw source at ingest) and
+  `api_key_hash` (listed for symmetry; Prox does hold it, see above). A hex-like term such as
+  `429` matches a source hash of one account at random, which is why 3,366 of the 3,785
+  CPAMP matches for `429` on 13 Nov were one account's events.
   The reverse also holds: Prox searches execution, session, parent-session and trace IDs
   by substring, and CPAMP's document holds none of them, so a hex-like or wildcard term
-  returns events here that CPAMP does not. The parity rule `search-cpamp-only` accepts the
-  difference only for that one field, a closed list in `searchCpampOnly.ts` that changes
+  returns events here that CPAMP does not. It also searches the record's provider, the
+  response model and the requested and effective tier, which the document lacks
+  (`PROX_ONLY_SEARCH_DIMS`). The parity rule `search-cpamp-only` accepts the
+  difference only for the three hash fields, a closed list in `searchCpampOnly.ts` that changes
   only with code and a test, and only when no single Prox-searchable field of the event
   matches the term. Even then each pair needs proof: CPAMP's own database lists the events,
   they map to Prox by execution ID, and a replay of the Prox query that searches as CPAMP's
   document does (request ID, failure text, response trace id and credential file, not the
   other identifiers) with exactly those events added must reproduce CPAMP's response value
   for value, while Prox's served response must equal its own plain replay.
-  History: reconcile fills the three fields of existing rows. Migration 4 rewinds
+  `scripts/usage-search-probe.ts` is the per-column proof: for a window it derives one real
+  term for each of the 29 columns, a slice of the rarest value in CPAMP's own search
+  document, and compares the events both sides match. A CPAMP match Prox misses is
+  explained only through the hash list (the replay proof above); a Prox match CPAMP misses
+  only through a Prox-only field; anything else is unexplained and fails the probe. A column
+  no event of the window fills (`x_forwarded_for`, say) cannot be probed there and is
+  reported as not probed.
+  History: reconcile fills the new fields of existing rows. Migrations 4 and 5 each rewind
   `import:cpamp:last_id` to 0 when it exists, so the next reconcile pass reads every CPAMP
   row once through the governed, paced job path. For an event already stored, `importChunk`
   sets a NULL field to CPAMP's persisted value (the failure text through the scrubber
-  again) and counts it in the report's `filled`; a stored value is never replaced, and a
-  CPAMP value that differs from it is an `import_conflicts` row like any other. The three
-  fields are compared fields: a stored value that differs, or a missing one, makes the
+  again, the source through the mask again) and counts it in the report's `filled`; a
+  stored value is never replaced, and a CPAMP value that differs from it is an
+  `import_conflicts` row like any other. These fields are compared fields: a stored value that differs, or a missing one, makes the
   event `different` in verification (so `exact` is false and no gap is filled) until the
-  pass has filled it. A live-ingested event whose credential file, trace id or failure text
-  differs from CPAMP's (a file renamed between the two collectors' listings, say) stays a
+  pass has filled it. A live-ingested event whose credential file, provider, project, trace
+  id or failure text differs from CPAMP's (a file renamed between the two collectors'
+  listings, say) stays a
   reported difference rather than an excused one.
 - The inspector is an explicit allowlist. Token zero is visible only when its
   presence/component flags report it; positive counters stay visible. User agents
