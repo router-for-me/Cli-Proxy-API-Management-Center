@@ -1,5 +1,5 @@
 // Evidence for the search-cpamp-only rule: which CPAMP events match a search term only through
-// the field that Prox does not store (the event hash). CPAMP keeps one search document per event (fields joined by
+// the fields that Prox does not store (the three internal hashes). CPAMP keeps one search document per event (fields joined by
 // char(31)); a term without wildcards is in the document exactly when it is in one field, and a
 // term with `%` or `_` is matched field by field (usageevent/analytics.go, and usagemonitoring
 // filter.go, which exclude "%_\x1f" from the document path), so a wildcard never bridges two
@@ -46,7 +46,7 @@ interface Candidate {
 }
 // One read of CPAMP per range serves every term and filter combination of the matrix.
 const ranges = new WeakMap<Database, Map<string, Candidate[]>>();
-function documents(cpamp: Database, from: number, to: number): Candidate[] {
+export function documents(cpamp: Database, from: number, to: number): Candidate[] {
   const cache = ranges.get(cpamp) ?? new Map<string, Candidate[]>();
   ranges.set(cpamp, cache);
   const key = `${from}:${to}`;
