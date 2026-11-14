@@ -126,17 +126,25 @@ describe('stacked height measurements', () => {
 });
 
 describe('stored layout choice', () => {
-  const originalWindow = globalThis.window;
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
   afterEach(() => {
-    globalThis.window = originalWindow;
+    if (originalWindow) {
+      Object.defineProperty(globalThis, 'window', originalWindow);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
   const withStorage = (getItem: (key: string) => string | null, store?: Map<string, string>) => {
-    globalThis.window = {
-      localStorage: {
-        getItem,
-        setItem: (key: string, value: string) => store?.set(key, value),
-      },
-    } as unknown as Window & typeof globalThis;
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      writable: true,
+      value: {
+        localStorage: {
+          getItem,
+          setItem: (key: string, value: string) => store?.set(key, value),
+        },
+      } as unknown as Window & typeof globalThis,
+    });
   };
 
   test('reads a valid choice and falls back to Even rows otherwise', () => {
