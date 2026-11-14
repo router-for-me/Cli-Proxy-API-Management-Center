@@ -17,7 +17,7 @@
     "sources:check": "bun scripts/generate-provider-sources.ts --check",
     "test:ui:analytics": "tsc -p tsconfig.browser.json && playwright test --config playwright.config.ts",
     "build:usage": "bun build ./server/usage/main.ts --target=bun --outdir dist/usage --entry-naming main.js && bun build ./server/usage/writer.worker.ts ./server/usage/query.worker.ts --target=bun --outdir dist/usage --entry-naming [name].js",
-    "build:usage-jobs": "bun build ./scripts/usage-nightly.ts ./scripts/usage-parity.ts --target=bun --outdir dist/usage-jobs --entry-naming [name].js"
+    "build:usage-jobs": "bun build ./scripts/usage-nightly.ts ./scripts/usage-parity.ts ./scripts/usage-restore-check.ts --target=bun --outdir dist/usage-jobs --entry-naming [name].js"
   },
   "dependencies": {
     "@codemirror/lang-yaml": "^6.1.3",

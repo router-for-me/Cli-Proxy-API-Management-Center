@@ -306,7 +306,7 @@ network or keys) before reloading systemd. The nightly bundle spawns `usage-pari
 its own directory. Both units use that directory as `WorkingDirectory` and write parity evidence
 to `~/.local/share/prox/usage-evidence/` (`PROX_USAGE_EVIDENCE_DIR`); a manual repo run keeps
 the `docs/evidence/prox-usage-parity/` default. `scripts/usage-nightly.ts` waits for **prune → reconcile →
-optional backup → quick/event parity**, observing each job's terminal success
+backup → quick/event parity**, observing each job's terminal success
 and completed cleanup before starting the next. It reads the management bearer
 inside the process, polls `/v1/jobs` every ten seconds through the shared PSI gate,
 and stops on job/API/parity failure. It enforces today's absolute **12:00 UTC**
@@ -335,10 +335,11 @@ Incomplete
 parity exits 2 and cannot pass the chain. Parity has a 5h30min runtime cap; the
 whole oneshot has a 7h40min start timeout as a backstop.
 
-Backup stays **skipped** with `PROX_USAGE_ENABLE_PACED_BACKUP=0`. Only set it to
-`1` through a nightly-service override after the paced snapshot implementation
-and restore gate land. Upload pacing does not make the existing VACUUM snapshot
-bounded. The old independent prune/reconcile/backup/parity timers are no longer
+The backup step runs by default (paced snapshot, then upload). Set
+`PROX_USAGE_ENABLE_PACED_BACKUP=0` in a nightly-service override to skip it for a
+night; it needs a working `~/.config/prox-usage/backup.json`. The restore check is a
+separate manual command, `bun ~/.local/share/prox/usage-jobs/usage-restore-check.js`
+(see server/usage/RULES.md, Restore check). The old independent prune/reconcile/backup/parity timers are no longer
 shipped. On upgrades, deployment disables/stops each retired timer, removes its
 unit and enable link, then reloads systemd; missing timers are tolerated, manager
 failures stop deployment. The sole nightly timer remains disabled. `prox-usage-job@.service` and `prox-usage-parity.service` remain for

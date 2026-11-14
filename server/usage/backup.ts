@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync, statfsSync } from 'node:fs';
 import { join } from 'node:path';
 import { IoGovernor, runIoChunk, type ChunkScheduler, type IoBytes } from './ioGovernor';
+import { UsageSnapshot } from './snapshot';
 import type { UsageStore } from './store';
 
 export interface BackupConfig {
@@ -73,9 +74,13 @@ export interface BackupOptions {
   filesystemInfo?: (path: string) => { isTmpfs: boolean; freeBytes: number };
   ioBytes?: () => IoBytes;
   scheduleChunk?: ChunkScheduler;
+  /** Longest a snapshot may stay open, wall time including IO pauses. Default 2 hours. */
+  maxSnapshotMs?: number;
+  /** Rows copied per writer-queue chunk. Default SNAPSHOT_ROWS_PER_STEP. */
+  rowsPerStep?: number;
 }
 
-function filesystemInfo(path: string) {
+export function filesystemInfo(path: string) {
   const stats = statfsSync(path, { bigint: true });
   return { isTmpfs: stats.type === 0x01021994n, freeBytes: Number(stats.bavail * stats.bsize) };
 }
@@ -103,32 +108,71 @@ export class UsageBackup {
     const filename = `usage-${stamp}.sqlite`;
     const keys = [`usage/daily/${filename}`];
     if (date.getUTCDay() === 0) keys.push(`usage/weekly/${filename}`);
+    const maxSnapshotMs = this.options.maxSnapshotMs ?? 2 * 60 * 60 * 1000;
+    const startedAt = now();
     let directory: string | undefined;
+    let snapshot: UsageSnapshot | undefined;
+    const chunk = { count: 0, maxMs: 0 };
+    // Each call is one writer-queue chunk, so `maxMs` is the longest the writer was held.
+    const timed = <T>(work: () => T) => {
+      const began = performance.now();
+      try {
+        return work();
+      } finally {
+        chunk.count += 1;
+        chunk.maxMs = Math.max(chunk.maxMs, performance.now() - began);
+      }
+    };
+    const chunkOptions = { ...this.options, signal };
     try {
       const path = await runIoChunk(
         'backup',
-        () => {
-          const info = (this.options.filesystemInfo ?? filesystemInfo)(tmpfsDir);
-          if (!info.isTmpfs) throw new Error('Usage backup directory must be tmpfs');
-          // Check WAL-inclusive size just before VACUUM, while the writer job owns the handle.
-          if (info.freeBytes < 2 * store.databaseSizeBytes()) {
-            throw new Error(
-              'Insufficient tmpfs space: usage backup requires twice the database size'
-            );
-          }
-          directory = mkdtempSync(join(tmpfsDir, 'prox-usage-backup-'));
-          const path = join(directory, filename);
-          // VACUUM is one SQLite operation: tmpfs avoids pool writes, but its read cannot be sliced.
-          store.vacuumInto(path);
-          return path;
-        },
-        { ...this.options, signal }
+        () =>
+          timed(() => {
+            const info = (this.options.filesystemInfo ?? filesystemInfo)(tmpfsDir);
+            if (!info.isTmpfs) throw new Error('Usage backup directory must be tmpfs');
+            // WAL-inclusive size while the writer job owns the handle. The copy holds rows only,
+            // so it is never larger than the database; the margin covers growth during the copy.
+            const size = store.databaseSizeBytes();
+            if (info.freeBytes < size + size / 10) {
+              throw new Error(
+                'Insufficient tmpfs space: usage backup requires the database size plus 10%'
+              );
+            }
+            directory = mkdtempSync(join(tmpfsDir, 'prox-usage-backup-'));
+            const path = join(directory, filename);
+            snapshot = new UsageSnapshot(store.eventsPath, path, {
+              rowsPerStep: this.options.rowsPerStep,
+            });
+            return path;
+          }),
+        chunkOptions
+      );
+      // The open snapshot pins the live WAL: bound how long a paused copy may hold it.
+      while (
+        !(await runIoChunk(
+          'backup',
+          () =>
+            timed(() => {
+              if (now() - startedAt > maxSnapshotMs)
+                throw new Error('Usage backup snapshot exceeded its time bound');
+              return snapshot!.step();
+            }),
+          chunkOptions
+        ))
       );
       const size = Bun.file(path).size;
       for (const key of keys) await this.upload(path, key, size, signal);
       this.lastSuccess = now();
-      return { keys, sizeBytes: size, lastSuccessAtMs: this.lastSuccess };
+      return {
+        keys,
+        sizeBytes: size,
+        lastSuccessAtMs: this.lastSuccess,
+        snapshot: { steps: chunk.count, rows: snapshot!.totalRows, maxStepMs: chunk.maxMs },
+      };
     } finally {
+      // Release the live read snapshot before the file goes: a failed run must not pin the WAL.
+      snapshot?.close();
       if (directory) rmSync(directory, { recursive: true, force: true });
     }
   }

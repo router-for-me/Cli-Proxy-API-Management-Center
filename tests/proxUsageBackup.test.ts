@@ -16,16 +16,21 @@ afterEach(() => {
 function fixture() {
   const root = mkdtempSync('/dev/shm/prox-backup-test-');
   cleanups.push(() => rmSync(root, { recursive: true, force: true }));
-  const store = new UsageStore({ events: ':memory:', raw: null });
+  // The live database sits beside, not inside, the backup directory the tests watch.
+  const liveRoot = mkdtempSync('/dev/shm/prox-backup-live-');
+  cleanups.push(() => rmSync(liveRoot, { recursive: true, force: true }));
+  const store = new UsageStore({ events: join(liveRoot, 'usage.sqlite'), raw: null });
   cleanups.push(() => store.close());
-  store.insert(
-    Array.from({ length: 100 }, (_, i) => {
-      const result = normalizeUsagePayload(JSON.stringify(usagePayloadNumber(i)));
-      if (result.kind !== 'event') throw new Error('invalid fixture');
-      return { event: result.event, raw: null };
-    }),
-    INGEST.subscribed
-  );
+  const insert = (from: number, count: number) =>
+    store.insert(
+      Array.from({ length: count }, (_, i) => {
+        const result = normalizeUsagePayload(JSON.stringify(usagePayloadNumber(from + i)));
+        if (result.kind !== 'event') throw new Error('invalid fixture');
+        return { event: result.event, raw: null };
+      }),
+      INGEST.subscribed
+    );
+  insert(0, 100);
   let status = 200;
   const uploads: { path: string; bytes: Buffer; snapshot: Buffer; at: number }[] = [];
   const io = fakeIo({ bytesPerSecond: 100_000 });
@@ -52,6 +57,7 @@ function fixture() {
   return {
     root,
     store,
+    insert,
     uploads,
     io,
     config,
@@ -113,14 +119,14 @@ describe('usage tmpfs backups', () => {
     expect(f.uploads).toHaveLength(2);
   });
 
-  test('refuses insufficient tmpfs before VACUUM or network activity and refuses a disk directory', async () => {
+  test('refuses insufficient tmpfs before copying or network activity and refuses a disk directory', async () => {
     const f = fixture();
     const size = f.store.databaseSizeBytes();
     const backup = new UsageBackup(f.config, {
       governor: f.io.governor,
-      filesystemInfo: () => ({ isTmpfs: true, freeBytes: 2 * size - 1 }),
+      filesystemInfo: () => ({ isTmpfs: true, freeBytes: size + size / 10 - 1 }),
     });
-    await expect(backup.run(f.store)).rejects.toThrow('twice the database size');
+    await expect(backup.run(f.store)).rejects.toThrow('database size plus 10%');
     expect(backup.lastSuccessAtMs).toBeNull();
     expect(f.uploads).toHaveLength(0);
     expect(readdirSync(f.root)).toEqual([]);
@@ -131,19 +137,72 @@ describe('usage tmpfs backups', () => {
     await expect(disk.run(f.store)).rejects.toThrow('must be tmpfs');
   });
 
-  test('cancellation and VACUUM failures leave no temporary file or successful timestamp', async () => {
+  test('cancellation and a failure in a later chunk leave no temp file, no pinned WAL, no success', async () => {
     const f = fixture();
-    const backup = new UsageBackup(f.config, { governor: f.io.governor });
+    const backup = new UsageBackup(f.config, { governor: f.io.governor, rowsPerStep: 20 });
     await expect(backup.run(f.store, AbortSignal.abort())).rejects.toThrow();
     expect(readdirSync(f.root)).toEqual([]);
-    const vacuum = f.store.vacuumInto.bind(f.store);
-    f.store.vacuumInto = (path) => {
-      vacuum(path);
-      throw new Error('synthetic snapshot failure');
-    };
-    await expect(backup.run(f.store)).rejects.toThrow('synthetic snapshot failure');
+    let chunks = 0;
+    const failing = new UsageBackup(f.config, {
+      governor: f.io.governor,
+      rowsPerStep: 20,
+      scheduleChunk: async (_kind, work) => {
+        chunks += 1;
+        if (chunks === 4) throw new Error('synthetic snapshot failure');
+        return work();
+      },
+    });
+    await expect(failing.run(f.store)).rejects.toThrow('synthetic snapshot failure');
+    expect(chunks).toBe(4);
     expect(readdirSync(f.root)).toEqual([]);
-    expect(backup.lastSuccessAtMs).toBeNull();
+    expect(failing.lastSuccessAtMs).toBeNull();
+    expect(f.uploads).toHaveLength(0);
+    // The snapshot's read mark is gone, so the writer's WAL can reset again.
+    const other = new Database(f.store.eventsPath);
+    cleanups.push(() => other.close());
+    expect(other.query('PRAGMA wal_checkpoint(RESTART)').get()).toMatchObject({ busy: 0 });
+  });
+
+  test('bounded chunks: live commits between chunks stay out, one copy at a time, writer hold measured', async () => {
+    const f = fixture();
+    let released = 0;
+    const backup = new UsageBackup(f.config, {
+      governor: f.io.governor,
+      rowsPerStep: 20,
+      // Stand-in for the writer queue: the live writer commits between every backup chunk.
+      scheduleChunk: async (_kind, work) => {
+        const result = await work();
+        f.insert(10_000 + released * 3, 3);
+        released += 1;
+        return result;
+      },
+    });
+    const size = f.store.databaseSizeBytes();
+    const report = await backup.run(f.store);
+    expect(report.snapshot.steps).toBeGreaterThan(8);
+    expect(report.snapshot.maxStepMs).toBeLessThan(250);
+    expect(report.sizeBytes).toBeLessThanOrEqual(size);
+    // Exactly the 100 events that were committed when the snapshot began.
+    const copy = Database.deserialize(f.uploads[0].bytes);
+    cleanups.push(() => copy.close());
+    expect(copy.query('SELECT count(*) AS n FROM events').get()).toEqual({ n: 100 });
+    expect(copy.query('PRAGMA integrity_check').get()).toEqual({ integrity_check: 'ok' });
+    expect(f.store.databaseSizeBytes()).toBeGreaterThan(0);
+    // Only one snapshot file existed while uploading, and it was no bigger than the database.
+    expect(f.uploads[0].snapshot.length).toBeLessThanOrEqual(size);
+  });
+
+  test('a snapshot held open past its time bound fails and releases the live WAL', async () => {
+    const f = fixture();
+    let time = Date.UTC(2026, 10, 16);
+    const backup = new UsageBackup(f.config, {
+      governor: f.io.governor,
+      rowsPerStep: 20,
+      maxSnapshotMs: 1000,
+      now: () => (time += 400),
+    });
+    await expect(backup.run(f.store)).rejects.toThrow('time bound');
+    expect(readdirSync(f.root)).toEqual([]);
     expect(f.uploads).toHaveLength(0);
   });
 

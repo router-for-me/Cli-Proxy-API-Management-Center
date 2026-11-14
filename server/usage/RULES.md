@@ -395,27 +395,73 @@ backup manifest. Job modules open no databases or network listeners.
 `_TMPFS_DIR` environment values override the file. Keep config files private;
 secrets and signed URLs must never be logged. No real credentials ship here.
 
-The backup refuses a directory that is not tmpfs, or less than twice the database's
-WAL-inclusive logical size in free space. It VACUUMs into a private temporary
-directory, then uploads 64 KiB chunks using a PUT signed by the pinned Bun 1.4.3
-`S3Client`. Each chunk counts its tmpfs read plus network write and is paced
-before sending, with backpressure and no redirect or automatic retry. Temp files
-are deleted on success, failure and cancellation. **VACUUM is one indivisible
-SQLite operation:** its reads cannot be chunked; admission is PSI-gated and its
-measured bytes are charged afterward. It writes only to tmpfs. Revisit the
-snapshot method and tmpfs headroom before the database reaches 2 GB.
+The backup refuses a directory that is not tmpfs, or less than the database's
+WAL-inclusive logical size plus 10% in free space (the copy holds rows only, so
+it is never larger than the database: one copy in `/dev/shm` at a time, plus the
+10% for growth during the copy). It copies the database into a private temporary
+directory with `UsageSnapshot` (`snapshot.ts`), then uploads 64 KiB chunks using a
+PUT signed by the pinned Bun `S3Client`. Each chunk counts its tmpfs read plus
+network write and is paced before sending, with backpressure and no redirect or
+automatic retry. Temp files are deleted on success, failure and cancellation.
+
+**Why not VACUUM INTO or the online backup API.** VACUUM is one indivisible
+operation and rebuilds every index. The SQLite backup API restarts whenever
+another connection commits, and the writer commits every 50 ms, so a stepped
+backup never finishes; bun:sqlite exposes neither it nor `sqlite_dbpage` anyway.
+`UsageSnapshot` instead opens one read transaction on the live file (the live file
+is attached as `src` to a fresh scratch database, so the copy is `INSERT ... SELECT`
+inside SQLite) and copies table by table in primary-key order,
+`SNAPSHOT_ROWS_PER_STEP` (500) rows per step. Each step is one governed
+writer-queue chunk through `runIoChunk`; PSI admission, 4 MB/s pacing and
+cancellation apply between steps. The read transaction fixes the snapshot at the
+first step: commits made between steps never enter the copy and never restart it.
+The attach is not read-only at the SQLite level (bun:sqlite cannot open URI
+filenames); the class issues only SELECTs against `src`, and a test pins the live
+file and WAL byte-identical.
+
+The writer is held only for one step: measured on a 350 MB copy of production,
+median 0.6 ms, p99 2 ms, worst 18 ms (the final commit). The report carries
+`snapshot: {steps, rows, maxStepMs}`. An open snapshot pins the live WAL (it
+cannot reset past the snapshot's read mark), so a copy is abandoned with an error
+after `maxSnapshotMs` (2 hours, wall time including IO pauses) and is always
+closed before its file is removed. The scratch database uses `synchronous=OFF`,
+`temp_store=MEMORY` and a 32 MB cache: a multi-row INSERT keeps a statement
+journal of every page it dirties, which went to a temp file at ~25x the database
+size in writes before this was set. Revisit the cache and the 2-hour bound before
+the database reaches 2 GB.
 
 Object keys are `usage/daily/usage-YYYYMMDD.sqlite` in UTC and, on Sundays,
 `usage/weekly/usage-YYYYMMDD.sqlite`. Configure bucket lifecycle expiration at
 14 days for the daily prefix and 56 days for the weekly prefix (eight weekly
-copies). The client never lists, prunes or deletes objects. It backs up
+copies). The backup never lists, prunes or deletes objects. It backs up
 `usage.sqlite`, including the reserved `client_alias` table; active aliases are a separate private file,
 not a backup of that table. The rate book remains a separate git
 artifact and the raw buffer is excluded. P4/P2 must arrange rate-book distribution
 alongside the backup; there is no rate-book table in the P1 schema.
 
-The coordinator configures the off-pool target and records the quarterly restore
-drill. This PR does not contact MinIO, run a real backup or perform a restore drill.
+### Restore check
+
+`scripts/usage-restore-check.ts` (installed as `usage-restore-check.js`) proves the
+newest `usage/daily/` object, or `--key`, restores. It runs in its own process,
+never in the writer worker, because `PRAGMA integrity_check` cannot be sliced; that
+pragma reads a scratch file on tmpfs and is the only ungoverned step. The download
+is paced through the same `IoGovernor`; live is opened read-only with mmap off and
+read in slices of ~20,000 rows through `runIoChunk`. It lists the daily prefix (the
+backup itself never does), downloads into a private tmpfs directory that is removed
+on every path, and prints one JSON verdict (exit 0 pass, 1 fail, 130 interrupted):
+
+- `integrity`: `PRAGMA integrity_check` is `ok`.
+- `schema`: `meta.schema_version` equals live's (`build` is this bundle's latest).
+- `opens`: the copy opens through `UsageStore` (migrate forward, set WAL), as a restore would.
+- `tables`: for the append-only tables (`events`, `event_detail`, `dim`, `session`,
+  `import_conflicts`) the backup's high-water mark is its max id. Live rows at or
+  below that mark must equal the backup's count, slice by slice, and live's max id
+  must be at least the backup's; rows added since the snapshot are allowed. Rolled-up
+  and mutable tables (`usage_hour_*`, `ingest_gaps`, `meta`, `client_alias`) are
+  listed as `unchecked` with the backup's row count.
+- `failures`: closed-vocabulary strings; empty when `ok`.
+
+The coordinator configures the off-pool target and records the restore drill.
 
 
 ### Worker integration and manual controls
@@ -439,7 +485,7 @@ drill. This PR does not contact MinIO, run a real backup or perform a restore dr
 - Shutdown refuses new starts, aborts the active job and settles its orchestration
   (including an in-flight upload pull and source cleanup) before closing the
   store. PSI/pacing checks observe cancellation within a one-second sleep; an
-  already-running synchronous chunk or VACUUM must finish first. A failed live
+  already-running synchronous chunk (one snapshot step) must finish first. A failed live
   flush still requests this worker cleanup and retains its unsuccessful result.
   A worker error/exit is tracked separately: outstanding RPCs reject and shutdown
   skips cleanup RPCs to an unavailable worker instead of waiting indefinitely.
@@ -713,7 +759,7 @@ The sole shipped nightly timer is `prox-usage-nightly.timer`, nonpersistent at
 `~/.local/share/prox/usage-jobs/usage-nightly.js` (built from `scripts/usage-nightly.ts` by
 `bun run build:usage-jobs` and installed atomically by `scripts/deploy-homelab.sh`, never run
 from a checkout; it spawns `usage-parity.js` beside itself; evidence goes to
-`PROX_USAGE_EVIDENCE_DIR`, `~/.local/share/prox/usage-evidence/`) under ionice/nice: prune → reconcile → optional backup → parity. Each job is polled
+`PROX_USAGE_EVIDENCE_DIR`, `~/.local/share/prox/usage-evidence/`) under ionice/nice: prune → reconcile → backup → parity. Each job is polled
 through GET `/v1/jobs` until `succeeded` AND `finishedAtMs` is present, so source
 cleanup releases the bulk slot before the next start. A failure, replaced job,
 HTTP error or nonzero parity stops the chain; incomplete parity remains exit 2.
@@ -792,10 +838,10 @@ daemon-reload, tolerating missing units but failing on manager errors. The new
 chain timer stays disabled until operator enablement.
 No live unit is installed, enabled or disabled by this work.
 
-**Backup chain gate:** `PROX_USAGE_ENABLE_PACED_BACKUP` defaults to `0`, so the
-step is explicitly skipped until the paced snapshot and restore gates land.
-Only then may the operator set `1` through the nightly service override. Upload
-pacing alone does not make the current VACUUM snapshot bounded.
+**Backup chain step:** the backup runs by default. Set
+`PROX_USAGE_ENABLE_PACED_BACKUP=0` in a nightly-service override to skip it for a
+night. It needs a working `backup.json`; without it the step fails and the chain
+stops before parity.
 
 
 ## Exporter lifetime counters and client names

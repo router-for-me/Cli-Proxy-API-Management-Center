@@ -39,16 +39,17 @@ test('usage units run the installed artefacts, never a mutable checkout', () => 
   }
 });
 
-test('the build step bundles both entry points and verify covers it', () => {
+test('the build step bundles every entry point and verify covers it', () => {
   const pkg = JSON.parse(readFileSync('package.json', 'utf8')).scripts;
   expect(pkg['build:usage-jobs']).toContain('./scripts/usage-nightly.ts');
   expect(pkg['build:usage-jobs']).toContain('./scripts/usage-parity.ts');
+  expect(pkg['build:usage-jobs']).toContain('./scripts/usage-restore-check.ts');
   expect(pkg['build:usage-jobs']).toContain('--target=bun');
   expect(pkg.build).toContain('bun run build:usage-jobs');
   expect(pkg.verify).toContain('bun run build');
 });
 
-test('deploy installs both artefacts atomically before daemon-reload', () => {
+test('deploy installs the artefacts atomically before daemon-reload', () => {
   const install = deploy.indexOf('# Install the self-contained usage job bundles');
   const reload = deploy.indexOf('systemctl --user daemon-reload');
   const verify = deploy.indexOf('bun run verify');
@@ -81,16 +82,27 @@ function runInstallBlock(root: string, dist: Record<string, string>) {
 
 test('the install block replaces artefacts by rename and leaves no temp files', () => {
   const root = temp();
-  const first = runInstallBlock(root, { 'usage-nightly.js': 'nightly v1', 'usage-parity.js': 'parity v1' });
+  const set = (version: string) => ({
+    'usage-nightly.js': `nightly ${version}`,
+    'usage-parity.js': `parity ${version}`,
+    'usage-restore-check.js': `restore ${version}`,
+  });
+  const first = runInstallBlock(root, set('v1'));
   expect(first.result.exitCode).toBe(0);
   expect(readFileSync(join(first.dir, 'usage-nightly.js'), 'utf8')).toBe('nightly v1');
   expect(readFileSync(join(first.dir, 'usage-parity.js'), 'utf8')).toBe('parity v1');
+  expect(readFileSync(join(first.dir, 'usage-restore-check.js'), 'utf8')).toBe('restore v1');
   // Redeploy over the existing files.
-  const second = runInstallBlock(root, { 'usage-nightly.js': 'nightly v2', 'usage-parity.js': 'parity v2' });
+  const second = runInstallBlock(root, set('v2'));
   expect(second.result.exitCode).toBe(0);
   expect(readFileSync(join(second.dir, 'usage-nightly.js'), 'utf8')).toBe('nightly v2');
   expect(readFileSync(join(second.dir, 'usage-parity.js'), 'utf8')).toBe('parity v2');
-  expect(readdirSync(second.dir).sort()).toEqual(['usage-nightly.js', 'usage-parity.js']);
+  expect(readFileSync(join(second.dir, 'usage-restore-check.js'), 'utf8')).toBe('restore v2');
+  expect(readdirSync(second.dir).sort()).toEqual([
+    'usage-nightly.js',
+    'usage-parity.js',
+    'usage-restore-check.js',
+  ]);
 });
 
 test('a missing bundle fails the install instead of shipping a half set', () => {

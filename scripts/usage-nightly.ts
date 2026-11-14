@@ -25,7 +25,7 @@ interface Job {
 export interface NightlyOptions {
   url: string;
   keyFile: string;
-  // Enable only after the paced snapshot implementation and restore gate have landed.
+  // The paced snapshot backup between reconcile and parity. Needs a working backup.json.
   backupEnabled: boolean;
   pollMs: number;
   // CPAMP's /status (loopback) and the admin key file that authorizes it.
@@ -386,7 +386,8 @@ if (import.meta.main) {
     {
       url: 'http://127.0.0.1:18320',
       keyFile: join(homedir(), '.config/cli-proxy-rerank/management-key'),
-      backupEnabled: process.env.PROX_USAGE_ENABLE_PACED_BACKUP === '1',
+      // On unless the unit opts out with PROX_USAGE_ENABLE_PACED_BACKUP=0.
+      backupEnabled: process.env.PROX_USAGE_ENABLE_PACED_BACKUP !== '0',
       pollMs: 10000,
       cpamp: {
         url: 'http://127.0.0.1:18317/status',

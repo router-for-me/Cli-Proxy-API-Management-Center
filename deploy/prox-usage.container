@@ -24,7 +24,7 @@ Environment=PROX_USAGE_CPAMP_IMMUTABLE=0
 Volume=%h/.config/prox-usage:/config:ro
 Environment=PROX_USAGE_BACKUP_CONFIG=/config/backup.json
 Environment=PROX_USAGE_CLIENT_ALIASES_PATH=/config/client-aliases.json
-# The backup snapshot is written to tmpfs and needs twice the database size free.
+# The backup snapshot is written to tmpfs and needs the database size plus 10% free.
 ShmSize=2g
 
 [Service]

@@ -1,7 +1,7 @@
 # Installed disabled by scripts/deploy-homelab.sh; the coordinator enables the timer.
 # Runs the bundles that deploy built from the deployed commit, never a source checkout.
 [Unit]
-Description=Serial Prox usage prune, reconcile, optional backup and parity
+Description=Serial Prox usage prune, reconcile, backup and parity
 After=prox-usage.service
 
 [Service]
@@ -9,8 +9,7 @@ Type=oneshot
 WorkingDirectory=%h/.local/share/prox/usage-jobs
 Environment=PATH=%h/.local/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin
 Environment=PROX_USAGE_EVIDENCE_DIR=%h/.local/share/prox/usage-evidence
-# Keep off until the paced snapshot and restore gate land.
-Environment=PROX_USAGE_ENABLE_PACED_BACKUP=0
+# The paced backup runs by default. To skip it for a night: Environment=PROX_USAGE_ENABLE_PACED_BACKUP=0
 ExecStart=/usr/bin/ionice -c3 /usr/bin/nice -n10 bun %h/.local/share/prox/usage-jobs/usage-nightly.js
 # From 04:20 to noon. The script also enforces today's absolute noon deadline.
 TimeoutStartSec=7h40min
