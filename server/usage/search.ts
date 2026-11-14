@@ -120,7 +120,7 @@ export function queryFilter(
         'SELECT id, kind FROM dim WHERE lower(value) LIKE ?'
       )
       .all(`%${term}%`))
-      matching.set(row.kind, [...(matching.get(row.kind) ?? []), row.id]);
+      (matching.get(row.kind) ?? matching.set(row.kind, []).get(row.kind)!).push(row.id);
     // A column holds only ids of its own kind, so it is tested only against those: a term that
     // matches nothing of a kind costs no per-row test of the columns of that kind.
     const clauses = SEARCH_DIMS.flatMap((column) => {

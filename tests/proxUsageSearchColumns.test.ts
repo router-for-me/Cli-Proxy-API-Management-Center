@@ -7,8 +7,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { queryAnalytics } from '../server/usage/analytics';
 import { runCpampJob } from '../server/usage/importCpamp';
-import { maskSource, normalizeUsagePayload } from '../server/usage/normalize';
+import { createHash } from 'node:crypto';
+import { isKeySource, maskSource, normalizeUsagePayload } from '../server/usage/normalize';
 import { USAGE_MIGRATIONS } from '../server/usage/schema';
+import { queryFilter } from '../server/usage/search';
 import { migrateUsageDatabase, openUsageReader, UsageStore } from '../server/usage/store';
 import type { AccountLabel, NormalizedEvent } from '../server/usage/types';
 import { CPAMP_ONLY_SEGMENTS } from '../scripts/usage-parity/searchCpampOnly';
@@ -65,6 +67,26 @@ describe('normalizer: source', () => {
     for (const stored of [maskSource(key), maskSource(long)]) expect(stored).not.toContain(key);
     expect(maskSource('   ')).toBe('');
   });
+  test('masking an already masked e-mail changes nothing, including one- and two-character locals', () => {
+    for (const masked of ['a***@x.test', 'ab***@x.test', 'abc***@x.test', 'a***@b@c.test'])
+      expect(maskSource(masked)).toBe(masked);
+    expect(maskSource('ab@x.test')).toBe('ab***@x.test');
+  });
+  test('a source that is a key is hashed, whatever its length or shape', () => {
+    const short = 'synthetic-client-key';
+    // The client's own key as the source, and an API-key credential's source.
+    expect(normalized({ source: short, api_key: short }).source).toMatch(/^h:[0-9a-f]{64}$/);
+    expect(normalized({ source: 'upstreamkey1', auth_type: 'apikey' }).source).toMatch(/^h:[0-9a-f]{64}$/);
+    for (const stored of [
+      normalized({ source: short, api_key: short }).source,
+      normalized({ source: 'upstreamkey1', auth_type: 'apikey' }).source,
+    ])
+      expect(stored).not.toMatch(/synthetic-client-key|upstreamkey1/);
+    // An OAuth account that is not a key keeps its readable form.
+    expect(normalized({ source: 'project-123', auth_type: 'oauth' }).source).toBe('project-123');
+    expect(isKeySource(short, 'oauth', '', createHash('sha256').update(short).digest('hex'))).toBe(true);
+    expect(isKeySource(short, 'oauth', '', '')).toBe(false);
+  });
   test('comes from the record source and is null when it is empty', () => {
     expect(normalized({ source: 'someone@example.test' }).source).toBe('som***@example.test');
     expect(normalized({ source: '' }).source).toBeNull();
@@ -99,6 +121,15 @@ describe('normalizer: response-header values', () => {
     expect(kc({ 'retry-after': '30' })).toEqual(['rate_limit', 'retry_after']);
     expect(kc({ 'retry-after': 'Mon, 02 Jan 2006 15:04:05 GMT' })).toEqual(['rate_limit', 'retry_after']);
     expect(kc({ 'retry-after': '0' })).toEqual(['rate_limit', 'retry_after']);
+    // The layouts Go accepts, with a real calendar date: a zone is required for the T form only.
+    expect(kc({ 'retry-after': '2026-11-14T12:00:00Z' })).toEqual(['rate_limit', 'retry_after']);
+    expect(kc({ 'retry-after': '2026-11-14 12:00:00' })).toEqual(['rate_limit', 'retry_after']);
+    expect(kc({ 'retry-after': '2026-11-14 12:00:00 UTC' })).toEqual(['rate_limit', 'retry_after']);
+    expect(kc({ 'retry-after': '2026-11-14T12:00:00' })).toEqual([null, null]);
+    expect(kc({ 'retry-after': '2026-02-30T12:00:00Z' })).toEqual([null, null]);
+    expect(kc({ 'retry-after': '2026-13-01 12:00:00' })).toEqual([null, null]);
+    expect(kc({ 'retry-after': '2026-11-14T12:00:60Z' })).toEqual([null, null]);
+    expect(kc({ 'retry-after': 'Mon, 31 Feb 2026 15:04:05 GMT' })).toEqual([null, null]);
     expect(kc({ 'retry-after': 'soon' })).toEqual([null, null]);
     expect(kc({ 'retry-after': '-5' })).toEqual([null, null]);
     expect(kc({ 'x-request-id': 'r' })).toEqual([null, null]);
@@ -207,6 +238,20 @@ describe('store: search of the eight columns', () => {
     seed();
     for (const term of ['post /v1/mess', '203.0.113.77', 'zed***', 'zprovider', 'needle-9', 'promaxplan', 'retry_after'])
       expect(calls(term, true), term).toBe(1);
+  });
+  test('building the filter stays linear when very many dictionary values match', () => {
+    const dims = new Database(':memory:');
+    dims.exec('CREATE TABLE dim (id INTEGER PRIMARY KEY, kind TEXT, value TEXT)');
+    dims.transaction(() => {
+      for (let i = 0; i < 50_000; i += 1)
+        dims.query('INSERT INTO dim (kind, value) VALUES (?, ?)').run('model', `needle-${i}`);
+    })();
+    const start = performance.now();
+    const filter = queryFilter(dims, query({ search: 'needle' }), []);
+    expect(performance.now() - start).toBeLessThan(500);
+    expect(filter.sql).toContain('e.model_id IN (1,2,3');
+    // Kinds with no match add no clause.
+    expect(filter.sql).not.toContain('e.provider_id IN');
   });
   test('only the three internal hashes stay CPAMP-only', () => {
     expect([...CPAMP_ONLY_SEGMENTS]).toEqual([
@@ -324,6 +369,24 @@ describe('CPAMP import, reconcile and backfill', () => {
     f.store.setMeta('import:cpamp:last_id', '0');
     await run(f, 'reconcile');
     expect(Buffer.from(f.reader.serialize()).equals(Buffer.from(before))).toBe(true);
+  });
+
+  test('a short masked e-mail imports unchanged and a key source is stored only as its hash', async () => {
+    const f = fixture(2);
+    const key = 'synthetic-client-key';
+    f.writable.db.exec(`UPDATE usage_events SET source = 'ab***@x.test' WHERE id = 1`);
+    f.writable.db
+      .query(`UPDATE usage_events SET source = ?, api_key_hash = ? WHERE id = 2`)
+      .run(key, createHash('sha256').update(key).digest('hex'));
+    const report = await run(f);
+    expect(report.verification).toMatchObject({ different: 0, exact: true });
+    const sources = (stored(f.reader) as { source: string }[]).map((row) => row.source);
+    expect(sources[0]).toBe('ab***@x.test');
+    expect(sources[1]).toMatch(/^h:[0-9a-f]{64}$/);
+    expect(f.reader.query(`SELECT count(*) AS n FROM dim WHERE value LIKE '%${key}%'`).get()).toEqual({ n: 0 });
+    // A second pass finds nothing to fill or conflict on.
+    f.store.setMeta('import:cpamp:last_id', '0');
+    expect(await run(f, 'reconcile')).toMatchObject({ conflicts: 0, filled: 0 });
   });
 
   test('a Codex project that is only an account marker is not stored as a project', async () => {

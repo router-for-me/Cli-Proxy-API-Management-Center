@@ -670,7 +670,10 @@ separate nightly chain below serializes maintenance before invoking parity.
     SHA-256; a long opaque value shows `m:` and its first and last four characters; any
     other value (a project id) is kept. The raw `source` can be an API key, so it never
     reaches the store, the raw buffer or a log; `maskSource` runs on live and imported
-    values alike and keeps a value that is already masked. The e-mails are masked forms of
+    values alike and keeps a value that is already masked. Token shape cannot tell a short
+    key, so the record's own provenance decides first: a source that is the record's
+    `api_key`, or whose SHA-256 is CPAMP's `api_key_hash`, or whose `auth_type` is `apikey`,
+    is stored only as `h:` and its SHA-256 (CPAMP would keep a short one as it is). The e-mails are masked forms of
     the account that `account` already holds in full.
   - `auth_provider_snapshot` and `auth_project_id_snapshot` (`auth_provider_id`,
     `auth_project_id`): from the management credential listing in force at ingestion, like

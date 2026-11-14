@@ -5,6 +5,7 @@ import { IoGovernor, runIoChunk, type ChunkScheduler, type IoBytes } from './ioG
 import {
   endpointText,
   failSummaryFromBody,
+  isKeySource,
   maskSource,
   normalizeUsagePayload,
   projectSnapshot,
@@ -90,7 +91,7 @@ export const CPAMP_EVENT_COLUMNS = `
   auth_index, account_snapshot, auth_label_snapshot, auth_file_snapshot, fail_summary,
   header_trace_id, endpoint, x_forwarded_for, source, auth_provider_snapshot,
   auth_project_id_snapshot, header_quota_plan_type, header_error_kind, header_error_code,
-  api_key_hash, user_agent, client_ip,
+  auth_type, api_key_hash, user_agent, client_ip,
   path, method, reasoning_effort, executor_type, request_id, session_id, parent_session_id,
   stream, failed, fail_status_code, latency_ms, ttft_ms,
   normalized_total_input_tokens AS input_total,
@@ -203,7 +204,12 @@ export function mapCpampRow(
   // the header values pass the scrubber again, so nothing unmasked or unscrubbed can enter.
   event.endpoint = endpointText(String(row.endpoint ?? ''));
   event.xForwardedFor = requestMetadata(row.x_forwarded_for, 2048);
-  event.source = maskSource(String(row.source ?? '')) || null;
+  const source = String(row.source ?? '');
+  event.source =
+    maskSource(
+      source,
+      isKeySource(source, String(row.auth_type ?? ''), '', String(row.api_key_hash ?? ''))
+    ) || null;
   event.authProvider = nonempty(row.auth_provider_snapshot);
   event.authProject = projectSnapshot(
     event.authProvider ?? event.provider,

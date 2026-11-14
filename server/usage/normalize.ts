@@ -311,17 +311,40 @@ export function scrubTraceId(value: string): string | null {
 }
 
 const FLOAT_HEADER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
-const DATE_HEADERS = [
-  // RFC 3339 and the two "2006-01-02 15:04:05" layouts CPAMP's parseHeaderCommonTime accepts.
-  /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])[T ](?:[01]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60)(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}| [A-Z]{3,5})?$/,
-  // RFC 1123 with a zone name or a numeric offset (an HTTP-date).
-  /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (?:0[1-9]|[12]\d|3[01]) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} (?:[01]\d|2[0-3]):[0-5]\d:(?:[0-5]\d|60) (?:[A-Z]{3,5}|[+-]\d{4})$/,
+// The layouts of CPAMP's parseHeaderCommonTime, each with its calendar fields captured as
+// year, month, day, hour, minute, second. Go rejects an impossible date and a leap second.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DATE_LAYOUTS: readonly [RegExp, (m: RegExpExecArray) => number[]][] = [
+  // RFC 3339 (and its ".000" form): a zone is required.
+  [
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
+    (m) => m.slice(1, 7).map(Number),
+  ],
+  // "2006-01-02 15:04:05 MST" and "2006-01-02 15:04:05".
+  [
+    /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(?: [A-Z]{3,5})?$/,
+    (m) => m.slice(1, 7).map(Number),
+  ],
+  // RFC 1123 and RFC 1123Z (an HTTP-date).
+  [
+    /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) ([A-Z][a-z]{2}) (\d{4}) (\d{2}):(\d{2}):(\d{2}) (?:[A-Z]{3,5}|[+-]\d{4})$/,
+    (m) => [Number(m[3]), MONTHS.indexOf(m[2]) + 1, Number(m[1]), Number(m[4]), Number(m[5]), Number(m[6])],
+  ],
 ];
+function calendarValid([year, month, day, hour, minute, second]: number[]): boolean {
+  if (month < 1 || hour > 23 || minute > 59 || second > 59) return false;
+  const at = new Date(Date.UTC(2000, month - 1, day));
+  at.setUTCFullYear(year);
+  return at.getUTCMonth() === month - 1 && at.getUTCDate() === day && day >= 1;
+}
 /** CPAMP's parseRetryAfter succeeds: a non-negative number of seconds, or a date in a known layout. */
 function retryAfterParses(value: string): boolean {
   const number = value.endsWith('%') ? value.slice(0, -1).trim() : value;
   if (FLOAT_HEADER.test(number)) return Number.isFinite(Number(number)) && Number(number) >= 0;
-  return DATE_HEADERS.some((pattern) => pattern.test(value));
+  return DATE_LAYOUTS.some(([pattern, fields]) => {
+    const match = pattern.exec(value);
+    return !!match && calendarValid(fields(match));
+  });
 }
 const AUTH_ERROR_CODES = ['token_revoked', 'token_invalidated', 'account_deactivated', '401'];
 
@@ -361,11 +384,19 @@ export function headerSearchValues(headers: unknown): {
  * a value holding a credential is replaced by its SHA-256; a long opaque value shows only its
  * first and last four characters. Anything else (a project id, an account name) is kept.
  */
-export function maskSource(value: string): string {
+export function maskSource(value: string, isKey = false): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
   // A value CPAMP already masked this way stays as it is, so masking an imported value is exact.
-  if (/^h:[0-9a-f]{64}$/.test(trimmed) || /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed)) return trimmed;
+  if (
+    /^h:[0-9a-f]{64}$/.test(trimmed) ||
+    /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed) ||
+    /^[^@]{0,3}\*\*\*@/.test(trimmed)
+  )
+    return trimmed;
+  // The record says the source is a key (an API-key credential, or the client's own key): CPAMP
+  // would keep a short one as it is, Prox never stores it, only its hash.
+  if (isKey) return `h:${createHash('sha256').update(trimmed).digest('hex')}`;
   const at = trimmed.indexOf('@');
   if (at !== -1) {
     const prefix = Buffer.from(trimmed.slice(0, at));
@@ -379,6 +410,21 @@ export function maskSource(value: string): string {
     (trimmed.startsWith('sk-') || trimmed.startsWith('AIza') || Buffer.byteLength(trimmed) >= 32);
   if (!looksSecret) return trimmed;
   return Buffer.byteLength(trimmed) <= 8 ? 'm:****' : `m:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+}
+
+/**
+ * Whether a source is a key, by what the record knows: an API-key credential (`auth_type`
+ * `apikey`) has its key as the source, and a source equal to the client's key (or whose hash
+ * is CPAMP's persisted `api_key_hash`) is that key. Token shape alone cannot tell a short key.
+ */
+export function isKeySource(source: string, authType: string, apiKey: string, apiKeyHash = ''): boolean {
+  const trimmed = source.trim();
+  if (!trimmed) return false;
+  return (
+    authType.trim().toLowerCase() === 'apikey' ||
+    (!!apiKey && trimmed === apiKey) ||
+    (!!apiKeyHash && createHash('sha256').update(trimmed).digest('hex') === apiKeyHash.toLowerCase())
+  );
 }
 
 /** The marker CPAMP gives a Codex account id it stores where a project id would go. */
@@ -666,7 +712,9 @@ export function normalizeUsagePayload(
       // The proxy's route pattern, "METHOD /route": no query string, so none is kept either.
       endpoint: endpointText(text(record.endpoint)),
       xForwardedFor: requestMetadata(record.x_forwarded_for, 2048),
-      source: orNull(maskSource(text(record.source))),
+      source: orNull(
+        maskSource(text(record.source), isKeySource(text(record.source), text(record.auth_type), apiKey))
+      ),
       authProvider: orNull(text(label?.provider)),
       authProject: projectSnapshot(text(label?.provider) || provider, text(label?.project)),
       ...headerSearchValues(record.response_headers),
