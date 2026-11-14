@@ -272,9 +272,10 @@ export function apiKeyHashParity(cpamp: Database, prox: Database, window: ProbeW
   return { cpamp: hashes.size, inProx: [...hashes].filter((hash) => find.get(hash)).length };
 }
 
-/** A table for the PR and the evidence folder. Terms are shown cut, never whole: they are real values. */
+/** A table for the PR and the evidence folder. Terms are real values (accounts, addresses), so
+ * only their length is shown; the JSON report keeps them for the operator. */
 export function probeMarkdown(report: ProbeReport): string {
-  const preview = (term?: string) => (term ? `${term.slice(0, 3)}… (${term.length})` : '');
+  const preview = (term?: string) => (term ? `${term.length} chars` : '');
   const rows = report.columns.map((c) =>
     c.skipped
       ? `| ${c.index} | ${c.column} | not probed: ${c.skipped} | | | | | | |`
@@ -283,7 +284,7 @@ export function probeMarkdown(report: ProbeReport): string {
   return [
     `Window ${new Date(report.window.from_ms).toISOString()} .. ${new Date(report.window.to_ms).toISOString()}, ${report.events} events`,
     '',
-    '| # | column | term (cut) | CPAMP | Prox | both | CPAMP-only: hash | Prox-only: Prox-only field | unexplained |',
+    '| # | column | term | CPAMP | Prox | both | CPAMP-only: hash | Prox-only: Prox-only field | unexplained |',
     '|---|---|---|---|---|---|---|---|---|',
     ...rows,
     '',
