@@ -158,7 +158,7 @@ export class UsageBackup {
         while (!(await runIoChunk('backup', () => timed(() => snapshot!.step()), chunkOptions)));
       } catch (error) {
         if (deadline.aborted && !signal?.aborted)
-          throw new Error('Usage backup snapshot exceeded its time bound');
+          throw new Error('Usage backup snapshot exceeded its time bound', { cause: error });
         throw error;
       }
       const size = Bun.file(path).size;
