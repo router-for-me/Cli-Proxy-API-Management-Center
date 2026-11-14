@@ -604,6 +604,35 @@ const draftFromStoredGroup = (group: Record<string, unknown>): GeminiGroupDraft 
   })),
 });
 
+/**
+ * Disable/enable a stored group. A key that carries its own excluded-models
+ * replaces the group list, so the group-wide rule must reach those keys too.
+ */
+export const buildGroupDisabledDraft = (
+  group: Record<string, unknown>,
+  disabled: boolean
+): GeminiGroupDraft => {
+  const draft = draftFromStoredGroup(group);
+  draft.excludedModels = disabled
+    ? withDisableAllModelsRule(draft.excludedModels ?? [])
+    : withoutDisableAllModelsRule(draft.excludedModels ?? []);
+  draft.keys = draft.keys.map((key) => {
+    const raw = key.raw ?? {};
+    if (!Array.isArray(raw['excluded-models'])) return key;
+    const list = (raw['excluded-models'] as string[]).map(String);
+    return {
+      ...key,
+      raw: {
+        ...raw,
+        'excluded-models': disabled
+          ? withDisableAllModelsRule(list)
+          : withoutDisableAllModelsRule(list),
+      },
+    };
+  });
+  return draft;
+};
+
 /* -------------------------------------------------------------------------- */
 /* hook                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -1080,29 +1109,9 @@ export function useProviderWorkbench(
         const selector = resource.selector;
         if (brand === 'gemini' && resource.kind === 'group' && 'groups' in selector) {
           const group = selector.group;
-          const draft = draftFromStoredGroup(group);
-          draft.excludedModels = disabled
-            ? withDisableAllModelsRule(draft.excludedModels ?? [])
-            : withoutDisableAllModelsRule(draft.excludedModels ?? []);
-          // Key-level lists replace the group list, so a group-wide disable must
-          // reach every key that carries its own exclusions.
-          draft.keys = draft.keys.map((key) => {
-            const raw = key.raw ?? {};
-            if (!Array.isArray(raw['excluded-models'])) return key;
-            const list = (raw['excluded-models'] as string[]).map(String);
-            return {
-              ...key,
-              raw: {
-                ...raw,
-                'excluded-models': disabled
-                  ? withDisableAllModelsRule(list)
-                  : withoutDisableAllModelsRule(list),
-              },
-            };
-          });
           await providersApi.updateGeminiGroup(
             { groupIndex: selector.groupIndex, group, groups: selector.groups },
-            draft
+            buildGroupDisabledDraft(group, disabled)
           );
         } else if (brand === 'gemini' && selector.brand === 'gemini' && 'apiKey' in selector) {
           const current = resource.raw as GeminiKeyConfig;
