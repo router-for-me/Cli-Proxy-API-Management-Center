@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import type { RuntimePolicyDraft } from '../../runtimePolicy';
 import { ErrorRulesEditor } from './ErrorRulesEditor';
 import styles from './sharedForm.module.scss';
@@ -24,18 +25,23 @@ export function RuntimePolicyEditor({
   const key = 'providersPage.runtimePolicy';
 
   return (
-    <Collapsible label={t(`${key}.title`)} aria-describedby={`${id}-description`}>
+    <Collapsible label={t(`${key}.title`)}>
       <div className={styles.section}>
-        <p id={`${id}-description`} className={styles.sectionDesc}>
-          {t(`${key}.description`)}
-        </p>
         <div className={styles.field}>
-          <label htmlFor={`${id}-cooling`} className={styles.label}>
-            {t(`${key}.cooling`)}
-          </label>
+          {/* The section's inherit/override explanation rides on its first field: an InfoTip
+              cannot sit in the Collapsible summary (a button inside a button). */}
+          <FieldLabel
+            className={styles.labelLine}
+            labelClassName={styles.label}
+            htmlFor={`${id}-cooling`}
+            label={t(`${key}.cooling`)}
+            hint={t(`${key}.description`)}
+            hintId={`${id}-cooling-hint`}
+          />
           <Select
             id={`${id}-cooling`}
             ariaLabel={t(`${key}.cooling`)}
+            ariaDescribedBy={`${id}-cooling-hint`}
             value={value.cooling}
             disabled={disabled}
             options={[
@@ -49,9 +55,14 @@ export function RuntimePolicyEditor({
           />
         </div>
         <div className={styles.field}>
-          <label htmlFor={`${id}-retry`} className={styles.label}>
-            {t(`${key}.retry`)}
-          </label>
+          <FieldLabel
+            className={styles.labelLine}
+            labelClassName={styles.label}
+            htmlFor={`${id}-retry`}
+            label={t(`${key}.retry`)}
+            hint={t(`${key}.retryHint`)}
+            hintId={`${id}-retry-hint`}
+          />
           <input
             id={`${id}-retry`}
             className={styles.input}
@@ -62,16 +73,24 @@ export function RuntimePolicyEditor({
             aria-describedby={`${id}-retry-hint`}
             onChange={(event) => onChange({ ...value, retry: event.target.value })}
           />
-          <span id={`${id}-retry-hint`} className={styles.labelHint}>
-            {t(`${key}.retryHint`)}
-          </span>
         </div>
         {supportsErrors && (
           <>
             <div className={styles.field}>
-              <label htmlFor={`${id}-errors-mode`} className={styles.label}>
-                {t(`${key}.errorsMode`)}
-              </label>
+              <FieldLabel
+                className={styles.labelLine}
+                labelClassName={styles.label}
+                htmlFor={`${id}-errors-mode`}
+                label={t(`${key}.errorsMode`)}
+                hint={
+                  <>
+                    {/* The space keeps the two sentences apart in the accessible description. */}
+                    {t(`${key}.errorsHint`)} <br />
+                    {t('providersPage.errorRules.hint')}
+                  </>
+                }
+                hintId={`${id}-errors-hint`}
+              />
               <Select
                 id={`${id}-errors-mode`}
                 ariaLabel={t(`${key}.errorsMode`)}
@@ -86,15 +105,13 @@ export function RuntimePolicyEditor({
                   onChange({ ...value, errorsMode: errorsMode as RuntimePolicyDraft['errorsMode'] })
                 }
               />
-              <span id={`${id}-errors-hint`} className={styles.labelHint}>
-                {t(`${key}.errorsHint`)}
-              </span>
             </div>
             {value.errorsMode === 'override' && (
               <ErrorRulesEditor
                 rules={value.errorRules}
                 onChange={(errorRules) => onChange({ ...value, errorRules })}
                 disabled={disabled}
+                showOrderHint={false}
               />
             )}
           </>

@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { IconChevronDown, IconRefreshCw } from '@/components/ui/icons';
+import { InfoTip } from '@/components/ui/Tooltip';
 import type { AuthFileCooldownSnapshot } from '@/types/authFile';
 import { createSharedClock } from '@/utils/time/sharedClock';
 import { formatDateTimeValue } from '@/utils/format';
@@ -115,17 +116,23 @@ function CooldownDetails({
             </li>
           ))}
         </ul>
-        {snapshot.observedAt && (
+        {/* 快照时间 + 解读说明（估算、到期不等于可用）收进提示；右侧是清除动作。 */}
+        <div className={styles.foot}>
           <p className={styles.observed}>
-            {t('auth_files.cooldown_observed')}{' '}
-            <time dateTime={snapshot.observedAt}>
-              {formatDateTimeValue(snapshot.observedAt, i18n.language)}
-            </time>
+            {snapshot.observedAt && (
+              <>
+                {t('auth_files.cooldown_observed')}{' '}
+                <time dateTime={snapshot.observedAt}>
+                  {formatDateTimeValue(snapshot.observedAt, i18n.language)}
+                </time>
+              </>
+            )}
+            <InfoTip
+              content={t('auth_files.cooldown_note')}
+              label={snapshot.observedAt ? t('auth_files.cooldown_observed') : undefined}
+            />
           </p>
-        )}
-        <p className={styles.note}>{t('auth_files.cooldown_note')}</p>
-        {onReset && (
-          <div className={styles.actionRow}>
+          {onReset && (
             <Button
               variant="secondary"
               size="sm"
@@ -137,8 +144,8 @@ function CooldownDetails({
               {!resetting && <IconRefreshCw size={14} />}
               {t('auth_files.cooldown_reset_button')}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </details>
   );

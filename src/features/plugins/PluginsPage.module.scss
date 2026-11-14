@@ -18,7 +18,8 @@
 }
 
 // ─── Header ─────────────────────────────────────────────
-// Title and description only: the app's floating action bar owns the top-right corner.
+// Title only: the app's floating action bar owns the top-right corner, and the summary line
+// below carries the page's live state.
 
 .header {
   display: flex;
@@ -34,14 +35,6 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
-}
-
-.description {
-  max-width: 68ch;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 // ─── Summary line ───────────────────────────────────────

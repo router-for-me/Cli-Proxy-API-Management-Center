@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { formatRelativeInstant, TYPE_COLORS } from '@/utils/quota';
 import { getQuotaCacheKey, getQuotaDisplayName } from '@/utils/quota/identity';
 import { useNow } from '@/hooks/useNow';
+import { InfoTip } from '@/components/ui/Tooltip';
 import type { ResolvedTheme, ThemeColors } from '@/types';
 import {
   buildTimelineLanes,
@@ -164,13 +165,27 @@ export function QuotaTimeline({
 
   if (!hasAnyLane) return null;
 
+  const windowsTitle = t('quota_management.windows_title', { defaultValue: 'Quota windows' });
+  // How the bars are drawn: occasional knowledge, so it sits behind the title, not under the chart.
+  const chartNote =
+    mode === 'weekly'
+      ? t('quota_management.windows_note_weekly', {
+          defaultValue:
+            'Each bar is one full quota window, drawn from when it opened to when it resets. Lanes ending together compete for the same days.',
+        })
+      : t('quota_management.windows_note_session', {
+          defaultValue:
+            'Each bar is one 5-hour window. Only credentials with a window counting down can be projected; the rest stay empty rather than invented.',
+        });
+
   return (
     <section className={styles.timeline}>
       <header className={styles.head}>
         <div>
-          <h2 className={styles.title}>
-            {t('quota_management.windows_title', { defaultValue: 'Quota windows' })}
-          </h2>
+          <div className={styles.titleRow}>
+            <h2 className={styles.title}>{windowsTitle}</h2>
+            {lanes.length > 0 && <InfoTip content={chartNote} label={windowsTitle} />}
+          </div>
           <p className={styles.range}>
             {formatDay(span.startMs)} – {formatDay(span.endMs - 1)}
             {' · '}
@@ -304,17 +319,6 @@ export function QuotaTimeline({
             {t('quota_management.windows_legend_reset_credit', {
               defaultValue: 'manual reset expiry',
             })}
-          </span>
-          <span className={styles.legendNote}>
-            {mode === 'weekly'
-              ? t('quota_management.windows_note_weekly', {
-                  defaultValue:
-                    'Each bar is one full quota window, drawn from when it opened to when it resets. Lanes ending together compete for the same days.',
-                })
-              : t('quota_management.windows_note_session', {
-                  defaultValue:
-                    'Each bar is one 5-hour window. Only credentials with a window counting down can be projected; the rest stay empty rather than invented.',
-                })}
           </span>
         </footer>
       )}

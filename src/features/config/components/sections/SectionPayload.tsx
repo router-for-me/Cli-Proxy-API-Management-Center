@@ -53,7 +53,6 @@ export function SectionPayload({
       indexLabel={SECTION_INDEX_LABELS.payload}
       icon={<Icon size={16} />}
       title={t('config_management.visual.sections.payload.title')}
-      description={t('config_management.visual.sections.payload.description')}
       animateIn={animateIn}
     >
       <FieldStack>
@@ -61,7 +60,6 @@ export function SectionPayload({
           <Collapsible
             key={`payloadDefaultRules-${payloadValidationKey}`}
             label={t('config_management.visual.sections.payload.default_rules')}
-            hint={t('config_management.visual.sections.payload.default_rules_desc')}
             defaultOpen={hasPayloadValidationErrors}
           >
             <PayloadRulesEditor
@@ -76,7 +74,6 @@ export function SectionPayload({
           <Collapsible
             key={`payloadDefaultRawRules-${payloadValidationKey}`}
             label={t('config_management.visual.sections.payload.default_raw_rules')}
-            hint={t('config_management.visual.sections.payload.default_raw_rules_desc')}
             defaultOpen={hasPayloadValidationErrors}
           >
             <PayloadRulesEditor
@@ -92,7 +89,6 @@ export function SectionPayload({
           <Collapsible
             key={`payloadOverrideRules-${payloadValidationKey}`}
             label={t('config_management.visual.sections.payload.override_rules')}
-            hint={t('config_management.visual.sections.payload.override_rules_desc')}
             defaultOpen={hasPayloadValidationErrors}
           >
             <PayloadRulesEditor
@@ -108,7 +104,6 @@ export function SectionPayload({
           <Collapsible
             key={`payloadOverrideRawRules-${payloadValidationKey}`}
             label={t('config_management.visual.sections.payload.override_raw_rules')}
-            hint={t('config_management.visual.sections.payload.override_raw_rules_desc')}
             defaultOpen={hasPayloadValidationErrors}
           >
             <PayloadRulesEditor
@@ -125,7 +120,6 @@ export function SectionPayload({
           <Collapsible
             key={`payloadFilterRules-${payloadValidationKey}`}
             label={t('config_management.visual.sections.payload.filter_rules')}
-            hint={t('config_management.visual.sections.payload.filter_rules_desc')}
             defaultOpen={hasPayloadValidationErrors}
           >
             <PayloadFilterRulesEditor

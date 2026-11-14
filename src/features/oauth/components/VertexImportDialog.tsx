@@ -2,6 +2,7 @@ import { useId, useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { IconFileText, IconLoader2, IconUpload } from '@/components/ui/icons';
 import type { VertexImportState } from '../hooks/useVertexImport';
 import { DialogTitle, type DialogHeading } from './OAuthFlowDialog';
@@ -89,10 +90,15 @@ export function VertexImportDialog({
           </div>
         ) : (
           <div className={dialogStyles.stack}>
-            <p className={dialogStyles.hint}>{t('vertex_import.description')}</p>
-
             <div className={styles.field}>
-              <span className={styles.label}>{t('vertex_import.file_label')}</span>
+              {/* 同一句说明同时描述落点按钮与 InfoTip：读屏聚焦任一处都能听到 */}
+              <FieldLabel
+                label={t('vertex_import.file_label')}
+                hint={t('vertex_import.file_hint')}
+                hintId={fileHintId}
+                className={styles.labelRow}
+                labelClassName={styles.label}
+              />
               <button
                 type="button"
                 className={styles.dropZone}
@@ -114,9 +120,9 @@ export function VertexImportDialog({
                   <span className={vertex.file ? styles.fileName : styles.dropTitle}>
                     {vertex.file ? vertex.file.name : t('vertex_import.drop_hint')}
                   </span>
-                  <span className={styles.dropHint} id={fileHintId}>
-                    {vertex.file ? t('vertex_import.choose_file') : t('vertex_import.file_hint')}
-                  </span>
+                  {vertex.file && (
+                    <span className={styles.dropHint}>{t('vertex_import.choose_file')}</span>
+                  )}
                 </span>
               </button>
               <input

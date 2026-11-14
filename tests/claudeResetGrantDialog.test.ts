@@ -54,6 +54,9 @@ test('radio cards begin unselected and show kind, count, expiry and Fable semant
   expect(markup).toContain('Expiry unknown');
   expect(markup).toContain('No Fable usage to reset.');
   expect(markup).toContain('Other weekly usage stays unchanged.');
+  // Only the Fable grant spends differently from its label; ordinary grants carry no note.
+  expect(markup.match(/Other weekly usage stays unchanged\./g)).toHaveLength(1);
+  expect(markup).not.toContain('Uses exactly this reset grant.');
   expect(markup.match(/disabled=""/g)).toHaveLength(1);
 });
 
@@ -81,7 +84,6 @@ test.each(['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr'])(
       'selected_grant',
       'no_usage',
       'fable_hint',
-      'exact_grant_hint',
     ]) {
       expect(typeof locale.claude_reset[key]).toBe('string');
       expect(locale.claude_reset[key].length).toBeGreaterThan(0);

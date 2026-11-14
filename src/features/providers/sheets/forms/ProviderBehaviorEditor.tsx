@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
 import type { ProviderBehaviorOptions } from '@/types/provider';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { getProviderBehaviorCapabilities } from '../../descriptors';
 import type { ProviderBrand } from '../../types';
+import { CheckboxField } from './CheckboxField';
 import styles from './sharedForm.module.scss';
 
 interface ProviderBehaviorEditorProps {
@@ -25,20 +27,13 @@ export function ProviderBehaviorEditor({
   const capabilities = getProviderBehaviorCapabilities(brand);
   if (!Object.values(capabilities).some(Boolean)) return null;
   const checkbox = (key: 'alphaSearch' | 'rebuildMidSystemMessage' | 'supportPromptCacheKey') => (
-    <label className={styles.checkboxRow}>
-      <input
-        type="checkbox"
-        className={styles.checkboxBox}
-        checked={value[key] === true}
-        disabled={disabled}
-        aria-describedby={`${id}-${key}-hint`}
-        onChange={(event) => onChange({ [key]: event.target.checked })}
-      />
-      <span className={styles.checkboxText}>
-        <span>{t(`providersPage.behavior.${key}`)}</span>
-        <small id={`${id}-${key}-hint`}>{t(`providersPage.behavior.${key}Hint`)}</small>
-      </span>
-    </label>
+    <CheckboxField
+      label={t(`providersPage.behavior.${key}`)}
+      hint={t(`providersPage.behavior.${key}Hint`)}
+      checked={value[key] === true}
+      disabled={disabled}
+      onChange={(checked) => onChange({ [key]: checked })}
+    />
   );
   return (
     <Collapsible label={t('providersPage.behavior.title')}>
@@ -46,9 +41,14 @@ export function ProviderBehaviorEditor({
         {capabilities.alphaSearch ? checkbox('alphaSearch') : null}
         {capabilities.disableCodexCloaking ? (
           <div className={styles.field}>
-            <label htmlFor={`${id}-cloak`} className={styles.label}>
-              {t('providersPage.behavior.codexCloaking')}
-            </label>
+            <FieldLabel
+              className={styles.labelLine}
+              labelClassName={styles.label}
+              htmlFor={`${id}-cloak`}
+              label={t('providersPage.behavior.codexCloaking')}
+              hint={t('providersPage.behavior.codexCloakingHint')}
+              hintId={`${id}-cloak-hint`}
+            />
             <Select
               id={`${id}-cloak`}
               ariaLabel={t('providersPage.behavior.codexCloaking')}
@@ -72,9 +72,6 @@ export function ProviderBehaviorEditor({
                 })
               }
             />
-            <small id={`${id}-cloak-hint`} className={styles.labelHint}>
-              {t('providersPage.behavior.codexCloakingHint')}
-            </small>
           </div>
         ) : null}
         {capabilities.rebuildMidSystemMessage ? checkbox('rebuildMidSystemMessage') : null}

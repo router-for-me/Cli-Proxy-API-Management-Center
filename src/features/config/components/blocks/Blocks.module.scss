@@ -148,24 +148,13 @@
   gap: 16px;
 }
 
-.apiKeysCopy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
+/* 标题独占左侧一行，与右侧「添加」按钮垂直居中。 */
 .apiKeysTitle {
+  min-width: 0;
   color: var(--text-primary);
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.4;
-}
-
-.apiKeysHint {
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.55;
 }
 
 .apiKeyList {
@@ -396,18 +385,15 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
+}
 
-  > span {
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  small {
-    color: var(--text-tertiary);
-    font-size: 12px;
-    line-height: 1.45;
-  }
+/* 「应用到」组名 + InfoTip：普通行内流，字号/行高与组名一致，InfoTip 不撑高这一行。 */
+.storeAuthApplyToLabel {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .storeAuthCheckboxes {

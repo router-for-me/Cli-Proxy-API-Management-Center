@@ -73,8 +73,13 @@ describe('server configuration localization', () => {
         const entry = findConfigFieldById(id);
         expect(entry?.sectionId).toBe('connectivity');
         expect(entry?.labelKey).toBe(`config_management.visual.serverExtras.${id}.label`);
-        expect(entry?.hintKey).toBe(`config_management.visual.serverExtras.${id}.hint`);
         expect(resolve(entry!.labelKey)).toBeString();
+        // The service type's default is its placeholder; it has no separate explanation.
+        if (id === 'discoveryServiceType') {
+          expect(entry?.hintKey).toBeUndefined();
+          continue;
+        }
+        expect(entry?.hintKey).toBe(`config_management.visual.serverExtras.${id}.hint`);
         expect(resolve(entry!.hintKey!)).toBeString();
       }
       for (const key of [

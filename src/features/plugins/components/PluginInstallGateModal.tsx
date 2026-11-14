@@ -168,7 +168,6 @@ export function PluginInstallGateModal({
             disabled={installing}
             aria-label={t('plugin_store.gate_step3_prompt', { token })}
           />
-          <p className={styles.confirmHint}>{t('plugin_store.gate_step3_hint')}</p>
         </div>
       </>
     );

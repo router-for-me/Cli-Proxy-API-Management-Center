@@ -56,8 +56,9 @@ export function LoginProxyField({ value, rejectedValue, onChange }: LoginProxyFi
     inputRef.current?.focus();
   };
 
+  // Nothing set: the collapsed chip alone says it is optional, so no status is shown.
   const statusText = !active
-    ? t('auth_login.login_proxy_optional')
+    ? null
     : invalid
       ? t('auth_login.login_proxy_status_invalid')
       : maskProxyUrl(check.kind === 'valid' ? check.url : value);
@@ -78,10 +79,12 @@ export function LoginProxyField({ value, rejectedValue, onChange }: LoginProxyFi
       >
         <IconNetwork size={14} className={styles.toggleIcon} aria-hidden="true" />
         <span className={styles.toggleLabel}>{t('auth_login.login_proxy_toggle')}</span>
-        <span className={styles.toggleStatus}>
-          {active && <span className={styles.statusDot} aria-hidden="true" />}
-          <span className={styles.statusText}>{statusText}</span>
-        </span>
+        {statusText && (
+          <span className={styles.toggleStatus}>
+            <span className={styles.statusDot} aria-hidden="true" />
+            <span className={styles.statusText}>{statusText}</span>
+          </span>
+        )}
         <IconChevronDown size={14} className={styles.chevron} aria-hidden="true" />
       </button>
 

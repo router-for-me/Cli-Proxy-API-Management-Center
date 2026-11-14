@@ -44,7 +44,6 @@ export interface QuotaClassMap {
   antigravityQuotaGroup: string;
   antigravityQuotaGroupHeader: string;
   antigravityQuotaGroupTitle: string;
-  antigravityQuotaGroupDescription: string;
   // 水位条（QuotaMeter）
   quotaBar: string;
   quotaBarFill: string;
@@ -82,7 +81,6 @@ export const QUOTA_CLASS_KEYS: readonly (keyof QuotaClassMap)[] = [
   'antigravityQuotaGroup',
   'antigravityQuotaGroupHeader',
   'antigravityQuotaGroupTitle',
-  'antigravityQuotaGroupDescription',
   'quotaBar',
   'quotaBarFill',
   'quotaBarFillHigh',

@@ -1,7 +1,9 @@
 import { memo, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import { apiKeyNameFingerprint, readApiKeyNames, saveApiKeyName } from '../../apiKeyNames';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -56,8 +58,6 @@ function ScopedApiKeysCardEditor({
   }, [apiKeyIds, apiKeys.length]);
 
   const apiKeyInputId = useId();
-  const nameInputId = useId();
-  const nameHintId = `${nameInputId}-hint`;
   const apiKeyHintId = `${apiKeyInputId}-hint`;
   const apiKeyErrorId = `${apiKeyInputId}-error`;
   const [modalOpen, setModalOpen] = useState(false);
@@ -149,12 +149,7 @@ function ScopedApiKeysCardEditor({
   return (
     <div className={styles.apiKeys}>
       <div className={styles.apiKeysHeader}>
-        <div className={styles.apiKeysCopy}>
-          <span className={styles.apiKeysTitle}>
-            {t('config_management.visual.api_keys.label')}
-          </span>
-          <span className={styles.apiKeysHint}>{t('config_management.visual.api_keys.hint')}</span>
-        </div>
+        <span className={styles.apiKeysTitle}>{t('config_management.visual.api_keys.label')}</span>
         <Button size="sm" onClick={openAddModal} disabled={disabled}>
           {t('config_management.visual.api_keys.add')}
         </Button>
@@ -227,25 +222,22 @@ function ScopedApiKeysCardEditor({
           </>
         }
       >
+        {/* 两条说明都收进标签后的 InfoTip，并以视觉隐藏副本留给 aria-describedby。 */}
+        <Input
+          label={t('config_management.visual.api_keys.name_label')}
+          hint={t('config_management.visual.api_keys.name_hint')}
+          value={nameValue}
+          onChange={(event) => setNameValue(event.target.value)}
+          placeholder={t('config_management.visual.api_keys.name_placeholder')}
+          disabled={disabled}
+        />
         <div className="form-group">
-          <label htmlFor={nameInputId}>{t('config_management.visual.api_keys.name_label')}</label>
-          <input
-            id={nameInputId}
-            className="input"
-            value={nameValue}
-            onChange={(event) => setNameValue(event.target.value)}
-            placeholder={t('config_management.visual.api_keys.name_placeholder')}
-            aria-describedby={nameHintId}
-            disabled={disabled}
+          <FieldLabel
+            htmlFor={apiKeyInputId}
+            label={t('config_management.visual.api_keys.input_label')}
+            hint={t('config_management.visual.api_keys.input_hint')}
+            hintId={apiKeyHintId}
           />
-          <div id={nameHintId} className="hint">
-            {t('config_management.visual.api_keys.name_hint')}
-          </div>
-        </div>
-        <div className="form-group">
-          <label htmlFor={apiKeyInputId}>
-            {t('config_management.visual.api_keys.input_label')}
-          </label>
           <div className={styles.apiKeyModalInputRow}>
             <input
               id={apiKeyInputId}
@@ -268,9 +260,6 @@ function ScopedApiKeysCardEditor({
             </Button>
           </div>
           <ApiKeyStrengthMeter value={inputValue} />
-          <div id={apiKeyHintId} className="hint">
-            {t('config_management.visual.api_keys.input_hint')}
-          </div>
           {formError && (
             <div id={apiKeyErrorId} className="error-box">
               {formError}

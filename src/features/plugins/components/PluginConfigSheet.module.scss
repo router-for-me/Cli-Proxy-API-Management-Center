@@ -63,11 +63,9 @@
   gap: $spacing-md;
 }
 
-.switchText {
-  display: flex;
+/* Field name + InfoTip on one line (the field's description lives in the tooltip). */
+.labelRow {
   min-width: 0;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .fieldRow {
@@ -83,12 +81,6 @@
     font-size: 14px;
     overflow-wrap: anywhere;
   }
-
-  :global(.form-group .hint) {
-    font-size: 12px;
-    line-height: 1.45;
-    overflow-wrap: anywhere;
-  }
 }
 
 .rowLabel {
@@ -96,13 +88,6 @@
   font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.rowDescription {
-  color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 

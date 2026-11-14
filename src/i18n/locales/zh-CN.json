@@ -17,6 +17,8 @@
     "success": "成功",
     "error": "错误",
     "info": "信息",
+    "more_info": "更多说明",
+    "more_info_about": "关于「{{label}}」的说明",
     "warning": "警告",
     "loading": "加载中...",
     "connecting": "连接中...",
@@ -148,17 +150,13 @@
     "cta_inspect_logs": "查看日志",
     "stats_aria": "核心指标",
     "success_rate": "成功率",
-    "stat_success_hint": "窗口内共 {{total}} 次请求",
     "stat_credentials": "凭证",
-    "stat_credentials_hint": "{{active}} 个可用 · {{disabled}} 个未参与调度",
-    "stat_credentials_empty": "未找到凭证文件",
     "stat_provider_keys": "供应商密钥",
     "stat_provider_keys_hint": "所有品牌已配置的 API Key 总数",
     "stat_models": "模型",
     "stat_models_hint": "通过代理端点暴露的模型",
     "traffic_eyebrow": "实时流量",
     "traffic_title": "以 10 分钟为粒度的吞吐",
-    "traffic_description": "最近 {{window}} 的成功与失败次数，每 10 分钟一桶。悬停任一柱可查看精确构成。",
     "traffic_table": "数据表",
     "traffic_table_window": "时间段",
     "traffic_chart_summary": "最近 {{minutes}} 分钟共 {{total}} 次请求：成功 {{success}} 次，失败 {{failed}} 次。",
@@ -166,7 +164,6 @@
     "traffic_unavailable_hint": "代理处理首个请求后即会出现计数。",
     "fleet_eyebrow": "供应商",
     "fleet_title": "所有供应商横向对比",
-    "fleet_description": "同一窗口内各供应商的请求量与成功率。",
     "fleet_empty": "暂未记录到供应商流量。",
     "fleet_credentials": "凭证 {{value}} 个",
     "fleet_spark_label": "{{provider}} 请求量",
@@ -196,12 +193,6 @@
     "runtime_link": "编辑配置",
     "cta_eyebrow": "下一步",
     "cta_title": "接下来去哪里",
-    "cta_providers_desc": "添加 API Key、设置优先级并测试品牌。",
-    "cta_auth_files_desc": "上传、刷新与禁用 OAuth 凭证。",
-    "cta_config_desc": "调整路由、重试、日志与访问控制。",
-    "cta_quota_desc": "查看各凭证的剩余额度。",
-    "cta_logs_desc": "实时跟踪请求并下载错误报告。",
-    "cta_system_desc": "版本详情与管理中心信息。",
     "window_m": "{{minutes}} 分钟",
     "window_h": "{{hours}} 小时",
     "window_hm": "{{hours}} 小时 {{minutes}} 分"
@@ -394,7 +385,8 @@
     "priority_hint": "仅支持整数；非法值会被忽略。数值越大优先级越高。",
     "weight_label": "调度权重（weight）",
     "weight_tooltip": "默认值为 1；小于或等于 0 时不参与加权调度；最大值为 1,000,000。填入后打开加权轮询设置即可生效。",
-    "weight_hint": "默认值为 1；小于或等于 0 时不参与加权调度；最大值为 1,000,000。填入后打开<settingsLink>加权轮询设置</settingsLink>即可生效。",
+    "weight_hint": "默认值为 1；小于或等于 0 时不参与加权调度；最大值为 1,000,000。",
+    "weight_strategy_note": "需开启<settingsLink>加权轮询</settingsLink>才会生效。",
     "weight_invalid_integer": "权重必须是整数。",
     "weight_invalid_max": "权重不能超过 1,000,000。",
     "disable_cooling_label": "禁用指数冷却（disable_cooling）",
@@ -425,11 +417,9 @@
     "policy_rules_invalid": "请为每条修改的规则填写正整数状态码、动作和至少一个非空匹配条件。",
     "note_label": "备注（note）",
     "note_placeholder": "输入备注信息，例如：张三的账号",
-    "note_hint": "可选，用于标记凭证用途或归属；留空则不写入。",
     "excluded_models_label": "排除模型（excluded_models）",
     "headers_label": "自定义请求头（headers）",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
-    "headers_hint": "以 JSON 对象格式输入自定义 HTTP 请求头，例如：{\"X-My-Header\": \"value\"}",
     "headers_invalid_json": "自定义请求头必须是有效的 JSON。",
     "headers_invalid_object": "自定义请求头必须是 JSON 对象。",
     "headers_invalid_value": "每个自定义请求头的值都必须是字符串。",
@@ -702,8 +692,7 @@
   },
   "vertex_import": {
     "title": "Vertex JSON 登录",
-    "description": "上传 Google 服务账号 JSON，使用 CLI vertex-import 同步规则写入 auth-dir/vertex-<project>.json。",
-    "location_label": "目标区域 (可选)",
+    "location_label": "目标区域",
     "location_placeholder": "global",
     "location_hint": "留空表示使用默认区域 global。",
     "file_label": "服务账号密钥 JSON",
@@ -721,8 +710,6 @@
     "import_another": "再导入一个"
   },
   "oauth_excluded": {
-    "editor_description": "为提供商设置不对外展示的模型，支持精确选择和通配符规则。",
-    "models_hint": "展开列表选择模型，或在下方输入通配符规则。",
     "title": "OAuth 模型禁用",
     "models_label": "禁用的模型",
     "save_success": "模型禁用已更新",
@@ -766,7 +753,6 @@
     "rules_reserved": "“*” 会停用整个 provider，请改用「已停用」开关"
   },
   "oauth_model_alias": {
-    "editor_description": "为提供商的模型设置调用别名，统一客户端使用的模型名称。",
     "mapping_row": "别名映射 {{number}}",
     "remove_mapping": "删除第 {{number}} 条别名映射",
     "title": "OAuth 模型别名",
@@ -845,7 +831,7 @@
     "devin_oauth_retry_hint": "服务器可能仍在等待授权。请先取消本次登录，再重新开始。",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "开始 Devin 登录",
-    "devin_oauth_hint": "通过浏览器 OAuth 登录 Devin / Cognition，自动保存认证文件。需要 CLI Proxy API v7.3.1 或更高版本，请在五分钟内完成授权。",
+    "devin_oauth_hint": "请在五分钟内完成授权。",
     "devin_copy_link": "复制链接",
     "devin_open_link": "打开链接",
     "devin_oauth_status_waiting": "等待 Devin 认证中...",
@@ -862,7 +848,6 @@
     "other_login_methods": "其他登录方式",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "开始 Codex 登录",
-    "codex_oauth_hint": "通过 OAuth 流程登录 Codex 服务，自动获取并保存认证文件。",
     "codex_open_link": "打开链接",
     "codex_copy_link": "复制链接",
     "codex_oauth_status_waiting": "等待认证中...",
@@ -872,7 +857,6 @@
     "codex_oauth_polling_error": "检查认证状态失败:",
     "anthropic_oauth_title": "Anthropic OAuth",
     "anthropic_oauth_button": "开始 Anthropic 登录",
-    "anthropic_oauth_hint": "通过 OAuth 流程登录 Anthropic (Claude) 服务，自动获取并保存认证文件。",
     "anthropic_open_link": "打开链接",
     "anthropic_copy_link": "复制链接",
     "anthropic_oauth_status_waiting": "等待认证中...",
@@ -882,7 +866,7 @@
     "anthropic_oauth_polling_error": "检查认证状态失败:",
     "antigravity_oauth_title": "Antigravity OAuth",
     "antigravity_oauth_button": "开始 Antigravity 登录",
-    "antigravity_oauth_hint": "通过 OAuth 流程登录 Antigravity（Google 账号）服务，自动获取并保存认证文件。",
+    "antigravity_oauth_hint": "使用 Google 账号登录。",
     "antigravity_open_link": "打开链接",
     "antigravity_copy_link": "复制链接",
     "antigravity_oauth_status_waiting": "等待认证中...",
@@ -892,7 +876,6 @@
     "antigravity_oauth_polling_error": "检查认证状态失败:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "使用 Muse 登录",
-    "meta_oauth_hint": "打开授权链接，如有提示请输入设备码。授权完成后将自动获取并保存认证文件。",
     "meta_open_link": "打开链接",
     "meta_copy_link": "复制链接",
     "meta_oauth_status_waiting": "等待认证中...",
@@ -904,7 +887,7 @@
     "device_code_copy": "复制设备码",
     "kimi_ai_oauth_title": "Kimi 国际站（kimi.ai）",
     "kimi_ai_oauth_button": "登录 Kimi 国际站",
-    "kimi_ai_oauth_hint": "通过设备授权登录 kimi.ai 国际站，自动保存独立的 kimi-ai 认证文件。国内站与国际站账号不互通。",
+    "kimi_ai_oauth_hint": "仅限 kimi.ai 国际站账号，保存为独立的 kimi-ai 认证文件。",
     "kimi_ai_open_link": "打开链接",
     "kimi_ai_copy_link": "复制链接",
     "kimi_ai_oauth_status_waiting": "等待认证中...",
@@ -915,7 +898,7 @@
     "kimi_oauth_title": "Kimi 国内站（kimi.com）",
     "kimi_oauth_button": "登录 Kimi 国内站",
     "kimi_sign_up_button": "立即注册",
-    "kimi_oauth_hint": "通过设备授权登录 kimi.com 国内站，自动获取并保存认证文件。国际站账号请使用独立的 kimi.ai 登录入口。",
+    "kimi_oauth_hint": "仅限 kimi.com 国内站账号；国际站账号请使用 kimi.ai 入口。",
     "kimi_open_link": "打开链接",
     "kimi_copy_link": "复制链接",
     "kimi_oauth_status_waiting": "等待认证中...",
@@ -925,7 +908,6 @@
     "kimi_oauth_polling_error": "检查认证状态失败:",
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "开始 xAI 登录",
-    "xai_oauth_hint": "通过 OAuth 流程登录 xAI Grok 服务，自动获取并保存认证文件。",
     "xai_open_link": "打开链接",
     "xai_copy_link": "复制链接",
     "xai_oauth_status_waiting": "等待认证中...",
@@ -935,7 +917,6 @@
     "xai_oauth_polling_error": "检查认证状态失败:",
     "plugin_oauth_title": "{{name}} OAuth",
     "plugin_oauth_button": "开始 {{name}} 登录",
-    "plugin_oauth_hint": "通过插件提供的 OAuth 流程登录 {{name}}，自动获取并保存认证文件。",
     "plugin_open_link": "打开链接",
     "plugin_copy_link": "复制链接",
     "plugin_oauth_status_waiting": "等待认证中...",
@@ -962,7 +943,6 @@
     "view_auth_files": "查看认证文件",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "开始 iFlow 登录",
-    "iflow_oauth_hint": "通过 OAuth 流程登录 iFlow 服务，自动获取并保存认证文件。",
     "iflow_oauth_url_label": "授权链接:",
     "iflow_open_link": "打开链接",
     "iflow_copy_link": "复制链接",
@@ -994,14 +974,12 @@
     "waiting_background_hint": "关闭窗口不会中断授权",
     "restart_login": "重新开始",
     "login_proxy_toggle": "登录代理",
-    "login_proxy_optional": "可选",
     "login_proxy_status_invalid": "无效",
     "login_proxy_label": "新登录使用的代理",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
     "login_proxy_clear": "清除",
     "login_proxy_invalid": "代理 URL 无效。请使用 http、https、socks5 或 socks5h 并填写主机（socks5 需要端口），不能包含路径或查询参数。",
     "login_proxy_in_use": "本次登录通过代理",
-    "success_saved_hint": "凭证已保存，可在认证文件页管理。",
     "sign_up_prompt": "还没有账号？",
     "copied": "已复制"
   },
@@ -1170,8 +1148,7 @@
           "hint": "后端自动追加短 ID，留空使用 CPA-<ShortID>。"
         },
         "discoveryServiceType": {
-          "label": "服务类型",
-          "hint": "留空使用 _ai-gateway._tcp。"
+          "label": "服务类型"
         },
         "discoverySubtypes": {
           "label": "协议子类型",
@@ -1204,7 +1181,6 @@
         "antigravityTitle": "Antigravity",
         "xaiTitle": "xAI",
         "liveRelayTitle": "Codex Live 媒体中继",
-        "liveRelayHint": "在代理进程内中继 WebRTC 音频和 DataChannel 流量，需要入站 UDP 可达。请勿在截图或日志中暴露 ICE 凭据。",
         "iceAdd": "添加 ICE 服务器",
         "iceRemove": "移除 ICE 服务器 {{index}}",
         "iceURLs": "STUN/TURN URL",
@@ -1322,21 +1298,17 @@
       },
       "sections": {
         "common": {
-          "title": "常用",
-          "description": "最常调整的配置项，与完整分区共享同一份数据"
+          "title": "常用"
         },
         "connectivity": {
-          "title": "接入与认证",
-          "description": "服务地址、端口、认证目录与 API 密钥"
+          "title": "接入与认证"
         },
         "logging": {
-          "title": "日志与诊断",
-          "description": "调试、日志输出与使用统计"
+          "title": "日志与诊断"
         },
         "advanced": {
           "antigravity_credits": "使用Antigravity Credits",
           "title": "高级与实验",
-          "description": "请求头伪装、签名缓存、插件源等不常修改的设置",
           "plugins_title": "插件",
           "antigravity_title": "Antigravity",
           "devin_title": "Devin",
@@ -1350,19 +1322,15 @@
         },
         "tls": {
           "title": "TLS/SSL 配置",
-          "description": "HTTPS 安全连接设置",
           "enable": "启用 TLS",
-          "enable_desc": "启用 HTTPS 安全连接",
           "cert": "证书文件路径",
           "key": "私钥文件路径"
         },
         "remote": {
           "title": "远程管理",
-          "description": "远程访问和控制面板设置",
           "allow_remote": "允许远程访问",
           "allow_remote_desc": "允许从其他主机访问管理接口",
           "disable_panel": "禁用控制面板",
-          "disable_panel_desc": "禁用内置的 Web 控制面板",
           "disable_auto_update_panel": "禁用面板自动更新",
           "disable_auto_update_panel_desc": "首次缺失时仍可下载，但不再从 GitHub 后台自动更新",
           "secret_key": "管理密钥",
@@ -1370,25 +1338,20 @@
           "panel_repo": "面板仓库"
         },
         "auth": {
-          "auth_dir": "OAuth 认证文件目录 (oauth.auth-dir)",
-          "auth_dir_hint": "存放认证文件的目录路径（支持 ~）"
+          "auth_dir": "OAuth 认证文件目录 (oauth.auth-dir)"
         },
         "system": {
           "debug": "调试模式",
-          "debug_desc": "启用详细的调试日志",
           "commercial_mode": "商业模式",
           "commercial_mode_desc": "禁用高开销中间件以支持高并发",
           "logging_to_file": "写入日志文件",
-          "logging_to_file_desc": "将日志保存到文件",
           "plugins_enabled": "启用插件系统",
           "plugins_enabled_desc": "启用标准动态库插件加载；具体插件实例仍在插件管理页启停",
           "plugin_store_sources": "第三方插件源",
           "plugin_store_sources_desc": "追加插件商店 registry 源；内置官方源始终保留",
           "plugin_store_sources_label": "插件源 registry URL (plugins.store-sources)",
           "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
-          "plugin_store_sources_hint": "每行一个 registry.json URL，保存时会过滤空行",
           "plugin_store_auth": "插件商店认证规则",
-          "plugin_store_auth_desc": "为私有 registry、GitHub Release 元数据或下载地址配置认证头",
           "plugin_store_auth_hint": "这里只填写环境变量名，不填写真实 token；后端会从运行环境读取值。",
           "store_auth_empty": "暂未配置认证规则。公开插件源不需要配置。",
           "store_auth_rule": "认证规则",
@@ -1414,7 +1377,6 @@
           "logs_max_size": "日志文件大小限制 (MB)",
           "error_logs_max_files": "错误日志保留文件数",
           "usage_statistics_enabled": "启用内存用量统计",
-          "usage_statistics_enabled_desc": "启用内存中的请求用量聚合",
           "redis_usage_retention": "Redis 用量队列保留秒数",
           "redis_usage_retention_hint": "RESP 接口 LPOP/RPOP 用量队列的内存保留时间，最大 3600 秒",
           "antigravity_sensitive_words": "敏感词混淆",
@@ -1434,7 +1396,6 @@
         },
         "headers": {
           "title": "Header 默认值",
-          "description": "Claude 与 Codex OAuth 请求在客户端缺少 Header 时使用的默认值",
           "claude_title": "Claude OAuth 默认请求头",
           "codex_title": "Codex OAuth 默认请求头",
           "user_agent": "User-Agent",
@@ -1449,7 +1410,6 @@
         },
         "network": {
           "title": "网络配置",
-          "description": "代理、重试和路由设置",
           "proxy_url": "代理 URL",
           "proxy_url_sponsor_hint": "没有合适的代理？",
           "request_retry": "请求重试次数",
@@ -1460,7 +1420,6 @@
           "auth_auto_refresh_workers": "认证自动刷新 Worker 数",
           "auth_auto_refresh_workers_hint": "正整数覆盖 Worker 数；设为 0、负整数或留空时使用默认值（16）",
           "disable_image_generation": "禁用图像生成",
-          "disable_image_generation_hint": "false 为启用；true 为全部禁用；chat 禁用非图片端点注入；passthrough 不注入并保留客户端工具列表",
           "disable_image_generation_false": "false（启用）",
           "disable_image_generation_true": "true（全部禁用）",
           "disable_image_generation_chat": "chat（仅禁用聊天注入）",
@@ -1468,7 +1427,6 @@
           "gpt_image_2_base_model": "GPT Image 2 基础模型",
           "gpt_image_2_base_model_hint": "代理 gpt-image-2 图片请求时使用的主线模型；留空或非法时后端使用默认值",
           "routing_strategy": "路由策略",
-          "routing_strategy_hint": "选择凭据选择策略",
           "strategy_round_robin": "轮询 (Round Robin)",
           "strategy_weighted_round_robin": "加权轮询 (Weighted Round Robin)",
           "strategy_fill_first": "填充优先 (Fill First)",
@@ -1476,7 +1434,6 @@
           "force_model_prefix": "强制模型前缀",
           "force_model_prefix_desc": "未带前缀的模型请求只使用无前缀凭据",
           "passthrough_headers": "透传上游响应 Header",
-          "passthrough_headers_desc": "将过滤后的上游响应 Header 转发给下游客户端",
           "disable_cooling": "禁用冷却调度",
           "disable_cooling_desc": "全局禁用认证/模型失败后的冷却窗口",
           "session_affinity": "会话亲和性路由",
@@ -1485,9 +1442,7 @@
         },
         "streaming": {
           "title": "流式传输配置",
-          "description": "Keepalive 与 bootstrap 重试设置",
           "keepalive_seconds": "Keepalive 秒数",
-          "keepalive_hint": "设置为 0、负整数或留空表示禁用 keepalive",
           "bootstrap_retries": "Bootstrap 重试次数",
           "bootstrap_hint": "流式传输首包前的重试次数；设为 0、负整数或留空表示禁用启动重试",
           "nonstream_keepalive": "非流式 Keepalive 间隔 (秒)",
@@ -1496,17 +1451,11 @@
         },
         "payload": {
           "title": "Payload 配置",
-          "description": "默认值、原始 JSON 规则、覆盖规则与过滤规则",
           "default_rules": "默认规则",
-          "default_rules_desc": "当请求中未指定参数时，使用这些默认值",
           "default_raw_rules": "默认 Raw 规则",
-          "default_raw_rules_desc": "当请求中未指定参数时，按原始 JSON 片段写入这些值，例如 true、123、\"high\" 或 {\"type\":\"object\"}",
           "override_rules": "覆盖规则",
-          "override_rules_desc": "强制覆盖请求中的参数值",
           "override_raw_rules": "覆盖 Raw 规则",
-          "override_raw_rules_desc": "始终按原始 JSON 片段覆盖参数值，适合 response_format、schema 等复杂字段",
-          "filter_rules": "过滤规则",
-          "filter_rules_desc": "通过 JSON Path 预过滤上游请求体，自动剔除不合规/冗余参数（Request Sanitization）"
+          "filter_rules": "过滤规则"
         }
       },
       "api_keys": {
@@ -1514,12 +1463,11 @@
         "add": "添加 API 密钥",
         "generate": "生成",
         "empty": "暂无 API 密钥",
-        "hint": "每个条目代表一个 API 密钥（与 「API 密钥管理」 页面样式一致）",
         "edit_title": "编辑 API 密钥",
         "add_title": "添加 API 密钥",
         "input_label": "API 密钥",
         "input_placeholder": "粘贴你的 API 密钥",
-        "name_label": "名称 / 说明（可选）",
+        "name_label": "名称 / 说明",
         "name_placeholder": "例如：小明的笔记本",
         "name_hint": "名称立即保存在当前浏览器中，按服务器隔离，不写入服务器配置。清空此字段可移除名称。",
         "name_save_error": "无法将名称保存到浏览器存储，请检查浏览器存储设置。",
@@ -1629,7 +1577,6 @@
     "search_empty_desc": "请尝试其他文件名或邮箱，或清空搜索。",
     "search_clear": "清空搜索",
     "title": "配额管理",
-    "description": "集中查看 OAuth 额度与剩余情况",
     "refresh_all_credentials": "刷新全部凭证",
     "sort_label": "排序",
     "sort_default": "默认",
@@ -1765,7 +1712,6 @@
   },
   "plugin_management": {
     "title": "插件",
-    "description": "从插件仓库安装插件并保持更新，管理已安装插件的启停、配置与删除。",
     "load_failed": "加载插件失败",
     "config_load_failed": "读取插件配置失败",
     "config_not_found": "无法读取插件配置，后端未找到该插件。",
@@ -1870,7 +1816,6 @@
     "install_version_latest_mode": "最新稳定版",
     "install_version_latest_hint": "安装时由后端解析；当前列表版本为 {{version}}。",
     "install_version_release_mode": "选择历史版本",
-    "install_version_release_hint": "从 GitHub Releases 读取可安装标签。",
     "install_version_manual_mode": "手动发布标签",
     "install_version_manual_hint": "仅在自动读取不可用时使用。",
     "install_versions_loading": "正在读取 GitHub Releases...",
@@ -1914,8 +1859,7 @@
     "gate_step1_action": "我要安装此插件",
     "gate_step2_action": "我已阅读并理解上述风险",
     "gate_step3_prompt": "如需确认，请在下方输入框中键入 “{{token}}”",
-    "gate_step3_action": "安装此插件",
-    "gate_step3_hint": "请输入上方显示的完整标识以启用安装。"
+    "gate_step3_action": "安装此插件"
   },
   "plugin_resource": {
     "page_count": "{{count}} 个页面",
@@ -1928,7 +1872,6 @@
   },
   "system_info": {
     "models_refresh_button": "刷新列表",
-    "models_refresh_hint": "重新获取最新的可用模型列表。",
     "models_refresh_success": "可用模型列表已刷新，共 {{count}} 个。",
     "models_catalog_refresh_button": "更新模型目录",
     "models_catalog_refresh_hint": "更新所有用户共用的模型目录，获取最新模型信息。",
@@ -1949,13 +1892,9 @@
     "version_current_missing": "未获取到服务器版本号，暂无法比对",
     "version_unknown": "未知",
     "quick_links_title": "快捷链接",
-    "quick_links_desc": "访问项目仓库和文档，获取帮助和更新。",
     "link_main_repo": "主程序仓库",
-    "link_main_repo_desc": "CLI Proxy API 核心程序源代码",
     "link_webui_repo": "WebUI 仓库",
-    "link_webui_repo_desc": "管理中心前端界面源代码",
     "link_docs": "使用教程",
-    "link_docs_desc": "配置指南和使用说明",
     "clear_login_title": "本地登录信息",
     "clear_login_desc": "清理本地保存的登录信息并退出登录。",
     "clear_login_button": "清理登录信息",
@@ -2005,7 +1944,6 @@
     "toggle_collapse": "收起侧边栏",
     "expand": "展开",
     "collapse": "收起",
-    "subtitle": "CLI Proxy API 管理控制台",
     "auth_files_count": "认证文件：{{count}} 个"
   },
   "footer": {
@@ -2153,8 +2091,7 @@
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 指纹",
       "empty": "尚未添加配置,点击右上角新建。",
-      "filterPlaceholder": "搜索密钥、地址、前缀…",
-      "description": "在 {{route}} 下管理资源"
+      "filterPlaceholder": "搜索密钥、地址、前缀…"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2181,7 +2118,6 @@
       "addGroupedKey": "添加分组 Key",
       "removeGroupedKey": "删除分组 Key",
       "protocol": "分组/协议",
-      "protocolHint": "请选择此 Key 对应的分组/协议。",
       "protocolEndpoint": "当前协议地址",
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
@@ -2210,12 +2146,6 @@
         "anthropic": "Anthropic 模型",
         "gemini": "Gemini 模型",
         "openai": "OpenAI 兼容模型"
-      },
-      "protocolModelHints": {
-        "codex": "写入 Codex API 配置的 models,可从 /v1/models 拉取后设置别名。",
-        "anthropic": "写入 Anthropic 配置的 models,可从 /v1/models 拉取后设置别名。",
-        "gemini": "写入 Gemini 配置的 models,可从 /v1beta/models 拉取后设置别名。",
-        "openai": "写入 OpenAI 兼容配置的 models,可从 /models 拉取后设置别名。"
       },
       "validation": {
         "keyRequired": "请为每个分组 Key 填写 API Key。",
@@ -2271,14 +2201,12 @@
       "apiKeyCreatePlaceholder": "输入 API 密钥",
       "apiKeyEditPlaceholder": "留空表示不修改",
       "baseUrl": "服务地址",
-      "baseUrlRequiredHint": "此提供商要求填写服务地址",
       "proxyUrl": "代理 URL",
       "prefix": "前缀",
       "priority": "优先级",
       "weight": "调度权重",
       "weightHint": "默认 1 · ≤ 0 时不参与 · 最大 1,000,000",
       "disabled": "停用此条目",
-      "disabledHint": "停用后不会被网关使用",
       "websockets": "启用 WebSockets",
       "testModel": "测试模型",
       "testModelHint": "仅用于连通性测试,不会被保存",
@@ -2444,7 +2372,6 @@
     "retry_grant": "重试 {{kind}} · {{label}}",
     "no_usage": "没有可重置的 Fable 用量。",
     "fable_hint": "补充 Fable 额度，并将其用量返还到每周额度。其他每周用量保持不变。",
-    "exact_grant_hint": "仅使用此重置额度。",
     "choose_grant": "选择重置券",
     "no_grants": "暂无重置券。",
     "grant_expiry": "到期时间：{{date}}",

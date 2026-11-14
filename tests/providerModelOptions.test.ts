@@ -216,12 +216,19 @@ describe('provider model options', () => {
   });
 
   test('mutating disables every control; default thinking disables budgets and levels', () => {
-    const controls =
+    const isInfoTip = (control: string) => control.includes('data-info-tip');
+    const all =
       render('openaiCompatibility', true).match(/<(?:input|select|button)\b[^>]*>/g) ?? [];
+    // InfoTips explain, they do not edit: they stay reachable while the form is disabled.
+    expect(all.filter(isInfoTip).length).toBeGreaterThan(0);
+    for (const tip of all.filter(isInfoTip)) expect(tip).not.toContain('disabled=""');
+    const controls = all.filter((control) => !isInfoTip(control));
     expect(controls.length).toBeGreaterThan(10);
     for (const control of controls) expect(control).toContain('disabled=""');
     const defaultThinking = render('gemini', false, false).split('<fieldset')[1];
-    const inputs = defaultThinking.match(/<(?:input|button)\b[^>]*>/g) ?? [];
+    const inputs = (defaultThinking.match(/<(?:input|button)\b[^>]*>/g) ?? []).filter(
+      (control) => !isInfoTip(control)
+    );
     expect(inputs.length).toBeGreaterThan(4);
     const mode = inputs.filter((input) => input.includes('aria-haspopup="listbox"'));
     expect(mode).toHaveLength(1);
@@ -229,5 +236,46 @@ describe('provider model options', () => {
     for (const input of inputs.filter((input) => !input.includes('aria-haspopup="listbox"'))) {
       expect(input).toContain('disabled=""');
     }
+  });
+
+  test('field notes are InfoTips after associated labels, still describing their inputs', () => {
+    const html = render('openaiCompatibility');
+    // No visible note lines are left in the advanced fields.
+    expect(html).not.toContain('<small');
+    expect(html).not.toMatch(/<p\b/);
+    for (const label of html.matchAll(/<label\b[^>]*\bfor="([^"]+)"/g)) {
+      expect(html).toContain(`id="${label[1]}"`);
+    }
+    const tips = [...html.matchAll(/<button\b[^>]*data-info-tip[^>]*>/g)].map((m) => m[0]);
+    // Context length, input + output modalities, thinking override.
+    expect(tips).toHaveLength(4);
+    for (const key of ['contextHint', 'modalitiesHint', 'thinkingHint'] as const) {
+      expect(html).toContain(`hidden="">providersPage.modelOptions.${key}</span>`);
+    }
+    const context = /<input\b[^>]*inputMode="numeric"[^>]*>/.exec(html)![0];
+    const contextHintId = /aria-describedby="([^"]+)"/.exec(context)![1];
+    expect(html).toContain(
+      `<span id="${contextHintId}" hidden="">providersPage.modelOptions.contextHint</span>`
+    );
+    expect(html).not.toContain('providersPage.form.thinkingExistingHint');
+  });
+
+  test('existing thinking JSON adds the preservation note to the thinking InfoTip', () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        I18nextProvider,
+        { i18n: translations },
+        createElement(ModelAdvancedFields, {
+          entry: { name: 'model', thinkingEnabled: true, thinkingJson: '{"levels":["low"]}' },
+          providerBrand: 'gemini',
+          disabled: false,
+          supportsThinking: true,
+          onUpdate: () => {},
+        })
+      )
+    );
+    expect(html).toContain(
+      'providersPage.modelOptions.thinkingHint <br/>providersPage.form.thinkingExistingHint'
+    );
   });
 });

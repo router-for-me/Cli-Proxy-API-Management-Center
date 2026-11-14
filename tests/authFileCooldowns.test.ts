@@ -217,7 +217,35 @@ describe('cooldown section rendering', () => {
     expect(markup).toContain(i18n.t('auth_files.cooldown_reason_quota'));
     expect(markup).toContain('429');
     expect(markup).toContain('dateTime="2026-07-17T10:00:32.000Z"');
-    expect(markup).toContain(i18n.t('auth_files.cooldown_note'));
+  });
+
+  test('carries the interpretation caveat in an InfoTip on the snapshot line, not a paragraph', () => {
+    const note = Bun.escapeHTML(i18n.t('auth_files.cooldown_note'));
+    const markup = render(snapshot);
+    const button = markup.match(/<button\b[^>]*data-info-tip=""[^>]*>/)?.[0];
+    expect(button).toBeDefined();
+    // Named after the snapshot label it sits beside, and described by a hidden copy of the note.
+    expect(button).toContain(
+      Bun.escapeHTML(
+        i18n.t('common.more_info_about', { label: i18n.t('auth_files.cooldown_observed') })
+      )
+    );
+    const describedBy = button!.match(/aria-describedby="([^"]+)"/)?.[1];
+    expect(markup).toContain(`<span id="${describedBy}" hidden="">${note}</span>`);
+    // The note text appears only in that hidden copy.
+    expect(markup.split(note)).toHaveLength(2);
+    // The tip sits on the snapshot line, after the observed timestamp.
+    const snapshotLine = markup.slice(markup.indexOf(i18n.t('auth_files.cooldown_observed')));
+    expect(snapshotLine.indexOf(`dateTime="${observedAt}"`)).toBeLessThan(
+      snapshotLine.indexOf('data-info-tip')
+    );
+
+    // Without a snapshot time the caveat stays reachable through a generically named tip.
+    const untimed = render({ ...snapshot, observedAt: undefined });
+    expect(untimed).not.toContain(i18n.t('auth_files.cooldown_observed'));
+    expect(untimed).toContain('data-info-tip=""');
+    expect(untimed).toContain(`aria-label="${Bun.escapeHTML(i18n.t('common.more_info'))}"`);
+    expect(untimed).toContain(note);
   });
 
   test('keeps the reset action contextual and exposes pending state', () => {

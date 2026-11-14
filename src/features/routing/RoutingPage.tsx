@@ -370,7 +370,6 @@ export function RoutingPage() {
             onStep={handleStep}
             onEditWeights={handleEditWeights}
           />
-          <p className={styles.footnote}>{t('routing.footnote')}</p>
         </section>
         <PolicyPanel settings={draft.settings} disabled={saving} onChange={handleSettings} />
       </div>

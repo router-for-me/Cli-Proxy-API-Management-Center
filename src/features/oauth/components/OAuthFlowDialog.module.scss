@@ -140,13 +140,13 @@
   color: var(--text-secondary);
 }
 
-/* 本次登录走的代理：紧贴提示行，凭据已脱敏 */
+/* 本次登录走的代理：步骤上方的一行状态，凭据已脱敏 */
 .proxyNote {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 4px 8px;
-  margin: -10px 0 0;
+  margin: 0;
   font-size: 12px;
   line-height: 1.55;
   color: var(--text-tertiary);

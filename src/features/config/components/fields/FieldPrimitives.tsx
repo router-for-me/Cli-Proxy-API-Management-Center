@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { InfoTip } from '@/components/ui/Tooltip';
 import { configFieldDomId } from '../../searchIndex';
 import { resolveRowSpans } from './rowSpans';
 import styles from './Field.module.scss';
@@ -27,15 +28,54 @@ const cx = (...classes: Array<string | false | undefined>) => classes.filter(Boo
 
 /* ======================================================================
    设置行：开关 / 输入 / 下拉 / 区块编辑器共用同一副骨架——
-   左列「标题 + 说明 + 错误」，右列控件；只有控件槽的内容不同。
+   左列「标题（+ InfoTip）+ 错误」，右列控件；只有控件槽的内容不同。
    行收进 SettingList（圆角容器 + 发丝分隔线），宽容器下两列排布。
+
+   说明文字（description / hint）默认不占版面：标题后挂一个 InfoTip 承载，
+   同时以视觉隐藏的元素留在 DOM 里，控件的 aria-describedby 照旧指向它。
+   需要常驻页面的说明（安全提示、不可逆后果）传 keepDescriptionVisible / keepHintVisible。
+   不是「说明」的可见附加内容（链接等可交互内容）走 aside，不进 InfoTip、不挂 aria-describedby。
+   错误始终可见。
    ====================================================================== */
+
+/** 说明文字：默认进 InfoTip + 视觉隐藏副本；keepVisible 时照旧作为可见的一行。 */
+function DescriptionText({
+  id,
+  className,
+  keepVisible,
+  children,
+}: {
+  id?: string;
+  className?: string;
+  keepVisible: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div id={id} className={cx(className, !keepVisible && 'visually-hidden-focusable')}>
+      {children}
+    </div>
+  );
+}
 
 type SettingCopy = {
   /** 搜索锚点：行本身即锚点（DOM id 见 configFieldDomId）。 */
   fieldId: string;
   label: string;
+  /**
+   * 行说明。默认收进标题后的 InfoTip（悬停 / 聚焦 / 点按可见），
+   * 并以视觉隐藏副本保留给读屏（控件 aria-describedby 指向它）。
+   */
   description?: ReactNode;
+  /**
+   * 让 description 作为可见的一行留在标题下方，而不是收进 InfoTip。
+   * 只给「不读就会出错」的说明用：安全相关、破坏性或不可逆后果、含链接等可交互内容。
+   */
+  keepDescriptionVisible?: boolean;
+  /**
+   * 标题下方常驻的附加内容，但不是对控件的说明（如代理 URL 的赞助链接）：
+   * 原样可见、可被键盘访问，不进 InfoTip，也不进控件的 aria-describedby。
+   */
+  aside?: ReactNode;
   error?: string;
   /**
    * 两列布局下独占一整行——只为语义而设（长 URL、总开关置顶）。
@@ -69,6 +109,8 @@ function SettingRow({
   fieldId,
   label,
   description,
+  keepDescriptionVisible = false,
+  aside,
   error,
   wide,
   ids,
@@ -96,20 +138,30 @@ function SettingRow({
       )}
     >
       <div className={styles.rowCopy}>
-        {labelFor ? (
-          <label id={ids.labelId} htmlFor={labelFor} className={styles.rowLabel}>
-            {label}
-          </label>
-        ) : (
-          <span id={ids.labelId} className={styles.rowLabel}>
-            {label}
-          </span>
-        )}
+        <div className={styles.rowLabelLine}>
+          {labelFor ? (
+            <label id={ids.labelId} htmlFor={labelFor} className={styles.rowLabel}>
+              {label}
+            </label>
+          ) : (
+            <span id={ids.labelId} className={styles.rowLabel}>
+              {label}
+            </span>
+          )}
+          {description && !keepDescriptionVisible ? (
+            <InfoTip content={description} label={label} descriptionId={ids.hintId} />
+          ) : null}
+        </div>
         {description ? (
-          <div id={ids.hintId} className={styles.rowDescription}>
+          <DescriptionText
+            id={ids.hintId}
+            className={styles.rowDescription}
+            keepVisible={keepDescriptionVisible}
+          >
             {description}
-          </div>
+          </DescriptionText>
         ) : null}
+        {aside ? <div className={styles.rowAside}>{aside}</div> : null}
         {error ? (
           <div id={ids.errorId} className={styles.rowError}>
             {error}
@@ -321,10 +373,14 @@ const isFullRow = (row: RowElement) =>
 export function SettingList({
   title,
   description,
+  keepDescriptionVisible = false,
   children,
 }: {
   title?: string;
+  /** 组说明：默认收进组标题后的 InfoTip；没有 title 时不渲染。 */
   description?: ReactNode;
+  /** 让组说明作为可见的一行留在组标题下方。 */
+  keepDescriptionVisible?: boolean;
   children: ReactNode;
 }) {
   const rows = flattenRows(children);
@@ -335,8 +391,15 @@ export function SettingList({
     <Group className={styles.group}>
       {title ? (
         <header className={styles.groupHeader}>
-          <h3 className={styles.groupTitle}>{title}</h3>
-          {description ? <p className={styles.groupDescription}>{description}</p> : null}
+          <div className={styles.groupTitleLine}>
+            <h3 className={styles.groupTitle}>{title}</h3>
+            {description && !keepDescriptionVisible ? (
+              <InfoTip content={description} label={title} />
+            ) : null}
+          </div>
+          {description && keepDescriptionVisible ? (
+            <p className={styles.groupDescription}>{description}</p>
+          ) : null}
         </header>
       ) : null}
       <div className={styles.list}>
@@ -368,7 +431,7 @@ export function FieldAnchor({ fieldId, children }: { fieldId: string; children: 
   );
 }
 
-/** 独立的提示行（SettingCell 里编辑器上方的说明等）。 */
+/** 独立的可见提示行（折叠组正文开头的作用域说明等）；需要关联控件时传 id 供 aria-describedby 引用。 */
 export function FieldHint({ id, children }: { id?: string; children: ReactNode }) {
   return (
     <div id={id} className={styles.fieldHint}>
@@ -377,13 +440,18 @@ export function FieldHint({ id, children }: { id?: string; children: ReactNode }
   );
 }
 
-/** 区块编辑器内部的「标签在上」字段（载荷规则等多控件表单）。 */
+/**
+ * 区块编辑器内部的「标签在上」字段（载荷规则等多控件表单）。
+ * hint 默认收进标签后的 InfoTip；传了 hintId 时另留一个视觉隐藏副本，
+ * 供调用方挂到控件的 aria-describedby。keepHintVisible 时照旧在控件下方显示。
+ */
 export function FieldShell({
   label,
   labelId,
   htmlFor,
   hint,
   hintId,
+  keepHintVisible = false,
   error,
   errorId,
   children,
@@ -393,25 +461,32 @@ export function FieldShell({
   htmlFor?: string;
   hint?: string;
   hintId?: string;
+  /** 让 hint 作为可见的一行留在控件下方，而不是收进 InfoTip。 */
+  keepHintVisible?: boolean;
   error?: string;
   errorId?: string;
   children: ReactNode;
 }) {
   return (
     <div className={styles.fieldShell}>
-      <label id={labelId} htmlFor={htmlFor} className={styles.fieldLabel}>
-        {label}
-      </label>
+      <div className={styles.fieldLabelLine}>
+        <label id={labelId} htmlFor={htmlFor} className={styles.fieldLabel}>
+          {label}
+        </label>
+        {hint && !keepHintVisible ? (
+          <InfoTip content={hint} label={label} descriptionId={hintId} />
+        ) : null}
+      </div>
       {children}
       {error ? (
         <div id={errorId} className="error-box">
           {error}
         </div>
       ) : null}
-      {hint ? (
-        <div id={hintId} className={styles.fieldHint}>
+      {hint && (keepHintVisible || hintId) ? (
+        <DescriptionText id={hintId} className={styles.fieldHint} keepVisible={keepHintVisible}>
           {hint}
-        </div>
+        </DescriptionText>
       ) : null}
     </div>
   );

@@ -132,7 +132,7 @@ export function MemberCard({
 
   // Disabled is configuration, reliable for every member. Cooldown and availability are runtime
   // state CPA exposes only for credentials, so an enabled config API key says it has none. That
-  // note lives in the tooltip (and the footnote): repeating it on every card is only noise.
+  // note lives in the card's title (and the entry InfoTip): repeating it on every card is only noise.
   const showNoRuntimeState = member.kind !== 'credential' && !member.disabled;
 
   let chip: string | null = null;

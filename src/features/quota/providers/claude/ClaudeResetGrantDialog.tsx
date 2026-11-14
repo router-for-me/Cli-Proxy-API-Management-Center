@@ -53,13 +53,8 @@ export function ClaudeResetGrantChoices({
                     expiry === null ? t('claude_reset.expiry_unknown') : formatInstantShort(expiry),
                 })}
               </span>
-              <span>
-                {t(
-                  grant.givesBackWeekly
-                    ? 'claude_reset.fable_hint'
-                    : 'claude_reset.exact_grant_hint'
-                )}
-              </span>
+              {/* Only Fable spends differently from what its row says; keep that visible. */}
+              {grant.givesBackWeekly && <span>{t('claude_reset.fable_hint')}</span>}
               {resetGrantHasNoUsage(grant) && <span>{t('claude_reset.no_usage')}</span>}
               {!available && !resetGrantHasNoUsage(grant) && (
                 <span>{t('claude_reset.grant_unavailable')}</span>

@@ -35,9 +35,11 @@ import { useModelDiscovery } from './useModelDiscovery';
 import { ModelDiscoveryPanel } from './ModelDiscoveryPanel';
 import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
 import { ApiKeyEntriesEditor } from './ApiKeyEntriesEditor';
+import { CheckboxField } from './CheckboxField';
 import { ModelEntriesEditor } from './ModelEntriesEditor';
 import styles from './sharedForm.module.scss';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { readRuntimePolicy, validateRuntimePolicy } from '../../runtimePolicy';
 import { readModelOptions, validateModelOptions } from '../../modelOptions';
 import { RuntimePolicyEditor } from './RuntimePolicyEditor';
@@ -561,12 +563,6 @@ export function BaseProviderForm({
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`${fid}-baseUrl`}>
               {t('providersPage.form.baseUrl')}
-              {descriptor.baseUrlRequired ? (
-                <span className={styles.labelHint}>
-                  {' '}
-                  · {t('providersPage.form.baseUrlRequiredHint')}
-                </span>
-              ) : null}
             </label>
             <input
               id={`${fid}-baseUrl`}
@@ -574,6 +570,7 @@ export function BaseProviderForm({
               value={form.baseUrl}
               onChange={(e) => updateField('baseUrl', e.target.value)}
               placeholder="https://api.example.com"
+              aria-required={descriptor.baseUrlRequired || undefined}
               disabled={mutating}
             />
           </div>
@@ -634,9 +631,14 @@ export function BaseProviderForm({
 
         {brand !== 'openaiCompatibility' ? (
           <div className={styles.field}>
-            <label className={styles.label} htmlFor={`${fid}-weight`}>
-              {t('providersPage.form.weight')}
-            </label>
+            <FieldLabel
+              className={styles.labelLine}
+              labelClassName={styles.label}
+              htmlFor={`${fid}-weight`}
+              label={t('providersPage.form.weight')}
+              hint={t('providersPage.form.weightHint')}
+              hintId={`${fid}-weight-hint`}
+            />
             <input
               id={`${fid}-weight`}
               type="number"
@@ -645,21 +647,25 @@ export function BaseProviderForm({
               className={styles.input}
               value={form.weight ?? ''}
               placeholder="1"
+              aria-describedby={`${fid}-weight-hint`}
               onChange={(e) =>
                 updateField('weight', e.target.value === '' ? undefined : Number(e.target.value))
               }
               disabled={mutating}
             />
-            <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
           </div>
         ) : null}
 
         {descriptor.supportsTestModel ? (
           <div className={styles.field}>
-            <label className={styles.label} htmlFor={`${fid}-testModel`}>
-              {t('providersPage.form.testModel')}
-              <span className={styles.labelHint}> · {t('providersPage.form.testModelHint')}</span>
-            </label>
+            <FieldLabel
+              className={styles.labelLine}
+              labelClassName={styles.label}
+              htmlFor={`${fid}-testModel`}
+              label={t('providersPage.form.testModel')}
+              hint={t('providersPage.form.testModelHint')}
+              hintId={`${fid}-testModel-hint`}
+            />
             <Select
               id={`${fid}-testModel`}
               value={form.testModel ?? ''}
@@ -667,6 +673,7 @@ export function BaseProviderForm({
               onChange={(value) => updateField('testModel', value)}
               disabled={mutating}
               ariaLabel={t('providersPage.form.testModel')}
+              ariaDescribedBy={`${fid}-testModel-hint`}
             />
             {singleConnectivity ? (
               <div className={styles.connectivityRow}>
@@ -721,10 +728,7 @@ export function BaseProviderForm({
               disabled={mutating}
               onChange={(e) => updateField('disabled', e.target.checked)}
             />
-            <span className={styles.checkboxText}>
-              <span>{t('providersPage.form.disabled')}</span>
-              <small>{t('providersPage.form.disabledHint')}</small>
-            </span>
+            <span className={styles.checkboxText}>{t('providersPage.form.disabled')}</span>
           </label>
         ) : null}
       </div>
@@ -910,9 +914,14 @@ export function BaseProviderForm({
 
       {isClaudeLikeBrand(brand) ? (
         <div className={styles.field}>
-          <label id={`${fid}-fingerprint-profile-label`} className={styles.label}>
-            {t('providersPage.form.fingerprintProfile')}
-          </label>
+          <FieldLabel
+            className={styles.labelLine}
+            labelClassName={styles.label}
+            id={`${fid}-fingerprint-profile-label`}
+            label={t('providersPage.form.fingerprintProfile')}
+            hint={t('providersPage.form.fingerprintProfileHint')}
+            hintId={`${fid}-fingerprint-profile-hint`}
+          />
           <Select
             id={`${fid}-fingerprint-profile`}
             value={form.fingerprintProfile ?? ''}
@@ -929,10 +938,8 @@ export function BaseProviderForm({
             onChange={(value) => updateField('fingerprintProfile', value)}
             disabled={mutating}
             ariaLabelledBy={`${fid}-fingerprint-profile-label`}
+            ariaDescribedBy={`${fid}-fingerprint-profile-hint`}
           />
-          <small className={styles.labelHint}>
-            {t('providersPage.form.fingerprintProfileHint')}
-          </small>
         </div>
       ) : null}
 
@@ -961,19 +968,13 @@ export function BaseProviderForm({
                 <span>{t('providersPage.form.cloakStrict')}</span>
               </span>
             </label>
-            <label className={styles.checkboxRow}>
-              <input
-                type="checkbox"
-                className={styles.checkboxBox}
-                checked={form.cloak.cacheUserId}
-                disabled={mutating}
-                onChange={(e) => updateCloak('cacheUserId', e.target.checked)}
-              />
-              <span className={styles.checkboxText}>
-                <span>{t('providersPage.form.cloakCacheUserId')}</span>
-                <small>{t('providersPage.form.cloakCacheUserIdHint')}</small>
-              </span>
-            </label>
+            <CheckboxField
+              label={t('providersPage.form.cloakCacheUserId')}
+              hint={t('providersPage.form.cloakCacheUserIdHint')}
+              checked={form.cloak.cacheUserId}
+              disabled={mutating}
+              onChange={(checked) => updateCloak('cacheUserId', checked)}
+            />
             <div className={styles.field}>
               <label className={styles.label}>{t('providersPage.form.cloakSensitiveWords')}</label>
               <textarea

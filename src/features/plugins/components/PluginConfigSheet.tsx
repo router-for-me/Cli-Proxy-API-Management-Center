@@ -6,6 +6,7 @@ import { Select } from '@/components/ui/Select';
 import { Sheet } from '@/components/ui/Sheet';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import type { PluginConfigField, PluginListEntry } from '@/types';
 import {
   normalizePluginConfigFieldType,
@@ -43,6 +44,25 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
     </div>
   );
 }
+
+/**
+ * Field name with its declared description in an InfoTip, the same way the config page explains
+ * settings. The description is also kept in a hidden element (`${id}-desc`) so the control can
+ * point at it with aria-describedby.
+ */
+const fieldLabel = (id: string, label: string, description: string | undefined) => (
+  <FieldLabel
+    htmlFor={id}
+    label={label}
+    hint={description}
+    hintId={`${id}-desc`}
+    className={styles.labelRow}
+    labelClassName={styles.rowLabel}
+  />
+);
+
+const describedBy = (id: string, description: string | undefined) =>
+  description ? `${id}-desc` : undefined;
 
 function SheetSkeleton() {
   return (
@@ -94,21 +114,12 @@ export function PluginConfigSheet({
     onChange: (value: boolean) => void
   ) => (
     <div key={id} className={styles.switchRow}>
-      <div className={styles.switchText}>
-        <label className={styles.rowLabel} htmlFor={id}>
-          {label}
-        </label>
-        {description ? (
-          <div id={`${id}-desc`} className={styles.rowDescription}>
-            {description}
-          </div>
-        ) : null}
-      </div>
+      {fieldLabel(id, label, description)}
       <ToggleSwitch
         id={id}
         checked={checked}
         onChange={onChange}
-        ariaDescribedBy={description ? `${id}-desc` : undefined}
+        ariaDescribedBy={describedBy(id, description)}
       />
     </div>
   );
@@ -129,19 +140,15 @@ export function PluginConfigSheet({
     if (fieldType === 'enum' && field.enumValues.length > 0) {
       return (
         <div key={field.name} className={styles.fieldRow}>
-          <label className={styles.rowLabel} htmlFor={fieldId}>
-            {field.name}
-          </label>
+          {fieldLabel(fieldId, field.name, field.description)}
           <Select
             id={fieldId}
             value={textValue}
             options={field.enumValues.map((item) => ({ value: item, label: item }))}
             onChange={(next) => onDraftChange(setFieldValue(field.name, next))}
             placeholder={t('plugin_management.select_placeholder')}
+            ariaDescribedBy={describedBy(fieldId, field.description)}
           />
-          {field.description ? (
-            <div className={styles.rowDescription}>{field.description}</div>
-          ) : null}
           {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
         </div>
       );
@@ -150,9 +157,7 @@ export function PluginConfigSheet({
     if (fieldType === 'array' || fieldType === 'object') {
       return (
         <div key={field.name} className={styles.fieldRow}>
-          <label className={styles.rowLabel} htmlFor={fieldId}>
-            {field.name}
-          </label>
+          {fieldLabel(fieldId, field.name, field.description)}
           <textarea
             id={fieldId}
             className={styles.textarea}
@@ -160,10 +165,8 @@ export function PluginConfigSheet({
             onChange={handleTextChange(field.name)}
             placeholder={fieldType === 'array' ? '[]' : '{}'}
             spellCheck={false}
+            aria-describedby={describedBy(fieldId, field.description)}
           />
-          {field.description ? (
-            <div className={styles.rowDescription}>{field.description}</div>
-          ) : null}
           {errorText ? <div className={styles.fieldError}>{errorText}</div> : null}
         </div>
       );

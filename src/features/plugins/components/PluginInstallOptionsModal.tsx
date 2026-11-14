@@ -220,7 +220,12 @@ export function PluginInstallOptionsModal({
     onClose();
   };
 
-  const renderMode = (mode: InstallVersionMode, label: string, hint: string, disabled: boolean) => (
+  const renderMode = (
+    mode: InstallVersionMode,
+    label: string,
+    hint: string | null,
+    disabled: boolean
+  ) => (
     <label
       className={`${styles.mode} ${versionMode === mode ? styles.modeActive : ''} ${
         disabled ? styles.modeDisabled : ''
@@ -235,7 +240,7 @@ export function PluginInstallOptionsModal({
       />
       <span className={styles.modeText}>
         <strong>{label}</strong>
-        <small>{hint}</small>
+        {hint ? <small>{hint}</small> : null}
       </span>
     </label>
   );
@@ -264,9 +269,8 @@ export function PluginInstallOptionsModal({
                 {renderMode(
                   'release',
                   t('plugin_store.install_version_release_mode'),
-                  releaseLoading
-                    ? t('plugin_store.install_versions_loading')
-                    : t('plugin_store.install_version_release_hint'),
+                  // The label already says what this does; only the live loading state shows.
+                  releaseLoading ? t('plugin_store.install_versions_loading') : null,
                   releaseModeDisabled
                 )}
                 {renderMode(

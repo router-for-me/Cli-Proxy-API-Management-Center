@@ -33,7 +33,6 @@ export function SectionStreaming({
       indexLabel={SECTION_INDEX_LABELS.streaming}
       icon={<Icon size={16} />}
       title={t('config_management.visual.sections.streaming.title')}
-      description={t('config_management.visual.sections.streaming.description')}
       animateIn={animateIn}
     >
       <SettingList>
@@ -41,7 +40,6 @@ export function SectionStreaming({
           fieldId="streamingKeepaliveSeconds"
           size="sm"
           label={t('config_management.visual.sections.streaming.keepalive_seconds')}
-          description={t('config_management.visual.sections.streaming.keepalive_hint')}
           type="number"
           placeholder="0"
           value={streaming.keepaliveSeconds}

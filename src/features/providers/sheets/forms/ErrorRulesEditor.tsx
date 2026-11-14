@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconChevronUp, IconPlus, IconTrash2 } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import {
   ERROR_RULE_ACTIONS,
   createErrorMatch,
@@ -18,12 +19,22 @@ export interface ErrorRulesEditorProps {
   rules: ErrorRuleDraft[];
   onChange: (rules: ErrorRuleDraft[]) => void;
   disabled: boolean;
+  /**
+   * Show the rule-evaluation-order note as a line above the rules. Hosts that already carry it
+   * in an InfoTip on their own label (the provider runtime policy) turn it off.
+   */
+  showOrderHint?: boolean;
 }
 
 const actions: readonly string[] = ERROR_RULE_ACTIONS;
 const key = 'providersPage.errorRules';
 
-export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditorProps) {
+export function ErrorRulesEditor({
+  rules,
+  onChange,
+  disabled,
+  showOrderHint = true,
+}: ErrorRulesEditorProps) {
   const { t } = useTranslation();
   const id = useId();
   const counter = useRef(0);
@@ -47,7 +58,7 @@ export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditor
 
   return (
     <div ref={root} className={`${form.section} ${styles.editor}`}>
-      <p className={form.sectionDesc}>{t(`${key}.hint`)}</p>
+      {showOrderHint && <p className={form.sectionDesc}>{t(`${key}.hint`)}</p>}
       {rules.length === 0 && <p className={form.sectionDesc}>{t(`${key}.empty`)}</p>}
       {rules.map((rule, index) => {
         const error = touched.has(rule.id) ? validateErrorRule(rule) : null;
@@ -169,9 +180,14 @@ export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditor
                   />
                 </div>
                 <div className={form.field}>
-                  <label htmlFor={matchId(match.id)} className={form.label}>
-                    {t(`${key}.matchValue`)}
-                  </label>
+                  <FieldLabel
+                    className={form.labelLine}
+                    labelClassName={form.label}
+                    htmlFor={matchId(match.id)}
+                    label={t(`${key}.matchValue`)}
+                    hint={match.kind === 'regex' ? t(`${key}.regexHint`) : undefined}
+                    hintId={`${id}-${match.id}-hint`}
+                  />
                   <textarea
                     id={matchId(match.id)}
                     className={`${form.input} ${styles.matchInput}`}
@@ -197,11 +213,6 @@ export function ErrorRulesEditor({ rules, onChange, disabled }: ErrorRulesEditor
                       })
                     }
                   />
-                  {match.kind === 'regex' && (
-                    <span id={`${id}-${match.id}-hint`} className={form.labelHint}>
-                      {t(`${key}.regexHint`)}
-                    </span>
-                  )}
                 </div>
                 <button
                   type="button"

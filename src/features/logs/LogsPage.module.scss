@@ -166,6 +166,12 @@
 
 .filterPanelButtonContent,
 .buttonContent,
+/* 开关 + 行尾 InfoTip：InfoTip 不能放进开关的 <label> 内 */
+.switchRow {
+  display: flex;
+  align-items: center;
+}
+
 .switchLabel {
   display: inline-flex;
   align-items: center;

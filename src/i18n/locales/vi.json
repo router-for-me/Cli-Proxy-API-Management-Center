@@ -17,6 +17,8 @@
     "success": "Thành công",
     "error": "Lỗi",
     "info": "Thông tin",
+    "more_info": "Thêm thông tin",
+    "more_info_about": "Thêm thông tin về {{label}}",
     "warning": "Cảnh báo",
     "loading": "Đang tải...",
     "connecting": "Đang kết nối...",
@@ -148,17 +150,13 @@
     "cta_inspect_logs": "Kiểm tra log",
     "stats_aria": "Chỉ số chính",
     "success_rate": "Tỷ lệ thành công",
-    "stat_success_hint": "Trên {{total}} yêu cầu trong cửa sổ",
     "stat_credentials": "Credential",
-    "stat_credentials_hint": "{{active}} đang hoạt động · {{disabled}} không phục vụ",
-    "stat_credentials_empty": "Chưa tìm thấy file credential nào",
     "stat_provider_keys": "Key provider",
     "stat_provider_keys_hint": "API key được cấu hình trên tất cả các thương hiệu",
     "stat_models": "Model",
     "stat_models_hint": "Được phục vụ qua proxy endpoint",
     "traffic_eyebrow": "Lưu lượng trực tiếp",
     "traffic_title": "Thông lượng, từng khoảng mười phút",
-    "traffic_description": "Số lần thành công và thất bại mỗi bucket 10 phút trong {{window}} vừa qua. Di chuột vào cột để xem phân tách chính xác.",
     "traffic_table": "Bảng dữ liệu",
     "traffic_table_window": "Cửa sổ",
     "traffic_chart_summary": "{{total}} yêu cầu trong {{minutes}} phút vừa qua: {{success}} thành công, {{failed}} thất bại.",
@@ -166,7 +164,6 @@
     "traffic_unavailable_hint": "Bộ đếm sẽ xuất hiện khi proxy phục vụ yêu cầu đầu tiên.",
     "fleet_eyebrow": "Toàn cảnh",
     "fleet_title": "Mọi provider, đặt cạnh nhau",
-    "fleet_description": "Lưu lượng và tỷ lệ thành công của từng provider trong cùng cửa sổ.",
     "fleet_empty": "Chưa có lưu lượng provider nào được ghi nhận.",
     "fleet_credentials": "Credential: {{value}}",
     "fleet_spark_label": "Lưu lượng yêu cầu của {{provider}}",
@@ -196,12 +193,6 @@
     "runtime_link": "Chỉnh sửa cấu hình",
     "cta_eyebrow": "Tiếp theo",
     "cta_title": "Nên đi đâu từ đây",
-    "cta_providers_desc": "Thêm API key, đặt ưu tiên và kiểm thử các thương hiệu.",
-    "cta_auth_files_desc": "Tải lên, làm mới và vô hiệu hóa credential OAuth.",
-    "cta_config_desc": "Tinh chỉnh định tuyến, thử lại, ghi log và truy cập.",
-    "cta_quota_desc": "Kiểm tra quota còn lại của từng credential.",
-    "cta_logs_desc": "Theo dõi yêu cầu và tải báo cáo lỗi.",
-    "cta_system_desc": "Chi tiết phiên bản và thông tin trung tâm quản lý.",
     "window_m": "{{minutes}}p",
     "window_h": "{{hours}}g",
     "window_hm": "{{hours}}g {{minutes}}p"
@@ -348,6 +339,7 @@
     "priority_hint": "Chỉ nhận số nguyên. Giá trị không hợp lệ sẽ bị bỏ qua. Giá trị lớn hơn nghĩa là ưu tiên cao hơn.",
     "weight_label": "Trọng số điều phối (weight)",
     "weight_hint": "Mặc định là 1. Giá trị ≤ 0 sẽ loại credential này khỏi điều phối có trọng số; tối đa 1.000.000.",
+    "weight_strategy_note": "Chỉ có hiệu lực khi bật <settingsLink>round robin có trọng số</settingsLink>.",
     "weight_invalid_integer": "Trọng số phải là số nguyên.",
     "weight_invalid_max": "Trọng số không được vượt quá 1.000.000.",
     "disable_cooling_label": "Tắt cooldown lũy thừa (disable_cooling)",
@@ -360,11 +352,9 @@
     "using_api_hint": "Dùng API xAI chính thức khi bật; dùng chat-proxy Grok CLI khi tắt.",
     "note_label": "Ghi chú",
     "note_placeholder": "Nhập ghi chú, ví dụ: Tài khoản của John",
-    "note_hint": "Tùy chọn. Dùng để mô tả mục đích hoặc chủ sở hữu của credential này; để trống nếu không cần.",
     "excluded_models_label": "Model bị loại trừ (excluded_models)",
     "headers_label": "Header tùy chỉnh (headers)",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
-    "headers_hint": "Nhập header HTTP tùy chỉnh dưới dạng đối tượng JSON, ví dụ {\"X-My-Header\": \"value\"}",
     "headers_invalid_json": "Header tùy chỉnh phải là JSON hợp lệ.",
     "headers_invalid_object": "Header tùy chỉnh phải là một đối tượng JSON.",
     "headers_invalid_value": "Mỗi giá trị header tùy chỉnh phải là chuỗi.",
@@ -659,8 +649,7 @@
   },
   "vertex_import": {
     "title": "Đăng nhập Vertex bằng JSON",
-    "description": "Tải lên file JSON service account của Google để lưu thành auth-dir/vertex-<project>.json theo cùng quy tắc với công cụ vertex-import của CLI.",
-    "location_label": "Khu vực (tùy chọn)",
+    "location_label": "Khu vực",
     "location_placeholder": "global",
     "location_hint": "Để trống để dùng khu vực mặc định global.",
     "file_label": "JSON key của service account",
@@ -686,9 +675,7 @@
     "list_empty_all": "Chưa có model nào bị vô hiệu hóa. Chọn một provider để bắt đầu.",
     "upgrade_required": "Phiên bản CPA hiện tại không hỗ trợ vô hiệu hóa model OAuth. Vui lòng nâng cấp.",
     "upgrade_required_title": "Vui lòng nâng cấp CLI Proxy API",
-    "upgrade_required_desc": "Phiên bản máy chủ hiện tại không hỗ trợ lấy danh sách vô hiệu hóa model OAuth. Vui lòng nâng cấp lên phiên bản CPA (CLI Proxy API) mới nhất và thử lại.",
-    "editor_description": "Chọn các model mà provider hiển thị bằng cách chọn riêng lẻ hoặc dùng quy tắc ký tự đại diện (wildcard).",
-    "models_hint": "Mở rộng danh sách để chọn model hoặc nhập quy tắc ký tự đại diện bên dưới."
+    "upgrade_required_desc": "Phiên bản máy chủ hiện tại không hỗ trợ lấy danh sách vô hiệu hóa model OAuth. Vui lòng nâng cấp lên phiên bản CPA (CLI Proxy API) mới nhất và thử lại."
   },
   "excluded_models": {
     "trigger_summary": "{{excluded}} bị loại trừ · {{available}} khả dụng",
@@ -767,7 +754,6 @@
     "upgrade_required": "Tính năng này yêu cầu phiên bản CLI Proxy API (CPA) mới hơn. Vui lòng nâng cấp.",
     "upgrade_required_title": "Vui lòng nâng cấp CLI Proxy API",
     "upgrade_required_desc": "Máy chủ hiện tại không hỗ trợ API bí danh model OAuth. Vui lòng nâng cấp lên phiên bản CLI Proxy API (CPA) mới nhất.",
-    "editor_description": "Đặt tên gọi nhất quán cho các model của provider để sử dụng trong client của bạn.",
     "mapping_row": "Ánh xạ bí danh {{number}}",
     "remove_mapping": "Xóa ánh xạ bí danh {{number}}"
   },
@@ -807,7 +793,6 @@
     "other_login_methods": "Phương thức đăng nhập khác",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Bắt đầu đăng nhập Codex",
-    "codex_oauth_hint": "Đăng nhập dịch vụ Codex qua luồng OAuth, tự động lấy và lưu file xác thực.",
     "codex_open_link": "Mở liên kết",
     "codex_copy_link": "Sao chép liên kết",
     "codex_oauth_status_waiting": "Đang chờ xác thực...",
@@ -817,7 +802,6 @@
     "codex_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
     "anthropic_oauth_title": "Anthropic OAuth",
     "anthropic_oauth_button": "Bắt đầu đăng nhập Anthropic",
-    "anthropic_oauth_hint": "Đăng nhập dịch vụ Anthropic (Claude) qua luồng OAuth, tự động lấy và lưu file xác thực.",
     "anthropic_open_link": "Mở liên kết",
     "anthropic_copy_link": "Sao chép liên kết",
     "anthropic_oauth_status_waiting": "Đang chờ xác thực...",
@@ -827,7 +811,7 @@
     "anthropic_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
     "antigravity_oauth_title": "Antigravity OAuth",
     "antigravity_oauth_button": "Bắt đầu đăng nhập Antigravity",
-    "antigravity_oauth_hint": "Đăng nhập dịch vụ Antigravity (tài khoản Google) qua luồng OAuth, tự động lấy và lưu file xác thực.",
+    "antigravity_oauth_hint": "Đăng nhập bằng tài khoản Google.",
     "antigravity_open_link": "Mở liên kết",
     "antigravity_copy_link": "Sao chép liên kết",
     "antigravity_oauth_status_waiting": "Đang chờ xác thực...",
@@ -838,7 +822,7 @@
     "kimi_oauth_title": "Kimi OAuth",
     "kimi_oauth_button": "Đăng nhập bằng Kimi",
     "kimi_sign_up_button": "Đăng ký ngay",
-    "kimi_oauth_hint": "Đăng nhập nhanh vào Kimi qua ủy quyền thiết bị. File xác thực được lấy và lưu tự động.",
+    "kimi_oauth_hint": "Chỉ dành cho tài khoản kimi.com (Trung Quốc); tài khoản quốc tế hãy dùng mục kimi.ai.",
     "kimi_open_link": "Mở liên kết",
     "kimi_copy_link": "Sao chép liên kết",
     "kimi_oauth_status_waiting": "Đang chờ xác thực...",
@@ -848,7 +832,6 @@
     "kimi_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "Bắt đầu đăng nhập xAI",
-    "xai_oauth_hint": "Đăng nhập xAI Grok qua luồng OAuth, tự động lấy và lưu file xác thực.",
     "xai_open_link": "Mở liên kết",
     "xai_copy_link": "Sao chép liên kết",
     "xai_oauth_status_waiting": "Đang chờ xác thực...",
@@ -858,7 +841,6 @@
     "xai_oauth_polling_error": "Không thể kiểm tra trạng thái xác thực:",
     "plugin_oauth_title": "{{name}} OAuth",
     "plugin_oauth_button": "Bắt đầu đăng nhập {{name}}",
-    "plugin_oauth_hint": "Đăng nhập {{name}} qua luồng OAuth của plugin, tự động lấy và lưu file xác thực.",
     "plugin_open_link": "Mở liên kết",
     "plugin_copy_link": "Sao chép liên kết",
     "plugin_oauth_status_waiting": "Đang chờ xác thực...",
@@ -885,7 +867,6 @@
     "view_auth_files": "Xem file xác thực",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "Bắt đầu đăng nhập iFlow",
-    "iflow_oauth_hint": "Đăng nhập dịch vụ iFlow qua luồng OAuth, tự động lấy và lưu file xác thực.",
     "iflow_oauth_url_label": "URL ủy quyền:",
     "iflow_open_link": "Mở liên kết",
     "iflow_copy_link": "Sao chép liên kết",
@@ -917,14 +898,12 @@
     "waiting_background_hint": "Đóng cửa sổ không làm gián đoạn đăng nhập",
     "restart_login": "Bắt đầu lại",
     "login_proxy_toggle": "Proxy đăng nhập",
-    "login_proxy_optional": "Tùy chọn",
     "login_proxy_status_invalid": "Không hợp lệ",
     "login_proxy_label": "Proxy cho các lần đăng nhập mới",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
     "login_proxy_clear": "Xóa",
     "login_proxy_invalid": "URL proxy không hợp lệ. Hãy dùng http, https, socks5 hoặc socks5h kèm máy chủ (socks5 cần cổng), không có đường dẫn hay tham số truy vấn.",
     "login_proxy_in_use": "Đang đăng nhập qua proxy",
-    "success_saved_hint": "Đã lưu credential — quản lý trong File xác thực.",
     "sign_up_prompt": "Chưa có tài khoản?",
     "copied": "Đã sao chép",
     "devin_oauth_cancel": "Hủy đăng nhập Devin",
@@ -933,7 +912,7 @@
     "devin_oauth_retry_hint": "Máy chủ có thể vẫn đang chờ ủy quyền. Hãy hủy lượt đăng nhập này trước khi bắt đầu lại.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Bắt đầu đăng nhập Devin",
-    "devin_oauth_hint": "Đăng nhập Devin / Cognition qua trình duyệt OAuth để tự động lưu file xác thực. Yêu cầu CLI Proxy API v7.3.1 trở lên; vui lòng hoàn tất ủy quyền trong vòng năm phút.",
+    "devin_oauth_hint": "Vui lòng hoàn tất ủy quyền trong vòng năm phút.",
     "devin_copy_link": "Sao chép liên kết",
     "devin_open_link": "Mở liên kết",
     "devin_oauth_status_waiting": "Đang chờ xác thực Devin...",
@@ -946,7 +925,6 @@
     "devin_callback_state_mismatch": "Callback này không thuộc về lượt đăng nhập Devin hiện tại. Vui lòng dùng URL cuối cùng từ lần thử này; không tái sử dụng callback cũ.",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Đăng nhập bằng Muse",
-    "meta_oauth_hint": "Mở liên kết ủy quyền và nhập mã thiết bị nếu được yêu cầu. File xác thực sẽ tự động được lưu sau khi ủy quyền.",
     "meta_open_link": "Mở liên kết",
     "meta_copy_link": "Sao chép liên kết",
     "meta_oauth_status_waiting": "Đang chờ xác thực...",
@@ -958,7 +936,7 @@
     "device_code_copy": "Sao chép mã thiết bị",
     "kimi_ai_oauth_title": "Kimi quốc tế (kimi.ai)",
     "kimi_ai_oauth_button": "Đăng nhập Kimi quốc tế",
-    "kimi_ai_oauth_hint": "Ủy quyền tài khoản kimi.ai quốc tế qua đăng nhập thiết bị. File xác thực kimi-ai độc lập sẽ được lưu tự động. Tài khoản nội địa Trung Quốc và quốc tế không thể dùng thay thế cho nhau.",
+    "kimi_ai_oauth_hint": "Chỉ dành cho tài khoản kimi.ai (quốc tế); được lưu thành file xác thực kimi-ai riêng.",
     "kimi_ai_open_link": "Mở liên kết",
     "kimi_ai_copy_link": "Sao chép liên kết",
     "kimi_ai_oauth_status_waiting": "Đang chờ xác thực...",
@@ -1120,21 +1098,17 @@
       },
       "sections": {
         "common": {
-          "title": "Chung",
-          "description": "Các cài đặt dùng nhiều nhất, dùng chung dữ liệu với các mục đầy đủ"
+          "title": "Chung"
         },
         "connectivity": {
-          "title": "Truy cập & Xác thực",
-          "description": "Địa chỉ máy chủ, cổng, thư mục xác thực và API key"
+          "title": "Truy cập & Xác thực"
         },
         "logging": {
-          "title": "Ghi log & Chẩn đoán",
-          "description": "Debug, xuất log và thống kê sử dụng"
+          "title": "Ghi log & Chẩn đoán"
         },
         "advanced": {
           "antigravity_credits": "Dùng credit Antigravity",
           "title": "Nâng cao & Thử nghiệm",
-          "description": "Giả mạo header, cache chữ ký, nguồn plugin và các cài đặt ít thay đổi khác",
           "plugins_title": "Plugin",
           "signature_title": "Chữ ký Antigravity",
           "antigravity_title": "Antigravity",
@@ -1148,19 +1122,15 @@
         },
         "tls": {
           "title": "Cấu hình TLS/SSL",
-          "description": "Cài đặt kết nối HTTPS bảo mật",
           "enable": "Bật TLS",
-          "enable_desc": "Bật kết nối HTTPS bảo mật",
           "cert": "Đường dẫn file chứng chỉ",
           "key": "Đường dẫn file khóa riêng"
         },
         "remote": {
           "title": "Quản lý từ xa",
-          "description": "Truy cập từ xa và cài đặt bảng điều khiển",
           "allow_remote": "Cho phép truy cập từ xa",
           "allow_remote_desc": "Cho phép truy cập quản lý từ máy chủ khác",
           "disable_panel": "Tắt bảng điều khiển",
-          "disable_panel_desc": "Tắt bảng điều khiển web tích hợp",
           "disable_auto_update_panel": "Tắt tự động cập nhật bảng điều khiển",
           "disable_auto_update_panel_desc": "Tải bảng điều khiển khi thiếu lần đầu, nhưng không bao giờ tự cập nhật từ GitHub",
           "secret_key": "Key quản lý",
@@ -1168,25 +1138,20 @@
           "panel_repo": "Repository bảng điều khiển"
         },
         "auth": {
-          "auth_dir": "Thư mục xác thực (auth-dir)",
-          "auth_dir_hint": "Đường dẫn thư mục chứa file xác thực (hỗ trợ ~)"
+          "auth_dir": "Thư mục xác thực (auth-dir)"
         },
         "system": {
           "debug": "Chế độ Debug",
-          "debug_desc": "Bật ghi log debug chi tiết",
           "commercial_mode": "Chế độ thương mại",
           "commercial_mode_desc": "Tắt middleware tốn tài nguyên để hỗ trợ đồng thời cao",
           "logging_to_file": "Ghi log ra file",
-          "logging_to_file_desc": "Lưu log vào file",
           "plugins_enabled": "Bật hệ thống Plugin",
           "plugins_enabled_desc": "Bật nạp plugin thư viện động chuẩn; từng phiên bản plugin vẫn được quản lý ở trang Plugin",
           "plugin_store_sources": "Nguồn Plugin bên thứ ba",
           "plugin_store_sources_desc": "Thêm nguồn registry plugin store; nguồn chính thức tích hợp luôn được giữ",
           "plugin_store_sources_label": "URL registry nguồn plugin (plugins.store-sources)",
           "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
-          "plugin_store_sources_hint": "Mỗi dòng một URL registry.json. Dòng trống sẽ bị lọc khi lưu",
           "plugin_store_auth": "Quy tắc xác thực Plugin Store",
-          "plugin_store_auth_desc": "Cấu hình header xác thực cho registry riêng tư, metadata GitHub Release hoặc tải artifact",
           "plugin_store_auth_hint": "Chỉ nhập tên biến môi trường, không nhập token thật. Backend đọc giá trị từ môi trường runtime của nó.",
           "store_auth_empty": "Chưa cấu hình quy tắc xác thực nào. Nguồn plugin công khai không cần.",
           "store_auth_rule": "Quy tắc xác thực",
@@ -1212,7 +1177,6 @@
           "logs_max_size": "Giới hạn kích thước file log (MB)",
           "error_logs_max_files": "Số file log lỗi giữ lại",
           "usage_statistics_enabled": "Bật thống kê sử dụng trong bộ nhớ",
-          "usage_statistics_enabled_desc": "Tổng hợp thống kê sử dụng yêu cầu trong bộ nhớ",
           "redis_usage_retention": "Thời gian giữ hàng đợi sử dụng Redis (giây)",
           "redis_usage_retention_hint": "Thời gian giữ trong bộ nhớ cho đầu ra sử dụng RESP LPOP/RPOP, tối đa 3600 giây",
           "antigravity_signature_cache": "Bật cache chữ ký Antigravity",
@@ -1232,7 +1196,6 @@
         },
         "headers": {
           "title": "Header mặc định",
-          "description": "Header mặc định cho yêu cầu OAuth Claude và Codex khi client không gửi",
           "claude_title": "Header mặc định Claude",
           "codex_title": "Header mặc định Codex",
           "user_agent": "User-Agent",
@@ -1247,7 +1210,6 @@
         },
         "network": {
           "title": "Cấu hình mạng",
-          "description": "Cài đặt proxy, thử lại và định tuyến",
           "proxy_url": "URL Proxy",
           "request_retry": "Số lần thử lại yêu cầu",
           "max_retry_credentials": "Số credential thử lại tối đa",
@@ -1256,7 +1218,6 @@
           "auth_auto_refresh_workers": "Số worker tự làm mới xác thực",
           "auth_auto_refresh_workers_hint": "Khi lớn hơn 0, ghi đè số worker mặc định (16)",
           "disable_image_generation": "Tắt tạo ảnh",
-          "disable_image_generation_hint": "false để bật; true tắt toàn bộ tạo ảnh; chat tắt inject endpoint phi ảnh; passthrough giữ danh sách tool của client mà không inject",
           "disable_image_generation_false": "false (đang bật)",
           "disable_image_generation_true": "true (tắt ở mọi nơi)",
           "disable_image_generation_chat": "chat (chỉ tắt inject trong chat)",
@@ -1264,7 +1225,6 @@
           "gpt_image_2_base_model": "Model gốc GPT Image 2",
           "gpt_image_2_base_model_hint": "Model chính dùng khi proxy yêu cầu ảnh gpt-image-2; backend dùng mặc định nếu trống hoặc không hợp lệ",
           "routing_strategy": "Chiến lược định tuyến",
-          "routing_strategy_hint": "Chọn chiến lược lựa chọn credential",
           "strategy_round_robin": "Round Robin",
           "strategy_weighted_round_robin": "Weighted Round Robin",
           "strategy_fill_first": "Fill First",
@@ -1272,7 +1232,6 @@
           "force_model_prefix": "Bắt buộc tiền tố model",
           "force_model_prefix_desc": "Yêu cầu model không có tiền tố chỉ dùng credential không có tiền tố",
           "passthrough_headers": "Chuyển tiếp Header upstream",
-          "passthrough_headers_desc": "Chuyển tiếp header phản hồi upstream đã lọc đến client downstream",
           "disable_cooling": "Tắt Cooling",
           "disable_cooling_desc": "Tắt toàn cục cửa sổ cooldown auth/model sau thất bại",
           "session_affinity": "Định tuyến Session Affinity",
@@ -1283,9 +1242,7 @@
         },
         "streaming": {
           "title": "Cấu hình Streaming",
-          "description": "Cài đặt keepalive và thử lại bootstrap",
           "keepalive_seconds": "Số giây Keepalive",
-          "keepalive_hint": "Đặt 0 hoặc để trống để tắt keepalive",
           "bootstrap_retries": "Số lần thử Bootstrap",
           "bootstrap_hint": "Số lần thử lại khi khởi động stream (trước byte đầu tiên)",
           "nonstream_keepalive": "Khoảng keepalive phi stream (giây)",
@@ -1294,17 +1251,11 @@
         },
         "payload": {
           "title": "Cấu hình Payload",
-          "description": "Giá trị mặc định, quy tắc JSON thô, quy tắc ghi đè và quy tắc lọc",
           "default_rules": "Quy tắc mặc định",
-          "default_rules_desc": "Dùng các giá trị mặc định này khi tham số không được chỉ định trong yêu cầu",
           "default_raw_rules": "Quy tắc thô mặc định",
-          "default_raw_rules_desc": "Khi thiếu tham số, ghi các giá trị này dưới dạng đoạn JSON thô như true, 123, \"high\" hoặc {\"type\":\"object\"}",
           "override_rules": "Quy tắc ghi đè",
-          "override_rules_desc": "Bắt buộc ghi đè giá trị tham số trong yêu cầu",
           "override_raw_rules": "Quy tắc thô ghi đè",
-          "override_raw_rules_desc": "Luôn ghi đè giá trị tham số dưới dạng đoạn JSON thô, hữu ích cho response_format, schema và các trường phức tạp khác",
-          "filter_rules": "Quy tắc lọc",
-          "filter_rules_desc": "Lọc trước body yêu cầu upstream qua JSON Path, tự động loại bỏ tham số không tuân thủ/dư thừa (Làm sạch yêu cầu)"
+          "filter_rules": "Quy tắc lọc"
         }
       },
       "api_keys": {
@@ -1312,7 +1263,6 @@
         "add": "Thêm API Key",
         "generate": "Tạo",
         "empty": "Chưa có API key",
-        "hint": "Mỗi mục là một API key (nhất quán với phong cách trang 'Quản lý API Key')",
         "edit_title": "Chỉnh sửa API Key",
         "add_title": "Thêm API Key",
         "input_label": "API Key",
@@ -1328,7 +1278,7 @@
           "good": "Tốt",
           "strong": "Mạnh"
         },
-        "name_label": "Tên / mô tả (tùy chọn)",
+        "name_label": "Tên / mô tả",
         "name_placeholder": "Ví dụ: Laptop của Alice",
         "name_hint": "Được lưu ngay trong trình duyệt này, riêng cho từng máy chủ. Không bao gồm trong cấu hình máy chủ. Xóa trường này để xóa tên.",
         "name_save_error": "Không thể lưu tên vào bộ lưu trữ trình duyệt. Vui lòng kiểm tra cài đặt lưu trữ của trình duyệt."
@@ -1424,8 +1374,7 @@
           "hint": "Backend sẽ nối thêm một ID ngắn. Để trống sẽ dùng CPA-<ShortID>."
         },
         "discoveryServiceType": {
-          "label": "Loại dịch vụ",
-          "hint": "Để trống sẽ dùng _ai-gateway._tcp."
+          "label": "Loại dịch vụ"
         },
         "discoverySubtypes": {
           "label": "Phân loại giao thức con",
@@ -1458,7 +1407,6 @@
         "antigravityTitle": "Antigravity",
         "xaiTitle": "xAI",
         "liveRelayTitle": "Codex Live media relay",
-        "liveRelayHint": "Chuyển tiếp âm thanh WebRTC và lưu lượng DataChannel trong tiến trình proxy. UDP chiều đến phải truy cập được. Không để lộ thông tin xác thực ICE trong ảnh chụp màn hình hoặc log.",
         "iceAdd": "Thêm máy chủ ICE",
         "iceRemove": "Xóa máy chủ ICE {{index}}",
         "iceURLs": "URL STUN/TURN",
@@ -1586,7 +1534,6 @@
   },
   "quota_management": {
     "title": "Quản lý Quota",
-    "description": "Theo dõi trạng thái quota OAuth của credential Antigravity, Codex, Claude, Kimi và xAI.",
     "refresh_all_credentials": "Làm mới mọi credential",
     "sort_label": "Sắp xếp",
     "sort_default": "Mặc định",
@@ -1727,7 +1674,6 @@
   },
   "plugin_management": {
     "title": "Plugin",
-    "description": "Cài plugin từ kho, giữ chúng luôn cập nhật, và bật, cấu hình hoặc gỡ các plugin đã cài.",
     "load_failed": "Không thể tải plugin",
     "config_load_failed": "Không thể đọc cấu hình plugin",
     "config_not_found": "Không thể đọc cấu hình plugin vì backend không tìm thấy plugin này.",
@@ -1832,7 +1778,6 @@
     "install_version_latest_mode": "Bản ổn định mới nhất",
     "install_version_latest_hint": "Backend sẽ phân giải khi cài đặt. Phiên bản đang niêm yết: {{version}}.",
     "install_version_release_mode": "Chọn bản phát hành",
-    "install_version_release_hint": "Đọc các tag cài được từ GitHub Releases.",
     "install_version_manual_mode": "Tag phát hành thủ công",
     "install_version_manual_hint": "Chỉ dùng khi không thể tự động tải danh sách bản phát hành.",
     "install_versions_loading": "Đang tải GitHub Releases...",
@@ -1876,8 +1821,7 @@
     "gate_step1_action": "Tôi muốn cài plugin này",
     "gate_step2_action": "Tôi đã đọc và hiểu các rủi ro này",
     "gate_step3_prompt": "Để xác nhận, nhập \"{{token}}\" vào ô bên dưới",
-    "gate_step3_action": "Cài đặt plugin này",
-    "gate_step3_hint": "Nhập chính xác mã định danh hiển thị ở trên để cho phép cài đặt."
+    "gate_step3_action": "Cài đặt plugin này"
   },
   "plugin_resource": {
     "page_count": "{{count}} trang",
@@ -1890,7 +1834,6 @@
   },
   "system_info": {
     "models_refresh_button": "Làm mới danh sách",
-    "models_refresh_hint": "Lấy các mô hình khả dụng mới nhất và làm mới danh sách.",
     "models_refresh_success": "Đã làm mới danh sách mô hình khả dụng: {{count}}.",
     "models_catalog_refresh_button": "Cập nhật danh mục mô hình",
     "models_catalog_refresh_hint": "Cập nhật danh mục mô hình dùng chung cho mọi người để lấy thông tin mô hình mới nhất.",
@@ -1911,13 +1854,9 @@
     "version_current_missing": "Không có phiên bản máy chủ; không thể so sánh",
     "version_unknown": "Không rõ",
     "quick_links_title": "Liên kết nhanh",
-    "quick_links_desc": "Truy cập repository dự án và tài liệu để được trợ giúp và cập nhật.",
     "link_main_repo": "Repository chính",
-    "link_main_repo_desc": "Mã nguồn chương trình lõi CLI Proxy API",
     "link_webui_repo": "Repository WebUI",
-    "link_webui_repo_desc": "Mã nguồn frontend Trung tâm Quản lý",
     "link_docs": "Tài liệu",
-    "link_docs_desc": "Hướng dẫn và tutorial cấu hình",
     "clear_login_title": "Dữ liệu đăng nhập cục bộ",
     "clear_login_desc": "Xóa dữ liệu đăng nhập đã lưu cục bộ và đăng xuất.",
     "clear_login_button": "Xóa dữ liệu đăng nhập",
@@ -1967,7 +1906,6 @@
     "toggle_collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng",
     "collapse": "Thu gọn",
-    "subtitle": "Bảng điều khiển CLI Proxy API",
     "auth_files_count": "File xác thực: {{count}}"
   },
   "footer": {
@@ -2035,7 +1973,6 @@
       "cloakTag": "Cloak",
       "empty": "Chưa có tài nguyên nào, nhấn \"Mới\" để thêm.",
       "filterPlaceholder": "Tìm key, URL, tiền tố…",
-      "description": "Quản lý tài nguyên trong {{route}}",
       "cliProfileTag": "Hồ sơ CLI"
     },
     "sponsor": {
@@ -2062,7 +1999,6 @@
       "addGroupedKey": "Thêm key được nhóm",
       "removeGroupedKey": "Xóa key được nhóm",
       "protocol": "Nhóm/giao thức",
-      "protocolHint": "Chọn nhóm/giao thức cho key này.",
       "protocolEndpoint": "Endpoint giao thức hiện tại",
       "urlMode": "URL {{provider}}",
       "urlHint": "Mọi URL dùng cùng quy ước API. Lưu chỉ ghi endpoint của giao thức được nhóm hiện tại.",
@@ -2091,12 +2027,6 @@
         "anthropic": "Model Anthropic",
         "gemini": "Model Gemini",
         "openai": "Model tương thích OpenAI"
-      },
-      "protocolModelHints": {
-        "codex": "Ghi vào cấu hình model Codex API. Lấy từ /v1/models và đặt bí danh nếu cần.",
-        "anthropic": "Ghi vào cấu hình model Anthropic. Lấy từ /v1/models và đặt bí danh nếu cần.",
-        "gemini": "Ghi vào cấu hình model Gemini. Lấy từ /v1beta/models và đặt bí danh nếu cần.",
-        "openai": "Ghi vào cấu hình model tương thích OpenAI. Lấy từ /models và đặt bí danh nếu cần."
       },
       "validation": {
         "keyRequired": "Nhập API key cho mọi key được nhóm.",
@@ -2153,14 +2083,12 @@
       "apiKeyCreatePlaceholder": "Nhập API key",
       "apiKeyEditPlaceholder": "Để trống nếu không đổi",
       "baseUrl": "Base URL",
-      "baseUrlRequiredHint": "Bắt buộc với provider này",
       "proxyUrl": "URL Proxy",
       "prefix": "Tiền tố",
       "priority": "Ưu tiên",
       "weight": "Trọng số điều phối",
       "weightHint": "Mặc định 1 · ≤ 0 bị loại trừ · tối đa 1.000.000",
       "disabled": "Tắt mục này",
-      "disabledHint": "Gateway sẽ không dùng mục đã tắt",
       "websockets": "Bật WebSocket",
       "testModel": "Model kiểm thử",
       "testModelHint": "Chỉ dùng để kiểm thử kết nối; không được lưu",
@@ -2456,7 +2384,6 @@
     "retry_grant": "Thử lại {{kind}} · {{label}}",
     "no_usage": "Chưa có mức sử dụng Fable để đặt lại.",
     "fable_hint": "Khôi phục hạn mức Fable và hoàn lại phần đã dùng vào hạn mức tuần. Mức sử dụng tuần khác không thay đổi.",
-    "exact_grant_hint": "Chỉ dùng đúng lượt đặt lại này.",
     "choose_grant": "Chọn lượt đặt lại",
     "no_grants": "Không có lượt đặt lại.",
     "grant_expiry": "Hết hạn: {{date}}",

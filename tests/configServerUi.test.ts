@@ -40,7 +40,7 @@ describe('server configuration UI', () => {
       expect(FIELD_VALUE_KEYS[entry.fieldId]).toEqual([entry.fieldId]);
       expect(markup.split(`id="cfg-field-${entry.fieldId}"`)).toHaveLength(2);
       expect(markup).toContain(escapeText(translations.t(entry.labelKey)));
-      expect(markup).toContain(escapeText(translations.t(entry.hintKey!)));
+      if (entry.hintKey) expect(markup).toContain(escapeText(translations.t(entry.hintKey)));
       const path = entry.yamlKeys!.join('.');
       expect(path).toMatch(/^server\.(trusted-proxies|discovery\.)/);
       expect(
@@ -104,18 +104,70 @@ describe('server configuration UI', () => {
     for (const input of inputs) {
       const id = input.match(/\bid="([^"]+)"/)?.[1];
       expect(discovery).toContain(`for="${id}"`);
+      // The service type has no explanation (its placeholder is the default), so nothing to describe it.
+      if (input.includes('placeholder="_ai-gateway._tcp"')) {
+        expect(input).not.toContain('aria-describedby');
+        continue;
+      }
       const hint = input.match(/aria-describedby="([^"]+)"/)?.[1];
       expect(discovery).toContain(`id="${hint}"`);
     }
+  });
+
+  test('copy decisions: security notes stay visible, the discovery prerequisites join the master switch', () => {
+    const markup = render(createElement(SectionConnectivity, props));
+    const t = (key: string) => escapeText(translations.t(`config_management.visual.${key}`));
+    const rowOf = (fieldId: string) =>
+      markup.split(`id="cfg-field-${fieldId}"`)[1].split('id="cfg-field-')[0];
+    const visibleDescription = (row: string) =>
+      row.match(/<div id="[^"]+-hint"(?: class="([^"]*)")?>/)?.[1] ?? '';
+
+    // Trusted proxies (client IP spoofing) and remote management access: visible, no InfoTip.
+    for (const [fieldId, key] of [
+      ['trustedProxies', 'serverExtras.trustedProxies.hint'],
+      ['rmAllowRemote', 'sections.remote.allow_remote_desc'],
+    ]) {
+      const row = rowOf(fieldId);
+      expect(row).toContain(t(key));
+      expect(row).not.toContain('data-info-tip');
+      expect(visibleDescription(row)).not.toContain('visually-hidden');
+    }
+
+    // The collapsible summaries carry no hint; the discovery note moved into the switch's InfoTip.
+    expect(markup).not.toContain(t('sections.tls.description'));
+    expect(markup).not.toContain(t('sections.remote.description'));
+    const summaries = markup.match(/<summary\b.*?<\/summary>/g) ?? [];
+    expect(summaries.length).toBe(3);
+    for (const summary of summaries) expect(summary).not.toContain('<button');
+    const discovery = rowOf('discoveryEnabled');
+    expect(discovery).toContain('data-info-tip');
+    expect(discovery).toContain(t('serverExtras.discoveryEnabled.hint'));
+    expect(discovery).toContain(t('serverExtras.discoveryHint'));
+    expect(visibleDescription(discovery)).toContain('visually-hidden-focusable');
+
+    // Restating descriptions are gone entirely.
+    for (const key of [
+      'sections.connectivity.description',
+      'sections.auth.auth_dir_hint',
+      'sections.tls.enable_desc',
+      'sections.remote.disable_panel_desc',
+      'serverExtras.discoveryServiceType.hint',
+    ])
+      expect(markup).not.toContain(t(key));
   });
 
   test('disables every input and list action in read-only mode', () => {
     const markup = render(
       createElement(SectionConnectivity, { ...props, values: populated, disabled: true })
     );
-    const controls = markup.match(/<(?:input|textarea|button)\b[^>]*>/g) ?? [];
+    const tags = markup.match(/<(?:input|textarea|button)\b[^>]*>/g) ?? [];
+    // InfoTip buttons only reveal explanations, so they stay usable in read-only mode.
+    const infoTips = tags.filter((tag) => tag.includes('data-info-tip'));
+    const controls = tags.filter((tag) => !tag.includes('data-info-tip'));
     expect(controls.length).toBeGreaterThan(10);
+    expect(infoTips.length).toBeGreaterThan(0);
     for (const control of controls) expect(control).toContain('disabled=""');
+    for (const infoTip of infoTips) expect(infoTip).not.toContain('disabled');
   });
 
   test('renders and associates both validation errors', () => {

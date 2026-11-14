@@ -17,6 +17,8 @@
     "success": "성공",
     "error": "오류",
     "info": "정보",
+    "more_info": "자세한 정보",
+    "more_info_about": "{{label}}에 대한 설명",
     "warning": "경고",
     "loading": "로딩 중...",
     "connecting": "연결 중...",
@@ -148,17 +150,13 @@
     "cta_inspect_logs": "로그 확인",
     "stats_aria": "주요 지표",
     "success_rate": "성공률",
-    "stat_success_hint": "윈도우 내 총 {{total}}건의 요청",
     "stat_credentials": "자격 증명",
-    "stat_credentials_hint": "활성 {{active}}개 · 비제공 {{disabled}}개",
-    "stat_credentials_empty": "자격 증명 파일을 찾을 수 없습니다",
     "stat_provider_keys": "공급자 키",
     "stat_provider_keys_hint": "모든 브랜드에 설정된 API 키",
     "stat_models": "모델",
     "stat_models_hint": "프록시 엔드포인트를 통해 제공됨",
     "traffic_eyebrow": "실시간 트래픽",
     "traffic_title": "10분 단위 처리량",
-    "traffic_description": "최근 {{window}} 동안 10분 단위 버킷별 성공 및 실패 횟수입니다. 열에 마우스를 올리면 정확한 구성을 확인할 수 있습니다.",
     "traffic_table": "데이터 테이블",
     "traffic_table_window": "시간 구간",
     "traffic_chart_summary": "최근 {{minutes}}분 동안 총 {{total}}건의 요청: 성공 {{success}}건, 실패 {{failed}}건.",
@@ -166,7 +164,6 @@
     "traffic_unavailable_hint": "프록시가 첫 번째 요청을 처리하면 카운터가 표시됩니다.",
     "fleet_eyebrow": "공급자",
     "fleet_title": "모든 공급자 비교",
-    "fleet_description": "동일한 윈도우 내 각 공급자의 요청량 및 성공률입니다.",
     "fleet_empty": "아직 기록된 공급자 트래픽이 없습니다.",
     "fleet_credentials": "자격 증명: {{value}}",
     "fleet_spark_label": "{{provider}} 요청량",
@@ -196,12 +193,6 @@
     "runtime_link": "설정 편집",
     "cta_eyebrow": "다음",
     "cta_title": "다음 작업 안내",
-    "cta_providers_desc": "API 키를 추가하고 우선순위를 설정하며 브랜드를 테스트합니다.",
-    "cta_auth_files_desc": "OAuth 자격 증명을 업로드, 새로 고침 및 비활성화합니다.",
-    "cta_config_desc": "라우팅, 재시도, 로깅 및 접근 권한을 조정합니다.",
-    "cta_quota_desc": "자격 증명별 남은 할당량을 확인합니다.",
-    "cta_logs_desc": "요청을 실시간 추적하고 오류 보고서를 다운로드합니다.",
-    "cta_system_desc": "버전 세부 정보 및 관리 센터 정보입니다.",
     "window_m": "{{minutes}}분",
     "window_h": "{{hours}}시간",
     "window_hm": "{{hours}}시간 {{minutes}}분"
@@ -396,7 +387,8 @@
     "priority_hint": "정수만 지원됩니다. 유효하지 않은 값은 무시됩니다. 값이 클수록 우선순위가 높습니다.",
     "weight_label": "스케줄링 가중치 (weight)",
     "weight_tooltip": "기본값은 1입니다. 0 이하의 값은 가중치 스케줄링에서 이 자격 증명을 제외합니다. 최대값은 1,000,000입니다. 값을 입력한 후 가중 라운드 로빈을 활성화해야 적용됩니다.",
-    "weight_hint": "기본값은 1입니다. 0 이하의 값은 가중치 스케줄링에서 이 자격 증명을 제외합니다. 최대값은 1,000,000입니다. 값을 입력한 후 <settingsLink>가중 라운드 로빈</settingsLink>을 활성화해야 적용됩니다.",
+    "weight_hint": "기본값은 1입니다. 0 이하의 값은 가중치 스케줄링에서 이 자격 증명을 제외합니다. 최대값은 1,000,000입니다.",
+    "weight_strategy_note": "<settingsLink>가중 라운드 로빈</settingsLink>을 활성화해야 적용됩니다.",
     "weight_invalid_integer": "가중치는 정수여야 합니다.",
     "weight_invalid_max": "가중치는 1,000,000을 초과할 수 없습니다.",
     "disable_cooling_label": "지수 쿨다운 비활성화 (disable_cooling)",
@@ -427,11 +419,9 @@
     "policy_rules_invalid": "수정된 각 규칙에 양수 상태 코드, 동작 및 하나 이상의 비어 있지 않은 일치 조건을 입력하세요.",
     "note_label": "메모",
     "note_placeholder": "메모를 입력하세요(예: John의 계정)",
-    "note_hint": "선택 사항입니다. 이 자격 증명의 용도나 소유자를 설명하는 데 사용되며, 생략하려면 비워 두세요.",
     "excluded_models_label": "제외 모델 (excluded_models)",
     "headers_label": "사용자 정의 헤더 (headers)",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
-    "headers_hint": "사용자 정의 HTTP 헤더를 JSON 객체로 입력하세요(예: {\"X-My-Header\": \"value\"}).",
     "headers_invalid_json": "사용자 정의 헤더는 유효한 JSON이어야 합니다.",
     "headers_invalid_object": "사용자 정의 헤더는 JSON 객체여야 합니다.",
     "headers_invalid_value": "각 사용자 정의 헤더 값은 문자열이어야 합니다.",
@@ -703,8 +693,7 @@
   },
   "vertex_import": {
     "title": "Vertex JSON 로그인",
-    "description": "Google 서비스 계정 JSON을 업로드하여 CLI vertex-import 도우미와 동일한 규칙으로 auth-dir/vertex-<project>.json에 저장합니다.",
-    "location_label": "리전 (선택 사항)",
+    "location_label": "리전",
     "location_placeholder": "global",
     "location_hint": "기본 리전인 global을(를) 사용하려면 비워 두세요.",
     "file_label": "서비스 계정 키 JSON",
@@ -722,8 +711,6 @@
     "import_another": "하나 더 가져오기"
   },
   "oauth_excluded": {
-    "editor_description": "개별 선택 또는 와일드카드 규칙을 사용하여 공급자가 노출할 모델을 선택합니다.",
-    "models_hint": "목록을 펼쳐 모델을 선택하거나 아래에 와일드카드 규칙을 입력하세요.",
     "title": "OAuth 모델 비활성화",
     "models_label": "비활성화할 모델",
     "save_success": "모델 비활성화가 업데이트되었습니다.",
@@ -767,7 +754,6 @@
     "rules_reserved": "“*”은(는) 공급자 전체를 비활성화합니다. 대신 '비활성화됨' 스위치를 사용하세요"
   },
   "oauth_model_alias": {
-    "editor_description": "클라이언트에서 사용할 수 있도록 공급자 모델에 일관된 이름을 지정합니다.",
     "mapping_row": "별칭 매핑 {{number}}",
     "remove_mapping": "별칭 매핑 {{number}} 삭제",
     "title": "OAuth 모델 별칭",
@@ -851,7 +837,7 @@
     "devin_oauth_retry_hint": "서버가 여전히 인증을 기다리고 있을 수 있습니다. 다시 시작하기 전에 이 로그인을 취소하세요.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Devin 로그인 시작",
-    "devin_oauth_hint": "브라우저 OAuth를 통해 Devin / Cognition에 로그인하여 인증 파일을 저장합니다. CLI Proxy API v7.3.1 이상이 필요하며 5분 이내에 인증을 완료하세요.",
+    "devin_oauth_hint": "5분 이내에 인증을 완료하세요.",
     "devin_copy_link": "링크 복사",
     "devin_open_link": "링크 열기",
     "devin_oauth_status_waiting": "Devin 인증 대기 중...",
@@ -868,7 +854,6 @@
     "other_login_methods": "기타 로그인 방식",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Codex 로그인 시작",
-    "codex_oauth_hint": "OAuth 흐름을 통해 Codex 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "codex_open_link": "링크 열기",
     "codex_copy_link": "링크 복사",
     "codex_oauth_status_waiting": "인증 대기 중...",
@@ -878,7 +863,6 @@
     "codex_oauth_polling_error": "인증 상태 확인 실패:",
     "anthropic_oauth_title": "Anthropic OAuth",
     "anthropic_oauth_button": "Anthropic 로그인 시작",
-    "anthropic_oauth_hint": "OAuth 흐름을 통해 Anthropic(Claude) 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "anthropic_open_link": "링크 열기",
     "anthropic_copy_link": "링크 복사",
     "anthropic_oauth_status_waiting": "인증 대기 중...",
@@ -888,7 +872,7 @@
     "anthropic_oauth_polling_error": "인증 상태 확인 실패:",
     "antigravity_oauth_title": "Antigravity OAuth",
     "antigravity_oauth_button": "Antigravity 로그인 시작",
-    "antigravity_oauth_hint": "OAuth 흐름을 통해 Antigravity(Google 계정) 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
+    "antigravity_oauth_hint": "Google 계정으로 로그인하세요.",
     "antigravity_open_link": "링크 열기",
     "antigravity_copy_link": "링크 복사",
     "antigravity_oauth_status_waiting": "인증 대기 중...",
@@ -898,7 +882,6 @@
     "antigravity_oauth_polling_error": "인증 상태 확인 실패:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Muse로 로그인",
-    "meta_oauth_hint": "인증 링크를 열고 안내가 나타나면 기기 코드를 입력하세요. 인증이 완료되면 인증 파일이 자동으로 저장됩니다.",
     "meta_open_link": "링크 열기",
     "meta_copy_link": "링크 복사",
     "meta_oauth_status_waiting": "인증 대기 중...",
@@ -910,7 +893,7 @@
     "device_code_copy": "기기 코드 복사",
     "kimi_ai_oauth_title": "Kimi 글로벌(kimi.ai)",
     "kimi_ai_oauth_button": "Kimi 글로벌 로그인",
-    "kimi_ai_oauth_hint": "기기 로그인을 통해 kimi.ai 글로벌 계정을 인증합니다. 별도의 kimi-ai 인증 파일이 자동으로 저장됩니다. 중국 계정과 글로벌 계정은 호환되지 않습니다.",
+    "kimi_ai_oauth_hint": "kimi.ai(글로벌) 계정 전용이며, 별도의 kimi-ai 인증 파일로 저장됩니다.",
     "kimi_ai_open_link": "링크 열기",
     "kimi_ai_copy_link": "링크 복사",
     "kimi_ai_oauth_status_waiting": "인증 대기 중...",
@@ -921,7 +904,7 @@
     "kimi_oauth_title": "Kimi 중국(kimi.com)",
     "kimi_oauth_button": "Kimi 중국 로그인",
     "kimi_sign_up_button": "지금 가입하기",
-    "kimi_oauth_hint": "기기 로그인을 통해 kimi.com 중국 계정을 인증합니다. 인증 파일이 자동으로 저장됩니다. 글로벌 계정은 별도의 kimi.ai 로그인을 사용해야 합니다.",
+    "kimi_oauth_hint": "kimi.com(중국) 계정 전용이며, 글로벌 계정은 kimi.ai 항목을 사용하세요.",
     "kimi_open_link": "링크 열기",
     "kimi_copy_link": "링크 복사",
     "kimi_oauth_status_waiting": "인증 대기 중...",
@@ -931,7 +914,6 @@
     "kimi_oauth_polling_error": "인증 상태 확인 실패:",
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "xAI 로그인 시작",
-    "xai_oauth_hint": "OAuth 흐름을 통해 xAI Grok 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "xai_open_link": "링크 열기",
     "xai_copy_link": "링크 복사",
     "xai_oauth_status_waiting": "인증 대기 중...",
@@ -941,7 +923,6 @@
     "xai_oauth_polling_error": "인증 상태 확인 실패:",
     "plugin_oauth_title": "{{name}} OAuth",
     "plugin_oauth_button": "{{name}} 로그인 시작",
-    "plugin_oauth_hint": "플러그인 OAuth 흐름을 통해 {{name}}에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "plugin_open_link": "링크 열기",
     "plugin_copy_link": "링크 복사",
     "plugin_oauth_status_waiting": "인증 대기 중...",
@@ -968,7 +949,6 @@
     "view_auth_files": "인증 파일 보기",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "iFlow 로그인 시작",
-    "iflow_oauth_hint": "OAuth 흐름을 통해 iFlow 서비스에 로그인하여 인증 파일을 자동으로 가져오고 저장합니다.",
     "iflow_oauth_url_label": "인증 URL:",
     "iflow_open_link": "링크 열기",
     "iflow_copy_link": "링크 복사",
@@ -1000,14 +980,12 @@
     "waiting_background_hint": "창을 닫아도 로그인은 계속됩니다",
     "restart_login": "다시 시작",
     "login_proxy_toggle": "로그인 프록시",
-    "login_proxy_optional": "선택",
     "login_proxy_status_invalid": "유효하지 않음",
     "login_proxy_label": "새 로그인에 사용할 프록시",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
     "login_proxy_clear": "지우기",
     "login_proxy_invalid": "프록시 URL이 올바르지 않습니다. 호스트와 함께 http, https, socks5 또는 socks5h를 사용하세요(socks5는 포트 필요). 경로나 쿼리는 넣을 수 없습니다.",
     "login_proxy_in_use": "프록시를 통해 로그인 중",
-    "success_saved_hint": "자격 증명이 저장되었습니다. 인증 파일에서 관리할 수 있습니다.",
     "sign_up_prompt": "계정이 없나요?",
     "copied": "복사됨"
   },
@@ -1176,8 +1154,7 @@
           "hint": "백엔드가 짧은 ID를 덧붙입니다. 비워 두면 CPA-<ShortID>를 사용합니다."
         },
         "discoveryServiceType": {
-          "label": "서비스 유형",
-          "hint": "비워 두면 _ai-gateway._tcp를 사용합니다."
+          "label": "서비스 유형"
         },
         "discoverySubtypes": {
           "label": "프로토콜 하위 유형",
@@ -1210,7 +1187,6 @@
         "antigravityTitle": "Antigravity",
         "xaiTitle": "xAI",
         "liveRelayTitle": "Codex Live 미디어 릴레이",
-        "liveRelayHint": "프록시 프로세스에서 WebRTC 오디오 및 DataChannel 트래픽을 릴레이합니다. 인바운드 UDP에 연결할 수 있어야 합니다. ICE 자격 증명이 스크린샷이나 로그에 노출되지 않도록 주의하세요.",
         "iceAdd": "ICE 서버 추가",
         "iceRemove": "ICE 서버 {{index}} 제거",
         "iceURLs": "STUN/TURN URL",
@@ -1328,21 +1304,17 @@
       },
       "sections": {
         "common": {
-          "title": "일반",
-          "description": "전체 섹션과 동일한 데이터를 기반으로 하는 가장 자주 사용하는 설정"
+          "title": "일반"
         },
         "connectivity": {
-          "title": "접속 및 인증",
-          "description": "서버 주소, 포트, 인증 디렉터리 및 API 키"
+          "title": "접속 및 인증"
         },
         "logging": {
-          "title": "로깅 및 진단",
-          "description": "디버그, 로그 출력 및 사용량 통계"
+          "title": "로깅 및 진단"
         },
         "advanced": {
           "antigravity_credits": "Antigravity 크레딧 사용",
           "title": "고급 및 실험",
-          "description": "헤더 위장, 서명 캐시, 플러그인 소스 및 거의 변경되지 않는 기타 설정",
           "plugins_title": "플러그인",
           "antigravity_title": "Antigravity",
           "devin_title": "Devin",
@@ -1356,19 +1328,15 @@
         },
         "tls": {
           "title": "TLS/SSL 설정",
-          "description": "HTTPS 보안 연결 설정",
           "enable": "TLS 활성화",
-          "enable_desc": "HTTPS 보안 연결 활성화",
           "cert": "인증서 파일 경로",
           "key": "개인 키 파일 경로"
         },
         "remote": {
           "title": "원격 관리",
-          "description": "원격 액세스 및 제어판 설정",
           "allow_remote": "원격 액세스 허용",
           "allow_remote_desc": "다른 호스트에서의 관리 액세스 허용",
           "disable_panel": "제어판 비활성화",
-          "disable_panel_desc": "내장 웹 제어판 비활성화",
           "disable_auto_update_panel": "패널 자동 업데이트 비활성화",
           "disable_auto_update_panel_desc": "처음 누락되었을 때는 패널을 다운로드하지만 GitHub에서 자동으로 업데이트하지는 않습니다.",
           "secret_key": "관리 키",
@@ -1376,25 +1344,20 @@
           "panel_repo": "패널 저장소"
         },
         "auth": {
-          "auth_dir": "OAuth 자격 증명 디렉터리 (oauth.auth-dir)",
-          "auth_dir_hint": "인증 파일 디렉터리 경로 (~ 지원)"
+          "auth_dir": "OAuth 자격 증명 디렉터리 (oauth.auth-dir)"
         },
         "system": {
           "debug": "디버그 모드",
-          "debug_desc": "상세 디버그 로깅을 활성화합니다.",
           "commercial_mode": "상용 모드",
           "commercial_mode_desc": "높은 동시성을 지원하기 위해 오버헤드가 큰 미들웨어를 비활성화합니다.",
           "logging_to_file": "파일에 로그 기록",
-          "logging_to_file_desc": "로그를 파일에 저장합니다.",
           "plugins_enabled": "플러그인 시스템 활성화",
           "plugins_enabled_desc": "표준 동적 라이브러리 플러그인 로드를 활성화합니다. 개별 플러그인 인스턴스는 플러그인 페이지에서 관리됩니다.",
           "plugin_store_sources": "서드파티 플러그인 소스",
           "plugin_store_sources_desc": "플러그인 스토어 레지스트리 소스를 추가합니다. 기본 제공 공식 소스는 항상 유지됩니다.",
           "plugin_store_sources_label": "플러그인 소스 레지스트리 URL (plugins.store-sources)",
           "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
-          "plugin_store_sources_hint": "한 줄에 하나의 registry.json URL을 입력하세요. 빈 줄은 저장 시 제외됩니다.",
           "plugin_store_auth": "플러그인 스토어 인증 규칙",
-          "plugin_store_auth_desc": "비공개 레지스트리, GitHub Release 메타데이터 또는 아티팩트 다운로드를 위한 인증 헤더를 설정합니다.",
           "plugin_store_auth_hint": "실제 토큰이 아닌 환경 변수 이름만 입력하세요. 백엔드가 런타임 환경에서 값을 읽어옵니다.",
           "store_auth_empty": "구성된 인증 규칙이 없습니다. 공개 플러그인 소스에는 필요하지 않습니다.",
           "store_auth_rule": "인증 규칙",
@@ -1420,7 +1383,6 @@
           "logs_max_size": "로그 파일 크기 제한 (MB)",
           "error_logs_max_files": "오류 로그 보관 파일 수",
           "usage_statistics_enabled": "인메모리 사용량 통계 활성화",
-          "usage_statistics_enabled_desc": "메모리에서 요청 사용량 통계를 집계합니다.",
           "redis_usage_retention": "Redis 사용량 큐 보존 시간 (초)",
           "redis_usage_retention_hint": "RESP LPOP/RPOP 사용량 출력을 위한 인메모리 보존 시간으로 최대 3600초입니다.",
           "antigravity_sensitive_words": "민감한 단어 난독화",
@@ -1440,7 +1402,6 @@
         },
         "headers": {
           "title": "헤더 기본값",
-          "description": "클라이언트에서 생략된 경우 Claude 및 Codex OAuth 요청에 사용할 기본 헤더입니다.",
           "claude_title": "Claude OAuth 헤더 기본값",
           "codex_title": "Codex OAuth 헤더 기본값",
           "user_agent": "User-Agent",
@@ -1455,7 +1416,6 @@
         },
         "network": {
           "title": "네트워크 설정",
-          "description": "프록시, 재시도 및 라우팅 설정",
           "proxy_url": "프록시 URL",
           "proxy_url_sponsor_hint": "적합한 프록시가 없나요?",
           "request_retry": "요청 재시도 횟수",
@@ -1466,7 +1426,6 @@
           "auth_auto_refresh_workers": "인증 자동 새로 고침 워커 수",
           "auth_auto_refresh_workers_hint": "양의 정수는 워커 수를 재정의하며, 0, 음의 정수 또는 빈 필드는 기본값(16)을 사용합니다.",
           "disable_image_generation": "이미지 생성 비활성화",
-          "disable_image_generation_hint": "false는 활성화, true는 모든 이미지 생성 비활성화, chat은 비이미지 엔드포인트 주입 비활성화, passthrough는 주입 없이 클라이언트 도구 목록을 유지합니다.",
           "disable_image_generation_false": "false (활성화)",
           "disable_image_generation_true": "true (모두 비활성화)",
           "disable_image_generation_chat": "chat (채팅 주입만 비활성화)",
@@ -1474,7 +1433,6 @@
           "gpt_image_2_base_model": "GPT Image 2 기본 모델",
           "gpt_image_2_base_model_hint": "gpt-image-2 이미지 요청을 프록시할 때 사용하는 메인라인 모델입니다. 비어 있거나 유효하지 않으면 백엔드 기본값을 사용합니다.",
           "routing_strategy": "라우팅 전략",
-          "routing_strategy_hint": "자격 증명 선택 전략을 선택하세요",
           "strategy_round_robin": "라운드 로빈",
           "strategy_weighted_round_robin": "가중 라운드 로빈",
           "strategy_fill_first": "채우기 우선",
@@ -1482,7 +1440,6 @@
           "force_model_prefix": "모델 접두사 강제",
           "force_model_prefix_desc": "접두사가 없는 모델 요청은 접두사가 없는 자격 증명만 사용합니다.",
           "passthrough_headers": "업스트림 헤더 전달",
-          "passthrough_headers_desc": "필터링된 업스트림 응답 헤더를 다운스트림 클라이언트에 전달합니다.",
           "disable_cooling": "쿨다운 비활성화",
           "disable_cooling_desc": "실패 후 인증/모델 쿨다운 기간을 전역적으로 비활성화합니다.",
           "session_affinity": "세션 어피니티 라우팅",
@@ -1491,9 +1448,7 @@
         },
         "streaming": {
           "title": "스트리밍 설정",
-          "description": "Keepalive 및 부트스트랩 재시도 설정",
           "keepalive_seconds": "Keepalive 시간(초)",
-          "keepalive_hint": "keepalive를 비활성화하려면 0, 음의 정수로 설정하거나 비워 두세요.",
           "bootstrap_retries": "부트스트랩 재시도 횟수",
           "bootstrap_hint": "첫 번째 바이트 전의 재시도 횟수입니다. 0, 음의 정수 또는 빈 필드는 부트스트랩 재시도를 비활성화합니다.",
           "nonstream_keepalive": "비스트리밍 Keepalive 간격(초)",
@@ -1502,17 +1457,11 @@
         },
         "payload": {
           "title": "페이로드 설정",
-          "description": "기본값, 원시 JSON 규칙, 재정의 규칙 및 필터 규칙",
           "default_rules": "기본 규칙",
-          "default_rules_desc": "요청에 매개변수가 지정되지 않은 경우 이 기본값을 사용합니다.",
           "default_raw_rules": "기본 Raw 규칙",
-          "default_raw_rules_desc": "매개변수가 누락된 경우 true, 123, \"high\" 또는 {\"type\":\"object\"}와 같은 원시 JSON 조각으로 이 값을 작성합니다.",
           "override_rules": "재정의 규칙",
-          "override_rules_desc": "요청의 매개변수 값을 강제로 재정의합니다.",
           "override_raw_rules": "재정의 Raw 규칙",
-          "override_raw_rules_desc": "매개변수 값을 항상 원시 JSON 조각으로 덮어씁니다. response_format, 스키마 및 기타 복잡한 필드에 유용합니다.",
-          "filter_rules": "필터 규칙",
-          "filter_rules_desc": "JSON Path를 통해 업스트림 요청 본문을 사전 필터링하고 규격에 맞지 않거나 중복된 매개변수를 자동으로 제거합니다 (Request Sanitization)."
+          "filter_rules": "필터 규칙"
         }
       },
       "api_keys": {
@@ -1520,12 +1469,11 @@
         "add": "API 키 추가",
         "generate": "생성",
         "empty": "API 키 없음",
-        "hint": "각 항목은 하나의 API 키를 나타냅니다 ('API 키 관리' 페이지 스타일과 일치).",
         "edit_title": "API 키 편집",
         "add_title": "API 키 추가",
         "input_label": "API 키",
         "input_placeholder": "API 키를 붙여넣으세요",
-        "name_label": "이름 / 설명 (선택 사항)",
+        "name_label": "이름 / 설명",
         "name_placeholder": "예: Alice의 노트북",
         "name_hint": "이 브라우저에만 즉시 저장되며 서버별로 구분됩니다. 서버 설정에는 포함되지 않습니다. 이름을 제거하려면 이 필드를 비우세요.",
         "name_save_error": "브라우저 저장소에 이름을 저장할 수 없습니다. 브라우저 저장소 설정을 확인하세요.",
@@ -1635,7 +1583,6 @@
     "search_empty_desc": "다른 파일명이나 이메일을 입력하거나 검색을 초기화하세요.",
     "search_clear": "검색 초기화",
     "title": "할당량 관리",
-    "description": "Antigravity, Codex, Claude, Kimi 및 xAI 자격 증명의 OAuth 할당량 상태를 모니터링합니다.",
     "refresh_all_credentials": "모든 자격 증명 새로 고침",
     "sort_label": "정렬",
     "sort_default": "기본값",
@@ -1771,7 +1718,6 @@
   },
   "plugin_management": {
     "title": "플러그인",
-    "description": "레지스트리에서 플러그인을 설치하고 최신 상태로 유지하며, 설치된 플러그인을 켜고 설정하거나 제거합니다.",
     "load_failed": "플러그인을 불러오지 못했습니다",
     "config_load_failed": "플러그인 설정을 읽지 못했습니다",
     "config_not_found": "백엔드에서 이 플러그인을 찾을 수 없어 플러그인 설정을 읽을 수 없습니다.",
@@ -1876,7 +1822,6 @@
     "install_version_latest_mode": "최신 안정 버전",
     "install_version_latest_hint": "설치 시 백엔드에서 결정됩니다. 현재 표시된 버전: {{version}}.",
     "install_version_release_mode": "릴리스 선택",
-    "install_version_release_hint": "GitHub Releases에서 설치 가능한 태그를 읽어옵니다.",
     "install_version_manual_mode": "수동 릴리스 태그",
     "install_version_manual_hint": "릴리스를 자동으로 불러올 수 없는 경우에만 사용하세요.",
     "install_versions_loading": "GitHub Releases 불러오는 중...",
@@ -1920,8 +1865,7 @@
     "gate_step1_action": "이 플러그인을 설치하겠습니다",
     "gate_step2_action": "이러한 위험을 읽었으며 이해했습니다",
     "gate_step3_prompt": "확인하려면 아래 입력란에 \"{{token}}\"을(를) 입력하세요",
-    "gate_step3_action": "이 플러그인 설치",
-    "gate_step3_hint": "설치를 활성화하려면 위에 표시된 식별자를 정확히 입력하세요."
+    "gate_step3_action": "이 플러그인 설치"
   },
   "plugin_resource": {
     "page_count": "페이지 {{count}}개",
@@ -1934,7 +1878,6 @@
   },
   "system_info": {
     "models_refresh_button": "목록 새로고침",
-    "models_refresh_hint": "최신 사용 가능한 모델을 가져와 목록을 새로고침합니다.",
     "models_refresh_success": "사용 가능한 모델 목록을 새로고침했습니다: {{count}}개.",
     "models_catalog_refresh_button": "모델 카탈로그 업데이트",
     "models_catalog_refresh_hint": "모든 사용자가 공유하는 모델 카탈로그를 업데이트하여 최신 모델 정보를 가져옵니다.",
@@ -1955,13 +1898,9 @@
     "version_current_missing": "서버 버전을 확인할 수 없어 비교할 수 없습니다",
     "version_unknown": "알 수 없음",
     "quick_links_title": "빠른 링크",
-    "quick_links_desc": "도움말과 업데이트를 확인하려면 프로젝트 저장소 및 문서를 참조하세요.",
     "link_main_repo": "메인 저장소",
-    "link_main_repo_desc": "CLI Proxy API 핵심 프로그램 소스 코드",
     "link_webui_repo": "WebUI 저장소",
-    "link_webui_repo_desc": "관리 센터 프런트엔드 소스 코드",
     "link_docs": "문서",
-    "link_docs_desc": "설정 튜토리얼 및 가이드",
     "clear_login_title": "로컬 로그인 데이터",
     "clear_login_desc": "로컬에 저장된 로그인 데이터를 지우고 로그아웃합니다.",
     "clear_login_button": "로그인 데이터 지우기",
@@ -2011,7 +1950,6 @@
     "toggle_collapse": "사이드바 접기",
     "expand": "펼치기",
     "collapse": "접기",
-    "subtitle": "CLI Proxy API 콘솔",
     "auth_files_count": "인증 파일: {{count}}개"
   },
   "footer": {
@@ -2159,8 +2097,7 @@
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 프로필",
       "empty": "아직 리소스가 없습니다. \"새로 만들기\"를 클릭하여 추가하세요.",
-      "filterPlaceholder": "키, URL, 접두사 검색…",
-      "description": "{{route}}의 리소스를 관리합니다."
+      "filterPlaceholder": "키, URL, 접두사 검색…"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2187,7 +2124,6 @@
       "addGroupedKey": "그룹 키 추가",
       "removeGroupedKey": "그룹 키 삭제",
       "protocol": "그룹/프로토콜",
-      "protocolHint": "이 키에 해당하는 그룹/프로토콜을 선택하세요.",
       "protocolEndpoint": "현재 프로토콜 엔드포인트",
       "urlMode": "{{provider}} URL",
       "urlHint": "모든 URL은 동일한 API 규칙을 사용합니다. 저장 시 현재 그룹화된 프로토콜의 엔드포인트만 기록됩니다.",
@@ -2216,12 +2152,6 @@
         "anthropic": "Anthropic 모델",
         "gemini": "Gemini 모델",
         "openai": "OpenAI 호환 모델"
-      },
-      "protocolModelHints": {
-        "codex": "Codex API 설정의 models에 저장됩니다. /v1/models에서 가져온 후 필요한 경우 별칭을 설정하세요.",
-        "anthropic": "Anthropic 설정의 models에 저장됩니다. /v1/models에서 가져온 후 필요한 경우 별칭을 설정하세요.",
-        "gemini": "Gemini 설정의 models에 저장됩니다. /v1beta/models에서 가져온 후 필요한 경우 별칭을 설정하세요.",
-        "openai": "OpenAI 호환 설정의 models에 저장됩니다. /models에서 가져온 후 필요한 경우 별칭을 설정하세요."
       },
       "validation": {
         "keyRequired": "모든 그룹 키에 API 키를 입력하세요.",
@@ -2277,14 +2207,12 @@
       "apiKeyCreatePlaceholder": "API 키를 입력하세요",
       "apiKeyEditPlaceholder": "변경하지 않으려면 비워 두세요",
       "baseUrl": "기본 URL",
-      "baseUrlRequiredHint": "이 공급자에는 필수 항목입니다.",
       "proxyUrl": "프록시 URL",
       "prefix": "접두사",
       "priority": "우선순위",
       "weight": "스케줄링 가중치",
       "weightHint": "기본값 1 · ≤ 0인 경우 제외 · 최대 1,000,000",
       "disabled": "이 항목 비활성화",
-      "disabledHint": "비활성화된 항목은 게이트웨이에서 사용되지 않습니다.",
       "websockets": "WebSockets 활성화",
       "testModel": "테스트 모델",
       "testModelHint": "연결 테스트용으로만 사용되며 저장되지 않습니다.",
@@ -2450,7 +2378,6 @@
     "retry_grant": "{{kind}} 재시도 · {{label}}",
     "no_usage": "초기화할 Fable 사용량이 없습니다.",
     "fable_hint": "Fable 한도를 복원하고 사용한 몫을 주간 한도로 반환합니다. 다른 주간 사용량은 유지됩니다.",
-    "exact_grant_hint": "이 초기화 크레딧만 사용합니다.",
     "choose_grant": "초기화 크레딧 선택",
     "no_grants": "사용 가능한 초기화 크레딧이 없습니다.",
     "grant_expiry": "만료: {{date}}",

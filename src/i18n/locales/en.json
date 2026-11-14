@@ -17,6 +17,8 @@
     "success": "Success",
     "error": "Error",
     "info": "Info",
+    "more_info": "More information",
+    "more_info_about": "More information about {{label}}",
     "warning": "Warning",
     "loading": "Loading...",
     "connecting": "Connecting...",
@@ -148,17 +150,13 @@
     "cta_inspect_logs": "Inspect logs",
     "stats_aria": "Key metrics",
     "success_rate": "Success rate",
-    "stat_success_hint": "Across {{total}} requests in the window",
     "stat_credentials": "Credentials",
-    "stat_credentials_hint": "{{active}} active · {{disabled}} not serving",
-    "stat_credentials_empty": "No credential files found",
     "stat_provider_keys": "Provider keys",
     "stat_provider_keys_hint": "API keys configured across all brands",
     "stat_models": "Models",
     "stat_models_hint": "Served through the proxy endpoint",
     "traffic_eyebrow": "Live traffic",
     "traffic_title": "Throughput, ten minutes at a time",
-    "traffic_description": "Success and failure counts per 10-minute bucket across the last {{window}}. Hover a column for its exact split.",
     "traffic_table": "Data table",
     "traffic_table_window": "Window",
     "traffic_chart_summary": "{{total}} requests over the last {{minutes}} minutes: {{success}} succeeded, {{failed}} failed.",
@@ -166,7 +164,6 @@
     "traffic_unavailable_hint": "Counters appear once the proxy has served its first request.",
     "fleet_eyebrow": "Fleet",
     "fleet_title": "Every provider, side by side",
-    "fleet_description": "Volume and success rate per provider over the same window.",
     "fleet_empty": "No provider traffic recorded yet.",
     "fleet_credentials": "Credentials: {{value}}",
     "fleet_spark_label": "{{provider}} request volume",
@@ -196,12 +193,6 @@
     "runtime_link": "Edit configuration",
     "cta_eyebrow": "Next",
     "cta_title": "Where to go from here",
-    "cta_providers_desc": "Add API keys, set priorities, and test brands.",
-    "cta_auth_files_desc": "Upload, refresh, and disable OAuth credentials.",
-    "cta_config_desc": "Tune routing, retries, logging, and access.",
-    "cta_quota_desc": "Check remaining quota per credential.",
-    "cta_logs_desc": "Tail requests and download error reports.",
-    "cta_system_desc": "Version details and management center info.",
     "window_m": "{{minutes}}m",
     "window_h": "{{hours}}h",
     "window_hm": "{{hours}}h {{minutes}}m"
@@ -396,7 +387,8 @@
     "priority_hint": "Integers only. Invalid values are ignored. Larger value means higher priority.",
     "weight_label": "Scheduling weight (weight)",
     "weight_tooltip": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable weighted round robin for it to take effect.",
-    "weight_hint": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000. After entering a value, enable <settingsLink>weighted round robin</settingsLink> for it to take effect.",
+    "weight_hint": "Defaults to 1. Values at or below 0 exclude this credential from weighted scheduling; maximum 1,000,000.",
+    "weight_strategy_note": "Takes effect only with <settingsLink>weighted round robin</settingsLink> enabled.",
     "weight_invalid_integer": "Weight must be an integer.",
     "weight_invalid_max": "Weight cannot exceed 1,000,000.",
     "disable_cooling_label": "Disable exponential cooldown (disable_cooling)",
@@ -427,11 +419,9 @@
     "policy_rules_invalid": "Complete each edited rule with a positive status, an action and at least one non-empty match condition.",
     "note_label": "Note",
     "note_placeholder": "Enter a note, e.g.: John's account",
-    "note_hint": "Optional. Used to describe the purpose or owner of this credential; leave empty to omit.",
     "excluded_models_label": "Excluded models (excluded_models)",
     "headers_label": "Custom Headers (headers)",
     "headers_placeholder": "{\n  \"Header-Name\": \"value\"\n}",
-    "headers_hint": "Enter custom HTTP headers as a JSON object, e.g., {\"X-My-Header\": \"value\"}",
     "headers_invalid_json": "Custom headers must be valid JSON.",
     "headers_invalid_object": "Custom headers must be a JSON object.",
     "headers_invalid_value": "Each custom header value must be a string.",
@@ -703,8 +693,7 @@
   },
   "vertex_import": {
     "title": "Vertex JSON Login",
-    "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",
-    "location_label": "Region (optional)",
+    "location_label": "Region",
     "location_placeholder": "global",
     "location_hint": "Leave empty to use the default region global.",
     "file_label": "Service account key JSON",
@@ -722,8 +711,6 @@
     "import_another": "Import another"
   },
   "oauth_excluded": {
-    "editor_description": "Choose which models a provider exposes using individual selections or wildcard rules.",
-    "models_hint": "Expand the list to select models, or enter wildcard rules below.",
     "title": "OAuth Model Disablement",
     "models_label": "Models to disable",
     "save_success": "Model disablement updated",
@@ -767,7 +754,6 @@
     "rules_reserved": "“*” disables the whole provider — use the Disabled switch instead"
   },
   "oauth_model_alias": {
-    "editor_description": "Give provider models consistent names for use in your clients.",
     "mapping_row": "Alias mapping {{number}}",
     "remove_mapping": "Delete alias mapping {{number}}",
     "title": "OAuth Model Aliases",
@@ -851,7 +837,7 @@
     "devin_oauth_retry_hint": "The server may still be waiting for authorization. Cancel this login before starting again.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Start Devin Login",
-    "devin_oauth_hint": "Sign in to Devin / Cognition through browser OAuth to save an authentication file. Requires CLI Proxy API v7.3.1 or later; complete authorization within five minutes.",
+    "devin_oauth_hint": "Complete authorization within five minutes.",
     "devin_copy_link": "Copy Link",
     "devin_open_link": "Open Link",
     "devin_oauth_status_waiting": "Waiting for Devin authentication...",
@@ -868,7 +854,6 @@
     "other_login_methods": "Other login methods",
     "codex_oauth_title": "Codex OAuth",
     "codex_oauth_button": "Start Codex Login",
-    "codex_oauth_hint": "Login to Codex service through OAuth flow, automatically obtain and save authentication files.",
     "codex_open_link": "Open Link",
     "codex_copy_link": "Copy Link",
     "codex_oauth_status_waiting": "Waiting for authentication...",
@@ -878,7 +863,6 @@
     "codex_oauth_polling_error": "Failed to check authentication status:",
     "anthropic_oauth_title": "Anthropic OAuth",
     "anthropic_oauth_button": "Start Anthropic Login",
-    "anthropic_oauth_hint": "Login to Anthropic (Claude) service through OAuth flow, automatically obtain and save authentication files.",
     "anthropic_open_link": "Open Link",
     "anthropic_copy_link": "Copy Link",
     "anthropic_oauth_status_waiting": "Waiting for authentication...",
@@ -888,7 +872,7 @@
     "anthropic_oauth_polling_error": "Failed to check authentication status:",
     "antigravity_oauth_title": "Antigravity OAuth",
     "antigravity_oauth_button": "Start Antigravity Login",
-    "antigravity_oauth_hint": "Login to Antigravity service (Google account) through OAuth flow, automatically obtain and save authentication files.",
+    "antigravity_oauth_hint": "Sign in with a Google account.",
     "antigravity_open_link": "Open Link",
     "antigravity_copy_link": "Copy Link",
     "antigravity_oauth_status_waiting": "Waiting for authentication...",
@@ -898,7 +882,6 @@
     "antigravity_oauth_polling_error": "Failed to check authentication status:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Log in with Muse",
-    "meta_oauth_hint": "Open the authorization link and enter the device code if requested. Authentication files are saved automatically after authorization.",
     "meta_open_link": "Open Link",
     "meta_copy_link": "Copy Link",
     "meta_oauth_status_waiting": "Waiting for authentication...",
@@ -910,7 +893,7 @@
     "device_code_copy": "Copy device code",
     "kimi_ai_oauth_title": "Kimi International (kimi.ai)",
     "kimi_ai_oauth_button": "Log in to Kimi International",
-    "kimi_ai_oauth_hint": "Authorize your kimi.ai international account via device login. A separate kimi-ai authentication file is saved automatically. China and international accounts are not interchangeable.",
+    "kimi_ai_oauth_hint": "For kimi.ai (international) accounts only; saved as a separate kimi-ai auth file.",
     "kimi_ai_open_link": "Open link",
     "kimi_ai_copy_link": "Copy link",
     "kimi_ai_oauth_status_waiting": "Waiting for authentication...",
@@ -921,7 +904,7 @@
     "kimi_oauth_title": "Kimi China (kimi.com)",
     "kimi_oauth_button": "Log in to Kimi China",
     "kimi_sign_up_button": "Sign Up Now",
-    "kimi_oauth_hint": "Authorize your kimi.com China account via device login. Authentication files are saved automatically. International accounts must use the separate kimi.ai login.",
+    "kimi_oauth_hint": "For kimi.com (China) accounts only; international accounts use the kimi.ai entry.",
     "kimi_open_link": "Open Link",
     "kimi_copy_link": "Copy Link",
     "kimi_oauth_status_waiting": "Waiting for authentication...",
@@ -931,7 +914,6 @@
     "kimi_oauth_polling_error": "Failed to check authentication status:",
     "xai_oauth_title": "xAI OAuth",
     "xai_oauth_button": "Start xAI Login",
-    "xai_oauth_hint": "Login to xAI Grok through OAuth flow, automatically obtain and save authentication files.",
     "xai_open_link": "Open Link",
     "xai_copy_link": "Copy Link",
     "xai_oauth_status_waiting": "Waiting for authentication...",
@@ -941,7 +923,6 @@
     "xai_oauth_polling_error": "Failed to check authentication status:",
     "plugin_oauth_title": "{{name}} OAuth",
     "plugin_oauth_button": "Start {{name}} Login",
-    "plugin_oauth_hint": "Log in to {{name}} through the plugin OAuth flow, automatically obtain and save authentication files.",
     "plugin_open_link": "Open Link",
     "plugin_copy_link": "Copy Link",
     "plugin_oauth_status_waiting": "Waiting for authentication...",
@@ -968,7 +949,6 @@
     "view_auth_files": "View auth files",
     "iflow_oauth_title": "iFlow OAuth",
     "iflow_oauth_button": "Start iFlow Login",
-    "iflow_oauth_hint": "Login to iFlow service through OAuth flow, automatically obtain and save authentication files.",
     "iflow_oauth_url_label": "Authorization URL:",
     "iflow_open_link": "Open Link",
     "iflow_copy_link": "Copy Link",
@@ -1000,14 +980,12 @@
     "waiting_background_hint": "Closing this window won't stop sign-in",
     "restart_login": "Start over",
     "login_proxy_toggle": "Login proxy",
-    "login_proxy_optional": "Optional",
     "login_proxy_status_invalid": "Invalid",
     "login_proxy_label": "Proxy for new logins",
     "login_proxy_placeholder": "socks5://user:pass@host:port",
     "login_proxy_clear": "Clear",
     "login_proxy_invalid": "Invalid proxy URL. Use http, https, socks5 or socks5h with a host (socks5 needs a port), and no path or query.",
     "login_proxy_in_use": "Signing in through proxy",
-    "success_saved_hint": "The credential is saved — manage it in Auth Files.",
     "sign_up_prompt": "No account yet?",
     "copied": "Copied"
   },
@@ -1176,8 +1154,7 @@
           "hint": "The backend appends a short ID. Empty uses CPA-<ShortID>."
         },
         "discoveryServiceType": {
-          "label": "Service type",
-          "hint": "Empty uses _ai-gateway._tcp."
+          "label": "Service type"
         },
         "discoverySubtypes": {
           "label": "Protocol subtypes",
@@ -1210,7 +1187,6 @@
         "antigravityTitle": "Antigravity",
         "xaiTitle": "xAI",
         "liveRelayTitle": "Codex Live media relay",
-        "liveRelayHint": "Relay WebRTC audio and DataChannel traffic in the proxy process. Inbound UDP must be reachable. Keep ICE credentials out of screenshots and logs.",
         "iceAdd": "Add ICE server",
         "iceRemove": "Remove ICE server {{index}}",
         "iceURLs": "STUN/TURN URLs",
@@ -1328,21 +1304,17 @@
       },
       "sections": {
         "common": {
-          "title": "Common",
-          "description": "The most-used settings, backed by the same data as the full sections"
+          "title": "Common"
         },
         "connectivity": {
-          "title": "Access & Authentication",
-          "description": "Server address, port, auth directory, and API keys"
+          "title": "Access & Authentication"
         },
         "logging": {
-          "title": "Logging & Diagnostics",
-          "description": "Debug, log output, and usage statistics"
+          "title": "Logging & Diagnostics"
         },
         "advanced": {
           "antigravity_credits": "Use Antigravity Credits",
           "title": "Advanced & Experimental",
-          "description": "Header spoofing, signature cache, plugin sources, and other rarely changed settings",
           "plugins_title": "Plugins",
           "antigravity_title": "Antigravity",
           "devin_title": "Devin",
@@ -1356,19 +1328,15 @@
         },
         "tls": {
           "title": "TLS/SSL Configuration",
-          "description": "HTTPS secure connection settings",
           "enable": "Enable TLS",
-          "enable_desc": "Enable HTTPS secure connection",
           "cert": "Certificate File Path",
           "key": "Private Key File Path"
         },
         "remote": {
           "title": "Remote Management",
-          "description": "Remote access and control panel settings",
           "allow_remote": "Allow Remote Access",
           "allow_remote_desc": "Allow management access from other hosts",
           "disable_panel": "Disable Control Panel",
-          "disable_panel_desc": "Disable the built-in web control panel",
           "disable_auto_update_panel": "Disable Panel Auto Updates",
           "disable_auto_update_panel_desc": "Download the panel when first missing, but never auto-update it from GitHub",
           "secret_key": "Management Key",
@@ -1376,25 +1344,20 @@
           "panel_repo": "Panel Repository"
         },
         "auth": {
-          "auth_dir": "OAuth Credential Directory (oauth.auth-dir)",
-          "auth_dir_hint": "Directory path for authentication files (supports ~)"
+          "auth_dir": "OAuth Credential Directory (oauth.auth-dir)"
         },
         "system": {
           "debug": "Debug Mode",
-          "debug_desc": "Enable verbose debug logging",
           "commercial_mode": "Commercial Mode",
           "commercial_mode_desc": "Disable high-overhead middleware to support high concurrency",
           "logging_to_file": "Log to File",
-          "logging_to_file_desc": "Save logs to files",
           "plugins_enabled": "Enable Plugin System",
           "plugins_enabled_desc": "Enable standard dynamic-library plugin loading; individual plugin instances are still managed on the Plugins page",
           "plugin_store_sources": "Third-party Plugin Sources",
           "plugin_store_sources_desc": "Append plugin-store registry sources; the built-in official source is always kept",
           "plugin_store_sources_label": "Plugin source registry URL (plugins.store-sources)",
           "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
-          "plugin_store_sources_hint": "One registry.json URL per row. Empty rows are filtered on save",
           "plugin_store_auth": "Plugin Store Auth Rules",
-          "plugin_store_auth_desc": "Configure auth headers for private registries, GitHub Release metadata, or artifact downloads",
           "plugin_store_auth_hint": "Enter environment variable names only, not actual tokens. The backend reads the values from its runtime environment.",
           "store_auth_empty": "No auth rules are configured. Public plugin sources do not need one.",
           "store_auth_rule": "Auth rule",
@@ -1420,7 +1383,6 @@
           "logs_max_size": "Log File Size Limit (MB)",
           "error_logs_max_files": "Retained Error Log Files",
           "usage_statistics_enabled": "Enable In-memory Usage Statistics",
-          "usage_statistics_enabled_desc": "Aggregate request usage statistics in memory",
           "redis_usage_retention": "Redis Usage Queue Retention (seconds)",
           "redis_usage_retention_hint": "In-memory retention for RESP LPOP/RPOP usage output, max 3600 seconds",
           "antigravity_sensitive_words": "Sensitive Word Obfuscation",
@@ -1440,7 +1402,6 @@
         },
         "headers": {
           "title": "Header Defaults",
-          "description": "Default headers for Claude and Codex OAuth requests when the client omits them",
           "claude_title": "Claude OAuth Header Defaults",
           "codex_title": "Codex OAuth Header Defaults",
           "user_agent": "User-Agent",
@@ -1455,7 +1416,6 @@
         },
         "network": {
           "title": "Network Configuration",
-          "description": "Proxy, retry, and routing settings",
           "proxy_url": "Proxy URL",
           "proxy_url_sponsor_hint": "No suitable proxy?",
           "request_retry": "Request Retry Count",
@@ -1466,7 +1426,6 @@
           "auth_auto_refresh_workers": "Auth Auto-refresh Workers",
           "auth_auto_refresh_workers_hint": "A positive integer overrides the worker count; 0, a negative integer, or an empty field uses the default (16)",
           "disable_image_generation": "Disable Image Generation",
-          "disable_image_generation_hint": "false enables it; true disables all image generation; chat disables non-image endpoint injection; passthrough preserves the client tool list without injecting one",
           "disable_image_generation_false": "false (enabled)",
           "disable_image_generation_true": "true (disabled everywhere)",
           "disable_image_generation_chat": "chat (disable chat injection only)",
@@ -1474,7 +1433,6 @@
           "gpt_image_2_base_model": "GPT Image 2 Base Model",
           "gpt_image_2_base_model_hint": "Mainline model used when proxying gpt-image-2 image requests; backend uses its default when empty or invalid",
           "routing_strategy": "Routing Strategy",
-          "routing_strategy_hint": "Select credential selection strategy",
           "strategy_round_robin": "Round Robin",
           "strategy_weighted_round_robin": "Weighted Round Robin",
           "strategy_fill_first": "Fill First",
@@ -1482,7 +1440,6 @@
           "force_model_prefix": "Force Model Prefix",
           "force_model_prefix_desc": "Unprefixed model requests only use credentials without prefix",
           "passthrough_headers": "Pass Through Upstream Headers",
-          "passthrough_headers_desc": "Forward filtered upstream response headers to downstream clients",
           "disable_cooling": "Disable Cooling",
           "disable_cooling_desc": "Globally disable auth/model cooldown windows after failures",
           "session_affinity": "Session Affinity Routing",
@@ -1491,9 +1448,7 @@
         },
         "streaming": {
           "title": "Streaming Configuration",
-          "description": "Keepalive and bootstrap retry settings",
           "keepalive_seconds": "Keepalive Seconds",
-          "keepalive_hint": "Set to 0, a negative integer, or leave empty to disable keepalive",
           "bootstrap_retries": "Bootstrap Retries",
           "bootstrap_hint": "Retries before the first byte; 0, a negative integer, or an empty field disables bootstrap retries",
           "nonstream_keepalive": "Non-stream Keepalive Interval (seconds)",
@@ -1502,17 +1457,11 @@
         },
         "payload": {
           "title": "Payload Configuration",
-          "description": "Default values, raw JSON rules, override rules, and filter rules",
           "default_rules": "Default Rules",
-          "default_rules_desc": "Use these default values when parameters are not specified in the request",
           "default_raw_rules": "Default Raw Rules",
-          "default_raw_rules_desc": "When parameters are missing, write these values as raw JSON fragments such as true, 123, \"high\", or {\"type\":\"object\"}",
           "override_rules": "Override Rules",
-          "override_rules_desc": "Force override parameter values in the request",
           "override_raw_rules": "Override Raw Rules",
-          "override_raw_rules_desc": "Always overwrite parameter values as raw JSON fragments, useful for response_format, schemas, and other complex fields",
-          "filter_rules": "Filter Rules",
-          "filter_rules_desc": "Pre-filter upstream request body via JSON Path, automatically remove non-compliant/redundant parameters (Request Sanitization)"
+          "filter_rules": "Filter Rules"
         }
       },
       "api_keys": {
@@ -1520,12 +1469,11 @@
         "add": "Add API Key",
         "generate": "Generate",
         "empty": "No API keys",
-        "hint": "Each entry represents an API key (consistent with 'API Key Management' page style)",
         "edit_title": "Edit API Key",
         "add_title": "Add API Key",
         "input_label": "API Key",
         "input_placeholder": "Paste your API key",
-        "name_label": "Name / description (optional)",
+        "name_label": "Name / description",
         "name_placeholder": "For example: Alice's laptop",
         "name_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
         "name_save_error": "Could not save the name in browser storage. Check your browser storage settings.",
@@ -1635,7 +1583,6 @@
     "search_empty_desc": "Try another filename or email, or clear the search.",
     "search_clear": "Clear search",
     "title": "Quota Management",
-    "description": "Monitor OAuth quota status for Antigravity, Codex, Claude, Kimi, and xAI credentials.",
     "refresh_all_credentials": "Refresh all credentials",
     "sort_label": "Sort",
     "sort_default": "Default",
@@ -1771,7 +1718,6 @@
   },
   "plugin_management": {
     "title": "Plugins",
-    "description": "Install plugins from the registry, keep them up to date, and switch on, configure or remove the ones you have.",
     "load_failed": "Failed to load plugins",
     "config_load_failed": "Failed to read plugin config",
     "config_not_found": "Unable to read plugin config because the backend could not find this plugin.",
@@ -1876,7 +1822,6 @@
     "install_version_latest_mode": "Latest stable",
     "install_version_latest_hint": "Resolved by the backend during install. Current listed version: {{version}}.",
     "install_version_release_mode": "Choose release",
-    "install_version_release_hint": "Read installable tags from GitHub Releases.",
     "install_version_manual_mode": "Manual release tag",
     "install_version_manual_hint": "Use only when automatic release loading is unavailable.",
     "install_versions_loading": "Loading GitHub Releases...",
@@ -1920,8 +1865,7 @@
     "gate_step1_action": "I want to install this plugin",
     "gate_step2_action": "I have read and understand these risks",
     "gate_step3_prompt": "To confirm, type \"{{token}}\" in the box below",
-    "gate_step3_action": "Install this plugin",
-    "gate_step3_hint": "Enter the exact identifier shown above to enable installation."
+    "gate_step3_action": "Install this plugin"
   },
   "plugin_resource": {
     "page_count": "{{count}} pages",
@@ -1934,7 +1878,6 @@
   },
   "system_info": {
     "models_refresh_button": "Refresh list",
-    "models_refresh_hint": "Fetch the latest available models and refresh the list.",
     "models_refresh_success": "Available models refreshed: {{count}}.",
     "models_catalog_refresh_button": "Update model catalog",
     "models_catalog_refresh_hint": "Update the shared model catalog to get the latest model information.",
@@ -1955,13 +1898,9 @@
     "version_current_missing": "Server version is unavailable; cannot compare",
     "version_unknown": "Unknown",
     "quick_links_title": "Quick Links",
-    "quick_links_desc": "Access project repositories and documentation for help and updates.",
     "link_main_repo": "Main Repository",
-    "link_main_repo_desc": "CLI Proxy API core program source code",
     "link_webui_repo": "WebUI Repository",
-    "link_webui_repo_desc": "Management Center frontend source code",
     "link_docs": "Documentation",
-    "link_docs_desc": "Configuration tutorials and guides",
     "clear_login_title": "Local Login Data",
     "clear_login_desc": "Clear locally saved login data and sign out.",
     "clear_login_button": "Clear login data",
@@ -2011,7 +1950,6 @@
     "toggle_collapse": "Collapse sidebar",
     "expand": "Expand",
     "collapse": "Collapse",
-    "subtitle": "CLI Proxy API Console",
     "auth_files_count": "Authentication files: {{count}}"
   },
   "footer": {
@@ -2159,8 +2097,7 @@
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI Profile",
       "empty": "No resources yet, click \"New\" to add.",
-      "filterPlaceholder": "Search keys, URLs, prefixes…",
-      "description": "Manage resources under {{route}}"
+      "filterPlaceholder": "Search keys, URLs, prefixes…"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2187,7 +2124,6 @@
       "addGroupedKey": "Add grouped key",
       "removeGroupedKey": "Remove grouped key",
       "protocol": "Group/protocol",
-      "protocolHint": "Select the group/protocol for this key.",
       "protocolEndpoint": "Current protocol endpoint",
       "urlMode": "{{provider}} URL",
       "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
@@ -2216,12 +2152,6 @@
         "anthropic": "Anthropic models",
         "gemini": "Gemini models",
         "openai": "OpenAI-compatible models"
-      },
-      "protocolModelHints": {
-        "codex": "Writes to the Codex API config models. Fetch from /v1/models and set aliases if needed.",
-        "anthropic": "Writes to the Anthropic config models. Fetch from /v1/models and set aliases if needed.",
-        "gemini": "Writes to the Gemini config models. Fetch from /v1beta/models and set aliases if needed.",
-        "openai": "Writes to the OpenAI-compatible config models. Fetch from /models and set aliases if needed."
       },
       "validation": {
         "keyRequired": "Enter an API key for every grouped key.",
@@ -2277,14 +2207,12 @@
       "apiKeyCreatePlaceholder": "Enter API key",
       "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
       "baseUrl": "Base URL",
-      "baseUrlRequiredHint": "Required for this provider",
       "proxyUrl": "Proxy URL",
       "prefix": "Prefix",
       "priority": "Priority",
       "weight": "Scheduling weight",
       "weightHint": "Default 1 · ≤ 0 is excluded · maximum 1,000,000",
       "disabled": "Disable this entry",
-      "disabledHint": "Disabled entries won't be used by the gateway",
       "websockets": "Enable WebSockets",
       "testModel": "Test model",
       "testModelHint": "Used for connectivity testing only; not saved",
@@ -2450,7 +2378,6 @@
     "retry_grant": "Retry {{kind}} · {{label}}",
     "no_usage": "No Fable usage to reset.",
     "fable_hint": "Refills Fable and returns its share to your weekly allowance. Other weekly usage stays unchanged.",
-    "exact_grant_hint": "Uses exactly this reset grant.",
     "choose_grant": "Choose a reset grant",
     "no_grants": "No reset grants available.",
     "grant_expiry": "Expires: {{date}}",

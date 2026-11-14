@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconPlus, IconX } from '@/components/ui/icons';
+import { CheckboxField } from './CheckboxField';
 import { ModelAdvancedFields } from './ModelAdvancedFields';
 import type { ModelEntryInput, ProviderBrand } from '../../types';
 import styles from './sharedForm.module.scss';
@@ -134,19 +135,13 @@ export function ModelEntriesEditor({
             {expanded ? (
               <div className={styles.modelEntryDetails}>
                 {!oauthAliasOnly && supportsImage ? (
-                  <label className={styles.checkboxRow}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkboxBox}
-                      checked={entry.image === true}
-                      disabled={mutating}
-                      onChange={(e) => onUpdate(idx, { image: e.target.checked })}
-                    />
-                    <span className={styles.checkboxText}>
-                      <span>{t('providersPage.form.modelImage')}</span>
-                      <small>{t('providersPage.form.modelImageHint')}</small>
-                    </span>
-                  </label>
+                  <CheckboxField
+                    label={t('providersPage.form.modelImage')}
+                    hint={t('providersPage.form.modelImageHint')}
+                    checked={entry.image === true}
+                    disabled={mutating}
+                    onChange={(checked) => onUpdate(idx, { image: checked })}
+                  />
                 ) : null}
                 {oauthAliasOnly ? (
                   <>

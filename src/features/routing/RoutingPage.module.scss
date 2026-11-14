@@ -71,20 +71,6 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
   gap: 16px;
 }
 
-.footnote {
-  text-wrap: pretty;
-  max-width: 72ch;
-  margin: 0;
-  padding-left: $label-x;
-  font-size: 12px;
-  line-height: 1.55;
-  color: var(--text-tertiary);
-
-  @include mobile {
-    padding-left: 0;
-  }
-}
-
 .srOnly {
   position: absolute;
   width: 1px;
@@ -412,8 +398,7 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
 
 .policyHead {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
   padding-bottom: 18px;
 }
 
@@ -423,15 +408,6 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
   font-weight: 650;
   letter-spacing: -0.01em;
   color: var(--text-primary);
-}
-
-.policySubtitle,
-.policyHint {
-  margin: 0;
-  text-wrap: pretty;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-tertiary);
 }
 
 /* Sections are separated by hairlines instead of extra boxes. */
@@ -449,6 +425,11 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.policyLabelRow {
+  display: flex;
+  align-items: center;
 }
 
 .policyLabel {
@@ -497,6 +478,17 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
   }
 }
 
+/* InfoTip content (portalled): one line per strategy. */
+.strategyTips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.strategyTip {
+  display: block;
+}
+
 .strategyOptionActive {
   background: var(--floating-surface);
   box-shadow:
@@ -519,10 +511,10 @@ $label-x: $tier-pad + 1px + $index-size + 10px; // where tier names begin
   gap: 16px;
 }
 
+/* Label + InfoTip on one line; the explanation lives in the tooltip. */
 .policyRowText {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
   min-width: 0;
 }
 
