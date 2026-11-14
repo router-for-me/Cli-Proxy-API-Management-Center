@@ -648,6 +648,13 @@ separate nightly chain below serializes maintenance before invoking parity.
   with no new index. Measured on a 960,000-row synthetic 30-day store (tmpfs), a miss went
   from 2.07 s to 2.36 s (about +14%), a common dimension term from 1.50 s to 1.76 s and a
   long identifier from 2.31 s to 2.98 s; the search lane keeps its own limits.
+  Migration 5 adds eight more dictionary columns to that test. A term is now tested only
+  against the columns whose dictionary kind it matches (`EVENT_DIMENSIONS`), so an unmatched
+  kind costs nothing per row. Same store, `usage-query-benchmark.ts --search <term>`, 30 days,
+  p95 over 50 warm runs, main before, this change after: a miss 2.39 s to 1.80 s, a model
+  name 2.10 s to 1.69 s, `post /v1/messages` 2.58 s to 1.76 s, `rate_limit` 2.67 s to
+  1.80 s, a long identifier 3.03 s to 2.33 s. None is within 1 s, as none was before; the
+  1 s budget of the views does not apply to searches.
   Eight more document fields are stored (migration 5: eight nullable `events` columns, each
   a dictionary id, no table rewrite). Each is searched with the other dictionary fields:
   - `endpoint` (`endpoint_id`, kind `endpoint`): the proxy record's `endpoint`, the text

@@ -94,15 +94,17 @@ export interface ProbeReport {
 }
 
 const MAX_TERM = 12;
-const WILDCARD_OR_SEPARATOR = /[%_\x1f]/;
+const SEPARATOR = '\x1f';
+const hasWildcardOrSeparator = (text: string) => /[%_]/.test(text) || text.includes(SEPARATOR);
 
 /** The longest run of ordinary characters in the value, up to MAX_TERM of it from the middle. */
 export function distinctiveSlice(value: string): string | null {
   let best = '';
-  for (const run of value.split(/[%_\x1f]/)) if (run.length > best.length) best = run;
+  for (const run of value.split(/[%_]/).flatMap((part) => part.split(SEPARATOR)))
+    if (run.length > best.length) best = run;
   const offset = Math.max(0, Math.floor((best.length - MAX_TERM) / 2));
   const slice = best.slice(offset, offset + MAX_TERM).trim();
-  return slice && !WILDCARD_OR_SEPARATOR.test(slice) ? slice : null;
+  return slice && !hasWildcardOrSeparator(slice) ? slice : null;
 }
 
 /**
