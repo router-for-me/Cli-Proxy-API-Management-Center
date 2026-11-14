@@ -107,6 +107,7 @@ function providerKeyToResource(
     headerCount: countHeaders(config.headers),
     excludedModelCount: stripDisableAllModelsRule(config.excludedModels).length,
     apiKeyEntryCount: 0,
+    overrideCount: 0,
     disabled,
     flags,
     selector,
@@ -135,6 +136,23 @@ const readGroupModels = (value: unknown): string[] => {
   });
   return names;
 };
+
+const KEY_OVERRIDE_FIELDS = [
+  'models',
+  'excluded-models',
+  'priority',
+  'prefix',
+  'proxy-url',
+  'headers',
+  'disable-cooling',
+  'request-retry',
+  'request-scoped-errors',
+  'connection-pool',
+] as const;
+
+const countKeyOverrides = (keys: Record<string, unknown>[]): number =>
+  keys.filter((key) => KEY_OVERRIDE_FIELDS.some((field) => key[field] !== undefined && key[field] !== null))
+    .length;
 
 /** One row per upstream group; keys stay inside the group resource. */
 export function geminiGroupToResource(
@@ -180,6 +198,7 @@ export function geminiGroupToResource(
     headerCount: headers,
     excludedModelCount: stripDisableAllModelsRule(excluded).length,
     apiKeyEntryCount: keys.length,
+    overrideCount: countKeyOverrides(keys),
     disabled: hasDisableAllModelsRule(excluded),
     flags: {},
     selector: { brand: 'gemini', kind: 'group', groupIndex: index, group, groups },
@@ -235,6 +254,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     headerCount: countHeaders(config.headers),
     excludedModelCount: 0,
     apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,
+    overrideCount: 0,
     disabled: config.disabled === true,
     flags: {},
     selector: { brand: 'openaiCompatibility', name, index: sourceIndex },
@@ -374,6 +394,7 @@ function sponsorRawToResource(
         0
       ),
     apiKeyEntryCount: openaiKeyCount + codexKeyCount + raw.claude.length + geminiKeyCount,
+    overrideCount: 0,
     disabled,
     flags: {
       protocols: [...options.protocolLabels],

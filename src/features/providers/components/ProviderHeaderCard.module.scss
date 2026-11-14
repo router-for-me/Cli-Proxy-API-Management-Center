@@ -179,3 +179,27 @@
     }
   }
 }
+
+.viewMode {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border-default, rgba(127, 127, 127, 0.35));
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.viewModeBtn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.viewModeActive {
+  opacity: 1;
+  background: var(--surface-raised, rgba(127, 127, 127, 0.18));
+}

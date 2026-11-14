@@ -121,6 +121,8 @@ export interface ProviderResource {
   excludedModelCount: number;
   /** 仅 OpenAI 有意义,其它 brand 该字段不展示但保留 */
   apiKeyEntryCount: number;
+  /** 分组行里带 key 级覆盖的 key 数量;非分组行为 0 */
+  overrideCount: number;
   /** 是否被禁用(各 brand 判定规则不同) */
   disabled: boolean;
   /** 额外能力旗标 */
