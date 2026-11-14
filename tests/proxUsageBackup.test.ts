@@ -3,6 +3,7 @@ import { Database } from 'bun:sqlite';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadBackupConfig, UsageBackup } from '../server/usage/backup';
+import { IoGovernor } from '../server/usage/ioGovernor';
 import { normalizeUsagePayload } from '../server/usage/normalize';
 import { UsageStore } from '../server/usage/store';
 import { INGEST } from '../server/usage/types';
@@ -192,18 +193,35 @@ describe('usage tmpfs backups', () => {
     expect(f.uploads[0].snapshot.length).toBeLessThanOrEqual(size);
   });
 
-  test('a snapshot held open past its time bound fails and releases the live WAL', async () => {
+  test('sustained IO pressure cannot hold the snapshot, and the live WAL, past its time bound', async () => {
     const f = fixture();
-    let time = Date.UTC(2026, 10, 16);
+    let pressure = 0;
+    // Real clock: the bound is wall time, and a fake clock would spin without ever reaching it.
+    const governor = new IoGovernor({
+      readPsi: () => `full avg10=${pressure} avg60=0`,
+      clock: { now: () => performance.now(), sleep: (ms) => Bun.sleep(ms) },
+    });
+    let chunks = 0;
     const backup = new UsageBackup(f.config, {
-      governor: f.io.governor,
+      governor,
       rowsPerStep: 20,
-      maxSnapshotMs: 1000,
-      now: () => (time += 400),
+      maxSnapshotMs: 300,
+      // The snapshot is open after the first chunk; from then on the disk is saturated.
+      scheduleChunk: async (_kind, work) => {
+        chunks += 1;
+        const result = await work();
+        pressure = 50;
+        return result;
+      },
     });
     await expect(backup.run(f.store)).rejects.toThrow('time bound');
+    expect(chunks).toBe(1);
     expect(readdirSync(f.root)).toEqual([]);
     expect(f.uploads).toHaveLength(0);
+    expect(backup.lastSuccessAtMs).toBeNull();
+    const other = new Database(f.store.eventsPath);
+    cleanups.push(() => other.close());
+    expect(other.query('PRAGMA wal_checkpoint(RESTART)').get()).toMatchObject({ busy: 0 });
   });
 
   test('loads JSON or env configuration without including secrets in validation errors', () => {

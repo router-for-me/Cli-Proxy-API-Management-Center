@@ -157,6 +157,29 @@ describe('usage restore check', () => {
     expect(lost.tables.find((t) => t.name === 'events')).toMatchObject({ liveRowsAtHighWater: 99 });
   });
 
+  test('a backup missing its newest rows, or every row, of a seq table fails', async () => {
+    for (const [table, sql] of [
+      ['events', 'DELETE FROM events WHERE seq = 100'],
+      ['event_detail', 'DELETE FROM event_detail WHERE seq = 100'],
+      ['events', 'DELETE FROM events'],
+      ['event_detail', 'DELETE FROM event_detail'],
+    ] as const) {
+      const f = fixture();
+      await f.backup(15);
+      const key = 'usage/daily/usage-20261115.sqlite';
+      const copy = Database.deserialize(f.objects.get(key)!);
+      copy.exec(sql);
+      f.objects.set(key, copy.serialize());
+      copy.close();
+      const verdict = await f.check();
+      expect(verdict.ok).toBe(false);
+      expect(verdict.failures).toEqual([
+        `${table}: rows differ from live up to the backup high-water mark`,
+      ]);
+      expect(verdict.tables.find((t) => t.name === table)).toMatchObject({ highWater: 100 });
+    }
+  });
+
   test('an explicit key is honoured', async () => {
     const f = fixture();
     await f.backup(15);

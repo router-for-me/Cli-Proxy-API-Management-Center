@@ -28,7 +28,9 @@ export interface RestoreTableVerdict {
   kind: 'append-only' | 'unchecked';
   backupRows: number;
   backupMax: number | null;
-  /** Live rows with id <= the backup's high-water mark. Must equal backupRows. */
+  /** events/event_detail: the backup's meta.next_seq - 1. Others: backupMax. */
+  highWater: number | null;
+  /** Live rows with id <= highWater. Must equal backupRows. */
   liveRowsAtHighWater: number | null;
   liveMax: number | null;
   ranges: number;
@@ -71,6 +73,11 @@ const schemaVersion = (db: Database): number | null => {
     .get();
   return row ? Number(row.value) : null;
 };
+const nextSeq = (db: Database) =>
+  Number(
+    db.query<{ value: string }, []>(`SELECT value FROM meta WHERE key = 'next_seq'`).get()?.value ??
+      1
+  );
 const tableNames = (db: Database) =>
   db
     .query<{ name: string }, []>(
@@ -164,25 +171,24 @@ async function compareTable(
   const { range, mark } = APPEND_ONLY[table];
   const backupRows = scalar(backup, `SELECT count(*) AS v FROM ${table}`)!;
   const backupMax = scalar(backup, `SELECT max(${mark}) AS v FROM ${table}`);
+  // The `seq` tables' high-water mark is meta.next_seq - 1, which the snapshot copied atomically
+  // with the rows: a backup missing its newest rows (or all of them) cannot hide behind its own
+  // surviving max. events.seq has no index, so live's mark comes from meta too.
+  const highWater = mark === 'seq' ? nextSeq(backup) - 1 : backupMax;
   const verdict: RestoreTableVerdict = {
     name: table,
     kind: 'append-only',
     backupRows,
     backupMax,
+    highWater,
     liveRowsAtHighWater: 0,
-    // events.seq has no index: the live high-water mark of a `seq` table is meta.next_seq - 1.
     liveMax:
-      mark === 'seq'
-        ? Number(
-            live.query<{ value: string }, []>(`SELECT value FROM meta WHERE key = 'next_seq'`).get()
-              ?.value ?? 1
-          ) - 1
-        : scalar(live, `SELECT max(${mark}) AS v FROM ${table}`),
+      mark === 'seq' ? nextSeq(live) - 1 : scalar(live, `SELECT max(${mark}) AS v FROM ${table}`),
     ranges: 0,
     ok: true,
   };
-  // An empty backup table has no high-water mark; live may hold anything newer.
-  if (backupMax === null) return verdict;
+  // Without a seq mark, an empty table has no high-water mark; live may hold anything newer.
+  if (highWater === null) return verdict;
   const cuts = boundaries(backup, table, options.rangeRows ?? RANGE_ROWS);
   const edges: (number | null)[] = [null, ...cuts, null];
   const sql = (low: boolean, high: boolean) =>
@@ -192,7 +198,7 @@ async function compareTable(
   let liveRows = 0;
   for (let i = 0; i + 1 < edges.length; i += 1) {
     const [low, high] = [edges[i], edges[i + 1]];
-    const params = [backupMax, ...(low === null ? [] : [low]), ...(high === null ? [] : [high])];
+    const params = [highWater, ...(low === null ? [] : [low]), ...(high === null ? [] : [high])];
     const query = sql(low !== null, high !== null);
     const want = backup.query<{ v: number }, number[]>(query).get(...params)!.v;
     const got = await runIoChunk(
@@ -206,7 +212,7 @@ async function compareTable(
     if (got !== want) verdict.ok = false;
   }
   verdict.liveRowsAtHighWater = liveRows;
-  verdict.ok &&= liveRows === backupRows && (verdict.liveMax ?? -Infinity) >= backupMax;
+  verdict.ok &&= liveRows === backupRows && (verdict.liveMax ?? -Infinity) >= highWater;
   return verdict;
 }
 
@@ -283,6 +289,7 @@ export async function runRestoreCheck(options: RestoreCheckOptions): Promise<Res
           kind: 'unchecked',
           backupRows: scalar(backup, `SELECT count(*) AS v FROM "${name}"`)!,
           backupMax: null,
+          highWater: null,
           liveRowsAtHighWater: null,
           liveMax: null,
           ranges: 0,

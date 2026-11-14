@@ -109,7 +109,6 @@ export class UsageBackup {
     const keys = [`usage/daily/${filename}`];
     if (date.getUTCDay() === 0) keys.push(`usage/weekly/${filename}`);
     const maxSnapshotMs = this.options.maxSnapshotMs ?? 2 * 60 * 60 * 1000;
-    const startedAt = now();
     let directory: string | undefined;
     let snapshot: UsageSnapshot | undefined;
     const chunk = { count: 0, maxMs: 0 };
@@ -123,44 +122,45 @@ export class UsageBackup {
         chunk.maxMs = Math.max(chunk.maxMs, performance.now() - began);
       }
     };
-    const chunkOptions = { ...this.options, signal };
+    // An open snapshot pins the live WAL. The bound is a signal, not a check inside a chunk, so it
+    // also ends waits for admission under IO pressure and for byte-debt pacing.
+    const deadline = AbortSignal.timeout(maxSnapshotMs);
+    const chunkOptions = {
+      ...this.options,
+      signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
+    };
     try {
-      const path = await runIoChunk(
-        'backup',
-        () =>
-          timed(() => {
-            const info = (this.options.filesystemInfo ?? filesystemInfo)(tmpfsDir);
-            if (!info.isTmpfs) throw new Error('Usage backup directory must be tmpfs');
-            // WAL-inclusive size while the writer job owns the handle. The copy holds rows only,
-            // so it is never larger than the database; the margin covers growth during the copy.
-            const size = store.databaseSizeBytes();
-            if (info.freeBytes < size + size / 10) {
-              throw new Error(
-                'Insufficient tmpfs space: usage backup requires the database size plus 10%'
-              );
-            }
-            directory = mkdtempSync(join(tmpfsDir, 'prox-usage-backup-'));
-            const path = join(directory, filename);
-            snapshot = new UsageSnapshot(store.eventsPath, path, {
-              rowsPerStep: this.options.rowsPerStep,
-            });
-            return path;
-          }),
-        chunkOptions
-      );
-      // The open snapshot pins the live WAL: bound how long a paused copy may hold it.
-      while (
-        !(await runIoChunk(
+      let path: string;
+      try {
+        path = await runIoChunk(
           'backup',
           () =>
             timed(() => {
-              if (now() - startedAt > maxSnapshotMs)
-                throw new Error('Usage backup snapshot exceeded its time bound');
-              return snapshot!.step();
+              const info = (this.options.filesystemInfo ?? filesystemInfo)(tmpfsDir);
+              if (!info.isTmpfs) throw new Error('Usage backup directory must be tmpfs');
+              // WAL-inclusive size while the writer job owns the handle. The copy holds rows only,
+              // so it is never larger than the database; the margin covers growth during the copy.
+              const size = store.databaseSizeBytes();
+              if (info.freeBytes < size + size / 10) {
+                throw new Error(
+                  'Insufficient tmpfs space: usage backup requires the database size plus 10%'
+                );
+              }
+              directory = mkdtempSync(join(tmpfsDir, 'prox-usage-backup-'));
+              const path = join(directory, filename);
+              snapshot = new UsageSnapshot(store.eventsPath, path, {
+                rowsPerStep: this.options.rowsPerStep,
+              });
+              return path;
             }),
           chunkOptions
-        ))
-      );
+        );
+        while (!(await runIoChunk('backup', () => timed(() => snapshot!.step()), chunkOptions)));
+      } catch (error) {
+        if (deadline.aborted && !signal?.aborted)
+          throw new Error('Usage backup snapshot exceeded its time bound');
+        throw error;
+      }
       const size = Bun.file(path).size;
       for (const key of keys) await this.upload(path, key, size, signal);
       this.lastSuccess = now();

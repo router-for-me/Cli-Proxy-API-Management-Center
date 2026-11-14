@@ -423,8 +423,9 @@ The writer is held only for one step: measured on a 350 MB copy of production,
 median 0.6 ms, p99 2 ms, worst 18 ms (the final commit). The report carries
 `snapshot: {steps, rows, maxStepMs}`. An open snapshot pins the live WAL (it
 cannot reset past the snapshot's read mark), so a copy is abandoned with an error
-after `maxSnapshotMs` (2 hours, wall time including IO pauses) and is always
-closed before its file is removed. The scratch database uses `synchronous=OFF`,
+after `maxSnapshotMs` (2 hours of wall time) and is always closed before its file is
+removed. The bound is an abort signal on every admission and pacing wait, so
+sustained IO pressure cannot hold the snapshot open past it. The scratch database uses `synchronous=OFF`,
 `temp_store=MEMORY` and a 32 MB cache: a multi-row INSERT keeps a statement
 journal of every page it dirties, which went to a temp file at ~25x the database
 size in writes before this was set. Revisit the cache and the 2-hour bound before
@@ -454,9 +455,11 @@ on every path, and prints one JSON verdict (exit 0 pass, 1 fail, 130 interrupted
 - `schema`: `meta.schema_version` equals live's (`build` is this bundle's latest).
 - `opens`: the copy opens through `UsageStore` (migrate forward, set WAL), as a restore would.
 - `tables`: for the append-only tables (`events`, `event_detail`, `dim`, `session`,
-  `import_conflicts`) the backup's high-water mark is its max id. Live rows at or
-  below that mark must equal the backup's count, slice by slice, and live's max id
-  must be at least the backup's; rows added since the snapshot are allowed. Rolled-up
+  `import_conflicts`) the backup has a high-water mark: `meta.next_seq - 1` for the
+  two `seq` tables (copied atomically with the rows, so a backup missing its newest
+  rows or all of them fails), its max id for the others. Live rows at or below that
+  mark must equal the backup's count, slice by slice, and live's mark must be at
+  least the backup's; rows added since the snapshot are allowed. Rolled-up
   and mutable tables (`usage_hour_*`, `ingest_gaps`, `meta`, `client_alias`) are
   listed as `unchecked` with the backup's row count.
 - `failures`: closed-vocabulary strings; empty when `ok`.
