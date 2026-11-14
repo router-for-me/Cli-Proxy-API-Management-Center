@@ -5,8 +5,7 @@ import { IoGovernor, runIoChunk, type ChunkScheduler, type IoBytes } from './ioG
 import {
   endpointText,
   failSummaryFromBody,
-  isKeySource,
-  maskSource,
+  maskPersistedSource,
   normalizeUsagePayload,
   projectSnapshot,
   requestMetadata,
@@ -204,11 +203,11 @@ export function mapCpampRow(
   // the header values pass the scrubber again, so nothing unmasked or unscrubbed can enter.
   event.endpoint = endpointText(String(row.endpoint ?? ''));
   event.xForwardedFor = requestMetadata(row.x_forwarded_for, 2048);
-  const source = String(row.source ?? '');
   event.source =
-    maskSource(
-      source,
-      isKeySource(source, String(row.auth_type ?? ''), '', String(row.api_key_hash ?? ''))
+    maskPersistedSource(
+      String(row.source ?? ''),
+      String(row.auth_type ?? ''),
+      String(row.api_key_hash ?? '')
     ) || null;
   event.authProvider = nonempty(row.auth_provider_snapshot);
   event.authProject = projectSnapshot(

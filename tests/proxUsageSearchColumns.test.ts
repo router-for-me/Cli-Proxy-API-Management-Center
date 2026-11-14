@@ -8,7 +8,12 @@ import { join } from 'node:path';
 import { queryAnalytics } from '../server/usage/analytics';
 import { runCpampJob } from '../server/usage/importCpamp';
 import { createHash } from 'node:crypto';
-import { isKeySource, maskSource, normalizeUsagePayload } from '../server/usage/normalize';
+import {
+  isKeySource,
+  maskPersistedSource,
+  maskSource,
+  normalizeUsagePayload,
+} from '../server/usage/normalize';
 import { USAGE_MIGRATIONS } from '../server/usage/schema';
 import { queryFilter } from '../server/usage/search';
 import { migrateUsageDatabase, openUsageReader, UsageStore } from '../server/usage/store';
@@ -67,10 +72,25 @@ describe('normalizer: source', () => {
     for (const stored of [maskSource(key), maskSource(long)]) expect(stored).not.toContain(key);
     expect(maskSource('   ')).toBe('');
   });
-  test('masking an already masked e-mail changes nothing, including one- and two-character locals', () => {
+  test('a persisted masked e-mail imports unchanged, including one- and two-character locals', () => {
     for (const masked of ['a***@x.test', 'ab***@x.test', 'abc***@x.test', 'a***@b@c.test'])
-      expect(maskSource(masked)).toBe(masked);
+      expect(maskPersistedSource(masked, 'oauth', '')).toBe(masked);
     expect(maskSource('ab@x.test')).toBe('ab***@x.test');
+    const h = `h:${'a'.repeat(64)}`;
+    expect(maskPersistedSource(h, 'apikey', '')).toBe(h);
+    expect(maskPersistedSource('m:****', 'oauth', '')).toBe('m:****');
+  });
+  test('a key is hashed even when it looks like a mask, live or persisted', () => {
+    for (const lookalike of ['ab***@x.test', 'm:****', `h:${'a'.repeat(64)}`]) {
+      const stored = normalized({ source: lookalike, api_key: lookalike, auth_type: 'apikey' }).source!;
+      expect(stored).toMatch(/^h:[0-9a-f]{64}$/);
+      expect(stored).not.toBe(lookalike);
+      // CPAMP persisted the raw key and its hash: the key wins over the mask shape.
+      const hash = createHash('sha256').update(lookalike).digest('hex');
+      expect(maskPersistedSource(lookalike, 'oauth', hash)).toBe(`h:${hash}`);
+    }
+    // A live API-key credential's unmasked persisted value is hashed too.
+    expect(maskPersistedSource('upstreamkey1', 'apikey', '')).toMatch(/^h:[0-9a-f]{64}$/);
   });
   test('a source that is a key is hashed, whatever its length or shape', () => {
     const short = 'synthetic-client-key';
@@ -84,8 +104,8 @@ describe('normalizer: source', () => {
       expect(stored).not.toMatch(/synthetic-client-key|upstreamkey1/);
     // An OAuth account that is not a key keeps its readable form.
     expect(normalized({ source: 'project-123', auth_type: 'oauth' }).source).toBe('project-123');
-    expect(isKeySource(short, 'oauth', '', createHash('sha256').update(short).digest('hex'))).toBe(true);
-    expect(isKeySource(short, 'oauth', '', '')).toBe(false);
+    expect(isKeySource(short, 'oauth', short)).toBe(true);
+    expect(isKeySource(short, 'oauth', '')).toBe(false);
   });
   test('comes from the record source and is null when it is empty', () => {
     expect(normalized({ source: 'someone@example.test' }).source).toBe('som***@example.test');
@@ -125,6 +145,8 @@ describe('normalizer: response-header values', () => {
     expect(kc({ 'retry-after': '2026-11-14T12:00:00Z' })).toEqual(['rate_limit', 'retry_after']);
     expect(kc({ 'retry-after': '2026-11-14 12:00:00' })).toEqual(['rate_limit', 'retry_after']);
     expect(kc({ 'retry-after': '2026-11-14 12:00:00 UTC' })).toEqual(['rate_limit', 'retry_after']);
+    expect(kc({ 'retry-after': '2026-11-14 12:00:00.123' })).toEqual(['rate_limit', 'retry_after']);
+    expect(kc({ 'retry-after': '2026-11-14T12:00:00.5+01:00' })).toEqual(['rate_limit', 'retry_after']);
     expect(kc({ 'retry-after': '2026-11-14T12:00:00' })).toEqual([null, null]);
     expect(kc({ 'retry-after': '2026-02-30T12:00:00Z' })).toEqual([null, null]);
     expect(kc({ 'retry-after': '2026-13-01 12:00:00' })).toEqual([null, null]);

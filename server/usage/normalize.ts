@@ -312,22 +312,23 @@ export function scrubTraceId(value: string): string | null {
 
 const FLOAT_HEADER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 // The layouts of CPAMP's parseHeaderCommonTime, each with its calendar fields captured as
-// year, month, day, hour, minute, second. Go rejects an impossible date and a leap second.
+// year, month, day, hour, minute, second. Go rejects an impossible date and a leap second, and
+// accepts fractional seconds after the seconds field in any layout.
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DATE_LAYOUTS: readonly [RegExp, (m: RegExpExecArray) => number[]][] = [
   // RFC 3339 (and its ".000" form): a zone is required.
   [
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
     (m) => m.slice(1, 7).map(Number),
   ],
   // "2006-01-02 15:04:05 MST" and "2006-01-02 15:04:05".
   [
-    /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(?: [A-Z]{3,5})?$/,
+    /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)?(?: [A-Z]{3,5})?$/,
     (m) => m.slice(1, 7).map(Number),
   ],
   // RFC 1123 and RFC 1123Z (an HTTP-date).
   [
-    /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) ([A-Z][a-z]{2}) (\d{4}) (\d{2}):(\d{2}):(\d{2}) (?:[A-Z]{3,5}|[+-]\d{4})$/,
+    /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) ([A-Z][a-z]{2}) (\d{4}) (\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)? (?:[A-Z]{3,5}|[+-]\d{4})$/,
     (m) => [Number(m[3]), MONTHS.indexOf(m[2]) + 1, Number(m[1]), Number(m[4]), Number(m[5]), Number(m[6])],
   ],
 ];
@@ -387,16 +388,9 @@ export function headerSearchValues(headers: unknown): {
 export function maskSource(value: string, isKey = false): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
-  // A value CPAMP already masked this way stays as it is, so masking an imported value is exact.
-  if (
-    /^h:[0-9a-f]{64}$/.test(trimmed) ||
-    /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed) ||
-    /^[^@]{0,3}\*\*\*@/.test(trimmed)
-  )
-    return trimmed;
   // The record says the source is a key (an API-key credential, or the client's own key): CPAMP
   // would keep a short one as it is, Prox never stores it, only its hash.
-  if (isKey) return `h:${createHash('sha256').update(trimmed).digest('hex')}`;
+  if (isKey) return sha256Source(trimmed);
   const at = trimmed.indexOf('@');
   if (at !== -1) {
     const prefix = Buffer.from(trimmed.slice(0, at));
@@ -412,19 +406,37 @@ export function maskSource(value: string, isKey = false): string {
   return Buffer.byteLength(trimmed) <= 8 ? 'm:****' : `m:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }
 
+const sha256Source = (value: string): string => `h:${createHash('sha256').update(value).digest('hex')}`;
+const isApiKeyAuth = (authType: string): boolean => authType.trim().toLowerCase() === 'apikey';
+
 /**
- * Whether a source is a key, by what the record knows: an API-key credential (`auth_type`
- * `apikey`) has its key as the source, and a source equal to the client's key (or whose hash
- * is CPAMP's persisted `api_key_hash`) is that key. Token shape alone cannot tell a short key.
+ * Whether a live record's source is a key, by what the record knows: an API-key credential
+ * (`auth_type` `apikey`) has its key as the source, and a source equal to the client's key is
+ * that key. Token shape alone cannot tell a short key.
  */
-export function isKeySource(source: string, authType: string, apiKey: string, apiKeyHash = ''): boolean {
+export function isKeySource(source: string, authType: string, apiKey: string): boolean {
   const trimmed = source.trim();
-  if (!trimmed) return false;
-  return (
-    authType.trim().toLowerCase() === 'apikey' ||
-    (!!apiKey && trimmed === apiKey) ||
-    (!!apiKeyHash && createHash('sha256').update(trimmed).digest('hex') === apiKeyHash.toLowerCase())
-  );
+  return !!trimmed && (isApiKeyAuth(authType) || (!!apiKey && trimmed === apiKey));
+}
+
+/**
+ * CPAMP's persisted `source` as Prox stores it. A value CPAMP already masked stays as it is, so
+ * a short e-mail masked as `ab***@x.test` imports exactly; but a value whose SHA-256 is CPAMP's
+ * persisted `api_key_hash` is the client's key whatever it looks like, and an API-key
+ * credential's unmasked value is hashed.
+ */
+export function maskPersistedSource(source: string, authType: string, apiKeyHash: string): string {
+  const trimmed = source.trim();
+  if (!trimmed) return '';
+  const hash = createHash('sha256').update(trimmed).digest('hex');
+  if (apiKeyHash && hash === apiKeyHash.trim().toLowerCase()) return `h:${hash}`;
+  if (
+    /^h:[0-9a-f]{64}$/.test(trimmed) ||
+    /^m:(?:\*{4}|[^]{4}\.\.\.[^]{4})$/.test(trimmed) ||
+    /^[^@]{0,3}\*\*\*@/.test(trimmed)
+  )
+    return trimmed;
+  return maskSource(trimmed, isApiKeyAuth(authType));
 }
 
 /** The marker CPAMP gives a Codex account id it stores where a project id would go. */
