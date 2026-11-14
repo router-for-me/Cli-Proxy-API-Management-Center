@@ -86,7 +86,7 @@ export async function latestBackupKey(config: BackupConfig, signal?: AbortSignal
   // Retention keeps about 14 daily objects; a truncated page means the prefix is not what we expect.
   if (listing.isTruncated) throw new Error('Backup listing is truncated; pass an explicit key');
   const keys = (listing.contents ?? []).map((entry) => entry.key).sort();
-  const key = keys.at(-1);
+  const key = keys[keys.length - 1];
   if (!key) throw new Error('No backup found under usage/daily/');
   return key;
 }
@@ -150,7 +150,7 @@ function boundaries(backup: Database, table: AppendOnly, rangeRows: number): num
     .query<{ v: number }, []>(`SELECT ${range} AS v FROM ${table} ORDER BY ${range}`)
     .iterate()) {
     seen += 1;
-    if (seen % rangeRows === 0 && row.v > (cuts.at(-1) ?? -Infinity)) cuts.push(row.v);
+    if (seen % rangeRows === 0 && row.v > (cuts[cuts.length - 1] ?? -Infinity)) cuts.push(row.v);
   }
   return cuts;
 }

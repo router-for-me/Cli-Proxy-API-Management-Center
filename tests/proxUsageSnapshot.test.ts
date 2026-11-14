@@ -110,9 +110,26 @@ describe('paced usage snapshot', () => {
     expect(bytes()).toEqual(before);
   });
 
-  test('refuses an in-memory source instead of backing up an empty database', () => {
+  test('refuses sources it would copy wrongly: in-memory, or with a trigger', () => {
     const f = fixture(1);
     expect(() => new UsageSnapshot(':memory:', f.dest)).toThrow('needs a file');
+    const other = new Database(f.live);
+    cleanups.push(() => other.close());
+    other.exec('CREATE TRIGGER t AFTER INSERT ON dim BEGIN SELECT 1; END');
+    expect(() => new UsageSnapshot(f.live, f.dest)).toThrow('does not support triggers');
+    // The failed attempt released the live read snapshot.
+    other.exec('DROP TRIGGER t');
+    expect(other.query('PRAGMA wal_checkpoint(RESTART)').get()).toMatchObject({ busy: 0 });
+  });
+
+  test('the copy keeps the live page size', () => {
+    const f = fixture(10);
+    const snapshot = new UsageSnapshot(f.live, f.dest, { rowsPerStep: 50 });
+    cleanups.push(() => snapshot.close());
+    while (!snapshot.step());
+    const copy = new Database(f.dest, { readonly: true });
+    cleanups.push(() => copy.close());
+    expect(copy.query('PRAGMA page_size').get()).toEqual(f.reader.query('PRAGMA page_size').get());
   });
 
   test('closing an unfinished snapshot releases the read mark so the WAL can reset', () => {

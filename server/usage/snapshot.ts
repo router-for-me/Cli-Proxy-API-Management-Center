@@ -12,7 +12,7 @@ interface TableCopy {
   insertColumns: string[];
   selectColumns: string[];
 }
-const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
+const quote = (name: string) => `"${name.replace(/"/g, '""')}"`;
 
 /**
  * The copy runs inside ONE read transaction on the live file, so it sees the database as of its
@@ -74,6 +74,9 @@ export class UsageSnapshot {
           .filter((row) => row.schema === 'src' && row.wr === 1)
           .map((row) => row.name)
       );
+      // A trigger would fire on the copy's own inserts and change the data it copies.
+      if (objects.some((object) => object.type === 'trigger'))
+        throw new Error('Usage snapshot does not support triggers');
       for (const object of objects) {
         db.exec(object.sql);
         if (object.type === 'table') this.tables.push(this.describe(db, object.name, withoutRowid));
