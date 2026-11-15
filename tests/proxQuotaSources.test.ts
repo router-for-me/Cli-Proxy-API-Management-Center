@@ -853,6 +853,58 @@ describe('additive legacy quota attribution', () => {
     expect(store.listSamples(0, NOW + MANUAL_REFRESH_INTERVAL_MS)).toHaveLength(sampleCount);
   });
 
+  test('a targeted refresh accepts the source-qualified id of a legacy-attributed account', async () => {
+    // The browser names an account by source and auth index only; it cannot know that the
+    // server stores a migrated account under its pre-attribution id.
+    const path = join(temporary(), 'quota.sqlite');
+    legacyDatabase(path);
+    const store = open(path);
+    const f = fixture(['claude-primary', 'other-claude']);
+    store.migrateLegacySources(
+      [{ provider: 'claude', instanceId: 'claude-primary' }],
+      f.sources.map((source) => source.instanceId)
+    );
+    const legacy = store.listAccounts().find((account) => account.provider === 'claude')!;
+    let clock = NOW;
+    const collector = new QuotaCollector(store, {
+      sources: f.manifest.sources,
+      revision: 'fixture',
+      fetcher: f.fetcher,
+      now: () => clock,
+    });
+    cleanups.push(() => collector.stop());
+    await collector.refresh();
+    clock += MANUAL_REFRESH_INTERVAL_MS;
+    const qualified = `claude-primary:${legacy.id}`;
+    expect(store.listAccounts().find((account) => account.id === legacy.id)?.sourceAccountId).toBe(
+      qualified
+    );
+    const first = collector.refreshAccount(qualified);
+    // Both spellings are one account, so they share its single flight and its 20 s limit.
+    expect(collector.refreshAccount(legacy.id)).toBe(first);
+    expect(await first).toBe(true);
+    expect(await collector.refreshAccount(qualified)).toBe(false);
+    expect(await collector.refreshAccount(`other-source:${legacy.id}`)).toBe(false);
+    clock += 20_000;
+    expect(await collector.refreshAccount(qualified)).toBe(true);
+    // POST /v1/refresh carries the same id from the browser.
+    clock += 20_000;
+    const handler = createHandler({
+      store,
+      collector,
+      keyFile: f.sources[0].managementKeyFile,
+      now: () => clock,
+    });
+    const response = await handler(
+      new Request('http://localhost/v1/refresh', {
+        method: 'POST',
+        headers: { Authorization: `Bearer synthetic-key-${f.sources[0].instanceId}` },
+        body: JSON.stringify({ accountId: qualified }),
+      })
+    );
+    expect(await response.json()).toEqual({ refreshed: true });
+  });
+
   test('a source-qualified alias collision aborts mapping rather than merging two histories', () => {
     const path = join(temporary(), 'quota.sqlite');
     legacyDatabase(path);

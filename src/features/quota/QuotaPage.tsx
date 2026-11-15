@@ -20,7 +20,7 @@ import {
   type RefreshOutcome,
 } from '@/stores/useCredentialInventoryStore';
 import { providerSources } from '@/stores/useProviderSources';
-import { createQuotaStore } from '@/stores/useQuotaStore';
+import { sourceQuotaStore } from '@/stores/sourceQuotaStores';
 import { isQuotaSourceCurrent } from './sourceCurrent';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -94,7 +94,8 @@ export function QuotaPage() {
 
 function SourceQuotaPage({ session: owner }: { session: SourceSession }) {
   const { session } = useSourceLease(owner);
-  const [useSourceQuotaStore] = useState(createQuotaStore);
+  // The source session's one quota store, shared with Auth Files and the pool's reset panel.
+  const useSourceQuotaStore = sourceQuotaStore(owner.owner);
   const adapters = useMemo(
     () => createQuotaAdapters(session, useSourceQuotaStore),
     [session, useSourceQuotaStore]

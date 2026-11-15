@@ -1,13 +1,13 @@
 import { Fact, FactSection } from '@/components/ui/FactPanel';
 import { IconAlertTriangle } from '@/components/ui/icons';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PoolAccount, PoolProviderId } from '@/domain/quotaPool/types';
 import type { AuthFileItem } from '@/types';
 import { sourceOwnerKey, type SourceSession } from '@/services/api/sourceSession';
 import { useProviderSources } from '@/stores/useProviderSources';
 import { useCredentialInventoryStore, useSourceFiles } from '@/stores/useCredentialInventoryStore';
-import { createQuotaStore } from '@/stores/useQuotaStore';
+import { sourceQuotaStore } from '@/stores/sourceQuotaStores';
 import { useSourceLease } from '@/hooks/useSourceLease';
 import { useQuotaActions } from '@/features/quota/hooks/useQuotaActions';
 import { createQuotaAdapters } from '@/features/quota/providers';
@@ -272,7 +272,7 @@ type ActionProps = Props & {
   /** A spend from this tab is newer than the server's reading. */
   spent: boolean;
 };
-function ClaudeResetAction({ file, session, onRefresh, accountId, spent, ...fact }: ActionProps) {
+function ClaudeResetAction({ file, session, accountId, spent, ...fact }: ActionProps) {
   const { t } = useTranslation();
   const scope = useMemo(() => {
     const shared = createSourceResetGrants(session);
@@ -289,14 +289,20 @@ function ClaudeResetAction({ file, session, onRefresh, accountId, spent, ...fact
       },
     };
   }, [session, accountId]);
-  // The hook refreshes once when a claim finishes; bind that to this account so a confirm
-  // re-reads only it, never the whole fleet as well.
-  const refreshAccount = useCallback(() => onRefresh(accountId), [onRefresh, accountId]);
-  const reset = useClaudeResetGrants(file, true, false, null, refreshAccount, scope);
+  // The hook re-reads once when a claim finishes. That read goes into the source's shared quota
+  // store, so Auth Files and the Quota page show the claim too; the claim itself already had the
+  // history server re-read this one account (accountSync.ts), never the whole fleet.
+  const store = sourceQuotaStore(session.owner);
+  const adapters = useMemo(() => createQuotaAdapters(session, store), [session, store]);
+  const { refreshQuota } = useQuotaActions(false, store, session);
+  const readQuota = useCallback(
+    (options?: { force?: boolean }) => void refreshQuota(file, adapters.claude, options),
+    [refreshQuota, file, adapters]
+  );
+  const reset = useClaudeResetGrants(file, true, false, null, readQuota, scope);
   return (
     <ResetFact
       {...fact}
-      onRefresh={onRefresh}
       spent={spent}
       disabled={reset.blocked || spent}
       onClick={reset.confirm}
@@ -328,7 +334,6 @@ function ClaudeResetAction({ file, session, onRefresh, accountId, spent, ...fact
 function CodexResetAction({
   file,
   session,
-  onRefresh,
   accountId,
   spent,
   early,
@@ -336,7 +341,7 @@ function CodexResetAction({
   ...fact
 }: ActionProps & { early: boolean }) {
   const { t, i18n } = useTranslation();
-  const [store] = useState(createQuotaStore);
+  const store = sourceQuotaStore(session.owner);
   const adapter = useMemo(() => {
     const codex = createQuotaAdapters(session, store).codex;
     const reset = codex.resetQuota!;
@@ -347,13 +352,13 @@ function CodexResetAction({
           return await reset(...args);
         } finally {
           // A confirmed attempt may have consumed the credit even if its cooldown clear or
-          // follow-up read failed, so the row waits for the next reading either way.
+          // follow-up read failed, so the row waits for the next reading either way. The adapter
+          // already had the history server re-read this account.
           markSpent(accountId);
-          if (!session.signal.aborted) onRefresh(accountId);
         }
       },
     };
-  }, [session, store, onRefresh, accountId]);
+  }, [session, store, accountId]);
   const actions = useQuotaActions(false, store, session);
   // Both confirmations name the soonest expiry the account holds when the dialog opens.
   const soonestFact = () => {
@@ -374,7 +379,6 @@ function CodexResetAction({
     <ResetFact
       {...fact}
       name={name}
-      onRefresh={onRefresh}
       spent={spent}
       disabled={actions.resettingQuotaName !== null || spent}
       onClick={() => {
