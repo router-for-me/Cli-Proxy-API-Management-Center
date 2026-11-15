@@ -12,6 +12,7 @@ export function beginLoading(adapter: QuotaAdapter, store: QuotaStore, keys: str
   const setQuota = getQuotaSetter(adapter, store);
   const before = getQuotaMap(adapter, store);
   const previous = new Map(keys.map((key) => [key, before[key]]));
+  const readAt = new Map(keys.map((key) => [key, store.getState().fetchedAt[key]]));
   setQuota((prev) => {
     const next = { ...prev };
     keys.forEach((key) => {
@@ -23,7 +24,8 @@ export function beginLoading(adapter: QuotaAdapter, store: QuotaStore, keys: str
   const mine = new Map<string, QuotaCardState | undefined>(
     keys.map((key) => [key, getQuotaMap(adapter, store)[key]])
   );
-  return () =>
+  return () => {
+    const given: string[] = [];
     setQuota((prev) => {
       let next = prev;
       keys.forEach((key) => {
@@ -33,7 +35,21 @@ export function beginLoading(adapter: QuotaAdapter, store: QuotaStore, keys: str
         // The reading it replaced comes back, so the other pages keep showing it.
         if (last && last.status !== 'loading') next[key] = last;
         else delete next[key];
+        given.push(key);
       });
       return next;
     });
+    if (given.length === 0) return;
+    // Restoring is not a read: each card keeps the time of the reading it shows, so the 60 s
+    // reuse never takes an old reading for a fresh one.
+    store.setState((state) => {
+      const fetchedAt = { ...state.fetchedAt };
+      given.forEach((key) => {
+        const at = readAt.get(key);
+        if (at === undefined) delete fetchedAt[key];
+        else fetchedAt[key] = at;
+      });
+      return { fetchedAt };
+    });
+  };
 }

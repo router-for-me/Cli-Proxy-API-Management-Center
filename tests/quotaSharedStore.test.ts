@@ -144,6 +144,14 @@ describe('a read cancelled by its view closing', () => {
     expect(store.getState().claudeQuota['b.json']).toBe(reading);
   });
 
+  test('gives the restored reading its own time back, not the time of the release', () => {
+    const { store, adapter } = claudeAdapter();
+    getQuotaSetter(adapter, store)(() => ({ 'a.json': reading }));
+    store.setState({ fetchedAt: { 'a.json': 1_000 } });
+    beginLoading(adapter, store, ['a.json', 'new.json'])();
+    expect(store.getState().fetchedAt).toEqual({ 'a.json': 1_000 });
+  });
+
   test('leaves a newer read of the same card alone (another page, or a cleared cache)', () => {
     const { store, adapter } = claudeAdapter();
     const older = beginLoading(adapter, store, ['a.json']);
@@ -228,6 +236,21 @@ describe('a confirmed reset attempt re-reads that account on the history server'
         body: { accountId: poolSourceAccountId('codex-primary', 'codex', 'codex-1') },
       },
     ]);
+  });
+
+  test('another source session with the same account has its own refresh, not a joined one', async () => {
+    const posts = historyServer();
+    const first = hubs(['claude-primary'], claudeHub);
+    const second = hubs(['claude-primary'], claudeHub);
+    const run = (sessions: ReturnType<typeof hubs>) =>
+      createSourceResetGrants(sessions.captureSource('claude-primary')).operations.run(
+        'work.json',
+        'auth-1',
+        grant.id
+      );
+    await Promise.all([run(first), run(second)]);
+    await flush();
+    expect(posts).toHaveLength(2);
   });
 
   test('Quota Management reloads its pool once the account was re-read', async () => {

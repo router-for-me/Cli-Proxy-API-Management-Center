@@ -25,12 +25,22 @@ export function onPoolAccountRefreshed(reload: () => void): () => void {
 }
 
 type PoolApi = ReturnType<typeof createQuotaPoolApi>;
+/** A number per source session: owner objects are unique per authenticated session. */
+const sessionIds = new WeakMap<SourceOwner, number>();
+let sessions = 0;
+const sessionId = (owner: SourceOwner) => {
+  if (!sessionIds.has(owner)) sessionIds.set(owner, ++sessions);
+  return sessionIds.get(owner);
+};
 const flights = new Map<string, Promise<boolean>>();
 const followUps = new Map<string, ReturnType<typeof setTimeout>>();
 
-/** One targeted read per account at a time (a caller during one joins it); true when it ran. */
-function readOnServer(api: PoolApi, accountId: string): Promise<boolean> {
-  const pending = flights.get(accountId);
+/**
+ * One targeted read per account at a time (a caller during one joins it); true when it ran. Keyed
+ * by the source session as well as the account: another session has its own history connection.
+ */
+function readOnServer(api: PoolApi, scope: string, accountId: string): Promise<boolean> {
+  const pending = flights.get(scope);
   if (pending) return pending;
   const flight = (async () => {
     let read = false;
@@ -41,8 +51,8 @@ function readOnServer(api: PoolApi, accountId: string): Promise<boolean> {
     }
     poolReloads.forEach((reload) => reload());
     return read;
-  })().finally(() => flights.delete(accountId));
-  flights.set(accountId, flight);
+  })().finally(() => flights.delete(scope));
+  flights.set(scope, flight);
   return flight;
 }
 
@@ -61,14 +71,15 @@ export async function refreshPoolAccountAfterReset(
   const index = normalizeAuthIndex(authIndex);
   if (!index) return;
   const accountId = poolSourceAccountId(owner.instanceId, provider, index);
-  if (!(await readOnServer(api, accountId))) return;
+  const scope = JSON.stringify([sessionId(owner), accountId]);
+  if (!(await readOnServer(api, scope, accountId))) return;
   // One follow-up per account: a newer attempt moves it later, never adds a second.
-  clearTimeout(followUps.get(accountId));
+  clearTimeout(followUps.get(scope));
   followUps.set(
-    accountId,
+    scope,
     setTimeout(() => {
-      followUps.delete(accountId);
-      void readOnServer(api, accountId);
+      followUps.delete(scope);
+      void readOnServer(api, scope, accountId);
     }, FOLLOW_UP_DELAY_MS)
   );
 }
