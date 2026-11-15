@@ -6,11 +6,16 @@ import type { SourceSession } from '@/services/api/sourceSession';
 /** Feature state is private to a mounted source view; domain rules stay in the factories. */
 export function createAuthFilesSourceScope(owner: SourceSession) {
   const lease = createSourceLease(owner);
+  const quotaStore = sourceQuotaStore(owner.owner);
   return Object.freeze({
     ...lease,
-    // Shared with every other page of this source session, so closing this view keeps it.
-    quotaStore: sourceQuotaStore(owner.owner),
+    // Shared with every other page of this source session, so closing this view keeps its
+    // finished readings; only the reads it left running are forgotten.
+    quotaStore,
     api: createAuthFilesApi(lease.session),
-    dispose: lease.dispose,
+    dispose: () => {
+      lease.dispose();
+      quotaStore.getState().releaseLoading();
+    },
   });
 }

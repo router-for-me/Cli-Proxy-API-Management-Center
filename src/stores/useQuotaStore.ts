@@ -42,6 +42,12 @@ interface QuotaStoreState {
   setPluginQuota: (updater: QuotaUpdater<Record<string, PluginQuotaState>>) => void;
   setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: (names?: string[]) => void;
+  /**
+   * Forget readings still 'loading' once the view that started them has closed: its requests were
+   * cancelled and can no longer settle, and a card refuses to read again while one is loading.
+   * Finished readings stay for the other pages.
+   */
+  releaseLoading: () => void;
 }
 
 const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
@@ -176,6 +182,35 @@ export const createQuotaStore = (now: () => number = Date.now) =>
           xaiQuota: next,
           fetchedAt: stampReads(state.fetchedAt, state.xaiQuota, next, now),
         };
+      }),
+    releaseLoading: () =>
+      set((state) => {
+        const released = new Set<string>();
+        const settle = <T extends QuotaEntry>(cache: Record<string, T>): Record<string, T> => {
+          const keys = Object.keys(cache).filter((key) => cache[key]!.status === 'loading');
+          if (keys.length === 0) return cache;
+          const next = { ...cache };
+          keys.forEach((key) => {
+            delete next[key];
+            released.add(key);
+          });
+          return next;
+        };
+        const patch = {
+          antigravityQuota: settle(state.antigravityQuota),
+          claudeQuota: settle(state.claudeQuota),
+          codexQuota: settle(state.codexQuota),
+          devinQuota: settle(state.devinQuota),
+          kimiQuota: settle(state.kimiQuota),
+          metaQuota: settle(state.metaQuota),
+          pluginQuota: settle(state.pluginQuota),
+          xaiQuota: settle(state.xaiQuota),
+        };
+        if (released.size === 0) return state;
+        // A dropped key's last read time would otherwise pass for a fresh reading to reuse.
+        const fetchedAt = { ...state.fetchedAt };
+        released.forEach((key) => delete fetchedAt[key]);
+        return { ...patch, fetchedAt };
       }),
     clearQuotaCache: (names) =>
       set((state) => {

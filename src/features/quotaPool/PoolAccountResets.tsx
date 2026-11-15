@@ -252,7 +252,13 @@ function SourceResetAction({
       />
     );
   return provider === 'claude' ? (
-    <ClaudeResetAction {...fact} file={file} session={session} accountId={account.id} />
+    <ClaudeResetAction
+      {...fact}
+      file={file}
+      session={session}
+      source={owner}
+      accountId={account.id}
+    />
   ) : (
     <CodexResetAction
       {...fact}
@@ -272,7 +278,14 @@ type ActionProps = Props & {
   /** A spend from this tab is newer than the server's reading. */
   spent: boolean;
 };
-function ClaudeResetAction({ file, session, accountId, spent, ...fact }: ActionProps) {
+function ClaudeResetAction({
+  file,
+  session,
+  source,
+  accountId,
+  spent,
+  ...fact
+}: ActionProps & { source: SourceSession }) {
   const { t } = useTranslation();
   const scope = useMemo(() => {
     const shared = createSourceResetGrants(session);
@@ -291,10 +304,12 @@ function ClaudeResetAction({ file, session, accountId, spent, ...fact }: ActionP
   }, [session, accountId]);
   // The hook re-reads once when a claim finishes. That read goes into the source's shared quota
   // store, so Auth Files and the Quota page show the claim too; the claim itself already had the
-  // history server re-read this one account (accountSync.ts), never the whole fleet.
-  const store = sourceQuotaStore(session.owner);
-  const adapters = useMemo(() => createQuotaAdapters(session, store), [session, store]);
-  const { refreshQuota } = useQuotaActions(false, store, session);
+  // history server re-read this one account (accountSync.ts), never the whole fleet. The read is
+  // bound to the source session, not this panel's lease: the refreshed pool can drop the panel
+  // (no resets left) while the read is still running, and the other pages still need its result.
+  const store = sourceQuotaStore(source.owner);
+  const adapters = useMemo(() => createQuotaAdapters(source, store), [source, store]);
+  const { refreshQuota } = useQuotaActions(false, store, source);
   const readQuota = useCallback(
     (options?: { force?: boolean }) => void refreshQuota(file, adapters.claude, options),
     [refreshQuota, file, adapters]

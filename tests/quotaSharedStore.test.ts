@@ -124,7 +124,10 @@ describe('one quota store per hub source session', () => {
     const store = sourceQuotaStore(first.owner);
     expect(sourceQuotaStore(sessions.captureSource('codex-primary').owner)).not.toBe(store);
     const adapters = createQuotaAdapters(first, store);
-    getQuotaSetter(adapters.claude, store)(() => ({
+    getQuotaSetter(
+      adapters.claude,
+      store
+    )(() => ({
       'a.json': { status: 'success', windows: [] },
     }));
     sessions.reset();
@@ -151,6 +154,35 @@ describe('one quota store per hub source session', () => {
       expect(source).toContain('sourceQuotaStore(');
       expect(source).not.toContain('createQuotaStore');
     }
+  });
+});
+
+describe('closing a page', () => {
+  test('forgets the reads it left loading, and keeps what finished for the other pages', () => {
+    const sessions = hubs(['claude-primary']);
+    const store = sourceQuotaStore(sessions.captureSource('claude-primary').owner);
+    const state = store.getState();
+    state.setCodexQuota({ 'done.json': { status: 'loading', windows: [] } });
+    state.setCodexQuota((prev) => ({ ...prev, 'done.json': { status: 'success', windows: [] } }));
+    state.setCodexQuota((prev) => ({
+      ...prev,
+      'running.json': { status: 'loading', windows: [] },
+    }));
+    state.setClaudeQuota({ 'running.json': { status: 'loading', windows: [] } });
+    store.setState({ fetchedAt: { ...store.getState().fetchedAt, 'running.json': Date.now() } });
+    store.getState().releaseLoading();
+    const after = store.getState();
+    expect(Object.keys(after.codexQuota)).toEqual(['done.json']);
+    expect(after.claudeQuota).toEqual({});
+    // A forgotten read's time must not pass for a fresh reading that a refresh would reuse.
+    expect(Object.keys(after.fetchedAt)).toEqual(['done.json']);
+  });
+
+  test('the pool panel reads after a claim through the source session, not its own lease', () => {
+    // The refreshed pool can drop the panel (no resets left) while the read still runs.
+    const source = readFileSync('src/features/quotaPool/PoolAccountResets.tsx', 'utf8');
+    expect(source).toContain('createQuotaAdapters(source, store)');
+    expect(source).toContain('useQuotaActions(false, store, source)');
   });
 });
 
@@ -200,7 +232,8 @@ describe('a confirmed reset attempt re-reads that account on the history server'
   test('a Codex reset attempt posts one targeted refresh, even when it was not confirmed', async () => {
     const posts = historyServer();
     const sessions = hubs(['codex-primary'], (config, payload) =>
-      config.url === '/requests/api-call' && payload?.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL
+      config.url === '/requests/api-call' &&
+      payload?.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL
         ? { status_code: 200, body: { code: 'no_credit' } }
         : { status_code: 200, body: {} }
     );
@@ -245,5 +278,28 @@ describe('a confirmed reset attempt re-reads that account on the history server'
     await flush();
     expect(reads).toBe(2);
     stop();
+  });
+  test('the refresh goes to the history server the reset was made against', async () => {
+    const first = historyServer();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slowHub = hubs(['claude-primary'], async (config, payload) => {
+      if (payload?.url?.endsWith('/reset_rate_limits')) await gate;
+      return claudeHub(config, payload);
+    });
+    const running = createSourceResetGrants(slowHub.captureSource('claude-primary')).operations.run(
+      'work.json',
+      'auth-1',
+      grant.id
+    );
+    await flush();
+    // The user switches connection while the claim is in flight.
+    restores.pop()!.mockRestore();
+    const second = historyServer();
+    release();
+    await running;
+    await flush();
+    expect(first).toHaveLength(1);
+    expect(second).toEqual([]);
   });
 });

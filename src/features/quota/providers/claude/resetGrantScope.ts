@@ -6,6 +6,7 @@ import {
 } from '@/services/api/claudeResetGrants';
 import type { SourceOwner, SourceSession } from '@/services/api/sourceSession';
 import { refreshPoolAccountAfterReset } from '@/features/quotaPool/accountSync';
+import { createQuotaPoolApi } from '@/services/api/quotaPool';
 import {
   createResetGrantJournal,
   createResetGrantOperations,
@@ -67,6 +68,7 @@ export function createSourceResetGrants(session: SourceSession): ResetGrantScope
       // Every page claims through here, so a claim re-reads its account on the history server
       // whichever page made it. A refusal before the claim was sent changed nothing.
       run: async (...args: Parameters<typeof operations.run>) => {
+        const history = createQuotaPoolApi();
         let sent = true;
         try {
           return await operations.run(...args);
@@ -74,7 +76,7 @@ export function createSourceResetGrants(session: SourceSession): ResetGrantScope
           if (error instanceof ResetGrantPreflightError) sent = false;
           throw error;
         } finally {
-          if (sent) void refreshPoolAccountAfterReset(session.owner, 'claude', args[1]);
+          if (sent) void refreshPoolAccountAfterReset(session.owner, 'claude', args[1], history);
         }
       },
     },

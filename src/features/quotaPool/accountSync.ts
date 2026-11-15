@@ -22,11 +22,16 @@ export function onPoolAccountRefreshed(reload: () => void): () => void {
 
 const flights = new Map<string, Promise<void>>();
 
-/** Re-read one account on the history server, then reload the pool pages that are open. */
+/**
+ * Re-read one account on the history server, then reload the pool pages that are open. Capture
+ * `api` before the reset is sent: the reply can arrive after the user switched connection, and
+ * the refresh must still go to the history server that reset belongs to.
+ */
 export function refreshPoolAccountAfterReset(
   owner: SourceOwner,
   provider: PoolProviderId,
-  authIndex: unknown
+  authIndex: unknown,
+  api: ReturnType<typeof createQuotaPoolApi>
 ): Promise<void> {
   const index = normalizeAuthIndex(authIndex);
   if (!index) return Promise.resolve();
@@ -35,7 +40,7 @@ export function refreshPoolAccountAfterReset(
   if (pending) return pending;
   const flight = (async () => {
     try {
-      await createQuotaPoolApi().refreshAccount(accountId, new AbortController().signal);
+      await api.refreshAccount(accountId, new AbortController().signal);
     } catch {
       // The reset already happened; the next collection reads the account if this missed.
     }

@@ -8,6 +8,7 @@
 import type { ComponentType } from 'react';
 import type { PoolProviderId } from '@/domain/quotaPool/types';
 import { refreshPoolAccountAfterReset } from '@/features/quotaPool/accountSync';
+import { createQuotaPoolApi } from '@/services/api/quotaPool';
 import type { SourceSession } from '@/services/api/sourceSession';
 import type { QuotaStore as BoundQuotaStore } from '@/stores/useQuotaStore';
 import { createQuotaConfigs } from './scoped';
@@ -72,11 +73,17 @@ function withPoolRefresh(
   reset: (file: AuthFileItem, t: TFunction) => Promise<unknown>
 ): QuotaAdapter['resetQuota'] {
   return async (file, t) => {
+    const history = createQuotaPoolApi();
     try {
       return await reset(file, t);
     } finally {
       // Even if the page was left meanwhile: the attempt happened, and the server is per source.
-      void refreshPoolAccountAfterReset(session.owner, provider, file.auth_index ?? file.authIndex);
+      void refreshPoolAccountAfterReset(
+        session.owner,
+        provider,
+        file.auth_index ?? file.authIndex,
+        history
+      );
     }
   };
 }
