@@ -23,8 +23,17 @@ export function isBulkJobClientToken(value: unknown): value is string {
     !/[^A-Za-z0-9_-]/.test(value)
   );
 }
+/** The kinds that read the CPAMP file; a retired CPAMP refuses them all. */
+export const CPAMP_JOB_KINDS: readonly BulkJobKind[] = ['import', 'reconcile', 'verify'];
+export const CPAMP_RETIRED_ERROR = 'CPAMP retired';
+/** The one switch for the retired mode: set in the prox-usage quadlet, read by every consumer. */
+export const cpampRetiredFromEnv = (): boolean => process.env.PROX_USAGE_CPAMP_RETIRED === '1';
 export interface BulkJobConfig {
   cpampPath?: string;
+  /** Open the CPAMP file with SQLite's immutable=1; only for a stopped CPAMP (see RULES.md). */
+  cpampImmutable?: boolean;
+  /** Overrides PROX_USAGE_CPAMP_RETIRED. */
+  cpampRetired?: boolean;
   backupConfigPath?: string;
   bytesPerSecond?: number;
 }
@@ -83,8 +92,9 @@ export interface ExporterConfig {
 export const ROLLUP_BACKFILL_BUSY_ERROR = 'Rollup backfill in progress';
 /** Only explicitly safe command errors cross the worker and HTTP boundaries. */
 export function bulkJobFailureMessage(error: unknown): string {
-  return error instanceof Error && error.message === ROLLUP_BACKFILL_BUSY_ERROR
-    ? ROLLUP_BACKFILL_BUSY_ERROR
+  return error instanceof Error &&
+    (error.message === ROLLUP_BACKFILL_BUSY_ERROR || error.message === CPAMP_RETIRED_ERROR)
+    ? error.message
     : 'Bulk job unavailable or ID differs';
 }
 export interface RollupBackfillReport {

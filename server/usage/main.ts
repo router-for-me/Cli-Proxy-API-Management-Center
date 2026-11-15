@@ -3,6 +3,7 @@ import { loadSourceManifest } from '../providerSources/config';
 import { UsageCollector } from './collector';
 import { UsageWriter } from './writer';
 import { createUsageStatusHandler } from './status';
+import { cpampRetiredFromEnv } from './writerProtocol';
 import { createAnalyticsHandler, ANALYTICS_PATHS } from './handler';
 import { EventLoopLagStats, startEventLoopLagProbe } from '../eventLoopLag';
 
@@ -43,6 +44,7 @@ const statusHandler = createUsageStatusHandler({
   jobs: writer,
   exporter: () => writer.exporterSnapshot(),
   eventLoop: () => eventLoopLag.snapshot(),
+  cpampRetired: cpampRetiredFromEnv(),
   healthy: () => healthy,
 });
 const server = Bun.serve({

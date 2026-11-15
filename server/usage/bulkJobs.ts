@@ -3,9 +3,17 @@ import { loadBackupConfig, UsageBackup } from './backup';
 import { runCpampJob } from './importCpamp';
 import type { RollupWriteResult } from './rollup';
 import { IoGovernor, runIoChunk, type ChunkScheduler, type IoGovernorOptions } from './ioGovernor';
-import { openUsageReader, type RawPruneCursor, type UsageStore } from './store';
+import {
+  CPAMP_SOURCE_NOT_QUIET,
+  openCpampSource,
+  type RawPruneCursor,
+  type UsageStore,
+} from './store';
 import {
   BULK_JOB_KINDS,
+  CPAMP_JOB_KINDS,
+  CPAMP_RETIRED_ERROR,
+  cpampRetiredFromEnv,
   ROLLUP_BACKFILL_BUSY_ERROR,
   type RollupBackfillReport,
   isBulkJobClientToken,
@@ -112,6 +120,9 @@ export class UsageBulkJobs {
   start(kind: BulkJobKind, clientToken?: string): BulkJobReport {
     if (clientToken !== undefined && !isBulkJobClientToken(clientToken))
       throw new Error('Invalid client token');
+    // A retired CPAMP is a fixed refusal; its file and port are never touched again.
+    if ((this.config.cpampRetired ?? cpampRetiredFromEnv()) && CPAMP_JOB_KINDS.includes(kind))
+      throw new Error(CPAMP_RETIRED_ERROR);
     if (this.closing || this.active) throw new Error('Bulk job unavailable');
     if (this.rollupBackfill) throw new Error(ROLLUP_BACKFILL_BUSY_ERROR);
     this.ioBase = this.governor?.counters ?? {
@@ -243,7 +254,7 @@ export class UsageBulkJobs {
   }
 
   private async run(kind: BulkJobKind, signal: AbortSignal): Promise<void> {
-    let source: ReturnType<typeof openUsageReader> | undefined;
+    let source: ReturnType<typeof openCpampSource> | undefined;
     const report = this.latest!;
     try {
       this.governor = this.getGovernor();
@@ -277,10 +288,12 @@ export class UsageBulkJobs {
       } else {
         const path = this.config.cpampPath ?? process.env.PROX_USAGE_CPAMP_DB_PATH;
         if (!path) throw new Error('CPAMP source not configured');
+        const immutable =
+          this.config.cpampImmutable ?? process.env.PROX_USAGE_CPAMP_IMMUTABLE === '1';
         await runIoChunk(
           kind,
           () => {
-            source = openUsageReader(path);
+            source = openCpampSource(path, immutable);
           },
           options
         );
@@ -297,11 +310,15 @@ export class UsageBulkJobs {
       }
       signal.throwIfAborted();
       report.state = 'succeeded';
-    } catch {
+    } catch (error) {
       report.state = signal.aborted ? 'cancelled' : 'failed';
-      // SQLite paths and S3 credentials/errors must never reach HTTP or logs.
+      // SQLite paths and S3 credentials/errors must never reach HTTP or logs. The one exception is
+      // the fixed text that tells the operator the immutable open refused a CPAMP that is not quiet.
       if (!signal.aborted)
-        report.error = 'Usage bulk job failed; check job configuration and source';
+        report.error =
+          error instanceof Error && error.message === CPAMP_SOURCE_NOT_QUIET
+            ? CPAMP_SOURCE_NOT_QUIET
+            : 'Usage bulk job failed; check job configuration and source';
     } finally {
       // Later governed chunks (rollup backfill, the next job) must not change a finished report.
       report.io = this.ioSince(this.ioBase!);

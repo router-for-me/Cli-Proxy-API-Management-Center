@@ -14,6 +14,13 @@ Volume=%h/.config/cli-proxy-rerank/management-key:/run/secrets/proxy-management-
 # until the off-pool target exists, and a backup job fails cleanly without it.
 Volume=%h/.local/share/cpa-manager-plus:/cpamp:ro
 Environment=PROX_USAGE_CPAMP_DB_PATH=/cpamp/usage.sqlite
+# The one switch for a retired CPAMP: import/reconcile/verify are refused, /v1/status and
+# /v1/exporter report cpamp_retired, and the nightly chain (which reads it from /v1/status) skips
+# the CPAMP guard, reconcile and parity. Flip to 1 only after the final reconcile (docs/PROX-SETUP.md).
+Environment=PROX_USAGE_CPAMP_RETIRED=0
+# 1 only for that final reconcile of a stopped CPAMP through this :ro mount: SQLite's immutable=1
+# open, which refuses a non-empty -wal, any -shm and any -journal. Back to 0 afterwards.
+Environment=PROX_USAGE_CPAMP_IMMUTABLE=0
 Volume=%h/.config/prox-usage:/config:ro
 Environment=PROX_USAGE_BACKUP_CONFIG=/config/backup.json
 Environment=PROX_USAGE_CLIENT_ALIASES_PATH=/config/client-aliases.json

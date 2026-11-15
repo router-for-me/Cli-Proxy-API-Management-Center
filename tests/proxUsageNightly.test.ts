@@ -43,6 +43,8 @@ function fixture(
     postDelay?: number;
     parityExit?: number;
     cpamp?: object[] | 'down';
+    // The body prox-usage answers GET /v1/status with; an old server has no cpamp_retired.
+    status?: object;
     busy?: number;
     busyError?: string;
     // Advance the clock by this much as the third gated call (the first retry) waits.
@@ -69,12 +71,17 @@ function fixture(
     finishedAtMs: number | null;
   } | null = null;
   let polls = 0;
+  let statusReads = 0;
   const server = Bun.serve({
     hostname: '127.0.0.1',
     port: 0,
     async fetch(request) {
       expect(request.headers.get('authorization')).toBe('Bearer synthetic-nightly-key');
       const path = new URL(request.url).pathname;
+      if (path === '/v1/status') {
+        statusReads += 1;
+        return Response.json(options.status ?? { sources: [], writer: {} });
+      }
       if (path === '/v1/jobs/cancel') {
         expect(await request.json()).toEqual({ jobId: job?.id, clientToken: job?.clientToken });
         calls.push('cancel');
@@ -123,7 +130,8 @@ function fixture(
   const gated = gate.run.bind(gate);
   let gateCalls = 0;
   gate.run = (fn) => {
-    if (++gateCalls === 3) now += options.stall ?? 0;
+    // Status read, CPAMP guard, first submit, then the first retry's wait.
+    if (++gateCalls === 4) now += options.stall ?? 0;
     return gated(fn);
   };
   const run = () =>
@@ -150,7 +158,15 @@ function fixture(
         },
       }
     );
-  return { run, calls, tokens, submits, cpamp, elapsed: () => now - start };
+  return {
+    run,
+    calls,
+    tokens,
+    submits,
+    cpamp,
+    statusReads: () => statusReads,
+    elapsed: () => now - start,
+  };
 }
 test('nightly chain waits for terminal success and cleanup before every subsequent step', async () => {
   const f = fixture({ backup: true, unfinishedSuccess: true });
@@ -298,6 +314,7 @@ for (const stop of ['noon', 'interrupt', 'broken-response'] as const) {
       async fetch(request) {
         expect(request.headers.get('authorization')).toBe('Bearer synthetic-key');
         const path = new URL(request.url).pathname;
+        if (path === '/v1/status') return Response.json({});
         if (path === '/v1/jobs/cancel') {
           expect(await request.json()).toEqual({ jobId: 71, clientToken: job.clientToken });
           calls.push('cancel');
@@ -383,6 +400,7 @@ test('ambiguous recovery never cancels newer operator jobs without the exact tok
       hostname: '127.0.0.1',
       port: 0,
       async fetch(request) {
+        if (new URL(request.url).pathname === '/v1/status') return Response.json({});
         if (new URL(request.url).pathname.endsWith('/cancel')) {
           calls.push('cancel');
           return Response.json({});
@@ -553,6 +571,51 @@ test('an unreachable or unauthorized CPAMP fails before any job', async () => {
   });
   expect(denied.calls).toEqual([]);
 });
+test('a retired CPAMP skips guard, reconcile and parity, records the skip, and succeeds', async () => {
+  const f = fixture({ status: { cpamp_retired: true } });
+  // Any read of the admin key or call to CPAMP would now fail the night.
+  rmSync(f.cpamp.keyFile);
+  const report = await f.run();
+  expect(report).toMatchObject({
+    status: 'succeeded',
+    completed: ['prune'],
+    cpamp: { retired: true, skipped: ['guard', 'reconcile', 'parity'] },
+  });
+  expect(report.error).toBeUndefined();
+  expect(f.calls).toEqual(['start-prune', 'poll-prune']);
+  expect(f.cpamp.requests).toEqual([]);
+  expect(f.statusReads()).toBe(1);
+  expect(JSON.parse(JSON.stringify(report)).cpamp).toEqual({
+    retired: true,
+    skipped: ['guard', 'reconcile', 'parity'],
+  });
+});
+test('a retired CPAMP still runs the backup when it is enabled, and failures still fail', async () => {
+  const backup = fixture({ status: { cpamp_retired: true }, backup: true });
+  expect(await backup.run()).toMatchObject({
+    status: 'succeeded',
+    backup: 'completed',
+    completed: ['prune', 'backup'],
+    cpamp: { retired: true },
+  });
+  const failed = fixture({ status: { cpamp_retired: true }, fail: 'prune' });
+  expect(await failed.run()).toMatchObject({
+    status: 'failed',
+    completed: [],
+    cpamp: { retired: true },
+  });
+});
+test('only an explicit true retires CPAMP; an old server without the field runs the guard', async () => {
+  for (const status of [{}, { cpamp_retired: false }, { cpamp_retired: 'true' }, { cpamp_retired: 1 }]) {
+    const f = fixture({ status });
+    expect(await f.run()).toMatchObject({
+      status: 'succeeded',
+      completed: ['prune', 'reconcile', 'parity'],
+      cpamp: { ok: true },
+    });
+    expect(f.cpamp.requests).toEqual(['/status Bearer synthetic-cpamp-key']);
+  }
+});
 test('I/O-gate waits cannot push a backfill retry past the 15-minute bound', async () => {
   const f = fixture({ busy: Infinity, stall: 16 * 60000 });
   expect(await f.run()).toMatchObject({
@@ -580,6 +643,7 @@ test('a refusal from an earlier attempt is not reported when a later submit need
     hostname: '127.0.0.1',
     port: 0,
     async fetch(request) {
+      if (new URL(request.url).pathname === '/v1/status') return Response.json({});
       if (new URL(request.url).pathname.endsWith('/cancel')) {
         calls.push('cancel');
         return Response.json({});

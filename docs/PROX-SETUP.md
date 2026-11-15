@@ -322,8 +322,9 @@ answers 409 `Rollup backfill in progress`; the chain retries only that refusal
 every 30 s for up to 15 minutes (new token each attempt, still inside the noon
 cutoff) and reports the `attempts` count. Any other 409, such as an active bulk
 job, is not retried, and giving up keeps `refused: {kind, status}`.
-Before any job, the chain reads CPAMP's `/status` (port 18317) with the key in
-`~/.config/prox/cpa-admin-key` and fails the night, starting nothing, with
+Unless prox-usage reports `cpamp_retired: true` on `GET /v1/status` (see "Retiring
+CPA-Manager-Plus" below), before any job the chain reads CPAMP's `/status` (port 18317)
+with the key in `~/.config/prox/cpa-admin-key` and fails the night, starting nothing, with
 `cpamp: {ok: false, collectors}` unless every collector (at least two) reports
 transport `subscribe` and state `running`, or if CPAMP is unreachable. A polling
 CPAMP would otherwise lose history silently. The nightly runs as the same user,
@@ -343,3 +344,42 @@ unit and enable link, then reloads systemd; missing timers are tolerated, manage
 failures stop deployment. The sole nightly timer remains disabled. `prox-usage-job@.service` and `prox-usage-parity.service` remain for
 manual use. The deployment script copies templates without enabling them; this
 change installs, enables and runs no live maintenance unit.
+
+## Retiring CPA-Manager-Plus (Step G runbook)
+
+`PROX_USAGE_CPAMP_RETIRED` in `deploy/prox-usage.container` is the single switch. While it is
+`0`, nothing changes. At `1`, prox-usage refuses `import`, `reconcile` and `verify` (409 `CPAMP
+retired`) and reports `cpamp_retired: true` on `/v1/status` and `/v1/exporter`; the nightly chain
+reads that field, skips the CPAMP guard, reconcile and parity, never reads
+`~/.config/prox/cpa-admin-key` or contacts port 18317, and prints
+`"cpamp":{"retired":true,"skipped":["guard","reconcile","parity"]}` with status `succeeded`.
+A retired night is healthy; a failed one still has `"status":"failed"`.
+
+The final reconcile must happen before the switch, because retired mode refuses it. The `:ro`
+mount cannot create the `-shm` a read-only open of CPAMP's WAL database needs, so the final
+reconcile opens the stopped file with SQLite's `immutable=1` (`PROX_USAGE_CPAMP_IMMUTABLE=1`).
+immutable=1 ignores the `-wal`, so the open refuses a non-empty `-wal`, any `-shm` and any `-journal`.
+
+1. `systemctl --user stop cpa-manager-plus`, then mask the unit.
+2. Confirm nothing holds the file: `fuser ~/.local/share/cpa-manager-plus/usage.sqlite*` and
+   `lsof ~/.local/share/cpa-manager-plus/usage.sqlite*` print nothing.
+3. Confirm `ls -l ~/.local/share/cpa-manager-plus/usage.sqlite*` shows no `-shm` and no `-journal`
+   and no `-wal`, or an empty `-wal`. If either remains, with nothing holding the file run
+   `sqlite3 ~/.local/share/cpa-manager-plus/usage.sqlite 'PRAGMA wal_checkpoint(TRUNCATE)'` on
+   the host (this rewrites the file, so take its cold copy first) and check again.
+4. Set `PROX_USAGE_CPAMP_IMMUTABLE=1` in `deploy/prox-usage.container`, deploy, then run
+   `systemctl --user restart prox-usage.service`. The deploy script restarts it only when its
+   JavaScript bundle changed, so a quadlet-only change needs this explicit restart.
+5. Start `systemctl --user start prox-usage-job@reconcile.service`, then read the result with
+   `printf 'Authorization: Bearer %s\n' "$(cat ~/.config/cli-proxy-rerank/management-key)" | curl -sS --header @- http://127.0.0.1:18320/v1/jobs`.
+6. Accept only `state: "succeeded"` with `result.report.verification.exact: true` and
+   `result.report.conflicts: 0`. An error `CPAMP source is not quiet: -wal, -shm or -journal present`
+   means go back to step 3. Anything else stops the retirement; CPAMP can be unmasked and started.
+7. Set `PROX_USAGE_CPAMP_RETIRED=1` and `PROX_USAGE_CPAMP_IMMUTABLE=0` in the quadlet, deploy, run
+   `systemctl --user restart prox-usage.service` (same reason as step 4), and check `/v1/status`
+   shows `cpamp_retired: true`. Until it does, the nightly still runs the CPAMP guard.
+8. The next night's journal JSON carries the `retired` skip record and `status: succeeded`.
+
+Step H (separate change) removes the `/cpamp` mount and `PROX_USAGE_CPAMP_DB_PATH` from the
+quadlet and the CPAMP-only scripts. The mount stays until then because the final reconcile above
+needs it. Alert rules must stop requiring `reconcile` outcomes once `cpamp_retired` is true.

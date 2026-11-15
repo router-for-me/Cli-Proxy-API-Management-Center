@@ -763,6 +763,27 @@ started. An unreachable, unauthorized or malformed status is the same failure wi
 empty `collectors`. The report copies only a closed vocabulary of these three
 fields, never CPAMP text. A failed night is never clean for the two-clean-nights
 gate. The check is once at chain start, not a monitor.
+
+**Retired CPAMP.** `PROX_USAGE_CPAMP_RETIRED=1` in the prox-usage quadlet is the only switch.
+The server then refuses `import`, `reconcile` and `verify` with the fixed error `CPAMP retired`
+(409) before opening anything, and `GET /v1/status` and `GET /v1/exporter` report
+`cpamp_retired: true` (always a boolean; `false` when unset). Retirement is a flag, not a source:
+`sources` still lists only the proxies, so no consumer sees a failing CPAMP source. The nightly
+chain reads `cpamp_retired` from its first `GET /v1/status` (one switch, no second copy to drift)
+and only an explicit `true` counts, so a server without the field keeps today's guard. When
+retired it runs prune (and backup when enabled), never reads the admin key or contacts port
+18317, and reports `cpamp: {retired: true, skipped: ["guard","reconcile","parity"]}` with status
+`succeeded`; any failed step still fails the night. The exporter's `jobs.reconcile` outcome goes
+stale by design; alert rules must stop requiring it when `cpamp_retired` is true.
+
+**Final reconcile of a stopped CPAMP.** Stopped CPAMP files are read through the `:ro` mount, which
+cannot create the `-shm` a read-only WAL open needs. `PROX_USAGE_CPAMP_IMMUTABLE=1` opens the source
+with `file:...?immutable=1` instead (Bun needs the numeric `SQLITE_OPEN_READONLY|SQLITE_OPEN_URI`
+flags; its string form rejects URIs). immutable=1 takes no locks and ignores `-wal`, so frames left
+in it would be skipped silently: the open therefore refuses with the fixed job error
+`CPAMP source is not quiet: -wal, -shm or -journal present` when `-shm` or `-journal` exists or `-wal` is
+non-empty. A symlinked path is resolved first, since SQLite looks for the sidecars beside the real file.
+
 The oneshot has `TimeoutStartSec=7h40min`; parity has a 5h30min cap and
 absolute noon deadline. The standalone parity service keeps `RuntimeMaxSec=5h30min`.
 The old independent prune/reconcile/backup/parity timers are removed from shipping;

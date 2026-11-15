@@ -40,7 +40,11 @@ export interface NightlyReport {
   status: 'succeeded' | 'failed' | 'incomplete';
   completed: string[];
   backup: 'skipped' | 'pending' | 'completed';
-  cpamp?: { ok: boolean; collectors: CpampCollector[] };
+  // `retired` is prox-usage's own report (GET /v1/status cpamp_retired); the skips are deliberate,
+  // so a night with this field and status "succeeded" is a healthy retired night, not a failure.
+  cpamp?:
+    | { retired?: false; ok: boolean; collectors: CpampCollector[] }
+    | { retired: true; skipped: string[] };
   // Submit POSTs per kind, counting backfill-busy retries.
   attempts: Partial<Record<JobKind, number>>;
   cancellation?: 'requested' | 'unconfirmed';
@@ -208,24 +212,36 @@ export async function runNightly(
       throw new Error('Invalid poll interval');
     key = readFileSync(options.keyFile, 'utf8').trim();
     if (!key) throw new Error('Empty nightly credential');
-    // A polling CPAMP would silently lose history once Prox holds the subscription.
-    report.cpamp = { ok: false, collectors: [] };
-    try {
-      report.cpamp.collectors = await gate.run(() =>
-        readCpampCollectors(options.cpamp, window.signal)
-      );
-    } catch {
-      throw new Error('CPAMP status unreachable');
+    // prox-usage alone says whether CPAMP is retired, so no second switch can disagree with it.
+    // Only an explicit true retires it; an older server without the field keeps the guard.
+    let retired = false;
+    await gate.run(async () => {
+      retired =
+        ((await request('/v1/status')) as { cpamp_retired?: unknown } | null)?.cpamp_retired ===
+        true;
+    });
+    if (retired) {
+      // Nothing below touches CPAMP: no port, no admin key, no reconcile, no parity against it.
+      report.cpamp = { retired: true, skipped: ['guard', 'reconcile', 'parity'] };
+    } else {
+      // A polling CPAMP would silently lose history once Prox holds the subscription.
+      const guard = { ok: false, collectors: [] as CpampCollector[] };
+      report.cpamp = guard;
+      try {
+        guard.collectors = await gate.run(() => readCpampCollectors(options.cpamp, window.signal));
+      } catch {
+        throw new Error('CPAMP status unreachable');
+      }
+      guard.ok =
+        guard.collectors.length >= CPAMP_COLLECTORS &&
+        guard.collectors.every(
+          (collector) => collector.transport === 'subscribe' && collector.state === 'running'
+        );
+      if (!guard.ok) throw new Error('CPAMP collectors are not all subscribed');
     }
-    report.cpamp.ok =
-      report.cpamp.collectors.length >= CPAMP_COLLECTORS &&
-      report.cpamp.collectors.every(
-        (collector) => collector.transport === 'subscribe' && collector.state === 'running'
-      );
-    if (!report.cpamp.ok) throw new Error('CPAMP collectors are not all subscribed');
     for (const kind of [
       'prune',
-      'reconcile',
+      ...(retired ? [] : ['reconcile']),
       ...(options.backupEnabled ? ['backup'] : []),
     ] as JobKind[]) {
       window.check();
@@ -306,15 +322,17 @@ export async function runNightly(
       active = undefined;
     }
     window.check();
-    const exit = await (dependencies.parity ?? parityProcess)(deadline, window.signal);
-    window.check();
-    if (exit === 2) {
-      report.status = 'incomplete';
-      report.error = 'Nightly parity stopped with incomplete evidence';
-      return report;
+    if (!retired) {
+      const exit = await (dependencies.parity ?? parityProcess)(deadline, window.signal);
+      window.check();
+      if (exit === 2) {
+        report.status = 'incomplete';
+        report.error = 'Nightly parity stopped with incomplete evidence';
+        return report;
+      }
+      if (exit !== 0) throw new Error('Nightly parity did not pass');
+      report.completed.push('parity');
     }
-    if (exit !== 0) throw new Error('Nightly parity did not pass');
-    report.completed.push('parity');
     report.status = 'succeeded';
   } catch {
     report.status = window.signal.reason instanceof IncompleteRun ? 'incomplete' : 'failed';
@@ -325,7 +343,7 @@ export async function runNightly(
         : report.refused
           ? `Nightly ${report.refused.kind} admission refused (HTTP ${report.refused.status})` +
             (attempts && attempts > 1 ? ` after ${attempts} attempts` : '')
-          : report.cpamp && !report.cpamp.ok
+          : report.cpamp && !report.cpamp.retired && !report.cpamp.ok
             ? report.cpamp.collectors.length
               ? 'CPAMP collectors are not all subscribed; no job started'
               : 'CPAMP status unreachable; no job started'

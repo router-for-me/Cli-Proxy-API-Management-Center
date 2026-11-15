@@ -56,8 +56,11 @@ export function createUsageStatusHandler(options: {
   exporter?: () => Promise<NonNullable<WriterStatus['exporter']>>;
   /** Main-thread event-loop lag since start; absent in tests that do not wire a probe. */
   eventLoop?: () => EventLoopLagSnapshot;
+  /** PROX_USAGE_CPAMP_RETIRED: CPAMP is gone on purpose. A flag, never a failing source. */
+  cpampRetired?: boolean;
   now?: () => number;
 }): (request: Request) => Promise<Response> {
+  const cpamp_retired = options.cpampRetired === true;
   return async (request) => {
     const path = new URL(request.url).pathname;
     const json = (body: unknown, status = 200) =>
@@ -97,6 +100,7 @@ export function createUsageStatusHandler(options: {
                 },
               }
             : {}),
+          cpamp_retired,
           sources: options.sources().map((source) => ({
             instance: source.instance,
             state: source.state,
@@ -117,6 +121,7 @@ export function createUsageStatusHandler(options: {
         if (path === '/v1/jobs') return json({ job });
         const { rollup, ...writer } = options.writer();
         return json({
+          cpamp_retired,
           sources: options.sources(),
           writer: { ...writer, job },
           ...(options.eventLoop ? { eventLoop: options.eventLoop() } : {}),
