@@ -11,7 +11,7 @@ import {
   statSync,
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { INGEST } from './types';
+import { EVENT_DIMENSIONS, INGEST } from './types';
 import type { ExporterEvent } from './exporter';
 import { gzipSync } from 'node:zlib';
 import {
@@ -36,32 +36,20 @@ import type {
   SanitizedPayload,
 } from './types';
 
-/** The one mapping from event dictionary columns to their owning dimension kind. */
-const EVENT_DIMENSIONS: Record<string, DimKind> = {
-  instance_id: 'instance',
-  provider_id: 'provider',
-  model_id: 'model',
-  requested_model_id: 'model',
-  billing_model_id: 'model',
-  response_model_id: 'model',
-  tier_id: 'tier',
-  timing_id: 'timing',
-  account_id: 'account',
-  account_label_id: 'account_label',
-  api_key_id: 'api_key',
-  user_agent_id: 'user_agent',
-  client_ip_id: 'client_ip',
-  path_id: 'path',
-  method_id: 'method',
-  effort_id: 'effort',
-  executor_id: 'executor',
-  requested_tier_id: 'tier',
-  effective_tier_id: 'tier',
-  auth_index_id: 'auth_index',
-  auth_file_id: 'auth_file',
-};
+/** Search fields that are dictionary ids on `events`, NULL on rows that predate them. */
+const FILLABLE_IDS = [
+  'auth_file_id',
+  'endpoint_id',
+  'x_forwarded_for_id',
+  'source_id',
+  'auth_provider_id',
+  'auth_project_id',
+  'quota_plan_id',
+  'error_kind_id',
+  'error_code_id',
+];
 /** The only stored fields a later CPAMP pass may fill: they are NULL on rows that predate them. */
-const FILLABLE_FIELDS = ['auth_file_id', 'header_trace_id', 'fail_summary'];
+const FILLABLE_FIELDS = [...FILLABLE_IDS, 'header_trace_id', 'fail_summary'];
 
 export type ImportValues = Record<string, string | number | null>;
 export interface RawPruneCursor {
@@ -128,6 +116,14 @@ const EVENT_COLUMNS = [
   'session_id',
   'auth_index_id',
   'auth_file_id',
+  'endpoint_id',
+  'x_forwarded_for_id',
+  'source_id',
+  'auth_provider_id',
+  'auth_project_id',
+  'quota_plan_id',
+  'error_kind_id',
+  'error_code_id',
   'ingest',
 ] as const;
 const DETAIL_COLUMNS = [
@@ -710,10 +706,12 @@ export class UsageStore {
   }
 
   private fillSearchField(stored: ImportValues, field: string, value: string): number {
-    if (field === 'auth_file_id') {
+    if (FILLABLE_IDS.includes(field)) {
+      // `field` is one of the constant names above, never input.
       return this.db
-        .query('UPDATE events SET auth_file_id = ? WHERE ts_ms = ? AND seq = ? AND auth_file_id IS NULL')
-        .run(this.dim('auth_file', value), Number(stored.ts_ms), Number(stored.seq)).changes;
+        .query(`UPDATE events SET ${field} = ? WHERE ts_ms = ? AND seq = ? AND ${field} IS NULL`)
+        .run(this.dim(EVENT_DIMENSIONS[field], value), Number(stored.ts_ms), Number(stored.seq))
+        .changes;
     }
     return this.db
       .query(`UPDATE event_detail SET ${field} = ? WHERE seq = ? AND ${field} IS NULL`)
@@ -854,6 +852,14 @@ export class UsageStore {
         : (event.session?.uuid ?? null),
       auth_index_id: event.authIndex,
       auth_file_id: event.authFile,
+      endpoint_id: event.endpoint,
+      x_forwarded_for_id: event.xForwardedFor,
+      source_id: event.source,
+      auth_provider_id: event.authProvider,
+      auth_project_id: event.authProject,
+      quota_plan_id: event.quotaPlan,
+      error_kind_id: event.errorKind,
+      error_code_id: event.errorCode,
       ingest,
     };
     if (intern) {

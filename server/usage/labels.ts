@@ -42,8 +42,23 @@ export class CredentialLabels {
           const label = text(entry.label);
           // The backend omits account for API keys. Also guard it here: it can be a raw key.
           const account = entry.account_type === 'api_key' ? '' : text(entry.account);
-          // The listing's file name is what CPAMP records as the credential file snapshot.
-          if (index) next.set(index, { account: account || label || index, label, file: text(entry.name) });
+          // The listing's file name, provider and project are what CPAMP records as the credential
+          // file, provider and project snapshots (collector/auth_snapshot.go). Its provider is
+          // lowercase with '_' as '-', and x-ai and grok are xai.
+          const provider = (text(entry.provider) || text(entry.type)).toLowerCase().replace(/_/g, '-');
+          const project =
+            [entry.project_id, entry.projectId, entry.gemini_virtual_project, entry.geminiVirtualProject]
+              .map(text)
+              .find(Boolean) ?? '';
+          if (index) {
+            next.set(index, {
+              account: account || label || index,
+              label,
+              file: text(entry.name),
+              provider: provider === 'x-ai' || provider === 'grok' ? 'xai' : provider,
+              project,
+            });
+          }
         }
         this.labels = next;
       })

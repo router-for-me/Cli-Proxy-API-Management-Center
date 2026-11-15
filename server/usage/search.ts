@@ -5,7 +5,13 @@ import { sanitizeCredentialText } from './credentialText';
 import { estimateRequestCost } from './pricing';
 import { analyticsModel, failSummaryFromBody, scrubTraceId } from './normalize';
 import type { RateBook } from './rates';
-import { RECORD_KIND, USAGE_FLAG, type EventTokens, type RecordKindCode } from './types';
+import {
+  EVENT_DIMENSIONS,
+  RECORD_KIND,
+  USAGE_FLAG,
+  type EventTokens,
+  type RecordKindCode,
+} from './types';
 import type { UsageAnalyticsQuery } from './validate';
 
 export interface Dimension {
@@ -37,7 +43,28 @@ const SEARCH_DIMS = [
   'effort_id',
   'executor_id',
   'auth_file_id',
+  // CPAMP's endpoint, forwarded-for, source, credential provider and project, quota plan and
+  // header error kind and code. Dictionary ids like the rest, so a term costs one integer test.
+  'endpoint_id',
+  'x_forwarded_for_id',
+  'source_id',
+  'auth_provider_id',
+  'auth_project_id',
+  'quota_plan_id',
+  'error_kind_id',
+  'error_code_id',
 ];
+/**
+ * Dictionary fields Prox searches that CPAMP's document does not hold (it has the credential's
+ * provider, not the record's, no response model and only the effective tier). Prox returns
+ * events here that CPAMP does not; parity evidence uses the list to explain them.
+ */
+export const PROX_ONLY_SEARCH_DIMS = [
+  'provider_id',
+  'response_model_id',
+  'requested_tier_id',
+  'effective_tier_id',
+] as const;
 /** Fields CPAMP's search document holds that Prox keeps as event_detail text. */
 const DOCUMENT_TEXT = ['header_trace_id', 'fail_summary'];
 const SEARCH_IDS = [
@@ -87,11 +114,19 @@ export function queryFilter(
   const term = q.search?.trim().toLowerCase();
   if (term) {
     // Match CPAMP's SQL LIKE semantics, including % and _ wildcards and ASCII SQL lower().
-    const matching = db
-      .query<{ id: number }, [string]>('SELECT id FROM dim WHERE lower(value) LIKE ?')
-      .all(`%${term}%`)
-      .map((row) => row.id);
-    const clauses = SEARCH_DIMS.map((column) => `e.${column} IN (${matching.join(',') || 'NULL'})`);
+    const matching = new Map<string, number[]>();
+    for (const row of db
+      .query<{ id: number; kind: string }, [string]>(
+        'SELECT id, kind FROM dim WHERE lower(value) LIKE ?'
+      )
+      .all(`%${term}%`))
+      (matching.get(row.kind) ?? matching.set(row.kind, []).get(row.kind)!).push(row.id);
+    // A column holds only ids of its own kind, so it is tested only against those: a term that
+    // matches nothing of a kind costs no per-row test of the columns of that kind.
+    const clauses = SEARCH_DIMS.flatMap((column) => {
+      const ids = matching.get(EVENT_DIMENSIONS[column]);
+      return ids ? [`e.${column} IN (${ids.join(',')})`] : [];
+    });
     // Long identifiers try indexed exact lookups first, but substring matches remain included.
     // Every detail lookup is joined from events inside the requested range; no global detail scan.
     if (term.length >= 16) {

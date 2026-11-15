@@ -78,6 +78,8 @@ describe('usage collector with an in-process proxy', () => {
       label: 'Test account',
       account: 'test@example.test',
       file: 'test-account.json',
+      provider: '',
+      project: '',
     });
     env.proxy.emit(usagePayload({ execution_id: 'live-event' }));
     await eventually(() => env.items.length === 2);

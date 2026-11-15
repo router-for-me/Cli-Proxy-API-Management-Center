@@ -180,7 +180,9 @@ try {
     // About 34k/day live ingest is 0.4/s; use 4/s while measuring for a conservative check.
     store.insert([{ event: makeEvent(inserted++, BASE + 30 * 86400000 - 1), raw: null }], 0);
   }, 250);
-  const request = (days: number, granularity: 'day' | 'hour') =>
+  // `--search <term>` (repeatable) measures 30-day searches for those terms instead of the views.
+  const searches = process.argv.flatMap((arg, i) => (arg === '--search' ? [process.argv[i + 1]] : []));
+  const request = (days: number, granularity: 'day' | 'hour', search?: string) =>
     new Request('http://127.0.0.1/v1/analytics', {
       method: 'POST',
       headers: { authorization: 'Bearer synthetic-benchmark-key' },
@@ -191,13 +193,17 @@ try {
         granularity,
         outcome: 'all',
         limit: 100,
+        ...(search ? { search } : {}),
       }),
     });
-  for (const [days, granularity] of [
-    [1, 'hour'],
-    [30, 'day'],
-    [30, 'hour'],
-  ] as const) {
+  const views: readonly (readonly [number, 'day' | 'hour', string?])[] = searches.length
+    ? searches.map((term) => [30, 'day', term] as const)
+    : [
+        [1, 'hour'],
+        [30, 'day'],
+        [30, 'hour'],
+      ];
+  for (const [days, granularity, search] of views) {
     if (process.argv.includes('--profile')) {
       const db = openUsageReader(dbPath);
       let phaseStart = performance.now();
@@ -232,7 +238,7 @@ try {
     const durations: number[] = [];
     for (let run = 0; run < 53; run++) {
       const at = performance.now();
-      const response = await handler(request(days, granularity));
+      const response = await handler(request(days, granularity, search));
       if (response.status !== 200) throw new Error(await response.text());
       await response.text();
       const ms = performance.now() - at;
@@ -249,6 +255,7 @@ try {
         synthetic: true,
         days,
         granularity,
+        search,
         rows,
         warmRuns: 50,
         budget_ms,

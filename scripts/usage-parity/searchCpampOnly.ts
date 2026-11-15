@@ -1,5 +1,5 @@
 // Evidence for the search-cpamp-only rule: which CPAMP events match a search term only through
-// the field that Prox does not store (the event hash). CPAMP keeps one search document per event (fields joined by
+// the fields that Prox does not store (the three internal hashes). CPAMP keeps one search document per event (fields joined by
 // char(31)); a term without wildcards is in the document exactly when it is in one field, and a
 // term with `%` or `_` is matched field by field (usageevent/analytics.go, and usagemonitoring
 // filter.go, which exclude "%_\x1f" from the document path), so a wildcard never bridges two
@@ -14,11 +14,17 @@ import type { UsageAnalyticsQuery } from '../../server/usage/validate';
  */
 export const SEARCH_SEGMENTS = 29;
 /**
- * Fields in that document that Prox does not store: only the event hash, CPAMP's own internal
- * identity. The failure text (24), credential file (18) and response trace id (28) have stored,
- * searchable counterparts, so a match there that Prox misses stays a failure.
+ * Fields in that document that Prox does not store: the three internal hashes CPAMP derives
+ * itself, the event hash (1), the source hash (13) and the API key hash (14). Every other field
+ * has a stored, searchable counterpart, so a match there that Prox misses stays a failure.
+ * (Prox does keep the API key hash, as the `api_key` dictionary value, and searches it; the
+ * entry only means a difference there would not be a failure of a missing field.)
  */
-export const CPAMP_ONLY_SEGMENTS: ReadonlyMap<number, string> = new Map([[1, 'event_hash']]);
+export const CPAMP_ONLY_SEGMENTS: ReadonlyMap<number, string> = new Map([
+  [1, 'event_hash'],
+  [13, 'source_hash'],
+  [14, 'api_key_hash'],
+]);
 
 /** SQLite's LIKE without ESCAPE: `%` any run, `_` one character, everything else literal. */
 export function likePattern(pattern: string): RegExp {
@@ -40,7 +46,7 @@ interface Candidate {
 }
 // One read of CPAMP per range serves every term and filter combination of the matrix.
 const ranges = new WeakMap<Database, Map<string, Candidate[]>>();
-function documents(cpamp: Database, from: number, to: number): Candidate[] {
+export function documents(cpamp: Database, from: number, to: number): Candidate[] {
   const cache = ranges.get(cpamp) ?? new Map<string, Candidate[]>();
   ranges.set(cpamp, cache);
   const key = `${from}:${to}`;
