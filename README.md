@@ -24,7 +24,7 @@ Pooled quota forecasts, usage analytics and every management page for your Claud
 Prox is a fork of [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center). It keeps the upstream management pages and adds what you need when one homelab runs several CLI Proxy API instances: a quota pool across every Claude and Codex account, retained-usage analytics, and one login that reaches each instance through its own management source.
 
 > [!IMPORTANT]
-> Requires **CLI Proxy API ≥ 8.0.0** (v8 Management API, `/v8/management`). Prox is a management UI; it never forwards inference traffic. Analytics additionally needs a [CPA-Manager-Plus](https://github.com/SwiggitySwerve/CPA-Manager-Plus) usage dataset.
+> Requires **CLI Proxy API ≥ 8.0.0** (v8 Management API, `/v8/management`). Prox is a management UI; it never forwards inference traffic. Analytics comes from `prox-usage`, Prox's own usage collector and history store.
 
 ## What Prox adds
 
@@ -34,7 +34,7 @@ Prox is a fork of [CLI Proxy API Management Center](https://github.com/router-fo
 | **Analytics** | Retained usage across your instances: cards with sparklines, a trend chart of requests, tokens and cost on separate scales, provider and model breakdowns, a request log with details, and the configured model rates. Tabs for Overview, Tokens & Cache, Cost, Performance, Requests and Model Rates. |
 | **Fast, shareable views** | Pill selectors for the time range (Last hour, 24 hours, Today, Yesterday, 7 or 30 days) and bucket size (Auto, Hourly, Daily). The address carries the view — `#/analytics?tab=tokens&range=7d&bucket=hour` — so a link opens it directly, and the last view and sidebar state are remembered on this browser. A 7-day view loads in well under a second. |
 | **Fits your screen** | The first chart is fully visible on load at every desktop size from 1024 to 3440 pixels wide, sidebar open or collapsed; browser tests enforce it. Phones get stacked cards and collapsible filters. |
-| **Honest numbers** | Prox shows what the backends report. Costs are API-equivalent estimates at your configured rates (cache writes priced at the cache-write rate, matching the CPA-Manager-Plus dashboard), labelled *Partial* when a component is unknown. Quiet hours draw as zero; unmeasured periods stay gaps. |
+| **Honest numbers** | Prox shows what the backends report. Costs are API-equivalent estimates at your configured rates (cache writes priced at the cache-write rate), labelled *Partial* when a component is unknown. Quiet hours draw as zero; unmeasured periods stay gaps. |
 | **Several runtimes, one login** | A checked-in manifest (`deploy/provider-sources.json`) lists each instance. Account, log and config pages target the selected **Management source**; pooled pages read them all. |
 
 It keeps everything from upstream: dashboard, visual and YAML configuration, AI providers, auth files and OAuth, per-provider quotas, logs, plugins and system information. The UI speaks **English, 简体中文, 繁體中文, Русский, 한국어 and Tiếng Việt**.
@@ -75,12 +75,13 @@ flowchart LR
   P -->|"/claude/v8/management"| C["CLI Proxy API · Claude<br/>:8319"]
   P -->|"/v8/management/prox/*"| H["prox-history<br/>Bun server · :18319"]
   H --> Q[("Quota snapshots<br/>SQLite")]
-  H -->|"analytics query"| M["CPA-Manager-Plus<br/>:18317"]
+  H -->|"analytics query"| U["prox-usage<br/>Bun server · :18320"]
+  U -.->|"usage subscription"| X & C
   H -.->|"quota reads"| X & C
 ```
 
 - **`prox`** serves the UI and routes each management source to its instance. The browser sends the management key; nginx never injects one.
-- **`prox-history`** records quota snapshots for the pooled forecasts and forwards bounded analytics queries to CPA-Manager-Plus, which owns token accounting, pricing and latency figures.
+- **`prox-history`** records quota snapshots for the pooled forecasts and forwards bounded analytics queries to `prox-usage`, which collects every request's usage from the proxies and owns token accounting, pricing and latency figures.
 - Keys live in server-only files mounted into the containers. None are in Git or the bundle.
 
 ## Build and deploy
@@ -138,7 +139,7 @@ Visual reviews use repeatable capture scripts in `scripts/visual/` with measured
 <summary><strong>Connection, quotas or analytics unavailable</strong></summary>
 
 - **Cannot connect / 401:** check the address and management key. Remote connections may require `management.allow-remote: true` on the instance.
-- **Pooled quotas or Analytics unavailable:** check `systemctl --user status prox-history`. Analytics also needs CPA-Manager-Plus reachable from it.
+- **Pooled quotas or Analytics unavailable:** check `systemctl --user status prox-history`. Analytics also needs `prox-usage` (`systemctl --user status prox-usage`).
 - **Model list unavailable:** `/v1/models` needs at least one client API key in `access.api-keys`.
 - **Logs page missing:** enable “Logging to file” in Basic Settings.
 

@@ -10,17 +10,11 @@ Exec=bun /app/usage/main.js
 Network=host
 Volume=%h/.local/share/prox-usage:/data:rw
 Volume=%h/.config/cli-proxy-rerank/management-key:/run/secrets/proxy-management-key:ro
-# Manual bulk jobs only (POST /v1/jobs). CPAMP's history is read-only here; backup.json is optional
-# until the off-pool target exists, and a backup job fails cleanly without it.
-Volume=%h/.local/share/cpa-manager-plus:/cpamp:ro
-Environment=PROX_USAGE_CPAMP_DB_PATH=/cpamp/usage.sqlite
-# The one switch for a retired CPAMP: import/reconcile/verify are refused, /v1/status and
-# /v1/exporter report cpamp_retired, and the nightly chain (which reads it from /v1/status) skips
-# the CPAMP guard, reconcile and parity. Flip to 1 only after the final reconcile (docs/PROX-SETUP.md).
+# CPA-Manager-Plus was retired on 15 Nov 2026 after an exact final reconcile; prox-usage is the only
+# usage store. Retired mode refuses CPAMP import/reconcile/verify, reports cpamp_retired on
+# /v1/status and /v1/exporter, and the nightly chain skips the CPAMP guard, reconcile and parity.
 Environment=PROX_USAGE_CPAMP_RETIRED=1
-# 1 only for that final reconcile of a stopped CPAMP through this :ro mount: SQLite's immutable=1
-# open, which refuses a non-empty -wal, any -shm and any -journal. Back to 0 afterwards.
-Environment=PROX_USAGE_CPAMP_IMMUTABLE=0
+# backup.json configures the paced nightly backup (usage/daily, usage/weekly).
 Volume=%h/.config/prox-usage:/config:ro
 Environment=PROX_USAGE_BACKUP_CONFIG=/config/backup.json
 Environment=PROX_USAGE_CLIENT_ALIASES_PATH=/config/client-aliases.json

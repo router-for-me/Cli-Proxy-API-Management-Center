@@ -24,7 +24,7 @@
 Prox 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 的分支。它保留上游的全部管理页面，并补充了在一个家庭实验室中运行多个 CLI Proxy API 实例时所需的功能：覆盖所有 Claude 与 Codex 账号的额度池、已保留用量的分析，以及通过各自管理源访问每个实例的统一登录。
 
 > [!IMPORTANT]
-> 需要 **CLI Proxy API ≥ 8.0.0**（v8 管理 API，`/v8/management`）。Prox 是管理界面，从不转发推理流量。分析功能还需要 [CPA-Manager-Plus](https://github.com/SwiggitySwerve/CPA-Manager-Plus) 用量数据集。
+> 需要 **CLI Proxy API ≥ 8.0.0**（v8 管理 API，`/v8/management`）。Prox 是管理界面，从不转发推理流量。用量分析来自 `prox-usage`，即 Prox 自己的用量采集与历史存储服务。
 
 ## Prox 新增功能
 
@@ -34,7 +34,7 @@ Prox 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-
 | **用量分析** | 汇总各实例的已保留用量：带迷你走势图的指标卡、按独立刻度绘制请求数/Token/成本的趋势图、按提供商与模型的分解、带详情的请求记录以及已配置的模型价格。分为概览、Token 与缓存、成本、性能、请求、模型价格六个标签页。 |
 | **快速、可分享的视图** | 用胶囊按钮选择时间范围（最近 1 小时、24 小时、今天、昨天、7 天、30 天）与分桶粒度（自动、按小时、按天）。地址栏保存当前视图——例如 `#/analytics?tab=tokens&range=7d&bucket=hour`——链接可直接打开该视图；本浏览器还会记住上次的视图与侧边栏状态。7 天视图的加载时间远低于一秒。 |
 | **适配屏幕** | 从 1024 到 3440 像素宽的各种桌面尺寸下（侧边栏展开或收起），首个图表在加载时完整可见，并由浏览器测试保证。手机上卡片堆叠显示，筛选项可折叠。 |
-| **如实的数据** | Prox 只显示后端报告的数值。成本是按已配置价格估算的 API 等价金额（缓存写入按缓存写入价格计费，与 CPA-Manager-Plus 仪表盘一致），存在未知成分时标记为 *部分*。空闲时段绘制为零，未测量时段保持空缺。 |
+| **如实的数据** | Prox 只显示后端报告的数值。成本是按已配置价格估算的 API 等价金额（缓存写入按缓存写入价格计费），存在未知成分时标记为 *部分*。空闲时段绘制为零，未测量时段保持空缺。 |
 | **多个运行时，一次登录** | 仓库中的清单（`deploy/provider-sources.json`）列出每个实例。账号、日志与配置页面作用于所选的 **管理源**；合并页面读取全部实例。 |
 
 上游的全部功能均已保留：仪表盘、可视化与 YAML 配置、AI 提供商、认证文件与 OAuth、各提供商额度、日志、插件以及系统信息。界面支持 **English、简体中文、繁體中文、Русский、한국어 与 Tiếng Việt**。
@@ -75,12 +75,13 @@ flowchart LR
   P -->|"/claude/v8/management"| C["CLI Proxy API · Claude<br/>:8319"]
   P -->|"/v8/management/prox/*"| H["prox-history<br/>Bun 服务 · :18319"]
   H --> Q[("额度快照<br/>SQLite")]
-  H -->|"分析查询"| M["CPA-Manager-Plus<br/>:18317"]
+  H -->|"分析查询"| U["prox-usage<br/>Bun 服务 · :18320"]
+  U -.->|"用量订阅"| X & C
   H -.->|"读取额度"| X & C
 ```
 
 - **`prox`** 提供界面，并把每个管理源路由到对应实例。管理密钥由浏览器发送；nginx 从不注入密钥。
-- **`prox-history`** 记录额度快照用于合并预测，并把受限的分析查询转发给 CPA-Manager-Plus；Token 统计、定价与延迟数据由后者负责。
+- **`prox-history`** 记录额度快照用于合并预测，并把受限的分析查询转发给 `prox-usage`；后者从各代理采集每个请求的用量，并负责 Token 统计、定价与延迟数据。
 - 密钥保存在挂载进容器的仅服务器可读文件中，从不进入 Git 或打包产物。
 
 ## 构建与部署
@@ -138,7 +139,7 @@ bun run dev
 <summary><strong>无法连接、额度或分析不可用</strong></summary>
 
 - **无法连接 / 401：** 检查地址与管理密钥。远程连接可能需要在实例上设置 `management.allow-remote: true`。
-- **合并额度或用量分析不可用：** 检查 `systemctl --user status prox-history`。用量分析还需要该服务能够访问 CPA-Manager-Plus。
+- **合并额度或用量分析不可用：** 检查 `systemctl --user status prox-history`。用量分析还需要 `prox-usage`（`systemctl --user status prox-usage`）。
 - **模型列表不可用：** `/v1/models` 需要 `access.api-keys` 中至少有一个客户端 API 密钥。
 - **日志页面缺失：** 在基础设置中启用“记录日志到文件”。
 
