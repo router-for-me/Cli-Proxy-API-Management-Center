@@ -16,3 +16,8 @@ five-hour window (`laneOf`, `poolWindowId`). The collector, the pool card and th
 timeline call it; do not compare window ids to `'seven-day'` or `'weekly'` elsewhere.
 Same-period model windows (Fable, Opus, Sonnet, Codex Spark) are never the weekly lane.
 `tests/quotaLanes.test.ts` fails when a new id appears without a lane.
+
+A Codex payload whose only account-wide window is the weekly one (`primary_window` of 604800 s,
+`secondary_window` null or absent) yields a weekly window and no `five-hour` window; the collector
+records the five-hour lane as an explicit missing observation, and `server/quota/RULES.md` says
+that a successful reading like this means the account has no five-hour limit.

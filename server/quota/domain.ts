@@ -1,7 +1,7 @@
 import type { AccountBilling } from '../../src/domain/accountBilling';
 import { combinedPools } from './combined';
 import { maskIdentifier } from '../../src/domain/quotaPool/mask';
-import { sumKnown } from './values';
+import { sumKnown, weeklyOnlyAccountIds } from './values';
 import type {
   AccountQuotaWindow,
   AccountResets,
@@ -38,6 +38,12 @@ export interface CollectionState {
   issues: PoolDashboard['issues'];
   sources?: readonly QuotaSourceView[];
   billing?: ReadonlyMap<string, AccountBilling>;
+  /**
+   * Accounts whose newest reading was weekly-only (`weeklyOnlyAccountIds` over every window's
+   * latest samples). The dashboard is built from one window's samples, so the caller supplies it;
+   * without it, the samples given are searched.
+   */
+  weeklyOnly?: ReadonlySet<string>;
   resets?: ReadonlyMap<string, AccountResets>;
   windows?: ReadonlyMap<string, readonly AccountQuotaWindow[]>;
 }
@@ -246,7 +252,8 @@ function buildPool(
   options: DashboardOptions,
   fromMs: number,
   toMs: number,
-  inventoryFailed: boolean
+  inventoryFailed: boolean,
+  weeklyOnly: ReadonlySet<string>
 ): QuotaPool {
   const { nowMs, lookbackHours, multiplier } = options;
   const accounts = source
@@ -255,13 +262,14 @@ function buildPool(
   const { scale, histories } = accountHistories(accounts, samples);
   // Ultra accounts answered without a five-hour window: Anthropic removed that limit for verified
   // Ultra accounts on 2026-10-30. A successful answer is proof; a failed poll writes no sample.
+  // Codex accounts are decided by the provider's own answer, not the plan: its latest successful
+  // reading had a weekly window and no five-hour one (`weeklyOnlyAccountIds`).
   const lacksFiveHourLimit = (account: StoredAccount) => {
     const plan = planWeight(provider, account.plan);
     return (
       options.window === 'five-hour' &&
-      provider === 'claude' &&
-      plan.known &&
-      plan.multiplier === 20
+      ((provider === 'claude' && plan.known && plan.multiplier === 20) ||
+        (provider === 'codex' && weeklyOnly.has(account.id)))
     );
   };
   const forecastInputs: ForecastInput[] = [];
@@ -409,7 +417,7 @@ export function buildDashboard(
   const fromMs = Math.floor(options.nowMs / DAY_MS) * DAY_MS + (options.offsetDays - 3) * DAY_MS;
   const toMs = fromMs + 14 * DAY_MS;
   const filtered = samples.filter((s) => s.window === options.window);
-  const { sources, windows, resets, billing, ...state } = collection;
+  const { sources, windows, resets, billing, weeklyOnly: suppliedWeeklyOnly, ...state } = collection;
   const scopes = new Map<string, QuotaSourceView>();
   for (const source of sources ?? []) scopes.set(source.instanceId, source);
   for (const entry of [...accounts, ...collection.issues]) {
@@ -422,6 +430,8 @@ export function buildDashboard(
   }
   const scoped = sources !== undefined || scopes.size > 0;
   const accountPlans = new Map(accounts.map((account) => [account.id, account.plan]));
+  // From every window's samples (not `filtered`): the weekly view flags these accounts too.
+  const weeklyOnly = suppliedWeeklyOnly ?? weeklyOnlyAccountIds(samples, options.nowMs);
   const allPools = (scoped ? [...scopes.values()] : [undefined]).flatMap((source) =>
     QUOTA_PROVIDERS.map((provider) => ({
       ...buildPool(
@@ -438,7 +448,8 @@ export function buildDashboard(
               issue.instanceId === source?.instanceId &&
               issue.provider === provider &&
               issue.code === 'inventory-unavailable'
-          )
+          ),
+        weeklyOnly
       ),
       ...source,
     }))
@@ -453,10 +464,11 @@ export function buildDashboard(
         windows: [...(windows?.get(account.id) ?? [])],
         resets: resets?.get(account.id) ?? null,
         billing: billing?.get(account.id) ?? null,
-        ...(pool.provider === 'claude' &&
-        planWeight(pool.provider, accountPlans.get(account.id)).multiplier === 20 &&
-        (windows?.get(account.id)?.length ?? 0) > 0 &&
-        !windows?.get(account.id)?.some((limit) => limit.id === 'five-hour')
+        ...((pool.provider === 'claude' &&
+          planWeight(pool.provider, accountPlans.get(account.id)).multiplier === 20 &&
+          (windows?.get(account.id)?.length ?? 0) > 0 &&
+          !windows?.get(account.id)?.some((limit) => limit.id === 'five-hour')) ||
+        (pool.provider === 'codex' && weeklyOnly.has(account.id))
           ? { noFiveHourLimit: true }
           : {}),
       })),

@@ -16,6 +16,7 @@ import { laneOf, poolWindowId } from '../../src/domain/quotaWindows/lanes';
 import type { ClaudeUsageSnapshot } from '../../src/types/quota';
 import { planWeight } from './plans';
 import { STALE_MS, type QuotaSample, type StoredAccount } from './types';
+import { weeklyOnlyAccountIds } from './values';
 
 /** What the stored weekly/five-hour samples say when no window list is held in memory. */
 const SAMPLE_LABEL_KEYS: Record<PoolProviderId, Record<PoolWindow, string>> = {
@@ -92,6 +93,7 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
     counts.set(group, next);
     position.set(account.id, next);
   }
+  const weeklyOnly = weeklyOnlyAccountIds(input.latestSamples);
   const accounts = live.map((account): ServerAccount => {
     const stored = samples.get(account.id) ?? [];
     const observedAtMs = stored.reduce<number | null>(
@@ -114,6 +116,14 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
           ? 'stale'
           : 'ok';
     const plan = planWeight(account.provider, account.plan);
+    // The same two rules as the dashboard's `noFiveHourLimit`: Claude Ultra answered with limits
+    // but no five-hour one; Codex's latest successful reading had only a weekly window.
+    const noFiveHourLimit =
+      account.provider === 'codex'
+        ? weeklyOnly.has(account.id)
+        : plan.multiplier === 20 &&
+          windows.length > 0 &&
+          !windows.some((window) => window.lane === 'five-hour' && window.remainingPercent !== null);
     const balances = account.disabled ? undefined : input.balances.get(account.id);
     const credits = account.disabled ? undefined : input.credits?.get(account.id);
     return {
@@ -128,6 +138,7 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
       identifier: maskIdentifier(account.email || account.name),
       ...(input.reveal ? { email: account.email || account.name } : {}),
       plan: { label: plan.label, known: plan.known, type: account.plan ?? null },
+      ...(noFiveHourLimit ? { noFiveHourLimit } : {}),
       windows,
       resets: input.resets.get(account.id) ?? null,
       billing: input.billing.get(account.id) ?? null,

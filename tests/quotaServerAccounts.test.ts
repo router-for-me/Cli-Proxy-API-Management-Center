@@ -20,6 +20,8 @@ import {
   projectServerAccounts,
   refreshServedFile,
   refreshServedPage,
+  serverClaudeState,
+  serverCodexState,
   serverGrantStatus,
   serverReadNotice,
 } from '../src/features/quotaPool/serverQuota';
@@ -353,6 +355,33 @@ describe('server numbers in the shared quota store', () => {
     expect(shown.rateLimitResetCreditsApplicableAvailableCount).toBe(1);
     expect(shown.rateLimitResetCredits).toHaveLength(2);
     expect(shown.windows.find((w) => w.id === 'weekly')?.usedPercent).toBe(59);
+  });
+
+  test('the server marking an account as having no 5-hour limit reaches its card state', () => {
+    const store = createQuotaStore();
+    const ann = account('claude-primary', 'claude', 'ann', { noFiveHourLimit: true });
+    const cy = account('codex-primary', 'codex', 'cy', { noFiveHourLimit: true });
+    const bob = account('claude-primary', 'claude', 'bob');
+    for (const [instance, file, served] of [
+      ['claude-primary', claudeFile, ann],
+      ['codex-primary', codexFile, cy],
+    ] as const) {
+      projectServerAccounts({
+        owner: owner(instance),
+        files: [file],
+        routing: ready,
+        accounts: { [served.sourceAccountId!]: served },
+        store,
+        t,
+      });
+    }
+    const claude = store.getState().claudeQuota[getQuotaCacheKey(claudeFile)] as ClaudeQuotaState;
+    const codex = store.getState().codexQuota[getQuotaCacheKey(codexFile)] as CodexQuotaState;
+    expect(claude.noFiveHourLimit).toBe(true);
+    expect(codex.noFiveHourLimit).toBe(true);
+    // An account the server does not mark keeps its ordinary card.
+    expect(serverClaudeState(bob, t).noFiveHourLimit).toBeFalsy();
+    expect(serverCodexState(cy, t).noFiveHourLimit).toBe(true);
   });
 
   test('nothing is written for a non-manifest hub, another provider, or without a routing answer', () => {

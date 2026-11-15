@@ -294,8 +294,58 @@ async def case_phone(browser, base, origin, out):
         return await c.finish()
 
 
+async def case_no_five_hour(browser, base, origin, out):
+    """A served card for an account with no 5-hour limit says so, on Auth Files and /quota/accounts."""
+    async with Case(browser, base, origin, out, 'no-five-hour-auth-files', 'served-no-five-hour', '/auth-files') as c:
+        await loaded(c.page, 6)
+        await c.page.wait_for_timeout(1500)
+        claude = await c.card('team-a@example.invalid')
+        codex = await c.card('codex-main')
+        plain = await c.card('max-d@example.invalid')
+        c.notes.update({'claude (stored null 5-hour window)': claude, 'codex (no 5-hour window)': codex,
+                        'claude (reports 5-hour)': plain})
+        for label, text in (('Claude', claude), ('Codex', codex)):
+            c.check(f'{label} card says "No 5-hour limit"', text and 'No 5-hour limit' in text, text)
+            c.check(f'{label} card has no "5-hour limit –"', text and not re.search(r'5-hour limit\s*(–|--)', text), text)
+        c.check('the Codex card keeps its weekly number', codex and 'Weekly limit 23%' in codex, codex)
+        c.check('an account that reports a 5-hour window is unchanged',
+                plain and 'No 5-hour limit' not in plain and re.search(r'5-hour limit \d+%', plain), plain)
+        await c.shot('fold')
+        return await c.finish()
+
+
+async def case_no_five_hour_quota_accounts(browser, base, origin, out):
+    async with Case(browser, base, origin, out, 'no-five-hour-quota-accounts', 'served-no-five-hour',
+                    '/quota/accounts') as c:
+        await c.page.wait_for_function(
+            "() => [...document.querySelectorAll('main article')].some(a => a.textContent.includes('No 5-hour limit'))")
+        text = await c.card('claude-team-a.json')
+        codex = await c.card('codex-main')
+        c.notes.update({'claude': text, 'codex': codex})
+        c.check('Claude card says "No 5-hour limit"', text and 'No 5-hour limit' in text, text)
+        c.check('Codex card says "No 5-hour limit"', codex and 'No 5-hour limit' in codex, codex)
+        c.check('neither shows "5-hour limit –"', not re.search(r'5-hour limit\s*(–|--)', f'{text} {codex}'), f'{text} {codex}')
+        await c.shot('fold')
+        return await c.finish()
+
+
+async def case_no_five_hour_pool(browser, base, origin, out):
+    """Quota Management's 5-hour view, from dashboards the real server code built (weekly-only Codex Pro)."""
+    async with Case(browser, base, origin, out, 'no-five-hour-pool', 'served-no-five-hour',
+                    '/quota?window=five-hour') as c:
+        await c.page.wait_for_timeout(3000)
+        text = await c.page.evaluate("() => document.querySelector('main').innerText.replace(/\\s+/g, ' ')")
+        c.notes['page'] = text
+        c.check('the Codex pool names the account as "No 5-hour limit"', 'No 5-hour limit' in text, text[:600])
+        c.check('no "5-hour quota unavailable" withheld notice', '5-hour quota unavailable' not in text, text[:600])
+        c.check('the combined total is not withheld for missing data', 'No current quota data' not in text, text[:600])
+        await c.shot('fold')
+        return await c.finish()
+
+
 CASES = [case_auth_files_served, case_quota_accounts_served, case_refresh_floor, case_refresh_ran,
-         case_other_hub, case_disabled_refresh, case_claim_dialog, case_prox_absent, case_phone]
+         case_other_hub, case_disabled_refresh, case_claim_dialog, case_prox_absent, case_phone,
+         case_no_five_hour, case_no_five_hour_quota_accounts, case_no_five_hour_pool]
 
 
 async def main():

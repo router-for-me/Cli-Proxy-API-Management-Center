@@ -53,6 +53,17 @@ credential UI. The store owns persistence; the collector uses only public APIs.
 - Plans come from provider responses only: Codex's usage `plan_type`, and Claude's
   OAuth profile tier, read at most every six hours. A failed plan read changes
   nothing else.
+- An account with no five-hour limit is `no-limit` in the five-hour pool, not `missing-window`:
+  outside its capacity and eligible count, and it never withholds the pool or combined five-hour
+  total. Claude is decided by plan (Ultra answered with limits but no five-hour one). Codex is
+  decided by the provider's own answer, never the plan: the newest successful reading has a weekly
+  balance and an explicit missing five-hour sample at the same instant (`weeklyOnlyAccountIds`,
+  `values.ts`; e.g. Pro with only `primary_window` of 604800 s and `secondary_window: null`). A
+  failed poll writes no sample, so it stays errored or stale; a reading with no weekly window
+  either stays `missing-window`; a later five-hour reading supersedes it. `/v1/pools` is built from
+  one window's samples, so `app.ts` passes the set from `store.latestSamples()`. Pools flag the
+  account `noFiveHourLimit` in both windows, and `/v1/accounts` serves the same flag so cards say
+  "No 5-hour limit" like Quota Management.
 - Weekly and five-hour windows are separate. Model-scoped, monthly, dollar and
   reset-credit balances are not added to those pools.
 - Missing, expired, errored or older-than-15-minute samples are unknown, not 0.
@@ -154,6 +165,8 @@ while collection is running, without requesting additional collections.
   `plan {label, known, type}`, `resets` and `billing` as `/v1/pools` has them, and `windows[]`
   (`id`, `lane` from `laneOf`, `labelKey`, `remainingPercent`, `resetAtMs`, `periodHours`): weekly
   is always its own lane, and every other limit (model-scoped, monthly, surface-scoped) its own.
+  An entry also carries `noFiveHourLimit: true` when the no-five-hour-limit rule above holds
+  (omitted otherwise); a card shows it as "No 5-hour limit".
   Claude entries also carry `extraUsage` and `dollarWindows` from the usage payload the collector
   already parses: memory-only like billing, never persisted, never pooled, never in `/v1/pools`;
   after a restart they are absent until the next reading. Codex entries likewise carry `credits`

@@ -217,6 +217,8 @@ export interface ClaudeQuotaState {
   windows: ClaudeQuotaWindow[];
   extraUsage?: ClaudeExtraUsage | null;
   dollarWindows?: ClaudeDollarWindow[];
+  /** The server marks the account as having no 5-hour limit (Ultra): the card says so. */
+  noFiveHourLimit?: boolean;
   observedAt?: string | null;
   stale?: boolean;
   planType?: string | null;
@@ -299,6 +301,8 @@ export interface CodexQuotaState {
   billing?: AccountBilling | null;
   status: 'idle' | 'loading' | 'success' | 'error';
   windows: CodexQuotaWindow[];
+  /** The server marks the account as having no 5-hour limit (weekly-only Pro): the card says so. */
+  noFiveHourLimit?: boolean;
   planType?: string | null;
   subscriptionActiveUntil?: string | number | null;
   subscriptionActiveUntilSource?: BillingExpiryFallback['source'];

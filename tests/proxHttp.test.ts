@@ -25,6 +25,7 @@ function fixture() {
       return [];
     },
     listSamples: () => [],
+    latestSamples: () => [],
     firstSampleAtMs: () => null,
     firstSampleTimes: () => new Map(),
   } as unknown as QuotaStore;

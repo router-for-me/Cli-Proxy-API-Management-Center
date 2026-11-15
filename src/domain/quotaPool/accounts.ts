@@ -39,6 +39,11 @@ export interface ServerAccount {
   email?: string;
   /** `type` is the provider's own plan id (e.g. `pro`), for the plan chip. */
   plan: { label: string | null; known: boolean; type: string | null };
+  /**
+   * The provider answered without a five-hour limit (Claude Ultra; Codex with only a weekly
+   * window), so the card says "No 5-hour limit". Absent otherwise.
+   */
+  noFiveHourLimit?: true;
   windows: ServerAccountWindow[];
   resets: AccountResets | null;
   billing: AccountBilling | null;

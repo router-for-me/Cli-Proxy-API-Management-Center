@@ -81,6 +81,7 @@ export function serverClaudeState(account: ServerAccount, t: TFunction): ClaudeQ
   return {
     status: 'success',
     windows: account.windows.map((window) => claudeWindow(window, t)),
+    ...(account.noFiveHourLimit ? { noFiveHourLimit: true } : {}),
     extraUsage: account.extraUsage ?? null,
     dollarWindows: account.dollarWindows ?? [],
     planType: account.plan.type ? (CLAUDE_PLAN_KEYS[account.plan.type] ?? null) : null,
@@ -95,6 +96,7 @@ export function serverCodexState(account: ServerAccount, t: TFunction): CodexQuo
   return {
     status: 'success',
     windows: account.windows.map((window) => codexWindow(window, t)),
+    ...(account.noFiveHourLimit ? { noFiveHourLimit: true } : {}),
     planType: account.plan.type,
     billing: account.billing,
     creditBalance: account.credits?.balance ?? null,

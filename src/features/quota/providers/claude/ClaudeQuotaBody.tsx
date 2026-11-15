@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import type { ClaudeQuotaState } from '@/types';
 import { buildResetDisplay, formatQuotaResetTime, resolveResetMs } from '@/utils/quota';
 import { useNow } from '@/hooks/useNow';
+import { NoFiveHourRow } from '../../components/NoFiveHourRow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
@@ -30,6 +31,8 @@ export function ClaudeQuotaBody({
     [quota, now]
   );
   const windows = quota.windows ?? [];
+  // The server says the account has no 5-hour limit: that row says so instead of showing "–".
+  const noFiveHour = quota.noFiveHourLimit === true;
   const extraUsage = quota.extraUsage ?? null;
   const planType = quota.planType ?? null;
   const language = i18n.resolvedLanguage;
@@ -92,6 +95,15 @@ export function ClaudeQuotaBody({
     return [
       ...slots.map((slot, index) => {
         const window = windows.find((candidate) => candidate.id === slot.id);
+        if (slot.id === 'five-hour' && noFiveHour && window?.usedPercent == null)
+          return (
+            <NoFiveHourRow
+              key={slot.id}
+              labelKey={slot.labelKey}
+              classes={classes}
+              slotId={slot.id}
+            />
+          );
         if (window) return windowRow(window, index, slot.id);
         return (
           <div
@@ -236,10 +248,17 @@ export function ClaudeQuotaBody({
           {slotRows()}
           {staleNotice}
         </>
-      ) : windows.length === 0 && !extraUsage && !quota.dollarWindows?.length ? (
+      ) : windows.length === 0 && !noFiveHour && !extraUsage && !quota.dollarWindows?.length ? (
         <div className={classes.quotaMessage}>{t('claude_quota.empty_windows')}</div>
       ) : (
-        windows.map((window, index) => windowRow(window, index))
+        <>
+          {noFiveHour && !windows.some((window) => window.id === 'five-hour' && window.usedPercent !== null) && (
+            <NoFiveHourRow labelKey="claude_quota.five_hour" classes={classes} />
+          )}
+          {windows
+            .filter((window) => !(noFiveHour && window.id === 'five-hour' && window.usedPercent === null))
+            .map((window, index) => windowRow(window, index))}
+        </>
       )}
     </>
   );

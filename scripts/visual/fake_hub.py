@@ -24,7 +24,9 @@ team-b's read fails while off; every Claude account holds reset grants) |
 served | served-alpha-only | served-floor (prox-history answers: /prox/inventory lists the sources,
 /prox/accounts serves Claude and Codex accounts with numbers that differ from what the hubs report,
 so a page that shows them proves it read the server; served-alpha-only lists only the Claude hub, so
-the GPT hub stays hub-direct; served-floor answers every targeted refresh with the 20 s floor and the
+the GPT hub stays hub-direct; served-no-five-hour marks the first Claude account (a stored null 5-hour
+window) and the first Codex account (no 5-hour window at all) `noFiveHourLimit`, and answers
+/prox/pools from the real server code (scripts/visual/no-five-hour-pools.ts); served-floor answers every targeted refresh with the 20 s floor and the
 page-wide one with the 4 minute floor). The stale case calls edit_elsewhere().
 """
 from __future__ import annotations
@@ -36,6 +38,7 @@ import json
 import re
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 CATALOG = {
@@ -261,6 +264,14 @@ class FakeHubs:
                              'type': 'default_claude_max' if provider == 'claude' else 'plus'},
                     'windows': windows, 'resets': None, 'billing': None,
                 }
+                if self.scenario == 'served-no-five-hour' and index == 0 and not off:
+                    entry['noFiveHourLimit'] = True
+                    if provider == 'claude':
+                        entry['windows'][0]['remainingPercent'] = None
+                        entry['windows'][0]['resetAtMs'] = None
+                        entry['windows'][0]['periodHours'] = None
+                    else:
+                        entry['windows'] = entry['windows'][1:]
                 if provider == 'claude' and not off:
                     entry['windows'].append({'id': 'seven-day-opus', 'lane': 'model',
                                              'labelKey': 'claude_quota.seven_day_opus',
@@ -277,6 +288,16 @@ class FakeHubs:
                                        'kinds': ['weekly', 'fable'], 'observedAtMs': at}
                 out.append(entry)
         return out
+
+    def _real_pools(self) -> dict:
+        """Dashboards built by the real server code from synthetic samples (written once per hub)."""
+        if not hasattr(self, '_pools_cache'):
+            import subprocess
+            script = Path(__file__).with_name('no-five-hour-pools.ts')
+            out = subprocess.run(['bun', 'run', str(script), str(self.clock)], check=True,
+                                 capture_output=True, text=True, cwd=script.parents[2])
+            self._pools_cache = json.loads(out.stdout)
+        return self._pools_cache
 
     def _server_inventory(self) -> list[dict]:
         sources = [{'instanceId': 'alpha', 'provider': 'claude', 'state': 'ok', 'accounts': []}]
@@ -303,6 +324,10 @@ class FakeHubs:
             await route.fulfill(status=200, content_type='application/json',
                                 headers={'etag': f'"{version}"'},
                                 body=json.dumps({'version': version, **rest}))
+            return True
+        if path == '/prox/pools' and method == 'get' and self.scenario == 'served-no-five-hour':
+            window = parse_qs(urlparse(request.url).query).get('window', ['weekly'])[0]
+            await self._json(route, self._real_pools()[window])
             return True
         if path == '/prox/refresh' and method == 'post':
             try:
