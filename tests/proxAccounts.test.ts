@@ -6,11 +6,16 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { TFunction } from 'i18next';
 import { createHandler } from '../server/app';
 import { QuotaCollector } from '../server/quota/collector';
 import { QuotaStore } from '../server/quota/store';
 import type { ServerAccount, ServerAccounts } from '../src/domain/quotaPool/accounts';
+import { createCodexQuotaConfig } from '../src/features/quota/providers/codex/data';
 import { poolSourceAccountId } from '../src/features/quotaPool/resetAccounts';
+import { serverCodexState } from '../src/features/quotaPool/serverQuota';
+import { apiCallApi } from '../src/services/api';
+import { testQuotaDependencies } from './helpers/quotaDependencies';
 import {
   CLAUDE_PROFILE_URL,
   CLAUDE_USAGE_URL,
@@ -70,17 +75,20 @@ const codexUsage = {
 };
 
 const cleanups: Array<() => void> = [];
-afterEach(() =>
+const originalApiCallRequest = apiCallApi.request;
+afterEach(() => {
+  apiCallApi.request = originalApiCallRequest;
   cleanups
     .splice(0)
     .reverse()
-    .forEach((cleanup) => cleanup())
-);
+    .forEach((cleanup) => cleanup());
+});
 
 function stack() {
   let clock = NOW;
   let weeklyUsed = 60;
   let usageFails = false;
+  let credits: unknown = { has_credits: true, unlimited: false, balance: '8.75' };
   const disabled = new Set<string>();
   const root = mkdtempSync(join(tmpdir(), 'prox-accounts-'));
   cleanups.push(() => rmSync(root, { recursive: true, force: true }));
@@ -119,7 +127,7 @@ function stack() {
           body: { organization: { rate_limit_tier: 'default_claude_max_20x' } },
         });
       if (call.url === CODEX_USAGE_URL)
-        return Response.json({ status_code: 200, body: codexUsage });
+        return Response.json({ status_code: 200, body: { ...codexUsage, credits } });
       return Response.json({ status_code: 404, body: {} });
     },
     { preconnect: () => {} }
@@ -166,6 +174,7 @@ function stack() {
     advance: (ms: number) => (clock += ms),
     setWeeklyUsed: (value: number) => (weeklyUsed = value),
     failUsage: (value: boolean) => (usageFails = value),
+    setCredits: (value: unknown) => (credits = value),
     disable: (index: string) => disabled.add(index),
   };
 }
@@ -325,6 +334,66 @@ describe('GET /v1/accounts', () => {
     expect(ann.extraUsage).toBeUndefined();
     expect(ann.dollarWindows).toBeUndefined();
     expect(ann.resets).toBeNull();
+  });
+});
+
+describe('Codex credit balance on /v1/accounts', () => {
+  const t = ((key: string) => key) as unknown as TFunction;
+
+  test('is served for Codex accounts, in memory only, and matches the hub-direct card', async () => {
+    const s = stack();
+    await s.collector.refresh();
+    const list = await s.accounts();
+    const cy = byIndex(list, 'codex-primary', 'codex', 'cy-index');
+    expect(cy.credits).toEqual({ balance: '8.75', unlimited: false });
+    expect(byIndex(list, 'claude-primary', 'claude', 'ann-index').credits).toBeUndefined();
+    expect(JSON.stringify(await (await s.call('/v1/pools')).json())).not.toContain('8.75');
+
+    // The served card shows what the hub-direct adapter shows for the same usage payload.
+    apiCallApi.request = async (payload) => {
+      const body =
+        payload.url === CODEX_USAGE_URL
+          ? { ...codexUsage, credits: { has_credits: true, unlimited: false, balance: '8.75' } }
+          : { available_count: 0, credits: [] };
+      return { statusCode: 200, header: {}, bodyText: JSON.stringify(body), body };
+    };
+    const config = createCodexQuotaConfig(testQuotaDependencies);
+    const direct = config.buildSuccessState(
+      await config.fetchQuota({ name: 'cy.json', type: 'codex', auth_index: 'cy-index' }, t)
+    );
+    const served = serverCodexState(cy, t);
+    expect(direct.creditBalance).toBe('8.75');
+    expect(served.creditBalance).toBe(direct.creditBalance);
+    expect(served.creditsUnlimited).toBe(direct.creditsUnlimited);
+  });
+
+  test('carries the unlimited flag', async () => {
+    const s = stack();
+    s.setCredits({ has_credits: true, unlimited: true, balance: null });
+    await s.collector.refresh();
+    const cy = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
+    expect(cy.credits).toEqual({ balance: null, unlimited: true });
+    const served = serverCodexState(cy, t);
+    expect(served.creditsUnlimited).toBe(true);
+    expect(served.creditBalance).toBeNull();
+  });
+
+  test('a payload without credits reads as no balance, and a restart forgets it', async () => {
+    const s = stack();
+    s.setCredits(undefined);
+    await s.collector.refresh();
+    const cy = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
+    expect(cy.credits).toEqual({ balance: null, unlimited: false });
+    s.setCredits({ balance: '3' });
+    s.advance(11 * 60_000);
+    await s.collector.refresh();
+    expect(byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index').credits?.balance).toBe(
+      '3'
+    );
+    for (const id of s.store.listAccounts().map((account) => account.id)) s.collector.forget([id]);
+    expect(
+      byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index').credits
+    ).toBeUndefined();
   });
 });
 

@@ -24,6 +24,7 @@ interface CollectorState extends Omit<CollectionState, 'historyStartedAtMs'> {
   /** When the 20 s per-account floor lets the next targeted read run; null when it is not held. */
   accountRetryAtMs?(accountId: string): number | null;
   balances?: ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>>;
+  credits?: ReadonlyMap<string, { balance: string | null; unlimited: boolean }>;
   syncInventory(options?: { deletedNames?: readonly string[] }): Promise<InventoryChange>;
   pollAdded(accountIds: readonly string[]): Promise<void>;
   inventorySources: readonly InventorySourceStatus[];
@@ -292,6 +293,7 @@ export function createHandler({
           resets: collector.resets ?? new Map(),
           billing: collector.billing ?? new Map(),
           balances: collector.balances ?? new Map(),
+          credits: collector.credits,
           nowMs: now(),
           reveal: reveal[0] === 'true',
           collection: {

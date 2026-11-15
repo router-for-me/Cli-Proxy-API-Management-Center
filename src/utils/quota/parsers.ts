@@ -4,6 +4,7 @@
 
 import type {
   ClaudeUsagePayload,
+  CodexAccountCredits,
   CodexUsagePayload,
   KimiUsagePayload,
   XaiBillingPayload,
@@ -168,6 +169,21 @@ export function parseCodexUsagePayload(payload: unknown): CodexUsagePayload | nu
   }
   return null;
 }
+
+export const normalizeCodexAccountCredits = (
+  credits: CodexAccountCredits | null | undefined
+): { balance: string | null; unlimited: boolean } => {
+  const value = credits?.balance;
+  const balance =
+    typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : null;
+  return {
+    balance:
+      balance && /^\d+(?:\.\d+)?$/.test(balance) && Number.isFinite(Number(balance))
+        ? balance
+        : null,
+    unlimited: credits?.unlimited === true,
+  };
+};
 
 export function parseKimiUsagePayload(payload: unknown): KimiUsagePayload | null {
   if (payload === undefined || payload === null) return null;

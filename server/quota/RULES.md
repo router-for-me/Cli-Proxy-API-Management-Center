@@ -156,7 +156,10 @@ while collection is running, without requesting additional collections.
   is always its own lane, and every other limit (model-scoped, monthly, surface-scoped) its own.
   Claude entries also carry `extraUsage` and `dollarWindows` from the usage payload the collector
   already parses: memory-only like billing, never persisted, never pooled, never in `/v1/pools`;
-  after a restart they are absent until the next reading. After a restart the windows are the last
+  after a restart they are absent until the next reading. Codex entries likewise carry `credits`
+  (`{balance, unlimited}`, read from the usage payload's `credits` by the same
+  `normalizeCodexAccountCredits` the hub-direct adapter uses): memory-only, never persisted,
+  pooled or in `/v1/pools`, absent after a restart until the next reading. After a restart the windows are the last
   stored weekly and five-hour sample until the collector reads again.
   A disabled account has `status: 'disabled'` and its last stored weekly/five-hour sample with that
   sample's time as `observedAtMs` (its age); the collector still never reads it, and a disabled

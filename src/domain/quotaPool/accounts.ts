@@ -45,6 +45,8 @@ export interface ServerAccount {
   /** Claude only, memory-only like billing: never stored, never pooled. */
   extraUsage?: ClaudeExtraUsage | null;
   dollarWindows?: ClaudeDollarWindow[];
+  /** Codex only, memory-only like billing: the usage payload's `credits`, never stored or pooled. */
+  credits?: { balance: string | null; unlimited: boolean };
 }
 
 export interface ServerAccountsBody {

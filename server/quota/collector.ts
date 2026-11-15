@@ -28,7 +28,11 @@ import {
   CODEX_RATE_LIMIT_RESET_CREDITS_URL,
   CODEX_REQUEST_HEADERS,
 } from '../../src/utils/quota/constants';
-import { parseClaudeUsagePayload, parseCodexUsagePayload } from '../../src/utils/quota/parsers';
+import {
+  normalizeCodexAccountCredits,
+  parseClaudeUsagePayload,
+  parseCodexUsagePayload,
+} from '../../src/utils/quota/parsers';
 import { normalizeClaudeUsageSnapshot } from '../../src/services/api/claudeUsage';
 import type { ClaudeUsageSnapshot } from '../../src/types/quota';
 import { isRecord } from '../../src/utils/helpers';
@@ -316,6 +320,11 @@ export class QuotaCollector {
     string,
     Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>
   >();
+  /** Codex credit balance and unlimited flag from the usage payload; memory-only, never pooled. */
+  private readonly latestCredits = new Map<
+    string,
+    { balance: string | null; unlimited: boolean }
+  >();
   private readonly latestReadingAt = new Map<string, number>();
   /** Reset claims in progress, so a full collection starts only after them like after a poll. */
   private readonly claimFlights = new Set<Promise<unknown>>();
@@ -411,6 +420,10 @@ export class QuotaCollector {
   /** In memory only: refilled by the next Claude reading after a restart. */
   get balances(): ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>> {
     return this.latestBalances;
+  }
+  /** In memory only: refilled by the next Codex reading after a restart. */
+  get credits(): ReadonlyMap<string, { balance: string | null; unlimited: boolean }> {
+    return this.latestCredits;
   }
   /**
    * When a targeted read of this account may next run, if the 20 s floor is what holds it back;
@@ -551,6 +564,7 @@ export class QuotaCollector {
       this.latestBilling.delete(id);
       this.latestWindows.delete(id);
       this.latestBalances.delete(id);
+      this.latestCredits.delete(id);
       this.latestReadingAt.delete(id);
       this.latestResets.delete(id);
       this.resetCreditAttempts.delete(id);
@@ -1044,6 +1058,11 @@ export class QuotaCollector {
               dollarWindows: snapshot.dollarWindows,
             });
           }
+        } else {
+          this.latestCredits.set(
+            account.id,
+            normalizeCodexAccountCredits(parseCodexUsagePayload(usageBody)?.credits)
+          );
         }
       } catch {
         this.addIssue(source, account.provider, 'quota-unavailable');
