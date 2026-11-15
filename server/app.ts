@@ -7,6 +7,7 @@ import type { CollectionState, DashboardOptions } from './quota/domain';
 import { parseResetClaimRequest, ResetClaimRefusal, type ResetClaims } from './quota/claims';
 import type { QuotaStore } from './quota/store';
 import { accountsVersion, buildAccounts } from './quota/accounts';
+import { weeklyOnlyAccountIds } from './quota/values';
 import { buildInventory, inventoryVersion, type InventorySourceStatus } from './quota/inventory';
 import type { ClaudeUsageSnapshot } from '../src/types/quota';
 import { DAY_MS, HOUR_MS, type InventoryChange } from './quota/types';
@@ -360,6 +361,7 @@ export function createHandler({
             windows: collector.windows,
             resets: collector.resets,
             billing: collector.billing,
+            weeklyOnly: weeklyOnlyAccountIds(store.latestSamples()),
           }
         ),
         inventoryVersion: inventoryVersion(accounts),

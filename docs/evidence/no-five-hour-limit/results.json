@@ -1,0 +1,124 @@
+{
+  "url": "http://127.0.0.1:5199",
+  "cases": {
+    "no-five-hour": {
+      "scenario": "served-no-five-hour",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "Claude card says \"No 5-hour limit\"",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:37 AM UTC 1/1 left Fable reset Nov 24, 10:37 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "Claude card has no \"5-hour limit \u2013\"",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:37 AM UTC 1/1 left Fable reset Nov 24, 10:37 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "Codex card says \"No 5-hour limit\"",
+          "ok": true,
+          "detail": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "Codex card has no \"5-hour limit \u2013\"",
+          "ok": true,
+          "detail": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "the Codex card keeps its weekly number",
+          "ok": true,
+          "detail": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "an account that reports a 5-hour window is unchanged",
+          "ok": true,
+          "detail": "Claude max-d@example.invalid claude-max-d REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 67% 11/15, 11:37 in 59 minutes 7-day limit 50% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-max-d.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "claude (stored null 5-hour window)": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:37 AM UTC 1/1 left Fable reset Nov 24, 10:37 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled",
+        "codex (no 5-hour window)": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Served models Enabled",
+        "claude (reports 5-hour)": "Claude max-d@example.invalid claude-max-d REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 67% 11/15, 11:37 in 59 minutes 7-day limit 50% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-max-d.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "no-five-hour-quota-accounts": {
+      "scenario": "served-no-five-hour",
+      "route": "/quota/accounts",
+      "checks": [
+        {
+          "check": "Claude card says \"No 5-hour limit\"",
+          "ok": true,
+          "detail": "claude-team-a.json Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota"
+        },
+        {
+          "check": "Codex card says \"No 5-hour limit\"",
+          "ok": true,
+          "detail": "codex-main.json Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota"
+        },
+        {
+          "check": "neither shows \"5-hour limit \u2013\"",
+          "ok": true,
+          "detail": "claude-team-a.json Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota codex-main.json Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota"
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "claude": "claude-team-a.json Plan Max 5-hour limit No 5-hour limit 7-day limit 23% 11/17, 10:37 in 1 day 7-day Opus 64% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota",
+        "codex": "codex-main.json Plan Plus 5-hour limit No 5-hour limit Weekly limit 23% 11/17, 10:37 in 1 day Account details updated 1m ago Refresh quota"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "no-five-hour-pool": {
+      "scenario": "served-no-five-hour",
+      "route": "/quota?window=five-hour",
+      "checks": [
+        {
+          "check": "the Codex pool names the account as \"No 5-hour limit\"",
+          "ok": true,
+          "detail": "Quota Management Manage accounts \u2192 Show emails Auto-refresh in 58s All pools Claude 0 Codex 3 Nov 14 \u2013 Nov 16 Current Weekly 5-hour Remaining Drain rate Burn rate Averaged over 1h 3h 6h Future Same as now Half Double Idle Combined usage Chart view Provider lines Stacked providers Minimize graph 135.4 5-hour quota remaining of 200 points points 0 100 200 4 PM Nov 15 8 AM 4 PM Nov 16 8 AM Snapshot Codex Recorded Projected Latest reading \u00b7 Nov 15, 10:36 AM UTC Codex \u00b7 GPT hub fixture 3 accounts Go to Accounts Forecast ready Minimize graph 135.4 5-hour quota remaining of 200 points Now Burn rate ("
+        },
+        {
+          "check": "no \"5-hour quota unavailable\" withheld notice",
+          "ok": true,
+          "detail": "Quota Management Manage accounts \u2192 Show emails Auto-refresh in 58s All pools Claude 0 Codex 3 Nov 14 \u2013 Nov 16 Current Weekly 5-hour Remaining Drain rate Burn rate Averaged over 1h 3h 6h Future Same as now Half Double Idle Combined usage Chart view Provider lines Stacked providers Minimize graph 135.4 5-hour quota remaining of 200 points points 0 100 200 4 PM Nov 15 8 AM 4 PM Nov 16 8 AM Snapshot Codex Recorded Projected Latest reading \u00b7 Nov 15, 10:36 AM UTC Codex \u00b7 GPT hub fixture 3 accounts Go to Accounts Forecast ready Minimize graph 135.4 5-hour quota remaining of 200 points Now Burn rate ("
+        },
+        {
+          "check": "the combined total is not withheld for missing data",
+          "ok": true,
+          "detail": "Quota Management Manage accounts \u2192 Show emails Auto-refresh in 58s All pools Claude 0 Codex 3 Nov 14 \u2013 Nov 16 Current Weekly 5-hour Remaining Drain rate Burn rate Averaged over 1h 3h 6h Future Same as now Half Double Idle Combined usage Chart view Provider lines Stacked providers Minimize graph 135.4 5-hour quota remaining of 200 points points 0 100 200 4 PM Nov 15 8 AM 4 PM Nov 16 8 AM Snapshot Codex Recorded Projected Latest reading \u00b7 Nov 15, 10:36 AM UTC Codex \u00b7 GPT hub fixture 3 accounts Go to Accounts Forecast ready Minimize graph 135.4 5-hour quota remaining of 200 points Now Burn rate ("
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "page": "Quota Management Manage accounts \u2192 Show emails Auto-refresh in 58s All pools Claude 0 Codex 3 Nov 14 \u2013 Nov 16 Current Weekly 5-hour Remaining Drain rate Burn rate Averaged over 1h 3h 6h Future Same as now Half Double Idle Combined usage Chart view Provider lines Stacked providers Minimize graph 135.4 5-hour quota remaining of 200 points points 0 100 200 4 PM Nov 15 8 AM 4 PM Nov 16 8 AM Snapshot Codex Recorded Projected Latest reading \u00b7 Nov 15, 10:36 AM UTC Codex \u00b7 GPT hub fixture 3 accounts Go to Accounts Forecast ready Minimize graph 135.4 5-hour quota remaining of 200 points Now Burn rate (3h) 24 points/h Forecast Pool empty Not before Nov 29 First account empty Nov 15, 5:47 PM UTC Next reset Nov 15, 1:37 PM UTC +136.6 points points 0 100 200 4 PM Nov 15 8 AM 4 PM Nov 16 8 AM Snapshot +136.6 +120 +120 +120 +120 Recorded Projected Scheduled reset Latest reading \u00b7 Nov 15, 10:36 AM UTC Accounts With a 5-hour limit 2 of 3 Expand all Account Plan 5-hour remaining cod\u2022\u2022\u2022-1@ex\u2022\u2022\u2022.invalid Plus \u00b7 100 points 80.2% cod\u2022\u2022\u2022-2@ex\u2022\u2022\u2022.invalid Plus \u00b7 100 points 55.2% cod\u2022\u2022\u2022ro@ex\u2022\u2022\u2022.invalid Pro \u00b7 1,000 points No 5-hour limit Data collection History since Nov 15, 10:17 AM UTC Last collection attempt Nov 15, 10:36 AM UTC About these numbers"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    }
+  }
+}

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TFunction } from 'i18next';
 import { createHandler } from '../server/app';
-import { QuotaCollector } from '../server/quota/collector';
+import { QuotaCollector, quotaSamples } from '../server/quota/collector';
 import { QuotaStore } from '../server/quota/store';
 import type { ServerAccount, ServerAccounts } from '../src/domain/quotaPool/accounts';
 import { createCodexQuotaConfig } from '../src/features/quota/providers/codex/data';
@@ -28,8 +28,8 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const WEEK_RESET = NOW + 3 * 86_400_000;
 const FIVE_RESET = NOW + 3 * 3_600_000;
 
-const claudeUsage = (weeklyUsed: number) => ({
-  five_hour: { utilization: 10, resets_at: iso(FIVE_RESET) },
+const claudeUsage = (weeklyUsed: number, fiveHour = true) => ({
+  ...(fiveHour ? { five_hour: { utilization: 10, resets_at: iso(FIVE_RESET) } } : {}),
   seven_day: { utilization: weeklyUsed, resets_at: iso(WEEK_RESET) },
   seven_day_opus: { utilization: 70, resets_at: iso(WEEK_RESET) },
   extra_usage: {
@@ -88,6 +88,8 @@ function stack() {
   let clock = NOW;
   let weeklyUsed = 60;
   let usageFails = false;
+  let claudeFiveHour = true;
+  let codexBody: unknown = codexUsage;
   let credits: unknown = { has_credits: true, unlimited: false, balance: '8.75' };
   const disabled = new Set<string>();
   const root = mkdtempSync(join(tmpdir(), 'prox-accounts-'));
@@ -120,14 +122,14 @@ function stack() {
       if (call.url.startsWith(CLAUDE_USAGE_URL) && usageFails)
         return Response.json({ status_code: 500, body: {} });
       if (call.url.startsWith(CLAUDE_USAGE_URL))
-        return Response.json({ status_code: 200, body: claudeUsage(weeklyUsed) });
+        return Response.json({ status_code: 200, body: claudeUsage(weeklyUsed, claudeFiveHour) });
       if (call.url === CLAUDE_PROFILE_URL)
         return Response.json({
           status_code: 200,
           body: { organization: { rate_limit_tier: 'default_claude_max_20x' } },
         });
       if (call.url === CODEX_USAGE_URL)
-        return Response.json({ status_code: 200, body: { ...codexUsage, credits } });
+        return Response.json({ status_code: 200, body: { ...(codexBody as object), credits } });
       return Response.json({ status_code: 404, body: {} });
     },
     { preconnect: () => {} }
@@ -175,6 +177,8 @@ function stack() {
     setWeeklyUsed: (value: number) => (weeklyUsed = value),
     failUsage: (value: boolean) => (usageFails = value),
     setCredits: (value: unknown) => (credits = value),
+    setCodexUsage: (value: unknown) => (codexBody = value),
+    setClaudeFiveHour: (value: boolean) => (claudeFiveHour = value),
     disable: (index: string) => disabled.add(index),
   };
 }
@@ -248,6 +252,84 @@ describe('GET /v1/accounts', () => {
     expect(cy.windows.filter((entry) => entry.lane === 'model').length).toBeGreaterThan(0);
     // Balances belong to Claude's usage payload only.
     expect(cy.extraUsage).toBeUndefined();
+  });
+
+  test('marks an account whose provider reports no five-hour window, and only that one', async () => {
+    const s = stack();
+    await s.collector.refresh();
+    const first = await s.accounts();
+    expect(byIndex(first, 'codex-primary', 'codex', 'cy-index').noFiveHourLimit).toBeFalsy();
+    expect(byIndex(first, 'claude-primary', 'claude', 'ann-index').noFiveHourLimit).toBeFalsy();
+    // A Pro account answers with its weekly window only (primary 604800 s, no secondary).
+    s.setCodexUsage({
+      plan_type: 'pro',
+      rate_limit: {
+        primary_window: {
+          used_percent: 83,
+          limit_window_seconds: 604800,
+          reset_at: WEEK_RESET / 1000,
+        },
+        secondary_window: null,
+      },
+    });
+    s.setClaudeFiveHour(false);
+    s.advance(5 * 60_000);
+    await s.collector.refresh();
+    const list = await s.accounts();
+    const cy = byIndex(list, 'codex-primary', 'codex', 'cy-index');
+    expect(cy.noFiveHourLimit).toBe(true);
+    expect(cy.windows.find((entry) => entry.lane === 'weekly')?.remainingPercent).toBe(17);
+    expect(byIndex(list, 'claude-primary', 'claude', 'ann-index').noFiveHourLimit).toBe(true);
+    // The pool and the served account agree: the five-hour pool leaves it out.
+    const pools = (await (await s.call('/v1/pools?window=five-hour')).json()) as {
+      pools: Array<{ provider: string; accounts: Array<{ status: string }> }>;
+    };
+    expect(pools.pools.find((pool) => pool.provider === 'codex')?.accounts[0].status).toBe(
+      'no-limit'
+    );
+    // After a restart the stored samples still say so.
+    for (const id of s.store.listAccounts().map((account) => account.id)) s.collector.forget([id]);
+    const restarted = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
+    expect(restarted.noFiveHourLimit).toBe(true);
+  });
+
+  test.each([[false], [0], [''], ['x'], [[]]])(
+    'a malformed secondary window (%p) is a failed read, never proof of no five-hour limit',
+    async (secondary) => {
+      const weeklyOnly = (value: unknown) => ({
+        plan_type: 'pro',
+        rate_limit: {
+          primary_window: { used_percent: 83, limit_window_seconds: 604800, reset_at: WEEK_RESET / 1000 },
+          secondary_window: value,
+        },
+      });
+      // The provider's own absence is proof; anything else in that slot is a bad response.
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(null), NOW)).not.toThrow();
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(undefined), NOW)).not.toThrow();
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(secondary), NOW)).toThrow();
+      // Through the collector: only a malformed answer arrives, so the account is not no-limit.
+      const s = stack();
+      s.setCodexUsage(weeklyOnly(secondary));
+      await s.collector.refresh();
+      const cy = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
+      expect(cy.noFiveHourLimit).toBeFalsy();
+      const pools = (await (await s.call('/v1/pools?window=five-hour')).json()) as {
+        pools: Array<{ provider: string; accounts: Array<{ status: string }> }>;
+      };
+      expect(pools.pools.find((pool) => pool.provider === 'codex')?.accounts[0].status).not.toBe(
+        'no-limit'
+      );
+    }
+  );
+
+  test('a failed read does not mark an account as having no five-hour limit', async () => {
+    const s = stack();
+    await s.collector.refresh();
+    s.failUsage(true);
+    s.advance(5 * 60_000);
+    await s.collector.refresh();
+    const list = await s.accounts();
+    for (const account of list.accounts) expect(account.noFiveHourLimit).toBeFalsy();
   });
 
   test('names and emails only with reveal=true', async () => {

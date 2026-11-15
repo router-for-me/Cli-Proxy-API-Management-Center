@@ -18,6 +18,7 @@ import { resolveTimeZoneLabel } from '@/utils/time/timezone';
 import { formatDateTimeValue } from '@/utils/format';
 import { useNow } from '@/hooks/useNow';
 import { formatPoolDate } from '@/features/quotaPool/presentation';
+import { NoFiveHourRow } from '../../components/NoFiveHourRow';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { QuotaResetLabel } from '../../components/QuotaResetLabel';
 import { collectQuotaRowInstants, pickUrgentRowId, resetCreditRowId } from '../../resetSchedule';
@@ -46,6 +47,11 @@ export function CodexQuotaBody({
     [quota, now]
   );
   const windows = quota.windows ?? [];
+  // The server says the account has no 5-hour limit: that row says so instead of showing "--".
+  const noFiveHour = quota.noFiveHourLimit === true;
+  const hasFiveHourData = windows.some(
+    (window) => window.id === 'five-hour' && window.usedPercent !== null
+  );
   const planType = quota.planType ?? null;
   const subscriptionActiveUntil = quota.subscriptionActiveUntil ?? null;
   const creditBalance = quota.creditBalance ?? null;
@@ -179,10 +185,15 @@ export function CodexQuotaBody({
             })}
           </div>
         ) : null)}
-      {windows.length === 0 ? (
+      {noFiveHour && !hasFiveHourData && (
+        <NoFiveHourRow labelKey="codex_quota.primary_window" classes={classes} />
+      )}
+      {windows.length === 0 && !noFiveHour ? (
         <div className={classes.quotaMessage}>{t('codex_quota.empty_windows')}</div>
       ) : (
-        windows.map((window, index) => {
+        windows
+          .filter((window) => !(noFiveHour && window.id === 'five-hour' && !hasFiveHourData))
+          .map((window, index) => {
           const used = window.usedPercent;
           const clampedUsed = used === null ? null : Math.max(0, Math.min(100, used));
           const remaining =

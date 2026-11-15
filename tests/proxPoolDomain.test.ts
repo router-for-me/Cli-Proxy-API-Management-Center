@@ -392,6 +392,102 @@ describe('accounts without a five-hour limit', () => {
   });
 });
 
+describe('Codex accounts whose provider reports only a weekly window', () => {
+  const codex = (id: string, patch: Partial<StoredAccount> = {}) =>
+    account(id, { provider: 'codex', plan: 'pro', ...patch });
+  // One successful read writes both lanes at the same instant: the weekly balance, and a null
+  // five-hour sample when the payload has no five-hour window.
+  const weekly = (accountId: string, at = now) => sample(at, 17, { accountId, periodHours: 168 });
+  const missingFiveHour = (accountId: string, at = now) =>
+    sample(at, 0, {
+      accountId,
+      window: 'five-hour',
+      remainingPercent: null,
+      resetAtMs: null,
+      periodHours: null,
+    });
+  const fiveHour = (accountId: string, remaining: number, at = now) =>
+    sample(at, remaining, { accountId, window: 'five-hour', periodHours: 5 });
+  const codexPool = (view: ReturnType<typeof dashboard>) =>
+    view.pools.find((pool) => pool.provider === 'codex')!;
+  const view = (accounts: StoredAccount[], samples: QuotaSample[]) =>
+    dashboard(accounts, samples, { window: 'five-hour' });
+
+  test('is no-limit in the five-hour pool, outside its capacity, and does not withhold the total', () => {
+    const accounts = [codex('c'), codex('d')];
+    const samples = [
+      weekly('c'),
+      missingFiveHour('c'),
+      fiveHour('d', 60, now - 600_000),
+      fiveHour('d', 50),
+    ];
+    const result = view(accounts, samples);
+    const pool = codexPool(result);
+    expect(pool.accounts.find((a) => a.id === 'c')?.status).toBe('no-limit');
+    expect(pool.accounts.find((a) => a.id === 'c')?.noFiveHourLimit).toBe(true);
+    expect(pool.accountCount).toBe(2);
+    expect(pool.eligibleCount).toBe(1);
+    expect(pool.capacityPoints).toBe(1000);
+    expect(pool.forecastState).not.toBe('partial');
+    expect(pool.remainingPoints).toBe(500);
+    expect(result.combined?.codex.series?.remainingPoints).not.toBeNull();
+  });
+  test('a pool of only such accounts says so instead of withholding', () => {
+    const pool = codexPool(view([codex('c')], [weekly('c'), missingFiveHour('c')]));
+    expect(pool.forecastState).toBe('no-limit');
+    expect(pool.eligibleCount).toBe(0);
+  });
+  test('the weekly pool still counts that account, and flags it', () => {
+    const pool = codexPool(dashboard([codex('c')], [weekly('c'), missingFiveHour('c')]));
+    expect(pool.accounts[0].status).toBe('ok');
+    expect(pool.accounts[0].noFiveHourLimit).toBe(true);
+    expect(pool.eligibleCount).toBe(1);
+  });
+  test('an account that reports a five-hour window is unchanged', () => {
+    const pool = codexPool(view([codex('c')], [weekly('c'), fiveHour('c', 40)]));
+    expect(pool.accounts[0].status).toBe('ok');
+    expect(pool.accounts[0].noFiveHourLimit).toBeFalsy();
+    expect(pool.eligibleCount).toBe(1);
+    expect(pool.capacityPoints).toBe(1000);
+  });
+  test('a reading with no weekly window either stays missing, not no-limit', () => {
+    const empty = sample(now, 0, { window: 'weekly', remainingPercent: null });
+    const pool = codexPool(view([codex('c')], [empty, missingFiveHour('c')]));
+    expect(pool.accounts[0].status).toBe('missing-window');
+    expect(pool.accounts[0].noFiveHourLimit).toBeFalsy();
+    expect(pool.forecastState).toBe('partial');
+  });
+  test('a failed read is still errored, and a stale answer is not proof', () => {
+    const old = now - STALE_MS - 1;
+    const failed = codexPool(view(
+      [codex('c', { lastSeenAtMs: old, lastErrorAtMs: now })],
+      [weekly('c', old), missingFiveHour('c', old)]
+    ));
+    expect(failed.accounts[0].status).toBe('error');
+    expect(failed.forecastState).not.toBe('no-limit');
+    const stale = codexPool(view(
+      [codex('c', { lastSeenAtMs: old })],
+      [weekly('c', old), missingFiveHour('c', old)]
+    ));
+    expect(stale.accounts[0].status).toBe('stale');
+  });
+  test('a later five-hour reading supersedes an earlier weekly-only one', () => {
+    const pool = codexPool(view(
+      [codex('c')],
+      [weekly('c', now - 600_000), missingFiveHour('c', now - 600_000), weekly('c'), fiveHour('c', 40)]
+    ));
+    expect(pool.accounts[0].status).toBe('ok');
+    expect(pool.accounts[0].noFiveHourLimit).toBeFalsy();
+  });
+  test('Claude Pro without a five-hour window stays unknown (the rule is unchanged)', () => {
+    const pool = view(
+      [account('p', { plan: 'claude_pro' })],
+      [sample(now, 17, { accountId: 'p' }), missingFiveHour('p')]
+    ).pools.find((entry) => entry.provider === 'claude')!;
+    expect(pool.accounts[0].status).toBe('missing-window');
+  });
+});
+
 describe('accounts known to have no five-hour limit', () => {
   const fiveHourWindow = {
     id: 'five-hour',

@@ -27,11 +27,11 @@ export interface PoolAccount {
   label: string;
   /** Masked address or name, always present, so accounts can be told apart. */
   identifier?: string;
-  /** Claude Ultra answered with other limits but no five-hour one: that limit does not exist for it. */
+  /** The provider answered without a five-hour limit (Claude Ultra; Codex with only a weekly window): none exists for it. */
   noFiveHourLimit?: boolean;
   email?: string;
   disabled: boolean;
-  /** `no-limit`: the provider answered and the account has no limit in this window (Ultra, 5-hour). */
+  /** `no-limit`: the provider answered and the account has no limit in this window (Ultra or weekly-only Codex, 5-hour). */
   status: 'ok' | 'stale' | 'error' | 'disabled' | 'missing-window' | 'no-limit';
   observedAtMs: number | null;
   remainingPercent: number | null;
