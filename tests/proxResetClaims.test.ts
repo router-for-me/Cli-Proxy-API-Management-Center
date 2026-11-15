@@ -47,6 +47,11 @@ function fixture() {
     consumeCode: 'reset',
     calls: [] as Call[],
     claimGate: null as Promise<void> | null,
+    org: ORG,
+    /** Holds the next usage read after its body is fixed, as a slow real response would be. */
+    usageGate: null as Promise<void> | null,
+    usageGateHit: false,
+    onOrganizationRead: null as (() => void) | null,
   };
   const reset = (ms: number) => new Date(NOW + ms).toISOString();
   const claudeUsage = () => ({
@@ -98,9 +103,21 @@ function fixture() {
   });
   const apiCall = async (body: Record<string, unknown>) => {
     const url = String(body.url);
-    if (url === USAGE) return { status_code: 200, body: claudeUsage() };
-    if (url === PROFILE) return { status_code: 200, body: { organization: { uuid: ORG } } };
-    if (url === CLAIM) {
+    if (url === USAGE) {
+      const body = claudeUsage();
+      const gate = hub.usageGate;
+      if (gate) {
+        hub.usageGate = null;
+        hub.usageGateHit = true;
+        await gate;
+      }
+      return { status_code: 200, body };
+    }
+    if (url === PROFILE) {
+      hub.onOrganizationRead?.();
+      return { status_code: 200, body: { organization: { uuid: hub.org } } };
+    }
+    if (url.endsWith('/reset_rate_limits')) {
       if (hub.claimGate) await hub.claimGate;
       if (hub.claimMode === 'transport-error') throw new Error('hub dropped the request');
       if (hub.claimMode === 'cooldown') return { status_code: 200, body: { result: 'cooldown' } };
@@ -470,5 +487,60 @@ describe('server-owned reset claims', () => {
     const [event] = second.listResetEvents({});
     expect(event).toMatchObject({ outcome: 'unknown', settledAtMs: null });
     second.close();
+  });
+
+  test('the refresh after a claim is a new read, not a poll that started before the spend', async () => {
+    const f = fixture();
+    await f.collect();
+    const account = f.account('claude');
+    let release: () => void = () => {};
+    f.hub.usageGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const early = f.collector.refreshAccount(account.id);
+    for (let i = 0; i < 200 && !f.hub.usageGateHit; i++) await Bun.sleep(2);
+    expect(f.hub.usageGateHit).toBe(true);
+    const claim = f.claim(claudeBody(account.id));
+    for (let i = 0; i < 200 && f.posts(CLAIM).length === 0; i++) await Bun.sleep(2);
+    await Bun.sleep(20);
+    release();
+    await early;
+    const result = await (await claim).json();
+    expect(result.outcome).toBe('reset');
+    expect(windowOf(result.event.after, 'seven-day-fable')).toBe(100);
+    expect(windowOf(result.account, 'seven-day-fable')).toBe(100);
+  });
+
+  test('a retry is refused when the account now reads another organization', async () => {
+    const f = fixture();
+    await f.collect();
+    const account = f.account('claude');
+    f.hub.claimMode = 'transport-error';
+    await f.claim(claudeBody(account.id));
+    f.hub.claimMode = 'reset';
+    f.hub.org = '99999999-2222-3333-4444-555555555555';
+    f.advance(30_000);
+    const retry = await f.claim(claudeBody(account.id));
+    expect(retry.status).toBe(409);
+    expect(await retry.json()).toMatchObject({ stage: 'operation', reason: 'identity' });
+    expect(f.posts(CLAIM)).toHaveLength(1);
+    expect(f.hub.calls.some((call) => String(call.body?.url).includes('99999999'))).toBe(false);
+    expect(f.store.resetEventByRequestId('request-1')?.outcome).toBe('unknown');
+  });
+
+  test('a retry that ran out of window while its preflight was running is not sent', async () => {
+    const f = fixture();
+    await f.collect();
+    const account = f.account('claude');
+    f.hub.claimMode = 'transport-error';
+    await f.claim(claudeBody(account.id));
+    f.hub.claimMode = 'reset';
+    f.advance(599_000);
+    f.hub.onOrganizationRead = () => f.advance(2000);
+    const retry = await f.claim(claudeBody(account.id));
+    expect(retry.status).toBe(409);
+    expect(await retry.json()).toMatchObject({ reason: 'expired' });
+    expect(f.posts(CLAIM)).toHaveLength(1);
+    expect(f.store.resetEventByRequestId('request-1')?.outcome).toBe('unknown');
   });
 });

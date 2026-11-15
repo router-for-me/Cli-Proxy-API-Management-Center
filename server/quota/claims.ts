@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { AccountBilling } from '../../src/domain/accountBilling';
 import type {
   AccountQuotaWindow,
@@ -138,12 +139,7 @@ export class ResetClaims {
           account: this.accountReading(account),
         };
       }
-      if (this.now() - existing.requestedAtMs >= RETRY_WINDOW_MS)
-        throw new ResetClaimRefusal(409, {
-          error: 'Claim retry window has passed',
-          stage: 'operation',
-          reason: 'expired',
-        });
+      this.assertRetryable(existing);
     } else {
       const open = this.store.latestUnknownResetEvent(account.id, this.now() - RETRY_WINDOW_MS);
       if (open)
@@ -189,6 +185,16 @@ export class ResetClaims {
     });
   }
 
+  /** A retry is sent only inside its window; checked again right before the send. */
+  private assertRetryable(existing: ResetEvent | null): void {
+    if (existing && this.now() - existing.requestedAtMs >= RETRY_WINDOW_MS)
+      throw new ResetClaimRefusal(409, {
+        error: 'Claim retry window has passed',
+        stage: 'operation',
+        reason: 'expired',
+      });
+  }
+
   private accountReading(account: StoredAccount): AccountReading {
     return {
       accountId: account.id,
@@ -222,7 +228,12 @@ export class ResetClaims {
     } catch {
       console.error('Reset claim event update failed');
     }
-    const stored = this.store.resetEventById(event.id);
+    let stored: ResetEvent | null = null;
+    try {
+      stored = this.store.resetEventById(event.id);
+    } catch {
+      console.error('Reset claim event read failed');
+    }
     return {
       outcome,
       replayed: false,
@@ -242,7 +253,8 @@ export class ResetClaims {
     account: StoredAccount,
     request: ResetClaimRequest,
     kind: string,
-    before: ResetReading | null
+    before: ResetReading | null,
+    organizationHash?: string
   ): ResetEvent {
     try {
       return this.store.insertResetEvent({
@@ -253,6 +265,7 @@ export class ResetClaims {
         clientRequestId: request.clientRequestId,
         requestedAtMs: this.now(),
         before,
+        organizationHash,
       });
     } catch {
       // Nothing was sent. A unique-id clash here is a concurrent request with the same id.
@@ -282,6 +295,14 @@ export class ResetClaims {
     } catch (error) {
       throw preflight('organization', error);
     }
+    const organizationHash = createHash('sha256').update(organization).digest('hex');
+    // A retry goes to the organization the first send was addressed to, or not at all.
+    if (existing && this.store.resetEventOrganization(existing.id) !== organizationHash)
+      throw new ResetClaimRefusal(409, {
+        error: 'Account organization changed since the claim was sent',
+        stage: 'operation',
+        reason: 'identity',
+      });
     let event = existing;
     if (!event) {
       let status: Awaited<ReturnType<typeof readClaudeResetGrants>>;
@@ -298,8 +319,9 @@ export class ResetClaims {
           reason: `blocked_${reason}`,
         });
       const kind = status.grants.find((grant) => grant.id === grantId)!.kind;
-      event = this.record(account, request, kind, before);
+      event = this.record(account, request, kind, before, organizationHash);
     }
+    this.assertRetryable(existing);
     let code: string;
     try {
       code = await claimClaudeResetGrant(
@@ -331,6 +353,7 @@ export class ResetClaims {
         reason: 'blocked_none_available',
       });
     const event = existing ?? this.record(account, request, CODEX_RESET_KIND, before);
+    this.assertRetryable(existing);
     let code = 'unknown';
     try {
       const result = await managed.api.request(

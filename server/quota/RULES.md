@@ -133,11 +133,12 @@ while collection is running, without requesting additional collections.
   like a targeted refresh. The row is written as `pending` before anything is sent. The client
   request id is unique: a settled one replays its event and sends nothing. A claim that may have
   been sent and got no answer is `unknown`, never failed; the same request id may be sent again
-  for ten minutes (providers deduplicate it) and settles the one event only on a definite spend.
+  for ten minutes, checked again just before the send (providers deduplicate it), and only to the
+  organization the first send was addressed to; it settles the one event only on a definite spend.
   A refusal on that retry stays `unknown`. A `pending` row left by a stopped process becomes
   `unknown` at startup. Anything refused before the send (eligibility, organization, status read)
   records no event. After every claim one targeted refresh reads the account, past the 20-second
-  floor, and its reading is the event's `after` (null when the refresh could not read).
+  floor and never adopting a poll that started before the send, and its reading is the event's `after` (null when the refresh could not read).
 - Per-account model-scoped windows (Fable) are exposed beside, never inside, the pool points:
   `/v1/pools` carries each account's latest `windows`. Usage (prox-usage) is not joined to claims.
   A "tokens since last reset" view is a documented follow-up that would come through prox-usage's

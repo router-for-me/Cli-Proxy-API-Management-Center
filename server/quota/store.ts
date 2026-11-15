@@ -99,7 +99,9 @@ export class QuotaStore {
         settledAtMs INTEGER,
         cooldownCleared INTEGER CHECK (cooldownCleared IS NULL OR cooldownCleared IN (0, 1)),
         beforeJson TEXT,
-        afterJson TEXT
+        afterJson TEXT,
+        -- SHA-256 of the Claude organization the claim was addressed to; never returned.
+        organizationHash TEXT
       );
       CREATE INDEX IF NOT EXISTS quota_reset_events_time ON quota_reset_events(requestedAtMs);
       CREATE INDEX IF NOT EXISTS quota_reset_events_account
@@ -483,12 +485,14 @@ export class QuotaStore {
     clientRequestId: string;
     requestedAtMs: number;
     before: ResetReading | null;
+    organizationHash?: string;
   }): ResetEvent {
     const { lastInsertRowid } = this.db
       .query(
         `INSERT INTO quota_reset_events
-           (clientRequestId, accountId, provider, kind, grantId, outcome, requestedAtMs, beforeJson)
-         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`
+           (clientRequestId, accountId, provider, kind, grantId, outcome, requestedAtMs, beforeJson,
+            organizationHash)
+         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
       )
       .run(
         input.clientRequestId,
@@ -497,7 +501,8 @@ export class QuotaStore {
         input.kind,
         input.grantId,
         input.requestedAtMs,
-        input.before ? JSON.stringify(input.before) : null
+        input.before ? JSON.stringify(input.before) : null,
+        input.organizationHash ?? null
       );
     return this.resetEventById(Number(lastInsertRowid))!;
   }
@@ -520,6 +525,17 @@ export class QuotaStore {
     this.db
       .query('UPDATE quota_reset_events SET afterJson = ? WHERE id = ?')
       .run(after ? JSON.stringify(after) : null, id);
+  }
+
+  /** Which organization a Claude claim was addressed to, so a retry can be held to it. */
+  resetEventOrganization(id: number): string | null {
+    return (
+      this.db
+        .query<{ organizationHash: string | null }, [number]>(
+          'SELECT organizationHash FROM quota_reset_events WHERE id = ?'
+        )
+        .get(id)?.organizationHash ?? null
+    );
   }
 
   resetEventById(id: number): ResetEvent | null {
@@ -566,7 +582,9 @@ export class QuotaStore {
         },
         (string | number)[]
       >(
-        `SELECT * FROM quota_reset_events ${where} ORDER BY requestedAtMs DESC, id DESC LIMIT ${limit}`
+        `SELECT id, clientRequestId, accountId, provider, kind, grantId, outcome, requestedAtMs,
+           settledAtMs, cooldownCleared, beforeJson, afterJson
+         FROM quota_reset_events ${where} ORDER BY requestedAtMs DESC, id DESC LIMIT ${limit}`
       )
       .all(...params)
       .map(({ cooldownCleared, beforeJson, afterJson, ...row }) => ({

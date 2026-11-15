@@ -605,22 +605,16 @@ export class QuotaCollector {
     accountId: string,
     use: (account: ManagedAccount) => Promise<T>
   ): Promise<T | null> {
-    const stored = this.store.listAccounts().find((account) => account.id === accountId);
-    if (!stored || stored.disabled || stored.retired) return null;
-    const source = this.collectionSources.find((entry) => entry.instanceId === stored.instanceId);
-    if (!source) return null;
+    const live = this.liveAccount(accountId);
+    if (!live) return null;
+    const { stored, source } = live;
     // Not tied to stop(): a user's claim that is already on its way is let finish.
     const signal = new AbortController().signal;
     const flight = (async () => {
       await this.inFlight?.catch(() => {});
-      const { key, groups } = await this.readInventory(source, signal);
-      const entry = groups
-        .flatMap((group) => group.accounts)
-        .find(
-          ({ account, authIndex }) =>
-            this.store.accountIdFor(source.instanceId!, account.provider, authIndex) === accountId
-        );
-      if (!entry || entry.account.disabled) return null;
+      const found = await this.inventoryEntry(source, accountId, signal);
+      if (!found) return null;
+      const { key, entry } = found;
       const post = (path: string, body: Record<string, unknown>, timeoutMs?: number) =>
         this.request(source, path.replace(/^\//, ''), key, signal, body, timeoutMs);
       return use({
@@ -642,14 +636,40 @@ export class QuotaCollector {
     }
   }
 
-  /** `force` skips the 20-second floor; only a claim just sent uses it, once. */
+  /** An enabled, live account and the source it belongs to; null otherwise. */
+  private liveAccount(accountId: string) {
+    const stored = this.store.listAccounts().find((account) => account.id === accountId);
+    if (!stored || stored.disabled || stored.retired) return null;
+    const source = this.collectionSources.find((entry) => entry.instanceId === stored.instanceId);
+    return source ? { stored, source } : null;
+  }
+
+  /** Reads the source's credential list and finds this account's enabled entry in it. */
+  private async inventoryEntry(source: CollectionSource, accountId: string, signal: AbortSignal) {
+    const { key, groups } = await this.readInventory(source, signal);
+    const entry = groups
+      .flatMap((group) => group.accounts)
+      .find(
+        ({ account, authIndex }) =>
+          this.store.accountIdFor(source.instanceId!, account.provider, authIndex) === accountId
+      );
+    return entry && !entry.account.disabled ? { key, entry } : null;
+  }
+
+  /**
+   * `force` skips the 20-second floor and never adopts a poll already in flight (it may have read
+   * the account before a claim was sent): it waits for that one, then reads again.
+   */
   refreshAccount(accountId: string, options: { force?: boolean } = {}): Promise<boolean> {
     const existing = this.accountFlights.get(accountId);
-    if (existing) return existing;
-    const stored = this.store.listAccounts().find((account) => account.id === accountId);
-    if (!stored || stored.disabled || stored.retired) return Promise.resolve(false);
-    const source = this.collectionSources.find((entry) => entry.instanceId === stored.instanceId);
-    if (!source) return Promise.resolve(false);
+    if (existing) {
+      return options.force
+        ? existing.catch(() => false).then(() => this.refreshAccount(accountId, options))
+        : existing;
+    }
+    const live = this.liveAccount(accountId);
+    if (!live) return Promise.resolve(false);
+    const { stored, source } = live;
     const last = this.accountAttempts.get(accountId);
     if (!options.force && last !== undefined && this.now() - last < 20_000)
       return Promise.resolve(false);
@@ -664,14 +684,9 @@ export class QuotaCollector {
       if (!current || current.disabled || current.retired) return false;
       this.accountAttempts.set(accountId, this.now());
       try {
-        const { key, groups } = await this.readInventory(source, signal);
-        const entry = groups
-          .flatMap((group) => group.accounts)
-          .find(
-            ({ account, authIndex }) =>
-              this.store.accountIdFor(source.instanceId!, account.provider, authIndex) === accountId
-          );
-        if (!entry || entry.account.disabled) return false;
+        const found = await this.inventoryEntry(source, accountId, signal);
+        if (!found) return false;
+        const { key, entry } = found;
         return await this.pollAccount(
           current,
           entry.authIndex,
