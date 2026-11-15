@@ -15,8 +15,7 @@ ExecStart=/usr/bin/ionice -c3 /usr/bin/nice -n10 bun %h/.local/share/prox/usage-
 TimeoutStartSec=7h40min
 KillSignal=SIGINT
 TimeoutStopSec=45
-# Reads ~/.config/prox/cpa-admin-key for the CPAMP /status guard; no ProtectHome, so no mount.
-# Only while prox-usage reports cpamp_retired=false: once PROX_USAGE_CPAMP_RETIRED=1 in its quadlet,
-# the chain never reads the key or contacts CPAMP.
+# CPA-Manager-Plus is retired (prox-usage reports cpamp_retired=true): the chain never reads its key
+# or contacts it, and runs prune and the paced backup.
 NoNewPrivileges=yes
 UMask=0077

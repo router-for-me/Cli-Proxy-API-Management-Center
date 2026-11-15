@@ -143,10 +143,9 @@ test('deploy uses the history image, hashes both bundles and keeps the API on lo
   expect(script.match(/restart prox-usage.service/g)).toHaveLength(1);
   expect(read('deploy/prox-usage.container')).toContain('Image=localhost/prox-history:dev');
   expect(read('deploy/prox-usage.container')).toContain('Exec=bun /app/usage/main.js');
-  // CPAMP's history is only ever mounted read-only; the rate book ships with every deploy.
-  expect(read('deploy/prox-usage.container')).toContain(
-    'Volume=%h/.local/share/cpa-manager-plus:/cpamp:ro'
-  );
+  // CPA-Manager-Plus is retired: no mount of its data, and retired mode stays on.
+  expect(read('deploy/prox-usage.container')).not.toContain('cpa-manager-plus');
+  expect(read('deploy/prox-usage.container')).toContain('Environment=PROX_USAGE_CPAMP_RETIRED=1');
   expect(script).toContain(
     'install -m 644 deploy/usage-rates.json "$HOME/.local/share/prox-usage/usage-rates.json"'
   );

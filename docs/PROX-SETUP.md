@@ -236,9 +236,10 @@ The existing `/v8/management/prox/analytics` route reaches the authenticated Pro
 server, which calls prox-usage's `/v0/management/monitoring/prox-analytics`, an
 alias of its `/v1/analytics` kept for this switch and removed in plan P10. The
 response contract is unchanged. The inference instances remain on v8. prox-usage
-and CPA-Manager-Plus both consume the usage queue until CPA-Manager-Plus is stopped.
+and CPA-Manager-Plus both consumed the usage queue until CPA-Manager-Plus was stopped
+(15 Nov 2026, 21:41 UTC, after an exact final reconcile of 868,254 events).
 
-**Rollback:** `git revert` the P7 merge and run `scripts/deploy-homelab.sh`. That
+**Rollback (historical; CPA-Manager-Plus is retired, so this no longer applies):** `git revert` the P7 merge and run `scripts/deploy-homelab.sh`. That
 restores the old `analytics` values (`"upstreamOrigin": "http://127.0.0.1:18317"`,
 `"adminKeyFile": "/run/secrets/cpa-admin-key"`) and the key mount line
 `Volume=%h/.config/prox/cpa-admin-key:/run/secrets/cpa-admin-key:ro` in
