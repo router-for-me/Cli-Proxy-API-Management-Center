@@ -6,7 +6,7 @@
  * refresh it triggers, the history server's collector and /v1/pools (points, recorded line,
  * forecast, reset counts), and the one client store that Auth Files and /quota/accounts share.
  */
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
