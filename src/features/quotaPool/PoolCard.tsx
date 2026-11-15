@@ -30,6 +30,7 @@ import { metricField, type ChartMode } from './chartGeometry';
 import { DAY_MS } from '@/utils/time/durations';
 import { useNow } from '@/hooks/useNow';
 import type { AccountResetKind, AccountResets } from '@/domain/quotaPool/types';
+import { laneOf, poolWindowId } from '@/domain/quotaWindows/lanes';
 import type { TFunction } from 'i18next';
 import { heldResetKinds, sumResetKinds, wasSpent, type ResetKindCount } from './resetAccounts';
 import { PoolAccountResets, ResetKindCounts } from './PoolAccountResets';
@@ -254,9 +255,9 @@ export function PoolCard({
   // Claude names its weekly windows "7-day"; the page calls that window Weekly everywhere.
   // The columns show remaining percentages, so the headings say "remaining", not "limit".
   const limitLabel = (limit: (typeof pool.accounts)[number]['windows'][number]) =>
-    limit.id === 'five-hour'
+    laneOf(pool.provider, limit.id) === 'five-hour'
       ? t('quota_pool.five_hour_remaining')
-      : limit.id === 'seven-day' || limit.id === 'weekly'
+      : laneOf(pool.provider, limit.id) === 'weekly'
         ? t('quota_pool.weekly_remaining')
         : limit.id === 'seven-day-opus'
           ? t('quota_pool.weekly_opus_remaining')
@@ -290,12 +291,7 @@ export function PoolCard({
   }, []);
   // The pool balance is the sample of one limit (server/quota/collector.ts): the 5-hour
   // limit, or the provider's weekly one. Mark that column instead of repeating it.
-  const countedLimitId =
-    dashboard.window === 'five-hour'
-      ? 'five-hour'
-      : pool.provider === 'claude'
-        ? 'seven-day'
-        : 'weekly';
+  const countedLimitId = poolWindowId(pool.provider, dashboard.window);
   const balanceHasColumn = limitColumns.some((column) => column.id === countedLimitId);
   // A wide column that shows a Low mark or "Unavailable" on any row reserves a status slot, as wide as
   // its widest mark, on every row, so the values and bars of the whole column start at one x.
