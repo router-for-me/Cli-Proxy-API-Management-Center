@@ -145,4 +145,26 @@ while collection is running, without requesting additional collections.
   `/v1/pools` carries each account's latest `windows`. Usage (prox-usage) is not joined to claims.
   A "tokens since last reset" view is a documented follow-up that would come through prox-usage's
   existing `/v1/analytics` keyed by the event times, not through a second usage store here.
+- Accounts read model (`GET /v1/accounts`, `accounts.ts`; contract in
+  `src/domain/quotaPool/accounts.ts`): prox-history owns every number that feeds a lane or pool
+  points for Claude and Codex accounts of the manifest sources, and pages read it instead of the
+  hubs. Authenticated like `/v1/pools`; names and emails only with `reveal=true`. One entry per
+  non-retired account, keyed by `id` and `sourceAccountId`, with `instanceId`, `provider`,
+  `disabled`, `status` (`ok`, `stale` after 15 minutes, `error`, `disabled`), `observedAtMs`,
+  `plan {label, known, type}`, `resets` and `billing` as `/v1/pools` has them, and `windows[]`
+  (`id`, `lane` from `laneOf`, `labelKey`, `remainingPercent`, `resetAtMs`, `periodHours`): weekly
+  is always its own lane, and every other limit (model-scoped, monthly, surface-scoped) its own.
+  Claude entries also carry `extraUsage` and `dollarWindows` from the usage payload the collector
+  already parses: memory-only like billing, never persisted, never pooled, never in `/v1/pools`;
+  after a restart they are absent until the next reading. After a restart the windows are the last
+  stored weekly and five-hour sample until the collector reads again.
+  A disabled account has `status: 'disabled'` and its last stored weekly/five-hour sample with that
+  sample's time as `observedAtMs` (its age); the collector still never reads it, and a disabled
+  account's memory-only readings are not served. The body holds nothing that depends on the
+  request time, and the response `ETag` is a hash of the body; a matching `If-None-Match` is a
+  304 (the same helper as `/v1/inventory`).
+- `POST /v1/refresh {accountId}` answers `{refreshed, retryAtMs}`. `retryAtMs` is the time the
+  20 s per-account floor lets the next targeted read run, set only when that floor skipped this
+  one, otherwise null. The page-wide refresh answers with the existing `nextRefreshAtMs` (the
+  4 minute floor).
 - Billing readings and ChatGPT account IDs are memory-only. Never persist or log the provider account ID or send it to the browser. Codex subscription attempts and Claude profile attempts are gated per account for six hours, including failures and targeted refreshes. Claude reads once after restart even with a fresh stored plan. Billing failures preserve the previous reading.

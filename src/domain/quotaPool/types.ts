@@ -81,6 +81,8 @@ export interface AccountQuotaWindow {
   labelParams?: Record<string, string | number>;
   remainingPercent: number | null;
   resetAtMs: number | null;
+  /** Window length in hours; absent on readings that predate it. */
+  periodHours?: number | null;
 }
 export interface QuotaPool {
   instanceId?: string;

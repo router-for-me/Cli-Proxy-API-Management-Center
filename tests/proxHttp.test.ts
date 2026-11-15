@@ -72,7 +72,7 @@ describe('quota history HTTP boundary', () => {
       );
     const response = await send(JSON.stringify({ accountId: 'account' }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ refreshed: true });
+    expect(await response.json()).toEqual({ refreshed: true, retryAtMs: null });
     expect(f.targeted).toEqual(['account']);
     for (const body of [
       'null',
