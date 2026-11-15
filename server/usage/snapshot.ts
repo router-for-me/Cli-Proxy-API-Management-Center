@@ -1,6 +1,7 @@
 // A consistent copy of usage.sqlite taken in bounded steps. Used only by backup.ts, where every
 // step() is one governed writer-queue chunk. Import it from the writer worker only (store.ts rule).
-import { Database } from 'bun:sqlite';
+import { constants, Database } from 'bun:sqlite';
+import { pathToFileURL } from 'node:url';
 
 export const SNAPSHOT_ROWS_PER_STEP = 500;
 
@@ -21,9 +22,8 @@ const quote = (name: string) => `"${name.replace(/"/g, '""')}"`;
  * 50 ms. bun:sqlite exposes neither that API nor `sqlite_dbpage`, so rows are copied table by
  * table in primary-key order, inside SQLite (`INSERT ... SELECT`), a bounded page of rows per step.
  *
- * Connection model: the new file is `main`; the live file is attached as `src`. bun:sqlite cannot
- * open URI filenames, so the attach is not read-only at the SQLite level. This class only ever
- * issues SELECTs against `src`, and a test pins that the live file is untouched.
+ * Connection model: the new file is `main`; the live file is attached as `src` with `mode=ro`,
+ * so SQLite refuses any write to it. A test pins both that refusal and an untouched live file.
  * The new file is a disposable scratch, so it runs without fsync.
  */
 export class UsageSnapshot {
@@ -42,7 +42,13 @@ export class UsageSnapshot {
   ) {
     // ATTACH ':memory:' would open a different, empty database and back it up without complaint.
     if (!sourcePath || sourcePath === ':memory:') throw new Error('Usage snapshot needs a file');
-    const db = new Database(destPath, { create: true, strict: true });
+    // Numeric flags are the only constructor form that accepts URIs. URI handling on this
+    // connection is what lets ATTACH open the live file with mode=ro, so SQLite itself refuses
+    // every write to `src` (SQLITE_READONLY), not just this class's habits.
+    const db = new Database(
+      pathToFileURL(destPath).href,
+      constants.SQLITE_OPEN_READWRITE | constants.SQLITE_OPEN_CREATE | constants.SQLITE_OPEN_URI
+    );
     this.db = db;
     try {
       // temp_store matters: a multi-row INSERT keeps a statement journal of every page it dirties,
@@ -55,7 +61,9 @@ export class UsageSnapshot {
       // journal_mode=OFF is refused here (it reads back "delete"); no matter: the file starts
       // empty, so its rollback journal never holds more than a header.
       db.exec(`PRAGMA synchronous = OFF; PRAGMA temp_store = MEMORY; PRAGMA cache_size = -32768;`);
-      db.query('ATTACH DATABASE ? AS src').run(sourcePath);
+      const source = pathToFileURL(sourcePath);
+      source.search = 'mode=ro';
+      db.query('ATTACH DATABASE ? AS src').run(source.href);
       db.exec('BEGIN');
       // The first read of `src` fixes the snapshot; it holds until COMMIT or close().
       const pageSize = db.query<{ page_size: number }, []>('PRAGMA src.page_size').get()!.page_size;

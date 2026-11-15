@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { normalizeUsagePayload } from '../server/usage/normalize';
 import { UsageSnapshot } from '../server/usage/snapshot';
@@ -108,6 +108,49 @@ describe('paced usage snapshot', () => {
     cleanups.push(() => snapshot.close());
     while (!snapshot.step());
     expect(bytes()).toEqual(before);
+  });
+
+  test('SQLite itself refuses every write to the live file through the snapshot connection', () => {
+    const f = fixture(20);
+    const snapshot = new UsageSnapshot(f.live, f.dest, { rowsPerStep: 5 });
+    cleanups.push(() => snapshot.close());
+    snapshot.step();
+    const db = (snapshot as unknown as { db: Database }).db;
+    for (const sql of [
+      'CREATE TABLE src.zz (a)',
+      `INSERT INTO src.meta (key, value) VALUES ('x', 'y')`,
+      'DELETE FROM src.events',
+      'UPDATE src.dim SET value = value',
+      'DROP TABLE src.client_alias',
+    ]) {
+      let code: unknown;
+      try {
+        db.exec(sql);
+      } catch (error) {
+        code = (error as { code?: string }).code;
+      }
+      expect(code).toBe('SQLITE_READONLY');
+    }
+    while (!snapshot.step());
+    expect(f.reader.query('SELECT count(*) AS n FROM events').get()).toEqual({ n: 20 });
+  });
+
+  test('a path with spaces, #, ? and % is attached read-only and copied', () => {
+    const root = mkdtempSync('/dev/shm/prox-snapshot-test-');
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    const dir = join(root, 'a b#c?d%e');
+    mkdirSync(dir);
+    const live = join(dir, 'us age#1.sqlite');
+    const store = new UsageStore({ events: live, raw: null });
+    cleanups.push(() => store.close());
+    insert(store, 0, 30);
+    const dest = join(dir, 'snap shot#?.sqlite');
+    const snapshot = new UsageSnapshot(live, dest, { rowsPerStep: 7 });
+    cleanups.push(() => snapshot.close());
+    while (!snapshot.step());
+    const copy = new Database(dest, { readonly: true });
+    cleanups.push(() => copy.close());
+    expect(copy.query('SELECT count(*) AS n FROM events').get()).toEqual({ n: 30 });
   });
 
   test('refuses sources it would copy wrongly: in-memory, or with a trigger', () => {

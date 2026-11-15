@@ -415,9 +415,10 @@ inside SQLite) and copies table by table in primary-key order,
 writer-queue chunk through `runIoChunk`; PSI admission, 4 MB/s pacing and
 cancellation apply between steps. The read transaction fixes the snapshot at the
 first step: commits made between steps never enter the copy and never restart it.
-The attach is not read-only at the SQLite level (bun:sqlite cannot open URI
-filenames); the class issues only SELECTs against `src`, and a test pins the live
-file and WAL byte-identical.
+The live file is attached with `mode=ro` (the scratch connection opens with numeric
+`READWRITE|CREATE|URI` flags, the only bun:sqlite constructor form that accepts
+URIs), so SQLite refuses every write to it with SQLITE_READONLY. Tests pin that
+refusal and the live file and WAL byte-identical.
 
 The writer is held only for one step: measured on a 350 MB copy of production,
 median 0.6 ms, p99 2 ms, worst 18 ms (the final commit). The report carries
