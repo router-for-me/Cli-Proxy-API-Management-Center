@@ -32,6 +32,8 @@ export interface AccountsInput {
   resets: ReadonlyMap<string, AccountResets>;
   billing: ReadonlyMap<string, AccountBilling>;
   balances: ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>>;
+  /** Codex credit balances from the usage payload; memory-only. */
+  credits?: ReadonlyMap<string, { balance: string | null; unlimited: boolean }>;
   nowMs: number;
   reveal: boolean;
   collection: Pick<ServerAccountsBody, 'lastRefreshAtMs' | 'nextRefreshAtMs' | 'refreshing'>;
@@ -113,6 +115,7 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
           : 'ok';
     const plan = planWeight(account.provider, account.plan);
     const balances = account.disabled ? undefined : input.balances.get(account.id);
+    const credits = account.disabled ? undefined : input.credits?.get(account.id);
     return {
       id: account.id,
       sourceAccountId: account.sourceAccountId ?? null,
@@ -131,6 +134,7 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
       ...(balances
         ? { extraUsage: balances.extraUsage, dollarWindows: balances.dollarWindows }
         : {}),
+      ...(credits ? { credits } : {}),
     };
   });
   return { accounts, ...input.collection };

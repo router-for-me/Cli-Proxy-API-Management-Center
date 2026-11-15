@@ -97,6 +97,8 @@ export function serverCodexState(account: ServerAccount, t: TFunction): CodexQuo
     windows: account.windows.map((window) => codexWindow(window, t)),
     planType: account.plan.type,
     billing: account.billing,
+    creditBalance: account.credits?.balance ?? null,
+    creditsUnlimited: account.credits?.unlimited === true,
     rateLimitResetCreditsAvailableCount: resets?.available ?? null,
     rateLimitResetCreditsApplicableAvailableCount: resets?.usable ?? null,
     rateLimitResetCredits: (resets?.expiries ?? []).map((expiresAtMs, index) => ({

@@ -5,6 +5,7 @@ import {
 } from '@/domain/accountBilling';
 import { buildCodexQuotaWindows } from '@/domain/quotaWindows/codex';
 export { buildCodexQuotaWindows } from '@/domain/quotaWindows/codex';
+export { normalizeCodexAccountCredits } from '@/utils/quota/parsers';
 /**
  * Codex 额度数据层：用量窗口 + 套餐 + 重置积分（含消费流程）。
  * React-free / SCSS-free —— 由 tests/codexQuota.test.ts 直接消费。
@@ -13,7 +14,6 @@ export { buildCodexQuotaWindows } from '@/domain/quotaWindows/codex';
 import type { TFunction } from 'i18next';
 import type {
   AuthFileItem,
-  CodexAccountCredits,
   CodexRateLimitResetCredit,
   CodexQuotaState,
   CodexQuotaWindow,
@@ -26,6 +26,7 @@ import {
   CODEX_SUBSCRIPTION_URL,
   CODEX_USAGE_URL,
   CODEX_REQUEST_HEADERS,
+  normalizeCodexAccountCredits,
   normalizeNumberValue,
   normalizePlanType,
   normalizeStringValue,
@@ -62,21 +63,6 @@ export type CodexQuotaData = {
   rateLimitResetCredits: CodexRateLimitResetCredit[];
   rateLimitResetCreditsError: string;
   windows: CodexQuotaWindow[];
-};
-
-export const normalizeCodexAccountCredits = (
-  credits: CodexAccountCredits | null | undefined
-): { balance: string | null; unlimited: boolean } => {
-  const value = credits?.balance;
-  const balance =
-    typeof value === 'number' ? String(value) : typeof value === 'string' ? value.trim() : null;
-  return {
-    balance:
-      balance && /^\d+(?:\.\d+)?$/.test(balance) && Number.isFinite(Number(balance))
-        ? balance
-        : null,
-    unlimited: credits?.unlimited === true,
-  };
 };
 
 const buildCodexRequestHeader = (file: AuthFileItem): Record<string, string> => {
