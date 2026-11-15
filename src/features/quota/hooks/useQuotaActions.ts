@@ -23,6 +23,12 @@ import { enrichQuotaInBackground } from '../quotaEnrichment';
 import { beginLoading } from '../quotaLoading';
 import { isQuotaFresh } from '../quotaFreshness';
 import { providerSources } from '@/stores/useProviderSources';
+import { useServerAccountsStore } from '@/stores/useServerAccountsStore';
+import {
+  isServedFile,
+  refreshServedFile,
+  serverReadNotice,
+} from '@/features/quotaPool/serverQuota';
 import { getQuotaMap, getQuotaSetter, type QuotaAdapter, type QuotaCardState } from '../providers';
 
 const getQuotaState = (
@@ -36,7 +42,7 @@ export function useQuotaActions(
   store: QuotaStore = useQuotaStore,
   session?: SourceSession
 ) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const [resettingQuotaName, setResettingQuotaName] = useState<string | null>(null);
@@ -49,6 +55,29 @@ export function useQuotaActions(
       const cacheKey = getQuotaCacheKey(file);
       if (resettingQuotaName === cacheKey) return;
       if (getQuotaState(adapter, file, store)?.status === 'loading') return;
+      // A credential the history server serves is read there, not on the hub. A disabled one is
+      // the named exception: its explicit Refresh is the live hub read (PR #57).
+      if (
+        session &&
+        !isCredentialDisabled(file) &&
+        isServedFile(useServerAccountsStore.getState().routing, session.owner.instanceId, file)
+      ) {
+        const servers = useServerAccountsStore.getState();
+        // After a claim the server has already been asked (accountSync.ts): just read its numbers.
+        if (options?.force) return void servers.pollFresh();
+        const owner = session.owner;
+        const outcome = await refreshServedFile({ owner, file, store });
+        if (!isQuotaSourceCurrent(session)) return;
+        const notice = serverReadNotice(outcome, {
+          name: file.name,
+          t,
+          language: i18n.language,
+          readAtMs: store.getState().fetchedAt[cacheKey],
+          nowMs: Date.now(),
+        });
+        showNotification(notice.text, notice.type);
+        return;
+      }
       if (!options?.force && isQuotaFresh(store.getState().fetchedAt[cacheKey], Date.now())) {
         showNotification(t('auth_files.quota_reused', { name: file.name }), 'info');
         return;
@@ -87,7 +116,7 @@ export function useQuotaActions(
         });
       }
     },
-    [disableControls, resettingQuotaName, showNotification, t, store, session]
+    [disableControls, resettingQuotaName, showNotification, t, i18n.language, store, session]
   );
 
   const resetQuota = useCallback(

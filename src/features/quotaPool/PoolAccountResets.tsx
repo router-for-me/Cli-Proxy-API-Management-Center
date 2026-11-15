@@ -9,6 +9,7 @@ import { useProviderSources } from '@/stores/useProviderSources';
 import { useCredentialInventoryStore, useSourceFiles } from '@/stores/useCredentialInventoryStore';
 import { sourceQuotaStore } from '@/stores/sourceQuotaStores';
 import { useSourceLease } from '@/hooks/useSourceLease';
+import { useServedByServer } from './useServerQuota';
 import { useQuotaActions } from '@/features/quota/hooks/useQuotaActions';
 import { createQuotaAdapters } from '@/features/quota/providers';
 import { useClaudeResetGrants } from '@/features/quota/providers/claude/ClaudeResetGrants';
@@ -314,7 +315,20 @@ function ClaudeResetAction({
     (options?: { force?: boolean }) => void refreshQuota(file, adapters.claude, options),
     [refreshQuota, file, adapters]
   );
-  const reset = useClaudeResetGrants(file, true, false, null, readQuota, scope);
+  // The pool row is already the history server's reading of this account: when the server serves
+  // it, its held resets are shown from that and the hub is read for grants only when the claim
+  // dialog opens (src/features/quota/RULES.md).
+  const served = useServedByServer(source.owner.instanceId, 'claude');
+  const reset = useClaudeResetGrants(
+    file,
+    true,
+    false,
+    null,
+    readQuota,
+    scope,
+    false,
+    served ? { resets: fact.account.resets } : undefined
+  );
   return (
     <ResetFact
       {...fact}

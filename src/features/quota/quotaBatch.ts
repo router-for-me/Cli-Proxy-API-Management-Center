@@ -36,6 +36,12 @@ export interface QuotaBatchDeps {
   t: TFunction;
   /** False once the source session has gone; nothing is read or committed after that. */
   isCurrent: () => boolean;
+  /**
+   * Credentials the history server serves. They are never read on the hub here: `refreshServed`
+   * asks the server once for all of them and the shared store shows what it answers.
+   */
+  served?: (entry: QuotaFileEntry) => boolean;
+  refreshServed?: (entries: QuotaFileEntry[]) => Promise<boolean>;
   now?: () => number;
   onBusyChange?: (busy: boolean) => void;
 }
@@ -64,8 +70,22 @@ export function createQuotaBatchLoader(deps: QuotaBatchDeps): QuotaBatchLoad {
   let queue: Promise<void> = Promise.resolve();
   let pending = 0;
 
-  const run = async (targets: QuotaFileEntry[], onSettled?: (ok: boolean) => void) => {
+  const run = async (all: QuotaFileEntry[], onSettled?: (ok: boolean) => void) => {
     if (!isCurrent()) return;
+    const servedEntries = deps.served ? all.filter(deps.served) : [];
+    const targets = servedEntries.length
+      ? all.filter((entry) => !servedEntries.includes(entry))
+      : all;
+    const serverRead = servedEntries.length
+      ? (deps.refreshServed?.(servedEntries) ?? Promise.resolve(true)).then(
+          (ok) => servedEntries.forEach(() => onSettled?.(ok)),
+          () => servedEntries.forEach(() => onSettled?.(false))
+        )
+      : Promise.resolve();
+    await Promise.all([serverRead, readOnHubs(targets, onSettled)]);
+  };
+
+  const readOnHubs = async (targets: QuotaFileEntry[], onSettled?: (ok: boolean) => void) => {
     const unique = new Map<string, QuotaFileEntry>();
     targets.forEach((entry) => unique.set(getQuotaCacheKey(entry.file), entry));
     const { due, reused } = splitQuotaTargets(

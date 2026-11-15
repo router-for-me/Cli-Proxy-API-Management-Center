@@ -21,6 +21,9 @@ import {
 } from '@/stores/useCredentialInventoryStore';
 import { providerSources } from '@/stores/useProviderSources';
 import { sourceQuotaStore } from '@/stores/sourceQuotaStores';
+import { useServerAccountsStore } from '@/stores/useServerAccountsStore';
+import { isServedFile, serverAccountFor } from '@/features/quotaPool/serverQuota';
+import { useServerQuota } from '@/features/quotaPool/useServerQuota';
 import { isQuotaSourceCurrent } from './sourceCurrent';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -189,6 +192,11 @@ function SourceQuotaPage({ session: owner }: { session: SourceSession }) {
   const pluginQuota = useSourceQuotaStore((state) => state.pluginQuota);
   const xaiQuota = useSourceQuotaStore((state) => state.xaiQuota);
   const fetchedAt = useSourceQuotaStore((state) => state.fetchedAt);
+  const nextReadAt = useSourceQuotaStore((state) => state.nextReadAt);
+  // Claude and Codex accounts of a source the history server covers show its readings.
+  useServerQuota(session, files);
+  const routing = useServerAccountsStore((state) => state.routing);
+  const serverAccounts = useServerAccountsStore((state) => state.accounts);
 
   const quotaByType = useMemo<Record<QuotaProviderType, Record<string, QuotaCardState>>>(
     () =>
@@ -479,6 +487,22 @@ function SourceQuotaPage({ session: owner }: { session: SourceSession }) {
                 resetting={resettingQuotaName === getQuotaCacheKey(entry.file)}
                 entranceDelayMs={cardEntranceDelay(index)}
                 fetchedAt={fetchedAt[getQuotaCacheKey(entry.file)]}
+                nextReadAt={nextReadAt[getQuotaCacheKey(entry.file)]}
+                server={
+                  entry.type === 'claude' &&
+                  isServedFile(routing, session.owner.instanceId, entry.file)
+                    ? {
+                        resets:
+                          serverAccountFor(
+                            routing,
+                            serverAccounts,
+                            session.owner.instanceId,
+                            'claude',
+                            entry.file
+                          )?.resets ?? null,
+                      }
+                    : undefined
+                }
                 onRefresh={(options) =>
                   void refreshQuota(entry.file, adapters[entry.type], options)
                 }

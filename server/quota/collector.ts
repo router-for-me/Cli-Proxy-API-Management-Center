@@ -29,6 +29,8 @@ import {
   CODEX_REQUEST_HEADERS,
 } from '../../src/utils/quota/constants';
 import { parseClaudeUsagePayload, parseCodexUsagePayload } from '../../src/utils/quota/parsers';
+import { normalizeClaudeUsageSnapshot } from '../../src/services/api/claudeUsage';
+import type { ClaudeUsageSnapshot } from '../../src/types/quota';
 import { isRecord } from '../../src/utils/helpers';
 import { planFromClaudeProfile, planFromCodexUsage } from './plans';
 import { QuotaStore } from './store';
@@ -50,6 +52,8 @@ import {
   type StoredAccount,
 } from './types';
 
+/** A targeted read of one account starts at most this often. */
+const ACCOUNT_REFRESH_FLOOR_MS = 20_000;
 const PLAN_REFRESH_MS = 6 * 60 * 60 * 1000;
 /** Codex credit details are re-read at most this often while their count is unchanged. */
 const RESET_CREDITS_REFRESH_MS = 60 * 60 * 1000;
@@ -264,6 +268,7 @@ export function quotaSamples(
           ? Math.min(100, Math.max(0, 100 - entry.usedPercent))
           : null,
       resetAtMs: entry.resetAtMs ?? null,
+      periodHours: entry.periodHours ?? null,
     })),
   };
 }
@@ -306,6 +311,11 @@ export class QuotaCollector {
   private readonly billingAttempts = new Map<string, number>();
   private readonly latestBilling = new Map<string, AccountBilling>();
   private readonly latestWindows = new Map<string, AccountQuotaWindow[]>();
+  /** Claude's extra usage and dollar balances from the usage payload; memory-only, never pooled. */
+  private readonly latestBalances = new Map<
+    string,
+    Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>
+  >();
   private readonly latestReadingAt = new Map<string, number>();
   /** Reset claims in progress, so a full collection starts only after them like after a poll. */
   private readonly claimFlights = new Set<Promise<unknown>>();
@@ -397,6 +407,25 @@ export class QuotaCollector {
   }
   get billing(): ReadonlyMap<string, AccountBilling> {
     return this.latestBilling;
+  }
+  /** In memory only: refilled by the next Claude reading after a restart. */
+  get balances(): ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>> {
+    return this.latestBalances;
+  }
+  /**
+   * When a targeted read of this account may next run, if the 20 s floor is what holds it back;
+   * null when nothing does (never read, floor passed, or not an account the collector knows).
+   */
+  accountRetryAtMs(requestedId: string): number | null {
+    const account = this.store
+      .listAccounts()
+      .find((entry) => entry.id === requestedId || entry.sourceAccountId === requestedId);
+    // A read in flight is not a floor: its caller gets that read's own result.
+    if (!account || this.accountFlights.has(account.id)) return null;
+    const last = this.accountAttempts.get(account.id);
+    return last !== undefined && last + ACCOUNT_REFRESH_FLOOR_MS > this.now()
+      ? last + ACCOUNT_REFRESH_FLOOR_MS
+      : null;
   }
   get sources(): QuotaSourceView[] | undefined {
     if (this.revision === undefined) return undefined;
@@ -521,6 +550,7 @@ export class QuotaCollector {
       this.billingAttempts.delete(id);
       this.latestBilling.delete(id);
       this.latestWindows.delete(id);
+      this.latestBalances.delete(id);
       this.latestReadingAt.delete(id);
       this.latestResets.delete(id);
       this.resetCreditAttempts.delete(id);
@@ -676,7 +706,7 @@ export class QuotaCollector {
     if (!live) return Promise.resolve(false);
     const { stored, source } = live;
     const last = this.accountAttempts.get(accountId);
-    if (!options.force && last !== undefined && this.now() - last < 20_000)
+    if (!options.force && last !== undefined && this.now() - last < ACCOUNT_REFRESH_FLOOR_MS)
       return Promise.resolve(false);
     const fullCollection = this.inFlight;
     const controller = new AbortController();
@@ -1006,6 +1036,15 @@ export class QuotaCollector {
         this.latestReadingAt.set(account.id, this.now());
         const resets = readAccountResets(account.provider, usageBody, this.now());
         if (resets) this.latestResets.set(account.id, resets);
+        if (account.provider === 'claude') {
+          const snapshot = normalizeClaudeUsageSnapshot(parseClaudeUsagePayload(usageBody));
+          if (snapshot) {
+            this.latestBalances.set(account.id, {
+              extraUsage: snapshot.extraUsage,
+              dollarWindows: snapshot.dollarWindows,
+            });
+          }
+        }
       } catch {
         this.addIssue(source, account.provider, 'quota-unavailable');
         throw new Error('Quota sample persistence failed');

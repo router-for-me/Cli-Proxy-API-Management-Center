@@ -246,6 +246,22 @@ export class QuotaStore {
       .all(fromMs, toMs);
   }
 
+  /** Each account's newest sample per window, including explicit missing observations. */
+  latestSamples(): QuotaSample[] {
+    return this.db
+      .query<QuotaSample, []>(
+        `
+      SELECT s.* FROM quota_samples s
+      JOIN (
+        SELECT accountId, window, MAX(observedAtMs) AS observedAtMs
+        FROM quota_samples GROUP BY accountId, window
+      ) latest USING (accountId, window, observedAtMs)
+      ORDER BY accountId, window
+    `
+      )
+      .all();
+  }
+
   /** Each account's earliest sample in any window: when it joined its pool's history. */
   firstSampleTimes(): Map<string, number> {
     return new Map(

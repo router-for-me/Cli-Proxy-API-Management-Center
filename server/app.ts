@@ -6,7 +6,9 @@ import { buildDashboard } from './quota/domain';
 import type { CollectionState, DashboardOptions } from './quota/domain';
 import { parseResetClaimRequest, ResetClaimRefusal, type ResetClaims } from './quota/claims';
 import type { QuotaStore } from './quota/store';
+import { accountsVersion, buildAccounts } from './quota/accounts';
 import { buildInventory, inventoryVersion, type InventorySourceStatus } from './quota/inventory';
+import type { ClaudeUsageSnapshot } from '../src/types/quota';
 import { DAY_MS, HOUR_MS, type InventoryChange } from './quota/types';
 
 /** `GET /v1/inventory` re-reads the sources when the last read is older than this. */
@@ -19,6 +21,9 @@ const SYNC_REASONS = ['add', 'delete', 'change'] as const;
 interface CollectorState extends Omit<CollectionState, 'historyStartedAtMs'> {
   refresh(): Promise<void>;
   refreshAccount(accountId: string): Promise<boolean>;
+  /** When the 20 s per-account floor lets the next targeted read run; null when it is not held. */
+  accountRetryAtMs?(accountId: string): number | null;
+  balances?: ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>>;
   syncInventory(options?: { deletedNames?: readonly string[] }): Promise<InventoryChange>;
   pollAdded(accountIds: readonly string[]): Promise<void>;
   inventorySources: readonly InventorySourceStatus[];
@@ -150,11 +155,16 @@ export function createHandler({
           }
         }
         if (accountId !== undefined) {
+          // Held back by the per-account floor? Asked before the read, which stamps its own attempt:
+          // a read that ran and failed is a failure, not "next read at".
+          const floorUntil = collector.accountRetryAtMs?.(accountId) ?? null;
+          let refreshed = false;
           try {
-            return json({ refreshed: await collector.refreshAccount(accountId) });
+            refreshed = await collector.refreshAccount(accountId);
           } catch {
-            return json({ refreshed: false });
+            // A failed read is not a floor: no retry time.
           }
+          return json({ refreshed, retryAtMs: refreshed ? null : floorUntil });
         }
         return fullRefresh();
       })();
@@ -269,6 +279,49 @@ export function createHandler({
           return json({ error: 'Credential inventory is unavailable' }, 503);
         }
       })();
+    }
+    if (url.pathname === '/v1/accounts' && request.method === 'GET') {
+      const reveal = url.searchParams.getAll('reveal');
+      if (reveal.length > 1 || (reveal[0] !== undefined && !['true', 'false'].includes(reveal[0])))
+        return json({ error: 'Invalid reveal' }, 400);
+      try {
+        const view = buildAccounts({
+          accounts: store.listAccounts(),
+          latestSamples: store.latestSamples(),
+          windows: collector.windows ?? new Map(),
+          resets: collector.resets ?? new Map(),
+          billing: collector.billing ?? new Map(),
+          balances: collector.balances ?? new Map(),
+          nowMs: now(),
+          reveal: reveal[0] === 'true',
+          collection: {
+            lastRefreshAtMs: collector.lastRefreshAtMs,
+            nextRefreshAtMs: collector.nextRefreshAtMs,
+            refreshing: collector.refreshing,
+          },
+        });
+        const version = accountsVersion(JSON.stringify(view));
+        const body = JSON.stringify({ version, ...view });
+        const etag = `"${version}"`;
+        if (etagMatches(request.headers.get('if-none-match'), etag)) {
+          return new Response(null, {
+            status: 304,
+            headers: { ETag: etag, 'Cache-Control': 'no-store' },
+          });
+        }
+        const response = new Response(body, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+            ETag: etag,
+          },
+        });
+        return response;
+      } catch {
+        console.error('Quota accounts read failed');
+        return json({ error: 'Quota accounts are temporarily unavailable' }, 503);
+      }
     }
     if (url.pathname !== '/v1/pools' || request.method !== 'GET')
       return json({ error: 'Not found' }, 404);

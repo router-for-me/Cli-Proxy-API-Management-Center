@@ -15,6 +15,7 @@ import type { PoolQuery } from '@/services/api/quotaPool';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useHeaderRefresh, useReportHeaderRefreshBusy } from '@/hooks/useHeaderRefresh';
 import { usePoolDashboard } from './usePoolDashboard';
+import { useServerAccountsPoller } from './useServerQuota';
 import { usePhoneChipLine } from './usePhoneChipLine';
 import { PoolCard } from './PoolCard';
 import { CombinedPoolCard } from './CombinedPoolCard';
@@ -73,6 +74,9 @@ export function QuotaPoolPage() {
     ...local,
   };
   const state = usePoolDashboard(query);
+  // Whether a Claude account is served from the history server (its resets row then does not poll
+  // the hub) is known once the accounts poller has asked: hold it while this page is open.
+  useServerAccountsPoller();
   const { data, refresh } = state;
   const refreshPool = useCallback((accountId?: string) => void refresh(accountId), [refresh]);
   const refreshStatus = state.refreshStatus ?? data;

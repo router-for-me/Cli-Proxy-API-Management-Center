@@ -33,6 +33,11 @@ export function splitQuotaTargets<T extends { file: AuthFileItem }>(
   return { due, reused };
 }
 
+/** `HH:MM` in the viewer's locale and time zone: when the server's next read may run. */
+export function formatReadTime(ms: number, language: string): string {
+  return new Date(ms).toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+}
+
 export type QuotaAge = { unit: 'seconds' | 'minutes' | 'hours'; count: number };
 
 /** How long ago a read happened, in the unit a card shows ("updated 25s ago"). */

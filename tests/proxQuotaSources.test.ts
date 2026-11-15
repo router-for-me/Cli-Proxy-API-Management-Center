@@ -902,7 +902,7 @@ describe('additive legacy quota attribution', () => {
         body: JSON.stringify({ accountId: qualified }),
       })
     );
-    expect(await response.json()).toEqual({ refreshed: true });
+    expect(await response.json()).toEqual({ refreshed: true, retryAtMs: null });
   });
 
   test('a source-qualified alias collision aborts mapping rather than merging two histories', () => {

@@ -88,7 +88,13 @@ export function AccountDetails({
       : claudeReset.busy
         ? t('quota_pool.reset_loading')
         : claudeReset.blocked
-          ? t(held == null ? 'quota_pool.reset_loading' : 'quota_pool.reset_claude_unavailable')
+          ? t(
+              held == null
+                ? claudeReset.served
+                  ? 'quota_pool.reset_not_reported_reason'
+                  : 'quota_pool.reset_loading'
+                : 'quota_pool.reset_claude_unavailable'
+            )
           : t('quota_pool.reset_usable')
     : held === 0
       ? t('quota_pool.reset_none')

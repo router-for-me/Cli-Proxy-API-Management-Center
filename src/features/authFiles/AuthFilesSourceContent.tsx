@@ -34,6 +34,7 @@ import { quotaRefreshTargets, quotaTargetsShown } from '@/features/authFiles/quo
 import type { HeaderRefreshRound } from '@/hooks/useHeaderRefresh';
 import { providerSources } from '@/stores/useProviderSources';
 import { useQuotaBatchLoader } from '@/features/quota/hooks/useQuotaBatchLoader';
+import { useServerQuota } from '@/features/quotaPool/useServerQuota';
 import {
   OTHER_PROVIDER_GROUP,
   UNKNOWN,
@@ -401,6 +402,8 @@ export function AuthFilesSourceContent({
 
   /* ---------- page-wide quota refresh: the cards this group shows that can have quota ---------- */
 
+  // Claude and Codex accounts the history server covers show its readings, not hub reads.
+  useServerQuota(sourceScope.session, files);
   // The Quota page's loader, its guards and its limit: at most QUOTA_PAGE_SIZE reads at once.
   const { loadQuota } = useQuotaBatchLoader(
     sourceScope.quotaAdapters,
