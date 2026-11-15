@@ -267,10 +267,14 @@ export class UsageStore {
   };
 
   /** `raw: null` runs without the raw payload buffer (imported history brings no payloads). */
+  /** Path of the events database; the backup snapshot attaches the same file. */
+  readonly eventsPath: string;
+
   constructor(
     paths: { events: string; raw: string | null },
     private readonly now: () => number = Date.now
   ) {
+    this.eventsPath = paths.events;
     this.db = openWritable(paths.events, META_TABLE_SQL);
     try {
       migrateUsageDatabase(this.db);
@@ -774,11 +778,6 @@ export class UsageStore {
     const pages = this.db.query<{ page_count: number }, []>('PRAGMA page_count').get()!.page_count;
     const size = this.db.query<{ page_size: number }, []>('PRAGMA page_size').get()!.page_size;
     return pages * size;
-  }
-
-  /** Caller supplies a new path on tmpfs. This must run as a serialized writer job. */
-  vacuumInto(path: string): void {
-    this.db.query('VACUUM INTO ?').run(path);
   }
 
   close(): void {

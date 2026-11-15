@@ -36,7 +36,7 @@ install -D -m 644 deploy/prox-auth-janitor.timer "$HOME/.config/systemd/user/pro
 # half-written script. The nightly job spawns parity, so parity is replaced first.
 usage_jobs_dir="$HOME/.local/share/prox/usage-jobs"
 install -d -m 755 "$usage_jobs_dir"
-for bundle in usage-parity.js usage-nightly.js; do
+for bundle in usage-parity.js usage-restore-check.js usage-nightly.js; do
   bundle_tmp=$(mktemp "$usage_jobs_dir/.$bundle.XXXXXX")
   trap 'rm -f -- "$bundle_tmp"' EXIT
   install -m 644 "dist/usage-jobs/$bundle" "$bundle_tmp"
