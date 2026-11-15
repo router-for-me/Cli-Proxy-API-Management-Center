@@ -1475,7 +1475,7 @@
         "input_placeholder": "API Anahtarını Yapıştır",
         "name_label": "Ad / Açıklama",
         "name_placeholder": "Örnek: Alice'in Dizüstü Bilgisayarı",
-        "name_hint": "Yalnızca Bu Tarayıcıda, Her Sunucu için Ayrı Olarak Hemen Kaydedilir. Sunucu Yapılandırmasına Dahil Değildir. Adı Kaldırmak için Bu Alanı Temizle.",
+        "name_hint": "Yapılandırma kaydedildiğinde sunucuda (access.api-key-policies) saklanır. Adı kaldırmak için alanı temizle.",
         "name_save_error": "Ad Tarayıcı Deposuna Kaydedilemedi. Tarayıcı Depolama Ayarlarını Kontrol Et.",
         "input_hint": "Değişiklikler Yapılandırma Kaydedildikten Sonra Geçerli Olur. Yukarı Akış Sağlayıcı Anahtarları Ayrı Yönetilir.",
         "error_empty": "Lütfen Bir API Anahtarı Gir",
@@ -1487,6 +1487,29 @@
           "fair": "Orta",
           "good": "İyi",
           "strong": "Güçlü"
+        },
+        "policy": {
+          "all_accounts": "Tüm hesaplar",
+          "accounts_count_one": "{{count}} hesap",
+          "accounts_count_other": "{{count}} hesap",
+          "disabled_badge": "Pasif",
+          "enabled_label": "Anahtar etkin",
+          "enabled_hint": "Pasif anahtarlar, yapılandırma kaydedildikten sonra 401 (api_key_disabled) ile reddedilir.",
+          "accounts_label": "İzinli hesaplar",
+          "all_accounts_hint": "Hesap seçilmedi: bu anahtar tüm hesapları kullanabilir.",
+          "selected_count_one": "{{count}} hesap seçildi: istekler yalnızca bu hesabı kullanır. Hesap soğumadaysa istekler başka hesaba geçmez, bekler.",
+          "selected_count_other": "{{count}} hesap seçildi: istekler yalnızca bu hesapları kullanır. Hesaplar soğumadaysa istekler başka hesaplara geçmez, bekler.",
+          "search_placeholder": "Hesap ara",
+          "select_all": "Görünenleri seç",
+          "clear": "Temizle",
+          "loading": "Hesaplar yükleniyor…",
+          "load_error": "Hesaplar yüklenemedi: {{message}}",
+          "no_accounts": "Hesap bulunamadı.",
+          "state_active": "Aktif",
+          "state_cooldown": "Soğumada",
+          "state_disabled": "Devre dışı",
+          "state_missing": "Bulunamadı",
+          "error_duplicate": "Bu API anahtarı zaten var."
         }
       },
       "payload_rules": {

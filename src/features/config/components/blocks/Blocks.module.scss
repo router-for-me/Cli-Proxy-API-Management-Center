@@ -580,3 +580,82 @@
     transition: none;
   }
 }
+
+/* API key policies: account picker and badges. */
+.policyBadge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.policyState_active {
+  color: var(--success-color, #16a34a);
+  border-color: currentColor;
+}
+
+.policyState_cooldown {
+  color: #d97706;
+  border-color: currentColor;
+}
+
+.policyState_disabled {
+  color: var(--danger-color, #dc2626);
+  border-color: currentColor;
+}
+
+.policyAccounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policyAccountsToolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  :global(.input) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.policyAccountList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.policyAccountGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.policyAccountGroupTitle {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.policyAccountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}

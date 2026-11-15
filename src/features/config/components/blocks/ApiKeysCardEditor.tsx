@@ -12,12 +12,22 @@ import { generateSecureApiKey } from '@/utils/apiKey';
 import { maskApiKey } from '@/utils/format';
 import { isValidApiKeyCharset } from '@/utils/validation';
 import { ApiKeyStrengthMeter } from './ApiKeyStrengthMeter';
+import { ApiKeyAccountPicker } from './ApiKeyAccountPicker';
+import { usePolicyAccounts } from './usePolicyAccounts';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import type { ApiKeyPolicy } from '@/types/visualConfig';
 import styles from './Blocks.module.scss';
+
+export interface ApiKeysCardEditorChange {
+  apiKeysText?: string;
+  apiKeyPolicies?: ApiKeyPolicy[];
+}
 
 interface ApiKeysCardEditorProps {
   value: string;
+  policies: ApiKeyPolicy[];
   disabled?: boolean;
-  onChange: (nextValue: string) => void;
+  onChange: (patch: ApiKeysCardEditorChange) => void;
 }
 
 export const ApiKeysCardEditor = memo(function ApiKeysCardEditor(props: ApiKeysCardEditorProps) {
@@ -27,12 +37,21 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor(props: ApiKeysC
 
 function ScopedApiKeysCardEditor({
   value,
+  policies,
   disabled,
   onChange,
   apiBase,
 }: ApiKeysCardEditorProps & { apiBase: string }) {
+  // Names saved by older panels live in browser storage; they remain a display fallback
+  // and move into the server-side policy the next time the key is saved here.
   const [names, setNames] = useState(() => readApiKeyNames(apiBase));
   const [nameValue, setNameValue] = useState('');
+  const [disabledValue, setDisabledValue] = useState(false);
+  const [allowedAuthsValue, setAllowedAuthsValue] = useState<string[]>([]);
+  const policyByKey = useMemo(
+    () => new Map(policies.map((policy) => [policy.key, policy])),
+    [policies]
+  );
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
   const apiKeys = useMemo(
@@ -64,9 +83,12 @@ function ScopedApiKeysCardEditor({
   const [editingApiKeyId, setEditingApiKeyId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
+  const policyAccounts = usePolicyAccounts(modalOpen);
 
   const openAddModal = () => {
     setNameValue('');
+    setDisabledValue(false);
+    setAllowedAuthsValue([]);
     setEditingApiKeyId(null);
     setInputValue('');
     setFormError('');
@@ -77,7 +99,10 @@ function ScopedApiKeysCardEditor({
     const editingIndex = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     const latestNames = readApiKeyNames(apiBase);
     setNames(latestNames);
-    setNameValue(latestNames[nameFingerprints[editingIndex]] ?? '');
+    const policy = policyByKey.get(apiKeys[editingIndex] ?? '');
+    setNameValue(policy?.name || latestNames[nameFingerprints[editingIndex]] || '');
+    setDisabledValue(policy?.disabled ?? false);
+    setAllowedAuthsValue(policy?.allowedAuths ?? []);
     setEditingApiKeyId(apiKeyId);
     setInputValue(apiKeys[editingIndex] ?? '');
     setFormError('');
@@ -91,15 +116,15 @@ function ScopedApiKeysCardEditor({
     setFormError('');
   };
 
-  const updateApiKeys = (nextKeys: string[]) => {
-    onChange(nextKeys.join('\n'));
-  };
-
   const handleDelete = (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
+    const removed = apiKeys[index];
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
-    updateApiKeys(apiKeys.filter((_, i) => i !== index));
+    onChange({
+      apiKeysText: apiKeys.filter((_, i) => i !== index).join('\n'),
+      apiKeyPolicies: policies.filter((policy) => policy.key !== removed),
+    });
   };
 
   const handleSave = () => {
@@ -120,16 +145,33 @@ function ScopedApiKeysCardEditor({
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
         : apiKeys.map((key, idx) => (idx === editingIndex ? trimmed : key));
-    if (!saveApiKeyName(apiBase, trimmed, nameValue)) {
-      setFormError(t('config_management.visual.api_keys.name_save_error'));
+    if (editingApiKeyId === null && apiKeys.includes(trimmed)) {
+      setFormError(t('config_management.visual.api_keys.policy.error_duplicate'));
       return;
     }
+    // Keep the browser copy in sync so older panels still show the label.
+    saveApiKeyName(apiBase, trimmed, nameValue);
     setNames(readApiKeyNames(apiBase));
     // Retain old fingerprints: configuration edits can still be discarded or fail to save.
     if (editingApiKeyId === null) {
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
-    if (nextKeys.join('\n') !== apiKeys.join('\n')) updateApiKeys(nextKeys);
+    const previousKey = editingIndex >= 0 ? apiKeys[editingIndex] : undefined;
+    const nextPolicy: ApiKeyPolicy = {
+      key: trimmed,
+      name: nameValue.trim(),
+      disabled: disabledValue,
+      allowedAuths: allowedAuthsValue,
+    };
+    const nextPolicies = [
+      ...policies.filter((policy) => policy.key !== trimmed && policy.key !== previousKey),
+      nextPolicy,
+    ].filter((policy) => policy.name || policy.disabled || policy.allowedAuths.length > 0);
+    const patch: ApiKeysCardEditorChange = {};
+    if (nextKeys.join('\n') !== apiKeys.join('\n')) patch.apiKeysText = nextKeys.join('\n');
+    if (JSON.stringify(nextPolicies) !== JSON.stringify(policies))
+      patch.apiKeyPolicies = nextPolicies;
+    if (patch.apiKeysText !== undefined || patch.apiKeyPolicies !== undefined) onChange(patch);
     closeModal();
   };
 
@@ -164,10 +206,23 @@ function ScopedApiKeysCardEditor({
               <span className={styles.apiKeyIndex}>#{index + 1}</span>
               <span className={styles.apiKeyMeta}>
                 <span className={styles.apiKeyName}>
-                  {names[nameFingerprints[index]] ??
+                  {policyByKey.get(key)?.name ||
+                    names[nameFingerprints[index]] ||
                     t('config_management.visual.api_keys.input_label')}
                 </span>
                 <span className={styles.apiKeyValue}>{maskApiKey(String(key || ''))}</span>
+                <span className={styles.policyBadge}>
+                  {(policyByKey.get(key)?.allowedAuths.length ?? 0) > 0
+                    ? t('config_management.visual.api_keys.policy.accounts_count', {
+                        count: policyByKey.get(key)?.allowedAuths.length ?? 0,
+                      })
+                    : t('config_management.visual.api_keys.policy.all_accounts')}
+                </span>
+                {policyByKey.get(key)?.disabled && (
+                  <span className={`${styles.policyBadge} ${styles.policyState_disabled}`}>
+                    {t('config_management.visual.api_keys.policy.disabled_badge')}
+                  </span>
+                )}
               </span>
               <span className={styles.apiKeyActions}>
                 <Button
@@ -265,6 +320,26 @@ function ScopedApiKeysCardEditor({
               {formError}
             </div>
           )}
+        </div>
+        <div className="form-group">
+          <ToggleSwitch
+            checked={!disabledValue}
+            onChange={(enabled) => setDisabledValue(!enabled)}
+            disabled={disabled}
+            label={t('config_management.visual.api_keys.policy.enabled_label')}
+          />
+          <div className="hint">{t('config_management.visual.api_keys.policy.enabled_hint')}</div>
+        </div>
+        <div className="form-group">
+          <label>{t('config_management.visual.api_keys.policy.accounts_label')}</label>
+          <ApiKeyAccountPicker
+            accounts={policyAccounts.accounts}
+            loading={policyAccounts.loading}
+            error={policyAccounts.error}
+            selected={allowedAuthsValue}
+            disabled={disabled}
+            onChange={setAllowedAuthsValue}
+          />
         </div>
       </Modal>
     </div>

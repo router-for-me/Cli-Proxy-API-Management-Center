@@ -1475,7 +1475,7 @@
         "input_placeholder": "Paste your API key",
         "name_label": "Name / description",
         "name_placeholder": "For example: Alice's laptop",
-        "name_hint": "Saved immediately in this browser only, separately for each server. Not included in server configuration. Clear this field to remove the name.",
+        "name_hint": "Stored on the server in access.api-key-policies when the configuration is saved. Clear the field to remove the name.",
         "name_save_error": "Could not save the name in browser storage. Check your browser storage settings.",
         "input_hint": "Changes take effect after saving the configuration. Upstream provider keys are managed separately.",
         "error_empty": "Please enter an API key",
@@ -1487,6 +1487,29 @@
           "fair": "Fair",
           "good": "Good",
           "strong": "Strong"
+        },
+        "policy": {
+          "all_accounts": "All accounts",
+          "accounts_count_one": "{{count}} account",
+          "accounts_count_other": "{{count}} accounts",
+          "disabled_badge": "Disabled",
+          "enabled_label": "Key enabled",
+          "enabled_hint": "Disabled keys are rejected with 401 (api_key_disabled) after the configuration is saved.",
+          "accounts_label": "Allowed accounts",
+          "all_accounts_hint": "No account selected: this key may use every account.",
+          "selected_count_one": "{{count}} account selected: requests use only this account. If it is cooling down, requests wait instead of switching to other accounts.",
+          "selected_count_other": "{{count}} accounts selected: requests use only these accounts. If they are cooling down, requests wait instead of switching to other accounts.",
+          "search_placeholder": "Search accounts",
+          "select_all": "Select visible",
+          "clear": "Clear",
+          "loading": "Loading accounts…",
+          "load_error": "Could not load accounts: {{message}}",
+          "no_accounts": "No accounts found.",
+          "state_active": "Active",
+          "state_cooldown": "Cooldown",
+          "state_disabled": "Disabled",
+          "state_missing": "Not found",
+          "error_duplicate": "This API key already exists."
         }
       },
       "payload_rules": {

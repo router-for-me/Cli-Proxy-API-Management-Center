@@ -1,4 +1,14 @@
 export type PayloadParamValueType = 'string' | 'number' | 'boolean' | 'json';
+
+/** Restrictions for one client access key (access.api-key-policies). */
+export interface ApiKeyPolicy {
+  key: string;
+  name: string;
+  disabled: boolean;
+  /** Credential auth indexes; empty means every credential. */
+  allowedAuths: string[];
+}
+
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
 export type RoutingStrategy = 'round-robin' | 'weighted-round-robin' | 'fill-first';
 export type PluginStoreAuthType = 'none' | 'bearer' | 'basic' | 'header' | 'github-token';
@@ -167,6 +177,8 @@ export type VisualConfigValues = {
   authDir: string;
   /** Client authentication keys at access.api-keys (never the upstream api-keys map). */
   apiKeysText: string;
+  /** Per client key policies at access.api-key-policies. */
+  apiKeyPolicies: ApiKeyPolicy[];
   pluginsEnabled: boolean;
   pluginStoreSources: string[];
   pluginStoreAuth: PluginStoreAuthRule[];
@@ -273,6 +285,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rmPanelRepo: '',
   authDir: '',
   apiKeysText: '',
+  apiKeyPolicies: [],
   pluginsEnabled: false,
   pluginStoreSources: [],
   pluginStoreAuth: [],

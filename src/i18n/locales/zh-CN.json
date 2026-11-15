@@ -1469,7 +1469,7 @@
         "input_placeholder": "粘贴你的 API 密钥",
         "name_label": "名称 / 说明",
         "name_placeholder": "例如：小明的笔记本",
-        "name_hint": "名称立即保存在当前浏览器中，按服务器隔离，不写入服务器配置。清空此字段可移除名称。",
+        "name_hint": "保存配置时存储在服务器的 access.api-key-policies 中。清空此字段即可移除名称。",
         "name_save_error": "无法将名称保存到浏览器存储，请检查浏览器存储设置。",
         "input_hint": "保存配置后生效。上游提供商密钥独立管理，不受此处修改影响。",
         "error_empty": "请输入 API 密钥",
@@ -1481,6 +1481,29 @@
           "fair": "一般",
           "good": "良好",
           "strong": "很强"
+        },
+        "policy": {
+          "all_accounts": "全部账号",
+          "accounts_count_one": "{{count}} 个账号",
+          "accounts_count_other": "{{count}} 个账号",
+          "disabled_badge": "已停用",
+          "enabled_label": "启用此密钥",
+          "enabled_hint": "保存配置后，停用的密钥会以 401（api_key_disabled）拒绝。",
+          "accounts_label": "允许的账号",
+          "all_accounts_hint": "未选择账号：此密钥可使用全部账号。",
+          "selected_count_one": "已选择 {{count}} 个账号：请求仅使用该账号；冷却期间请求会等待，不会切换到其他账号。",
+          "selected_count_other": "已选择 {{count}} 个账号：请求仅使用这些账号；冷却期间请求会等待，不会切换到其他账号。",
+          "search_placeholder": "搜索账号",
+          "select_all": "选择可见项",
+          "clear": "清除",
+          "loading": "正在加载账号…",
+          "load_error": "无法加载账号：{{message}}",
+          "no_accounts": "未找到账号。",
+          "state_active": "正常",
+          "state_cooldown": "冷却中",
+          "state_disabled": "已禁用",
+          "state_missing": "未找到",
+          "error_duplicate": "该 API 密钥已存在。"
         }
       },
       "payload_rules": {

@@ -7,6 +7,7 @@ import type {
   PluginStoreAuthRule,
   PluginStoreAuthType,
   PayloadFilterRule,
+  ApiKeyPolicy,
   PayloadHeaderEntry,
   PayloadParamEntry,
   PayloadParamValueType,
@@ -89,6 +90,49 @@ function areSensitiveReplacementsEqual(
       ([key, value]) => Object.prototype.hasOwnProperty.call(right, key) && right[key] === value
     )
   );
+}
+
+function parseApiKeyPolicies(raw: unknown): ApiKeyPolicy[] {
+  if (!Array.isArray(raw)) return [];
+  const policies: ApiKeyPolicy[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const key = typeof record.key === 'string' ? record.key.trim() : '';
+    if (!key) continue;
+    policies.push({
+      key,
+      name: typeof record.name === 'string' ? record.name.trim() : '',
+      disabled: record.disabled === true,
+      allowedAuths: Array.isArray(record['allowed-auths'])
+        ? record['allowed-auths'].map((entry) => String(entry).trim()).filter(Boolean)
+        : [],
+    });
+  }
+  return policies;
+}
+
+/** Keep only meaningful policies for keys that still exist, in YAML field names. */
+function serializeApiKeyPolicies(policies: ApiKeyPolicy[], apiKeys: string[]) {
+  const known = new Set(apiKeys);
+  const seen = new Set<string>();
+  const out: Array<Record<string, unknown>> = [];
+  for (const policy of policies) {
+    const key = policy.key.trim();
+    if (!key || !known.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    const name = policy.name.trim();
+    const allowedAuths = Array.from(
+      new Set(policy.allowedAuths.map((v) => v.trim()).filter(Boolean))
+    );
+    if (!name && !policy.disabled && allowedAuths.length === 0) continue;
+    const entry: Record<string, unknown> = { key };
+    if (name) entry.name = name;
+    if (policy.disabled) entry.disabled = true;
+    if (allowedAuths.length > 0) entry['allowed-auths'] = allowedAuths;
+    out.push(entry);
+  }
+  return out;
 }
 
 function parseApiKeysText(raw: unknown): string {
@@ -1335,6 +1379,12 @@ function getNextDirtyFields(
       areStringArraysEqual(nextValues.devinSensitiveWords, baselineValues.devinSensitiveWords)
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'apiKeyPolicies')) {
+    updateDirty(
+      'apiKeyPolicies',
+      JSON.stringify(nextValues.apiKeyPolicies) === JSON.stringify(baselineValues.apiKeyPolicies)
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreAuth')) {
     updateDirty(
       'pluginStoreAuth',
@@ -1512,6 +1562,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
 
     authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
     apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
+    apiKeyPolicies: parseApiKeyPolicies(asRecord(parsed.access)?.['api-key-policies']),
     pluginsEnabled: Boolean(plugins?.enabled),
     pluginStoreSources: parseStringList(plugins?.['store-sources']),
     pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
@@ -1802,6 +1853,18 @@ export function useVisualConfig() {
             doc.setIn(['access', 'api-keys'], apiKeys);
           } else if (docHas(doc, ['access', 'api-keys'])) {
             doc.deleteIn(['access', 'api-keys']);
+          }
+        }
+        if (dirtyFields.has('apiKeysText') || dirtyFields.has('apiKeyPolicies')) {
+          const apiKeys = values.apiKeysText
+            .split('\n')
+            .map((key) => key.trim())
+            .filter(Boolean);
+          const policies = serializeApiKeyPolicies(values.apiKeyPolicies, apiKeys);
+          if (policies.length > 0) {
+            doc.setIn(['access', 'api-key-policies'], policies);
+          } else if (docHas(doc, ['access', 'api-key-policies'])) {
+            doc.deleteIn(['access', 'api-key-policies']);
           }
         }
 
