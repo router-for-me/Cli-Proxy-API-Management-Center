@@ -39,6 +39,7 @@ function fixture() {
   let now = 1_000_000_000_000;
   let modelId = 'same-model';
   let cpaGate: Promise<void> | undefined;
+  let requestsBody: Record<string, unknown> = {};
   const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     const key = new Headers(init?.headers).get('Authorization') ?? '';
@@ -60,7 +61,7 @@ function fixture() {
       schema_version: 1,
       summary: {},
       coverage: {},
-      requests: {},
+      requests: requestsBody,
       rates: [],
       timeline: [],
     });
@@ -92,6 +93,9 @@ function fixture() {
     register: (id: string) => {
       modelId = id;
     },
+    answerRequests: (body: Record<string, unknown>) => {
+      requestsBody = body;
+    },
     /** Hold CPA answers until the returned release is called. */
     holdCpa: () => {
       let release!: () => void;
@@ -119,6 +123,24 @@ describe('Prox analytics bridge', () => {
     try {
       expect((await f.handler(request(query, 'wrong'))).status).toBe(401);
       expect(f.calls).toHaveLength(0);
+    } finally {
+      f.clean();
+    }
+  });
+  test('passes the search-matched request fields through untouched', async () => {
+    const f = fixture();
+    try {
+      const item = {
+        id: 'synthetic-event',
+        fail_summary: 'synthetic failure text',
+        header_trace_id: 'synthetic-header-trace',
+        auth_file_snapshot: 'synthetic-credential.json',
+      };
+      f.answerRequests({ items: [item], total_count: 1, has_more: false });
+      const body = (await (await f.handler(request())).json()) as {
+        requests: { items: unknown[] };
+      };
+      expect(body.requests.items).toEqual([item]);
     } finally {
       f.clean();
     }

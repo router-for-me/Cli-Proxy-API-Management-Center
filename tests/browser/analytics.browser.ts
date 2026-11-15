@@ -170,6 +170,17 @@ for (const width of [1440, 1024, 390]) {
     await app.tab('Requests');
     await page.getByRole('button', { name: 'Open event synthetic-event-2', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+    // Long failure text and unbroken ids wrap inside the dialog instead of widening it.
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('Response trace ID');
+    expect(
+      await dialog.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return [...el.querySelectorAll('dd, dd *')].every(
+          (child) => child.getBoundingClientRect().right <= box.right + 1
+        );
+      })
+    ).toBe(true);
     await page.screenshot({ path: info.outputPath('details.png'), animations: 'disabled' });
     await page
       .getByRole('dialog')
@@ -180,6 +191,34 @@ for (const width of [1440, 1024, 390]) {
     await page.keyboard.press('Escape');
   });
 }
+
+test('request detail shows the search-matched fields and copies the ids', async ({
+  page,
+  app,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  app.scenario = 'large';
+  await app.login();
+  await app.loaded();
+  await app.tab('Requests');
+  await page.getByRole('button', { name: 'Open event synthetic-event-2', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  const failure = dialog.getByRole('region', { name: 'Failure text', exact: true });
+  await expect(failure).toContainText('END-OF-FAILURE');
+  // Long failure text scrolls inside its own keyboard-reachable region.
+  await failure.focus();
+  await expect(failure).toBeFocused();
+  expect(await failure.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  for (const [label, text] of [
+    ['Response trace ID', 'synthetic-header-trace-'],
+    ['Credential file', 'synthetic-credential-file-'],
+  ]) {
+    await dialog.getByRole('button', { name: `Copy ${label}`, exact: true }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(text);
+  }
+  await page.keyboard.press('Escape');
+});
 
 for (const scenario of ['empty', 'unknown', 'zero'] as AnalyticsScenario[]) {
   test(`${scenario} data stays truthful`, async ({ page, app }, info) => {

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { AnalyticsRequest, AnalyticsResponse } from '@/domain/analytics/types';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { CopyButton } from '@/features/oauth/components/CopyButton';
 import { analyticsNumber, analyticsTime } from './format';
 import styles from './AnalyticsPage.module.scss';
 
@@ -48,6 +49,12 @@ const detailFields = [
   'timing_method',
 ] as const satisfies readonly (keyof AnalyticsRequest)[];
 
+/** Fields a search can match on; shown only when present, so a hit visibly says why it matched. */
+const copyableFields = [
+  'header_trace_id',
+  'auth_file_snapshot',
+] as const satisfies readonly (keyof AnalyticsRequest)[];
+
 export function RequestDetails({ request }: { request: AnalyticsRequest }) {
   const { t, i18n } = useTranslation();
   return (
@@ -58,6 +65,35 @@ export function RequestDetails({ request }: { request: AnalyticsRequest }) {
         <dd>{analyticsTime(request.timestamp_ms, i18n.language)} UTC</dd>
         <dt>{t('analytics.outcome')}</dt>
         <dd>{t(`analytics.${request.failed ? 'failed_outcome' : 'success'}`)}</dd>
+        {request.fail_summary && (
+          <div className={styles.detailPair}>
+            <dt>{t('analytics.fields.fail_summary')}</dt>
+            <dd>
+              <div
+                className={styles.failureText}
+                role="region"
+                tabIndex={0}
+                aria-label={t('analytics.fields.fail_summary')}
+              >
+                {request.fail_summary}
+              </div>
+            </dd>
+          </div>
+        )}
+        {copyableFields.map((field) => {
+          const value = request[field];
+          if (!value) return null;
+          const label = t(`analytics.fields.${field}`);
+          return (
+            <div key={field} className={styles.detailPair}>
+              <dt>{label}</dt>
+              <dd className={styles.copyValue}>
+                <span className={styles.copyValueText}>{value}</span>
+                <CopyButton value={value} label={t('analytics.copy_field', { field: label })} />
+              </dd>
+            </div>
+          );
+        })}
         {detailFields.map((field) => {
           const value = request[field];
           return (

@@ -223,6 +223,9 @@ export function analyticsScenario(
     data.rates[0].id = longName;
     data.requests.items[0].model = longName;
     data.requests.items[0].error_summary = 'Synthetic detailed error '.repeat(20);
+    data.requests.items[0].fail_summary = `${'Synthetic upstream failure text. '.repeat(120)}END-OF-FAILURE`;
+    data.requests.items[0].header_trace_id = `synthetic-header-trace-${'x'.repeat(160)}`;
+    data.requests.items[0].auth_file_snapshot = `${'synthetic-credential-file-'.repeat(8)}.json`;
   }
   if (scenario === 'unknown') {
     data.summary.cost = {

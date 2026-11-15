@@ -861,6 +861,24 @@ button.rankedRow {
   margin: 0;
   overflow-wrap: anywhere;
 }
+// A scrubbed failure text is up to 4 KiB: wrap it and scroll it inside the dialog.
+.failureText {
+  max-height: 12em;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.copyValue {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.copyValueText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .errorState {
   border-left: 3px solid var(--error-color);
   > svg,
