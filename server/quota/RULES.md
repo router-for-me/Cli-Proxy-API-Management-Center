@@ -65,7 +65,9 @@ credential UI. The store owns persistence; the collector uses only public APIs.
   missing while others report is still unknown, never held.
   Full collections are at least 4 minutes apart: Anthropic's usage endpoint returns 429
   to bursts. After a confirmed reset attempt, a targeted refresh may read only the
-  affected account, at most once per 20 seconds with per-account single flight.
+  affected account, at most once per 20 seconds with per-account single flight. The account
+  is named by its stored id or by its source-qualified id (`<instance>:<provider>:<sha256>`),
+  which a browser can build from a source and an auth index; both are one account, one flight.
   It uses the same validated source inventory without recording membership or
   retiring accounts, and serializes with full collection. Each failed poll logs
   status, retry-after seconds and header names.

@@ -33,6 +33,8 @@ export interface BackendState {
   samples: number;
   reads: { codex: number; claude: number };
   usageCalls: number;
+  /** Auth indexes whose fake reset grant was claimed, in order. */
+  claims: string[];
   cli: { codex: string[]; claude: string[] };
 }
 
@@ -97,6 +99,9 @@ export class CredentialFlow {
     this.control(`/cli/${instance}/add`, { name, email });
   removeOutside = (instance: 'codex' | 'claude', name: string) =>
     this.control(`/cli/${instance}/remove`, { name });
+  /** Gives a fake Claude account that many reset grants (its usage then lists them). */
+  grantClaudeResets = (authIndex: string, left: number) =>
+    this.control('/cli/claude/grant', { authIndex, left });
   failCredentials = (instance: 'codex' | 'claude', status: number | null) =>
     this.control(`/cli/${instance}/fail`, { status });
   advanceServerClock = (ms: number) => this.control('/advance', { ms });
@@ -151,6 +156,10 @@ export class CredentialFlow {
           return this.forward(route, this.ports.history, `/v1/${rest}`);
         }
         if (path === '/credentials') {
+          return this.forward(route, this.ports[instance], `/v8/management${path}`);
+        }
+        // Quota reads and reset claims go to the loopback fake CLI-Proxy and nowhere else.
+        if (path === '/requests/api-call' && request.method() === 'POST') {
           return this.forward(route, this.ports[instance], `/v8/management${path}`);
         }
         if (request.method() === 'GET') {

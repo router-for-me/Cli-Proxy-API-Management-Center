@@ -42,6 +42,10 @@ const credentials: Record<Instance, Credential[]> = {
   ],
 };
 const failing: Record<Instance, number | null> = { codex: null, claude: null };
+/** Claude reset grants by auth index: how many resets each account holds. Off until a test grants. */
+const grants = new Map<string, number>();
+const claims: string[] = [];
+const ORGANIZATION = '11111111-2222-3333-4444-555555555555';
 const reads: Record<Instance, number> = { codex: 0, claude: 0 };
 let usageCalls = 0;
 let offsetMs = 0;
@@ -60,8 +64,37 @@ const entry = (instance: Instance, credential: Credential) => ({
   size: 512,
   modtime: new Date(RESET - 86_400_000).toISOString(),
 });
-const usageBody = (instance: Instance) =>
-  instance === 'codex'
+/** Spending a grant refills the account's windows, as a real reset does. */
+const claudeUsage = (authIndex: string) => {
+  const held = grants.get(authIndex);
+  const spent = claims.includes(authIndex);
+  return JSON.stringify({
+    five_hour: { utilization: spent ? 0 : 25, resets_at: new Date(RESET).toISOString() },
+    seven_day: { utilization: spent ? 5 : 60, resets_at: new Date(RESET).toISOString() },
+    ...(held === undefined
+      ? {}
+      : {
+          cedar_ember: {
+            eligible: true,
+            at_limit: true,
+            grants: [
+              {
+                id: 'fable-grant',
+                resets_total: 1,
+                resets_left: held,
+                usable_now: held > 0,
+                gives_back_weekly: true,
+                ends_at: new Date(RESET + 3 * 86_400_000).toISOString(),
+              },
+            ],
+          },
+        }),
+  });
+};
+const usageBody = (instance: Instance, authIndex = '') =>
+  instance === 'claude'
+    ? claudeUsage(authIndex)
+    : instance === 'codex'
     ? {
         rate_limit: {
           primary_window: {
@@ -76,10 +109,7 @@ const usageBody = (instance: Instance) =>
           },
         },
       }
-    : JSON.stringify({
-        five_hour: { utilization: 25, resets_at: new Date(RESET).toISOString() },
-        seven_day: { utilization: 60, resets_at: new Date(RESET).toISOString() },
-      });
+    : {};
 
 /** One fake CLI-Proxy: only the credential routes and the usage proxy the collector needs. */
 function fakeCliProxy(instance: Instance) {
@@ -122,11 +152,25 @@ function fakeCliProxy(instance: Instance) {
       }
       if (path === '/requests/api-call' && request.method === 'POST') {
         usageCalls++;
-        const body = (await request.json()) as { url?: string };
+        const body = (await request.json()) as { url?: string; authIndex?: string };
+        const authIndex = String(body.authIndex ?? '');
+        if (instance === 'claude' && String(body.url).endsWith('/reset_rate_limits')) {
+          const held = grants.get(authIndex) ?? 0;
+          if (held === 0) return Response.json({ status_code: 200, body: { result: 'no_credit' } });
+          grants.set(authIndex, held - 1);
+          claims.push(authIndex);
+          return Response.json({ status_code: 200, body: { result: 'reset' } });
+        }
+        if (instance === 'claude' && grants.has(authIndex) && String(body.url).includes('profile')) {
+          return Response.json({ status_code: 200, body: { organization: { uuid: ORGANIZATION } } });
+        }
         // Plan and profile lookups answer with an empty body; the usage URL answers the windows.
         const isUsage =
           !String(body.url).includes('profile') && !String(body.url).includes('subscription');
-        return Response.json({ status_code: 200, body: isUsage ? usageBody(instance) : {} });
+        return Response.json({
+          status_code: 200,
+          body: isUsage ? usageBody(instance, authIndex) : {},
+        });
       }
       return new Response('not found', { status: 404 });
     },
@@ -183,6 +227,7 @@ const control = Bun.serve({
         samples: store.listSamples(0, now() + 1).length,
         reads,
         usageCalls,
+        claims: [...claims],
         cli: {
           codex: credentials.codex.map((credential) => credential.name),
           claude: credentials.claude.map((credential) => credential.name),
@@ -211,6 +256,10 @@ const control = Bun.serve({
         credentials[instance] = credentials[instance].filter(
           (credential) => credential.name !== body.name
         );
+        return json({ ok: true });
+      }
+      if (url.pathname.endsWith('/grant')) {
+        grants.set(String(body.authIndex), Number(body.left));
         return json({ ok: true });
       }
       if (url.pathname.endsWith('/fail')) {
