@@ -221,6 +221,20 @@ export function quotaSamples(
       throw new Error('Invalid quota response');
     }
   }
+  // A missing five-hour window is proof only when the provider's slot is absent or null: the
+  // builders skip any falsy window, so `false`, `0` or `""` there would pass as "no such limit".
+  if (provider === 'codex') {
+    for (const key of ['rate_limit', 'rateLimit']) {
+      const limit = payload[key];
+      if (!isRecord(limit)) continue;
+      for (const slot of ['primary_window', 'primaryWindow', 'secondary_window', 'secondaryWindow']) {
+        const window = limit[slot];
+        if (window !== undefined && window !== null && !isRecord(window)) {
+          throw new Error('Invalid quota response');
+        }
+      }
+    }
+  }
   const windows =
     parsed.provider === 'claude'
       ? buildClaudeQuotaWindows(parsed.payload, label)

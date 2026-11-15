@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TFunction } from 'i18next';
 import { createHandler } from '../server/app';
-import { QuotaCollector } from '../server/quota/collector';
+import { QuotaCollector, quotaSamples } from '../server/quota/collector';
 import { QuotaStore } from '../server/quota/store';
 import type { ServerAccount, ServerAccounts } from '../src/domain/quotaPool/accounts';
 import { createCodexQuotaConfig } from '../src/features/quota/providers/codex/data';
@@ -292,6 +292,35 @@ describe('GET /v1/accounts', () => {
     const restarted = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
     expect(restarted.noFiveHourLimit).toBe(true);
   });
+
+  test.each([[false], [0], [''], ['x'], [[]]])(
+    'a malformed secondary window (%p) is a failed read, never proof of no five-hour limit',
+    async (secondary) => {
+      const weeklyOnly = (value: unknown) => ({
+        plan_type: 'pro',
+        rate_limit: {
+          primary_window: { used_percent: 83, limit_window_seconds: 604800, reset_at: WEEK_RESET / 1000 },
+          secondary_window: value,
+        },
+      });
+      // The provider's own absence is proof; anything else in that slot is a bad response.
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(null), NOW)).not.toThrow();
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(undefined), NOW)).not.toThrow();
+      expect(() => quotaSamples('codex', 'c', weeklyOnly(secondary), NOW)).toThrow();
+      // Through the collector: only a malformed answer arrives, so the account is not no-limit.
+      const s = stack();
+      s.setCodexUsage(weeklyOnly(secondary));
+      await s.collector.refresh();
+      const cy = byIndex(await s.accounts(), 'codex-primary', 'codex', 'cy-index');
+      expect(cy.noFiveHourLimit).toBeFalsy();
+      const pools = (await (await s.call('/v1/pools?window=five-hour')).json()) as {
+        pools: Array<{ provider: string; accounts: Array<{ status: string }> }>;
+      };
+      expect(pools.pools.find((pool) => pool.provider === 'codex')?.accounts[0].status).not.toBe(
+        'no-limit'
+      );
+    }
+  );
 
   test('a failed read does not mark an account as having no five-hour limit', async () => {
     const s = stack();
