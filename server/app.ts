@@ -6,7 +6,7 @@ import { buildDashboard } from './quota/domain';
 import type { CollectionState, DashboardOptions } from './quota/domain';
 import { parseResetClaimRequest, ResetClaimRefusal, type ResetClaims } from './quota/claims';
 import type { QuotaStore } from './quota/store';
-import { accountsEtag, buildAccounts } from './quota/accounts';
+import { accountsVersion, buildAccounts } from './quota/accounts';
 import { buildInventory, inventoryVersion, type InventorySourceStatus } from './quota/inventory';
 import type { ClaudeUsageSnapshot } from '../src/types/quota';
 import { DAY_MS, HOUR_MS, type InventoryChange } from './quota/types';
@@ -286,24 +286,24 @@ export function createHandler({
       if (reveal.length > 1 || (reveal[0] !== undefined && !['true', 'false'].includes(reveal[0])))
         return json({ error: 'Invalid reveal' }, 400);
       try {
-        const body = JSON.stringify(
-          buildAccounts({
-            accounts: store.listAccounts(),
-            latestSamples: store.latestSamples(),
-            windows: collector.windows ?? new Map(),
-            resets: collector.resets ?? new Map(),
-            billing: collector.billing ?? new Map(),
-            balances: collector.balances ?? new Map(),
-            nowMs: now(),
-            reveal: reveal[0] === 'true',
-            collection: {
-              lastRefreshAtMs: collector.lastRefreshAtMs,
-              nextRefreshAtMs: collector.nextRefreshAtMs,
-              refreshing: collector.refreshing,
-            },
-          })
-        );
-        const etag = accountsEtag(body);
+        const view = buildAccounts({
+          accounts: store.listAccounts(),
+          latestSamples: store.latestSamples(),
+          windows: collector.windows ?? new Map(),
+          resets: collector.resets ?? new Map(),
+          billing: collector.billing ?? new Map(),
+          balances: collector.balances ?? new Map(),
+          nowMs: now(),
+          reveal: reveal[0] === 'true',
+          collection: {
+            lastRefreshAtMs: collector.lastRefreshAtMs,
+            nextRefreshAtMs: collector.nextRefreshAtMs,
+            refreshing: collector.refreshing,
+          },
+        });
+        const version = accountsVersion(JSON.stringify(view));
+        const body = JSON.stringify({ version, ...view });
+        const etag = `"${version}"`;
         if (etagMatches(request.headers.get('if-none-match'), etag)) {
           return new Response(null, {
             status: 304,

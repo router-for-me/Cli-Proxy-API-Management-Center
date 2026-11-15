@@ -422,10 +422,11 @@ describe('Claude usage snapshot rendering and retention', () => {
     expect(source).toContain("aria-label={t('auth_files.quota_refresh_hint')}");
     // Refresh waits for a running Claude claim, so the claim's result and refresh aren't dropped.
     expect(source).toContain('if (!claudeReset.busy) void refreshQuotaForFile();');
+    // A read on the history server (a served account's Refresh) holds it like a hub read does.
     expect(source).toContain(
-      "const refreshDisabled = !canRefreshQuota || quotaStatus === 'loading' || claudeReset.busy;"
+      "!canRefreshQuota || quotaStatus === 'loading' || serverReading || claudeReset.busy;"
     );
-    expect(source).toContain("spinning: quotaStatus === 'loading',");
+    expect(source).toContain("spinning: quotaStatus === 'loading' || serverReading,");
     expect(source).toContain("if (quota?.status === 'loading' || resettingQuota) return;");
     // A disabled credential is read too; only its resets stay blocked.
     expect(source).toContain('const canRefreshQuota = !disableControls && !resettingQuota;');

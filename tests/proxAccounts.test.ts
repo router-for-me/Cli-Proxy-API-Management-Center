@@ -11,7 +11,11 @@ import { QuotaCollector } from '../server/quota/collector';
 import { QuotaStore } from '../server/quota/store';
 import type { ServerAccount, ServerAccounts } from '../src/domain/quotaPool/accounts';
 import { poolSourceAccountId } from '../src/features/quotaPool/resetAccounts';
-import { CLAUDE_PROFILE_URL, CLAUDE_USAGE_URL, CODEX_USAGE_URL } from '../src/utils/quota/constants';
+import {
+  CLAUDE_PROFILE_URL,
+  CLAUDE_USAGE_URL,
+  CODEX_USAGE_URL,
+} from '../src/utils/quota/constants';
 
 const NOW = 1_800_000_000_000;
 const KEY = 'synthetic-key';
@@ -66,7 +70,12 @@ const codexUsage = {
 };
 
 const cleanups: Array<() => void> = [];
-afterEach(() => cleanups.splice(0).reverse().forEach((cleanup) => cleanup()));
+afterEach(() =>
+  cleanups
+    .splice(0)
+    .reverse()
+    .forEach((cleanup) => cleanup())
+);
 
 function stack() {
   let clock = NOW;
@@ -91,7 +100,10 @@ function stack() {
         return Response.json({
           files:
             host === 'claude-primary.invalid'
-              ? [file('claude', 'ann-index', 'ann@example.test'), file('claude', 'bob-index', 'bob@example.test')]
+              ? [
+                  file('claude', 'ann-index', 'ann@example.test'),
+                  file('claude', 'bob-index', 'bob@example.test'),
+                ]
               : [file('codex', 'cy-index', 'cy@example.test')],
         });
       }
@@ -103,7 +115,8 @@ function stack() {
           status_code: 200,
           body: { organization: { rate_limit_tier: 'default_claude_max_20x' } },
         });
-      if (call.url === CODEX_USAGE_URL) return Response.json({ status_code: 200, body: codexUsage });
+      if (call.url === CODEX_USAGE_URL)
+        return Response.json({ status_code: 200, body: codexUsage });
       return Response.json({ status_code: 404, body: {} });
     },
     { preconnect: () => {} }
@@ -140,7 +153,8 @@ function stack() {
         })
       )
     );
-  const accounts = async (path = '/v1/accounts') => (await (await call(path)).json()) as ServerAccounts;
+  const accounts = async (path = '/v1/accounts') =>
+    (await (await call(path)).json()) as ServerAccounts;
   return {
     store,
     collector,
@@ -151,7 +165,12 @@ function stack() {
     disable: (index: string) => disabled.add(index),
   };
 }
-const byIndex = (list: ServerAccounts, instanceId: string, provider: 'claude' | 'codex', index: string) =>
+const byIndex = (
+  list: ServerAccounts,
+  instanceId: string,
+  provider: 'claude' | 'codex',
+  index: string
+) =>
   list.accounts.find(
     (account) => account.sourceAccountId === poolSourceAccountId(instanceId, provider, index)
   ) as ServerAccount;
@@ -186,7 +205,11 @@ describe('GET /v1/accounts', () => {
       resetAtMs: WEEK_RESET,
       periodHours: 168,
     });
-    expect(window('five-hour')).toMatchObject({ lane: 'five-hour', remainingPercent: 90, periodHours: 5 });
+    expect(window('five-hour')).toMatchObject({
+      lane: 'five-hour',
+      remainingPercent: 90,
+      periodHours: 5,
+    });
     // Every other limit stays in its own lane, never the weekly one.
     expect(window('seven-day-opus')).toMatchObject({ lane: 'model', remainingPercent: 30 });
     expect(ann.resets).toMatchObject({ available: 2, usable: 0 });
@@ -236,6 +259,8 @@ describe('GET /v1/accounts', () => {
     const first = await s.call('/v1/accounts');
     const etag = first.headers.get('etag')!;
     expect(etag).toMatch(/^"[0-9a-f]{16,}"$/);
+    // The version is in the body too, so a browser needs no access to the header to ask again.
+    expect(`"${((await first.json()) as { version: string }).version}"`).toBe(etag);
     const again = await s.call('/v1/accounts', { headers: { 'If-None-Match': etag } });
     expect(again.status).toBe(304);
     expect(again.headers.get('etag')).toBe(etag);
@@ -322,7 +347,9 @@ describe('POST /v1/refresh {accountId}', () => {
     await s.collector.refresh();
     const response = await s.call('/v1/refresh', {
       method: 'POST',
-      body: JSON.stringify({ accountId: poolSourceAccountId('claude-primary', 'claude', 'nobody') }),
+      body: JSON.stringify({
+        accountId: poolSourceAccountId('claude-primary', 'claude', 'nobody'),
+      }),
     });
     expect(await response.json()).toEqual({ refreshed: false, retryAtMs: null });
   });

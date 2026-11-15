@@ -47,12 +47,17 @@ export interface ServerAccount {
   dollarWindows?: ClaudeDollarWindow[];
 }
 
-export interface ServerAccounts {
+export interface ServerAccountsBody {
   accounts: ServerAccount[];
   lastRefreshAtMs: number | null;
   /** When the next full collection is scheduled; the page-wide refresh answers with the same. */
   nextRefreshAtMs: number;
   refreshing: boolean;
+}
+
+export interface ServerAccounts extends ServerAccountsBody {
+  /** A hash of the rest of the body; the quoted version is the response's `ETag`. */
+  version: string;
 }
 
 /** `POST /v1/refresh {accountId}`: `retryAtMs` is set when the 20 s per-account floor skipped it. */

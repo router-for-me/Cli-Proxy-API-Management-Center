@@ -6,6 +6,7 @@
 import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconRefreshCw } from '@/components/ui/icons';
+import type { AccountResets } from '@/domain/quotaPool/types';
 import type { ClaudeQuotaState, ResolvedTheme } from '@/types';
 import { resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaDisplayName } from '@/utils/quota/identity';
@@ -43,6 +44,10 @@ export type QuotaCardProps = {
   onReset: () => void;
   /** When the shown quota was read, for the "updated 25s ago" label. */
   fetchedAt?: number;
+  /** Served by the history server: the held resets of its reading; the hub is not polled. */
+  server?: { resets: AccountResets | null };
+  /** The server's read floor skipped a Refresh: when the next read may run. */
+  nextReadAt?: number;
 };
 
 export function QuotaCard(props: QuotaCardProps) {
@@ -56,6 +61,7 @@ export function QuotaCard(props: QuotaCardProps) {
     onRefresh,
     onReset,
     fetchedAt,
+    nextReadAt,
   } = props;
   const { t } = useTranslation();
   const adapter = props.adapter;
@@ -82,7 +88,8 @@ export function QuotaCard(props: QuotaCardProps) {
     quota,
     onRefresh,
     adapter.resetGrants,
-    accountOff
+    accountOff,
+    props.server
   );
   const providerType =
     entry.type === 'plugin'
@@ -204,7 +211,11 @@ export function QuotaCard(props: QuotaCardProps) {
       {status !== 'idle' && (
         <footer className={styles.actionRow}>
           {status === 'success' && (
-            <QuotaFreshness fetchedAt={fetchedAt} className={styles.freshness} />
+            <QuotaFreshness
+              fetchedAt={fetchedAt}
+              nextReadAtMs={nextReadAt}
+              className={styles.freshness}
+            />
           )}
           <button
             type="button"

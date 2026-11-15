@@ -9,8 +9,10 @@ import {
   type AnthropicResetGrant,
   type AnthropicResetGrantStatus,
 } from '@/services/api/claudeResetGrants';
+import type { AccountResets } from '@/domain/quotaPool/types';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/quota';
+import { serverGrantStatus } from '@/features/quotaPool/serverQuota';
 import { formatPoolDate } from '@/features/quotaPool/presentation';
 import { resetAccountName } from '@/features/quota/logic';
 import {
@@ -42,7 +44,13 @@ export function useClaudeResetGrants(
   onRefresh: (options?: { force?: boolean }) => void,
   scope: ResetGrantScope,
   /** Grants are still read; only spending them is blocked (a disabled account). */
-  spendBlocked = false
+  spendBlocked = false,
+  /**
+   * The account is served by the history server: its held resets come from that reading and the
+   * hub is not polled. The grants (their ids, which a claim needs) are read live once, when the
+   * claim dialog opens: a named exception (src/features/quota/RULES.md).
+   */
+  server?: { resets: AccountResets | null }
 ) {
   const { t, i18n } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
@@ -60,10 +68,12 @@ export function useClaudeResetGrants(
   const [reload, setReload] = useState(0);
   const lock = useRef(false);
   const generation = useRef(0);
+  const serverMode = server !== undefined;
   useEffect(() => {
     const version = ++generation.current;
     setStatus(null);
-    if (!enabled || disabled || !sessionActive || !authIndex) return;
+    // A server-served account is not polled: the history server's reading shows its resets.
+    if (serverMode || !enabled || disabled || !sessionActive || !authIndex) return;
     let cancelled = false;
     const current = () =>
       !cancelled &&
@@ -94,15 +104,28 @@ export function useClaudeResetGrants(
       cancelRead();
       generation.current += 1;
     };
-  }, [authIndex, key, enabled, disabled, sessionActive, session, refreshToken, reload, scope]);
+  }, [
+    authIndex,
+    key,
+    enabled,
+    disabled,
+    sessionActive,
+    session,
+    refreshToken,
+    reload,
+    scope,
+    serverMode,
+  ]);
 
   const operation = scope.operations.inspect(key);
   const pending = operation && !operation.code ? operation : undefined;
   const expired = Boolean(pending && now - pending.createdAt >= RETRY_WINDOW_MS);
-  const selected = pending?.grantId ?? (status ? selectResetGrant(status, now)?.id : undefined);
-  const selectedGrant = status?.grants.find((grant) => grant.id === selected);
+  // Served from the history server, what the card shows is that reading, not a hub read.
+  const shown = server ? serverGrantStatus(server.resets, now) : status;
+  const selected = pending?.grantId ?? (shown ? selectResetGrant(shown, now)?.id : undefined);
+  const selectedGrant = shown?.grants.find((grant) => grant.id === selected);
   // What the operator can pick from; a pending claim may only be retried as it was.
-  const choices = status && !pending ? resetGrantChoices(status, now) : [];
+  const choices = shown && !pending ? resetGrantChoices(shown, now) : [];
   const blocked =
     disabled || spendBlocked || !sessionActive || !authIndex || busy || expired || !selected;
   const confirm = () => {
@@ -148,41 +171,72 @@ export function useClaudeResetGrants(
       }
     };
     const name = resetAccountName(file);
-    showConfirmation({
-      title: t('quota_pool.reset_confirm_title'),
-      message: pending ? (
-        [
-          t('claude_reset.retry_confirm', { name }),
-          selectedGrant ? retryResetText(selectedGrant, t, i18n.language) : '',
-        ]
-          .filter(Boolean)
-          .join(' ')
-      ) : (
-        <ClaudeResetChooser
-          name={name}
-          choices={choices}
-          onUse={async (grant) => {
-            const dialog = useNotificationStore.getState();
-            dialog.setConfirmationLoading(true);
-            try {
-              await spend(grant.id);
-            } finally {
-              dialog.setConfirmationLoading(false);
-              dialog.hideConfirmation();
-            }
-          }}
-        />
-      ),
-      // Each choice carries its own Use button; only a retry confirms in the footer.
-      hideConfirm: !pending,
-      confirmText: t('claude_reset.retry'),
-      variant: 'primary',
-      onConfirm: () => spend(selected),
-    });
+    const present = (offered: typeof choices, pickedId: string) =>
+      showConfirmation({
+        title: t('quota_pool.reset_confirm_title'),
+        message: pending ? (
+          [
+            t('claude_reset.retry_confirm', { name }),
+            selectedGrant ? retryResetText(selectedGrant, t, i18n.language) : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
+        ) : (
+          <ClaudeResetChooser
+            name={name}
+            choices={offered}
+            onUse={async (grant) => {
+              const dialog = useNotificationStore.getState();
+              dialog.setConfirmationLoading(true);
+              try {
+                await spend(grant.id);
+              } finally {
+                dialog.setConfirmationLoading(false);
+                dialog.hideConfirmation();
+              }
+            }}
+          />
+        ),
+        // Each choice carries its own Use button; only a retry confirms in the footer.
+        hideConfirm: !pending,
+        confirmText: t('claude_reset.retry'),
+        variant: 'primary',
+        onConfirm: () => spend(pickedId),
+      });
+    if (server && !pending) {
+      // The one live hub read of a served account: the grants, with the ids a claim sends.
+      lock.current = true;
+      setBusy(true);
+      setMessage('');
+      scope
+        .read(authIndex)
+        .then(
+          (live) => {
+            if (!current()) return;
+            const first = selectResetGrant(live, Date.now());
+            if (!first) setMessage('blocked');
+            else present(resetGrantChoices(live, Date.now()), first.id);
+          },
+          (error: unknown) => {
+            if (!current()) return;
+            setMessage(
+              error instanceof AnthropicResetGrantError && error.code === 'rate_limited'
+                ? 'rate_limited'
+                : 'read_error'
+            );
+          }
+        )
+        .finally(() => {
+          lock.current = false;
+          setBusy(false);
+        });
+      return;
+    }
+    present(choices, selected);
   };
   return {
-    count: status?.grants.reduce((sum, grant) => sum + grant.resetsLeft, 0) ?? null,
-    grants: status?.grants ?? [],
+    count: shown?.grants.reduce((sum, grant) => sum + grant.resetsLeft, 0) ?? null,
+    grants: shown?.grants ?? [],
     busy,
     blocked,
     confirm,

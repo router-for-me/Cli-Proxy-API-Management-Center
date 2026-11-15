@@ -33,6 +33,12 @@ interface QuotaStoreState {
    * A failed read or a cleared credential drops its entry. quotaFreshness.ts reads it.
    */
   fetchedAt: Record<string, number>;
+  /**
+   * For a credential the history server serves: when the server's read floor next lets it read
+   * the account, set when a Refresh was skipped by the floor, by cache key.
+   */
+  nextReadAt: Record<string, number>;
+  setNextReadAt: (key: string, atMs: number | null) => void;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
@@ -87,6 +93,17 @@ export const createQuotaStore = (now: () => number = Date.now) =>
     pluginQuota: {},
     xaiQuota: {},
     fetchedAt: {},
+    nextReadAt: {},
+    setNextReadAt: (key, atMs) =>
+      set((state) => {
+        if (atMs === null) {
+          if (!(key in state.nextReadAt)) return state;
+          const rest = { ...state.nextReadAt };
+          delete rest[key];
+          return { nextReadAt: rest };
+        }
+        return { nextReadAt: { ...state.nextReadAt, [key]: atMs } };
+      }),
     setAntigravityQuota: (updater) =>
       set((state) => {
         const next = resolveUpdater(updater, state.antigravityQuota);
@@ -206,6 +223,7 @@ export const createQuotaStore = (now: () => number = Date.now) =>
             pluginQuota: omitNames(state.pluginQuota),
             xaiQuota: omitNames(state.xaiQuota),
             fetchedAt: omitNames(state.fetchedAt),
+            nextReadAt: omitNames(state.nextReadAt),
           };
         }
         return {
@@ -220,6 +238,7 @@ export const createQuotaStore = (now: () => number = Date.now) =>
           pluginQuota: {},
           xaiQuota: {},
           fetchedAt: {},
+          nextReadAt: {},
         };
       }),
   }));

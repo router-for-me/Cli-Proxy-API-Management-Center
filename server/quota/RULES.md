@@ -162,7 +162,8 @@ while collection is running, without requesting additional collections.
   sample's time as `observedAtMs` (its age); the collector still never reads it, and a disabled
   account's memory-only readings are not served. The body holds nothing that depends on the
   request time, and the response `ETag` is a hash of the body; a matching `If-None-Match` is a
-  304 (the same helper as `/v1/inventory`).
+  304 (the same helper as `/v1/inventory`). The hash, `version`, is also the first field of the
+  body (hashed over the rest), so a browser can ask again without access to the header.
 - `POST /v1/refresh {accountId}` answers `{refreshed, retryAtMs}`. `retryAtMs` is the time the
   20 s per-account floor lets the next targeted read run, set only when that floor skipped this
   one, otherwise null. The page-wide refresh answers with the existing `nextRefreshAtMs` (the

@@ -4,7 +4,7 @@ import { maskIdentifier } from '../../src/domain/quotaPool/mask';
 import type {
   ServerAccount,
   ServerAccountWindow,
-  ServerAccounts,
+  ServerAccountsBody,
 } from '../../src/domain/quotaPool/accounts';
 import type {
   AccountQuotaWindow,
@@ -34,34 +34,30 @@ export interface AccountsInput {
   balances: ReadonlyMap<string, Pick<ClaudeUsageSnapshot, 'extraUsage' | 'dollarWindows'>>;
   nowMs: number;
   reveal: boolean;
-  collection: Pick<ServerAccounts, 'lastRefreshAtMs' | 'nextRefreshAtMs' | 'refreshing'>;
+  collection: Pick<ServerAccountsBody, 'lastRefreshAtMs' | 'nextRefreshAtMs' | 'refreshing'>;
 }
 
 function storedWindows(provider: PoolProviderId, samples: readonly QuotaSample[]) {
-  return samples.map(
-    (sample): ServerAccountWindow => ({
-      id: poolWindowId(provider, sample.window),
-      lane: sample.window,
-      labelKey: SAMPLE_LABEL_KEYS[provider][sample.window],
-      remainingPercent: sample.remainingPercent,
-      resetAtMs: sample.resetAtMs,
-      periodHours: sample.periodHours,
-    })
-  );
+  return samples.map((sample): ServerAccountWindow => ({
+    id: poolWindowId(provider, sample.window),
+    lane: sample.window,
+    labelKey: SAMPLE_LABEL_KEYS[provider][sample.window],
+    remainingPercent: sample.remainingPercent,
+    resetAtMs: sample.resetAtMs,
+    periodHours: sample.periodHours,
+  }));
 }
 
 function liveWindows(provider: PoolProviderId, windows: readonly AccountQuotaWindow[]) {
-  return windows.map(
-    (window): ServerAccountWindow => ({
-      id: window.id,
-      lane: laneOf(provider, window.id),
-      labelKey: window.labelKey,
-      ...(window.labelParams ? { labelParams: window.labelParams } : {}),
-      remainingPercent: window.remainingPercent,
-      resetAtMs: window.resetAtMs,
-      periodHours: window.periodHours ?? null,
-    })
-  );
+  return windows.map((window): ServerAccountWindow => ({
+    id: window.id,
+    lane: laneOf(provider, window.id),
+    labelKey: window.labelKey,
+    ...(window.labelParams ? { labelParams: window.labelParams } : {}),
+    remainingPercent: window.remainingPercent,
+    resetAtMs: window.resetAtMs,
+    periodHours: window.periodHours ?? null,
+  }));
 }
 
 /**
@@ -70,7 +66,7 @@ function liveWindows(provider: PoolProviderId, windows: readonly AccountQuotaWin
  * time of that sample. Nothing here depends on the request time, so the same readings serialize
  * to the same bytes (and the same ETag) until the status of an account ages into `stale`.
  */
-export function buildAccounts(input: AccountsInput): ServerAccounts {
+export function buildAccounts(input: AccountsInput): ServerAccountsBody {
   const { nowMs } = input;
   const samples = new Map<string, QuotaSample[]>();
   for (const sample of input.latestSamples) {
@@ -140,7 +136,11 @@ export function buildAccounts(input: AccountsInput): ServerAccounts {
   return { accounts, ...input.collection };
 }
 
-/** A hash of the serialized body: equal readings give one tag, any change gives another. */
-export function accountsEtag(body: string): string {
-  return `"${createHash('sha256').update(body).digest('hex').slice(0, 24)}"`;
+/**
+ * A hash of the serialized body: equal readings give one version, any change gives another. The
+ * version rides in the body too (like the inventory's), so a browser can ask `If-None-Match`
+ * without needing the `ETag` header exposed to it.
+ */
+export function accountsVersion(body: string): string {
+  return createHash('sha256').update(body).digest('hex').slice(0, 24);
 }
