@@ -1,0 +1,457 @@
+{
+  "url": "http://127.0.0.1:5199",
+  "cases": {
+    "auth-files-served": {
+      "scenario": "served",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "no hub read at all: no usage, profile or grant read",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "shows the server weekly number (7-day limit 23%)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "shows the server five-hour number (5-hour limit 88%)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "shows the server Opus lane apart from weekly (7-day Opus 64%)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "not the hub numbers (29% / 62%)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "says how old the reading is",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "held resets come from the server reading (no grant read)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        },
+        {
+          "check": "the switched-off account shows its stored sample, hours old",
+          "ok": true,
+          "detail": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 5h ago Plan Max 5-hour limit 74% 11/15, 11:08 in 59 minutes 7-day limit 41% 11/17, 10:08 in 1 day 7-day Opus \u2013 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "a poll on focus is a conditional read answered 304",
+          "ok": true,
+          "detail": [
+            "200",
+            "304",
+            "304"
+          ]
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "team-a": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled",
+        "pro-c (off)": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 5h ago Plan Max 5-hour limit 74% 11/15, 11:08 in 59 minutes 7-day limit 41% 11/17, 10:08 in 1 day 7-day Opus \u2013 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "quota-accounts-served": {
+      "scenario": "served",
+      "route": "/quota/accounts",
+      "checks": [
+        {
+          "check": "no hub read at all",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "shows the server numbers, not the hub ones",
+          "ok": true,
+          "detail": "claude-team-a.json Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day Account details updated 1m ago Refresh quota"
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "team-a": "claude-team-a.json Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day Account details updated 1m ago Refresh quota"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "refresh-floor": {
+      "scenario": "served-floor",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "the targeted refresh went to the server, not the hub",
+          "ok": true,
+          "detail": [
+            {
+              "accountId": "alpha:claude:c7eb1b03f498c88c50fc9000b25316267cf1892ae703cfa2cfff1934d0314435"
+            }
+          ]
+        },
+        {
+          "check": "says when it was read and when the next read is",
+          "ok": true,
+          "detail": "Success:\nConnected | Information:\nClaude hub fixture: Quota for \"claude-team-a.json\" was read 1 minute ago; next read at 10:08 AM |  | Missing from the provider's last reading. | Missing from the provider's last reading. | Usable now \u00b7 2 held | Missing from the provider's last reading."
+        },
+        {
+          "check": "the card names the next read time too (short on the card, full as its tooltip)",
+          "ok": true,
+          "detail": "updated 1m ago \u00b7 next 10:08 AM"
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304",
+        "304"
+      ],
+      "serverRefreshes": [
+        {
+          "accountId": "alpha:claude:c7eb1b03f498c88c50fc9000b25316267cf1892ae703cfa2cfff1934d0314435"
+        }
+      ],
+      "notes": {
+        "notification": "Success:\nConnected | Information:\nClaude hub fixture: Quota for \"claude-team-a.json\" was read 1 minute ago; next read at 10:08 AM |  | Missing from the provider's last reading. | Missing from the provider's last reading. | Usable now \u00b7 2 held | Missing from the provider's last reading.",
+        "team-a": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1m ago \u00b7 next 10:08 AM Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "refresh-ran": {
+      "scenario": "served",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "one targeted server read, no hub read",
+          "ok": true,
+          "detail": [
+            {
+              "accountId": "alpha:claude:c7eb1b03f498c88c50fc9000b25316267cf1892ae703cfa2cfff1934d0314435"
+            }
+          ]
+        },
+        {
+          "check": "the reading is now current",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 1s ago Plan Max 5-hour limit 88% 11/15, 11:08 in 59 minutes 7-day limit 23% 11/17, 10:08 in 1 day 7-day Opus 64% 11/17, 10:08 in 1 day 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Usable now \u00b7 2 held Weekly reset Nov 19, 10:08 AM UTC 1/1 left Fable reset Nov 24, 10:08 AM UTC 1/1 left Balances Extra Usage Enabled Spent $12.00 Limit $50.00 Spending 24% used Served models Enabled"
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304",
+        "200"
+      ],
+      "serverRefreshes": [
+        {
+          "accountId": "alpha:claude:c7eb1b03f498c88c50fc9000b25316267cf1892ae703cfa2cfff1934d0314435"
+        }
+      ],
+      "notes": {},
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "other-hub": {
+      "scenario": "served-alpha-only",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "the GPT hub (not in the inventory) is not read on load either",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "its card is not loaded: nothing serves it yet",
+          "ok": true,
+          "detail": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Not loaded Served models Enabled"
+        },
+        {
+          "check": "its Refresh read the hub directly",
+          "ok": true,
+          "detail": [
+            [
+              "beta",
+              "beta-0",
+              "codex-usage"
+            ],
+            [
+              "beta",
+              "beta-0",
+              "other"
+            ]
+          ]
+        },
+        {
+          "check": "it shows the hub number (5-hour limit 80% left)",
+          "ok": true,
+          "detail": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 0s ago Plan Plus 5-hour limit 80% 11/15, 11:08 in 1 hour Weekly limit 45% 11/16, 10:08 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Expiry Not reported 404 {} Served models Enabled"
+        },
+        {
+          "check": "the server never got a targeted refresh for it",
+          "ok": true,
+          "detail": []
+        }
+      ],
+      "hubReads": [
+        [
+          "beta",
+          "beta-0",
+          "codex-usage"
+        ],
+        [
+          "beta",
+          "beta-0",
+          "other"
+        ]
+      ],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "codex-main before": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Not loaded Served models Enabled",
+        "refresh icon main@example.invalid": {
+          "count": 1,
+          "visible": true,
+          "disabled": false
+        },
+        "codex-main after": "Codex main@example.invalid codex-main REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 0s ago Plan Plus 5-hour limit 80% 11/15, 11:08 in 1 hour Weekly limit 45% 11/16, 10:08 in 1 day Account details Billing Subscription Not reported The provider has not reported billing details. Credit balance Not reported The provider has not reported this detail. Manual resets Resets held Not reported Missing from the provider's last reading. Expiry Not reported 404 {} Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "disabled-refresh": {
+      "scenario": "served",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "shows the server stored sample first",
+          "ok": true,
+          "detail": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 5h ago Plan Max 5-hour limit 74% 11/15, 11:08 in 59 minutes 7-day limit 41% 11/17, 10:08 in 1 day 7-day Opus \u2013 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "its explicit Refresh is the live hub read (exception a)",
+          "ok": true,
+          "detail": [
+            [
+              "alpha",
+              "alpha-2",
+              "claude-usage"
+            ],
+            [
+              "alpha",
+              "alpha-2",
+              "claude-profile"
+            ]
+          ]
+        },
+        {
+          "check": "no targeted server read for the disabled account",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "the hub reading (5-hour 62%, 7-day 29% left) replaces the stored sample",
+          "ok": true,
+          "detail": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 0s ago Plan Max 5-hour limit 62% 01/01, 00:00 in 1,142 days 7-day limit 29% 01/01, 00:00 in 1,142 days 7-day Opus 88% 01/01, 00:00 in 1,142 days 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        },
+        {
+          "check": "after a poll the hub reading is still shown",
+          "ok": true,
+          "detail": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 1s ago Plan Max 5-hour limit 62% 01/01, 00:00 in 1,142 days 7-day limit 29% 01/01, 00:00 in 1,142 days 7-day Opus 88% 01/01, 00:00 in 1,142 days 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        }
+      ],
+      "hubReads": [
+        [
+          "alpha",
+          "alpha-2",
+          "claude-usage"
+        ],
+        [
+          "alpha",
+          "alpha-2",
+          "claude-profile"
+        ]
+      ],
+      "accountsReads": [
+        "200",
+        "304",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "pro-c before": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 5h ago Plan Max 5-hour limit 74% 11/15, 11:08 in 59 minutes 7-day limit 41% 11/17, 10:08 in 1 day 7-day Opus \u2013 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled",
+        "pro-c after": "Claude pro-c@example.invalid claude-pro-c REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA Account off updated 0s ago Plan Max 5-hour limit 62% 01/01, 00:00 in 1,142 days 7-day limit 29% 01/01, 00:00 in 1,142 days 7-day Opus 88% 01/01, 00:00 in 1,142 days 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-pro-c.json Missing from the provider's last reading. Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "claim-dialog": {
+      "scenario": "served",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "no grant read before the dialog opens",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "opening the claim dialog reads the grants on the hub once (exception b)",
+          "ok": true,
+          "detail": [
+            [
+              "alpha",
+              "alpha-0",
+              "grants"
+            ]
+          ]
+        },
+        {
+          "check": "no write was proxied (nothing was claimed)",
+          "ok": true,
+          "detail": []
+        }
+      ],
+      "hubReads": [
+        [
+          "alpha",
+          "alpha-0",
+          "grants"
+        ]
+      ],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {
+        "reads at dialog open": [
+          [
+            "alpha",
+            "alpha-0",
+            "grants"
+          ]
+        ],
+        "dialog": "Use a manual reset?\n\nClears eligible usage limits for \u201ct\u2022\u2022\u2022@ex\u2022\u2022\u2022.invalid\u201d. Pick which manual reset to use.\n\nFull reset\nExpires Dec 10, 10:00\u00a0PM\u00a0UTC\nin 1,486 days\nUse\nFull reset\nExpires Dec 16, 4:59\u00a0AM\u00a0UTC\nin 1,491 days\nUse\nFable reset\nExpires Mar 9, 7:59\u00a0AM\u00a0UTC\nin 1,574 days\nUse\nA Fable reset returns what Fable models used to your weekly limit; it doesn't raise your plan limits.\n\nUses one manual reset. This can't be undone.\n\nCancel"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "prox-absent": {
+      "scenario": "default",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "prox-history gave no sources: its accounts were never asked for",
+          "ok": true,
+          "detail": []
+        },
+        {
+          "check": "Refresh reads the hub (hub-direct as before)",
+          "ok": true,
+          "detail": [
+            [
+              "alpha",
+              "alpha-0",
+              "claude-usage"
+            ],
+            [
+              "alpha",
+              "alpha-0",
+              "claude-profile"
+            ]
+          ]
+        },
+        {
+          "check": "shows the hub numbers (7-day limit 29% left)",
+          "ok": true,
+          "detail": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 0s ago Plan Max 5-hour limit 62% 01/01, 00:00 in 1,142 days 7-day limit 29% 01/01, 00:00 in 1,142 days 7-day Opus 88% 01/01, 00:00 in 1,142 days 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Checking\u2026 Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+        }
+      ],
+      "hubReads": [
+        [
+          "alpha",
+          "alpha-0",
+          "claude-usage"
+        ],
+        [
+          "alpha",
+          "alpha-0",
+          "claude-profile"
+        ]
+      ],
+      "accountsReads": [],
+      "serverRefreshes": [],
+      "notes": {
+        "refresh icon team-a@example.invalid": {
+          "count": 1,
+          "visible": true,
+          "disabled": false
+        },
+        "team-a": "Claude team-a@example.invalid claude-team-a REQUESTS Success 0 Failure 0 -- 512.00 B \u00b7 \u2013 QUOTA updated 0s ago Plan Max 5-hour limit 62% 01/01, 00:00 in 1,142 days 7-day limit 29% 01/01, 00:00 in 1,142 days 7-day Opus 88% 01/01, 00:00 in 1,142 days 7-day Fable 5 \u2013 Account details Billing Subscription Not reported The provider has not reported billing details. Manual resets Use reset for claude-team-a.json Checking\u2026 Resets held Not reported Missing from the provider's last reading. Served models Enabled"
+      },
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    },
+    "phone": {
+      "scenario": "served",
+      "route": "/auth-files",
+      "checks": [
+        {
+          "check": "no hub read",
+          "ok": true,
+          "detail": []
+        }
+      ],
+      "hubReads": [],
+      "accountsReads": [
+        "200",
+        "304"
+      ],
+      "serverRefreshes": [],
+      "notes": {},
+      "pageErrors": [],
+      "unexpected": [],
+      "blocked": [],
+      "pass": true
+    }
+  }
+}

@@ -26,15 +26,18 @@ export function QuotaFreshness({
   const age = quotaAge(fetchedAt, now);
   if (!age) return null;
   const waiting = nextReadAtMs !== undefined && nextReadAtMs > now;
+  const ageText = t(`auth_files.quota_updated_${age.unit}`, { count: age.count });
+  const time = waiting ? formatReadTime(nextReadAtMs, i18n.language) : '';
   return (
     <span
       className={className}
       data-quota-fetched-at={fetchedAt}
       data-quota-next-read-at={waiting ? nextReadAtMs : undefined}
+      // The card header is narrow: the short form shows, the full sentence is the tooltip.
+      title={waiting ? `${ageText} · ${t('auth_files.quota_next_read', { time })}` : undefined}
     >
-      {t(`auth_files.quota_updated_${age.unit}`, { count: age.count })}
-      {waiting &&
-        ` · ${t('auth_files.quota_next_read', { time: formatReadTime(nextReadAtMs, i18n.language) })}`}
+      {ageText}
+      {waiting && ` · ${t('auth_files.quota_next_short', { time })}`}
     </span>
   );
 }

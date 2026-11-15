@@ -235,6 +235,8 @@ export function useClaudeResetGrants(
     present(choices, selected);
   };
   return {
+    /** Served by the history server: no reading of the held resets means it reports none. */
+    served: serverMode,
     count: shown?.grants.reduce((sum, grant) => sum + grant.resetsLeft, 0) ?? null,
     grants: shown?.grants ?? [],
     busy,

@@ -20,15 +20,21 @@ claude-cards (four Claude Max accounts shaped like a real hub: three usage bars,
 estimated renewal, three or four reset grants with long upstream descriptions, and extra usage off
 with spend and limit unreported) | disabled (the default hubs with team-b and codex-spare switched off
 too: the hub still reads a disabled credential's quota, so pro-c and codex-spare load while off and
-team-b's read fails while off; every Claude account holds reset grants). The stale case calls
-edit_elsewhere().
+team-b's read fails while off; every Claude account holds reset grants) |
+served | served-alpha-only | served-floor (prox-history answers: /prox/inventory lists the sources,
+/prox/accounts serves Claude and Codex accounts with numbers that differ from what the hubs report,
+so a page that shows them proves it read the server; served-alpha-only lists only the Claude hub, so
+the GPT hub stays hub-direct; served-floor answers every targeted refresh with the 20 s floor and the
+page-wide one with the 4 minute floor). The stale case calls edit_elsewhere().
 """
 from __future__ import annotations
 
 import asyncio
 import copy
+import hashlib
 import json
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, unquote, urlparse
 
@@ -207,6 +213,121 @@ class FakeHubs:
         # Hubs that answer 401 to every management request (a revoked key), and the reply delay.
         self.denied: set[str] = set()
         self.delay = 0.6 if scenario == 'slow' else 0.02
+        # prox-history, for the served scenarios: when each account was last read by the server,
+        # every targeted refresh it received, and every /prox/accounts answer ('200' or '304').
+        self.served = scenario.startswith('served')
+        self.served_at: dict[str, int] = {}
+        self.server_refreshes: list[dict] = []
+        self.accounts_reads: list[str] = []
+        self.clock = int(time.time() * 1000)
+
+    def _server_accounts(self) -> list[dict]:
+        """What GET /v1/accounts answers: the same shape as server/quota/accounts.ts.
+
+        The numbers are the server's own (weekly 23-59% left) and differ from the hubs' (71% used),
+        and the disabled account carries its last stored sample, hours old.
+        """
+        now = self.clock
+        out = []
+        for source in ('alpha', 'beta'):
+            if self.scenario == 'served-alpha-only' and source == 'beta':
+                continue
+            for index, account in enumerate(self.hubs[source]['accounts']):
+                if account['type'] not in ('claude', 'codex') or account.get('runtime'):
+                    continue
+                provider = account['type']
+                auth_index = f'{source}-{index}'
+                digest = hashlib.sha256(f'{provider}\0{auth_index}'.encode()).hexdigest()
+                sid = f'{source}:{provider}:{digest}'
+                off = account['disabled']
+                at = self.served_at.setdefault(sid, now - (5 * 3_600_000 if off else 90_000))
+                weekly = 23 + 9 * index
+                five = 88 - 7 * index
+                key_week = 'seven-day' if provider == 'claude' else 'weekly'
+                label = {'claude': ('claude_quota.five_hour', 'claude_quota.seven_day'),
+                         'codex': ('codex_quota.primary_window', 'codex_quota.secondary_window')}[provider]
+                windows = [
+                    {'id': 'five-hour', 'lane': 'five-hour', 'labelKey': label[0], 'remainingPercent': five,
+                     'resetAtMs': now + 3_600_000, 'periodHours': 5},
+                    {'id': key_week, 'lane': 'weekly', 'labelKey': label[1], 'remainingPercent': weekly,
+                     'resetAtMs': now + 2 * 86_400_000, 'periodHours': 168},
+                ]
+                entry = {
+                    'id': f'acct-{sid[-8:]}', 'sourceAccountId': sid, 'instanceId': source,
+                    'provider': provider, 'disabled': off, 'status': 'disabled' if off else 'ok',
+                    'observedAtMs': at, 'label': f'{provider.title()} {index + 1}',
+                    'identifier': 'a\u2022\u2022\u2022@example.invalid',
+                    'plan': {'label': 'Max' if provider == 'claude' else 'Plus', 'known': True,
+                             'type': 'default_claude_max' if provider == 'claude' else 'plus'},
+                    'windows': windows, 'resets': None, 'billing': None,
+                }
+                if provider == 'claude' and not off:
+                    entry['windows'].append({'id': 'seven-day-opus', 'lane': 'model',
+                                             'labelKey': 'claude_quota.seven_day_opus',
+                                             'remainingPercent': 64, 'resetAtMs': now + 2 * 86_400_000,
+                                             'periodHours': 168})
+                    entry['extraUsage'] = {'isEnabled': True, 'monthlyLimit': 5000, 'usedCredits': 1200,
+                                           'utilization': 24, 'currency': 'USD', 'disabledReason': None,
+                                           'userDisabled': False, 'spendLimitReached': False}
+                    entry['dollarWindows'] = []
+                if provider == 'claude' and index == 0:
+                    entry['resets'] = {'available': 2, 'usable': 1, 'blocker': None,
+                                       'nextExpiryAtMs': now + 4 * 86_400_000,
+                                       'expiries': [now + 4 * 86_400_000, now + 9 * 86_400_000],
+                                       'kinds': ['weekly', 'fable'], 'observedAtMs': at}
+                out.append(entry)
+        return out
+
+    def _server_inventory(self) -> list[dict]:
+        sources = [{'instanceId': 'alpha', 'provider': 'claude', 'state': 'ok', 'accounts': []}]
+        if self.scenario != 'served-alpha-only':
+            sources.append({'instanceId': 'beta', 'provider': 'codex', 'state': 'ok', 'accounts': []})
+        return sources
+
+    async def _prox(self, route, path, method, request) -> bool:
+        """prox-history: the inventory, the account read model and the targeted/full refresh."""
+        if path == '/prox/inventory' and method == 'get':
+            await self._json(route, {'version': f'fixture-{len(self.writes)}', 'syncedAtMs': self.clock,
+                                     'sources': self._server_inventory()})
+            return True
+        if path == '/prox/accounts' and method == 'get':
+            accounts = self._server_accounts()
+            rest = {'accounts': accounts, 'lastRefreshAtMs': self.clock - 60_000,
+                    'nextRefreshAtMs': self.clock + 180_000, 'refreshing': False}
+            version = hashlib.sha256(json.dumps(rest, sort_keys=True).encode()).hexdigest()[:24]
+            if request.headers.get('if-none-match') == f'"{version}"':
+                self.accounts_reads.append('304')
+                await route.fulfill(status=304, headers={'etag': f'"{version}"'})
+                return True
+            self.accounts_reads.append('200')
+            await route.fulfill(status=200, content_type='application/json',
+                                headers={'etag': f'"{version}"'},
+                                body=json.dumps({'version': version, **rest}))
+            return True
+        if path == '/prox/refresh' and method == 'post':
+            try:
+                body = json.loads(request.post_data or '{}')
+            except ValueError:
+                body = {}
+            account_id = body.get('accountId') if isinstance(body, dict) else None
+            self.server_refreshes.append({'accountId': account_id})
+            if self.scenario == 'served-floor':
+                if account_id:
+                    await self._json(route, {'refreshed': False, 'retryAtMs': self.clock + 15_000})
+                else:
+                    await self._json(route, {'refreshing': False, 'lastRefreshAtMs': self.clock - 60_000,
+                                             'nextRefreshAtMs': self.clock + 180_000}, 202)
+                return True
+            if account_id:
+                self.served_at[account_id] = self.clock
+                await self._json(route, {'refreshed': True, 'retryAtMs': None})
+            else:
+                for entry in self._server_accounts():
+                    self.served_at[entry['sourceAccountId']] = self.clock
+                await self._json(route, {'refreshing': False, 'lastRefreshAtMs': self.clock,
+                                         'nextRefreshAtMs': self.clock + 300_000}, 202)
+            return True
+        return False
 
     def edit_elsewhere(self) -> None:
         """Another operator edits the claude provider list (the stale-preview scenario)."""
@@ -389,12 +510,13 @@ class FakeHubs:
             if str(body.get('method', 'GET')).upper() != 'GET':
                 self.unexpected.append(f'{source} proxied {body.get("method")} {url}')
                 return await self._fail(route, 403, 'Synthetic hub proxies reads only')
-            failing = self.scenario not in ('default', 'aligned', 'claude-cards', 'many', 'disabled') or (
-                self.scenario in ('default', 'many', 'disabled') and body.get('authIndex') == 'alpha-1')
+            failing = not self.served and (
+                self.scenario not in ('default', 'aligned', 'claude-cards', 'many', 'disabled') or (
+                    self.scenario in ('default', 'many', 'disabled') and body.get('authIndex') == 'alpha-1'))
             soon = '2030-01-01T00:00:00Z'
             variant = ALIGNED_CLAUDE.get(body.get('authIndex')) if self.scenario == 'aligned' else None
             card = CARD_CLAUDE.get(body.get('authIndex')) if self.scenario == 'claude-cards' else None
-            if self.scenario == 'disabled' and 'cedar_ember' in url:
+            if (self.scenario == 'disabled' or self.served) and 'cedar_ember' in url:
                 payload = self._card_usage(CARD_CLAUDE['alpha-1'], soon, True)
             elif card and 'anthropic.com/api/oauth/usage' in url:
                 payload = self._card_usage(card, soon, 'cedar_ember' in url)
@@ -422,6 +544,8 @@ class FakeHubs:
                 return await self._json(route, {'status_code': 401, 'header': {}, 'body': '{}'})
             return await self._json(route, {'status_code': 200, 'header': {},
                                             'body': json.dumps(payload)})
+        if self.served and await self._prox(route, path, method, request):
+            return
         if path == '/prox/inventory':
             return await self._json(route, {'version': f'fixture-{len(self.writes)}'})
         if path == '/prox/inventory/sync':

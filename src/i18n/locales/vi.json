@@ -510,6 +510,7 @@
     "quota_updated_minutes": "cập nhật {{count}} phút trước",
     "quota_updated_hours": "cập nhật {{count}} giờ trước",
     "quota_next_read": "lần đọc tiếp theo lúc {{time}}",
+    "quota_next_short": "tiếp {{time}}",
     "quota_server_wait": "Hạn mức của \"{{name}}\" đã được đọc {{ago}}; lần đọc tiếp theo lúc {{time}}",
     "quota_server_wait_unread": "Hạn mức của \"{{name}}\" chưa được đọc; lần đọc tiếp theo lúc {{time}}",
     "quota_none": "Không có hạn mức cho thông tin xác thực này",

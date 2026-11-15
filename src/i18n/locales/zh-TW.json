@@ -508,6 +508,7 @@
     "quota_updated_minutes": "{{count}} 分鐘前更新",
     "quota_updated_hours": "{{count}} 小時前更新",
     "quota_next_read": "下次讀取 {{time}}",
+    "quota_next_short": "下次 {{time}}",
     "quota_server_wait": "「{{name}}」的額度於{{ago}}讀取；下次讀取時間 {{time}}",
     "quota_server_wait_unread": "「{{name}}」的額度尚未讀取；下次讀取時間 {{time}}",
     "quota_none": "此憑證沒有額度",

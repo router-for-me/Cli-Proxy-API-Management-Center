@@ -4,6 +4,10 @@
  */
 import { afterEach, describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import i18n from '../src/i18n';
+import { QuotaFreshness } from '../src/features/quota/components/QuotaFreshness';
 import type { TFunction } from 'i18next';
 import type {
   AccountRefreshResult,
@@ -628,5 +632,24 @@ describe('no hub auto-poll for a served account', () => {
     expect(read('src/features/quotaPool/PoolAccountResets.tsx')).toContain(
       'served ? { resets: fact.account.resets } : undefined'
     );
+  });
+});
+
+describe('the freshness label of a served card', () => {
+  test('names the next read only while the server floor still holds', async () => {
+    await i18n.changeLanguage('en');
+    const render = (nextReadAtMs?: number) =>
+      renderToStaticMarkup(
+        createElement(QuotaFreshness, { fetchedAt: NOW - 125_000, now: NOW, nextReadAtMs })
+      );
+    const waiting = render(NOW + 15_000);
+    expect(waiting).toContain('updated 2m ago');
+    expect(waiting).toContain(`data-quota-next-read-at="${NOW + 15_000}"`);
+    expect(waiting).toMatch(/· next \d/);
+    expect(waiting).toContain('next read at');
+    // The floor has passed: back to the plain age.
+    const passed = render(NOW - 1);
+    expect(passed).not.toContain('next');
+    expect(render(undefined)).not.toContain('data-quota-next-read-at');
   });
 });

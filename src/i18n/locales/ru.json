@@ -527,6 +527,7 @@
     "quota_updated_minutes": "обновлено {{count}} мин назад",
     "quota_updated_hours": "обновлено {{count}} ч назад",
     "quota_next_read": "следующее чтение в {{time}}",
+    "quota_next_short": "далее {{time}}",
     "quota_server_wait": "Квота «{{name}}» прочитана {{ago}}; следующее чтение в {{time}}",
     "quota_server_wait_unread": "Квота «{{name}}» ещё не прочитана; следующее чтение в {{time}}",
     "quota_none": "Нет квоты для этих учётных данных",

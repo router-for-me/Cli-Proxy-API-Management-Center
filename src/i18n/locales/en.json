@@ -510,6 +510,7 @@
     "quota_updated_minutes": "updated {{count}}m ago",
     "quota_updated_hours": "updated {{count}}h ago",
     "quota_next_read": "next read at {{time}}",
+    "quota_next_short": "next {{time}}",
     "quota_server_wait": "Quota for \"{{name}}\" was read {{ago}}; next read at {{time}}",
     "quota_server_wait_unread": "Quota for \"{{name}}\" has not been read yet; next read at {{time}}",
     "quota_none": "No quota for this credential",
