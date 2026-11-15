@@ -63,6 +63,10 @@ export async function readCatalogs(
             id: model.name,
           });
         }
+        // The upstream lists models in Go map order, which changes per process; the rates view
+        // renders this order as sent, so give it one. Ids are unique after dedupe.
+        const lexical = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+        catalog.sort((a, b) => lexical(a.provider, b.provider) || lexical(a.id, b.id));
         state = 'ready';
       } catch {
         // Failed catalog discovery never hides the other source or invents an empty success.
