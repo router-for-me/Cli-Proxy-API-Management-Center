@@ -15,10 +15,10 @@ import type {
   AccountResets,
   PoolDashboard,
   PoolProviderId,
-  PoolWindow,
 } from '../../src/domain/quotaPool/types';
 import { buildClaudeQuotaWindows } from '../../src/domain/quotaWindows/claude';
 import { buildCodexQuotaWindows } from '../../src/domain/quotaWindows/codex';
+import { laneOf } from '../../src/domain/quotaWindows/lanes';
 import {
   CLAUDE_PROFILE_URL,
   CLAUDE_USAGE_WINDOW_KEYS,
@@ -177,7 +177,7 @@ function inventory(payload: unknown, provider: PoolProviderId, nowMs: number): I
   return accounts;
 }
 
-function quotaSamples(
+export function quotaSamples(
   provider: PoolProviderId,
   accountId: string,
   body: unknown,
@@ -219,10 +219,8 @@ function quotaSamples(
       : buildCodexQuotaWindows(parsed.payload, label);
   const samples: QuotaSample[] = [];
   for (const entry of windows) {
-    let window: PoolWindow;
-    if (entry.id === 'five-hour') window = 'five-hour';
-    else if (entry.id === (provider === 'claude' ? 'seven-day' : 'weekly')) window = 'weekly';
-    else continue;
+    const window = laneOf(provider, entry.id);
+    if (window !== 'five-hour' && window !== 'weekly') continue;
     if (
       entry.usedPercent === null ||
       !Number.isFinite(entry.usedPercent) ||

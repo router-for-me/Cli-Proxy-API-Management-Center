@@ -10,3 +10,9 @@ Cloud-session dollar credits are excluded from Claude quota windows, including
 partial dollar payloads. Do not relabel them as Fable or use them for low-quota
 warnings. Legacy percentage-only Fable windows and modern scoped Fable limits
 remain supported; the OAuth usage snapshot owns any separate dollar balances.
+
+`lanes.ts` is the one place that says which window id is the account-wide weekly or
+five-hour window (`laneOf`, `poolWindowId`). The collector, the pool card and the /quota
+timeline call it; do not compare window ids to `'seven-day'` or `'weekly'` elsewhere.
+Same-period model windows (Fable, Opus, Sonnet, Codex Spark) are never the weekly lane.
+`tests/quotaLanes.test.ts` fails when a new id appears without a lane.
