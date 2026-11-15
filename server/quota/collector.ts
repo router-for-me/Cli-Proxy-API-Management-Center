@@ -660,7 +660,14 @@ export class QuotaCollector {
    * `force` skips the 20-second floor and never adopts a poll already in flight (it may have read
    * the account before a claim was sent): it waits for that one, then reads again.
    */
-  refreshAccount(accountId: string, options: { force?: boolean } = {}): Promise<boolean> {
+  refreshAccount(requestedId: string, options: { force?: boolean } = {}): Promise<boolean> {
+    // The stored id or the source-qualified one (`sourceAccountId`, which a browser can build
+    // from a source and an auth index) name one account: one flight, one 20 s limit.
+    const accountId =
+      this.store
+        .listAccounts()
+        .find((account) => account.id === requestedId || account.sourceAccountId === requestedId)
+        ?.id ?? requestedId;
     const existing = this.accountFlights.get(accountId);
     if (existing) {
       return options.force

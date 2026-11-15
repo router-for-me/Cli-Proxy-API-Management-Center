@@ -171,8 +171,10 @@ describe('auth files source view lifetime', () => {
     expect(f.beta.quotaStore.getState().claudeQuota['same.json']).toBe(quota);
     expect(commitIfQuotaCacheCurrent(a, () => {})).toBe(false);
     expect(commitIfQuotaCacheCurrent(b, () => {})).toBe(true);
+    // The store belongs to the source session, shared with the other pages; closing this view
+    // keeps it (the session's replacement is what drops it: tests/quotaSharedStore.test.ts).
     f.beta.dispose();
-    expect(commitIfQuotaCacheCurrent(b, () => {})).toBe(false);
+    expect(commitIfQuotaCacheCurrent(b, () => {})).toBe(true);
   });
 
   test('logout and A -> B -> A replacement never revive an old view owner', async () => {

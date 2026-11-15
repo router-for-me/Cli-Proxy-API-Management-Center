@@ -10,6 +10,19 @@ import { providerOfCredential } from '@/features/authFiles/credentialFacts';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 
+/**
+ * The server's source-qualified account identity (server/quota/identity.ts: sourceAccountId of
+ * legacyAccountId), which the browser can build from a source and a credential's auth index.
+ */
+export function poolSourceAccountId(
+  instanceId: string,
+  provider: PoolProviderId,
+  authIndex: string
+): string {
+  const digest = bytesToHex(sha256(new TextEncoder().encode(`${provider}\0${authIndex}`)));
+  return `${instanceId}:${provider}:${digest}`;
+}
+
 /** Match opaque pool identities only inside the authenticated source's inventory. */
 export function findPoolResetFile(
   files: readonly AuthFileItem[],
@@ -27,8 +40,7 @@ export function findPoolResetFile(
       (file.provider !== undefined && file.type !== undefined && file.provider !== file.type)
     )
       return false;
-    const digest = bytesToHex(sha256(new TextEncoder().encode(`${provider}\0${authIndex}`)));
-    return sourceAccountId === `${instanceId}:${provider}:${digest}`;
+    return sourceAccountId === poolSourceAccountId(instanceId, provider, authIndex);
   });
   // An ambiguous inventory must never choose a credential arbitrarily.
   return matches.length === 1 ? matches[0] : undefined;

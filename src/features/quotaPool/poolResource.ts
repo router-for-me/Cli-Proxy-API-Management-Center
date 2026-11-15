@@ -1,5 +1,6 @@
 import type { PoolDashboard } from '@/domain/quotaPool/types';
 import type { createQuotaPoolApi, PoolQuery, PoolRefresh } from '@/services/api/quotaPool';
+import { onPoolAccountRefreshed } from './accountSync';
 
 interface PoolSnapshot {
   data: PoolDashboard | null;
@@ -55,6 +56,7 @@ export function createPoolResource(
   let adoptedRevision = -1;
   let detachInventory: (() => void) | undefined;
   let unsubscribeCommits: (() => void) | undefined;
+  let stopListeningForAccounts: (() => void) | undefined;
   let snapshot = EMPTY;
   let active = false;
   let generation = 0;
@@ -161,6 +163,8 @@ export function createPoolResource(
           detachInventory = inventory.attach(key, (signal) => api.get(query, signal));
           unsubscribeCommits = inventory.subscribe(adopt);
         }
+        // A reset made on any page re-reads its account on the server; show that reading here.
+        stopListeningForAccounts = onPoolAccountRefreshed(() => void reload());
         void reload();
         timer = setInterval(() => {
           // A slow backend must get a chance to finish before the next poll.
@@ -182,8 +186,10 @@ export function createPoolResource(
         generation += 1;
         detachInventory?.();
         unsubscribeCommits?.();
+        stopListeningForAccounts?.();
         detachInventory = undefined;
         unsubscribeCommits = undefined;
+        stopListeningForAccounts = undefined;
         adoptedRevision = -1;
         read?.abort();
         mutation?.abort();

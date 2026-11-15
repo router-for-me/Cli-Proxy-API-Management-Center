@@ -10,7 +10,7 @@ const t = ((key: string) => key) as unknown as TFunction;
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** A codex adapter whose reads the test answers by hand. */
-function harness(now: () => number = () => 1_000) {
+function harness(now: () => number = () => 1_000, isCurrent: () => boolean = () => true) {
   const store = createQuotaStore(now);
   const reads: Array<{ name: string; answer: () => void; fail: () => void }> = [];
   const adapter = {
@@ -36,7 +36,7 @@ function harness(now: () => number = () => 1_000) {
     store,
     t,
     now,
-    isCurrent: () => true,
+    isCurrent,
     onBusyChange: (value) => busy.push(value),
   });
   const entry = (name: string) => ({
@@ -56,6 +56,25 @@ function harness(now: () => number = () => 1_000) {
 }
 
 describe('quota batch loader', () => {
+  test('a view closing mid-read gives its loading entries back, keeping earlier readings', async () => {
+    let current = true;
+    const { store, reads, load, entry, answerOpen } = harness(
+      () => 1_000,
+      () => current
+    );
+    const earlier = { status: 'success' } as QuotaCardState;
+    store.getState().setCodexQuota({ 'old.json': earlier });
+    const running = load([entry('old.json'), entry('fresh.json')]);
+    await tick();
+    expect(reads).toHaveLength(2);
+    expect(store.getState().codexQuota['fresh.json']?.status).toBe('loading');
+    current = false;
+    await answerOpen();
+    await running;
+    expect(store.getState().codexQuota['old.json']).toBe(earlier);
+    expect(store.getState().codexQuota['fresh.json']).toBeUndefined();
+  });
+
   test('a refresh that arrives while a batch runs is queued, and every target is read', async () => {
     const { reads, load, entry, answerOpen, store } = harness();
     const first = load([entry('a.json'), entry('b.json')]);

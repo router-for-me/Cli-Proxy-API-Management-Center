@@ -6,6 +6,9 @@
  */
 
 import type { ComponentType } from 'react';
+import type { PoolProviderId } from '@/domain/quotaPool/types';
+import { refreshPoolAccountAfterReset } from '@/features/quotaPool/accountSync';
+import { createQuotaPoolApi } from '@/services/api/quotaPool';
 import type { SourceSession } from '@/services/api/sourceSession';
 import type { QuotaStore as BoundQuotaStore } from '@/stores/useQuotaStore';
 import { createQuotaConfigs } from './scoped';
@@ -60,6 +63,31 @@ export const QUOTA_PRESENTATION: Record<QuotaProviderType, Pick<QuotaAdapter, 'B
   xai: { Body: XaiQuotaBody as unknown as QuotaAdapter['Body'] },
 };
 
+/**
+ * A confirmed reset attempt may have spent the credit even when a later step failed, so every
+ * attempt, from any page, has the history server re-read that account (accountSync.ts).
+ */
+function withPoolRefresh(
+  session: SourceSession,
+  provider: PoolProviderId,
+  reset: (file: AuthFileItem, t: TFunction) => Promise<unknown>
+): QuotaAdapter['resetQuota'] {
+  return async (file, t) => {
+    const history = createQuotaPoolApi();
+    try {
+      return await reset(file, t);
+    } finally {
+      // Even if the page was left meanwhile: the attempt happened, and the server is per source.
+      void refreshPoolAccountAfterReset(
+        session.owner,
+        provider,
+        file.auth_index ?? file.authIndex,
+        history
+      );
+    }
+  };
+}
+
 /** Create once per source session/store; no requests occur during construction. */
 export function createQuotaAdapters(
   session: SourceSession,
@@ -72,6 +100,9 @@ export function createQuotaAdapters(
       type,
       {
         ...config,
+        ...(type === 'codex' && config.resetQuota
+          ? { resetQuota: withPoolRefresh(session, 'codex', config.resetQuota) }
+          : {}),
         Body: QUOTA_PRESENTATION[type as QuotaProviderType].Body,
         resetGrants,
       },

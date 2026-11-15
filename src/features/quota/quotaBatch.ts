@@ -16,6 +16,7 @@ import { getStatusFromError } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { QuotaFileEntry } from './logic';
 import { getQuotaSetter, type QuotaAdapter, type QuotaCardState } from './providers';
+import { beginLoading } from './quotaLoading';
 import type { QuotaProviderType } from './providers/types';
 import { enrichQuotaInBackground } from './quotaEnrichment';
 import { splitQuotaTargets } from './quotaFreshness';
@@ -84,14 +85,13 @@ export function createQuotaBatchLoader(deps: QuotaBatchDeps): QuotaBatchLoad {
       Array.from(groups.entries()).map(async ([type, entries]) => {
         const adapter = adapters[type];
         const setQuota = getQuotaSetter(adapter, store);
+        let release = () => {};
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
-          setQuota((prev) => {
-            const next = { ...prev };
-            entries.forEach(({ file }) => {
-              next[getQuotaCacheKey(file)] = adapter.buildLoadingState();
-            });
-            return next;
-          });
+          release = beginLoading(
+            adapter,
+            store,
+            entries.map(({ file }) => getQuotaCacheKey(file))
+          );
         });
 
         const results = await Promise.all(
@@ -120,7 +120,7 @@ export function createQuotaBatchLoader(deps: QuotaBatchDeps): QuotaBatchLoad {
             })
           )
         );
-        if (!isCurrent()) return;
+        if (!isCurrent()) return release();
 
         const committed = new Map<string, QuotaCardState>();
         setQuota((prev) => {
