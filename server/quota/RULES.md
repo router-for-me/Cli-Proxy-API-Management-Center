@@ -116,4 +116,31 @@ Minimize controls shrink the plot only; the account roster is unchanged (a
 behaviour change, user-approved 2026-11-05). Completion polling reads dashboard status every second
 while collection is running, without requesting additional collections.
 
+- Reset claims (`POST /v1/resets/claim`, `claims.ts`) are the server's source of truth for
+  spending a Claude grant or a Codex credit. The server performs a claim only on an explicit
+  authenticated user request, never on its own: no collection, refresh, sync or retry loop ever
+  claims. Refresh itself still does not consume usage queues, mutate auth or reset limits; claims
+  are the only write, and each is recorded in `quota_reset_events` (opaque account id, provider,
+  kind, grant/credit id, the client's request id, outcome, requested/settled times, and the
+  readings just before and after: every usage window the collector held, Fable's
+  `seven-day-fable` included, plus reset counts). Events are history: no pruning, no names, and an
+  account purge leaves them. `GET /v1/resets/events` returns them without names or emails unless
+  `reveal=true`, like `/v1/pools`.
+- A claim resolves the account to its validated source and auth index as the collector does,
+  sends through that source's management `/requests/api-call` with the instance key file, and
+  reuses the shared `src/` claim and parse helpers (Claude reads the organization first). It is
+  single flight per account, starts after a full collection in flight and holds the next one back,
+  like a targeted refresh. The row is written as `pending` before anything is sent. The client
+  request id is unique: a settled one replays its event and sends nothing. A claim that may have
+  been sent and got no answer is `unknown`, never failed; the same request id may be sent again
+  for ten minutes, checked again just before the send (providers deduplicate it), and only to the
+  organization the first send was addressed to; it settles the one event only on a definite spend.
+  A refusal on that retry stays `unknown`. A `pending` row left by a stopped process becomes
+  `unknown` at startup. Anything refused before the send (eligibility, organization, status read)
+  records no event. After every claim one targeted refresh reads the account, past the 20-second
+  floor and never adopting a poll that started before the send, and its reading is the event's `after` (null when the refresh could not read).
+- Per-account model-scoped windows (Fable) are exposed beside, never inside, the pool points:
+  `/v1/pools` carries each account's latest `windows`. Usage (prox-usage) is not joined to claims.
+  A "tokens since last reset" view is a documented follow-up that would come through prox-usage's
+  existing `/v1/analytics` keyed by the event times, not through a second usage store here.
 - Billing readings and ChatGPT account IDs are memory-only. Never persist or log the provider account ID or send it to the browser. Codex subscription attempts and Claude profile attempts are gated per account for six hours, including failures and targeted refreshes. Claude reads once after restart even with a fresh stored plan. Billing failures preserve the previous reading.

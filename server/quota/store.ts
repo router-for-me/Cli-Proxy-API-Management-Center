@@ -8,6 +8,8 @@ import {
   RETIRED_GRACE_MS,
   type InventoryChange,
   type QuotaSample,
+  type ResetEvent,
+  type ResetReading,
   type StoredAccount,
 } from './types';
 import { legacyAccountId, sourceAccountId, type LegacySourceMapping } from './identity';
@@ -83,9 +85,34 @@ export class QuotaStore {
         plan TEXT NOT NULL,
         observedAtMs INTEGER NOT NULL
       );
+      -- Reset claims are user-requested spends and stay as history: no foreign key, no 30-day
+      -- pruning, and an account purge leaves them (they hold opaque ids and readings only).
+      CREATE TABLE IF NOT EXISTS quota_reset_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clientRequestId TEXT NOT NULL UNIQUE,
+        accountId TEXT NOT NULL,
+        provider TEXT NOT NULL CHECK (provider IN ('claude', 'codex')),
+        kind TEXT NOT NULL,
+        grantId TEXT,
+        outcome TEXT NOT NULL,
+        requestedAtMs INTEGER NOT NULL,
+        settledAtMs INTEGER,
+        cooldownCleared INTEGER CHECK (cooldownCleared IS NULL OR cooldownCleared IN (0, 1)),
+        beforeJson TEXT,
+        afterJson TEXT,
+        -- SHA-256 of the Claude organization the claim was addressed to; never returned.
+        organizationHash TEXT
+      );
+      CREATE INDEX IF NOT EXISTS quota_reset_events_time ON quota_reset_events(requestedAtMs);
+      CREATE INDEX IF NOT EXISTS quota_reset_events_account
+        ON quota_reset_events(accountId, requestedAtMs);
     `);
     this.db
       .transaction(() => {
+        // A claim still pending when the process last stopped may have been sent: never failed.
+        this.db
+          .query("UPDATE quota_reset_events SET outcome = 'unknown' WHERE outcome = 'pending'")
+          .run();
         const columns = this.db
           .query<{ name: string }, []>('PRAGMA table_info(quota_accounts)')
           .all();
@@ -447,6 +474,125 @@ export class QuotaStore {
       this.purgeInTransaction(purged);
     })();
     return purged;
+  }
+
+  /** Records a claim about to be sent, as `pending`. Throws when the request id was used before. */
+  insertResetEvent(input: {
+    accountId: string;
+    provider: PoolProviderId;
+    kind: string;
+    grantId: string | null;
+    clientRequestId: string;
+    requestedAtMs: number;
+    before: ResetReading | null;
+    organizationHash?: string;
+  }): ResetEvent {
+    const { lastInsertRowid } = this.db
+      .query(
+        `INSERT INTO quota_reset_events
+           (clientRequestId, accountId, provider, kind, grantId, outcome, requestedAtMs, beforeJson,
+            organizationHash)
+         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?, ?)`
+      )
+      .run(
+        input.clientRequestId,
+        input.accountId,
+        input.provider,
+        input.kind,
+        input.grantId,
+        input.requestedAtMs,
+        input.before ? JSON.stringify(input.before) : null,
+        input.organizationHash ?? null
+      );
+    return this.resetEventById(Number(lastInsertRowid))!;
+  }
+
+  /** `settledAtMs` stays null while the outcome is `unknown`. */
+  settleResetEvent(
+    id: number,
+    outcome: string,
+    settledAtMs: number | null,
+    cooldownCleared: boolean | null
+  ): void {
+    this.db
+      .query(
+        'UPDATE quota_reset_events SET outcome = ?, settledAtMs = ?, cooldownCleared = ? WHERE id = ?'
+      )
+      .run(outcome, settledAtMs, cooldownCleared === null ? null : Number(cooldownCleared), id);
+  }
+
+  setResetEventAfter(id: number, after: ResetReading | null): void {
+    this.db
+      .query('UPDATE quota_reset_events SET afterJson = ? WHERE id = ?')
+      .run(after ? JSON.stringify(after) : null, id);
+  }
+
+  /** Which organization a Claude claim was addressed to, so a retry can be held to it. */
+  resetEventOrganization(id: number): string | null {
+    return (
+      this.db
+        .query<{ organizationHash: string | null }, [number]>(
+          'SELECT organizationHash FROM quota_reset_events WHERE id = ?'
+        )
+        .get(id)?.organizationHash ?? null
+    );
+  }
+
+  resetEventById(id: number): ResetEvent | null {
+    return this.resetEvents('WHERE id = ?', [id])[0] ?? null;
+  }
+
+  resetEventByRequestId(clientRequestId: string): ResetEvent | null {
+    return this.resetEvents('WHERE clientRequestId = ?', [clientRequestId])[0] ?? null;
+  }
+
+  /** The account's newest claim that may have been sent without an answer, from `sinceMs` on. */
+  latestUnknownResetEvent(accountId: string, sinceMs: number): ResetEvent | null {
+    return (
+      this.resetEvents(
+        "WHERE accountId = ? AND outcome = 'unknown' AND requestedAtMs >= ?",
+        [accountId, sinceMs],
+        1
+      )[0] ?? null
+    );
+  }
+
+  /** Newest first. */
+  listResetEvents(filter: { provider?: PoolProviderId; sinceMs?: number; limit?: number }) {
+    const where = ['1 = 1'];
+    const params: (string | number)[] = [];
+    if (filter.provider) {
+      where.push('provider = ?');
+      params.push(filter.provider);
+    }
+    if (filter.sinceMs !== undefined) {
+      where.push('requestedAtMs >= ?');
+      params.push(filter.sinceMs);
+    }
+    return this.resetEvents(`WHERE ${where.join(' AND ')}`, params, filter.limit ?? 500);
+  }
+
+  private resetEvents(where: string, params: (string | number)[], limit = 500): ResetEvent[] {
+    return this.db
+      .query<
+        Omit<ResetEvent, 'cooldownCleared' | 'before' | 'after'> & {
+          cooldownCleared: number | null;
+          beforeJson: string | null;
+          afterJson: string | null;
+        },
+        (string | number)[]
+      >(
+        `SELECT id, clientRequestId, accountId, provider, kind, grantId, outcome, requestedAtMs,
+           settledAtMs, cooldownCleared, beforeJson, afterJson
+         FROM quota_reset_events ${where} ORDER BY requestedAtMs DESC, id DESC LIMIT ${limit}`
+      )
+      .all(...params)
+      .map(({ cooldownCleared, beforeJson, afterJson, ...row }) => ({
+        ...row,
+        cooldownCleared: cooldownCleared === null ? null : cooldownCleared === 1,
+        before: beforeJson ? (JSON.parse(beforeJson) as ResetReading) : null,
+        after: afterJson ? (JSON.parse(afterJson) as ResetReading) : null,
+      }));
   }
 
   close(): void {
