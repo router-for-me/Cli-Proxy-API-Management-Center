@@ -16,6 +16,7 @@ import type { QuotaCardState } from '@/features/quota/providers';
 import { useAuthFilesSource, useAuthFilesNotifications } from '../AuthFilesSourceContext';
 import { hasClaudeUsageData } from '@/features/quota/providers/claude/data';
 import { QuotaFreshness } from '@/features/quota/components/QuotaFreshness';
+import { beginLoading } from '@/features/quota/quotaLoading';
 import { isQuotaFresh } from '@/features/quota/quotaFreshness';
 import { providerSources } from '@/stores/useProviderSources';
 import {
@@ -81,10 +82,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
 
     const cacheGeneration = captureQuotaCacheGeneration(file.name, sourceScope.quotaStore);
 
-    updateQuotaState((prev) => ({
-      ...prev,
-      [cacheKey]: adapter.buildLoadingState(),
-    }));
+    const release = beginLoading(adapter, sourceScope.quotaStore, [cacheKey]);
 
     try {
       const data = await adapter.fetchQuota(file, t);
@@ -97,7 +95,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         showNotification(t('auth_files.quota_refresh_success', { name: file.name }), 'success');
       });
     } catch (err: unknown) {
-      if (!sourceScope.isCurrent()) return;
+      if (!sourceScope.isCurrent()) return release();
       const message = err instanceof Error ? err.message : t('common.unknown_error');
       const status = getStatusFromError(err);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {

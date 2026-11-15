@@ -100,8 +100,6 @@ function SourceQuotaPage({ session: owner }: { session: SourceSession }) {
     () => createQuotaAdapters(session, useSourceQuotaStore),
     [session, useSourceQuotaStore]
   );
-  // Leaving the page cancels its reads; the store outlives it, so forget the ones left loading.
-  useEffect(() => () => useSourceQuotaStore.getState().releaseLoading(), [useSourceQuotaStore]);
   const { t } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);

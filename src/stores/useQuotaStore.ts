@@ -42,17 +42,6 @@ interface QuotaStoreState {
   setPluginQuota: (updater: QuotaUpdater<Record<string, PluginQuotaState>>) => void;
   setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: (names?: string[]) => void;
-  /**
-   * Forget readings still 'loading' once the view that started them has closed: its requests were
-   * cancelled and can no longer settle, and a card refuses to read again while one is loading.
-   * Finished readings stay for the other pages.
-   */
-  releaseLoading: () => void;
-  /**
-   * Keeps one key's loading entry through releaseLoading while a read that outlives its view
-   * (bound to the source session, not a page) is still running. Returns the unpin function.
-   */
-  pinRead: (key: string) => () => void;
 }
 
 const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
@@ -85,9 +74,8 @@ function stampReads(
   return stamped;
 }
 
-export const createQuotaStore = (now: () => number = Date.now) => {
-  const pinned = new Map<string, number>();
-  return create<QuotaStoreState>((set) => ({
+export const createQuotaStore = (now: () => number = Date.now) =>
+  create<QuotaStoreState>((set) => ({
     cacheGeneration: 0,
     fileGenerations: {},
     antigravityQuota: {},
@@ -189,45 +177,6 @@ export const createQuotaStore = (now: () => number = Date.now) => {
           fetchedAt: stampReads(state.fetchedAt, state.xaiQuota, next, now),
         };
       }),
-    pinRead: (key) => {
-      pinned.set(key, (pinned.get(key) ?? 0) + 1);
-      return () => {
-        const left = (pinned.get(key) ?? 1) - 1;
-        if (left > 0) pinned.set(key, left);
-        else pinned.delete(key);
-      };
-    },
-    releaseLoading: () =>
-      set((state) => {
-        const released = new Set<string>();
-        const settle = <T extends QuotaEntry>(cache: Record<string, T>): Record<string, T> => {
-          const keys = Object.keys(cache).filter(
-            (key) => cache[key]!.status === 'loading' && !pinned.has(key)
-          );
-          if (keys.length === 0) return cache;
-          const next = { ...cache };
-          keys.forEach((key) => {
-            delete next[key];
-            released.add(key);
-          });
-          return next;
-        };
-        const patch = {
-          antigravityQuota: settle(state.antigravityQuota),
-          claudeQuota: settle(state.claudeQuota),
-          codexQuota: settle(state.codexQuota),
-          devinQuota: settle(state.devinQuota),
-          kimiQuota: settle(state.kimiQuota),
-          metaQuota: settle(state.metaQuota),
-          pluginQuota: settle(state.pluginQuota),
-          xaiQuota: settle(state.xaiQuota),
-        };
-        if (released.size === 0) return state;
-        // A dropped key's last read time would otherwise pass for a fresh reading to reuse.
-        const fetchedAt = { ...state.fetchedAt };
-        released.forEach((key) => delete fetchedAt[key]);
-        return { ...patch, fetchedAt };
-      }),
     clearQuotaCache: (names) =>
       set((state) => {
         if (names) {
@@ -274,7 +223,6 @@ export const createQuotaStore = (now: () => number = Date.now) => {
         };
       }),
   }));
-};
 
 export const useQuotaStore = createQuotaStore();
 export type QuotaStore = ReturnType<typeof createQuotaStore>;

@@ -6,6 +6,7 @@ import { legacyAccountId, sourceAccountId } from '../server/quota/identity';
 import { createAuthFilesSourceScope } from '../src/features/authFiles/sourceScope';
 import { createQuotaAdapters, getQuotaMap, getQuotaSetter } from '../src/features/quota/providers';
 import { createSourceResetGrants } from '../src/features/quota/providers/claude/resetGrantScope';
+import { beginLoading } from '../src/features/quota/quotaLoading';
 import { isQuotaFresh } from '../src/features/quota/quotaFreshness';
 import { createPoolResource } from '../src/features/quotaPool/poolResource';
 import { poolSourceAccountId } from '../src/features/quotaPool/resetAccounts';
@@ -157,37 +158,37 @@ describe('one quota store per hub source session', () => {
   });
 });
 
-describe('closing a page', () => {
-  test('forgets the reads it left loading, and keeps what finished for the other pages', () => {
-    const sessions = hubs(['claude-primary']);
-    const store = sourceQuotaStore(sessions.captureSource('claude-primary').owner);
-    const state = store.getState();
-    state.setCodexQuota({ 'done.json': { status: 'loading', windows: [] } });
-    state.setCodexQuota((prev) => ({ ...prev, 'done.json': { status: 'success', windows: [] } }));
-    state.setCodexQuota((prev) => ({
-      ...prev,
-      'running.json': { status: 'loading', windows: [] },
-    }));
-    state.setClaudeQuota({ 'running.json': { status: 'loading', windows: [] } });
-    store.setState({ fetchedAt: { ...store.getState().fetchedAt, 'running.json': Date.now() } });
-    store.getState().releaseLoading();
-    const after = store.getState();
-    expect(Object.keys(after.codexQuota)).toEqual(['done.json']);
-    expect(after.claudeQuota).toEqual({});
-    // A forgotten read's time must not pass for a fresh reading that a refresh would reuse.
-    expect(Object.keys(after.fetchedAt)).toEqual(['done.json']);
+describe('a read cancelled by its view closing', () => {
+  const claudeAdapter = () => {
+    const session = hubs(['claude-primary']).captureSource('claude-primary');
+    const store = sourceQuotaStore(session.owner);
+    return { store, adapter: createQuotaAdapters(session, store).claude };
+  };
+  const reading = { status: 'success' as const, windows: [], observedAt: 5 };
+
+  test('gives back the reading it replaced, for the other pages', () => {
+    const { store, adapter } = claudeAdapter();
+    getQuotaSetter(adapter, store)(() => ({ 'a.json': reading, 'b.json': reading }));
+    const release = beginLoading(adapter, store, ['a.json', 'new.json']);
+    expect(store.getState().claudeQuota['new.json']?.status).toBe('loading');
+    release();
+    expect(store.getState().claudeQuota['a.json']).toBe(reading);
+    expect(store.getState().claudeQuota['new.json']).toBeUndefined();
+    expect(store.getState().claudeQuota['b.json']).toBe(reading);
   });
 
-  test('keeps a read that outlives its view, like the pool panel claim read', () => {
-    const store = sourceQuotaStore(hubs(['claude-primary']).captureSource('claude-primary').owner);
-    const loading = { status: 'loading' as const, windows: [] };
-    store.getState().setClaudeQuota({ 'pool.json': loading, 'page.json': loading });
-    const unpin = store.getState().pinRead('pool.json');
-    store.getState().releaseLoading(); // the page that started 'page.json' closed
-    expect(Object.keys(store.getState().claudeQuota)).toEqual(['pool.json']);
-    unpin();
-    store.getState().releaseLoading();
-    expect(store.getState().claudeQuota).toEqual({});
+  test('leaves a newer read of the same card alone (another page, or a cleared cache)', () => {
+    const { store, adapter } = claudeAdapter();
+    const older = beginLoading(adapter, store, ['a.json']);
+    const newer = beginLoading(adapter, store, ['a.json', 'c.json']);
+    older(); // the outgoing page's cancelled read, after the incoming page started its own
+    expect(store.getState().claudeQuota['a.json']?.status).toBe('loading');
+    store.getState().clearQuotaCache(['c.json']);
+    newer();
+    // c.json was cleared by an invalidation, so nothing of it comes back; a.json is the newer
+    // read's own entry, which it releases itself.
+    expect(store.getState().claudeQuota['c.json']).toBeUndefined();
+    expect(store.getState().claudeQuota['a.json']).toBeUndefined();
   });
 
   test('the pool panel reads after a claim through the source session, not its own lease', () => {
