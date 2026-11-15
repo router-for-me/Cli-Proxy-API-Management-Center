@@ -20,7 +20,7 @@ Environment=PROX_USAGE_CPAMP_DB_PATH=/cpamp/usage.sqlite
 Environment=PROX_USAGE_CPAMP_RETIRED=0
 # 1 only for that final reconcile of a stopped CPAMP through this :ro mount: SQLite's immutable=1
 # open, which refuses a non-empty -wal, any -shm and any -journal. Back to 0 afterwards.
-Environment=PROX_USAGE_CPAMP_IMMUTABLE=0
+Environment=PROX_USAGE_CPAMP_IMMUTABLE=1
 Volume=%h/.config/prox-usage:/config:ro
 Environment=PROX_USAGE_BACKUP_CONFIG=/config/backup.json
 Environment=PROX_USAGE_CLIENT_ALIASES_PATH=/config/client-aliases.json
