@@ -49,6 +49,31 @@ export interface QuotaSample {
   periodHours: number | null;
 }
 
+/** What the collector held for one account at a moment: every usage window plus reset counts. */
+export interface ResetReading {
+  observedAtMs: number;
+  windows: { id: string; remainingPercent: number | null; resetAtMs: number | null }[];
+  resets: { available: number; usable: number; blocker: string | null } | null;
+}
+
+/** `pending` is a claim being sent; `unknown` one that may have been sent and never got an answer. */
+export interface ResetEvent {
+  id: number;
+  accountId: string;
+  provider: PoolProviderId;
+  /** Claude: session, weekly, fable or full. Codex: its credit kind, `codex_rate_limits`. */
+  kind: string;
+  grantId: string | null;
+  clientRequestId: string;
+  outcome: string;
+  requestedAtMs: number;
+  settledAtMs: number | null;
+  /** Codex only: whether the hub's routing cooldown was cleared after the credit was spent. */
+  cooldownCleared: boolean | null;
+  before: ResetReading | null;
+  after: ResetReading | null;
+}
+
 export { HOUR_MS, DAY_MS } from '../../src/utils/time/durations';
 export const STALE_MS = 15 * 60_000;
 export const MIN_RATE_SPAN_MS = 10 * 60_000;

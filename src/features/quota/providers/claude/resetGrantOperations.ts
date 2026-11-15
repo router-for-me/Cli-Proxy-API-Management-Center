@@ -1,6 +1,6 @@
 import {
   AnthropicResetGrantError,
-  anthropicResetGrantBlocker,
+  anthropicResetGrantClaimBlocker,
   type claimClaudeResetGrant,
   type readClaudeOrganization,
   type readClaudeResetGrants,
@@ -108,20 +108,8 @@ export function createResetGrantOperations(
         if (!operation) {
           const status = await readPreflight('status', () => deps.readStatus(authIndex));
           assertSession();
-          const grant = status.grants.find((item) => item.id === grantId);
           const now = deps.now();
-          const blocker = anthropicResetGrantBlocker(status, grantId);
-          const reason =
-            blocker ??
-            (!grant
-              ? 'unknown_grant'
-              : grant.startsAt && Date.parse(grant.startsAt) > now
-                ? 'not_started'
-                : grant.endsAt && Date.parse(grant.endsAt) <= now
-                  ? 'grant_expired'
-                  : status.cooldownUntil && Date.parse(status.cooldownUntil) > now
-                    ? 'cooldown'
-                    : null);
+          const reason = anthropicResetGrantClaimBlocker(status, grantId, now);
           if (reason) throw new ResetGrantPreflightError('eligibility', `blocked_${reason}`);
           let requestId: string;
           try {

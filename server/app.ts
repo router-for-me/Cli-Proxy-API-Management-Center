@@ -4,6 +4,7 @@ import { authorized } from './http/auth';
 export { authorized } from './http/auth';
 import { buildDashboard } from './quota/domain';
 import type { CollectionState, DashboardOptions } from './quota/domain';
+import { parseResetClaimRequest, ResetClaimRefusal, type ResetClaims } from './quota/claims';
 import type { QuotaStore } from './quota/store';
 import { buildInventory, inventoryVersion, type InventorySourceStatus } from './quota/inventory';
 import { DAY_MS, HOUR_MS, type InventoryChange } from './quota/types';
@@ -27,6 +28,8 @@ export interface AppDependencies {
   store: QuotaStore;
   collector: CollectorState;
   keyFile: string;
+  /** Reset claims and their events; the routes exist only when it is supplied. */
+  claims?: ResetClaims;
   now?: () => number;
 }
 
@@ -88,7 +91,13 @@ function parseSyncRequest(text: string): SyncRequest | null {
   return { reason: body.reason as SyncRequest['reason'], deletedNames: names as string[] };
 }
 
-export function createHandler({ store, collector, keyFile, now = Date.now }: AppDependencies) {
+export function createHandler({
+  store,
+  collector,
+  keyFile,
+  claims,
+  now = Date.now,
+}: AppDependencies) {
   const fullRefresh = () => {
     // Collection owns single-flight behavior, rate limits and sanitized failures.
     void collector.refresh().catch(() => console.error('Quota collection failed'));
@@ -149,6 +158,51 @@ export function createHandler({ store, collector, keyFile, now = Date.now }: App
         }
         return fullRefresh();
       })();
+    }
+    if (claims && url.pathname === '/v1/resets/claim' && request.method === 'POST') {
+      return (async () => {
+        let claim: ReturnType<typeof parseResetClaimRequest>;
+        try {
+          claim = parseResetClaimRequest(JSON.parse(await readText(request.body!, 4096)));
+        } catch {
+          claim = null;
+        }
+        if (!claim) return json({ error: 'Invalid reset claim' }, 400);
+        try {
+          return json(await claims.claim(claim));
+        } catch (error) {
+          if (error instanceof ResetClaimRefusal) return json(error.detail, error.httpStatus);
+          console.error('Reset claim failed');
+          return json({ error: 'Reset claim failed' }, 500);
+        }
+      })();
+    }
+    if (claims && url.pathname === '/v1/resets/events' && request.method === 'GET') {
+      const one = (name: string) => {
+        const values = url.searchParams.getAll(name);
+        if (values.length > 1) throw new Error(`Invalid ${name}`);
+        return values[0];
+      };
+      try {
+        const provider = one('provider');
+        const sinceMs = one('sinceMs');
+        const reveal = one('reveal');
+        if (provider !== undefined && provider !== 'claude' && provider !== 'codex')
+          throw new Error('Invalid provider');
+        if (sinceMs !== undefined && !/^\d{1,16}$/.test(sinceMs))
+          throw new Error('Invalid sinceMs');
+        if (reveal !== undefined && reveal !== 'true' && reveal !== 'false')
+          throw new Error('Invalid reveal');
+        return json({
+          events: claims.events({
+            provider,
+            ...(sinceMs === undefined ? {} : { sinceMs: Number(sinceMs) }),
+            reveal: reveal === 'true',
+          }),
+        });
+      } catch {
+        return json({ error: 'Invalid reset event filters' }, 400);
+      }
     }
     if (url.pathname === '/v1/inventory' && request.method === 'GET') {
       return (async () => {

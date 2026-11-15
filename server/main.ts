@@ -1,6 +1,7 @@
 import { createHandler } from './app';
 import { QuotaStore } from './quota/store';
 import { QuotaCollector } from './quota/collector';
+import { ResetClaims } from './quota/claims';
 import { loadSourceManifest } from './providerSources/config';
 import { LEGACY_SOURCE_MAPPING } from './quota/identity';
 import { createAnalyticsHandler } from './analytics/handler';
@@ -19,7 +20,12 @@ store.migrateLegacySources(
 );
 // Configuration is an immutable process-lifetime snapshot. Restart to apply a new revision.
 const collector = new QuotaCollector(store, { sources: manifest.sources, revision });
-const quotaHandler = createHandler({ store, collector, keyFile });
+const quotaHandler = createHandler({
+  store,
+  collector,
+  keyFile,
+  claims: new ResetClaims({ store, collector }),
+});
 const analyticsHandler = createAnalyticsHandler(manifest);
 const server = Bun.serve({
   hostname: '127.0.0.1',

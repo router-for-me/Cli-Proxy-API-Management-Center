@@ -81,7 +81,11 @@ export function createApiCallApi(session: SourceSession) {
   return buildApiCallApi(session.management, () => session.assertCurrent());
 }
 
-function buildApiCallApi(transport: ManagementTransport, assertCurrent: () => void = () => {}) {
+/** Also built by prox-history over its own management transport (server/quota/claims.ts). */
+export function buildApiCallApi(
+  transport: Pick<ManagementTransport, 'post'>,
+  assertCurrent: () => void = () => {}
+) {
   return {
     request: async (
       payload: ApiCallRequest,

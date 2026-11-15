@@ -3,6 +3,7 @@ import {
   billingFromCodexSubscription,
   type AccountBilling,
 } from '../../src/domain/accountBilling';
+import { buildApiCallApi } from '../../src/services/api/apiCall';
 import { readJson } from '../http/readJson';
 import { readFile } from 'node:fs/promises';
 import type { DeploymentSource } from '../../src/domain/providerSources/types';
@@ -45,6 +46,7 @@ import {
   type InventoryChange,
   type QuotaSample,
   type QuotaSourceView,
+  type ResetReading,
   type StoredAccount,
 } from './types';
 
@@ -81,6 +83,17 @@ interface CollectionSource {
   upstreamOrigin: string;
   managementKeyFile: string;
   providers: readonly PoolProviderId[];
+}
+
+/** One live account of its validated source, as handed to `withManagedAccount`. */
+export interface ManagedAccount {
+  provider: PoolProviderId;
+  authIndex: string;
+  chatgptAccountId: string | null;
+  /** The hub's `/requests/api-call`, shaped as the shared src/services/api helpers expect. */
+  api: ReturnType<typeof buildApiCallApi>;
+  /** Any other management POST. Throws unless the hub answers 2xx. */
+  post(path: string, body: Record<string, unknown>): Promise<unknown>;
 }
 
 interface InventoryAccount {
@@ -295,6 +308,9 @@ export class QuotaCollector {
   private readonly billingAttempts = new Map<string, number>();
   private readonly latestBilling = new Map<string, AccountBilling>();
   private readonly latestWindows = new Map<string, AccountQuotaWindow[]>();
+  private readonly latestReadingAt = new Map<string, number>();
+  /** Reset claims in progress, so a full collection starts only after them like after a poll. */
+  private readonly claimFlights = new Set<Promise<unknown>>();
   private readonly latestResets = new Map<string, AccountResets>();
   private readonly resetCreditAttempts = new Map<string, number>();
   /** Codex credit expiries from the details endpoint, keyed by account, with the count they list. */
@@ -507,6 +523,7 @@ export class QuotaCollector {
       this.billingAttempts.delete(id);
       this.latestBilling.delete(id);
       this.latestWindows.delete(id);
+      this.latestReadingAt.delete(id);
       this.latestResets.delete(id);
       this.resetCreditAttempts.delete(id);
       this.latestResetCredits.delete(id);
@@ -536,7 +553,7 @@ export class QuotaCollector {
     this.lastAttemptAtMs = nowMs;
     this.nextRefresh = nowMs + REFRESH_INTERVAL_MS;
     this.controller = new AbortController();
-    const pendingAccounts = [...this.accountFlights.values()];
+    const pendingAccounts = [...this.accountFlights.values(), ...this.claimFlights];
     const signal = this.controller.signal;
     this.inFlight = Promise.allSettled(pendingAccounts)
       .then(() => this.collect(signal))
@@ -560,7 +577,73 @@ export class QuotaCollector {
     return this.inFlight;
   }
 
-  refreshAccount(accountId: string): Promise<boolean> {
+  /** What is held in memory for one account: its windows and reset counts, null before a poll. */
+  reading(accountId: string): ResetReading | null {
+    const windows = this.latestWindows.get(accountId);
+    const observedAtMs = this.latestReadingAt.get(accountId);
+    if (!windows || observedAtMs === undefined) return null;
+    const resets = this.latestResets.get(accountId);
+    return {
+      observedAtMs,
+      windows: windows.map(({ id, remainingPercent, resetAtMs }) => ({
+        id,
+        remainingPercent,
+        resetAtMs,
+      })),
+      resets: resets
+        ? { available: resets.available, usable: resets.usable, blocker: resets.blocker }
+        : null,
+    };
+  }
+
+  /**
+   * Runs `use` against one live account of its validated source, serialized with collection like a
+   * targeted refresh: it starts after a full collection in flight, and a new one waits for it.
+   * Returns null when the account is not live and enabled. A failed inventory read throws.
+   */
+  async withManagedAccount<T>(
+    accountId: string,
+    use: (account: ManagedAccount) => Promise<T>
+  ): Promise<T | null> {
+    const stored = this.store.listAccounts().find((account) => account.id === accountId);
+    if (!stored || stored.disabled || stored.retired) return null;
+    const source = this.collectionSources.find((entry) => entry.instanceId === stored.instanceId);
+    if (!source) return null;
+    // Not tied to stop(): a user's claim that is already on its way is let finish.
+    const signal = new AbortController().signal;
+    const flight = (async () => {
+      await this.inFlight?.catch(() => {});
+      const { key, groups } = await this.readInventory(source, signal);
+      const entry = groups
+        .flatMap((group) => group.accounts)
+        .find(
+          ({ account, authIndex }) =>
+            this.store.accountIdFor(source.instanceId!, account.provider, authIndex) === accountId
+        );
+      if (!entry || entry.account.disabled) return null;
+      const post = (path: string, body: Record<string, unknown>, timeoutMs?: number) =>
+        this.request(source, path.replace(/^\//, ''), key, signal, body, timeoutMs);
+      return use({
+        provider: stored.provider,
+        authIndex: entry.authIndex,
+        chatgptAccountId: entry.chatgptAccountId,
+        api: buildApiCallApi({
+          post: async <R>(path: string, body?: unknown, config?: { timeout?: number }) =>
+            (await post(path, body as Record<string, unknown>, config?.timeout)) as R,
+        }),
+        post: (path, body) => post(path, body),
+      });
+    })();
+    this.claimFlights.add(flight);
+    try {
+      return await flight;
+    } finally {
+      this.claimFlights.delete(flight);
+    }
+  }
+
+  /** `force` skips the 20-second floor; only a claim just sent uses it, once. */
+  refreshAccount(accountId: string, options: { force?: boolean } = {}): Promise<boolean> {
     const existing = this.accountFlights.get(accountId);
     if (existing) return existing;
     const stored = this.store.listAccounts().find((account) => account.id === accountId);
@@ -568,7 +651,8 @@ export class QuotaCollector {
     const source = this.collectionSources.find((entry) => entry.instanceId === stored.instanceId);
     if (!source) return Promise.resolve(false);
     const last = this.accountAttempts.get(accountId);
-    if (last !== undefined && this.now() - last < 20_000) return Promise.resolve(false);
+    if (!options.force && last !== undefined && this.now() - last < 20_000)
+      return Promise.resolve(false);
     const fullCollection = this.inFlight;
     const controller = new AbortController();
     const signal = controller.signal;
@@ -796,14 +880,15 @@ export class QuotaCollector {
     path: string,
     key: string,
     signal: AbortSignal,
-    body?: Record<string, unknown>
+    body?: Record<string, unknown>,
+    timeoutMs: number = REQUEST_TIMEOUT_MS
   ): Promise<unknown> {
     signal.throwIfAborted();
     const response = await this.fetcher(new URL(`/v8/management/${path}`, source.upstreamOrigin), {
       method: body ? 'POST' : 'GET',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]),
       redirect: 'error',
     });
     if (!response.ok || !response.body) {
@@ -898,6 +983,7 @@ export class QuotaCollector {
       try {
         this.store.recordSamples(samples);
         this.latestWindows.set(account.id, windows);
+        this.latestReadingAt.set(account.id, this.now());
         const resets = readAccountResets(account.provider, usageBody, this.now());
         if (resets) this.latestResets.set(account.id, resets);
       } catch {

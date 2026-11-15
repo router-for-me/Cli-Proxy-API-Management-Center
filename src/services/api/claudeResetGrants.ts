@@ -255,6 +255,25 @@ export function anthropicResetGrantBlocker(
   return null;
 }
 
+/**
+ * Why a claim must not be sent now, or null when it can: the grant blockers plus the grant's own
+ * start/end and the account cooldown. Shared by the tab journal and the prox-history claim route.
+ */
+export function anthropicResetGrantClaimBlocker(
+  status: AnthropicResetGrantStatus,
+  grantId: string,
+  nowMs: number
+): string | null {
+  const blocker = anthropicResetGrantBlocker(status, grantId);
+  if (blocker) return blocker;
+  const grant = status.grants.find((candidate) => candidate.id === grantId);
+  if (!grant) return 'unknown_grant';
+  if (grant.startsAt && Date.parse(grant.startsAt) > nowMs) return 'not_started';
+  if (grant.endsAt && Date.parse(grant.endsAt) <= nowMs) return 'grant_expired';
+  if (status.cooldownUntil && Date.parse(status.cooldownUntil) > nowMs) return 'cooldown';
+  return null;
+}
+
 async function readAccount(
   authIndex: string,
   path: string,
