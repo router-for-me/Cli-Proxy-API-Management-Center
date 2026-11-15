@@ -320,6 +320,13 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['api key', 'apikey', 'token'],
   },
   {
+    fieldId: 'modelPrices',
+    sectionId: 'connectivity',
+    labelKey: L('api_keys.prices.label'),
+    yamlKeys: ['access', 'model-prices'],
+    keywords: ['price', 'cost', 'limit', 'usd'],
+  },
+  {
     fieldId: 'tlsEnable',
     sectionId: 'connectivity',
     labelKey: L('sections.tls.enable'),

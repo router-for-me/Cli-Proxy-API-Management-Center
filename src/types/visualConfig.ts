@@ -7,6 +7,29 @@ export interface ApiKeyPolicy {
   disabled: boolean;
   /** Credential auth indexes; empty means every credential. */
   allowedAuths: string[];
+  /** Model name patterns ("*" wildcard); empty means every model. */
+  allowedModels: string[];
+  /** RFC 3339 timestamp or YYYY-MM-DD; empty means no expiry. */
+  expiresAt: string;
+  limits: ApiKeyLimits;
+}
+
+/** Usage caps per calendar window; 0 disables a cap. Costs are USD. */
+export interface ApiKeyLimits {
+  tokensPerDay: number;
+  tokensPerWeek: number;
+  tokensPerMonth: number;
+  costPerDay: number;
+  costPerWeek: number;
+  costPerMonth: number;
+}
+
+/** USD price per one million tokens at access.model-prices. */
+export interface ModelPrice {
+  model: string;
+  input: number;
+  output: number;
+  cachedInput: number;
 }
 
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';
@@ -179,6 +202,8 @@ export type VisualConfigValues = {
   apiKeysText: string;
   /** Per client key policies at access.api-key-policies. */
   apiKeyPolicies: ApiKeyPolicy[];
+  /** Prices used for API key cost limits at access.model-prices. */
+  modelPrices: ModelPrice[];
   pluginsEnabled: boolean;
   pluginStoreSources: string[];
   pluginStoreAuth: PluginStoreAuthRule[];
@@ -286,6 +311,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   authDir: '',
   apiKeysText: '',
   apiKeyPolicies: [],
+  modelPrices: [],
   pluginsEnabled: false,
   pluginStoreSources: [],
   pluginStoreAuth: [],

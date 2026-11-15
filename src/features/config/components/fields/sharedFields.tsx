@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { VisualConfigValues } from '@/types/visualConfig';
 import { SPONSORS } from '../../sponsors';
 import { ApiKeysCardEditor } from '../blocks/ApiKeysCardEditor';
+import { ModelPricesEditor } from '../blocks/ModelPricesEditor';
 import { SettingCell, SettingList, TextSetting, ToggleSetting } from './FieldPrimitives';
 import fieldStyles from './Field.module.scss';
 
@@ -105,6 +106,13 @@ export function ApiKeysField({ values, disabled, onChange }: SharedFieldProps) {
           policies={values.apiKeyPolicies}
           disabled={disabled}
           onChange={(patch) => onChange(patch)}
+        />
+      </SettingCell>
+      <SettingCell fieldId="modelPrices">
+        <ModelPricesEditor
+          value={values.modelPrices}
+          disabled={disabled}
+          onChange={(modelPrices) => onChange({ modelPrices })}
         />
       </SettingCell>
     </SettingList>

@@ -15,7 +15,17 @@ import { ApiKeyStrengthMeter } from './ApiKeyStrengthMeter';
 import { ApiKeyAccountPicker } from './ApiKeyAccountPicker';
 import { usePolicyAccounts } from './usePolicyAccounts';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
-import type { ApiKeyPolicy } from '@/types/visualConfig';
+import type { ApiKeyLimits, ApiKeyPolicy } from '@/types/visualConfig';
+import { ApiKeyPolicyFields, ExpiryBadgeText } from './ApiKeyPolicyFields';
+import { useApiKeyPolicyUsage } from './useApiKeyPolicyUsage';
+import {
+  EMPTY_LIMITS,
+  daysUntilExpiry,
+  expiresAtToDateInput,
+  hasLimits,
+  isApiKeyPolicyEmpty,
+  parseModelPatterns,
+} from '../../apiKeyPolicies';
 import styles from './Blocks.module.scss';
 
 export interface ApiKeysCardEditorChange {
@@ -48,6 +58,10 @@ function ScopedApiKeysCardEditor({
   const [nameValue, setNameValue] = useState('');
   const [disabledValue, setDisabledValue] = useState(false);
   const [allowedAuthsValue, setAllowedAuthsValue] = useState<string[]>([]);
+  const [expiresAtDate, setExpiresAtDate] = useState('');
+  const [originalExpiresAt, setOriginalExpiresAt] = useState('');
+  const [modelsText, setModelsText] = useState('');
+  const [limitsValue, setLimitsValue] = useState<ApiKeyLimits>({ ...EMPTY_LIMITS });
   const policyByKey = useMemo(
     () => new Map(policies.map((policy) => [policy.key, policy])),
     [policies]
@@ -84,11 +98,16 @@ function ScopedApiKeysCardEditor({
   const [inputValue, setInputValue] = useState('');
   const [formError, setFormError] = useState('');
   const policyAccounts = usePolicyAccounts(modalOpen);
+  const policyUsage = useApiKeyPolicyUsage(modalOpen);
 
   const openAddModal = () => {
     setNameValue('');
     setDisabledValue(false);
     setAllowedAuthsValue([]);
+    setExpiresAtDate('');
+    setOriginalExpiresAt('');
+    setModelsText('');
+    setLimitsValue({ ...EMPTY_LIMITS });
     setEditingApiKeyId(null);
     setInputValue('');
     setFormError('');
@@ -103,6 +122,10 @@ function ScopedApiKeysCardEditor({
     setNameValue(policy?.name || latestNames[nameFingerprints[editingIndex]] || '');
     setDisabledValue(policy?.disabled ?? false);
     setAllowedAuthsValue(policy?.allowedAuths ?? []);
+    setExpiresAtDate(expiresAtToDateInput(policy?.expiresAt ?? ''));
+    setOriginalExpiresAt(policy?.expiresAt ?? '');
+    setModelsText((policy?.allowedModels ?? []).join('\n'));
+    setLimitsValue({ ...EMPTY_LIMITS, ...(policy?.limits ?? {}) });
     setEditingApiKeyId(apiKeyId);
     setInputValue(apiKeys[editingIndex] ?? '');
     setFormError('');
@@ -157,16 +180,24 @@ function ScopedApiKeysCardEditor({
       setApiKeyIds([...renderApiKeyIds, makeClientId()]);
     }
     const previousKey = editingIndex >= 0 ? apiKeys[editingIndex] : undefined;
+    // Keep a precise server timestamp unless the date itself was changed here.
+    const expiresAt =
+      expiresAtDate && expiresAtDate === expiresAtToDateInput(originalExpiresAt)
+        ? originalExpiresAt
+        : expiresAtDate;
     const nextPolicy: ApiKeyPolicy = {
       key: trimmed,
       name: nameValue.trim(),
       disabled: disabledValue,
       allowedAuths: allowedAuthsValue,
+      allowedModels: parseModelPatterns(modelsText),
+      expiresAt,
+      limits: limitsValue,
     };
     const nextPolicies = [
       ...policies.filter((policy) => policy.key !== trimmed && policy.key !== previousKey),
       nextPolicy,
-    ].filter((policy) => policy.name || policy.disabled || policy.allowedAuths.length > 0);
+    ].filter((policy) => !isApiKeyPolicyEmpty(policy));
     const patch: ApiKeysCardEditorChange = {};
     if (nextKeys.join('\n') !== apiKeys.join('\n')) patch.apiKeysText = nextKeys.join('\n');
     if (JSON.stringify(nextPolicies) !== JSON.stringify(policies))
@@ -201,58 +232,87 @@ function ScopedApiKeysCardEditor({
         <div className={styles.emptyState}>{t('config_management.visual.api_keys.empty')}</div>
       ) : (
         <ol className={styles.apiKeyList}>
-          {apiKeys.map((key, index) => (
-            <li key={renderApiKeyIds[index] ?? `${key}-${index}`} className={styles.apiKeyRow}>
-              <span className={styles.apiKeyIndex}>#{index + 1}</span>
-              <span className={styles.apiKeyMeta}>
-                <span className={styles.apiKeyName}>
-                  {policyByKey.get(key)?.name ||
-                    names[nameFingerprints[index]] ||
-                    t('config_management.visual.api_keys.input_label')}
-                </span>
-                <span className={styles.apiKeyValue}>{maskApiKey(String(key || ''))}</span>
-                <span className={styles.policyBadge}>
-                  {(policyByKey.get(key)?.allowedAuths.length ?? 0) > 0
-                    ? t('config_management.visual.api_keys.policy.accounts_count', {
-                        count: policyByKey.get(key)?.allowedAuths.length ?? 0,
-                      })
-                    : t('config_management.visual.api_keys.policy.all_accounts')}
-                </span>
-                {policyByKey.get(key)?.disabled && (
-                  <span className={`${styles.policyBadge} ${styles.policyState_disabled}`}>
-                    {t('config_management.visual.api_keys.policy.disabled_badge')}
+          {apiKeys.map((key, index) => {
+            const policy = policyByKey.get(key);
+            const expiryDays = policy ? daysUntilExpiry(policy.expiresAt) : null;
+            return (
+              <li key={renderApiKeyIds[index] ?? `${key}-${index}`} className={styles.apiKeyRow}>
+                <span className={styles.apiKeyIndex}>#{index + 1}</span>
+                <span className={styles.apiKeyMeta}>
+                  <span className={styles.apiKeyName}>
+                    {policy?.name ||
+                      names[nameFingerprints[index]] ||
+                      t('config_management.visual.api_keys.input_label')}
                   </span>
-                )}
-              </span>
-              <span className={styles.apiKeyActions}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(key)}
-                  disabled={disabled}
-                >
-                  {t('common.copy')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.edit')}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={styles.apiKeyDelete}
-                  onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
-                  disabled={disabled}
-                >
-                  {t('config_management.visual.common.delete')}
-                </Button>
-              </span>
-            </li>
-          ))}
+                  <span className={styles.apiKeyValue}>{maskApiKey(String(key || ''))}</span>
+                  <span className={styles.policyBadge}>
+                    {(policy?.allowedAuths.length ?? 0) > 0
+                      ? t('config_management.visual.api_keys.policy.accounts_count', {
+                          count: policy?.allowedAuths.length ?? 0,
+                        })
+                      : t('config_management.visual.api_keys.policy.all_accounts')}
+                  </span>
+                  {(policy?.allowedModels.length ?? 0) > 0 && (
+                    <span className={styles.policyBadge}>
+                      {t('config_management.visual.api_keys.policy.models_count', {
+                        count: policy?.allowedModels.length ?? 0,
+                      })}
+                    </span>
+                  )}
+                  {policy && hasLimits(policy.limits) && (
+                    <span className={styles.policyBadge}>
+                      {t('config_management.visual.api_keys.policy.limited_badge')}
+                    </span>
+                  )}
+                  {policy?.expiresAt && (
+                    <span
+                      className={`${styles.policyBadge} ${
+                        expiryDays !== null && expiryDays < 0
+                          ? styles.policyState_disabled
+                          : expiryDays !== null && expiryDays <= 7
+                            ? styles.policyState_cooldown
+                            : ''
+                      }`}
+                    >
+                      <ExpiryBadgeText expiresAt={policy.expiresAt} />
+                    </span>
+                  )}
+                  {policy?.disabled && (
+                    <span className={`${styles.policyBadge} ${styles.policyState_disabled}`}>
+                      {t('config_management.visual.api_keys.policy.disabled_badge')}
+                    </span>
+                  )}
+                </span>
+                <span className={styles.apiKeyActions}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCopy(key)}
+                    disabled={disabled}
+                  >
+                    {t('common.copy')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditModal(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.edit')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={styles.apiKeyDelete}
+                    onClick={() => handleDelete(renderApiKeyIds[index] ?? '')}
+                    disabled={disabled}
+                  >
+                    {t('config_management.visual.common.delete')}
+                  </Button>
+                </span>
+              </li>
+            );
+          })}
         </ol>
       )}
 
@@ -330,6 +390,22 @@ function ScopedApiKeysCardEditor({
           />
           <div className="hint">{t('config_management.visual.api_keys.policy.enabled_hint')}</div>
         </div>
+        <ApiKeyPolicyFields
+          expiresAtDate={expiresAtDate}
+          modelsText={modelsText}
+          limits={limitsValue}
+          usage={
+            editingApiKeyId !== null
+              ? policyUsage.get(
+                  apiKeys[renderApiKeyIds.findIndex((id) => id === editingApiKeyId)] ?? ''
+                )
+              : undefined
+          }
+          disabled={disabled}
+          onExpiresAtDateChange={setExpiresAtDate}
+          onModelsTextChange={setModelsText}
+          onLimitsChange={setLimitsValue}
+        />
         <div className="form-group">
           <label>{t('config_management.visual.api_keys.policy.accounts_label')}</label>
           <ApiKeyAccountPicker

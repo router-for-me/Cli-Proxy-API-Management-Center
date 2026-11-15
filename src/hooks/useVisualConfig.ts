@@ -7,7 +7,6 @@ import type {
   PluginStoreAuthRule,
   PluginStoreAuthType,
   PayloadFilterRule,
-  ApiKeyPolicy,
   PayloadHeaderEntry,
   PayloadParamEntry,
   PayloadParamValueType,
@@ -18,6 +17,12 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
+import {
+  parseApiKeyPolicies,
+  parseModelPrices,
+  serializeApiKeyPolicies,
+  serializeModelPrices,
+} from '@/features/config/apiKeyPolicies';
 import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
 import {
   ADDITION_FIELDS,
@@ -90,49 +95,6 @@ function areSensitiveReplacementsEqual(
       ([key, value]) => Object.prototype.hasOwnProperty.call(right, key) && right[key] === value
     )
   );
-}
-
-function parseApiKeyPolicies(raw: unknown): ApiKeyPolicy[] {
-  if (!Array.isArray(raw)) return [];
-  const policies: ApiKeyPolicy[] = [];
-  for (const item of raw) {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
-    const record = item as Record<string, unknown>;
-    const key = typeof record.key === 'string' ? record.key.trim() : '';
-    if (!key) continue;
-    policies.push({
-      key,
-      name: typeof record.name === 'string' ? record.name.trim() : '',
-      disabled: record.disabled === true,
-      allowedAuths: Array.isArray(record['allowed-auths'])
-        ? record['allowed-auths'].map((entry) => String(entry).trim()).filter(Boolean)
-        : [],
-    });
-  }
-  return policies;
-}
-
-/** Keep only meaningful policies for keys that still exist, in YAML field names. */
-function serializeApiKeyPolicies(policies: ApiKeyPolicy[], apiKeys: string[]) {
-  const known = new Set(apiKeys);
-  const seen = new Set<string>();
-  const out: Array<Record<string, unknown>> = [];
-  for (const policy of policies) {
-    const key = policy.key.trim();
-    if (!key || !known.has(key) || seen.has(key)) continue;
-    seen.add(key);
-    const name = policy.name.trim();
-    const allowedAuths = Array.from(
-      new Set(policy.allowedAuths.map((v) => v.trim()).filter(Boolean))
-    );
-    if (!name && !policy.disabled && allowedAuths.length === 0) continue;
-    const entry: Record<string, unknown> = { key };
-    if (name) entry.name = name;
-    if (policy.disabled) entry.disabled = true;
-    if (allowedAuths.length > 0) entry['allowed-auths'] = allowedAuths;
-    out.push(entry);
-  }
-  return out;
 }
 
 function parseApiKeysText(raw: unknown): string {
@@ -1379,6 +1341,12 @@ function getNextDirtyFields(
       areStringArraysEqual(nextValues.devinSensitiveWords, baselineValues.devinSensitiveWords)
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'modelPrices')) {
+    updateDirty(
+      'modelPrices',
+      JSON.stringify(nextValues.modelPrices) === JSON.stringify(baselineValues.modelPrices)
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'apiKeyPolicies')) {
     updateDirty(
       'apiKeyPolicies',
@@ -1563,6 +1531,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
     authDir: typeof v8Oauth?.['auth-dir'] === 'string' ? v8Oauth?.['auth-dir'] : '',
     apiKeysText: parseApiKeysText(asRecord(parsed.access)?.['api-keys']),
     apiKeyPolicies: parseApiKeyPolicies(asRecord(parsed.access)?.['api-key-policies']),
+    modelPrices: parseModelPrices(asRecord(parsed.access)?.['model-prices']),
     pluginsEnabled: Boolean(plugins?.enabled),
     pluginStoreSources: parseStringList(plugins?.['store-sources']),
     pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
@@ -1865,6 +1834,14 @@ export function useVisualConfig() {
             doc.setIn(['access', 'api-key-policies'], policies);
           } else if (docHas(doc, ['access', 'api-key-policies'])) {
             doc.deleteIn(['access', 'api-key-policies']);
+          }
+        }
+        if (dirtyFields.has('modelPrices')) {
+          const prices = serializeModelPrices(values.modelPrices);
+          if (prices.length > 0) {
+            doc.setIn(['access', 'model-prices'], prices);
+          } else if (docHas(doc, ['access', 'model-prices'])) {
+            doc.deleteIn(['access', 'model-prices']);
           }
         }
 

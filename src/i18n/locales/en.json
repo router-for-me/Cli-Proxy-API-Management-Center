@@ -1509,7 +1509,36 @@
           "state_cooldown": "Cooldown",
           "state_disabled": "Disabled",
           "state_missing": "Not found",
-          "error_duplicate": "This API key already exists."
+          "error_duplicate": "This API key already exists.",
+          "models_count_one": "{{count}} model",
+          "models_count_other": "{{count}} models",
+          "limited_badge": "Limited",
+          "expired": "Expired",
+          "days_left_one": "{{count}} day left",
+          "days_left_other": "{{count}} days left",
+          "expires_label": "Expiry date",
+          "expires_hint": "Leave empty for no expiry. The key stops working at the end of this day (server time) and gets 401 (api_key_expired).",
+          "models_label": "Allowed models",
+          "models_hint": "One pattern per line; * matches anything (e.g. gpt-5*). Leave empty to allow every model. Other models get 403 (model_not_allowed).",
+          "limits_label": "Usage limits",
+          "limit_tokens": "Tokens",
+          "limit_cost": "Cost (USD)",
+          "window_day": "Daily",
+          "window_week": "Weekly",
+          "window_month": "Monthly",
+          "unlimited": "Unlimited",
+          "limits_hint": "Windows follow server time (weeks start on Monday). When a limit is reached, requests get 429 (api_key_quota_exceeded) with Retry-After until the window resets. Cost uses the upstream-reported cost or the model prices below.",
+          "usage_label": "Usage in this window"
+        },
+        "prices": {
+          "label": "Model prices (USD per 1M tokens)",
+          "hint": "Used for API key cost limits when the upstream does not report a cost. The first matching row wins; * matches anything.",
+          "add": "Add price",
+          "empty": "No model prices",
+          "model": "Model pattern",
+          "input": "Input",
+          "output": "Output",
+          "cachedInput": "Cached input"
         }
       },
       "payload_rules": {

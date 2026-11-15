@@ -1509,7 +1509,36 @@
           "state_cooldown": "Soğumada",
           "state_disabled": "Devre dışı",
           "state_missing": "Bulunamadı",
-          "error_duplicate": "Bu API anahtarı zaten var."
+          "error_duplicate": "Bu API anahtarı zaten var.",
+          "models_count_one": "{{count}} model",
+          "models_count_other": "{{count}} model",
+          "limited_badge": "Limitli",
+          "expired": "Süresi doldu",
+          "days_left_one": "{{count}} gün kaldı",
+          "days_left_other": "{{count}} gün kaldı",
+          "expires_label": "Son kullanma tarihi",
+          "expires_hint": "Süresiz için boş bırak. Anahtar bu günün sonunda (sunucu saati) çalışmayı durdurur ve 401 (api_key_expired) alır.",
+          "models_label": "İzinli modeller",
+          "models_hint": "Her satıra bir desen; * her şeyle eşleşir (ör. gpt-5*). Tüm modeller için boş bırak. Diğer modeller 403 (model_not_allowed) alır.",
+          "limits_label": "Kullanım limitleri",
+          "limit_tokens": "Token",
+          "limit_cost": "Maliyet (USD)",
+          "window_day": "Günlük",
+          "window_week": "Haftalık",
+          "window_month": "Aylık",
+          "unlimited": "Limitsiz",
+          "limits_hint": "Dönemler sunucu saatine göre işler (hafta pazartesi başlar). Limit dolunca istekler dönem sıfırlanana kadar Retry-After ile 429 (api_key_quota_exceeded) alır. Maliyet, sağlayıcının bildirdiği tutardan ya da aşağıdaki model fiyatlarından hesaplanır.",
+          "usage_label": "Bu dönemdeki kullanım"
+        },
+        "prices": {
+          "label": "Model fiyatları (1M token başına USD)",
+          "hint": "Sağlayıcı maliyet bildirmediğinde API anahtarı maliyet limitleri için kullanılır. İlk eşleşen satır geçerlidir; * her şeyle eşleşir.",
+          "add": "Fiyat ekle",
+          "empty": "Model fiyatı yok",
+          "model": "Model deseni",
+          "input": "Girdi",
+          "output": "Çıktı",
+          "cachedInput": "Önbellekli girdi"
         }
       },
       "payload_rules": {
