@@ -452,6 +452,35 @@ describe('server numbers in the shared quota store', () => {
   });
 });
 
+describe('a refresh and the poll that was already running', () => {
+  test('the readings come from a read that started after the refresh, not from the one in flight', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const versions: string[] = [];
+    let served = 'old';
+    const { runtime } = fakeRuntime({
+      inventory: async () => sources,
+      read: async () => {
+        const seen = served; // what the server held when this read began
+        if (versions.length === 0) await gate;
+        versions.push(seen);
+        return { status: 'changed', accounts: body([], seen) };
+      },
+      refreshAccount: async () => {
+        served = 'new';
+        return { refreshed: true, retryAtMs: null };
+      },
+    });
+    const store = createServerAccountsStore(runtime);
+    const early = store.getState().poll(); // began before the refresh: will report 'old'
+    await Promise.resolve();
+    const refresh = store.getState().refreshAccount('x');
+    release();
+    await Promise.all([early, refresh]);
+    expect(store.getState().version).toBe('new');
+  });
+});
+
 describe('Refresh on a served account', () => {
   afterEach(() => useServerAccountsStore.getState().reset());
   const file = { name: 'ann.json', type: 'claude', auth_index: 'ann' };
@@ -619,7 +648,7 @@ describe('no hub auto-poll for a served account', () => {
   test('the grant read on mount is skipped in server mode, and made when the dialog opens', () => {
     const source = read('src/features/quota/providers/claude/ClaudeResetGrants.tsx');
     // The mount effect returns before scheduling the hub read in server mode...
-    expect(source).toMatch(/if \(serverMode \|\| !enabled \|\| disabled/);
+    expect(source).toMatch(/if \(serverMode \|\| !routingKnown \|\| !enabled \|\| disabled/);
     // ...and the one live read is made by the confirm action, before the chooser opens.
     expect(source).toMatch(/if \(server && !pending\) \{[\s\S]*scope\s*\.read\(authIndex\)/);
   });

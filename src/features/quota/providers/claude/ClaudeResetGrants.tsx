@@ -13,6 +13,7 @@ import type { AccountResets } from '@/domain/quotaPool/types';
 import type { AuthFileItem } from '@/types';
 import { normalizeAuthIndex } from '@/utils/quota';
 import { serverGrantStatus } from '@/features/quotaPool/serverQuota';
+import { useServerAccountsStore } from '@/stores/useServerAccountsStore';
 import { formatPoolDate } from '@/features/quotaPool/presentation';
 import { resetAccountName } from '@/features/quota/logic';
 import {
@@ -69,11 +70,14 @@ export function useClaudeResetGrants(
   const lock = useRef(false);
   const generation = useRef(0);
   const serverMode = server !== undefined;
+  // Until the history server's inventory has answered, nobody knows whether this account is
+  // served, and a hub read now would be the prohibited poll: wait for the routing.
+  const routingKnown = useServerAccountsStore((state) => state.routing.status !== 'unknown');
   useEffect(() => {
     const version = ++generation.current;
     setStatus(null);
     // A server-served account is not polled: the history server's reading shows its resets.
-    if (serverMode || !enabled || disabled || !sessionActive || !authIndex) return;
+    if (serverMode || !routingKnown || !enabled || disabled || !sessionActive || !authIndex) return;
     let cancelled = false;
     const current = () =>
       !cancelled &&
@@ -115,6 +119,7 @@ export function useClaudeResetGrants(
     reload,
     scope,
     serverMode,
+    routingKnown,
   ]);
 
   const operation = scope.operations.inspect(key);

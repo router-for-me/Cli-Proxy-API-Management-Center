@@ -16,7 +16,9 @@ import { projectServerAccounts, serverAccountFor } from './serverQuota';
 export function useServerAccountsPoller() {
   useEffect(() => {
     const release = useServerAccountsStore.getState().acquire();
-    const unlisten = onPoolAccountRefreshed(() => void useServerAccountsStore.getState().poll());
+    const unlisten = onPoolAccountRefreshed(
+      () => void useServerAccountsStore.getState().pollFresh()
+    );
     return () => {
       unlisten();
       release();

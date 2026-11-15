@@ -62,6 +62,11 @@ export interface ServerAccountsState {
   /** When the accounts were last confirmed current (a changed read or a 304). */
   readAtMs: number | null;
   poll(): Promise<void>;
+  /**
+   * A read that starts after now: waits for a poll already in flight (it may have read before the
+   * change the caller is waiting for) and then reads again.
+   */
+  pollFresh(): Promise<void>;
   /** Hold the poller; returns the release. The first holder starts it, the last stops it. */
   acquire(): () => void;
   /** One targeted read of an account; null when the request itself failed. */
@@ -155,6 +160,11 @@ export function createServerAccountsStore(runtime: ServerAccountsRuntime) {
       return run;
     },
 
+    pollFresh: async () => {
+      await running?.catch(() => {});
+      await get().poll();
+    },
+
     acquire: () => {
       holders += 1;
       let stopTimer: (() => void) | null = null;
@@ -196,7 +206,7 @@ export function createServerAccountsStore(runtime: ServerAccountsRuntime) {
         .refreshAccount(sourceAccountId)
         .catch(() => null);
       if (mine !== epoch) return null;
-      await get().poll();
+      await get().pollFresh();
       return result;
     },
 
@@ -209,7 +219,7 @@ export function createServerAccountsStore(runtime: ServerAccountsRuntime) {
         return null;
       }
       if (mine !== epoch) return null;
-      await get().poll();
+      await get().pollFresh();
       // The collection runs on after the answer: read until it is done (bounded).
       for (let waited = 0; waited < 30 && mine === epoch && get().refreshing; waited += 1) {
         await runtime.sleep(1000);

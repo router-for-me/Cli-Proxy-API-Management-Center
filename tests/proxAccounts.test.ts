@@ -80,6 +80,7 @@ afterEach(() =>
 function stack() {
   let clock = NOW;
   let weeklyUsed = 60;
+  let usageFails = false;
   const disabled = new Set<string>();
   const root = mkdtempSync(join(tmpdir(), 'prox-accounts-'));
   cleanups.push(() => rmSync(root, { recursive: true, force: true }));
@@ -108,6 +109,8 @@ function stack() {
         });
       }
       const call = JSON.parse(String(init.body)) as { url: string };
+      if (call.url.startsWith(CLAUDE_USAGE_URL) && usageFails)
+        return Response.json({ status_code: 500, body: {} });
       if (call.url.startsWith(CLAUDE_USAGE_URL))
         return Response.json({ status_code: 200, body: claudeUsage(weeklyUsed) });
       if (call.url === CLAUDE_PROFILE_URL)
@@ -162,6 +165,7 @@ function stack() {
     accounts,
     advance: (ms: number) => (clock += ms),
     setWeeklyUsed: (value: number) => (weeklyUsed = value),
+    failUsage: (value: boolean) => (usageFails = value),
     disable: (index: string) => disabled.add(index),
   };
 }
@@ -340,6 +344,24 @@ describe('POST /v1/refresh {accountId}', () => {
     expect(await post()).toEqual({ refreshed: false, retryAtMs: read + 20_000 });
     s.advance(16_000);
     expect(await post()).toEqual({ refreshed: true, retryAtMs: null });
+  });
+
+  test('a read that ran and failed is a failure, not a wait', async () => {
+    const s = stack();
+    await s.collector.refresh();
+    s.advance(11 * 60_000);
+    s.failUsage(true);
+    const accountId = poolSourceAccountId('claude-primary', 'claude', 'ann-index');
+    const post = async () =>
+      (await (
+        await s.call('/v1/refresh', { method: 'POST', body: JSON.stringify({ accountId }) })
+      ).json()) as { refreshed: boolean; retryAtMs: number | null };
+    expect(await post()).toEqual({ refreshed: false, retryAtMs: null });
+    // The attempt is now inside the floor: the next request is skipped by it, and says when.
+    s.advance(5_000);
+    const result = await post();
+    expect(result.refreshed).toBe(false);
+    expect(result.retryAtMs).toBeNumber();
   });
 
   test('an account the server does not know has no retry time', async () => {

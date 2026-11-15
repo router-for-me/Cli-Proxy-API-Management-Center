@@ -64,7 +64,7 @@ export function useQuotaActions(
       ) {
         const servers = useServerAccountsStore.getState();
         // After a claim the server has already been asked (accountSync.ts): just read its numbers.
-        if (options?.force) return void servers.poll();
+        if (options?.force) return void servers.pollFresh();
         const owner = session.owner;
         const outcome = await refreshServedFile({ owner, file, store });
         if (!isQuotaSourceCurrent(session)) return;

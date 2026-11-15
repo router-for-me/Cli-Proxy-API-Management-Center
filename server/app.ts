@@ -155,17 +155,16 @@ export function createHandler({
           }
         }
         if (accountId !== undefined) {
+          // Held back by the per-account floor? Asked before the read, which stamps its own attempt:
+          // a read that ran and failed is a failure, not "next read at".
+          const floorUntil = collector.accountRetryAtMs?.(accountId) ?? null;
           let refreshed = false;
           try {
             refreshed = await collector.refreshAccount(accountId);
           } catch {
             // A failed read is not a floor: no retry time.
           }
-          // Skipped by the per-account floor: say when the next read may run, so a page can show it.
-          return json({
-            refreshed,
-            retryAtMs: refreshed ? null : (collector.accountRetryAtMs?.(accountId) ?? null),
-          });
+          return json({ refreshed, retryAtMs: refreshed ? null : floorUntil });
         }
         return fullRefresh();
       })();

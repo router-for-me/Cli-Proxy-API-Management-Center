@@ -420,7 +420,9 @@ export class QuotaCollector {
     const account = this.store
       .listAccounts()
       .find((entry) => entry.id === requestedId || entry.sourceAccountId === requestedId);
-    const last = account ? this.accountAttempts.get(account.id) : undefined;
+    // A read in flight is not a floor: its caller gets that read's own result.
+    if (!account || this.accountFlights.has(account.id)) return null;
+    const last = this.accountAttempts.get(account.id);
     return last !== undefined && last + ACCOUNT_REFRESH_FLOOR_MS > this.now()
       ? last + ACCOUNT_REFRESH_FLOOR_MS
       : null;

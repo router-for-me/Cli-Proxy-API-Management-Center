@@ -138,7 +138,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     (options?: { force?: boolean }) => {
       if (served && !accountOff) {
         // After a claim the server has already been asked (accountSync.ts): read its numbers.
-        if (options?.force) return void useServerAccountsStore.getState().poll();
+        if (options?.force) return void useServerAccountsStore.getState().pollFresh();
         if (serverReading || disableControls || !sourceScope.isCurrent()) return;
         setServerReading(true);
         void refreshServedFile({
