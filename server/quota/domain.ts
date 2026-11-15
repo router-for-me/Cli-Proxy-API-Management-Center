@@ -512,7 +512,7 @@ export function buildDashboard(
   const combined = (selected: QuotaPool[]) =>
     combinedPools(
       selected,
-      () => history(selected),
+      (eligible) => history(eligible),
       (eligible, times) => eligible.map((pool) => history([pool], times))
     );
   return {

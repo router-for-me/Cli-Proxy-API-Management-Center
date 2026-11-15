@@ -210,6 +210,29 @@ describe('combined provider totals', () => {
       'no-accounts'
     );
   });
+  test('a provider with no 5-hour limit adds nothing and never empties the 5-hour total', () => {
+    // Codex answered with a weekly window and an explicit missing 5-hour one (same reading), so it
+    // has no 5-hour limit. The combined 5-hour total and its history are Claude's alone.
+    const fiveHour: QuotaSample[] = [0, 1, 2].flatMap((i) => {
+      const at = now - (2 - i) * 300000;
+      return [
+        { accountId: 'a0', window: 'five-hour' as const, observedAtMs: at, remainingPercent: 90 - i, resetAtMs: now + HOUR_MS, periodHours: 5 },
+        { accountId: 'a0', window: 'weekly' as const, observedAtMs: at, remainingPercent: 80, resetAtMs: now + 100 * HOUR_MS, periodHours: 168 },
+        { accountId: 'a1', window: 'weekly' as const, observedAtMs: at + 1000, remainingPercent: 50, resetAtMs: now + 100 * HOUR_MS, periodHours: 168 },
+        { accountId: 'a1', window: 'five-hour' as const, observedAtMs: at + 1000, remainingPercent: null, resetAtMs: null, periodHours: null },
+      ];
+    });
+    const data = buildDashboard(accounts, fiveHour, { ...options, window: 'five-hour' }, collection);
+    const claude = data.combined!.claude.series!;
+    const total = data.combined!.all.series!;
+    expect(data.pools.find((pool) => pool.provider === 'codex')!.forecastState).toBe('no-limit');
+    expect(total.capacityPoints).toBe(claude.capacityPoints);
+    expect(total.remainingPoints).toBe(claude.remainingPoints);
+    expect(total.forecastState).toBe(claude.forecastState);
+    expect(total.recorded.length).toBeGreaterThan(0);
+    expect(total.recorded).toEqual(claude.recorded);
+  });
+
   test('plan weights, scenarios and both windows use the same authoritative total', () => {
     for (const window of ['weekly', 'five-hour'] as const)
       for (const multiplier of [0, 0.5, 1, 2] as const) {
