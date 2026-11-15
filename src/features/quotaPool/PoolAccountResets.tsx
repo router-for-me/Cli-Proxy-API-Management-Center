@@ -16,6 +16,7 @@ import { createSourceResetGrants } from '@/features/quota/providers/claude/reset
 import { useNow } from '@/hooks/useNow';
 import { resetAccountName } from '@/features/quota/logic';
 import { formatRelativeInstant } from '@/utils/quota';
+import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { AccountResets } from '@/domain/quotaPool/types';
 import {
   findPoolResetFile,
@@ -311,8 +312,12 @@ function ClaudeResetAction({
   const adapters = useMemo(() => createQuotaAdapters(source, store), [source, store]);
   const { refreshQuota } = useQuotaActions(false, store, source);
   const readQuota = useCallback(
-    (options?: { force?: boolean }) => void refreshQuota(file, adapters.claude, options),
-    [refreshQuota, file, adapters]
+    (options?: { force?: boolean }) => {
+      // Another page closing meanwhile must not forget this read's loading entry.
+      const unpin = store.getState().pinRead(getQuotaCacheKey(file));
+      void refreshQuota(file, adapters.claude, options).finally(unpin);
+    },
+    [refreshQuota, file, adapters, store]
   );
   const reset = useClaudeResetGrants(file, true, false, null, readQuota, scope);
   return (

@@ -178,6 +178,18 @@ describe('closing a page', () => {
     expect(Object.keys(after.fetchedAt)).toEqual(['done.json']);
   });
 
+  test('keeps a read that outlives its view, like the pool panel claim read', () => {
+    const store = sourceQuotaStore(hubs(['claude-primary']).captureSource('claude-primary').owner);
+    const loading = { status: 'loading' as const, windows: [] };
+    store.getState().setClaudeQuota({ 'pool.json': loading, 'page.json': loading });
+    const unpin = store.getState().pinRead('pool.json');
+    store.getState().releaseLoading(); // the page that started 'page.json' closed
+    expect(Object.keys(store.getState().claudeQuota)).toEqual(['pool.json']);
+    unpin();
+    store.getState().releaseLoading();
+    expect(store.getState().claudeQuota).toEqual({});
+  });
+
   test('the pool panel reads after a claim through the source session, not its own lease', () => {
     // The refreshed pool can drop the panel (no resets left) while the read still runs.
     const source = readFileSync('src/features/quotaPool/PoolAccountResets.tsx', 'utf8');

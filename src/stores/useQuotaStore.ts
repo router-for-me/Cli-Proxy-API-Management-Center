@@ -48,6 +48,11 @@ interface QuotaStoreState {
    * Finished readings stay for the other pages.
    */
   releaseLoading: () => void;
+  /**
+   * Keeps one key's loading entry through releaseLoading while a read that outlives its view
+   * (bound to the source session, not a page) is still running. Returns the unpin function.
+   */
+  pinRead: (key: string) => () => void;
 }
 
 const resolveUpdater = <T>(updater: QuotaUpdater<T>, prev: T): T => {
@@ -80,8 +85,9 @@ function stampReads(
   return stamped;
 }
 
-export const createQuotaStore = (now: () => number = Date.now) =>
-  create<QuotaStoreState>((set) => ({
+export const createQuotaStore = (now: () => number = Date.now) => {
+  const pinned = new Map<string, number>();
+  return create<QuotaStoreState>((set) => ({
     cacheGeneration: 0,
     fileGenerations: {},
     antigravityQuota: {},
@@ -183,11 +189,21 @@ export const createQuotaStore = (now: () => number = Date.now) =>
           fetchedAt: stampReads(state.fetchedAt, state.xaiQuota, next, now),
         };
       }),
+    pinRead: (key) => {
+      pinned.set(key, (pinned.get(key) ?? 0) + 1);
+      return () => {
+        const left = (pinned.get(key) ?? 1) - 1;
+        if (left > 0) pinned.set(key, left);
+        else pinned.delete(key);
+      };
+    },
     releaseLoading: () =>
       set((state) => {
         const released = new Set<string>();
         const settle = <T extends QuotaEntry>(cache: Record<string, T>): Record<string, T> => {
-          const keys = Object.keys(cache).filter((key) => cache[key]!.status === 'loading');
+          const keys = Object.keys(cache).filter(
+            (key) => cache[key]!.status === 'loading' && !pinned.has(key)
+          );
           if (keys.length === 0) return cache;
           const next = { ...cache };
           keys.forEach((key) => {
@@ -258,6 +274,7 @@ export const createQuotaStore = (now: () => number = Date.now) =>
         };
       }),
   }));
+};
 
 export const useQuotaStore = createQuotaStore();
 export type QuotaStore = ReturnType<typeof createQuotaStore>;
