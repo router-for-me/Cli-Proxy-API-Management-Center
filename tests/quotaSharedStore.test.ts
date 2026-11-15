@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { readFileSync } from 'node:fs';
 import type { TFunction } from 'i18next';
 import { legacyAccountId, sourceAccountId } from '../server/quota/identity';
@@ -12,11 +12,11 @@ import { createPoolResource } from '../src/features/quotaPool/poolResource';
 import { poolSourceAccountId } from '../src/features/quotaPool/resetAccounts';
 import { apiClient } from '../src/services/api/client';
 import { createSourceLease } from '../src/services/api/sourceLease';
-import { SourceSessions } from '../src/services/api/sourceSession';
 import { sourceQuotaStore } from '../src/stores/sourceQuotaStores';
 import { getQuotaCacheKey } from '../src/utils/quota/identity';
 import type { PoolDashboard } from '../src/domain/quotaPool/types';
 import { CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL } from '../src/utils/quota';
+import { hubs } from './helpers/sourceHubs';
 import type { ApiClient } from '../src/services/api/transport';
 
 const organization = '11111111-2222-3333-4444-555555555555';
@@ -25,39 +25,6 @@ const t = ((key: string) => key) as TFunction;
 
 const restores: Array<{ mockRestore(): void }> = [];
 afterEach(() => restores.splice(0).forEach((spy) => spy.mockRestore()));
-
-/** Hub sources whose transport answers from `respond`, the way the fake hubs do. */
-function hubs(
-  instanceIds: string[],
-  respond: (config: InternalAxiosRequestConfig, payload?: { url?: string }) => unknown = () => ({})
-) {
-  const sessions = new SourceSessions();
-  const original = axios.defaults.adapter;
-  axios.defaults.adapter = async (config) => {
-    const payload =
-      typeof config.data === 'string' ? (JSON.parse(config.data) as { url?: string }) : undefined;
-    return {
-      data: await respond(config, payload),
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      config,
-    };
-  };
-  try {
-    sessions.configure(
-      instanceIds.map((instanceId) => ({
-        instanceId,
-        configurationRevision: 'fixture',
-        apiBase: `https://${instanceId}.invalid`,
-        managementKey: 'synthetic-test-key',
-      }))
-    );
-  } finally {
-    axios.defaults.adapter = original;
-  }
-  return sessions;
-}
 
 /** The history server, as the browser reaches it: every POST /prox/refresh lands here. */
 function historyServer() {
