@@ -113,7 +113,8 @@ recorded values reuse the account history, plan weighting, expiry and gap rules
 above on a shared observation timeline. Forecast totals add the independent
 piecewise-linear provider projections at every event, preserving both sides of
 reset jumps. They never transfer demand between providers or extrapolate beyond
-a provider's trace. Missing constituent values remain unknown. Multiple eligible
+a provider's trace. Missing constituent values remain unknown. A provider with no limit in the
+selected window (weekly-only Codex in the 5-hour view) adds nothing and is left out of the total. Multiple eligible
 sources for the same provider still withhold the total until allowance identity
 is proven; disabled, retired and unresolved accounts add no capacity.
 

@@ -64,12 +64,16 @@ export function combineProjections(traces: PoolPoint[][]): PoolPoint[] {
 /** Only distinct provider allowances are proven independent by the current source contract. */
 export function combinedPools(
   pools: QuotaPool[],
-  readRecorded: () => PoolPoint[],
+  readRecorded: (eligible: QuotaPool[]) => PoolPoint[],
   readLayers?: (eligible: QuotaPool[], times: number[]) => PoolPoint[][]
 ): CombinedPoolResult {
-  const eligible = pools.filter(
+  const members = pools.filter(
     (pool) => pool.eligibleCount > 0 || pool.forecastState !== 'no-accounts'
   );
+  // A provider with no limit in this window (e.g. weekly-only Codex, 5-hour) has no allowance to
+  // add; leaving it in would hold the total at "collecting" and empty its history.
+  const limited = members.filter((pool) => pool.forecastState !== 'no-limit');
+  const eligible = limited.length ? limited : members;
   if (!eligible.length) return { series: null, unavailableReason: 'no-accounts' };
   if (new Set(eligible.map((pool) => pool.provider)).size !== eligible.length)
     return { series: null, unavailableReason: 'ambiguous-sources' };
@@ -83,7 +87,7 @@ export function combinedPools(
   const projectedLayers =
     forecastState === 'ready' ? alignProjections(eligible.map((pool) => pool.projected)) : [];
   const projected = sumProjections(projectedLayers);
-  const recorded = eligible.some((pool) => pool.eligibleCount === 0) ? [] : readRecorded();
+  const recorded = eligible.some((pool) => pool.eligibleCount === 0) ? [] : readRecorded(eligible);
   const recordedLayers = readLayers?.(
     eligible,
     recorded.map((point) => point.atMs)
