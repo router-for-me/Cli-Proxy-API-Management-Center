@@ -70,6 +70,9 @@ const codexMonthly = () =>
         primary_window: { used_percent: 1, limit_window_seconds: 18000 },
         secondary_window: { used_percent: 2, limit_window_seconds: 30 * 86400 },
       },
+      code_review_rate_limit: {
+        secondary_window: { used_percent: 3, limit_window_seconds: 30 * 86400 },
+      },
     } as never,
     t
   ).map((window) => window.id);
@@ -87,6 +90,7 @@ describe('lane mapping', () => {
         'monthly',
         'code-review-five-hour',
         'code-review-weekly',
+        'code-review-monthly',
       ])
     );
     expect(codexKnown.filter((id) => /-\d+$/.test(id)).length).toBeGreaterThan(2);
