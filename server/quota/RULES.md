@@ -73,7 +73,10 @@ credential UI. The store owns persistence; the collector uses only public APIs.
   15 minutes (or it has none); one failed poll never hides a still-fresh sample.
   Recorded charts hold the last balance flat across a stretch with no reports at
   all (the point 1 ms before the next report; rates stay unknown). An account
-  missing while others report is still unknown, never held.
+  missing while others report (e.g. disabled for a while) is bridged in recorded history only,
+  by a straight line between its own readings on both sides, when they share a reset cycle
+  (reset times within 1 minute) and the balance did not rise; otherwise it stays unknown, never
+  held. Current balances, rates and forecasts never use a bridged value.
   Full collections are at least 4 minutes apart: Anthropic's usage endpoint returns 429
   to bursts. After a confirmed reset attempt, a targeted refresh may read only the
   affected account, at most once per 20 seconds with per-account single flight. The account

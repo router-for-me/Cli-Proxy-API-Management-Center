@@ -111,6 +111,31 @@ function currentSample(
   return { ...sample, remainingPercent: sample.remainingPercent };
 }
 
+/** Reset times that differ by less than this are the same cycle (providers round them). */
+const SAME_CYCLE_MS = 60_000;
+
+/**
+ * A recorded balance for history only. A fresh sample wins; otherwise an account that went silent
+ * (e.g. disabled for a while) is bridged from its own readings on both sides of the gap, but only
+ * when they share a reset cycle and the balance did not rise: within one cycle a balance only
+ * falls, so the straight line between them is bounded by real readings. Anything else (a reset or
+ * refill in between, a changed cycle, an explicit missing observation) stays unknown.
+ */
+function recordedPercent(samples: QuotaSample[], atMs: number): number | null {
+  const current = currentSample(samples, atMs);
+  if (current) return current.remainingPercent;
+  const index = latestIndex(samples, atMs);
+  const before = samples[index];
+  const after = samples[index + 1];
+  if (!before || !after) return null;
+  if (before.remainingPercent === null || after.remainingPercent === null) return null;
+  if (before.resetAtMs === null || after.resetAtMs === null) return null;
+  if (Math.abs(before.resetAtMs - after.resetAtMs) > SAME_CYCLE_MS) return null;
+  if (before.resetAtMs <= atMs || after.remainingPercent > before.remainingPercent) return null;
+  const share = (atMs - before.observedAtMs) / (after.observedAtMs - before.observedAtMs);
+  return before.remainingPercent + (after.remainingPercent - before.remainingPercent) * share;
+}
+
 interface ForecastInput {
   remaining: number;
   rate: number;
@@ -230,7 +255,7 @@ function recordedHistory(
         a.firstSampleAtMs === undefined || (a.firstSampleAtMs !== null && a.firstSampleAtMs <= time)
     );
     const snapshots = members.map((a) =>
-      scale(a.id, currentSample(histories.get(a.id)!, time)?.remainingPercent ?? null)
+      scale(a.id, recordedPercent(histories.get(a.id)!, time))
     );
     const historicalRates = members.map((a) => {
       const measured = measuredRates(histories.get(a.id)!, time, lookbackHours);
