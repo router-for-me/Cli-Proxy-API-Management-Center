@@ -225,10 +225,10 @@
     "claude-sonnet-5-5": {
       "input": 2,
       "output": 10,
-      "cache_read": 0.2,
+      "cache_read": 0.1,
       "cache_write": 2.5,
-      "source": "models.dev",
-      "updated_at_ms": 1791407523984,
+      "source": "platform.claude.com/docs/en/about-claude/pricing (2026-11-15): cache hits and refreshes 0.05x base input",
+      "updated_at_ms": 1794787050293,
       "context_tiers": [],
       "service_tiers": []
     },
