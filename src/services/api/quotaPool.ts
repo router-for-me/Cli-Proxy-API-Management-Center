@@ -32,8 +32,11 @@ export interface ResetClaimResponse {
 }
 
 export function createQuotaPoolApi() {
+  const connection = apiClient.getConnectionRevision();
   const client = apiClient.captureConnection();
   return {
+    /** The connection this API was captured on; work keyed by it never crosses a switch. */
+    connection,
     get: (params: PoolQuery, signal: AbortSignal) =>
       client.get<PoolDashboard>('/prox/pools', { params, signal }),
     refreshAccount: (accountId: string, signal: AbortSignal) =>

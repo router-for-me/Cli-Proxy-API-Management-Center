@@ -1,9 +1,8 @@
 /**
  * The resets recorded by the quota history server (`GET /v1/resets/events`), newest first. Rows
- * that mount together share one in-flight request per provider; nothing is kept after it settles,
- * so a later page or another connection always reads its own. (A request captured on a connection
- * the user has left is refused by its client.) A targeted re-read after a reset (any page) makes
- * mounted rows read again.
+ * that mount together share one in-flight request per connection and provider; nothing is kept
+ * after it settles, so a later page reads again and another connection never sees this one's
+ * history. A targeted re-read after a reset (any page) makes mounted rows read again.
  */
 import { useEffect, useState } from 'react';
 import type { PoolProviderId } from '@/domain/quotaPool/types';
@@ -17,9 +16,12 @@ onPoolAccountRefreshed(() => listeners.forEach((listener) => listener()));
 
 export function loadResetEvents(
   provider: PoolProviderId,
-  api: Pick<ReturnType<typeof createQuotaPoolApi>, 'resetEvents'> = createQuotaPoolApi()
+  api: Pick<
+    ReturnType<typeof createQuotaPoolApi>,
+    'resetEvents' | 'connection'
+  > = createQuotaPoolApi()
 ): Promise<ResetEventView[]> {
-  const key = provider;
+  const key = JSON.stringify([api.connection, provider]);
   const pending = inFlight.get(key);
   if (pending) return pending;
   const events = api

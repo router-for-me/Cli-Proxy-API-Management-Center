@@ -54,6 +54,7 @@ describe('recorded resets for Quota Management', () => {
     let reads = 0;
     const event = { accountId: 'a', kind: 'fable', outcome: 'reset' } as ResetEventView;
     const api = {
+      connection: 1,
       resetEvents: async () => {
         reads++;
         return { events: [event] };
@@ -69,7 +70,27 @@ describe('recorded resets for Quota Management', () => {
     // Nothing is kept once it settled: a later page (or another connection) reads its own.
     await loadResetEvents('codex', api);
     expect(reads).toBe(2);
+    // Two connections loading at once each read their own history, never the other's.
+    const fromA = { accountId: 'a', kind: 'fable', outcome: 'reset' } as ResetEventView;
+    const fromB = { accountId: 'a', kind: 'full', outcome: 'reset' } as ResetEventView;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const a = loadResetEvents('claude', {
+      connection: 1,
+      resetEvents: async () => {
+        await gate;
+        return { events: [fromA] };
+      },
+    });
+    const b = loadResetEvents('claude', {
+      connection: 2,
+      resetEvents: async () => ({ events: [fromB] }),
+    });
+    release();
+    expect(await a).toEqual([fromA]);
+    expect(await b).toEqual([fromB]);
     const failed = await loadResetEvents('claude', {
+      connection: 1,
       resetEvents: async () => {
         throw new Error('down');
       },
