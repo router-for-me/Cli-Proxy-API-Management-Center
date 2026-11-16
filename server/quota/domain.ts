@@ -111,6 +111,43 @@ function currentSample(
   return { ...sample, remainingPercent: sample.remainingPercent };
 }
 
+/** Reset times that differ by less than this are the same cycle (providers round them). */
+const SAME_CYCLE_MS = 60_000;
+
+/**
+ * A recorded balance for history only. One quiet account (e.g. disabled for a while) never blanks
+ * the pool: its share comes from its own readings. A fresh sample wins. Otherwise, from its last
+ * reading before the silence:
+ * - same reset cycle on both sides and no rise: the straight line between the two readings;
+ * - its cycle has not reset yet: that last reading, held (a reset used in between shows at the
+ *   next reading, not before);
+ * - its cycle reset during the silence: 100%, the window the reset restored.
+ * These are estimates bounded by real readings; usage between readings that the account never
+ * reported can still be missed. Only a gap the account later reports after is filled; an explicit
+ * missing observation, no reading yet, or the stretch after its last reading stays unknown.
+ */
+function recordedPercent(samples: QuotaSample[], atMs: number): number | null {
+  const current = currentSample(samples, atMs);
+  if (current) return current.remainingPercent;
+  const index = latestIndex(samples, atMs);
+  const before = samples[index];
+  const after = samples[index + 1];
+  // Only a gap the account later reports after is filled; past its last reading it stays unknown.
+  if (!before || !after || before.remainingPercent === null) return null;
+  if (before.resetAtMs !== null && before.resetAtMs <= atMs) return 100;
+  if (
+    after.remainingPercent !== null &&
+    before.resetAtMs !== null &&
+    after.resetAtMs !== null &&
+    Math.abs(before.resetAtMs - after.resetAtMs) <= SAME_CYCLE_MS &&
+    after.remainingPercent <= before.remainingPercent
+  ) {
+    const share = (atMs - before.observedAtMs) / (after.observedAtMs - before.observedAtMs);
+    return before.remainingPercent + (after.remainingPercent - before.remainingPercent) * share;
+  }
+  return before.remainingPercent;
+}
+
 interface ForecastInput {
   remaining: number;
   rate: number;
@@ -230,7 +267,7 @@ function recordedHistory(
         a.firstSampleAtMs === undefined || (a.firstSampleAtMs !== null && a.firstSampleAtMs <= time)
     );
     const snapshots = members.map((a) =>
-      scale(a.id, currentSample(histories.get(a.id)!, time)?.remainingPercent ?? null)
+      scale(a.id, recordedPercent(histories.get(a.id)!, time))
     );
     const historicalRates = members.map((a) => {
       const measured = measuredRates(histories.get(a.id)!, time, lookbackHours);
