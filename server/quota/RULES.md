@@ -139,7 +139,11 @@ while collection is running, without requesting additional collections.
   spending a Claude grant or a Codex credit. The server performs a claim only on an explicit
   authenticated user request, never on its own: no collection, refresh, sync or retry loop ever
   claims. Refresh itself still does not consume usage queues, mutate auth or reset limits; claims
-  are the only write, and each is recorded in `quota_reset_events` (opaque account id, provider,
+  are the only write to providers. After a spent claim (Claude or Codex) the server also clears
+  that credential's cooldown on its hub (`POST routing/cooldown/reset` with its auth index), so the
+  proxy routes to it at once instead of waiting for its own probe; a still-limited account then
+  costs the hub one 429, which restores the cooldown. `cooldownCleared` on the event records it.
+  Each claim is recorded in `quota_reset_events` (opaque account id, provider,
   kind, grant/credit id, the client's request id, outcome, requested/settled times, and the
   readings just before and after: every usage window the collector held, Fable's
   `seven-day-fable` included, plus reset counts). Events are history: no pruning, no names, and an

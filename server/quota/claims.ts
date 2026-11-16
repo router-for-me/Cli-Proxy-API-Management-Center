@@ -336,7 +336,28 @@ export class ResetClaims {
       code = 'unknown';
     }
     const settled = code !== 'unknown' && (!existing || SPENT.has(code));
-    return { event, outcome: settled ? code : 'unknown', settled, cooldownCleared: null };
+    return {
+      event,
+      outcome: settled ? code : 'unknown',
+      settled,
+      cooldownCleared: SPENT.has(code) ? await this.clearHubCooldown(managed) : null,
+    };
+  }
+
+  /**
+   * A spent reset leaves the credential cooling down on the hub until its own probe passes:
+   * clear it (`POST routing/cooldown/reset`) so the account is routed again at once. If the limit
+   * still holds, the hub's next request gets a 429, restores the cooldown and moves on.
+   */
+  private async clearHubCooldown(managed: ManagedAccount): Promise<boolean> {
+    try {
+      const cleared = await managed.post('routing/cooldown/reset', {
+        auth_index: managed.authIndex,
+      });
+      return isRecord(cleared) && cleared.status === 'ok' && cleared.auth_index === managed.authIndex;
+    } catch {
+      return false;
+    }
   }
 
   private async sendCodex(
@@ -382,19 +403,7 @@ export class ResetClaims {
       /* The proxy may have sent the redeem even though no answer came back. */
     }
     const settled = code !== 'unknown' && (!existing || SPENT.has(code));
-    let cooldownCleared: boolean | null = null;
-    if (SPENT.has(code)) {
-      // A spent credit leaves the credential cooling down on the hub: clear it as the tab does.
-      try {
-        const cleared = await managed.post('routing/cooldown/reset', {
-          auth_index: managed.authIndex,
-        });
-        cooldownCleared =
-          isRecord(cleared) && cleared.status === 'ok' && cleared.auth_index === managed.authIndex;
-      } catch {
-        cooldownCleared = false;
-      }
-    }
+    const cooldownCleared = SPENT.has(code) ? await this.clearHubCooldown(managed) : null;
     return { event, outcome: settled ? code : 'unknown', settled, cooldownCleared };
   }
 }
