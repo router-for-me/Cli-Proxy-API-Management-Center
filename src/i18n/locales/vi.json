@@ -836,6 +836,7 @@
     "reset_credits_invalid_payload": "Phản hồi thời hạn đặt lại thủ công không hợp lệ",
     "reset_confirm_message": "Dùng 1 lượt đặt lại thủ công để xóa giới hạn Codex cho “{{name}}”?",
     "reset_not_confirmed": "Chưa xác nhận lượt đặt lại thủ công. Hãy làm mới quota trước khi thử lại.",
+    "reset_outcome_unknown": "Lần đặt lại có thể đã thực hiện nhưng không nhận được phản hồi. Bấm đặt lại lần nữa: thao tác này xác nhận cùng yêu cầu và không dùng thêm lượt.",
     "reset_dialog_account": "Tài khoản",
     "reset_dialog_used": "Lượt đặt lại sẽ dùng",
     "reset_dialog_used_of": "1 trên {{held}} lượt đang có",
@@ -2903,6 +2904,10 @@
     "reset_time_not_reported_reason": "Nhà cung cấp chưa báo cáo thời gian đặt lại.",
     "forecast_not_reported_reason": "Cần dữ liệu hiện tại và đủ lịch sử sử dụng.",
     "reset_held_label": "Lượt đặt lại đang có",
+    "reset_last_used_label": "Lần dùng gần nhất",
+    "reset_last_used_generic": "Đặt lại",
+    "reset_last_not_applied": "chưa áp dụng ({{outcome}})",
+    "reset_last_unknown": "Không rõ kết quả",
     "billing_active_until_basis": "Giá trị active_until từ đăng ký; chưa xác nhận gia hạn.",
     "billing_id_token_basis": "Ngày hết hạn đăng ký từ id_token của thông tin xác thực; chưa xác nhận gia hạn."
   },

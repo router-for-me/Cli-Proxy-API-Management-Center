@@ -57,7 +57,7 @@ function readOnServer(api: PoolApi, scope: string, accountId: string): Promise<b
 }
 
 /**
- * Re-read one account on the history server now and, if that read ran, once more after
+ * Re-read one account on the history server now and once more after
  * FOLLOW_UP_DELAY_MS, then reload the pool pages that are open. Capture `api` before the reset is
  * sent: the reply can arrive after the user switched connection, and the refresh must still go to
  * the history server that reset belongs to.
@@ -72,7 +72,9 @@ export async function refreshPoolAccountAfterReset(
   if (!index) return;
   const accountId = poolSourceAccountId(owner.instanceId, provider, index);
   const scope = JSON.stringify([sessionId(owner), accountId]);
-  if (!(await readOnServer(api, scope, accountId))) return;
+  // The server already re-read the account inside the claim, so this read may be refused by its
+  // 20 s floor; the follow-up still runs, in case the provider lagged behind the claim.
+  await readOnServer(api, scope, accountId);
   // One follow-up per account: a newer attempt moves it later, never adds a second.
   clearTimeout(followUps.get(scope));
   followUps.set(

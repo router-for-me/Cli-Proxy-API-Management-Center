@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TFunction } from 'i18next';
 import { createHandler } from '../server/app';
+import { ResetClaims } from '../server/quota/claims';
 import { QuotaCollector } from '../server/quota/collector';
 import { QuotaStore } from '../server/quota/store';
 import type { PoolDashboard } from '../src/domain/quotaPool/types';
@@ -130,7 +131,19 @@ test('a Fable claim recomputes pool points, forecast, resets and every page from
             },
           ],
         });
+      // The server's claim, sent through the hub: it flips the account to the "after" reading.
+      if (String(_input).endsWith('/routing/cooldown/reset'))
+        return Response.json({ status: 'ok', auth_index: 'carol-index', models: [] });
       const call = JSON.parse(String(init.body)) as { url: string };
+      if (call.url.endsWith('/reset_rate_limits')) {
+        stage = 'after';
+        return Response.json({ status_code: 200, body: { result: 'reset' } });
+      }
+      if (call.url.endsWith('/profile'))
+        return Response.json({
+          status_code: 200,
+          body: { organization: { uuid: '11111111-2222-3333-4444-555555555555' } },
+        });
       return Response.json({
         status_code: 200,
         body: call.url.startsWith(CLAUDE_USAGE_URL) ? usage(stage) : {},
@@ -158,7 +171,8 @@ test('a Fable claim recomputes pool points, forecast, resets and every page from
     now: () => clock,
   });
   cleanups.push(() => collector.stop());
-  const handler = createHandler({ store, collector, keyFile, now: () => clock });
+  const claims = new ResetClaims({ store, collector, now: () => clock });
+  const handler = createHandler({ store, collector, keyFile, now: () => clock, claims });
   const request = (path: string, body?: unknown) =>
     handler(
       new Request(`http://localhost${path}`, {
@@ -177,7 +191,9 @@ test('a Fable claim recomputes pool points, forecast, resets and every page from
   const refreshes: { accountId: string; refreshed: boolean }[] = [];
   restores.push(
     spyOn(apiClient, 'captureConnection').mockReturnValue({
-      post: async (_url: string, body: { accountId: string }) => {
+      post: async (url: string, body: { accountId: string }) => {
+        // The page spends the grant through the server, which claims on the hub itself.
+        if (url === '/prox/resets/claim') return (await request('/v1/resets/claim', body)).json();
         const answer = (await (await request('/v1/refresh', body)).json()) as {
           refreshed: boolean;
         };
@@ -250,8 +266,11 @@ test('a Fable claim recomputes pool points, forecast, resets and every page from
     'fable-grant'
   );
   expect(answer).toMatchObject({ code: 'reset' });
+  // The server re-read the account inside the claim; the page's own read right after it falls
+  // inside the 20 s floor, so it is refused, and the follow-up below still runs.
   await until(async () => (await pool()).remainingPoints === 86);
-  expect(refreshes).toEqual([{ accountId, refreshed: true }]);
+  await until(() => refreshes.length === 1);
+  expect(refreshes).toEqual([{ accountId, refreshed: false }]);
   await readIntoStore(); // the claim's own forced read, as the page issues it
 
   // Pool totals, the recorded line, the forecast and the reset count follow the new reading.

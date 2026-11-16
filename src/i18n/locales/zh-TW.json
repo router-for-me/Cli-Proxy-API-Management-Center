@@ -823,6 +823,7 @@
     "reset_credits_invalid_payload": "手動重設到期時間回應格式無效",
     "reset_confirm_message": "使用 1 次手動重設，清除「{{name}}」的 Codex 限額？",
     "reset_not_confirmed": "尚未確認手動重設是否成功，請重新整理額度後再決定是否重試。",
+    "reset_outcome_unknown": "重置可能已經生效，但沒有收到結果。請再次點擊重置：它會確認同一次請求，不會再消耗一次額度。",
     "reset_dialog_account": "帳號",
     "reset_dialog_used": "使用的重設次數",
     "reset_dialog_used_of": "持有 {{held}} 次，使用 1 次",
@@ -2923,6 +2924,10 @@
     "reset_time_not_reported_reason": "供應商尚未回報重設時間。",
     "forecast_not_reported_reason": "需要最新讀數及足夠的用量歷史。",
     "reset_held_label": "持有的重設次數",
+    "reset_last_used_label": "上次使用",
+    "reset_last_used_generic": "重置",
+    "reset_last_not_applied": "未生效（{{outcome}}）",
+    "reset_last_unknown": "結果未知",
     "billing_active_until_basis": "訂閱介面 active_until；續訂尚未確認。",
     "billing_id_token_basis": "憑證 id_token 訂閱到期時間；續訂尚未確認。"
   },

@@ -221,6 +221,37 @@ test('unknown outcome retains request ID across retries; expiry blocks', async (
   expect(h.ids).toHaveLength(2);
 });
 
+test('a first attempt refused before sending leaves no retry behind; a retry keeps its id', async () => {
+  const h = setup();
+  let answer: () => Promise<AnthropicResetSettledCode> = async () => {
+    throw new ResetGrantPreflightError('eligibility', 'blocked_cooldown');
+  };
+  h.deps.claim = async (_a, _o, _g, id) => {
+    h.ids.push(id);
+    return answer();
+  };
+  const operations = createResetGrantOperations(h.deps);
+  await expect(operations.run('account', 'a', grant.id)).rejects.toThrow('blocked_cooldown');
+  expect(operations.inspect('account')).toBeUndefined();
+  // The next click is a fresh claim: a definite refusal now settles, nothing is left unresolved.
+  answer = async () => 'rate_limited';
+  expect(await operations.run('account', 'a', grant.id)).toEqual({
+    code: 'rate_limited',
+    unresolved: false,
+  });
+  expect(h.ids).toEqual(['request-1', 'request-2']);
+  // An ambiguous send stays open, and a refusal on its retry does not drop it.
+  answer = async () => {
+    throw new AnthropicResetGrantUnknownOutcome();
+  };
+  await expect(operations.run('other', 'b', grant.id)).rejects.toThrow();
+  answer = async () => {
+    throw new ResetGrantPreflightError('operation', 'refused');
+  };
+  await expect(operations.run('other', 'b', grant.id)).rejects.toThrow('refused');
+  expect(operations.inspect('other')?.requestId).toBe('request-3');
+});
+
 test('fresh spend rechecks eligibility and blocks concurrent clicks', async () => {
   const h = setup();
   h.deps.readStatus = async () => ({ ...status(), eligible: false });

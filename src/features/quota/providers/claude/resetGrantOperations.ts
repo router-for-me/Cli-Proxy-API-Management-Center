@@ -125,7 +125,15 @@ export function createResetGrantOperations(
         if (wasRetry && deps.now() - operation.createdAt >= RETRY_WINDOW_MS) {
           throw new ResetGrantPreflightError('operation', 'expired');
         }
-        const code = await deps.claim(authIndex, organization, grantId, operation.requestId);
+        let code: Awaited<ReturnType<typeof deps.claim>>;
+        try {
+          code = await deps.claim(authIndex, organization, grantId, operation.requestId);
+        } catch (error) {
+          // Refused before it was sent: a first attempt leaves nothing to retry. A retry keeps
+          // its operation, since the earlier send may still have spent.
+          if (error instanceof ResetGrantPreflightError && !wasRetry) operations.delete(key);
+          throw error;
+        }
         assertSession();
         // A refusal on a retry cannot prove that the earlier ambiguous POST did not spend.
         if (!wasRetry || code === 'reset' || code === 'already_used') operation.code = code;

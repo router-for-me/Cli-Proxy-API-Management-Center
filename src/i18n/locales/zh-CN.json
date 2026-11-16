@@ -823,6 +823,7 @@
     "reset_credits_invalid_payload": "手动重置到期时间响应格式无效",
     "reset_confirm_message": "使用 1 次手动重置，清除“{{name}}”的 Codex 限额？",
     "reset_not_confirmed": "未确认手动重置是否成功，请刷新额度后再决定是否重试。",
+    "reset_outcome_unknown": "重置可能已经生效，但没有收到结果。请再次点击重置：它会确认同一次请求，不会再消耗一次额度。",
     "reset_dialog_account": "账号",
     "reset_dialog_used": "使用的重置次数",
     "reset_dialog_used_of": "持有 {{held}} 次，使用 1 次",
@@ -2895,6 +2896,10 @@
     "reset_time_not_reported_reason": "提供商尚未报告重置时间。",
     "forecast_not_reported_reason": "需要最新读数和足够的用量历史。",
     "reset_held_label": "持有的重置次数",
+    "reset_last_used_label": "上次使用",
+    "reset_last_used_generic": "重置",
+    "reset_last_not_applied": "未生效（{{outcome}}）",
+    "reset_last_unknown": "结果未知",
     "billing_active_until_basis": "订阅接口 active_until；续订尚未确认。",
     "billing_id_token_basis": "凭证 id_token 订阅到期时间；续订尚未确认。"
   },
