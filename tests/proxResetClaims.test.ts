@@ -284,6 +284,31 @@ describe('server-owned reset claims', () => {
     expect(events.events[0]).toEqual(result.event);
   });
 
+  test('a spent Claude claim clears the hub cooldown for that credential', async () => {
+    // The proxy keeps a quota cooldown until its probe says "allowed"; a confirmed claim clears it,
+    // as for Codex, so the account is routed again at once (a still-limited one costs one 429).
+    const f = fixture();
+    await f.collect();
+    const account = f.account('claude');
+    const result = await (await f.claim(claudeBody(account.id))).json();
+    expect(result.outcome).toBe('reset');
+    expect(result.event.cooldownCleared).toBe(true);
+    const resets = f.hub.calls.filter((call) => call.path === '/routing/cooldown/reset');
+    expect(resets).toHaveLength(1);
+    expect(resets[0].body).toEqual({ auth_index: expect.any(String) });
+  });
+
+  test('a Claude claim the provider refused does not touch the hub cooldown', async () => {
+    const f = fixture();
+    await f.collect();
+    f.hub.claimMode = 'cooldown';
+    const account = f.account('claude');
+    const result = await (await f.claim(claudeBody(account.id))).json();
+    expect(result.outcome).toBe('cooldown');
+    expect(result.event.cooldownCleared).toBeNull();
+    expect(f.hub.calls.some((call) => call.path === '/routing/cooldown/reset')).toBe(false);
+  });
+
   test('a retry with the same request id neither claims nor records twice', async () => {
     const f = fixture();
     await f.collect();
