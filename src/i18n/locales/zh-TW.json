@@ -2760,6 +2760,7 @@
     "weekly_opus_remaining": "每週 Opus 剩餘",
     "unavailable_count": "{{total}} 個帳號中有 {{count}} 個沒有目前配額資料，因此不顯示總量。",
     "stale_count": "{{total}} 個帳號中有 {{count}} 個沒有最新讀數，因此不顯示總量。",
+    "estimated_count": "{{total}} 個帳號中有 {{count}} 個沒有最新讀數，總量按其上次讀數估算。",
     "show_affected": "在清單中顯示",
     "show_all_accounts": "顯示所有帳戶",
     "accounts_affected": "受影響（{{count}}）",

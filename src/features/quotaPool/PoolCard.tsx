@@ -222,8 +222,12 @@ export function PoolCard({
         ? staleAccounts
         : [];
   const affectedIds = new Set(affectedAccounts.map((account) => account.id));
+  // A total with estimated accounts is still shown; the note says so instead of "withheld".
+  const estimated = pool.remainingPoints !== null ? (pool.estimatedCount ?? 0) : 0;
   const stateNote =
-    pool.forecastState === 'partial' && missingAccounts.length
+    estimated > 0
+      ? t('quota_pool.estimated_count', { count: estimated, total: pool.accountCount })
+      : pool.forecastState === 'partial' && missingAccounts.length
       ? t('quota_pool.unavailable_count', {
           count: missingAccounts.length,
           total: pool.accountCount,

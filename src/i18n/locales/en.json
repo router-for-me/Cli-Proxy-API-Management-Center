@@ -2734,6 +2734,7 @@
     "weekly_opus_remaining": "Weekly Opus remaining",
     "unavailable_count": "No current quota data from {{count}} of {{total}} accounts, so the total is withheld.",
     "stale_count": "No recent reading from {{count}} of {{total}} accounts, so the total is withheld.",
+    "estimated_count": "No recent reading from {{count}} of {{total}} accounts, so the total uses their last readings.",
     "show_affected": "Show affected accounts",
     "show_all_accounts": "Show all accounts",
     "accounts_affected": "Affected ({{count}})",

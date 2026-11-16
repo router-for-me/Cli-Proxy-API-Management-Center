@@ -151,14 +151,18 @@ describe('combined provider totals', () => {
     expect(data.combined!.all.series!.recorded.at(-1)?.remainingPoints).toBeNull();
     expect(data.combined!.all.series!.projected).toEqual([]);
   });
-  test('stale and expired observations cannot contribute a balance', () => {
-    for (const patch of [{ observedAtMs: now - STALE_MS - 1 }, { resetAtMs: now - 1 }]) {
+  test('stale and expired observations contribute an estimate, never blank the total', () => {
+    for (const [patch, codex] of [
+      [{ observedAtMs: now - STALE_MS - 1 }, 76],
+      [{ resetAtMs: now - 1 }, 100],
+    ] as const) {
       const old = samples
         .filter((s) => s.accountId === 'a0')
         .concat({ ...samples.at(-1)!, ...patch });
-      const total = buildDashboard(accounts, old, options, collection).combined!.all.series!;
-      expect(total.remainingPoints).toBeNull();
-      expect(total.recorded.at(-1)?.remainingPoints).toBeNull();
+      const data = buildDashboard(accounts, old, options, collection);
+      const claude = data.pools.find((pool) => pool.provider === 'claude')!.remainingPoints!;
+      expect(data.combined!.all.series!.remainingPoints).toBe(claude + codex);
+      expect(data.combined!.all.series!.forecastState).not.toBe('ready');
     }
   });
   test('does not inflate capacity from duplicate same-provider sources or empty failures', () => {

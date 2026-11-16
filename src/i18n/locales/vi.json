@@ -2740,6 +2740,7 @@
     "weekly_opus_remaining": "Opus còn lại hằng tuần",
     "unavailable_count": "{{count}}/{{total}} tài khoản không có dữ liệu hạn mức hiện tại, nên tổng bị ẩn.",
     "stale_count": "{{count}}/{{total}} tài khoản không có số liệu gần đây, nên tổng bị ẩn.",
+    "estimated_count": "{{count}}/{{total}} tài khoản không có số liệu gần đây, nên tổng dùng số liệu gần nhất của chúng.",
     "show_affected": "Xem trong danh sách",
     "show_all_accounts": "Hiện tất cả tài khoản",
     "accounts_affected": "Bị ảnh hưởng ({{count}})",

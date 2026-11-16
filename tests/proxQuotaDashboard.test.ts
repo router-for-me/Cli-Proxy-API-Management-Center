@@ -1193,6 +1193,40 @@ describe('pool presentation', () => {
     );
     expect(combined.match(/Refresh now/g)).toHaveLength(1);
   });
+  test('an estimated combined total still says it uses last readings, with Refresh now', async () => {
+    await i18n.changeLanguage('en');
+    const stale = { ...pool.accounts[0], id: 'opaque-9', status: 'stale' as const };
+    const estimated: QuotaPool = {
+      ...pool,
+      forecastState: 'stale',
+      remainingPoints: 150,
+      estimatedCount: 1,
+      accounts: [stale, ...pool.accounts.slice(1)],
+    };
+    const combined = renderToStaticMarkup(
+      createElement(CombinedPoolCard, {
+        pools: [estimated],
+        dashboard: {
+          ...dashboard,
+          combined: {
+            all: {
+              series: estimated,
+              layers: [{ ...estimated, provider: 'claude' }],
+              unavailableReason: null,
+            },
+          },
+        },
+        provider: 'all',
+        mode: 'remaining',
+        savedData: false,
+        onRefresh: () => {},
+      })
+    );
+    expect(combined).toContain(
+      'No recent reading from 1 of 1 accounts, so the total uses their last readings.'
+    );
+    expect(combined.match(/Refresh now/g)).toHaveLength(1);
+  });
   test('stale accounts are counted as stale, not as missing', async () => {
     await i18n.changeLanguage('en');
     const stale = { ...pool.accounts[0], id: 'opaque-8', status: 'stale' as const };

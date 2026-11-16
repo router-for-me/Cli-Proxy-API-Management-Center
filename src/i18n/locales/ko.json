@@ -2734,6 +2734,7 @@
     "weekly_opus_remaining": "주간 Opus 잔여",
     "unavailable_count": "계정 {{total}}개 중 {{count}}개에 현재 할당량 데이터가 없어 합계를 표시하지 않습니다.",
     "stale_count": "계정 {{total}}개 중 {{count}}개에 최근 데이터가 없어 합계를 표시하지 않습니다.",
+    "estimated_count": "계정 {{total}}개 중 {{count}}개에 최근 데이터가 없어 합계에는 마지막 값을 사용합니다.",
     "show_affected": "목록에서 보기",
     "show_all_accounts": "모든 계정 보기",
     "accounts_affected": "해당 ({{count}})",

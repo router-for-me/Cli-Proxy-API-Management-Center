@@ -93,6 +93,11 @@ export interface QuotaPool {
   loadedCount: number;
   capacityPoints: number;
   remainingPoints: number | null;
+  /**
+   * Accounts whose last reading stands in for a stale or failing poll in `remainingPoints` (a
+   * window that reset since counts as refilled). 0 when every account is fresh.
+   */
+  estimatedCount?: number;
   burnPointsPerHour: number | null;
   drainPointsPerHour: number | null;
   forecastState: PoolForecastState;
