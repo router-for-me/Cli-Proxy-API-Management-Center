@@ -167,17 +167,37 @@ describe('dashboard evidence and privacy', () => {
       dashboard([account()], [sample(now, 50)], { reveal: true }).pools[0].accounts[0].email
     ).toBe('private@example.test');
   });
-  test('missing windows and stale balances are unknown, not zero', () => {
+  test('an account that never reported is unknown, not zero', () => {
     expect(dashboard([account()], []).pools[0].remainingPoints).toBeNull();
+  });
+  test('a stale account adds its last reading to the total, flagged as estimated', () => {
+    // One quiet stream never blanks the total: its last reading stands in, and the pool says so.
     const stale = dashboard([account()], [sample(now - STALE_MS - 1, 50)]).pools[0];
-    expect(stale.remainingPoints).toBeNull();
+    expect(stale.remainingPoints).toBe(50);
+    expect(stale.estimatedCount).toBe(1);
     expect(stale.forecastState).toBe('stale');
     expect(stale.projected).toEqual([]);
   });
-  test('expired windows are unknown until another successful observation', () => {
+  test('a window that reset since the last reading counts as refilled, flagged as estimated', () => {
     const pool = dashboard([account()], [sample(now, 2, { resetAtMs: now })]).pools[0];
-    expect(pool.remainingPoints).toBeNull();
+    expect(pool.remainingPoints).toBe(100);
+    expect(pool.estimatedCount).toBe(1);
     expect(pool.nextResetAtMs).toBeNull();
+  });
+  test('a fresh pool reports no estimates', () => {
+    expect(dashboard([account()], [sample(now, 50)]).pools[0].estimatedCount).toBe(0);
+  });
+  test('fresh and stale streams aggregate; rates come from the streams that have them', () => {
+    const samples = [
+      sample(now - 600_000, 60),
+      sample(now, 50),
+      sample(now - STALE_MS - 600_000, 90, { accountId: 'b' }),
+      sample(now - STALE_MS - 1, 80, { accountId: 'b' }),
+    ];
+    const pool = dashboard([account('a'), account('b')], samples).pools[0];
+    expect(pool.remainingPoints).toBe(50 + 80);
+    expect(pool.estimatedCount).toBe(1);
+    expect(pool.burnPointsPerHour).toBe(60);
   });
   test('missing observations immediately supersede balances and break rate intervals', () => {
     const samples = [sample(now - 600_000, 60), sample(now, 0, { remainingPercent: null })];
@@ -217,10 +237,13 @@ describe('dashboard evidence and privacy', () => {
   });
   test('failed polls count once the latest sample is stale or absent', () => {
     const stale = [sample(now - STALE_MS - 1, 50)];
-    for (const samples of [stale, []]) {
-      const pool = dashboard([account('a', { lastErrorAtMs: now })], samples).pools[0];
+    for (const [samples, total] of [
+      [stale, 50],
+      [[], null],
+    ] as const) {
+      const pool = dashboard([account('a', { lastErrorAtMs: now })], [...samples]).pools[0];
       expect(pool.accounts[0].status).toBe('error');
-      expect(pool.remainingPoints).toBeNull();
+      expect(pool.remainingPoints).toBe(total);
     }
   });
   test('inventory failure preserves uncertainty even when previous quota samples are current', () => {
@@ -316,9 +339,11 @@ describe('dashboard evidence and privacy', () => {
     test('an explicit missing observation is still unknown', () => {
       expect(at(run(90, 0, {}, { remainingPercent: null }), now - HOUR_MS)).toBeNull();
     });
-    test('current balances never use an estimate', () => {
+    test('the current total takes its last reading too, and says it is an estimate', () => {
       const data = dashboard([account('a'), account('b')], [...steady, sample(now - 2 * HOUR_MS, 90, { accountId: 'b' })]);
-      expect(data.pools[0].remainingPoints).toBeNull();
+      expect(data.pools[0].remainingPoints).toBe(50 + 90);
+      expect(data.pools[0].estimatedCount).toBe(1);
+      expect(data.pools[0].projected).toEqual([]);
     });
   });
   test('an account added later joins the history at its first sample instead of blanking it', () => {

@@ -66,7 +66,12 @@ credential UI. The store owns persistence; the collector uses only public APIs.
   "No 5-hour limit" like Quota Management.
 - Weekly and five-hour windows are separate. Model-scoped, monthly, dollar and
   reset-credit balances are not added to those pools.
-- Missing, expired, errored or older-than-15-minute samples are unknown, not 0.
+- Each account is its own stream and totals aggregate what the streams know (user direction,
+  16 Nov 2026: per-stream collection, fault-tolerant aggregation). An account whose sample is
+  older than 15 minutes, or whose poll failed, is `stale`/`error` and never 0: in the pool total
+  its last reading stands in (100% once its window has reset since), counted in `estimatedCount`,
+  and the forecast stays off until every stream is fresh. An account with no reading, an explicit
+  missing window or a failed inventory still leaves the total unknown.
   A successful response without a general window records an explicit missing
   observation, immediately superseding that window's previous balance.
   A failed poll marks an account errored only once its latest sample is older than

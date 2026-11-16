@@ -397,6 +397,24 @@ function buildPool(
     const measured = measuredRates(histories.get(a.id)!, nowMs, lookbackHours);
     return { burn: scale(a.id, measured.burn), drain: scale(a.id, measured.drain) };
   });
+  // Each account is its own stream; the total aggregates what the streams know. A stale or failing
+  // account adds its last reading (100% once its window has reset since), counted in
+  // `estimatedCount`. An account with no reading, an explicit missing window or a failed inventory
+  // leaves the total unknown: there is nothing to stand in for it.
+  let estimatedCount = 0;
+  const balances = eligible.map((view) => {
+    if (view.status === 'ok') return scale(view.id, view.remainingPercent);
+    if ((view.status !== 'stale' && view.status !== 'error') || view.remainingPercent === null)
+      return null;
+    estimatedCount += 1;
+    return scale(
+      view.id,
+      view.resetAtMs !== null && view.resetAtMs <= nowMs ? POINTS_PER_UNIT : view.remainingPercent
+    );
+  });
+  const known = (values: (number | null)[]) => values.filter((v): v is number => v !== null);
+  const sumAvailable = (values: (number | null)[]) =>
+    known(values).length ? known(values).reduce((sum, v) => sum + v, 0) : null;
   const forecastState: QuotaPool['forecastState'] = !eligible.length
     ? inventoryFailed
       ? 'partial'
@@ -428,11 +446,18 @@ function buildPool(
     eligibleCount: eligible.length,
     loadedCount: loaded.length,
     capacityPoints: eligible.reduce((sum, a) => sum + a.plan.capacityPoints, 0),
-    remainingPoints: complete
-      ? sumKnown(eligible.map((a) => scale(a.id, a.remainingPercent)))
-      : null,
-    burnPointsPerHour: complete ? sumKnown(rates.map((r) => r.burn)) : null,
-    drainPointsPerHour: complete ? sumKnown(rates.map((r) => r.drain)) : null,
+    remainingPoints: inventoryFailed ? null : sumKnown(balances),
+    estimatedCount,
+    burnPointsPerHour: complete
+      ? sumKnown(rates.map((r) => r.burn))
+      : inventoryFailed
+        ? null
+        : sumAvailable(rates.map((r) => r.burn)),
+    drainPointsPerHour: complete
+      ? sumKnown(rates.map((r) => r.drain))
+      : inventoryFailed
+        ? null
+        : sumAvailable(rates.map((r) => r.drain)),
     forecastState,
     firstEmptyAtMs: projection.firstEmptyAtMs,
     poolEmptyAtMs: projection.poolEmptyAtMs,

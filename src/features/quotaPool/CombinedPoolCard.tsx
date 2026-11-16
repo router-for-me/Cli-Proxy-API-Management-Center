@@ -46,6 +46,12 @@ export function CombinedPoolCard({
   const stateNote = (state: string) => {
     const missing = count(['error', 'missing-window']);
     const stale = count(['stale']);
+    // A total with estimated accounts is still shown; the note says so instead of "withheld".
+    const estimated = total?.series?.remainingPoints != null
+      ? pools.reduce((sum, pool) => sum + (pool.estimatedCount ?? 0), 0)
+      : 0;
+    if (estimated > 0)
+      return t('quota_pool.estimated_count', { count: estimated, total: accounts.length });
     if (state === 'partial' && missing)
       return t('quota_pool.unavailable_count', { count: missing, total: accounts.length });
     if (state === 'stale' && stale)
