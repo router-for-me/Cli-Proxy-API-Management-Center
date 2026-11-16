@@ -228,13 +228,13 @@ export function PoolCard({
     estimated > 0
       ? t('quota_pool.estimated_count', { count: estimated, total: pool.accountCount })
       : pool.forecastState === 'partial' && missingAccounts.length
-      ? t('quota_pool.unavailable_count', {
-          count: missingAccounts.length,
-          total: pool.accountCount,
-        })
-      : pool.forecastState === 'stale' && staleAccounts.length
-        ? t('quota_pool.stale_count', { count: staleAccounts.length, total: pool.accountCount })
-        : t(`quota_pool.state_note.${pool.forecastState}`, { window: windowLabel });
+        ? t('quota_pool.unavailable_count', {
+            count: missingAccounts.length,
+            total: pool.accountCount,
+          })
+        : pool.forecastState === 'stale' && staleAccounts.length
+          ? t('quota_pool.stale_count', { count: staleAccounts.length, total: pool.accountCount })
+          : t(`quota_pool.state_note.${pool.forecastState}`, { window: windowLabel });
   const showAffected = () => {
     setAffectedOnly(true);
     setLowOnly(false);
@@ -534,10 +534,16 @@ export function PoolCard({
                     <dt>{t('quota_pool.account_remaining', { window: windowLabel })}</dt>
                     {/* The number takes the value style; "of 300 points" the headline unit's muted style. */}
                     <dd>
-                      {number(pool.remainingPoints)}{' '}
-                      <small>
-                        {t('quota_pool.of_capacity', { capacity: number(pool.capacityPoints) })}
-                      </small>
+                      {pool.forecastState === 'no-limit' ? (
+                        t('quota_pool.no_window_limit', { window: windowLabel })
+                      ) : (
+                        <>
+                          {number(pool.remainingPoints)}{' '}
+                          <small>
+                            {t('quota_pool.of_capacity', { capacity: number(pool.capacityPoints) })}
+                          </small>
+                        </>
+                      )}
                     </dd>
                   </div>
                 )}
