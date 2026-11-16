@@ -26,7 +26,6 @@ const t = (key: string) => escapeText(translations.t(`config_management.visual.$
 const props = {
   values: DEFAULT_VISUAL_VALUES,
   disabled: false,
-  hasPayloadValidationErrors: false,
   onChange: () => {},
 };
 const renderSection = (Section: ComponentType<Record<string, unknown>>) =>
@@ -127,7 +126,7 @@ describe('payload rule groups', () => {
   test('collapsible summaries carry only their titles', () => {
     const markup = renderSection(SectionPayload as ComponentType<Record<string, unknown>>);
     const summaries = markup.match(/<summary\b.*?<\/summary>/g) ?? [];
-    expect(summaries).toHaveLength(5);
+    expect(summaries).toHaveLength(6);
     for (const key of [
       'default_rules',
       'default_raw_rules',

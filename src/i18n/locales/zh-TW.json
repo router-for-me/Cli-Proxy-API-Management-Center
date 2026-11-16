@@ -544,7 +544,6 @@
     "reset_confirm_button": "確認重置",
     "reset_not_confirmed": "尚未確認額度重置成功，請重新整理額度後再決定是否重試。",
     "reset_cooldown_failed": "額度已重置，但代理冷卻清除失敗。請在原連線的認證檔案頁面使用「清除冷卻」，不要再次消耗重置卡。",
-
     "reset_success": "已重置「{{name}}」的 Codex 配額",
     "reset_failed": "重置「{{name}}」的 Codex 配額失敗：{{message}}",
     "plan_plus": "Plus",
@@ -1579,7 +1578,11 @@
         "integer_range_1_3600": "請輸入 1 到 3600 之間的整數",
         "payload_invalid_number": "請輸入有效數字",
         "payload_invalid_boolean": "請選擇 true 或 false",
-        "payload_invalid_json": "請輸入有效的 JSON"
+        "payload_invalid_json": "請輸入有效的 JSON",
+        "payload_replace_invalid_target": "僅支援使用者訊息：target.role 必須為 user。",
+        "payload_replace_invalid_positions": "請選擇所有使用者訊息，或提供非空的正整數位置清單，兩者不能同時指定。",
+        "payload_replace_invalid_models": "請至少新增一個模型，模型名稱不可為空，且條件必須有效。",
+        "payload_replace_invalid_replacements": "請至少新增一項替換。每項必須且只能包含一個字串對字串的對應，來源文字不可為空；替換文字為空時會刪除來源文字。"
       },
       "common": {
         "edit": "編輯",
@@ -1587,6 +1590,22 @@
         "cancel": "取消",
         "update": "更新",
         "add": "新增"
+      },
+      "payload_replace": {
+        "title": "使用者文字替換",
+        "description": "在覆寫規則之後、篩選規則之前套用。依清單順序對現有使用者文字進行字面替換。",
+        "target": "作用範圍",
+        "replacements": "替換項",
+        "target_all": "所有使用者訊息",
+        "target_positions": "使用者訊息位置",
+        "target_hint": "位置從 1 開始，依最終上游請求本文中的使用者訊息計數，包括沒有可編輯文字的使用者訊息。請選擇所有訊息，或輸入以逗號分隔的位置。",
+        "from": "來源文字",
+        "to": "替換文字（留空則刪除）",
+        "add_replacement": "新增替換",
+        "move_up": "上移",
+        "move_down": "下移",
+        "reset_invalid": "重設無效規則",
+        "invalid_hint": "此規則包含不支援或格式錯誤的值。請先在 YAML 中修正或重設規則，再進行編輯。"
       }
     }
   },

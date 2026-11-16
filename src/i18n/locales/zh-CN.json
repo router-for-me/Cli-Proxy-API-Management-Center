@@ -544,7 +544,6 @@
     "reset_confirm_button": "确认重置",
     "reset_not_confirmed": "未确认额度重置成功，请刷新额度后再决定是否重试。",
     "reset_cooldown_failed": "额度已重置，但代理冷却清除失败。请在原连接的认证文件页面使用“清除冷却”，不要再次消耗重置卡。",
-
     "reset_success": "已重置 \"{{name}}\" 的 Codex 额度",
     "reset_failed": "重置 \"{{name}}\" 的 Codex 额度失败：{{message}}",
     "plan_plus": "Plus",
@@ -1551,7 +1550,11 @@
         "integer_range_1_3600": "请输入 1 到 3600 之间的整数",
         "payload_invalid_number": "请输入有效数字",
         "payload_invalid_boolean": "请选择 true 或 false",
-        "payload_invalid_json": "请输入有效的 JSON"
+        "payload_invalid_json": "请输入有效的 JSON",
+        "payload_replace_invalid_target": "仅支持用户消息：target.role 必须为 user。",
+        "payload_replace_invalid_positions": "请选择所有用户消息，或提供非空的正整数位置列表，两者不能同时指定。",
+        "payload_replace_invalid_models": "请至少添加一个模型，模型名称不能为空，且条件必须有效。",
+        "payload_replace_invalid_replacements": "请至少添加一项替换。每项必须且只能包含一个字符串到字符串的映射，源文本不能为空；替换文本为空时会删除源文本。"
       },
       "common": {
         "edit": "编辑",
@@ -1559,6 +1562,22 @@
         "cancel": "取消",
         "update": "更新",
         "add": "添加"
+      },
+      "payload_replace": {
+        "title": "用户文本替换",
+        "description": "在覆盖规则之后、过滤规则之前应用。按列表顺序对现有用户文本进行字面替换。",
+        "target": "作用范围",
+        "replacements": "替换项",
+        "target_all": "所有用户消息",
+        "target_positions": "用户消息位置",
+        "target_hint": "位置从 1 开始，按最终上游请求体中的用户消息计数，包括没有可编辑文本的用户消息。请选择所有消息，或输入以逗号分隔的位置。",
+        "from": "源文本",
+        "to": "替换文本（留空则删除）",
+        "add_replacement": "添加替换",
+        "move_up": "上移",
+        "move_down": "下移",
+        "reset_invalid": "重置无效规则",
+        "invalid_hint": "此规则包含不支持或格式错误的值。请先在 YAML 中修复或重置规则，再进行编辑。"
       }
     }
   },

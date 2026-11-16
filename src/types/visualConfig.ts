@@ -90,6 +90,15 @@ export type PayloadRule = {
   params: PayloadParamEntry[];
 };
 
+export type PayloadReplaceRule = {
+  id: string;
+  models: PayloadRule['models'];
+  target: { role: string; all: boolean; positions: string };
+  replacements: { id: string; from: string; to: string }[];
+  /** Malformed source shape; clear explicitly after repairing the draft. */
+  invalid?: boolean;
+};
+
 export type PayloadFilterRule = {
   id: string;
   models: PayloadModelEntry[];
@@ -215,6 +224,7 @@ export type VisualConfigValues = {
   payloadOverrideRules: PayloadRule[];
   payloadOverrideRawRules: PayloadRule[];
   payloadFilterRules: PayloadFilterRule[];
+  payloadReplaceRules: PayloadReplaceRule[];
   streaming: StreamingConfig;
 };
 
@@ -320,6 +330,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   payloadOverrideRules: [],
   payloadOverrideRawRules: [],
   payloadFilterRules: [],
+  payloadReplaceRules: [],
   streaming: {
     keepaliveSeconds: '',
     bootstrapRetries: '',

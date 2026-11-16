@@ -1557,7 +1557,11 @@
         "integer_range_1_3600": "Enter a whole number between 1 and 3600",
         "payload_invalid_number": "Enter a valid number",
         "payload_invalid_boolean": "Choose true or false",
-        "payload_invalid_json": "Enter valid JSON"
+        "payload_invalid_json": "Enter valid JSON",
+        "payload_replace_invalid_target": "Only user messages are supported: target.role must be user.",
+        "payload_replace_invalid_positions": "Choose all user messages or a non-empty list of positive integer positions, not both.",
+        "payload_replace_invalid_models": "Add at least one model with a non-empty name and valid conditions.",
+        "payload_replace_invalid_replacements": "Add at least one replacement. Each entry must contain exactly one string-to-string mapping with a non-empty source; an empty replacement deletes the source text."
       },
       "common": {
         "edit": "Edit",
@@ -1565,6 +1569,22 @@
         "cancel": "Cancel",
         "update": "Update",
         "add": "Add"
+      },
+      "payload_replace": {
+        "title": "User text replacements",
+        "description": "Applied after overrides and before filters. Literal replacements run in listed order on existing user text.",
+        "target": "Scope",
+        "replacements": "Replacements",
+        "target_all": "All user messages",
+        "target_positions": "User message positions",
+        "target_hint": "One-based positions in the final upstream body, including user messages without editable text. Choose all messages or comma-separated positions.",
+        "from": "Source text",
+        "to": "Replacement text (empty deletes)",
+        "add_replacement": "Add replacement",
+        "move_up": "Move up",
+        "move_down": "Move down",
+        "reset_invalid": "Reset invalid rule",
+        "invalid_hint": "This rule contains unsupported or malformed values. Fix it in YAML or reset it before editing."
       }
     }
   },
