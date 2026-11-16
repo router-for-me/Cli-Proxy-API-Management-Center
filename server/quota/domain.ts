@@ -115,11 +115,16 @@ function currentSample(
 const SAME_CYCLE_MS = 60_000;
 
 /**
- * A recorded balance for history only. A fresh sample wins; otherwise an account that went silent
- * (e.g. disabled for a while) is bridged from its own readings on both sides of the gap, but only
- * when they share a reset cycle and the balance did not rise: within one cycle a balance only
- * falls, so the straight line between them is bounded by real readings. Anything else (a reset or
- * refill in between, a changed cycle, an explicit missing observation) stays unknown.
+ * A recorded balance for history only. One quiet account (e.g. disabled for a while) never blanks
+ * the pool: its share comes from its own readings. A fresh sample wins. Otherwise, from its last
+ * reading before the silence:
+ * - same reset cycle on both sides and no rise: the straight line between the two readings;
+ * - its cycle has not reset yet: that last reading, held (a reset used in between shows at the
+ *   next reading, not before);
+ * - its cycle reset during the silence: 100%, the window the reset restored.
+ * These are estimates bounded by real readings; usage between readings that the account never
+ * reported can still be missed. Only a gap the account later reports after is filled; an explicit
+ * missing observation, no reading yet, or the stretch after its last reading stays unknown.
  */
 function recordedPercent(samples: QuotaSample[], atMs: number): number | null {
   const current = currentSample(samples, atMs);
@@ -127,13 +132,20 @@ function recordedPercent(samples: QuotaSample[], atMs: number): number | null {
   const index = latestIndex(samples, atMs);
   const before = samples[index];
   const after = samples[index + 1];
-  if (!before || !after) return null;
-  if (before.remainingPercent === null || after.remainingPercent === null) return null;
-  if (before.resetAtMs === null || after.resetAtMs === null) return null;
-  if (Math.abs(before.resetAtMs - after.resetAtMs) > SAME_CYCLE_MS) return null;
-  if (before.resetAtMs <= atMs || after.remainingPercent > before.remainingPercent) return null;
-  const share = (atMs - before.observedAtMs) / (after.observedAtMs - before.observedAtMs);
-  return before.remainingPercent + (after.remainingPercent - before.remainingPercent) * share;
+  // Only a gap the account later reports after is filled; past its last reading it stays unknown.
+  if (!before || !after || before.remainingPercent === null) return null;
+  if (before.resetAtMs !== null && before.resetAtMs <= atMs) return 100;
+  if (
+    after.remainingPercent !== null &&
+    before.resetAtMs !== null &&
+    after.resetAtMs !== null &&
+    Math.abs(before.resetAtMs - after.resetAtMs) <= SAME_CYCLE_MS &&
+    after.remainingPercent <= before.remainingPercent
+  ) {
+    const share = (atMs - before.observedAtMs) / (after.observedAtMs - before.observedAtMs);
+    return before.remainingPercent + (after.remainingPercent - before.remainingPercent) * share;
+  }
+  return before.remainingPercent;
 }
 
 interface ForecastInput {

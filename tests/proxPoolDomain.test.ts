@@ -278,31 +278,47 @@ describe('dashboard evidence and privacy', () => {
     expect(recorded.map((p) => p.remainingPoints)).toEqual([null, null, 50]);
   });
   describe('an account silent while others report (e.g. disabled for a while)', () => {
+    // One quiet account never blanks the pool: its own readings fill its share of the total.
     const minutes = 60_000;
     const steady = Array.from({ length: 25 }, (_, i) => sample(now - 2 * HOUR_MS + i * 5 * minutes, 50));
     const at = (recorded: { atMs: number; remainingPoints: number | null }[], t: number) =>
       recorded.find((p) => p.atMs === t)?.remainingPoints;
-    const run = (before: number, after: number, afterPatch: Partial<QuotaSample> = {}) =>
+    const run = (
+      before: number,
+      after: number,
+      afterPatch: Partial<QuotaSample> = {},
+      beforePatch: Partial<QuotaSample> = {}
+    ) =>
       dashboard(
         [account('a'), account('b')],
         [
           ...steady,
-          sample(now - 2 * HOUR_MS, before, { accountId: 'b' }),
+          sample(now - 2 * HOUR_MS, before, { accountId: 'b', ...beforePatch }),
           sample(now, after, { accountId: 'b', ...afterPatch }),
         ]
       ).pools[0].recorded;
-    test('is bridged from its own readings when both sides share a reset cycle', () => {
-      // b read 90, went silent, then read 80 in the same cycle: halfway it held 85, never unknown.
+    test('is a straight line between its own readings when both sides share a reset cycle', () => {
+      // b read 90, went silent, then read 80 in the same cycle: halfway it held 85.
       expect(at(run(90, 80), now - HOUR_MS)).toBe(50 + 85);
     });
-    test('stays unknown when its balance rose across the gap (a reset or refill)', () => {
-      expect(at(run(80, 95), now - HOUR_MS)).toBeNull();
+    test('holds its last reading when its balance rose across the gap (a reset was used)', () => {
+      expect(at(run(80, 95), now - HOUR_MS)).toBe(50 + 80);
     });
-    test('stays unknown when the reset time changed across the gap', () => {
-      expect(at(run(90, 80, { resetAtMs: now + 200 * HOUR_MS }), now - HOUR_MS)).toBeNull();
+    test('holds its last reading while its cycle has not reset, even if the next one is in a new cycle', () => {
+      expect(at(run(90, 80, { resetAtMs: now + 200 * HOUR_MS }), now - HOUR_MS)).toBe(50 + 90);
     });
-    test('stays unknown after an explicit missing observation', () => {
-      expect(at(run(90, 0, { remainingPercent: null }), now - HOUR_MS)).toBeNull();
+    test('counts a window that reset during the silence as refilled', () => {
+      // b's cycle ended at now - 90 min with no reading since: the reset restored it to 100%.
+      expect(
+        at(run(10, 95, { resetAtMs: now + 100 * HOUR_MS }, { resetAtMs: now - 90 * minutes }), now - HOUR_MS)
+      ).toBe(50 + 100);
+    });
+    test('an explicit missing observation is still unknown', () => {
+      expect(at(run(90, 0, {}, { remainingPercent: null }), now - HOUR_MS)).toBeNull();
+    });
+    test('current balances never use an estimate', () => {
+      const data = dashboard([account('a'), account('b')], [...steady, sample(now - 2 * HOUR_MS, 90, { accountId: 'b' })]);
+      expect(data.pools[0].remainingPoints).toBeNull();
     });
   });
   test('an account added later joins the history at its first sample instead of blanking it', () => {
