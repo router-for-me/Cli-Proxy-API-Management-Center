@@ -2897,6 +2897,9 @@
     "reset_time_not_reported_reason": "The provider has not reported a reset time.",
     "forecast_not_reported_reason": "Needs current readings and enough usage history.",
     "reset_held_label": "Resets held",
+    "reset_last_used_label": "Last used",
+    "reset_last_used_generic": "Reset",
+    "reset_last_not_applied": "not applied ({{outcome}})",
     "billing_active_until_basis": "Subscriptions active_until; renewal is not confirmed.",
     "billing_id_token_basis": "Credential id_token subscription expiry; renewal is not confirmed."
   },

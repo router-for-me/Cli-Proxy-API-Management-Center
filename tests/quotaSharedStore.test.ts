@@ -27,12 +27,20 @@ const restores: Array<{ mockRestore(): void }> = [];
 afterEach(() => restores.splice(0).forEach((spy) => spy.mockRestore()));
 
 /** The history server, as the browser reaches it: every POST /prox/refresh lands here. */
-function historyServer() {
+/** The quota history server: pages spend resets through it, then ask it to re-read. */
+function historyServer(options: { outcome?: string; gate?: Promise<void> } = {}) {
   const posts: { url: string; body: unknown }[] = [];
   const client = {
     post: async (url: string, body: unknown) => {
       posts.push({ url, body });
-      return { refreshed: true };
+      if (url !== '/prox/resets/claim') return { refreshed: true };
+      if (options.gate) await options.gate;
+      return {
+        outcome: options.outcome ?? 'reset',
+        replayed: false,
+        refreshed: true,
+        event: { cooldownCleared: true },
+      };
     },
   } as unknown as ApiClient;
   restores.push(spyOn(apiClient, 'captureConnection').mockReturnValue(client));
@@ -193,7 +201,16 @@ describe('a confirmed reset attempt re-reads that account on the history server'
     );
     await flush();
     expect(answer).toMatchObject({ code: 'reset' });
+    // The page spends the grant through the server (never the provider directly), then re-reads.
     expect(posts).toEqual([
+      {
+        url: '/prox/resets/claim',
+        body: {
+          accountId: poolSourceAccountId('claude-primary', 'claude', 'auth-1'),
+          grantId: grant.id,
+          clientRequestId: expect.any(String),
+        },
+      },
       {
         url: '/prox/refresh',
         body: { accountId: poolSourceAccountId('claude-primary', 'claude', 'auth-1') },
@@ -218,19 +235,21 @@ describe('a confirmed reset attempt re-reads that account on the history server'
   });
 
   test('a Codex reset attempt posts one targeted refresh, even when it was not confirmed', async () => {
-    const posts = historyServer();
-    const sessions = hubs(['codex-primary'], (config, payload) =>
-      config.url === '/requests/api-call' &&
-      payload?.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL
-        ? { status_code: 200, body: { code: 'no_credit' } }
-        : { status_code: 200, body: {} }
-    );
+    const posts = historyServer({ outcome: 'no_credit' });
+    const sessions = hubs(['codex-primary'], () => ({ status_code: 200, body: {} }));
     const session = sessions.captureSource('codex-primary');
     const adapters = createQuotaAdapters(session, sourceQuotaStore(session.owner));
     const file = { name: 'work.json', type: 'codex', auth_index: 'codex-1' };
     await adapters.codex.resetQuota!(file, t).catch(() => {});
     await flush();
     expect(posts).toEqual([
+      {
+        url: '/prox/resets/claim',
+        body: {
+          accountId: poolSourceAccountId('codex-primary', 'codex', 'codex-1'),
+          clientRequestId: expect.any(String),
+        },
+      },
       {
         url: '/prox/refresh',
         body: { accountId: poolSourceAccountId('codex-primary', 'codex', 'codex-1') },
@@ -250,7 +269,8 @@ describe('a confirmed reset attempt re-reads that account on the history server'
       );
     await Promise.all([run(first), run(second)]);
     await flush();
-    expect(posts).toHaveLength(2);
+    // Each session sends its own claim and its own refresh.
+    expect(posts.filter((post) => post.url === '/prox/refresh')).toHaveLength(2);
   });
 
   test('Quota Management reloads its pool once the account was re-read', async () => {
@@ -283,13 +303,10 @@ describe('a confirmed reset attempt re-reads that account on the history server'
     stop();
   });
   test('the refresh goes to the history server the reset was made against', async () => {
-    const first = historyServer();
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
-    const slowHub = hubs(['claude-primary'], async (config, payload) => {
-      if (payload?.url?.endsWith('/reset_rate_limits')) await gate;
-      return claudeHub(config, payload);
-    });
+    const first = historyServer({ gate });
+    const slowHub = hubs(['claude-primary'], claudeHub);
     const running = createSourceResetGrants(slowHub.captureSource('claude-primary')).operations.run(
       'work.json',
       'auth-1',
@@ -302,7 +319,7 @@ describe('a confirmed reset attempt re-reads that account on the history server'
     release();
     await running;
     await flush();
-    expect(first).toHaveLength(1);
+    expect(first.map((post) => post.url)).toEqual(['/prox/resets/claim', '/prox/refresh']);
     expect(second).toEqual([]);
   });
 });

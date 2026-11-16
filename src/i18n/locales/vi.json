@@ -2903,6 +2903,9 @@
     "reset_time_not_reported_reason": "Nhà cung cấp chưa báo cáo thời gian đặt lại.",
     "forecast_not_reported_reason": "Cần dữ liệu hiện tại và đủ lịch sử sử dụng.",
     "reset_held_label": "Lượt đặt lại đang có",
+    "reset_last_used_label": "Lần dùng gần nhất",
+    "reset_last_used_generic": "Đặt lại",
+    "reset_last_not_applied": "chưa áp dụng ({{outcome}})",
     "billing_active_until_basis": "Giá trị active_until từ đăng ký; chưa xác nhận gia hạn.",
     "billing_id_token_basis": "Ngày hết hạn đăng ký từ id_token của thông tin xác thực; chưa xác nhận gia hạn."
   },

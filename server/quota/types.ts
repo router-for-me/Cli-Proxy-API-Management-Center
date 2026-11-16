@@ -68,7 +68,7 @@ export interface ResetEvent {
   outcome: string;
   requestedAtMs: number;
   settledAtMs: number | null;
-  /** Codex only: whether the hub's routing cooldown was cleared after the credit was spent. */
+  /** Whether the hub's routing cooldown was cleared after a spent reset; null when not tried. */
   cooldownCleared: boolean | null;
   before: ResetReading | null;
   after: ResetReading | null;

@@ -309,6 +309,39 @@ describe('server-owned reset claims', () => {
     expect(f.hub.calls.some((call) => call.path === '/routing/cooldown/reset')).toBe(false);
   });
 
+  test('a claim can name the account by its source-qualified id, as the browser builds it', async () => {
+    const f = fixture();
+    await f.collect();
+    const account = f.account('claude');
+    expect(account.sourceAccountId).toBeTruthy();
+    const response = await f.claim(claudeBody(account.sourceAccountId!));
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result.outcome).toBe('reset');
+    expect(result.event.accountId).toBe(account.id);
+    expect(f.posts(CLAIM)).toHaveLength(1);
+  });
+
+  test('an account stored under its legacy id is found by its source-qualified id too', async () => {
+    // Accounts collected before source attribution keep `claude:<digest>` as their stored id.
+    const legacy = {
+      id: 'claude:legacy-digest',
+      sourceAccountId: 'hub:claude:legacy-digest',
+      provider: 'claude' as const,
+      disabled: false,
+      retired: false,
+    };
+    const claims = new ResetClaims({
+      store: { listAccounts: () => [legacy] } as never,
+      collector: {} as never,
+      now: () => NOW,
+    });
+    // Found: it gets as far as checking the grant, instead of 404 Unknown account.
+    await expect(
+      claims.claim({ accountId: legacy.sourceAccountId, clientRequestId: 'r', grantId: 'bad id' })
+    ).rejects.toMatchObject({ httpStatus: 400 });
+  });
+
   test('a retry with the same request id neither claims nor records twice', async () => {
     const f = fixture();
     await f.collect();

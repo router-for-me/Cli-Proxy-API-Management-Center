@@ -8,6 +8,9 @@
 import type { ComponentType } from 'react';
 import type { PoolProviderId } from '@/domain/quotaPool/types';
 import { refreshPoolAccountAfterReset } from '@/features/quotaPool/accountSync';
+import { poolSourceAccountId } from '@/features/quotaPool/resetAccounts';
+import { normalizeAuthIndex } from '@/utils/authIndex';
+import { claimResetOnServer } from './serverResets';
 import { createQuotaPoolApi } from '@/services/api/quotaPool';
 import type { SourceSession } from '@/services/api/sourceSession';
 import type { QuotaStore as BoundQuotaStore } from '@/stores/useQuotaStore';
@@ -88,6 +91,36 @@ function withPoolRefresh(
   };
 }
 
+/**
+ * Codex's reset, spent through the quota history server: it redeems the credit with this request
+ * id, records the claim and clears the hub's routing cooldown. The card then re-reads its quota.
+ */
+function serverCodexReset(
+  session: SourceSession,
+  fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>
+) {
+  return async (file: AuthFileItem, t: TFunction) => {
+    const authIndex = normalizeAuthIndex(file.auth_index ?? file.authIndex);
+    if (!authIndex) throw new Error(t('codex_quota.missing_auth_index'));
+    // Never spend for a connection the page has already left.
+    session.assertCurrent();
+    let result;
+    try {
+      result = await claimResetOnServer(createQuotaPoolApi(), {
+        accountId: poolSourceAccountId(session.owner.instanceId, 'codex', authIndex),
+        clientRequestId: crypto.randomUUID(),
+      });
+    } catch {
+      throw new Error(t('codex_quota.reset_not_confirmed'));
+    }
+    if (result.outcome !== 'reset' && result.outcome !== 'already_redeemed')
+      throw new Error(t('codex_quota.reset_not_confirmed'));
+    // The credit is spent; direct the operator to the existing clear action if the hub kept it.
+    if (result.event.cooldownCleared === false) throw new Error(t('codex_quota.reset_cooldown_failed'));
+    return fetchQuota(file, t);
+  };
+}
+
 /** Create once per source session/store; no requests occur during construction. */
 export function createQuotaAdapters(
   session: SourceSession,
@@ -101,7 +134,13 @@ export function createQuotaAdapters(
       {
         ...config,
         ...(type === 'codex' && config.resetQuota
-          ? { resetQuota: withPoolRefresh(session, 'codex', config.resetQuota) }
+          ? {
+              resetQuota: withPoolRefresh(
+                session,
+                'codex',
+                serverCodexReset(session, config.fetchQuota)
+              ),
+            }
           : {}),
         Body: QUOTA_PRESENTATION[type as QuotaProviderType].Body,
         resetGrants,

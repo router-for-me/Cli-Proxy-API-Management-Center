@@ -30,6 +30,7 @@ import {
   type ResetKindCount,
 } from './resetAccounts';
 import { formatPoolDate } from './presentation';
+import { useLastResetEvent } from './resetEvents';
 import styles from './QuotaPoolPage.module.scss';
 
 type Props = {
@@ -175,7 +176,33 @@ function ResetFact({
       />
       {/* Its own fact, so the dates read as values instead of wrapping inside the status. */}
       {!spent && resets.available > 0 && <ResetExpiries resets={resets} />}
+      <LastResetUsed provider={provider} accountId={account.id} />
     </FactSection>
+  );
+}
+
+const APPLIED = new Set(['reset', 'already_used', 'already_redeemed']);
+
+/** The newest reset recorded for this account by the server, from any page, with its result. */
+function LastResetUsed({ provider, accountId }: { provider: Props['provider']; accountId: string }) {
+  const { t, i18n } = useTranslation();
+  const event = useLastResetEvent(provider, accountId);
+  if (!event) return null;
+  const kind = ['session', 'weekly', 'fable', 'full'].includes(event.kind)
+    ? t(`claude_reset.kind_${event.kind}`)
+    : t('quota_pool.reset_last_used_generic');
+  return (
+    <Fact
+      label={t('quota_pool.reset_last_used_label')}
+      state="known"
+      value={
+        <span data-reset-outcome={event.outcome}>
+          {kind} · {formatPoolDate(event.requestedAtMs, i18n.language)}
+          {!APPLIED.has(event.outcome) &&
+            ` · ${t('quota_pool.reset_last_not_applied', { outcome: event.outcome })}`}
+        </span>
+      }
+    />
   );
 }
 

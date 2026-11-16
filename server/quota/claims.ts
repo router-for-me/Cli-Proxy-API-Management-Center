@@ -116,7 +116,13 @@ export class ResetClaims {
   }
 
   async claim(request: ResetClaimRequest): Promise<ResetClaimResult> {
-    const account = this.store.listAccounts().find((entry) => entry.id === request.accountId);
+    // The stored id or the source-qualified one (which a browser builds from a source and an auth
+    // index) name one account, as for targeted refresh.
+    const account = this.store
+      .listAccounts()
+      .find(
+        (entry) => entry.id === request.accountId || entry.sourceAccountId === request.accountId
+      );
     if (!account || account.disabled || account.retired)
       throw new ResetClaimRefusal(404, { error: 'Unknown account' });
     if (

@@ -2897,6 +2897,9 @@
     "reset_time_not_reported_reason": "제공업체가 아직 초기화 시간을 보고하지 않았습니다.",
     "forecast_not_reported_reason": "최신 데이터와 충분한 사용 기록이 필요합니다.",
     "reset_held_label": "보유한 초기화",
+    "reset_last_used_label": "마지막 사용",
+    "reset_last_used_generic": "재설정",
+    "reset_last_not_applied": "적용되지 않음({{outcome}})",
     "billing_active_until_basis": "구독의 active_until 값이며 갱신은 확인되지 않았습니다.",
     "billing_id_token_basis": "자격 증명 id_token의 구독 만료일이며 갱신은 확인되지 않았습니다."
   },

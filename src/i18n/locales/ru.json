@@ -2904,6 +2904,9 @@
     "reset_time_not_reported_reason": "Провайдер ещё не сообщил время сброса.",
     "forecast_not_reported_reason": "Нужны актуальные данные и достаточная история использования.",
     "reset_held_label": "Сбросов в наличии",
+    "reset_last_used_label": "Последнее использование",
+    "reset_last_used_generic": "Сброс",
+    "reset_last_not_applied": "не применён ({{outcome}})",
     "billing_active_until_basis": "Поле active_until из подписки; продление не подтверждено.",
     "billing_id_token_basis": "Срок подписки из id_token учётных данных; продление не подтверждено."
   },

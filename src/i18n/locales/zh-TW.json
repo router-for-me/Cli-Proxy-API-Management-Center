@@ -2923,6 +2923,9 @@
     "reset_time_not_reported_reason": "供應商尚未回報重設時間。",
     "forecast_not_reported_reason": "需要最新讀數及足夠的用量歷史。",
     "reset_held_label": "持有的重設次數",
+    "reset_last_used_label": "上次使用",
+    "reset_last_used_generic": "重置",
+    "reset_last_not_applied": "未生效（{{outcome}}）",
     "billing_active_until_basis": "訂閱介面 active_until；續訂尚未確認。",
     "billing_id_token_basis": "憑證 id_token 訂閱到期時間；續訂尚未確認。"
   },

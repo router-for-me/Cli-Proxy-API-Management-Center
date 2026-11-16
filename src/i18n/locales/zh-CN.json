@@ -2895,6 +2895,9 @@
     "reset_time_not_reported_reason": "提供商尚未报告重置时间。",
     "forecast_not_reported_reason": "需要最新读数和足够的用量历史。",
     "reset_held_label": "持有的重置次数",
+    "reset_last_used_label": "上次使用",
+    "reset_last_used_generic": "重置",
+    "reset_last_not_applied": "未生效（{{outcome}}）",
     "billing_active_until_basis": "订阅接口 active_until；续订尚未确认。",
     "billing_id_token_basis": "凭证 id_token 订阅到期时间；续订尚未确认。"
   },

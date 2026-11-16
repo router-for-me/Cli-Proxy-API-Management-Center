@@ -80,6 +80,29 @@ const spies: Array<{ mockRestore(): void }> = [];
 afterEach(() => {
   spies.splice(0).forEach((spy) => spy.mockRestore());
 });
+/** The quota history server, through which every page spends resets. */
+function historyServer(answer: (body: Record<string, unknown>) => unknown | Promise<unknown>) {
+  const claims: Record<string, unknown>[] = [];
+  const client = {
+    post: async (url: string, body: Record<string, unknown>) => {
+      if (url !== '/prox/resets/claim') return { refreshed: true };
+      claims.push(body);
+      return answer(body);
+    },
+  };
+  spies.push(
+    spyOn(apiClient, 'captureConnection').mockReturnValue(
+      client as unknown as ReturnType<typeof apiClient.captureConnection>
+    )
+  );
+  return claims;
+}
+const spent = (outcome = 'reset') => ({
+  outcome,
+  replayed: false,
+  refreshed: true,
+  event: { cooldownCleared: true },
+});
 function forbidSingleton() {
   for (const method of ['get', 'post', 'getRaw'] as const) {
     spies.push(
@@ -205,12 +228,16 @@ function codexResponse({ path, payload }: Call) {
 test('Codex reset, cooldown, quota and subscription metadata stay on captured A while B exists', async () => {
   forbidSingleton();
   const f = fixture(codexResponse);
+  const claims = historyServer(() => spent());
   const a = createQuotaAdapters(f.capture('alpha')).codex;
   const target = { ...file, id_token: { chatgpt_account_id: 'same-account' } };
   const data = await a.resetQuota!(target, t);
+  // The server redeems and clears the cooldown; the page never does either on the hub.
+  expect(claims).toHaveLength(1);
+  expect(String(claims[0].accountId)).toStartWith('alpha:codex:');
   expect(f.calls.every((call) => call.owner === 'alpha')).toBe(true);
-  expect(f.calls[0].payload.url).toBe(CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL);
-  expect(f.calls[1].path).toBe('/routing/cooldown/reset');
+  expect(f.calls.some((call) => call.payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL)).toBe(false);
+  expect(f.calls.some((call) => call.path === '/routing/cooldown/reset')).toBe(false);
   expect(f.calls.some((call) => call.payload.url?.startsWith(CODEX_SUBSCRIPTION_URL))).toBe(true);
   const request = spyOn(apiCallApi, 'request').mockImplementation(async (payload) => {
     const raw = codexResponse({
@@ -230,11 +257,12 @@ test('Codex reset, cooldown, quota and subscription metadata stay on captured A 
   expect(data).toEqual(expected);
 });
 
-test('stale reset confirmation and stale redemption response cannot clear another source cooldown', async () => {
+test('a reset answered after the connection changed, or asked for after it, spends nothing more', async () => {
   forbidSingleton();
   const started = deferred<void>(),
     release = deferred<unknown>();
-  const f = fixture(() => {
+  const f = fixture(() => envelope({}));
+  const claims = historyServer(() => {
     started.resolve();
     return release.promise;
   });
@@ -245,10 +273,12 @@ test('stale reset confirmation and stale redemption response cannot clear anothe
   );
   await started.promise;
   f.sessions.configure([connections[1]]);
-  release.resolve(envelope({ code: 'reset' }));
+  release.resolve(spent());
+  // The page left the connection: it does not read quota for the old one.
   expect(await outcome).toBe('stale');
   await expect(a.resetQuota!(file, t)).rejects.toThrow();
-  expect(f.calls).toHaveLength(1);
+  expect(claims).toHaveLength(1);
+  expect(f.calls).toHaveLength(0);
 });
 
 test('plugin fallback list/cache and nested quota route cannot mix identical provider indices', async () => {
@@ -326,7 +356,6 @@ test('Claude grant reads, preflight and claim have owner-local journals and stal
   const organization = '11111111-2222-3333-4444-555555555555';
   const f = fixture(({ payload }) => {
     if (payload.url.endsWith('/profile')) return envelope({ organization: { uuid: organization } });
-    if (payload.method === 'POST') return envelope({ result: 'reset' });
     return envelope({
       cedar_ember: {
         eligible: true,
@@ -335,19 +364,21 @@ test('Claude grant reads, preflight and claim have owner-local journals and stal
       },
     });
   });
+  const claims = historyServer(() => spent());
   const a = createQuotaAdapters(f.capture('alpha')).claude.resetGrants!;
   const b = createQuotaAdapters(f.capture('beta')).claude.resetGrants!;
   await Promise.all([a.read('007'), b.read('007')]);
   await a.operations.run('same-key', '007', 'same-grant');
   expect(a.operations.inspect('same-key')?.code).toBe('reset');
   expect(b.operations.inspect('same-key')).toBeUndefined();
-  expect(
-    f.calls.filter((call) => call.payload.method === 'POST').map((call) => call.owner)
-  ).toEqual(['alpha']);
+  // One claim, through the server, for alpha's account; the page never posts it to the hub.
+  expect(claims.map((claim) => String(claim.accountId).split(':')[0])).toEqual(['alpha']);
+  expect(f.calls.some((call) => call.payload.method === 'POST')).toBe(false);
   f.sessions.configure([connections[1]]);
   const count = f.calls.length;
   await expect(a.operations.run('same-key', '007', 'same-grant')).rejects.toThrow();
   expect(f.calls).toHaveLength(count);
+  expect(claims).toHaveLength(1);
 });
 
 test('Devin queued work checks original source before dequeue and never dispatches the fourth job', async () => {

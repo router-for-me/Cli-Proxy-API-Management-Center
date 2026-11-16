@@ -1,11 +1,9 @@
 import { createApiCallApi } from '@/services/api/apiCall';
-import {
-  claimClaudeResetGrant,
-  readClaudeOrganization,
-  readClaudeResetGrants,
-} from '@/services/api/claudeResetGrants';
+import { readClaudeOrganization, readClaudeResetGrants } from '@/services/api/claudeResetGrants';
 import type { SourceOwner, SourceSession } from '@/services/api/sourceSession';
 import { refreshPoolAccountAfterReset } from '@/features/quotaPool/accountSync';
+import { poolSourceAccountId } from '@/features/quotaPool/resetAccounts';
+import { claimResetOnServer, claudeClaimCode } from '../serverResets';
 import { createQuotaPoolApi } from '@/services/api/quotaPool';
 import {
   createResetGrantJournal,
@@ -52,8 +50,18 @@ export function createSourceResetGrants(session: SourceSession): ResetGrantScope
       revision,
       readStatus: read,
       readOrganization: (authIndex) => readClaudeOrganization(authIndex, api),
-      claim: (authIndex, organization, grantId, requestId) =>
-        claimClaudeResetGrant(authIndex, organization, grantId, requestId, api),
+      // The server spends the grant (it reads the organization itself), records the claim and
+      // clears the hub's cooldown; the page's own organization read only pins its retries.
+      claim: async (authIndex, _organization, grantId, requestId) =>
+        claudeClaimCode(
+          (
+            await claimResetOnServer(createQuotaPoolApi(), {
+              accountId: poolSourceAccountId(session.owner.instanceId, 'claude', authIndex),
+              grantId,
+              clientRequestId: requestId,
+            })
+          ).outcome
+        ),
       now: () => Date.now(),
       requestId: () => crypto.randomUUID(),
     },
