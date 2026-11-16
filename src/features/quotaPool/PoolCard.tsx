@@ -228,13 +228,13 @@ export function PoolCard({
     estimated > 0
       ? t('quota_pool.estimated_count', { count: estimated, total: pool.accountCount })
       : pool.forecastState === 'partial' && missingAccounts.length
-      ? t('quota_pool.unavailable_count', {
-          count: missingAccounts.length,
-          total: pool.accountCount,
-        })
-      : pool.forecastState === 'stale' && staleAccounts.length
-        ? t('quota_pool.stale_count', { count: staleAccounts.length, total: pool.accountCount })
-        : t(`quota_pool.state_note.${pool.forecastState}`, { window: windowLabel });
+        ? t('quota_pool.unavailable_count', {
+            count: missingAccounts.length,
+            total: pool.accountCount,
+          })
+        : pool.forecastState === 'stale' && staleAccounts.length
+          ? t('quota_pool.stale_count', { count: staleAccounts.length, total: pool.accountCount })
+          : t(`quota_pool.state_note.${pool.forecastState}`, { window: windowLabel });
   const showAffected = () => {
     setAffectedOnly(true);
     setLowOnly(false);
@@ -454,12 +454,14 @@ export function PoolCard({
             </div>
           </div>
           <span className={styles.reorder}>
-            <PoolGraphToggle
-              minimized={minimized}
-              onToggle={() => setMinimized((value) => !value)}
-              label={`${t(`quota_pool.${pool.provider}`)}${pool.sourceLabel ? ` · ${pool.sourceLabel}` : ''}`}
-              controls={`${id}-plot`}
-            />
+            {pool.forecastState !== 'no-limit' && (
+              <PoolGraphToggle
+                minimized={minimized}
+                onToggle={() => setMinimized((value) => !value)}
+                label={`${t(`quota_pool.${pool.provider}`)}${pool.sourceLabel ? ` · ${pool.sourceLabel}` : ''}`}
+                controls={`${id}-plot`}
+              />
+            )}
             {/* A move that can't happen (first or last card) isn't drawn. */}
             {move?.up && (
               <button
@@ -491,8 +493,9 @@ export function PoolCard({
           data-rate={mode !== 'remaining'}
           data-no-limit={pool.forecastState === 'no-limit'}
         >
-          {/* Rate views read label, then number; Remaining keeps its caption beside the number. */}
-          {mode !== 'remaining' && headlineContext}
+          {/* Rate views read label, then number; Remaining keeps its caption beside the number.
+              A pool with no limit in this window has no scale to caption. */}
+          {mode !== 'remaining' && pool.forecastState !== 'no-limit' && headlineContext}
           <strong>
             {pool.forecastState === 'no-limit' ? (
               <span className={styles.unavailableValue}>
@@ -509,7 +512,7 @@ export function PoolCard({
               </>
             )}
           </strong>
-          {mode === 'remaining' && headlineContext}
+          {mode === 'remaining' && pool.forecastState !== 'no-limit' && headlineContext}
         </div>
         {/* Every view has the same two groups: "Now" holds the one measured fact the headline
             doesn't show (the burn rate, or in rate views the balance), "Forecast" the projections. */}
@@ -531,10 +534,16 @@ export function PoolCard({
                     <dt>{t('quota_pool.account_remaining', { window: windowLabel })}</dt>
                     {/* The number takes the value style; "of 300 points" the headline unit's muted style. */}
                     <dd>
-                      {number(pool.remainingPoints)}{' '}
-                      <small>
-                        {t('quota_pool.of_capacity', { capacity: number(pool.capacityPoints) })}
-                      </small>
+                      {pool.forecastState === 'no-limit' ? (
+                        t('quota_pool.no_window_limit', { window: windowLabel })
+                      ) : (
+                        <>
+                          {number(pool.remainingPoints)}{' '}
+                          <small>
+                            {t('quota_pool.of_capacity', { capacity: number(pool.capacityPoints) })}
+                          </small>
+                        </>
+                      )}
                     </dd>
                   </div>
                 )}
@@ -587,16 +596,19 @@ export function PoolCard({
           )}
         </p>
       )}
-      <PoolGraph title={t('quota_pool.history_forecast')} id={`${id}-plot`} minimized={minimized}>
-        <PoolChart
-          key={`${mode}-${dashboard.fromMs}`}
-          pool={pool}
-          dashboard={dashboard}
-          mode={mode}
-          savedData={savedData}
-          minimized={minimized}
-        />
-      </PoolGraph>
+      {/* No limit in this window means nothing to chart; the note above already says so. */}
+      {pool.forecastState !== 'no-limit' && (
+        <PoolGraph title={t('quota_pool.history_forecast')} id={`${id}-plot`} minimized={minimized}>
+          <PoolChart
+            key={`${mode}-${dashboard.fromMs}`}
+            pool={pool}
+            dashboard={dashboard}
+            mode={mode}
+            savedData={savedData}
+            minimized={minimized}
+          />
+        </PoolGraph>
+      )}
       <section ref={accountsRef} className={styles.accounts} aria-labelledby={`${id}-accounts`}>
         <h3 id={`${id}-accounts`} ref={accountsHeadingRef} tabIndex={-1}>
           <span className={styles.accountsHeading}>
