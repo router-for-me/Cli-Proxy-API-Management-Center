@@ -360,7 +360,9 @@ export class ResetClaims {
       const cleared = await managed.post('routing/cooldown/reset', {
         auth_index: managed.authIndex,
       });
-      return isRecord(cleared) && cleared.status === 'ok' && cleared.auth_index === managed.authIndex;
+      return (
+        isRecord(cleared) && cleared.status === 'ok' && cleared.auth_index === managed.authIndex
+      );
     } catch {
       return false;
     }

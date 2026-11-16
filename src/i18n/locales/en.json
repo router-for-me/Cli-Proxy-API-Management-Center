@@ -838,6 +838,7 @@
     "reset_credits_invalid_payload": "Invalid manual reset expiry response",
     "reset_confirm_message": "Use 1 manual reset to clear the Codex limits for “{{name}}”?",
     "reset_not_confirmed": "The manual reset wasn't confirmed. Refresh the quota before trying again.",
+    "reset_outcome_unknown": "The reset may have gone through, but no answer came back. Use Reset again: it confirms the same request and won't spend a second credit.",
     "reset_dialog_account": "Account",
     "reset_dialog_used": "Resets used",
     "reset_dialog_used_of": "1 of {{held}} held",
@@ -2900,6 +2901,7 @@
     "reset_last_used_label": "Last used",
     "reset_last_used_generic": "Reset",
     "reset_last_not_applied": "not applied ({{outcome}})",
+    "reset_last_unknown": "Result unknown",
     "billing_active_until_basis": "Subscriptions active_until; renewal is not confirmed.",
     "billing_id_token_basis": "Credential id_token subscription expiry; renewal is not confirmed."
   },

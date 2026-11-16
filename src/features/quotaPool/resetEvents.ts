@@ -1,37 +1,34 @@
 /**
- * The resets recorded by the quota history server (`GET /v1/resets/events`), newest first. One
- * request per provider serves every account row; a targeted re-read after a reset (any page)
- * drops the cache so the next render shows the new event.
+ * The resets recorded by the quota history server (`GET /v1/resets/events`), newest first. Rows
+ * that mount together share one in-flight request per provider; nothing is kept after it settles,
+ * so a later page or another connection always reads its own. (A request captured on a connection
+ * the user has left is refused by its client.) A targeted re-read after a reset (any page) makes
+ * mounted rows read again.
  */
 import { useEffect, useState } from 'react';
 import type { PoolProviderId } from '@/domain/quotaPool/types';
 import { createQuotaPoolApi, type ResetEventView } from '@/services/api/quotaPool';
 import { onPoolAccountRefreshed } from './accountSync';
 
-const CACHE_MS = 30_000;
-const cache = new Map<PoolProviderId, { atMs: number; events: Promise<ResetEventView[]> }>();
+const inFlight = new Map<string, Promise<ResetEventView[]>>();
 const listeners = new Set<() => void>();
 
-onPoolAccountRefreshed(() => {
-  cache.clear();
-  listeners.forEach((listener) => listener());
-});
+onPoolAccountRefreshed(() => listeners.forEach((listener) => listener()));
 
 export function loadResetEvents(
   provider: PoolProviderId,
   api: Pick<ReturnType<typeof createQuotaPoolApi>, 'resetEvents'> = createQuotaPoolApi()
 ): Promise<ResetEventView[]> {
-  const held = cache.get(provider);
-  if (held && Date.now() - held.atMs < CACHE_MS) return held.events;
+  const key = provider;
+  const pending = inFlight.get(key);
+  if (pending) return pending;
   const events = api
     .resetEvents(provider, new AbortController().signal)
     .then((body) => body.events)
     // History is a convenience on this page: a failed read shows nothing, never an error.
-    .catch(() => {
-      cache.delete(provider);
-      return [];
-    });
-  cache.set(provider, { atMs: Date.now(), events });
+    .catch(() => [])
+    .finally(() => inFlight.delete(key));
+  inFlight.set(key, events);
   return events;
 }
 

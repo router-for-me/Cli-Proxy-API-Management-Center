@@ -236,7 +236,9 @@ test('Codex reset, cooldown, quota and subscription metadata stay on captured A 
   expect(claims).toHaveLength(1);
   expect(String(claims[0].accountId)).toStartWith('alpha:codex:');
   expect(f.calls.every((call) => call.owner === 'alpha')).toBe(true);
-  expect(f.calls.some((call) => call.payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL)).toBe(false);
+  expect(
+    f.calls.some((call) => call.payload.url === CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL)
+  ).toBe(false);
   expect(f.calls.some((call) => call.path === '/routing/cooldown/reset')).toBe(false);
   expect(f.calls.some((call) => call.payload.url?.startsWith(CODEX_SUBSCRIPTION_URL))).toBe(true);
   const request = spyOn(apiCallApi, 'request').mockImplementation(async (payload) => {
@@ -379,6 +381,47 @@ test('Claude grant reads, preflight and claim have owner-local journals and stal
   await expect(a.operations.run('same-key', '007', 'same-grant')).rejects.toThrow();
   expect(f.calls).toHaveLength(count);
   expect(claims).toHaveLength(1);
+});
+
+test('a Claude claim is never sent once its connection was replaced during the preflight', async () => {
+  forbidSingleton();
+  const organization = '11111111-2222-3333-4444-555555555555';
+  let reads = 0;
+  const f = fixture(({ payload }) => {
+    if (payload.url.endsWith('/profile')) return envelope({ organization: { uuid: organization } });
+    // The user switches connection while the eligibility read is answered.
+    if (++reads === 2) f.sessions.configure([connections[1]]);
+    return envelope({
+      cedar_ember: {
+        eligible: true,
+        at_limit: true,
+        grants: [{ id: 'same-grant', resets_total: 2, resets_left: 2, usable_now: true }],
+      },
+    });
+  });
+  const claims = historyServer(() => spent());
+  const a = createQuotaAdapters(f.capture('alpha')).claude.resetGrants!;
+  await a.read('007');
+  await expect(a.operations.run('same-key', '007', 'same-grant')).rejects.toThrow();
+  expect(claims).toHaveLength(0);
+});
+
+test('a Codex claim with an unknown outcome is retried with the same request id', async () => {
+  forbidSingleton();
+  const f = fixture(codexResponse);
+  const answers: Array<() => unknown> = [
+    () => ({ ...spent('unknown') }),
+    () => spent(),
+    () => spent(),
+  ];
+  const claims = historyServer(() => answers.shift()!());
+  const a = createQuotaAdapters(f.capture('alpha')).codex;
+  await expect(a.resetQuota!(file, t)).rejects.toThrow('codex_quota.reset_outcome_unknown');
+  await a.resetQuota!(file, t);
+  await a.resetQuota!(file, t);
+  // The retry settles the same claim; once settled, the next reset is a new one.
+  expect(claims[1].clientRequestId).toBe(claims[0].clientRequestId);
+  expect(claims[2].clientRequestId).not.toBe(claims[0].clientRequestId);
 });
 
 test('Devin queued work checks original source before dequeue and never dispatches the fourth job', async () => {

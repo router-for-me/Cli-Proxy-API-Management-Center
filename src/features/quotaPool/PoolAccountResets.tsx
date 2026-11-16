@@ -182,9 +182,17 @@ function ResetFact({
 }
 
 const APPLIED = new Set(['reset', 'already_used', 'already_redeemed']);
+/** Possibly sent and not settled: it may have spent a reset, so never say it did not apply. */
+const UNSETTLED = new Set(['unknown', 'pending']);
 
 /** The newest reset recorded for this account by the server, from any page, with its result. */
-function LastResetUsed({ provider, accountId }: { provider: Props['provider']; accountId: string }) {
+function LastResetUsed({
+  provider,
+  accountId,
+}: {
+  provider: Props['provider'];
+  accountId: string;
+}) {
   const { t, i18n } = useTranslation();
   const event = useLastResetEvent(provider, accountId);
   if (!event) return null;
@@ -198,8 +206,10 @@ function LastResetUsed({ provider, accountId }: { provider: Props['provider']; a
       value={
         <span data-reset-outcome={event.outcome}>
           {kind} · {formatPoolDate(event.requestedAtMs, i18n.language)}
-          {!APPLIED.has(event.outcome) &&
-            ` · ${t('quota_pool.reset_last_not_applied', { outcome: event.outcome })}`}
+          {UNSETTLED.has(event.outcome)
+            ? ` · ${t('quota_pool.reset_last_unknown')}`
+            : !APPLIED.has(event.outcome) &&
+              ` · ${t('quota_pool.reset_last_not_applied', { outcome: event.outcome })}`}
         </span>
       }
     />

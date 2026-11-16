@@ -838,6 +838,7 @@
     "reset_credits_invalid_payload": "수동 초기화 만료 시간 응답이 올바르지 않습니다.",
     "reset_confirm_message": "수동 초기화 1회를 사용하여 “{{name}}”의 Codex 한도를 해제하시겠습니까?",
     "reset_not_confirmed": "수동 초기화가 확인되지 않았습니다. 할당량을 새로 고친 후 다시 시도하세요.",
+    "reset_outcome_unknown": "재설정이 적용되었을 수 있지만 응답을 받지 못했습니다. 다시 재설정하면 같은 요청을 확인하며 추가로 소모하지 않습니다.",
     "reset_dialog_account": "계정",
     "reset_dialog_used": "사용할 초기화",
     "reset_dialog_used_of": "보유 {{held}}개 중 1개",
@@ -2900,6 +2901,7 @@
     "reset_last_used_label": "마지막 사용",
     "reset_last_used_generic": "재설정",
     "reset_last_not_applied": "적용되지 않음({{outcome}})",
+    "reset_last_unknown": "결과 알 수 없음",
     "billing_active_until_basis": "구독의 active_until 값이며 갱신은 확인되지 않았습니다.",
     "billing_id_token_basis": "자격 증명 id_token의 구독 만료일이며 갱신은 확인되지 않았습니다."
   },

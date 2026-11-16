@@ -14,7 +14,12 @@ const failing = (error: unknown) => ({
 
 describe('pages spend resets through the history server', () => {
   test('the answer is passed through', async () => {
-    const answer = { outcome: 'reset', replayed: false, refreshed: true, event: {} as ResetEventView };
+    const answer = {
+      outcome: 'reset',
+      replayed: false,
+      refreshed: true,
+      event: {} as ResetEventView,
+    };
     expect(await claimResetOnServer({ claimReset: async () => answer }, body)).toBe(answer);
   });
 
@@ -61,6 +66,9 @@ describe('recorded resets for Quota Management', () => {
     expect(first).toEqual([event]);
     expect(second).toEqual([event]);
     expect(reads).toBe(1);
+    // Nothing is kept once it settled: a later page (or another connection) reads its own.
+    await loadResetEvents('codex', api);
+    expect(reads).toBe(2);
     const failed = await loadResetEvents('claude', {
       resetEvents: async () => {
         throw new Error('down');
