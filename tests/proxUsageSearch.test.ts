@@ -91,3 +91,27 @@ test('CPAMP shared-column search: literal substrings, SQL wildcards, filters and
   ).toBe(0);
   expect(queryAnalytics(f.db, query({ provider: 'CODEX' }), rateState()).summary.calls).toBe(1);
 });
+
+test('a fallback stays under the requested model; resolved_model shows the model that served it', () => {
+  const f = (fixture = analyticsStore());
+  // Client asked for Fable 5.1, Opus 5 served it: billed as Opus 5 (normalize.ts).
+  f.insert([
+    event(1, {
+      model: 'claude-fable-5-1',
+      requestedModel: 'claude-fable-5-1',
+      billingModel: 'claude-opus-5',
+      responseModel: 'claude-opus-5',
+    }),
+  ]);
+  for (const term of ['claude-fable-5-1', 'claude-opus-5']) {
+    const response = queryAnalytics(f.db, query({ search: term }), rateState());
+    expect(response.summary.calls, term).toBe(1);
+    expect(
+      response.models.map((row) => row.key),
+      term
+    ).toEqual(['claude-fable-5-1']);
+    const item = response.requests.items[0] as unknown as Record<string, unknown>;
+    expect(item.requested_model).toBe('claude-fable-5-1');
+    expect(item.resolved_model).toBe('claude-opus-5');
+  }
+});

@@ -748,7 +748,8 @@ separate nightly chain below serializes maintenance before invoking parity.
     1024-byte cap. No other response header is read or kept.
   The other 17 document fields were already searched: `request_id`, `model`,
   `requested_model`, `analytics_model` (`model_id`, the requested model without its
-  reasoning suffix), `resolved_model` (`billing_model_id`), `method`, `path`, `client_ip`,
+  reasoning suffix), `resolved_model` (`billing_model_id`: the billed model, which for a fallback is
+  the model that served it, not the upstream model asked for), `method`, `path`, `client_ip`,
   `user_agent`, `auth_index`, `account_snapshot`, `auth_label_snapshot`, `reasoning_effort`,
   `service_tier` (`tier_id`), `executor_type` and `api_key_hash` (`api_key_id`: the same
   SHA-256 of the trimmed client key, so ProxUI stores and searches the value CPAMP's hash
