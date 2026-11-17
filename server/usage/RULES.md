@@ -106,7 +106,10 @@ unit, not part of the history server.
   suffix removed: `(none|auto|minimal|low|medium|high|xhigh|max|-1)` in any case,
   or a non-negative integer. The billing model is the model that served the request: the
   `response_model` when it names a different model than `model` (a Claude server-side fallback;
-  a dated snapshot of the same model does not count), else the upstream model, else that.
+  only `model` plus a release date, `-YYYYMMDD` or `-YYYY-MM-DD`, is the same model), else the
+  upstream model, else that. With a custom alias that has no price, a served model without a
+  price leaves the request unpriced (the unpriced-model alert says so): the upstream model is not
+  kept as a further pricing candidate.
 - The pricing tier: an explicit effective tier replaces the requested tier; then
   for Codex (recognized from executor, provider or auth type) the request wins
   over the response, and for every other provider the response wins.

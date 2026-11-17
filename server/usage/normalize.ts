@@ -65,6 +65,14 @@ const REASONING_SUFFIXES = new Set([
 const MAX_INT64 = BigInt('9223372036854775807');
 
 /** Drop a trailing reasoning suffix such as "(high)" or "(8192)"; any other suffix stays. */
+/** True when `candidate` is `model` plus a release date: `-YYYYMMDD` or `-YYYY-MM-DD`. */
+export function isDatedSnapshot(candidate: string, model: string): boolean {
+  return (
+    candidate.startsWith(`${model}-`) &&
+    /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/.test(candidate.slice(model.length + 1))
+  );
+}
+
 export function analyticsModel(model: string): string {
   const open = model.lastIndexOf('(');
   if (open <= 0 || !model.endsWith(')')) return model;
@@ -673,14 +681,15 @@ export function normalizeUsagePayload(
   const requestedModel = text(record.alias) || resolvedModel || '-';
   const model = analyticsModel(requestedModel);
   // A different model in response_model is the one that served the request (a Claude server-side
-  // fallback, which `model` does not follow): bill as it. A dated snapshot of the same model
-  // ("claude-x-4-20260401" for "claude-x-4") is not a different model.
+  // fallback, which `model` does not follow): bill as it. Only a date-stamped snapshot of the same
+  // model ("claude-x-4-20260401", "gpt-x-2026-04-01") is the same model; "claude-opus-5-5" is not
+  // "claude-opus-5".
   const respondedModel = text(record.response_model);
   const servedModel =
     resolvedModel &&
     respondedModel &&
     respondedModel !== resolvedModel &&
-    !respondedModel.startsWith(`${resolvedModel}-`)
+    !isDatedSnapshot(respondedModel, resolvedModel)
       ? respondedModel
       : '';
 

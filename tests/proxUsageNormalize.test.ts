@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { normalizeUsagePayload } from '../server/usage/normalize';
+import { resolveModelPrice } from '../server/usage/pricing';
 import { RECORD_KIND, USAGE_FLAG, type NormalizedEvent } from '../server/usage/types';
 import { FAIL_BODY, SECRET, usagePayload } from './fixtures/usagePayloads';
 
@@ -153,6 +154,38 @@ describe('usage payload normalization: models', () => {
     // A dated snapshot of the same model is not a different model: billing keeps the model.
     expect(event().billingModel).toBe('claude-test-4');
     expect(event({ response_model: 'claude-test-4' }).billingModel).toBe('claude-test-4');
+    expect(
+      event({
+        alias: 'gpt-6.2-sol',
+        model: 'gpt-6.2-sol',
+        response_model: 'gpt-6.2-sol-2026-11-01',
+      }).billingModel
+    ).toBe('gpt-6.2-sol');
+    expect(event({ response_model: undefined }).billingModel).toBe('claude-test-4');
+  });
+
+  test.each([
+    ['claude-opus-5', 'claude-opus-5-5'],
+    ['claude-opus-5-5', 'claude-opus-5'],
+    ['gpt-6.2', 'gpt-6.2-sol'],
+  ])(
+    '%s served by %s is billed as the served model (a longer id is not a snapshot)',
+    (asked, served) => {
+      expect(event({ alias: asked, model: asked, response_model: served }).billingModel).toBe(
+        served
+      );
+    }
+  );
+
+  test('with an unpriced custom alias, an unpriced served model leaves the request unpriced', () => {
+    // Pinned on purpose (RULES.md): the upstream model is no longer a pricing candidate once a
+    // different served model is billed, and the unpriced-model alert reports it.
+    const e = event({ alias: 'my-alias', model: 'claude-test-4', response_model: 'claude-new-9' });
+    const book = { models: { 'claude-test-4': {} } } as unknown as Parameters<
+      typeof resolveModelPrice
+    >[1];
+    expect(e.billingModel).toBe('claude-new-9');
+    expect(resolveModelPrice([e.billingModel, e.model, e.requestedModel], book)).toBeNull();
   });
 });
 
