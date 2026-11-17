@@ -104,7 +104,12 @@ unit, not part of the history server.
   add up. Anything else falls back to the raw counters.
 - The model is the alias, else the upstream model, with a trailing reasoning
   suffix removed: `(none|auto|minimal|low|medium|high|xhigh|max|-1)` in any case,
-  or a non-negative integer. The billing model is the upstream model, else that.
+  or a non-negative integer. The billing model is the model that served the request: the
+  `response_model` when it names a different model than `model` (a Claude server-side fallback;
+  only `model` plus a release date, `-YYYYMMDD` or `-YYYY-MM-DD`, is the same model), else the
+  upstream model, else that. With a custom alias that has no price, a served model without a
+  price leaves the request unpriced (the unpriced-model alert says so): the upstream model is not
+  kept as a further pricing candidate.
 - The pricing tier: an explicit effective tier replaces the requested tier; then
   for Codex (recognized from executor, provider or auth type) the request wins
   over the response, and for every other provider the response wins.
@@ -743,7 +748,8 @@ separate nightly chain below serializes maintenance before invoking parity.
     1024-byte cap. No other response header is read or kept.
   The other 17 document fields were already searched: `request_id`, `model`,
   `requested_model`, `analytics_model` (`model_id`, the requested model without its
-  reasoning suffix), `resolved_model` (`billing_model_id`), `method`, `path`, `client_ip`,
+  reasoning suffix), `resolved_model` (`billing_model_id`: the billed model, which for a fallback is
+  the model that served it, not the upstream model asked for), `method`, `path`, `client_ip`,
   `user_agent`, `auth_index`, `account_snapshot`, `auth_label_snapshot`, `reasoning_effort`,
   `service_tier` (`tier_id`), `executor_type` and `api_key_hash` (`api_key_id`: the same
   SHA-256 of the trimmed client key, so ProxUI stores and searches the value CPAMP's hash

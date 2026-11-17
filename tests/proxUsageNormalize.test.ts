@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { normalizeUsagePayload } from '../server/usage/normalize';
+import { resolveModelPrice } from '../server/usage/pricing';
 import { RECORD_KIND, USAGE_FLAG, type NormalizedEvent } from '../server/usage/types';
 import { FAIL_BODY, SECRET, usagePayload } from './fixtures/usagePayloads';
 
@@ -137,6 +138,54 @@ describe('usage payload normalization: models', () => {
     expect(event({ alias: 'client-claude(high)', model: '' }).billingModel).toBe('client-claude');
     expect(event().responseModel).toBe('claude-test-4-20260401');
     expect(event({ response_model: undefined }).responseModel).toBeNull();
+  });
+
+  test('a fallback is billed as the model that served it; the requested model stays the model', () => {
+    // A Claude server-side fallback: the client asked for Fable 5.1, Opus 5 answered (ProxD v8.0.76
+    // records the served model in response_model; model and alias stay the requested one).
+    const fallback = event({
+      alias: 'claude-fable-5-1',
+      model: 'claude-fable-5-1',
+      response_model: 'claude-opus-5',
+    });
+    expect(fallback.model).toBe('claude-fable-5-1');
+    expect(fallback.requestedModel).toBe('claude-fable-5-1');
+    expect(fallback.billingModel).toBe('claude-opus-5');
+    // A dated snapshot of the same model is not a different model: billing keeps the model.
+    expect(event().billingModel).toBe('claude-test-4');
+    expect(event({ response_model: 'claude-test-4' }).billingModel).toBe('claude-test-4');
+    expect(
+      event({
+        alias: 'gpt-6.2-sol',
+        model: 'gpt-6.2-sol',
+        response_model: 'gpt-6.2-sol-2026-11-01',
+      }).billingModel
+    ).toBe('gpt-6.2-sol');
+    expect(event({ response_model: undefined }).billingModel).toBe('claude-test-4');
+  });
+
+  test.each([
+    ['claude-opus-5', 'claude-opus-5-5'],
+    ['claude-opus-5-5', 'claude-opus-5'],
+    ['gpt-6.2', 'gpt-6.2-sol'],
+  ])(
+    '%s served by %s is billed as the served model (a longer id is not a snapshot)',
+    (asked, served) => {
+      expect(event({ alias: asked, model: asked, response_model: served }).billingModel).toBe(
+        served
+      );
+    }
+  );
+
+  test('with an unpriced custom alias, an unpriced served model leaves the request unpriced', () => {
+    // Pinned on purpose (RULES.md): the upstream model is no longer a pricing candidate once a
+    // different served model is billed, and the unpriced-model alert reports it.
+    const e = event({ alias: 'my-alias', model: 'claude-test-4', response_model: 'claude-new-9' });
+    const book = { models: { 'claude-test-4': {} } } as unknown as Parameters<
+      typeof resolveModelPrice
+    >[1];
+    expect(e.billingModel).toBe('claude-new-9');
+    expect(resolveModelPrice([e.billingModel, e.model, e.requestedModel], book)).toBeNull();
   });
 });
 
