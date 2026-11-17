@@ -2563,6 +2563,7 @@
     "reason_api_key_disabled": "Pasif anahtar",
     "reason_api_key_expired": "Süresi dolmuş",
     "reason_api_key_quota_exceeded": "Limit aşımı",
-    "reason_other": "Diğer"
+    "reason_other": "Diğer",
+    "part_cache_write": "Önbelleğe yazılan"
   }
 }

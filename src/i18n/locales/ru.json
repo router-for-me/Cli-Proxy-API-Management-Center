@@ -2575,6 +2575,7 @@
     "reason_api_key_disabled": "Ключ отключён",
     "reason_api_key_expired": "Срок истёк",
     "reason_api_key_quota_exceeded": "Лимит исчерпан",
-    "reason_other": "Другое"
+    "reason_other": "Другое",
+    "part_cache_write": "Запись в кэш"
   }
 }

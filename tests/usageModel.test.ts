@@ -32,7 +32,14 @@ const payload = {
           last_rejected_at: '2026-11-17T08:39:49+03:00',
           tokens: 30,
           reset_at: '2026-11-18T00:00:00+03:00',
-          models: [model('m1', 20, { input_tokens: 15, cached_tokens: 5, output_tokens: 5 })],
+          models: [
+            model('m1', 20, {
+              input_tokens: 15,
+              cached_tokens: 5,
+              cache_write_tokens: 2,
+              output_tokens: 5,
+            }),
+          ],
         },
         week: { reset_at: '2026-11-23T00:00:00+03:00' },
         month: { reset_at: '2026-12-01T00:00:00+03:00' },
@@ -120,6 +127,8 @@ describe('usage model', () => {
       tokens: 30,
       inputTokens: 15,
       cachedTokens: 5,
+      cacheWriteTokens: 2,
+      rejected: 2,
     });
     const rows = toShareRows([
       { id: 'a', label: 'a', value: 1 },

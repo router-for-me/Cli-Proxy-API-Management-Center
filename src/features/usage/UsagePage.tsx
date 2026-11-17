@@ -340,14 +340,20 @@ export function UsagePage() {
         {
           id: 'input',
           label: t(`${PREFIX}.part_input`),
-          value: Math.max(totals.inputTokens - totals.cachedTokens, 0),
+          value: Math.max(totals.inputTokens - totals.cachedTokens - totals.cacheWriteTokens, 0),
         },
         { id: 'cached', label: t(`${PREFIX}.part_cached`), value: totals.cachedTokens },
+        {
+          id: 'cache_write',
+          label: t(`${PREFIX}.part_cache_write`),
+          value: totals.cacheWriteTokens,
+        },
         { id: 'output', label: t(`${PREFIX}.part_output`), value: totals.outputTokens },
       ]),
     [totals, t]
   );
-  const compositionColor = (id: string) => slotColor(id === 'input' ? 0 : id === 'cached' ? 2 : 1);
+  const compositionColor = (id: string) =>
+    slotColor({ input: 0, cached: 2, cache_write: 3 }[id] ?? 1);
 
   const trendSeries: SeriesInfo[] = useMemo(() => {
     const present = new Set<string>();

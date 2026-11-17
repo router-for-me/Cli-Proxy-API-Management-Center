@@ -2552,6 +2552,7 @@
     "reason_api_key_disabled": "密钥已停用",
     "reason_api_key_expired": "密钥已过期",
     "reason_api_key_quota_exceeded": "超出限额",
-    "reason_other": "其他"
+    "reason_other": "其他",
+    "part_cache_write": "缓存写入"
   }
 }

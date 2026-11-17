@@ -135,6 +135,7 @@ describe('api key policies', () => {
         inputTokens: 9,
         outputTokens: 3,
         cachedTokens: 0,
+        cacheWriteTokens: 0,
         reasoningTokens: 0,
         tokens: 12,
         cost: 0,

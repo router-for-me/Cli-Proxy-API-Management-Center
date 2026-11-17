@@ -12,7 +12,10 @@ export interface ApiKeyModelUsage {
   failed: number;
   inputTokens: number;
   outputTokens: number;
+  /** Part of `inputTokens` read from the prompt cache (input includes cache for every provider). */
   cachedTokens: number;
+  /** Part of `inputTokens` written to the prompt cache. */
+  cacheWriteTokens: number;
   reasoningTokens: number;
   tokens: number;
   cost: number;
@@ -73,6 +76,7 @@ const normalizeModels = (value: unknown): ApiKeyModelUsage[] =>
         inputTokens: toNumber(raw.input_tokens),
         outputTokens: toNumber(raw.output_tokens),
         cachedTokens: toNumber(raw.cached_tokens),
+        cacheWriteTokens: toNumber(raw.cache_write_tokens),
         reasoningTokens: toNumber(raw.reasoning_tokens),
         tokens: toNumber(raw.tokens),
         cost: toNumber(raw.cost),
@@ -149,6 +153,7 @@ export function aggregateModelUsage(
       acc.inputTokens += row.inputTokens;
       acc.outputTokens += row.outputTokens;
       acc.cachedTokens += row.cachedTokens;
+      acc.cacheWriteTokens += row.cacheWriteTokens;
       acc.reasoningTokens += row.reasoningTokens;
       acc.tokens += row.tokens;
       acc.cost += row.cost;

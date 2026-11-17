@@ -2580,6 +2580,7 @@
     "reason_api_key_disabled": "金鑰已停用",
     "reason_api_key_expired": "金鑰已過期",
     "reason_api_key_quota_exceeded": "超出限額",
-    "reason_other": "其他"
+    "reason_other": "其他",
+    "part_cache_write": "快取寫入"
   }
 }

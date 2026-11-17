@@ -2569,6 +2569,7 @@
     "reason_api_key_disabled": "Key đã tắt",
     "reason_api_key_expired": "Key hết hạn",
     "reason_api_key_quota_exceeded": "Vượt giới hạn",
-    "reason_other": "Khác"
+    "reason_other": "Khác",
+    "part_cache_write": "Ghi vào bộ nhớ đệm"
   }
 }

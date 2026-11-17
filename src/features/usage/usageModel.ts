@@ -48,6 +48,7 @@ export interface UsageTotals {
   tokens: number;
   inputTokens: number;
   cachedTokens: number;
+  cacheWriteTokens: number;
   outputTokens: number;
   reasoningTokens: number;
   cost: number;
@@ -265,6 +266,7 @@ export function sumTotals(entries: ApiKeyPolicyUsage[], window: ApiKeyStatsWindo
     tokens: 0,
     inputTokens: 0,
     cachedTokens: 0,
+    cacheWriteTokens: 0,
     outputTokens: 0,
     reasoningTokens: 0,
     cost: 0,
@@ -280,6 +282,7 @@ export function sumTotals(entries: ApiKeyPolicyUsage[], window: ApiKeyStatsWindo
     for (const row of usage.models) {
       totals.inputTokens += row.inputTokens;
       totals.cachedTokens += row.cachedTokens;
+      totals.cacheWriteTokens += row.cacheWriteTokens;
       totals.outputTokens += row.outputTokens;
       totals.reasoningTokens += row.reasoningTokens;
     }

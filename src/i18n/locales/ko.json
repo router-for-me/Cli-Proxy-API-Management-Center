@@ -2563,6 +2563,7 @@
     "reason_api_key_disabled": "비활성 키",
     "reason_api_key_expired": "만료된 키",
     "reason_api_key_quota_exceeded": "한도 초과",
-    "reason_other": "기타"
+    "reason_other": "기타",
+    "part_cache_write": "캐시 쓰기"
   }
 }
