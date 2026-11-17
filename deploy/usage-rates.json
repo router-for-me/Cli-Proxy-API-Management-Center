@@ -635,6 +635,82 @@
           ]
         }
       ]
+    },
+    "gpt-6.2-sol": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 2.5,
+      "source": "D5: developers.openai.com/api/docs/pricing (2026-11-17); Ultrafast is the 3x promo through 2027-02-28, 6x from 2027-03-01",
+      "updated_at_ms": 1794942035701,
+      "context_tiers": [
+        {
+          "input": 4,
+          "output": 15,
+          "cache_read": 0.2,
+          "cache_write": 5,
+          "above_input_tokens": 272000
+        }
+      ],
+      "service_tiers": [
+        {
+          "input": 4,
+          "output": 20,
+          "cache_read": 0.2,
+          "cache_write": 5.0,
+          "names": [
+            "fast",
+            "priority"
+          ]
+        },
+        {
+          "input": 6,
+          "output": 30,
+          "cache_read": 0.3,
+          "cache_write": 7.5,
+          "names": [
+            "ultrafast"
+          ]
+        }
+      ]
+    },
+    "gpt-6.2-astra": {
+      "input": 8,
+      "output": 40,
+      "cache_read": 0.4,
+      "cache_write": 10,
+      "source": "D5: developers.openai.com/api/docs/pricing (2026-11-17); Ultrafast is the 3x promo through 2027-02-28, 6x from 2027-03-01",
+      "updated_at_ms": 1794942035701,
+      "context_tiers": [
+        {
+          "input": 16,
+          "output": 60,
+          "cache_read": 0.8,
+          "cache_write": 20,
+          "above_input_tokens": 272000
+        }
+      ],
+      "service_tiers": [
+        {
+          "input": 16,
+          "output": 80,
+          "cache_read": 0.8,
+          "cache_write": 20,
+          "names": [
+            "fast",
+            "priority"
+          ]
+        },
+        {
+          "input": 24,
+          "output": 120,
+          "cache_read": 1.2,
+          "cache_write": 30,
+          "names": [
+            "ultrafast"
+          ]
+        }
+      ]
     }
   }
 }
