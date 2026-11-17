@@ -2555,6 +2555,14 @@
     "details": "상세",
     "chart_empty": "이 기간에는 아직 사용 내역이 없습니다.",
     "tooltip_total": "합계",
-    "footnote": "서버 현지 시간 기준이며 주는 월요일에 시작합니다. 비용은 업스트림 보고 값, 없으면 access.model-prices 를 사용합니다. 시간별 기록은 48시간, 일별 기록은 90일 보관됩니다."
+    "footnote": "서버 현지 시간 기준이며 주는 월요일에 시작합니다. 비용은 업스트림 보고 값, 없으면 access.model-prices 를 사용합니다. 시간별 기록은 48시간, 일별 기록은 90일 보관됩니다.",
+    "disabled": "비활성",
+    "kpi_rejected": "키 정책으로 거부된 요청 {{count}}건",
+    "rejected_title": "거부된 요청 {{count}}건",
+    "rejected_last": "최근: {{time}}",
+    "reason_api_key_disabled": "비활성 키",
+    "reason_api_key_expired": "만료된 키",
+    "reason_api_key_quota_exceeded": "한도 초과",
+    "reason_other": "기타"
   }
 }

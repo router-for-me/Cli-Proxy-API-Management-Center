@@ -2572,6 +2572,14 @@
     "details": "詳細",
     "chart_empty": "此期間尚無用量。",
     "tooltip_total": "合計",
-    "footnote": "依伺服器本地時間計算，每週從週一開始。費用優先使用上游回報值，否則依 access.model-prices 估算。每小時記錄保留 48 小時，每日記錄保留 90 天。"
+    "footnote": "依伺服器本地時間計算，每週從週一開始。費用優先使用上游回報值，否則依 access.model-prices 估算。每小時記錄保留 48 小時，每日記錄保留 90 天。",
+    "disabled": "已停用",
+    "kpi_rejected": "{{count}} 次請求被金鑰政策拒絕",
+    "rejected_title": "已拒絕 {{count}} 次請求",
+    "rejected_last": "最近：{{time}}",
+    "reason_api_key_disabled": "金鑰已停用",
+    "reason_api_key_expired": "金鑰已過期",
+    "reason_api_key_quota_exceeded": "超出限額",
+    "reason_other": "其他"
   }
 }

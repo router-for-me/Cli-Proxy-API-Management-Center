@@ -2555,6 +2555,14 @@
     "details": "Detaylar",
     "chart_empty": "Bu dönemde henüz kullanım yok.",
     "tooltip_total": "toplam",
-    "footnote": "Sunucunun yerel saati esas alınır; haftalar pazartesi başlar. Maliyet upstream'in bildirdiği değerden, yoksa access.model-prices ayarından gelir. Saatlik geçmiş 48 saat, günlük geçmiş 90 gün tutulur."
+    "footnote": "Sunucunun yerel saati esas alınır; haftalar pazartesi başlar. Maliyet upstream'in bildirdiği değerden, yoksa access.model-prices ayarından gelir. Saatlik geçmiş 48 saat, günlük geçmiş 90 gün tutulur.",
+    "disabled": "Pasif",
+    "kpi_rejected": "{{count}} istek anahtar politikasıyla reddedildi",
+    "rejected_title": "{{count}} reddedilen istek",
+    "rejected_last": "son: {{time}}",
+    "reason_api_key_disabled": "Pasif anahtar",
+    "reason_api_key_expired": "Süresi dolmuş",
+    "reason_api_key_quota_exceeded": "Limit aşımı",
+    "reason_other": "Diğer"
   }
 }

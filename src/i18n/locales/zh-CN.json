@@ -2544,6 +2544,14 @@
     "details": "详情",
     "chart_empty": "该周期内暂无用量。",
     "tooltip_total": "合计",
-    "footnote": "按服务器本地时间计算，每周从周一开始。费用优先使用上游返回值，否则按 access.model-prices 估算。小时记录保留 48 小时，日记录保留 90 天。"
+    "footnote": "按服务器本地时间计算，每周从周一开始。费用优先使用上游返回值，否则按 access.model-prices 估算。小时记录保留 48 小时，日记录保留 90 天。",
+    "disabled": "已停用",
+    "kpi_rejected": "{{count}} 次请求被密钥策略拒绝",
+    "rejected_title": "已拒绝 {{count}} 次请求",
+    "rejected_last": "最近：{{time}}",
+    "reason_api_key_disabled": "密钥已停用",
+    "reason_api_key_expired": "密钥已过期",
+    "reason_api_key_quota_exceeded": "超出限额",
+    "reason_other": "其他"
   }
 }

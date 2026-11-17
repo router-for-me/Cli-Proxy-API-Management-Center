@@ -2555,6 +2555,14 @@
     "details": "Details",
     "chart_empty": "No usage in this period yet.",
     "tooltip_total": "total",
-    "footnote": "Server local time; weeks start on Monday. Cost uses the upstream-reported cost, else access.model-prices. Hourly history covers 48 hours, daily history 90 days."
+    "footnote": "Server local time; weeks start on Monday. Cost uses the upstream-reported cost, else access.model-prices. Hourly history covers 48 hours, daily history 90 days.",
+    "disabled": "Disabled",
+    "kpi_rejected": "{{count}} requests refused by key policy",
+    "rejected_title": "{{count}} refused requests",
+    "rejected_last": "last: {{time}}",
+    "reason_api_key_disabled": "Disabled key",
+    "reason_api_key_expired": "Expired key",
+    "reason_api_key_quota_exceeded": "Limit reached",
+    "reason_other": "Other"
   }
 }

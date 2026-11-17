@@ -22,10 +22,14 @@ const payload = {
     {
       key: 'sk-a',
       name: 'Team A',
+      disabled: true,
       usage: {
         day: {
           requests: 3,
           failed: 1,
+          rejected: 2,
+          rejected_reasons: { api_key_disabled: 2, bogus: 0 },
+          last_rejected_at: '2026-11-17T08:39:49+03:00',
           tokens: 30,
           reset_at: '2026-11-18T00:00:00+03:00',
           models: [model('m1', 20, { input_tokens: 15, cached_tokens: 5, output_tokens: 5 })],
@@ -48,6 +52,15 @@ const payload = {
 
 describe('usage model', () => {
   const entries = normalizeApiKeyPolicyUsage(payload);
+
+  test('parses disabled state and rejections', () => {
+    expect(entries[0].disabled).toBe(true);
+    expect(entries[0].usage.day.rejected).toBe(2);
+    expect(entries[0].usage.day.rejectedReasons).toEqual({ api_key_disabled: 2 });
+    expect(entries[0].usage.day.lastRejectedAt).toBe('2026-11-17T08:39:49+03:00');
+    expect(entries[0].usage.week.rejected).toBe(0);
+    expect(sumTotals(entries, 'day').rejected).toBe(2);
+  });
 
   test('parses history buckets', () => {
     expect(entries[0].hourly).toHaveLength(2);

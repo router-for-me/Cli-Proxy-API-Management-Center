@@ -51,6 +51,8 @@ export interface UsageTotals {
   outputTokens: number;
   reasoningTokens: number;
   cost: number;
+  /** Requests refused by key policies; not part of `requests`. */
+  rejected: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -266,6 +268,7 @@ export function sumTotals(entries: ApiKeyPolicyUsage[], window: ApiKeyStatsWindo
     outputTokens: 0,
     reasoningTokens: 0,
     cost: 0,
+    rejected: 0,
   };
   for (const entry of entries) {
     const usage = entry.usage[window];
@@ -273,6 +276,7 @@ export function sumTotals(entries: ApiKeyPolicyUsage[], window: ApiKeyStatsWindo
     totals.failed += usage.failed;
     totals.tokens += usage.tokens;
     totals.cost += usage.cost;
+    totals.rejected += usage.rejected;
     for (const row of usage.models) {
       totals.inputTokens += row.inputTokens;
       totals.cachedTokens += row.cachedTokens;

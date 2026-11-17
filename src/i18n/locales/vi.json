@@ -2561,6 +2561,14 @@
     "details": "Chi tiết",
     "chart_empty": "Chưa có mức dùng trong khoảng này.",
     "tooltip_total": "tổng",
-    "footnote": "Theo giờ địa phương của máy chủ; tuần bắt đầu từ thứ Hai. Chi phí lấy từ upstream, nếu không có thì từ access.model-prices. Lịch sử theo giờ giữ 48 giờ, theo ngày giữ 90 ngày."
+    "footnote": "Theo giờ địa phương của máy chủ; tuần bắt đầu từ thứ Hai. Chi phí lấy từ upstream, nếu không có thì từ access.model-prices. Lịch sử theo giờ giữ 48 giờ, theo ngày giữ 90 ngày.",
+    "disabled": "Đã tắt",
+    "kpi_rejected": "{{count}} yêu cầu bị chính sách key từ chối",
+    "rejected_title": "{{count}} yêu cầu bị từ chối",
+    "rejected_last": "gần nhất: {{time}}",
+    "reason_api_key_disabled": "Key đã tắt",
+    "reason_api_key_expired": "Key hết hạn",
+    "reason_api_key_quota_exceeded": "Vượt giới hạn",
+    "reason_other": "Khác"
   }
 }

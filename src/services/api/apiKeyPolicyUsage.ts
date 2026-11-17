@@ -26,6 +26,12 @@ export interface ApiKeyWindowUsage {
   /** Empty for the total window, which never resets. */
   resetAt: string;
   models: ApiKeyModelUsage[];
+  /** Requests refused by the key policy (disabled, expired, over limit); not in `requests`. */
+  rejected: number;
+  /** Rejection count per backend reason code, e.g. `api_key_disabled`. */
+  rejectedReasons: Record<string, number>;
+  /** RFC 3339 time of the latest rejection in the window, or empty. */
+  lastRejectedAt: string;
 }
 
 /** One time slot of usage history: `YYYY-MM-DD` (daily) or `YYYY-MM-DDTHH` (hourly), server local time. */
@@ -37,6 +43,7 @@ export interface ApiKeyHistoryBucket {
 export interface ApiKeyPolicyUsage {
   key: string;
   name: string;
+  disabled: boolean;
   expired: boolean;
   usage: Record<ApiKeyStatsWindow, ApiKeyWindowUsage>;
   /** Daily buckets for the last 90 days, oldest first; empty days are omitted. */
@@ -73,6 +80,16 @@ const normalizeModels = (value: unknown): ApiKeyModelUsage[] =>
     ];
   });
 
+const normalizeReasons = (value: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (!isRecord(value)) return out;
+  for (const [reason, count] of Object.entries(value)) {
+    const n = toNumber(count);
+    if (reason && n > 0) out[reason] = n;
+  }
+  return out;
+};
+
 const normalizeHistory = (value: unknown): ApiKeyHistoryBucket[] =>
   (Array.isArray(value) ? value : []).flatMap((raw) => {
     if (!isRecord(raw) || typeof raw.time !== 'string' || !raw.time) return [];
@@ -94,6 +111,9 @@ export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[
         failed: toNumber(raw.failed),
         resetAt: typeof raw.reset_at === 'string' ? raw.reset_at : '',
         models: normalizeModels(raw.models),
+        rejected: toNumber(raw.rejected),
+        rejectedReasons: normalizeReasons(raw.rejected_reasons),
+        lastRejectedAt: typeof raw.last_rejected_at === 'string' ? raw.last_rejected_at : '',
       };
     }
     const name = typeof entry.name === 'string' ? entry.name.trim() : '';
@@ -101,6 +121,7 @@ export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[
       {
         key: entry.key,
         name,
+        disabled: entry.disabled === true,
         expired: entry.expired === true,
         usage,
         daily: normalizeHistory(entry.daily),

@@ -121,6 +121,9 @@ describe('api key policies', () => {
       failed: 0,
       resetAt: '2026-11-16T00:00:00+03:00',
       models: [],
+      rejected: 0,
+      rejectedReasons: {},
+      lastRejectedAt: '',
     });
     expect(usage[0].usage.month.tokens).toBe(0);
     expect(usage[0].usage.total.resetAt).toBe('');

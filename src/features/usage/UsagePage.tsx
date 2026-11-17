@@ -25,8 +25,9 @@ import {
   type ApiKeyModelUsage,
   type ApiKeyPolicyUsage,
   type ApiKeyStatsWindow,
+  type ApiKeyWindowUsage,
 } from '@/services/api/apiKeyPolicyUsage';
-import { formatCompactNumber, maskApiKey } from '@/utils/format';
+import { formatCompactNumber, formatDateTimeValue, maskApiKey } from '@/utils/format';
 import { Donut } from './components/Donut';
 import { SeriesLegend, TrendChart, type SeriesInfo } from './components/TrendChart';
 import {
@@ -87,6 +88,47 @@ function KpiCard({ label, value, sub, icon, tone, points, ariaLabel }: KpiCardPr
         color={`var(--kpi-${tone})`}
         ariaLabel={ariaLabel}
       />
+    </div>
+  );
+}
+
+const REJECT_REASONS = ['api_key_disabled', 'api_key_expired', 'api_key_quota_exceeded'];
+
+function KeyStatusBadge({ entry }: { entry: ApiKeyPolicyUsage }) {
+  const { t } = useTranslation();
+  if (entry.disabled) return <span className={styles.badgeBad}>{t(`${PREFIX}.disabled`)}</span>;
+  if (entry.expired) return <span className={styles.badgeBad}>{t(`${PREFIX}.expired`)}</span>;
+  return <span className={styles.badgeOk}>{t(`${PREFIX}.active`)}</span>;
+}
+
+/** Requests the key policy refused in this period, by reason, with the latest attempt. */
+function RejectedNotice({ usage }: { usage: ApiKeyWindowUsage }) {
+  const { t, i18n } = useTranslation();
+  const reasons = Object.entries(usage.rejectedReasons).sort((a, b) => b[1] - a[1]);
+  return (
+    <div className={styles.rejected} role="note">
+      <IconAlertTriangle size={16} aria-hidden="true" />
+      <div>
+        <strong>{t(`${PREFIX}.rejected_title`, { count: usage.rejected })}</strong>
+        <div className={styles.rejectedDetail}>
+          {reasons
+            .map(
+              ([reason, count]) =>
+                `${t(
+                  `${PREFIX}.reason_${REJECT_REASONS.includes(reason) ? reason : 'other'}`
+                )}: ${count}`
+            )
+            .join(' · ')}
+          {usage.lastRejectedAt && (
+            <>
+              {reasons.length > 0 ? ' · ' : ''}
+              {t(`${PREFIX}.rejected_last`, {
+                time: formatDateTimeValue(usage.lastRejectedAt, i18n.resolvedLanguage),
+              })}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -324,7 +366,12 @@ export function UsagePage() {
       { value: ALL_KEYS, label: t(`${PREFIX}.all_keys`) },
       ...entries.map((entry) => ({
         value: entry.key,
-        label: entry.name ? `${entry.name} (${maskApiKey(entry.key)})` : maskApiKey(entry.key),
+        label: [
+          entry.name ? `${entry.name} (${maskApiKey(entry.key)})` : maskApiKey(entry.key),
+          entry.disabled ? t(`${PREFIX}.disabled`) : entry.expired ? t(`${PREFIX}.expired`) : '',
+        ]
+          .filter(Boolean)
+          .join(' · '),
       })),
     ],
     [entries, t]
@@ -447,9 +494,11 @@ export function UsagePage() {
           label={t(`${PREFIX}.kpi_error_rate`)}
           value={formatPct(errorRate)}
           sub={
-            totals.failed > 0 && topErrorModel
-              ? t(`${PREFIX}.kpi_top_error`, { count: totals.failed, model: topErrorModel.model })
-              : t(`${PREFIX}.kpi_no_errors`)
+            totals.rejected > 0
+              ? t(`${PREFIX}.kpi_rejected`, { count: totals.rejected })
+              : totals.failed > 0 && topErrorModel
+                ? t(`${PREFIX}.kpi_top_error`, { count: totals.failed, model: topErrorModel.model })
+                : t(`${PREFIX}.kpi_no_errors`)
           }
           points={spark.errorRate}
           ariaLabel={t(`${PREFIX}.kpi_error_rate`)}
@@ -548,9 +597,7 @@ export function UsagePage() {
                           <code className={styles.keyMask}>{maskApiKey(entry.key)}</code>
                         </div>
                       </div>
-                      <span className={entry.expired ? styles.badgeBad : styles.badgeOk}>
-                        {entry.expired ? t(`${PREFIX}.expired`) : t(`${PREFIX}.active`)}
-                      </span>
+                      <KeyStatusBadge entry={entry} />
                     </div>
                     <dl className={styles.keyStats}>
                       <div>
@@ -572,6 +619,7 @@ export function UsagePage() {
                         </dd>
                       </div>
                     </dl>
+                    {usage.rejected > 0 && <RejectedNotice usage={usage} />}
                     {top.length > 0 ? (
                       <ul className={styles.topModels}>
                         {top.map((row) => (
