@@ -1,0 +1,132 @@
+@use '../../../styles/mixins' as *;
+
+.wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+.chart {
+  position: relative;
+  width: 168px;
+  height: 168px;
+}
+
+.track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.arc {
+  fill: none;
+  transition:
+    opacity 120ms ease,
+    stroke-width 120ms ease;
+}
+
+.dimmed {
+  opacity: 0.35;
+}
+
+.center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.centerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.centerValue {
+  margin-top: 2px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendRow {
+  @include button-reset;
+
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto 52px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+button.legendRow {
+  cursor: pointer;
+}
+
+.legendActive .legendRow,
+button.legendRow:focus-visible {
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value,
+.share {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.value {
+  color: var(--text-primary);
+}
+
+.share {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}

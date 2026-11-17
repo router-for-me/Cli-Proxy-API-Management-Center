@@ -28,11 +28,21 @@ export interface ApiKeyWindowUsage {
   models: ApiKeyModelUsage[];
 }
 
+/** One time slot of usage history: `YYYY-MM-DD` (daily) or `YYYY-MM-DDTHH` (hourly), server local time. */
+export interface ApiKeyHistoryBucket {
+  time: string;
+  models: ApiKeyModelUsage[];
+}
+
 export interface ApiKeyPolicyUsage {
   key: string;
   name: string;
   expired: boolean;
   usage: Record<ApiKeyStatsWindow, ApiKeyWindowUsage>;
+  /** Daily buckets for the last 90 days, oldest first; empty days are omitted. */
+  daily: ApiKeyHistoryBucket[];
+  /** Hourly buckets for the last 48 hours, oldest first; empty hours are omitted. */
+  hourly: ApiKeyHistoryBucket[];
 }
 
 export const API_KEY_STATS_WINDOWS: ApiKeyStatsWindow[] = ['day', 'week', 'month', 'total'];
@@ -63,6 +73,12 @@ const normalizeModels = (value: unknown): ApiKeyModelUsage[] =>
     ];
   });
 
+const normalizeHistory = (value: unknown): ApiKeyHistoryBucket[] =>
+  (Array.isArray(value) ? value : []).flatMap((raw) => {
+    if (!isRecord(raw) || typeof raw.time !== 'string' || !raw.time) return [];
+    return [{ time: raw.time, models: normalizeModels(raw.models) }];
+  });
+
 export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[] {
   const keys = isRecord(payload) && Array.isArray(payload.keys) ? payload.keys : [];
   return keys.flatMap((entry) => {
@@ -81,7 +97,16 @@ export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[
       };
     }
     const name = typeof entry.name === 'string' ? entry.name.trim() : '';
-    return [{ key: entry.key, name, expired: entry.expired === true, usage }];
+    return [
+      {
+        key: entry.key,
+        name,
+        expired: entry.expired === true,
+        usage,
+        daily: normalizeHistory(entry.daily),
+        hourly: normalizeHistory(entry.hourly),
+      },
+    ];
   });
 }
 
