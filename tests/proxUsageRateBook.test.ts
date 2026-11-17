@@ -52,3 +52,17 @@ test('gpt-6.1-terra is priced at the published rates, including long context and
   // OpenAI offers no Ultrafast tier for Terra: base price, flagged as not explicit.
   expect(million('gpt-6.1-terra', 'ultrafast').reasons).toContain('service-tier-rate-not-explicit');
 });
+
+test('gpt-6.2-sol and gpt-6.2-astra are priced at the published rates, Ultrafast at the 3x promo', () => {
+  // OpenAI: Sol $2 in, $0.10 cached, $2.50 write, $10 out; >272K input $4/$0.20/$5/$15.
+  expect(million('gpt-6.2-sol')).toMatchObject({ usd: 2 + 0.1 + 2.5 + 10, status: 'estimated' });
+  expect(million('gpt-6.2-sol', '', 272_000)).toMatchObject({ usd: 4 + 0.2 + 5 + 15 });
+  expect(million('gpt-6.2-sol', 'fast')).toMatchObject({ usd: 4 + 0.2 + 5 + 20 });
+  // Ultrafast on 6.2 is 3x Standard through 2027-02-28 (6x from 2027-03-01).
+  expect(million('gpt-6.2-sol', 'ultrafast')).toMatchObject({ usd: 6 + 0.3 + 7.5 + 30 });
+  // Astra: $8 in, $0.40 cached, $10 write, $40 out; >272K input $16/$0.80/$20/$60.
+  expect(million('gpt-6.2-astra')).toMatchObject({ usd: 8 + 0.4 + 10 + 40, status: 'estimated' });
+  expect(million('gpt-6.2-astra', '', 272_000)).toMatchObject({ usd: 16 + 0.8 + 20 + 60 });
+  expect(million('gpt-6.2-astra', 'priority')).toMatchObject({ usd: 16 + 0.8 + 20 + 80 });
+  expect(million('gpt-6.2-astra', 'ultrafast')).toMatchObject({ usd: 24 + 1.2 + 30 + 120 });
+});
