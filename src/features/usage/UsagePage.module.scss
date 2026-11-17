@@ -1,0 +1,139 @@
+@use '../../styles/mixins' as *;
+@use '../../styles/variables' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  background: var(--bg-tertiary);
+}
+
+.segment {
+  @include button-reset;
+
+  height: 28px;
+  padding: 0 14px;
+  border-radius: $radius-full;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 550;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: -1px;
+  }
+}
+
+.segmentActive {
+  color: var(--text-primary);
+  background: var(--floating-surface, var(--bg-primary));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.card {
+  min-width: 0;
+}
+
+.keyTitle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.keyMask {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.expired {
+  padding: 1px 8px;
+  border-radius: $radius-full;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--error-color);
+  border: 1px solid var(--error-color);
+}
+
+.totals {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.model {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.failed {
+  color: var(--error-color);
+}
+
+.muted {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.error {
+  padding: 10px 14px;
+  border: 1px solid var(--error-color);
+  border-radius: var(--radius-md);
+  color: var(--error-color);
+  font-size: 13px;
+}
+
+.footnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}

@@ -112,7 +112,8 @@
     "plugins": "插件",
     "config_management": "配置面板",
     "logs": "日志查看",
-    "system_info": "中心信息"
+    "system_info": "中心信息",
+    "usage": "API 密钥用量"
   },
   "nav_groups": {
     "operate": "运行",
@@ -132,7 +133,8 @@
     "plugins": "安装、更新与配置",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
-    "system_info": "运行与诊断信息"
+    "system_info": "运行与诊断信息",
+    "usage": "按密钥和模型统计"
   },
   "dashboard": {
     "hero_verdict_good": "运行平稳",
@@ -544,7 +546,6 @@
     "reset_confirm_button": "确认重置",
     "reset_not_confirmed": "未确认额度重置成功，请刷新额度后再决定是否重试。",
     "reset_cooldown_failed": "额度已重置，但代理冷却清除失败。请在原连接的认证文件页面使用“清除冷却”，不要再次消耗重置卡。",
-
     "reset_success": "已重置 \"{{name}}\" 的 Codex 额度",
     "reset_failed": "重置 \"{{name}}\" 的 Codex 额度失败：{{message}}",
     "plan_plus": "Plus",
@@ -2109,7 +2110,7 @@
       "activeCount": "{{active}}/{{total}} 活跃"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2170,8 +2171,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保线路",
-         "aiCodeMirrorDomestic": "国内优化线路",
+        "aiCodeMirrorGlobal": "全球高保线路",
+        "aiCodeMirrorDomestic": "国内优化线路",
         "standard": "普通 URL",
         "direct": "专线直连 URL",
         "domestic": "国内线路",
@@ -2180,8 +2181,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
-         "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
+        "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
+        "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
         "domestic": "面向中国大陆用户和部署在中国大陆网络环境中的业务，通常可获得更低延迟。",
         "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。",
         "mainlandChinaRecommended": "推荐中国大陆用户和部署在中国大陆网络环境中的业务使用。",
@@ -2482,5 +2483,32 @@
     "remove_pattern": "删除第 {{row}} 行正则规则",
     "move_up": "上移第 {{row}} 行正则规则",
     "move_down": "下移第 {{row}} 行正则规则"
+  },
+  "usage_page": {
+    "title": "API 密钥用量",
+    "subtitle": "按客户端 API 密钥统计请求、Token 和费用，并按模型细分。",
+    "window_label": "周期",
+    "window_day": "今天",
+    "window_week": "本周",
+    "window_month": "本月",
+    "window_total": "全部",
+    "load_failed": "无法加载用量：{{error}}",
+    "no_keys": "没有客户端 API 密钥",
+    "no_keys_hint": "在配置面板中添加 API 密钥后即可统计用量。",
+    "all_keys": "全部密钥",
+    "unnamed": "未命名密钥",
+    "expired": "已过期",
+    "no_usage": "该周期内没有用量。",
+    "col_model": "模型",
+    "col_requests": "请求",
+    "col_input": "输入",
+    "col_cached": "缓存",
+    "col_output": "输出",
+    "col_total": "总 Token",
+    "col_cost": "费用",
+    "failed_hint": "失败 {{count}} 次",
+    "total_requests": "{{count}} 次请求",
+    "total_tokens": "{{value}} Token",
+    "footnote": "周期按服务器本地时间计算，每周从周一开始。费用优先使用上游返回值，否则按 access.model-prices 估算。统计从此版本开始，之前的流量不计入。"
   }
 }

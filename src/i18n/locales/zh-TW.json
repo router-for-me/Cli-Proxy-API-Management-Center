@@ -112,7 +112,8 @@
     "plugins": "插件",
     "config_management": "設定面板",
     "logs": "記錄檢視",
-    "system_info": "中心資訊"
+    "system_info": "中心資訊",
+    "usage": "API 金鑰用量"
   },
   "nav_groups": {
     "operate": "運行",
@@ -132,7 +133,8 @@
     "plugins": "安裝、更新與設定",
     "logs": "請求追蹤與排查",
     "config_management": "閘道基礎設定",
-    "system_info": "運行與診斷資訊"
+    "system_info": "運行與診斷資訊",
+    "usage": "依金鑰與模型統計"
   },
   "dashboard": {
     "hero_verdict_good": "運行平穩",
@@ -544,7 +546,6 @@
     "reset_confirm_button": "確認重置",
     "reset_not_confirmed": "尚未確認額度重置成功，請重新整理額度後再決定是否重試。",
     "reset_cooldown_failed": "額度已重置，但代理冷卻清除失敗。請在原連線的認證檔案頁面使用「清除冷卻」，不要再次消耗重置卡。",
-
     "reset_success": "已重置「{{name}}」的 Codex 配額",
     "reset_failed": "重置「{{name}}」的 Codex 配額失敗：{{message}}",
     "plan_plus": "Plus",
@@ -2137,7 +2138,7 @@
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2198,8 +2199,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保線路",
-         "aiCodeMirrorDomestic": "國內優化線路",
+        "aiCodeMirrorGlobal": "全球高保線路",
+        "aiCodeMirrorDomestic": "國內優化線路",
         "standard": "普通 URL",
         "direct": "專線直連 URL",
         "domestic": "中國大陸線路",
@@ -2208,8 +2209,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
-         "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
+        "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
+        "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
         "domestic": "面向中國大陸使用者和部署在中國大陸網路環境中的業務，通常可獲得更低延遲。",
         "overseas": "面向海外部署、跨境存取或需要存取境外模型的業務。",
         "mainlandChinaRecommended": "推薦中國大陸使用者和部署在中國大陸網路環境中的業務使用。",
@@ -2510,5 +2511,32 @@
     "remove_pattern": "刪除第 {{row}} 列正規規則",
     "move_up": "上移第 {{row}} 列正規規則",
     "move_down": "下移第 {{row}} 列正規規則"
+  },
+  "usage_page": {
+    "title": "API 金鑰用量",
+    "subtitle": "依用戶端 API 金鑰統計請求、Token 與費用，並依模型細分。",
+    "window_label": "期間",
+    "window_day": "今天",
+    "window_week": "本週",
+    "window_month": "本月",
+    "window_total": "全部",
+    "load_failed": "無法載入用量：{{error}}",
+    "no_keys": "沒有用戶端 API 金鑰",
+    "no_keys_hint": "在設定面板新增 API 金鑰後即可統計用量。",
+    "all_keys": "全部金鑰",
+    "unnamed": "未命名金鑰",
+    "expired": "已過期",
+    "no_usage": "此期間沒有用量。",
+    "col_model": "模型",
+    "col_requests": "請求",
+    "col_input": "輸入",
+    "col_cached": "快取",
+    "col_output": "輸出",
+    "col_total": "總 Token",
+    "col_cost": "費用",
+    "failed_hint": "失敗 {{count}} 次",
+    "total_requests": "{{count}} 次請求",
+    "total_tokens": "{{value}} Token",
+    "footnote": "期間依伺服器本地時間計算，每週從週一開始。費用優先使用上游回報值，否則依 access.model-prices 估算。統計從此版本開始，先前的流量不計入。"
   }
 }

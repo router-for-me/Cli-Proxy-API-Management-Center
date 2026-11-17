@@ -10,7 +10,7 @@ import {
   serializeApiKeyPolicies,
   serializeModelPrices,
 } from '@/features/config/apiKeyPolicies';
-import { normalizeApiKeyPolicyUsage } from '@/services/api/apiKeyPolicyUsage';
+import { aggregateModelUsage, normalizeApiKeyPolicyUsage } from '@/services/api/apiKeyPolicyUsage';
 
 describe('api key policies', () => {
   test('round-trips every policy field through YAML names', () => {
@@ -91,18 +91,82 @@ describe('api key policies', () => {
           expired: false,
           usage: {
             day: { tokens: 12, cost: 0.5, requests: 2, reset_at: '2026-11-16T00:00:00+03:00' },
+            total: {
+              tokens: 12,
+              requests: 2,
+              failed: 1,
+              models: [
+                {
+                  model: 'gpt-5.1',
+                  requests: 2,
+                  failed: 1,
+                  input_tokens: 9,
+                  output_tokens: 3,
+                  tokens: 12,
+                },
+                { requests: 1 },
+              ],
+            },
           },
         },
         { nope: true },
       ],
     });
     expect(usage).toHaveLength(1);
+    expect(usage[0].name).toBe('');
     expect(usage[0].usage.day).toEqual({
       tokens: 12,
       cost: 0.5,
       requests: 2,
+      failed: 0,
       resetAt: '2026-11-16T00:00:00+03:00',
+      models: [],
     });
     expect(usage[0].usage.month.tokens).toBe(0);
+    expect(usage[0].usage.total.resetAt).toBe('');
+    expect(usage[0].usage.total.models).toEqual([
+      {
+        model: 'gpt-5.1',
+        requests: 2,
+        failed: 1,
+        inputTokens: 9,
+        outputTokens: 3,
+        cachedTokens: 0,
+        reasoningTokens: 0,
+        tokens: 12,
+        cost: 0,
+      },
+    ]);
+  });
+
+  test('aggregates model usage across keys', () => {
+    const usage = normalizeApiKeyPolicyUsage({
+      keys: [
+        {
+          key: 'sk-a',
+          name: ' Team A ',
+          usage: { week: { models: [{ model: 'm1', requests: 1, tokens: 5, cost: 0.1 }] } },
+        },
+        {
+          key: 'sk-b',
+          usage: {
+            week: {
+              models: [
+                { model: 'm2', requests: 1, tokens: 50 },
+                { model: 'm1', requests: 2, tokens: 10, cost: 0.2 },
+              ],
+            },
+          },
+        },
+      ],
+    });
+    expect(usage[0].name).toBe('Team A');
+    const rows = aggregateModelUsage(usage, 'week');
+    expect(rows.map((r) => [r.model, r.requests, r.tokens])).toEqual([
+      ['m2', 1, 50],
+      ['m1', 3, 15],
+    ]);
+    expect(rows[1].cost).toBeCloseTo(0.3);
+    expect(aggregateModelUsage(usage, 'day')).toEqual([]);
   });
 });

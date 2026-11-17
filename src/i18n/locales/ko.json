@@ -112,7 +112,8 @@
     "plugins": "플러그인",
     "config_management": "설정 패널",
     "logs": "로그 뷰어",
-    "system_info": "관리 센터 정보"
+    "system_info": "관리 센터 정보",
+    "usage": "API 키 사용량"
   },
   "nav_groups": {
     "operate": "운영",
@@ -132,7 +133,8 @@
     "plugins": "설치, 업데이트 및 설정",
     "logs": "요청 추적",
     "config_management": "게이트웨이 설정",
-    "system_info": "런타임 및 진단"
+    "system_info": "런타임 및 진단",
+    "usage": "키 및 모델별 사용량"
   },
   "dashboard": {
     "hero_verdict_good": "모든 시스템 정상",
@@ -2119,7 +2121,7 @@
       "activeCount": "활성 {{active}}/{{total}}"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2180,8 +2182,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "모든 URL은 동일한 API 규칙을 사용합니다. 저장 시 현재 그룹화된 프로토콜의 엔드포인트만 기록됩니다.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "글로벌 고보호 경로",
-         "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
+        "aiCodeMirrorGlobal": "글로벌 고보호 경로",
+        "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
         "standard": "표준 URL",
         "direct": "직접 연결 URL",
         "domestic": "중국 본토 경로",
@@ -2190,8 +2192,8 @@
         "global": "글로벌"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
-         "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
+        "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
+        "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
         "domestic": "중국 본토의 사용자 및 워크로드용입니다. 본토 네트워크에서 일반적으로 대기 시간이 더 짧습니다.",
         "overseas": "해외 배포, 국경 간 액세스 또는 해외 모델이 필요한 워크로드용입니다.",
         "mainlandChinaRecommended": "중국 본토 네트워크의 사용자 및 워크로드에 권장됩니다.",
@@ -2492,5 +2494,32 @@
     "remove_pattern": "{{row}}행 정규식 규칙 삭제",
     "move_up": "{{row}}행 정규식 규칙 위로 이동",
     "move_down": "{{row}}행 정규식 규칙 아래로 이동"
+  },
+  "usage_page": {
+    "title": "API 키 사용량",
+    "subtitle": "클라이언트 API 키별 요청, 토큰, 비용을 모델별로 보여줍니다.",
+    "window_label": "기간",
+    "window_day": "오늘",
+    "window_week": "이번 주",
+    "window_month": "이번 달",
+    "window_total": "전체",
+    "load_failed": "사용량을 불러오지 못했습니다: {{error}}",
+    "no_keys": "클라이언트 API 키가 없습니다",
+    "no_keys_hint": "설정 패널에서 API 키를 추가하면 사용량이 집계됩니다.",
+    "all_keys": "모든 키",
+    "unnamed": "이름 없는 키",
+    "expired": "만료됨",
+    "no_usage": "이 기간에는 사용 내역이 없습니다.",
+    "col_model": "모델",
+    "col_requests": "요청",
+    "col_input": "입력",
+    "col_cached": "캐시",
+    "col_output": "출력",
+    "col_total": "총 토큰",
+    "col_cost": "비용",
+    "failed_hint": "실패 {{count}}건",
+    "total_requests": "요청 {{count}}건",
+    "total_tokens": "토큰 {{value}}",
+    "footnote": "기간은 서버 현지 시간 기준이며 주는 월요일에 시작합니다. 비용은 업스트림이 보고한 값, 없으면 access.model-prices 를 사용합니다. 이 버전부터 집계되며 이전 트래픽은 포함되지 않습니다."
   }
 }

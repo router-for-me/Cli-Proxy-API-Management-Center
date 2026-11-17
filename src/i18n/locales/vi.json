@@ -112,7 +112,8 @@
     "plugins": "Plugin",
     "config_management": "Bảng cấu hình",
     "logs": "Trình xem Log",
-    "system_info": "Thông tin Trung tâm Quản lý"
+    "system_info": "Thông tin Trung tâm Quản lý",
+    "usage": "Mức dùng API key"
   },
   "nav_groups": {
     "operate": "Vận hành",
@@ -132,7 +133,8 @@
     "plugins": "Cài đặt, cập nhật & cấu hình",
     "logs": "Truy vết yêu cầu",
     "config_management": "Cấu hình gateway",
-    "system_info": "Runtime & chẩn đoán"
+    "system_info": "Runtime & chẩn đoán",
+    "usage": "Theo key và mô hình"
   },
   "dashboard": {
     "hero_verdict_good": "Mọi hệ thống ổn định",
@@ -1991,7 +1993,7 @@
       "activeCount": "{{active}}/{{total}} đang hoạt động"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "gemini": "Gemini",
       "interactions": "Interactions API",
       "codex": "Codex",
@@ -2055,8 +2057,8 @@
       "urlMode": "URL {{provider}}",
       "urlHint": "Mọi URL dùng cùng quy ước API. Lưu chỉ ghi endpoint của giao thức được nhóm hiện tại.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Tuyến toàn cầu được bảo vệ cao",
-         "aiCodeMirrorDomestic": "Tuyến tối ưu cho Trung Quốc đại lục",
+        "aiCodeMirrorGlobal": "Tuyến toàn cầu được bảo vệ cao",
+        "aiCodeMirrorDomestic": "Tuyến tối ưu cho Trung Quốc đại lục",
         "standard": "URL chuẩn",
         "direct": "URL trực tiếp",
         "domestic": "Tuyến Trung Quốc đại lục",
@@ -2065,8 +2067,8 @@
         "global": "Toàn cầu"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Tuyến có mức bảo vệ cao dành cho truy cập toàn cầu.",
-         "aiCodeMirrorDomestic": "Tuyến được tối ưu cho mạng tại Trung Quốc đại lục.",
+        "aiCodeMirrorGlobal": "Tuyến có mức bảo vệ cao dành cho truy cập toàn cầu.",
+        "aiCodeMirrorDomestic": "Tuyến được tối ưu cho mạng tại Trung Quốc đại lục.",
         "domestic": "Dành cho người dùng và khối lượng công việc tại Trung Quốc đại lục; thường có độ trễ thấp hơn trên mạng đại lục.",
         "overseas": "Dành cho triển khai nước ngoài, truy cập xuyên biên giới hoặc khối lượng công việc cần model nước ngoài.",
         "mainlandChinaRecommended": "Khuyến nghị cho người dùng và khối lượng công việc trên mạng Trung Quốc đại lục.",
@@ -2498,5 +2500,32 @@
     "remove_pattern": "Xóa quy tắc regex dòng {{row}}",
     "move_up": "Chuyển quy tắc regex dòng {{row}} lên",
     "move_down": "Chuyển quy tắc regex dòng {{row}} xuống"
+  },
+  "usage_page": {
+    "title": "Mức dùng API key",
+    "subtitle": "Số yêu cầu, token và chi phí theo từng API key của client, chia theo mô hình.",
+    "window_label": "Khoảng thời gian",
+    "window_day": "Hôm nay",
+    "window_week": "Tuần này",
+    "window_month": "Tháng này",
+    "window_total": "Toàn bộ",
+    "load_failed": "Không tải được mức dùng: {{error}}",
+    "no_keys": "Chưa có API key của client",
+    "no_keys_hint": "Thêm API key trong bảng cấu hình để theo dõi mức dùng.",
+    "all_keys": "Tất cả key",
+    "unnamed": "Key chưa đặt tên",
+    "expired": "Đã hết hạn",
+    "no_usage": "Không có mức dùng trong khoảng này.",
+    "col_model": "Mô hình",
+    "col_requests": "Yêu cầu",
+    "col_input": "Đầu vào",
+    "col_cached": "Bộ nhớ đệm",
+    "col_output": "Đầu ra",
+    "col_total": "Tổng token",
+    "col_cost": "Chi phí",
+    "failed_hint": "{{count}} lỗi",
+    "total_requests": "{{count}} yêu cầu",
+    "total_tokens": "{{value}} token",
+    "footnote": "Khoảng thời gian theo giờ địa phương của máy chủ; tuần bắt đầu từ thứ Hai. Chi phí lấy từ upstream, nếu không có thì từ access.model-prices. Việc đếm bắt đầu từ phiên bản này, lưu lượng trước đó không được tính."
   }
 }

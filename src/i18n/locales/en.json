@@ -112,7 +112,8 @@
     "plugins": "Plugins",
     "config_management": "Config Panel",
     "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "system_info": "Management Center Info",
+    "usage": "API Key Usage"
   },
   "nav_groups": {
     "operate": "Operate",
@@ -132,7 +133,8 @@
     "plugins": "Install, update & configure",
     "logs": "Request tracing",
     "config_management": "Gateway configuration",
-    "system_info": "Runtime & diagnostics"
+    "system_info": "Runtime & diagnostics",
+    "usage": "Usage by key and model"
   },
   "dashboard": {
     "hero_verdict_good": "All systems steady",
@@ -2119,7 +2121,7 @@
       "activeCount": "{{active}}/{{total}} active"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2180,8 +2182,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Global high-protection route",
-         "aiCodeMirrorDomestic": "Mainland China optimized route",
+        "aiCodeMirrorGlobal": "Global high-protection route",
+        "aiCodeMirrorDomestic": "Mainland China optimized route",
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
@@ -2190,8 +2192,8 @@
         "global": "Global"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "A high-protection route for global access.",
-         "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
+        "aiCodeMirrorGlobal": "A high-protection route for global access.",
+        "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
         "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
         "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
@@ -2492,5 +2494,32 @@
     "remove_pattern": "Remove regex row {{row}}",
     "move_up": "Move regex row {{row}} up",
     "move_down": "Move regex row {{row}} down"
+  },
+  "usage_page": {
+    "title": "API Key Usage",
+    "subtitle": "Requests, tokens and cost per client API key, broken down by model.",
+    "window_label": "Period",
+    "window_day": "Today",
+    "window_week": "This week",
+    "window_month": "This month",
+    "window_total": "All time",
+    "load_failed": "Could not load usage: {{error}}",
+    "no_keys": "No client API keys",
+    "no_keys_hint": "Add API keys in the config panel to track their usage.",
+    "all_keys": "All keys",
+    "unnamed": "Unnamed key",
+    "expired": "Expired",
+    "no_usage": "No usage in this period.",
+    "col_model": "Model",
+    "col_requests": "Requests",
+    "col_input": "Input",
+    "col_cached": "Cached",
+    "col_output": "Output",
+    "col_total": "Total tokens",
+    "col_cost": "Cost",
+    "failed_hint": "{{count}} failed",
+    "total_requests": "{{count}} requests",
+    "total_tokens": "{{value}} tokens",
+    "footnote": "Periods follow server local time; weeks start on Monday. Cost uses the upstream-reported cost, else access.model-prices. Counting starts with this version, earlier traffic is not included."
   }
 }
