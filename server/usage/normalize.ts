@@ -208,7 +208,7 @@ export function requestMetadata(value: unknown, maxBytes: number): string | null
 export const FAIL_SUMMARY_MAX_BYTES = 4096;
 const HEADER_VALUE_MAX_BYTES = 1024;
 
-const EMAIL_LOCAL =/[A-Za-z0-9._%+-]/;
+const EMAIL_LOCAL = /[A-Za-z0-9._%+-]/;
 const EMAIL_DOMAIN = /@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/y;
 
 /**
@@ -278,7 +278,9 @@ function headersByName(headers: unknown): Map<string, string[]> {
     const name = key.trim().toLowerCase();
     const value = headers[key];
     const values = (Array.isArray(value) ? value : [value])
-      .filter((item): item is string | number => typeof item === 'string' || typeof item === 'number')
+      .filter(
+        (item): item is string | number => typeof item === 'string' || typeof item === 'number'
+      )
       .map((item) => String(item).trim())
       .filter(Boolean);
     if (values.length) byName.set(name, [...(byName.get(name) ?? []), ...values]);
@@ -297,7 +299,10 @@ export function headerTraceId(headers: unknown): string | null {
   const first = (name: string) => headerValue(byName.get(name)?.[0] ?? '');
   const parts = TRACEPARENT.exec(first('traceparent').toLowerCase());
   const traceparentId =
-    parts && !first('traceparent').toLowerCase().startsWith('ff-') && !/^0+$/.test(parts[1]) && !/^0+$/.test(parts[2])
+    parts &&
+    !first('traceparent').toLowerCase().startsWith('ff-') &&
+    !/^0+$/.test(parts[1]) &&
+    !/^0+$/.test(parts[2])
       ? parts[1]
       : '';
   const primary = [...TRACE_HEADERS.map(first), traceparentId].find((value) => value !== '') ?? '';
@@ -307,7 +312,9 @@ export function headerTraceId(headers: unknown): string | null {
 /** One trace id value as stored: scrubbed and capped, whether it came from a live header or
  * from CPAMP's persisted column, and again when served. */
 export function scrubTraceId(value: string): string | null {
-  return orNull(truncateUtf8(sanitizeCredentialText(headerValue(value)).trim(), HEADER_VALUE_MAX_BYTES));
+  return orNull(
+    truncateUtf8(sanitizeCredentialText(headerValue(value)).trim(), HEADER_VALUE_MAX_BYTES)
+  );
 }
 
 const FLOAT_HEADER = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
@@ -329,7 +336,14 @@ const DATE_LAYOUTS: readonly [RegExp, (m: RegExpExecArray) => number[]][] = [
   // RFC 1123 and RFC 1123Z (an HTTP-date).
   [
     /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) ([A-Z][a-z]{2}) (\d{4}) (\d{2}):(\d{2}):(\d{2})(?:[.,]\d+)? (?:[A-Z]{3,5}|[+-]\d{4})$/,
-    (m) => [Number(m[3]), MONTHS.indexOf(m[2]) + 1, Number(m[1]), Number(m[4]), Number(m[5]), Number(m[6])],
+    (m) => [
+      Number(m[3]),
+      MONTHS.indexOf(m[2]) + 1,
+      Number(m[1]),
+      Number(m[4]),
+      Number(m[5]),
+      Number(m[6]),
+    ],
   ],
 ];
 function calendarValid([year, month, day, hour, minute, second]: number[]): boolean {
@@ -364,13 +378,18 @@ export function headerSearchValues(headers: unknown): {
   const value = (name: string) => headerValue(raw(name));
   let kind = '';
   let code = '';
-  for (const name of ['x-openai-ide-root-error-code', 'x-openai-ide-error-code', 'x-openai-authorization-error']) {
+  for (const name of [
+    'x-openai-ide-root-error-code',
+    'x-openai-ide-error-code',
+    'x-openai-authorization-error',
+  ]) {
     const normalized = value(name).trim().toLowerCase();
     if (AUTH_ERROR_CODES.includes(normalized)) [kind, code] = ['auth', normalized];
     else if (normalized === 'identity_edge_internal_error') [kind, code] = ['identity', normalized];
     if (kind) break;
   }
-  if (!kind && value('x-ratelimit-bypass')) [kind, code] = ['rate_limit', value('x-ratelimit-bypass')];
+  if (!kind && value('x-ratelimit-bypass'))
+    [kind, code] = ['rate_limit', value('x-ratelimit-bypass')];
   else if (!kind && raw('retry-after') && retryAfterParses(raw('retry-after')))
     [kind, code] = ['rate_limit', 'retry_after'];
   return {
@@ -403,10 +422,13 @@ export function maskSource(value: string, isKey = false): string {
     !/[ /\\]/.test(trimmed) &&
     (trimmed.startsWith('sk-') || trimmed.startsWith('AIza') || Buffer.byteLength(trimmed) >= 32);
   if (!looksSecret) return trimmed;
-  return Buffer.byteLength(trimmed) <= 8 ? 'm:****' : `m:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+  return Buffer.byteLength(trimmed) <= 8
+    ? 'm:****'
+    : `m:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
 }
 
-const sha256Source = (value: string): string => `h:${createHash('sha256').update(value).digest('hex')}`;
+const sha256Source = (value: string): string =>
+  `h:${createHash('sha256').update(value).digest('hex')}`;
 const isApiKeyAuth = (authType: string): boolean => authType.trim().toLowerCase() === 'apikey';
 
 /**
@@ -458,7 +480,7 @@ export function projectSnapshot(provider: string | null, project: string | null)
   return orNull(codex && trimmed.startsWith(CODEX_ACCOUNT_MARKER) ? '' : trimmed);
 }
 
-const UUID_VERSION =/^[0-9a-f]{8}-[0-9a-f]{4}-([0-9a-f])[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const UUID_VERSION = /^[0-9a-f]{8}-[0-9a-f]{4}-([0-9a-f])[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** The proxy projects every id it derives itself to a version 8 UUID (session/identity.go). */
 function eventSession(value: unknown): EventSession | null {
@@ -650,6 +672,17 @@ export function normalizeUsagePayload(
   const resolvedModel = text(record.model);
   const requestedModel = text(record.alias) || resolvedModel || '-';
   const model = analyticsModel(requestedModel);
+  // A different model in response_model is the one that served the request (a Claude server-side
+  // fallback, which `model` does not follow): bill as it. A dated snapshot of the same model
+  // ("claude-x-4-20260401" for "claude-x-4") is not a different model.
+  const respondedModel = text(record.response_model);
+  const servedModel =
+    resolvedModel &&
+    respondedModel &&
+    respondedModel !== resolvedModel &&
+    !respondedModel.startsWith(`${resolvedModel}-`)
+      ? respondedModel
+      : '';
 
   const requestedTier = text(record.service_tier);
   const effectiveTier = text(record.effective_service_tier);
@@ -698,7 +731,7 @@ export function normalizeUsagePayload(
       provider,
       model,
       requestedModel,
-      billingModel: resolvedModel || model,
+      billingModel: servedModel || resolvedModel || model,
       responseModel: orNull(text(record.response_model)),
       tier,
       requestedTier: orNull(requestedTier),
@@ -735,7 +768,10 @@ export function normalizeUsagePayload(
       endpoint: endpointText(text(record.endpoint)),
       xForwardedFor: requestMetadata(record.x_forwarded_for, 2048),
       source: orNull(
-        maskSource(text(record.source), isKeySource(text(record.source), text(record.auth_type), apiKey))
+        maskSource(
+          text(record.source),
+          isKeySource(text(record.source), text(record.auth_type), apiKey)
+        )
       ),
       authProvider: orNull(text(label?.provider)),
       authProject: projectSnapshot(text(label?.provider) || provider, text(label?.project)),
