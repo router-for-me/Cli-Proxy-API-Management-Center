@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import { IconCheck, IconX } from '@/components/ui/icons';
+import { InfoTip } from '@/components/ui/Tooltip';
 import { getProviderTotalStats, type ProviderRecentUsageMap } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
 import { maskApiKey } from '@/utils/format';
@@ -59,11 +60,12 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
 
     return (
       <div>
-        <div className={styles.detailHeader}>
-          <div className={styles.sectionTitle}>{resource.name ?? resource.identifier}</div>
-          <p className={styles.sectionDesc}>
-            {t('providersPage.sponsor.detailHint', { provider: definition.displayName })}
-          </p>
+        <div className={`${styles.detailHeader} ${styles.detailTitleLine}`}>
+          <span className={styles.detailTitle}>{resource.name ?? resource.identifier}</span>
+          <InfoTip
+            content={t('providersPage.sponsor.detailHint', { provider: definition.displayName })}
+            label={resource.name ?? resource.identifier}
+          />
         </div>
 
         <div className={styles.sponsorProtocolGrid}>

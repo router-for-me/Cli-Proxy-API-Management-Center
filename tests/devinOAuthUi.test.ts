@@ -43,6 +43,7 @@ describe('Devin OAuth login UI', () => {
             state,
             text: (suffix: string) => i18n.t(`auth_login.devin_${suffix}`),
             supportsCallback: true,
+            signInNote: i18n.t(devin!.signInNoteKey!),
             onStart: () => {},
             onCancel: () => {},
             onCallbackChange: () => {},
@@ -56,9 +57,25 @@ describe('Devin OAuth login UI', () => {
     const idle = renderDialog({});
     expect(idle).toContain('Devin OAuth');
     expect(idle).toContain('Start Devin Login');
-    expect(idle).toContain('v7.3.1');
-    expect(idle).toContain('five minutes');
+    // The provider sentence no longer sits at the top of the dialog.
+    expect(idle).not.toContain('five minutes');
     expect(idle).not.toContain('auth_login.devin_');
+
+    // The version/expiry guidance is an InfoTip after the "open the sign-in page" step title.
+    const flow = renderDialog({
+      status: 'waiting',
+      url: 'https://devin.example/authorize',
+      state: 'st',
+    });
+    const openStep = flow.slice(flow.indexOf(en.auth_login.step_open_auth_page));
+    expect(openStep).toMatch(/^[^<]*<\/span><button type="button" data-info-tip=""/);
+    expect(flow).toContain(
+      `aria-label="${i18n.t('common.more_info_about', { label: en.auth_login.step_open_auth_page })}"`
+    );
+    expect(flow).toContain(en.auth_login.devin_oauth_hint);
+    expect(flow).toContain('five minutes');
+    // The v7.3.1 backend requirement no longer applies on the v8 Management API.
+    expect(flow).not.toContain('v7.3.1');
 
     // 服务端会话还挂着（网络失败停了轮询）：必须先取消，回调输入锁定
     const stalled = renderDialog({
@@ -81,7 +98,7 @@ describe('Devin OAuth login UI', () => {
       for (const key of keys) {
         expect((locale.auth_login as Record<string, string>)[key]?.trim()).toBeTruthy();
       }
-      expect(locale.auth_login.devin_oauth_hint).toContain('v7.3.1');
+      expect(locale.auth_login.devin_oauth_hint).not.toContain('v7.3.1');
       expect(locale.auth_login.devin_callback_hint).toContain('/devin/callback');
     }
   });

@@ -114,6 +114,12 @@ const serializeProviderKey = (config: ProviderKeyConfig, family: ProviderFamily)
     if (config.cloak.sensitiveWords && config.cloak.sensitiveWords.length) {
       cloakPayload['sensitive-words'] = config.cloak.sensitiveWords;
     }
+    if (config.cloak.sensitiveWordsReplace !== undefined) {
+      cloakPayload['sensitive-words-replace'] = config.cloak.sensitiveWordsReplace;
+    }
+    if (config.cloak.sensitivePatternsReplace !== undefined) {
+      cloakPayload['sensitive-patterns-replace'] = config.cloak.sensitivePatternsReplace;
+    }
     if (config.cloak.cacheUserId) {
       cloakPayload['cache-user-id'] = true;
     }

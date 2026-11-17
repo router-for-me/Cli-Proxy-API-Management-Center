@@ -325,8 +325,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  /* 卡片只剩一行标题，图标随之收小，避免比文字高出一截 */
+  width: 36px;
+  height: 36px;
   border-radius: $radius-md;
   background-color: #24292f;
   color: white;
@@ -350,20 +351,11 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 2px;
 
   svg {
     opacity: 0.5;
     flex-shrink: 0;
   }
-}
-
-.linkDesc {
-  font-size: 13px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 768px) {

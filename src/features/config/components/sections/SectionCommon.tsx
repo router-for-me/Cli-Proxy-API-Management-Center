@@ -34,7 +34,6 @@ export function SectionCommon({
     <SectionCard
       icon={<Icon size={16} />}
       title={t('config_management.visual.sections.common.title')}
-      description={t('config_management.visual.sections.common.description')}
       animateIn={animateIn}
     >
       <SettingList>

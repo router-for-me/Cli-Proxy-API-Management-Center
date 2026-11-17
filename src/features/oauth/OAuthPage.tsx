@@ -101,6 +101,9 @@ export function OAuthPage() {
     icon: iconOf(card),
   });
 
+  const signInNoteOf = (card: OAuthProviderCard) =>
+    card.kind === 'builtin' && card.signInNoteKey ? t(card.signInNoteKey) : undefined;
+
   const sponsorOf = (card: OAuthProviderCard) =>
     isSponsor(card)
       ? { url: card.sponsor.signUpUrl, label: t('auth_login.kimi_sign_up_button') }
@@ -239,6 +242,7 @@ export function OAuthPage() {
           state={flows.states[dialogCard.id] ?? {}}
           text={(suffix) => flows.providerText(dialogCard.id, suffix)}
           supportsCallback={supportsManualCallback(dialogCard)}
+          signInNote={signInNoteOf(dialogCard)}
           sponsor={sponsorOf(dialogCard)}
           onStart={() => void flows.startAuth(dialogCard.id)}
           onCancel={() => void flows.cancelAuth(dialogCard.id)}

@@ -50,17 +50,19 @@ describe('auth file card presentation contract', () => {
       new URL('../src/features/authFiles/components/AuthFileDetailsSheet.tsx', import.meta.url),
       'utf8'
     );
-    expect(detailsSource).toContain('i18nKey="auth_files.weight_hint"');
+    // Details sheet: plain semantics in the InfoTip, the link sentence as a visible note.
+    expect(detailsSource).toContain("hint={t('auth_files.weight_hint')}");
+    expect(detailsSource).toContain('i18nKey="auth_files.weight_strategy_note"');
 
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
+    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
       const { auth_files: messages } = JSON.parse(
         readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
       ) as { auth_files: Record<string, string> };
       expect(messages.weight_tooltip).toBeTruthy();
       expect(messages.weight_tooltip).not.toMatch(/<[^>]+>/);
-      expect(messages.weight_hint).toContain('<settingsLink>');
-      expect(messages.weight_hint).toContain('</settingsLink>');
-      expect(messages.weight_tooltip).toBe(messages.weight_hint.replace(/<\/?settingsLink>/g, ''));
+      expect(messages.weight_hint).toBeTruthy();
+      expect(messages.weight_hint).not.toMatch(/<[^>]+>/);
+      expect(messages.weight_strategy_note).toMatch(/<settingsLink>[^<]+<\/settingsLink>/);
     }
   });
 

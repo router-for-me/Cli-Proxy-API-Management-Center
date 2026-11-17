@@ -19,6 +19,11 @@ $lane-width: 210px;
   flex-wrap: wrap;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+}
+
 .title {
   margin: 0;
   font-size: 18px;
@@ -383,11 +388,6 @@ $lane-width: 210px;
   height: 14px;
   border-radius: 999px;
   background: var(--amber-color);
-}
-
-.legendNote {
-  flex: 1 1 320px;
-  min-width: 0;
 }
 
 @include mobile {

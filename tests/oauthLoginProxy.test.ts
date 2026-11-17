@@ -329,7 +329,6 @@ describe('proxy display masking', () => {
 const LOCALES = { en, 'zh-CN': zhCN, 'zh-TW': zhTW, ru, vi, ko, tr } as const;
 const KEYS = [
   'login_proxy_toggle',
-  'login_proxy_optional',
   'login_proxy_status_invalid',
   'login_proxy_label',
   'login_proxy_placeholder',
@@ -379,7 +378,14 @@ describe('login proxy field', () => {
       expect(markup).toMatch(new RegExp(`id="${toggle![1]}"[^>]*hidden=""`));
       const text = markup.replace(/&#x27;/g, "'").replace(/&amp;/g, '&');
       expect(text).toContain(i18n.t('auth_login.login_proxy_toggle'));
-      expect(text).toContain(i18n.t('auth_login.login_proxy_optional'));
+      // An empty proxy shows no status: the collapsed chip already reads as optional, so the
+      // toggle's only text is its label.
+      const toggleText = /aria-expanded="false"[^>]*>([\s\S]*?)<\/button>/
+        .exec(markup)![1]
+        .replace(/<[^>]+>/g, '')
+        .replace(/&#x27;/g, "'");
+      expect(toggleText).toBe(i18n.t('auth_login.login_proxy_toggle'));
+      expect(markup).not.toContain('data-active');
       // It sits between the header and the gallery.
       expect(markup.indexOf('</header>')).toBeLessThan(toggle!.index);
       expect(markup.indexOf('aria-haspopup="dialog"')).toBeGreaterThan(toggle!.index);

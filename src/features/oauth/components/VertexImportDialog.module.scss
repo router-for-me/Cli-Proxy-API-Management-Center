@@ -6,6 +6,12 @@
   gap: 8px;
 }
 
+/* 标签 + InfoTip 同行（InfoTip 自带前导间距） */
+.labelRow {
+  display: flex;
+  align-items: center;
+}
+
 .label {
   font-size: 13.5px;
   font-weight: 600;
@@ -115,11 +121,6 @@
 
   :global(.form-group label) {
     font-size: 13.5px;
-  }
-
-  :global(.hint) {
-    font-size: 12px;
-    color: var(--text-tertiary);
   }
 }
 

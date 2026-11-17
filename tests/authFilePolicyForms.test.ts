@@ -88,9 +88,55 @@ describe('credential policy structured forms', () => {
   test('disables all mutation controls while saving or disconnected', () => {
     const controls = [
       ...render(original, true).matchAll(/<(?:input|textarea|select|button)\b[^>]*>/g),
-    ];
-    expect(controls.length).toBeGreaterThan(12);
-    for (const control of controls) expect(control[0]).toContain('disabled=""');
+    ].map((match) => match[0]);
+    // InfoTips explain the fields and change nothing, so they stay reachable while saving.
+    const infoTips = controls.filter((control) => control.includes('data-info-tip'));
+    const mutations = controls.filter((control) => !control.includes('data-info-tip'));
+    // At least the three policy-level tips (nested editors may add their own).
+    for (const label of [
+      en.auth_files.policy_retry_label,
+      en.auth_files.policy_aliases_label,
+      en.auth_files.policy_rules_label,
+    ]) {
+      const name = `More information about ${Bun.escapeHTML(label)}`;
+      expect(infoTips.some((tip) => tip.includes(`aria-label="${name}"`))).toBe(true);
+    }
+    for (const tip of infoTips) expect(tip).not.toContain('disabled=""');
+    expect(mutations.length).toBeGreaterThan(12);
+    for (const control of mutations) expect(control).toContain('disabled=""');
+  });
+
+  test('moves inherit/custom semantics into InfoTips that still describe each mode select', () => {
+    const html = render();
+    for (const [label, hint] of [
+      ['policy_retry_label', 'policy_retry_hint'],
+      ['policy_aliases_label', 'policy_aliases_hint'],
+      ['policy_rules_label', 'policy_rules_hint'],
+    ] as const) {
+      const labelText = Bun.escapeHTML(en.auth_files[label]);
+      const hintText = Bun.escapeHTML(en.auth_files[hint]);
+      const labelId = html.match(new RegExp(`<label id="([^"]+)">${labelText}</label>`))?.[1];
+      expect(labelId).toBeDefined();
+      // InfoTip right after the label, named after it.
+      const afterLabel = html.slice(html.indexOf(`>${labelText}</label>`));
+      const tip = afterLabel.match(/^[^<]*<\/label><button\b[^>]*data-info-tip=""[^>]*>/)?.[0];
+      expect(tip).toBeDefined();
+      expect(tip).toContain(`aria-label="More information about ${labelText}"`);
+      const hintId = tip!.match(/aria-describedby="([^"]+)"/)?.[1];
+      // One hidden copy of the hint, shared by the InfoTip and the mode select.
+      expect(html).toContain(`<span id="${hintId}" hidden="">${hintText}</span>`);
+      expect(html.split(hintText)).toHaveLength(2);
+      const select = html.match(
+        new RegExp(`<button\\b[^>]*aria-labelledby="${labelId}"[^>]*>`)
+      )?.[0];
+      expect(select).toContain(`aria-describedby="${hintId}"`);
+    }
+  });
+
+  test('keeps the unsupported-data notice visible: it explains why the editor is missing', () => {
+    const html = render({ model_aliases: 'not-a-list' });
+    expect(html).toContain(Bun.escapeHTML(en.auth_files.policy_unsupported));
+    expect(html).toContain('<p class="hint">');
   });
 
   test('provides unique label targets and accessible action buttons', () => {

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { AntigravityQuotaState, AntigravityQuotaSubscription } from '@/types';
+import { InfoTip } from '@/components/ui/Tooltip';
 import { planValueClassForTier, resolveAntigravityCardTier } from '../../cardTier';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import { collectQuotaRowInstants, pickUrgentRowId } from '../../resetSchedule';
@@ -167,12 +168,11 @@ export function AntigravityQuotaBody({ quota, classes }: QuotaBodyProps<Antigrav
           return (
             <div key={group.id} className={classes.antigravityQuotaGroup}>
               <div className={classes.antigravityQuotaGroupHeader}>
-                <span className={classes.antigravityQuotaGroupTitle}>{groupLabel}</span>
-                {groupDescription && (
-                  <span className={classes.antigravityQuotaGroupDescription}>
-                    {groupDescription}
-                  </span>
-                )}
+                {/* 分组覆盖哪些模型：标题后的 InfoTip，两个宿主里都紧跟标题 */}
+                <span>
+                  <span className={classes.antigravityQuotaGroupTitle}>{groupLabel}</span>
+                  {groupDescription && <InfoTip content={groupDescription} label={groupLabel} />}
+                </span>
               </div>
               {group.buckets.map((bucket, index) => {
                 const clamped = Math.max(0, Math.min(1, bucket.remainingFraction));

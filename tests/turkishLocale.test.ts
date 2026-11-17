@@ -52,7 +52,7 @@ describe('Turkish locale', () => {
   });
 
   test('preserves a valid object in the raw JSON configuration example', () => {
-    const hint = tr.config_management.visual.sections.payload.default_raw_rules_desc;
+    const hint = tr.config_management.visual.payload_rules.value_raw_json;
     const example = hint.match(/\{"type":"object"\}/)?.[0];
     expect(example).toBeDefined();
     expect(JSON.parse(example!)).toEqual({ type: 'object' });

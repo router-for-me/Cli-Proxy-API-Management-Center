@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { PluginQuotaMetric, PluginQuotaState } from '@/types';
+import { InfoTip } from '@/components/ui/Tooltip';
 import { QuotaMeter } from '../../components/QuotaMeter';
 import type { QuotaBodyProps } from '../../types';
 
@@ -12,14 +13,17 @@ const formatReset = (value: string | undefined): string => {
 const formatMetric = (metric: PluginQuotaMetric): string => {
   const value =
     metric.format === 'currency' && metric.currency
-      ? new Intl.NumberFormat(undefined, { style: 'currency', currency: metric.currency }).format(metric.value)
+      ? new Intl.NumberFormat(undefined, { style: 'currency', currency: metric.currency }).format(
+          metric.value
+        )
       : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(metric.value);
   return metric.unit ? `${value} ${metric.unit}` : value;
 };
 
 export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaState>) {
   const { t } = useTranslation();
-  const plan = quota.subscription?.tierName || quota.subscription?.plan || quota.subscription?.tierId;
+  const plan =
+    quota.subscription?.tierName || quota.subscription?.plan || quota.subscription?.tierId;
 
   return (
     <>
@@ -45,10 +49,10 @@ export function PluginQuotaBody({ quota, classes }: QuotaBodyProps<PluginQuotaSt
         quota.groups.map((group) => (
           <div key={group.id} className={classes.antigravityQuotaGroup}>
             <div className={classes.antigravityQuotaGroupHeader}>
-              <span className={classes.antigravityQuotaGroupTitle}>{group.label}</span>
-              {group.description && (
-                <span className={classes.antigravityQuotaGroupDescription}>{group.description}</span>
-              )}
+              <span>
+                <span className={classes.antigravityQuotaGroupTitle}>{group.label}</span>
+                {group.description && <InfoTip content={group.description} label={group.label} />}
+              </span>
             </div>
             {group.buckets.map((bucket, index) => {
               const percent = Math.round(Math.max(0, Math.min(1, bucket.remainingFraction)) * 100);

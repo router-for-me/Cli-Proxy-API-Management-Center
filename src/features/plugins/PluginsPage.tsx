@@ -173,7 +173,6 @@ export function PluginsPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>{t('plugin_management.title')}</h1>
-        <p className={styles.description}>{t('plugin_management.description')}</p>
       </header>
 
       {data || !pluginsEnabled || restartNames.length > 0 ? (

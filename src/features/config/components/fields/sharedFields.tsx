@@ -61,7 +61,8 @@ export function PortField({
 
 export function ProxyUrlField({ values, disabled, onChange, wide }: SharedFieldProps) {
   const { t } = useTranslation();
-  // 代理 URL 较长，调用处传 wide 独占整行；说明位挂赞助跳转（数据见 sponsors.ts，空则不渲染）。
+  // 代理 URL 较长，调用处传 wide 独占整行。赞助跳转（数据见 sponsors.ts，空则不渲染）含链接，
+  // 不能进 InfoTip（键盘够不到提示里的链接），也不是对输入框的说明：走 aside 常驻可见。
   const sponsor = SPONSORS[0];
   return (
     <TextSetting
@@ -69,7 +70,7 @@ export function ProxyUrlField({ values, disabled, onChange, wide }: SharedFieldP
       wide={wide}
       size="lg"
       label={t('config_management.visual.sections.network.proxy_url')}
-      description={
+      aside={
         sponsor ? (
           <>
             {t('config_management.visual.sections.network.proxy_url_sponsor_hint')}{' '}
@@ -116,7 +117,6 @@ export function DebugToggle({ values, disabled, onChange, wide }: SharedFieldPro
       fieldId="debug"
       wide={wide}
       label={t('config_management.visual.sections.system.debug')}
-      description={t('config_management.visual.sections.system.debug_desc')}
       checked={values.debug}
       disabled={disabled}
       onChange={(debug) => onChange({ debug })}
@@ -131,7 +131,6 @@ export function LoggingToFileToggle({ values, disabled, onChange, wide }: Shared
       fieldId="loggingToFile"
       wide={wide}
       label={t('config_management.visual.sections.system.logging_to_file')}
-      description={t('config_management.visual.sections.system.logging_to_file_desc')}
       checked={values.loggingToFile}
       disabled={disabled}
       onChange={(loggingToFile) => onChange({ loggingToFile })}

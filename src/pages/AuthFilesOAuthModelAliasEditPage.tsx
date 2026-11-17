@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { IconChevronUp, IconSearch } from '@/components/ui/icons';
+import { InfoTip } from '@/components/ui/Tooltip';
 import { ModelMappingDiagram, type ModelMappingDiagramRef } from '@/components/modelAlias';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import { authFilesApi } from '@/services/api';
@@ -65,6 +66,7 @@ export function AuthFilesOAuthModelAliasEditPage() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const diagramRef = useRef<ModelMappingDiagramRef | null>(null);
+  const graphTitleId = useId();
 
   const data = useModelRulesData('alias');
   const baseline = data.modelAlias;
@@ -293,7 +295,6 @@ export function AuthFilesOAuthModelAliasEditPage() {
     <ModelRulesWorkspace
       kind="alias"
       title={t('oauth_model_alias.title')}
-      description={t('oauth_model_alias.editor_description')}
       meta={data.status === 'ready' ? meta : []}
       status={data.status}
       errorMessage={data.errorMessage}
@@ -332,9 +333,18 @@ export function AuthFilesOAuthModelAliasEditPage() {
     >
       {view === 'graph' ? (
         hasMappings ? (
-          <section className={styles.graph} aria-label={t('oauth_model_alias.chart_title')}>
+          <section className={styles.graph} aria-labelledby={graphTitleId}>
             <header className={styles.graphBar}>
-              <p className={styles.graphHint}>{t('model_rules.graph_hint')}</p>
+              {/* 拖拽建链、右键菜单无法从界面看出：说明收进标题后的提示。 */}
+              <div className={styles.graphHeading}>
+                <h2 id={graphTitleId} className={styles.graphTitle}>
+                  {t('oauth_model_alias.chart_title')}
+                </h2>
+                <InfoTip
+                  content={t('model_rules.graph_hint')}
+                  label={t('oauth_model_alias.chart_title')}
+                />
+              </div>
               <button
                 type="button"
                 className={styles.quietAction}

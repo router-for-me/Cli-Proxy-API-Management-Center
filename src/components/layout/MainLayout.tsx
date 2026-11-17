@@ -1160,7 +1160,6 @@ export function MainLayout() {
               {showSidebarLabels && (
                 <span className="sidebar-brand-text">
                   <span className="sidebar-brand-title">{abbrBrandName}</span>
-                  <span className="sidebar-brand-subtitle">{t('sidebar.subtitle')}</span>
                 </span>
               )}
             </div>

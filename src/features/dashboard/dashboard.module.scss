@@ -421,6 +421,12 @@
   }
 }
 
+.statLabelRow {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .statLabel {
   font-size: 12px;
   font-weight: 600;
@@ -438,13 +444,9 @@
 }
 
 .statMeter {
-  margin: 4px 0 2px;
-}
-
-.statHint {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text-tertiary);
+  /* 无说明行后，计量条贴卡底，与无计量条的卡底边对齐 */
+  margin-top: auto;
+  padding-top: 4px;
 }
 
 /* ---------- 通用区块 ---------- */
@@ -491,14 +493,6 @@
   letter-spacing: -0.02em;
   color: var(--text-primary);
   text-wrap: balance;
-}
-
-.sectionDescription {
-  margin: 0;
-  max-width: 64ch;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text-secondary);
 }
 
 .panel {
@@ -872,12 +866,13 @@
   }
 }
 
+/* 整卡只有图标 + 标题：横排成一行，箭头收在行尾 */
 .ctaCard {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: $spacing-lg;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
   border-radius: 14px;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--bg-primary) 76%, transparent);
@@ -929,9 +924,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
-  margin-bottom: $spacing-xs;
   border-radius: $radius-md;
   border: 1px solid var(--border-color);
   background: color-mix(in srgb, var(--text-primary) 6%, transparent);
@@ -939,21 +934,15 @@
 }
 
 .ctaTitle {
+  flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 650;
   color: var(--text-primary);
 }
 
-.ctaDescription {
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
 .ctaArrow {
-  position: absolute;
-  top: $spacing-lg;
-  right: $spacing-lg;
+  flex-shrink: 0;
   font-size: 15px;
   color: var(--text-tertiary);
   opacity: 0.55;

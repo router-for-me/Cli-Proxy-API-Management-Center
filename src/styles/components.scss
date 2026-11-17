@@ -120,6 +120,27 @@ textarea {
   }
 }
 
+/* 标签行：标签文字 + 紧随其后的 InfoTip（Input 把 hint 收进提示时使用）。 */
+.form-label-row {
+  display: block;
+  min-width: 0;
+}
+
+/* 视觉隐藏、辅助技术可读。
+   -focusable 变体：内部元素获得焦点时自动显示（防止链接等可聚焦内容成为「隐形焦点」）。 */
+.visually-hidden,
+.visually-hidden-focusable:not(:focus-within) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .card {
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);

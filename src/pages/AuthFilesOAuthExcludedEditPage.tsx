@@ -197,7 +197,6 @@ export function AuthFilesOAuthExcludedEditPage() {
     <ModelRulesWorkspace
       kind="excluded"
       title={t('oauth_excluded.title')}
-      description={t('oauth_excluded.editor_description')}
       meta={data.status === 'ready' ? meta : []}
       status={data.status}
       errorMessage={data.errorMessage}
@@ -235,7 +234,6 @@ export function AuthFilesOAuthExcludedEditPage() {
             <p className={styles.fieldLabel} id={pickerLabelId}>
               {t('oauth_excluded.models_label')}
             </p>
-            <p className={styles.fieldHint}>{t('oauth_excluded.models_hint')}</p>
             <ExcludedModelsPicker
               value={draft[selected] ?? []}
               onChange={(next) => setDraft((current) => setExcludedRules(current, selected, next))}

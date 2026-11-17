@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   IconChevronDown,
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/icons';
 import { maskApiKey } from '@/utils/format';
 import { MAX_CREDENTIAL_WEIGHT } from '@/utils/credentialWeight';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import type { ApiKeyEntryInput } from '../../types';
 import type { ConnectivityState, ConnectivityStatus } from './useConnectivityTest';
 import { ConnectivityStatusIcon } from './ConnectivityStatusIcon';
@@ -49,6 +50,7 @@ export function ApiKeyEntriesEditor({
   onTestAll,
 }: ApiKeyEntriesEditorProps) {
   const { t } = useTranslation();
+  const fid = useId();
   const [expandedIdx, setExpandedIdx] = useState<number | null>(() =>
     entries.length === 1 && isBlankEntry(entries[0]) ? 0 : null
   );
@@ -239,8 +241,17 @@ export function ApiKeyEntriesEditor({
                   />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>{t('providersPage.form.weight')}</label>
+                  <FieldLabel
+                    className={styles.labelLine}
+                    labelClassName={styles.label}
+                    htmlFor={`${fid}-${idx}-weight`}
+                    label={t('providersPage.form.weight')}
+                    hint={t('providersPage.form.weightHint')}
+                    hintId={`${fid}-${idx}-weight-hint`}
+                  />
                   <input
+                    id={`${fid}-${idx}-weight`}
+                    aria-describedby={`${fid}-${idx}-weight-hint`}
                     className={styles.input}
                     type="number"
                     step="1"
@@ -254,7 +265,6 @@ export function ApiKeyEntriesEditor({
                     disabled={mutating}
                     placeholder="1"
                   />
-                  <span className={styles.labelHint}>{t('providersPage.form.weightHint')}</span>
                 </div>
               </div>
             ) : null}

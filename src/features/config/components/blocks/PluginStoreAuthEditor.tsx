@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import type {
   PluginStoreAuthApplyTo,
   PluginStoreAuthRule,
@@ -63,6 +64,7 @@ export const PluginStoreAuthEditor = memo(function PluginStoreAuthEditor({
   onChange: (next: PluginStoreAuthRule[]) => void;
 }) {
   const { t } = useTranslation();
+  const id = useId();
 
   const updateRule = (id: string, patch: Partial<PluginStoreAuthRule>) => {
     onChange(value.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)));
@@ -126,8 +128,20 @@ export const PluginStoreAuthEditor = memo(function PluginStoreAuthEditor({
               </label>
             </div>
 
-            <div className={styles.storeAuthApplyTo}>
-              <span>{t('config_management.visual.sections.system.store_auth_apply_to')}</span>
+            {/* 复选框组：以「应用到」命名；「都不选 = 全部」收进组名后的 InfoTip。 */}
+            <div
+              className={styles.storeAuthApplyTo}
+              role="group"
+              aria-labelledby={`${id}-${rule.id}-apply-to`}
+              aria-describedby={`${id}-${rule.id}-apply-to-hint`}
+            >
+              <FieldLabel
+                id={`${id}-${rule.id}-apply-to`}
+                label={t('config_management.visual.sections.system.store_auth_apply_to')}
+                hint={t('config_management.visual.sections.system.store_auth_apply_to_hint')}
+                hintId={`${id}-${rule.id}-apply-to-hint`}
+                className={styles.storeAuthApplyToLabel}
+              />
               <div className={styles.storeAuthCheckboxes}>
                 {PLUGIN_STORE_AUTH_APPLY_TO_OPTIONS.map((option) => (
                   <label key={option.value} className={styles.storeAuthCheckbox}>
@@ -141,9 +155,6 @@ export const PluginStoreAuthEditor = memo(function PluginStoreAuthEditor({
                   </label>
                 ))}
               </div>
-              <small>
-                {t('config_management.visual.sections.system.store_auth_apply_to_hint')}
-              </small>
             </div>
 
             {usesToken ? (

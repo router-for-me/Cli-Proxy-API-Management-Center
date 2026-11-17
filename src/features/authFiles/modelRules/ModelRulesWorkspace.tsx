@@ -165,7 +165,6 @@ export function ProviderRail({ items, selected, total, disabled, onSelect }: Pro
 export type ModelRulesWorkspaceProps = {
   kind: ModelRulesKind;
   title: string;
-  description: string;
   /** mono 遥测行，例如 ['3 个提供商', '14 条映射']。 */
   meta: readonly string[];
   status: ModelRulesStatus;
@@ -188,7 +187,6 @@ export type ModelRulesWorkspaceProps = {
 export function ModelRulesWorkspace({
   kind,
   title,
-  description,
   meta,
   status,
   errorMessage,
@@ -263,9 +261,6 @@ export function ModelRulesWorkspace({
             />
           </div>
         </div>
-        <p className={styles.description} data-reveal>
-          {description}
-        </p>
       </header>
 
       {status === 'loading' ? (
