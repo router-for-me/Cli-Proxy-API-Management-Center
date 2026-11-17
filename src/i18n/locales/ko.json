@@ -1540,7 +1540,8 @@
           "model": "모델 패턴",
           "input": "입력",
           "output": "출력",
-          "cachedInput": "캐시된 입력"
+          "cachedInput": "캐시된 입력",
+          "cacheWrite": "캐시 쓰기"
         }
       },
       "payload_rules": {
@@ -2534,7 +2535,7 @@
     "kpi_error_rate": "오류율",
     "kpi_avg": "평균/{{unit}} {{value}}",
     "kpi_cached": "캐시: {{value}} ({{pct}})",
-    "kpi_no_price": "가격 정보 없음 (access.model-prices 설정)",
+    "kpi_no_price": "이 모델들의 가격 정보 없음",
     "kpi_top_error": "실패 {{count}}건 · 최다: {{model}}",
     "kpi_no_errors": "실패한 요청 없음",
     "by_model": "모델별 사용량",
@@ -2555,7 +2556,7 @@
     "details": "상세",
     "chart_empty": "이 기간에는 아직 사용 내역이 없습니다.",
     "tooltip_total": "합계",
-    "footnote": "서버 현지 시간 기준이며 주는 월요일에 시작합니다. 비용은 업스트림 보고 값, 없으면 access.model-prices 를 사용합니다. 시간별 기록은 48시간, 일별 기록은 90일 보관됩니다.",
+    "footnote": "서버 현지 시간 기준이며 주는 월요일에 시작합니다. 비용은 업스트림 보고 값, 없으면 access.model-prices, 그것도 없으면 공개 가격표를 사용합니다. 시간별 기록은 48시간, 일별 기록은 90일 보관됩니다.",
     "disabled": "비활성",
     "kpi_rejected": "키 정책으로 거부된 요청 {{count}}건",
     "rejected_title": "거부된 요청 {{count}}건",
@@ -2615,6 +2616,10 @@
     "log_range": "{{from}}–{{to}} / {{total}}",
     "log_rows": "페이지당 행",
     "log_prev": "이전",
-    "log_next": "다음"
+    "log_next": "다음",
+    "price_feed_status": "가격: LiteLLM 공개 가격표, 모델 {{models}}개, 업데이트 {{time}}. access.model-prices 항목({{count}})이 우선합니다. 구독 계정의 비용은 실제 청구액이 아닌 동등한 API 가격입니다.",
+    "price_feed_disabled": "가격표 사용 안 함: access.model-prices({{count}}개)와 업스트림 보고 비용만 사용합니다.",
+    "price_feed_error": "가격표를 내려받지 못했습니다: {{error}}",
+    "price_feed_loading": "공개 가격표를 내려받는 중…"
   }
 }

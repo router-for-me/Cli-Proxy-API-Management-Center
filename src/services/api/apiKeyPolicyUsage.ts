@@ -268,6 +268,32 @@ const normalizeHistory = (value: unknown): ApiKeyHistoryBucket[] =>
     return [{ time: raw.time, models: normalizeModels(raw.models) }];
   });
 
+/** State of the public price list used for cost estimates. */
+export interface PriceFeedStatus {
+  enabled: boolean;
+  url: string;
+  models: number;
+  updatedAt: string;
+  lastError: string;
+  /** Rows in access.model-prices, which override the feed. */
+  configuredPrices: number;
+}
+
+export function normalizePriceFeed(payload: unknown): PriceFeedStatus | null {
+  if (!isRecord(payload) || !isRecord(payload.price_feed)) return null;
+  const feed = payload.price_feed;
+  const updatedAt = typeof feed.updated_at === 'string' ? feed.updated_at : '';
+  return {
+    enabled: feed.enabled === true,
+    url: typeof feed.url === 'string' ? feed.url : '',
+    models: toNumber(feed.models),
+    // Go's zero time means never downloaded.
+    updatedAt: updatedAt.startsWith('0001-') ? '' : updatedAt,
+    lastError: typeof feed.last_error === 'string' ? feed.last_error : '',
+    configuredPrices: toNumber(payload.configured_prices),
+  };
+}
+
 export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[] {
   const keys = isRecord(payload) && Array.isArray(payload.keys) ? payload.keys : [];
   return keys.flatMap((entry) => {
@@ -347,6 +373,11 @@ export function aggregateModelUsage(
 export const apiKeyPolicyUsageApi = {
   list: async () =>
     normalizeApiKeyPolicyUsage(await apiClient.get<unknown>('/access/api-key-usage')),
+  /** Usage plus the price feed status from the same response. */
+  report: async () => {
+    const payload = await apiClient.get<unknown>('/access/api-key-usage');
+    return { keys: normalizeApiKeyPolicyUsage(payload), priceFeed: normalizePriceFeed(payload) };
+  },
   /** Latest served requests, newest first; older backends without the endpoint reject. */
   requests: async (limit = 500) =>
     normalizeApiKeyRequests(

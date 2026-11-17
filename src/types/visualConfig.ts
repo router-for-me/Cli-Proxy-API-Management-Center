@@ -30,6 +30,8 @@ export interface ModelPrice {
   input: number;
   output: number;
   cachedInput: number;
+  /** Prompt-cache write price; 0 bills writes as regular input. */
+  cacheWrite: number;
 }
 
 export type DisableImageGenerationMode = 'false' | 'true' | 'chat' | 'passthrough';

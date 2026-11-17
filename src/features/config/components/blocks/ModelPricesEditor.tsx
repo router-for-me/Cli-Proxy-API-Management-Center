@@ -11,7 +11,12 @@ interface ModelPricesEditorProps {
   onChange: (next: ModelPrice[]) => void;
 }
 
-const PRICE_FIELDS: Array<keyof Omit<ModelPrice, 'model'>> = ['input', 'output', 'cachedInput'];
+const PRICE_FIELDS: Array<keyof Omit<ModelPrice, 'model'>> = [
+  'input',
+  'output',
+  'cachedInput',
+  'cacheWrite',
+];
 
 /** Edits access.model-prices: USD per one million tokens, used by API key cost limits. */
 export function ModelPricesEditor({ value, disabled, onChange }: ModelPricesEditorProps) {
@@ -33,7 +38,9 @@ export function ModelPricesEditor({ value, disabled, onChange }: ModelPricesEdit
         <Button
           size="sm"
           variant="secondary"
-          onClick={() => onChange([...value, { model: '', input: 0, output: 0, cachedInput: 0 }])}
+          onClick={() =>
+            onChange([...value, { model: '', input: 0, output: 0, cachedInput: 0, cacheWrite: 0 }])
+          }
           disabled={disabled}
         >
           {t(`${PREFIX}.add`)}

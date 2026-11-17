@@ -1540,7 +1540,8 @@
           "model": "Model deseni",
           "input": "Girdi",
           "output": "Çıktı",
-          "cachedInput": "Önbellekli girdi"
+          "cachedInput": "Önbellekli girdi",
+          "cacheWrite": "Önbelleğe yazma"
         }
       },
       "payload_rules": {
@@ -2534,7 +2535,7 @@
     "kpi_error_rate": "Hata oranı",
     "kpi_avg": "Ort./{{unit}} {{value}}",
     "kpi_cached": "Önbellek: {{value}} ({{pct}})",
-    "kpi_no_price": "Fiyat bilgisi yok (access.model-prices tanımlayın)",
+    "kpi_no_price": "Bu modeller için fiyat yok",
     "kpi_top_error": "{{count}} başarısız · en çok: {{model}}",
     "kpi_no_errors": "Başarısız istek yok",
     "by_model": "Modellere göre kullanım",
@@ -2555,7 +2556,7 @@
     "details": "Detaylar",
     "chart_empty": "Bu dönemde henüz kullanım yok.",
     "tooltip_total": "toplam",
-    "footnote": "Sunucunun yerel saati esas alınır; haftalar pazartesi başlar. Maliyet upstream'in bildirdiği değerden, yoksa access.model-prices ayarından gelir. Saatlik geçmiş 48 saat, günlük geçmiş 90 gün tutulur.",
+    "footnote": "Sunucunun yerel saati esas alınır; haftalar pazartesi başlar. Maliyet upstream'in bildirdiği değerden, yoksa access.model-prices'tan, o da yoksa herkese açık fiyat listesinden gelir. Saatlik geçmiş 48 saat, günlük geçmiş 90 gün tutulur.",
     "disabled": "Pasif",
     "kpi_rejected": "{{count}} istek anahtar politikasıyla reddedildi",
     "rejected_title": "{{count}} reddedilen istek",
@@ -2615,6 +2616,10 @@
     "log_range": "{{from}}–{{to}} / {{total}}",
     "log_rows": "Sayfa başına satır",
     "log_prev": "Önceki",
-    "log_next": "Sonraki"
+    "log_next": "Sonraki",
+    "price_feed_status": "Fiyatlar: LiteLLM'in herkese açık fiyat listesi, {{models}} model, güncelleme {{time}}. access.model-prices satırları ({{count}}) bu listeyi geçersiz kılar. Abonelik hesaplarında maliyet, gerçek fatura değil eşdeğer API fiyatıdır.",
+    "price_feed_disabled": "Fiyat listesi kapalı; yalnızca access.model-prices ({{count}} satır) ve upstream'in bildirdiği maliyet kullanılıyor.",
+    "price_feed_error": "Fiyat listesi indirilemedi: {{error}}",
+    "price_feed_loading": "Herkese açık fiyat listesi indiriliyor…"
   }
 }

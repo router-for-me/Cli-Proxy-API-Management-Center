@@ -130,6 +130,7 @@ export function parseModelPrices(raw: unknown): ModelPrice[] {
         input: toPositiveNumber(item.input),
         output: toPositiveNumber(item.output),
         cachedInput: toPositiveNumber(item['cached-input']),
+        cacheWrite: toPositiveNumber(item['cache-write']),
       },
     ];
   });
@@ -143,6 +144,7 @@ export function serializeModelPrices(prices: ModelPrice[]) {
       if (price.input > 0) entry.input = price.input;
       if (price.output > 0) entry.output = price.output;
       if (price.cachedInput > 0) entry['cached-input'] = price.cachedInput;
+      if (price.cacheWrite > 0) entry['cache-write'] = price.cacheWrite;
       return entry;
     });
 }

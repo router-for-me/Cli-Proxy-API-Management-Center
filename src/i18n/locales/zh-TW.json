@@ -1557,7 +1557,8 @@
           "model": "模型模式",
           "input": "輸入",
           "output": "輸出",
-          "cachedInput": "快取輸入"
+          "cachedInput": "快取輸入",
+          "cacheWrite": "快取寫入"
         }
       },
       "payload_rules": {
@@ -2551,7 +2552,7 @@
     "kpi_error_rate": "錯誤率",
     "kpi_avg": "平均/{{unit}} {{value}}",
     "kpi_cached": "快取：{{value}}（{{pct}}）",
-    "kpi_no_price": "無價格資料（請設定 access.model-prices）",
+    "kpi_no_price": "這些模型沒有價格",
     "kpi_top_error": "失敗 {{count}} 次 · 最多：{{model}}",
     "kpi_no_errors": "沒有失敗的請求",
     "by_model": "依模型",
@@ -2572,7 +2573,7 @@
     "details": "詳細",
     "chart_empty": "此期間尚無用量。",
     "tooltip_total": "合計",
-    "footnote": "依伺服器本地時間計算，每週從週一開始。費用優先使用上游回報值，否則依 access.model-prices 估算。每小時記錄保留 48 小時，每日記錄保留 90 天。",
+    "footnote": "依伺服器本地時間計算，每週從週一開始。費用優先使用上游回報值，其次 access.model-prices，再次公開價目表。每小時記錄保留 48 小時，每日記錄保留 90 天。",
     "disabled": "已停用",
     "kpi_rejected": "{{count}} 次請求被金鑰政策拒絕",
     "rejected_title": "已拒絕 {{count}} 次請求",
@@ -2632,6 +2633,10 @@
     "log_range": "{{from}}–{{to}} / {{total}}",
     "log_rows": "每頁列數",
     "log_prev": "上一頁",
-    "log_next": "下一頁"
+    "log_next": "下一頁",
+    "price_feed_status": "價格：LiteLLM 公開價目表，{{models}} 個模型，更新於 {{time}}。access.model-prices 的項目（{{count}}）優先。訂閱帳號的費用是等價 API 價格，而非實際帳單。",
+    "price_feed_disabled": "價目表已關閉；僅使用 access.model-prices（{{count}} 筆）與上游回報的費用。",
+    "price_feed_error": "無法下載價目表：{{error}}",
+    "price_feed_loading": "正在下載公開價目表…"
   }
 }

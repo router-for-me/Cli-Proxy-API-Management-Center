@@ -1334,7 +1334,8 @@
           "model": "Mẫu mô hình",
           "input": "Đầu vào",
           "output": "Đầu ra",
-          "cachedInput": "Đầu vào đã lưu đệm"
+          "cachedInput": "Đầu vào đã lưu đệm",
+          "cacheWrite": "Ghi bộ nhớ đệm"
         }
       },
       "payload_rules": {
@@ -2540,7 +2541,7 @@
     "kpi_error_rate": "Tỷ lệ lỗi",
     "kpi_avg": "TB/{{unit}} {{value}}",
     "kpi_cached": "Bộ nhớ đệm: {{value}} ({{pct}})",
-    "kpi_no_price": "Chưa có giá (đặt access.model-prices)",
+    "kpi_no_price": "Không có giá cho các mô hình này",
     "kpi_top_error": "{{count}} lỗi · nhiều nhất: {{model}}",
     "kpi_no_errors": "Không có yêu cầu lỗi",
     "by_model": "Theo mô hình",
@@ -2561,7 +2562,7 @@
     "details": "Chi tiết",
     "chart_empty": "Chưa có mức dùng trong khoảng này.",
     "tooltip_total": "tổng",
-    "footnote": "Theo giờ địa phương của máy chủ; tuần bắt đầu từ thứ Hai. Chi phí lấy từ upstream, nếu không có thì từ access.model-prices. Lịch sử theo giờ giữ 48 giờ, theo ngày giữ 90 ngày.",
+    "footnote": "Theo giờ địa phương của máy chủ; tuần bắt đầu từ thứ Hai. Chi phí lấy từ upstream, nếu không có thì từ access.model-prices, sau đó từ bảng giá công khai. Lịch sử theo giờ giữ 48 giờ, theo ngày giữ 90 ngày.",
     "disabled": "Đã tắt",
     "kpi_rejected": "{{count}} yêu cầu bị chính sách key từ chối",
     "rejected_title": "{{count}} yêu cầu bị từ chối",
@@ -2621,6 +2622,10 @@
     "log_range": "{{from}}–{{to}} / {{total}}",
     "log_rows": "Số dòng mỗi trang",
     "log_prev": "Trước",
-    "log_next": "Sau"
+    "log_next": "Sau",
+    "price_feed_status": "Giá: bảng giá công khai LiteLLM, {{models}} mô hình, cập nhật {{time}}. Các dòng access.model-prices ({{count}}) được ưu tiên. Với tài khoản thuê bao, chi phí là giá API tương đương, không phải hóa đơn thực.",
+    "price_feed_disabled": "Đã tắt bảng giá; chỉ dùng access.model-prices ({{count}} dòng) và chi phí do upstream báo.",
+    "price_feed_error": "Không tải được bảng giá: {{error}}",
+    "price_feed_loading": "Đang tải bảng giá công khai…"
   }
 }

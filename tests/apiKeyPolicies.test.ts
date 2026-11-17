@@ -10,7 +10,11 @@ import {
   serializeApiKeyPolicies,
   serializeModelPrices,
 } from '@/features/config/apiKeyPolicies';
-import { aggregateModelUsage, normalizeApiKeyPolicyUsage } from '@/services/api/apiKeyPolicyUsage';
+import {
+  aggregateModelUsage,
+  normalizeApiKeyPolicyUsage,
+  normalizePriceFeed,
+} from '@/services/api/apiKeyPolicyUsage';
 
 describe('api key policies', () => {
   test('round-trips every policy field through YAML names', () => {
@@ -63,13 +67,20 @@ describe('api key policies', () => {
 
   test('model prices keep only named rows', () => {
     const prices = parseModelPrices([
-      { model: 'gpt-5*', input: 1.25, output: 10, 'cached-input': 0.125 },
+      { model: 'gpt-5*', input: 1.25, output: 10, 'cached-input': 0.125, 'cache-write': 1.5 },
       { input: 3 },
     ]);
-    expect(prices).toEqual([{ model: 'gpt-5*', input: 1.25, output: 10, cachedInput: 0.125 }]);
+    expect(prices).toEqual([
+      { model: 'gpt-5*', input: 1.25, output: 10, cachedInput: 0.125, cacheWrite: 1.5 },
+    ]);
     expect(
-      serializeModelPrices([...prices, { model: ' ', input: 1, output: 0, cachedInput: 0 }])
-    ).toEqual([{ model: 'gpt-5*', input: 1.25, output: 10, 'cached-input': 0.125 }]);
+      serializeModelPrices([
+        ...prices,
+        { model: ' ', input: 1, output: 0, cachedInput: 0, cacheWrite: 0 },
+      ])
+    ).toEqual([
+      { model: 'gpt-5*', input: 1.25, output: 10, 'cached-input': 0.125, 'cache-write': 1.5 },
+    ]);
   });
 
   test('expiry helpers match backend semantics', () => {
@@ -81,6 +92,28 @@ describe('api key policies', () => {
     expect(daysUntilExpiry('garbage', now)).toBe(-1);
     expect(expiresAtToDateInput('2026-11-20')).toBe('2026-11-20');
     expect(expiresAtToDateInput('')).toBe('');
+  });
+
+  test('normalizes the price feed status', () => {
+    expect(normalizePriceFeed({ keys: [] })).toBeNull();
+    expect(
+      normalizePriceFeed({
+        price_feed: {
+          enabled: true,
+          url: 'https://x',
+          models: 2400,
+          updated_at: '0001-01-01T00:00:00Z',
+        },
+        configured_prices: 2,
+      })
+    ).toEqual({
+      enabled: true,
+      url: 'https://x',
+      models: 2400,
+      updatedAt: '',
+      lastError: '',
+      configuredPrices: 2,
+    });
   });
 
   test('normalizes the usage endpoint payload', () => {

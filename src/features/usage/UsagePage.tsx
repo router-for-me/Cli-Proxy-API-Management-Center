@@ -27,6 +27,7 @@ import {
   mergeDims,
   type ApiKeyAccountUsage,
   type ApiKeyRequestEntry,
+  type PriceFeedStatus,
   type ApiKeyDimUsage,
   type ApiKeyModelUsage,
   type ApiKeyPolicyUsage,
@@ -450,6 +451,7 @@ export function UsagePage() {
   const [selectedKey, setSelectedKey] = useState<string>(ALL_KEYS);
   const [metric, setMetric] = useState<UsageMetric>('tokens');
   const [entries, setEntries] = useState<ApiKeyPolicyUsage[]>([]);
+  const [priceFeed, setPriceFeed] = useState<PriceFeedStatus | null>(null);
   const [requestLog, setRequestLog] = useState<ApiKeyRequestEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -458,11 +460,12 @@ export function UsagePage() {
     setLoading(true);
     try {
       const [usage, requests] = await Promise.all([
-        apiKeyPolicyUsageApi.list(),
+        apiKeyPolicyUsageApi.report(),
         // Older backends have no request log; the page still works without it.
         apiKeyPolicyUsageApi.requests().catch(() => null),
       ]);
-      setEntries(usage);
+      setEntries(usage.keys);
+      setPriceFeed(usage.priceFeed);
       setRequestLog(requests);
       setError('');
     } catch (err) {
@@ -1039,6 +1042,23 @@ export function UsagePage() {
         />
       </section>
 
+      {priceFeed && (
+        <p className={priceFeed.lastError && !priceFeed.models ? styles.note : styles.footnote}>
+          {!priceFeed.enabled
+            ? t(`${PREFIX}.price_feed_disabled`, { count: priceFeed.configuredPrices })
+            : priceFeed.models > 0
+              ? t(`${PREFIX}.price_feed_status`, {
+                  models: priceFeed.models.toLocaleString(),
+                  time: priceFeed.updatedAt
+                    ? formatDateTimeValue(priceFeed.updatedAt, i18n.resolvedLanguage)
+                    : '—',
+                  count: priceFeed.configuredPrices,
+                })
+              : priceFeed.lastError
+                ? t(`${PREFIX}.price_feed_error`, { error: priceFeed.lastError })
+                : t(`${PREFIX}.price_feed_loading`)}
+        </p>
+      )}
       <p className={styles.footnote}>{t(`${PREFIX}.footnote`)}</p>
     </div>
   );

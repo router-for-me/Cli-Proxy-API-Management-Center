@@ -1540,7 +1540,8 @@
           "model": "Model pattern",
           "input": "Input",
           "output": "Output",
-          "cachedInput": "Cached input"
+          "cachedInput": "Cached input",
+          "cacheWrite": "Cache write"
         }
       },
       "payload_rules": {
@@ -2534,7 +2535,7 @@
     "kpi_error_rate": "Error rate",
     "kpi_avg": "Avg/{{unit}} {{value}}",
     "kpi_cached": "Cached: {{value}} ({{pct}})",
-    "kpi_no_price": "No price data (set access.model-prices)",
+    "kpi_no_price": "No price for these models",
     "kpi_top_error": "{{count}} failed · top: {{model}}",
     "kpi_no_errors": "No failed requests",
     "by_model": "Usage by model",
@@ -2555,7 +2556,7 @@
     "details": "Details",
     "chart_empty": "No usage in this period yet.",
     "tooltip_total": "total",
-    "footnote": "Server local time; weeks start on Monday. Cost uses the upstream-reported cost, else access.model-prices. Hourly history covers 48 hours, daily history 90 days.",
+    "footnote": "Server local time; weeks start on Monday. Cost uses the upstream-reported cost, else access.model-prices, else the public price list. Hourly history covers 48 hours, daily history 90 days.",
     "disabled": "Disabled",
     "kpi_rejected": "{{count}} requests refused by key policy",
     "rejected_title": "{{count}} refused requests",
@@ -2615,6 +2616,10 @@
     "log_range": "{{from}}–{{to}} of {{total}}",
     "log_rows": "Rows per page",
     "log_prev": "Previous",
-    "log_next": "Next"
+    "log_next": "Next",
+    "price_feed_status": "Prices: LiteLLM public price list, {{models}} models, updated {{time}}. Rows in access.model-prices ({{count}}) override it. For subscription accounts, cost is the equivalent API price, not your bill.",
+    "price_feed_disabled": "Price list disabled; only access.model-prices ({{count}} rows) and upstream-reported costs are used.",
+    "price_feed_error": "Price list could not be downloaded: {{error}}",
+    "price_feed_loading": "Downloading the public price list…"
   }
 }
