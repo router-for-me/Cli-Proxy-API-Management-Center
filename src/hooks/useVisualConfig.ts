@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useReducer } from 'react';
-import { isMap, isScalar, isSeq, parse as parseYaml, parseDocument } from 'yaml';
+import { isAlias, isMap, isScalar, isSeq, parse as parseYaml, parseDocument } from 'yaml';
 import type { Node, Pair, YAMLMap, YAMLSeq } from 'yaml';
 import type {
   DisableImageGenerationMode,
@@ -7,6 +7,7 @@ import type {
   PluginStoreAuthRule,
   PluginStoreAuthType,
   PayloadFilterRule,
+  PayloadReplaceRule,
   PayloadHeaderEntry,
   PayloadParamEntry,
   PayloadParamValueType,
@@ -206,9 +207,17 @@ const PAYLOAD_DIRTY_FIELDS = [
   'payloadOverrideRules',
   'payloadOverrideRawRules',
   'payloadFilterRules',
+  'payloadReplaceRules',
 ] as const;
 
-const PAYLOAD_SECTIONS = ['default', 'default-raw', 'override', 'override-raw', 'filter'] as const;
+const PAYLOAD_SECTIONS = [
+  'default',
+  'default-raw',
+  'override',
+  'override-raw',
+  'filter',
+  'replace',
+] as const;
 
 function hasPayloadDirtyFields(dirtyFields: Set<string>): boolean {
   return PAYLOAD_DIRTY_FIELDS.some((field) => dirtyFields.has(field));
@@ -295,7 +304,7 @@ export function getPayloadParamValidationError(
   }
 }
 
-function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
+export function hasPayloadParamValidationErrors(rules: PayloadRule[]): boolean {
   return rules.some(
     (rule) =>
       rule.params.some((param) => Boolean(getPayloadParamValidationError(param))) ||
@@ -634,6 +643,161 @@ function parsePayloadModelEntries(raw: unknown, idPrefix: string): PayloadRule['
       notMatch: parsePayloadConditions(modelRecord?.['not-match'], `${modelId}-not-match`),
       exist: parseStringList(modelRecord?.exist),
       notExist: parseStringList(modelRecord?.['not-exist']),
+    };
+  });
+}
+
+/** Returns translation leaf codes. Literal operands are deliberately never trimmed. */
+export function getPayloadReplaceValidationError(rule: PayloadReplaceRule): string | undefined {
+  if (rule.target.role !== 'user') return 'payload_replace_invalid_target';
+  const positions = rule.target.positions.trim();
+  if (rule.target.all ? Boolean(positions) : !positions) {
+    return 'payload_replace_invalid_positions';
+  }
+  if (
+    positions &&
+    positions
+      .split(',')
+      .some(
+        (position) =>
+          !/^\d+$/.test(position.trim()) ||
+          !Number.isSafeInteger(Number(position)) ||
+          Number(position) < 1
+      )
+  )
+    return 'payload_replace_invalid_positions';
+  if (
+    !rule.models.length ||
+    rule.models.some(
+      (model) =>
+        !model.name.trim() ||
+        [...(model.match ?? []), ...(model.notMatch ?? [])].some(
+          (entry) => !entry.path.trim() || Boolean(getPayloadParamValidationError(entry))
+        )
+    )
+  )
+    return 'payload_replace_invalid_models';
+  if (rule.invalid || !rule.replacements.length || rule.replacements.some((entry) => !entry.from)) {
+    return 'payload_replace_invalid_replacements';
+  }
+  return undefined;
+}
+
+// JS object keys and numbers lose YAML source types (e.g. true and 1.0).
+// Match PayloadReplacement.UnmarshalYAML and PayloadReplaceTarget.UnmarshalYAML
+// before accepting the normalized values below.
+function parsePayloadReplaceRules(raw: unknown, document: YamlDocument): PayloadReplaceRule[] {
+  const resolve = (node: unknown): unknown => (isAlias(node) ? node.resolve(document) : node);
+  const get = (node: unknown, key: string): unknown => {
+    const map = resolve(node);
+    return isMap(map) ? resolve(map.get(key, true)) : undefined;
+  };
+  const rules = get(get(get(document.contents, 'requests'), 'payload'), 'replace');
+  const isStringOperand = (node: unknown) =>
+    isScalar(node) &&
+    typeof node.value === 'string' &&
+    (!node.tag || node.tag === 'tag:yaml.org,2002:str');
+  const isIntegerPosition = (node: unknown) => {
+    const scalar = resolve(node);
+    if (!isScalar(scalar)) return false;
+    if (scalar.tag) return scalar.tag === 'tag:yaml.org,2002:int';
+    // Implicit tags are not retained on Scalar.tag. Consult the same schema
+    // used by the parser rather than inferring !!int from Number.isInteger.
+    return document.schema.tags.some(
+      (tag) =>
+        tag.tag === 'tag:yaml.org,2002:int' && 'test' in tag && tag.test?.test(scalar.source ?? '')
+    );
+  };
+  if (raw === undefined) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map((item, index) => {
+    const record = asRecord(item);
+    const target = asRecord(record?.target);
+    let invalid = !Array.isArray(raw) || !record || !target;
+    if (target?.all !== undefined && typeof target.all !== 'boolean') invalid = true;
+    if (
+      target?.positions !== undefined &&
+      (!Array.isArray(target.positions) ||
+        target.positions.some((value) => typeof value !== 'number' || !Number.isSafeInteger(value)))
+    )
+      invalid = true;
+    const models = record?.models;
+    if (
+      !Array.isArray(models) ||
+      models.some((value) => {
+        const model = asRecord(value);
+        if (!model || typeof model.name !== 'string') return true;
+        for (const key of ['protocol', 'from-protocol']) {
+          if (model[key] !== undefined && typeof model[key] !== 'string') return true;
+        }
+        for (const key of ['match', 'not-match']) {
+          if (
+            model[key] !== undefined &&
+            (!Array.isArray(model[key]) || model[key].some((condition) => !asRecord(condition)))
+          )
+            return true;
+        }
+        for (const key of ['exist', 'not-exist']) {
+          if (
+            model[key] !== undefined &&
+            (!Array.isArray(model[key]) || model[key].some((path) => typeof path !== 'string'))
+          )
+            return true;
+        }
+        return (
+          model.headers !== undefined &&
+          (!asRecord(model.headers) ||
+            Object.values(asRecord(model.headers)!).some((value) => typeof value !== 'string'))
+        );
+      })
+    )
+      invalid = true;
+    const ruleNode = isSeq(rules) ? resolve(rules.items[index]) : undefined;
+    const replacementNodes = get(ruleNode, 'replacements');
+    if (
+      !isSeq(replacementNodes) ||
+      replacementNodes.items.some((node) => {
+        const entry = resolve(node);
+        return (
+          !isMap(entry) ||
+          entry.items.length !== 1 ||
+          !isStringOperand(entry.items[0].key) ||
+          !isStringOperand(entry.items[0].value)
+        );
+      })
+    )
+      invalid = true;
+    const positionsNode = get(get(ruleNode, 'target'), 'positions');
+    if (
+      positionsNode !== undefined &&
+      (!isSeq(positionsNode) || positionsNode.items.some((node) => !isIntegerPosition(node)))
+    ) {
+      invalid = true;
+    }
+    const replacements = record?.replacements;
+    if (!Array.isArray(replacements)) invalid = true;
+    return {
+      id: `payload-replace-rule-${index}`,
+      models: parsePayloadModelEntries(models, `replace-model-${index}`),
+      target: {
+        role: typeof target?.role === 'string' ? target.role : '',
+        all: target?.all === true,
+        positions: Array.isArray(target?.positions)
+          ? target.positions.map(String).join(', ')
+          : target?.positions === undefined
+            ? ''
+            : String(target.positions),
+      },
+      replacements: (Array.isArray(replacements) ? replacements : []).map((entry, entryIndex) => {
+        const pairs = Object.entries(asRecord(entry) ?? {});
+        if (pairs.length !== 1 || typeof pairs[0]?.[1] !== 'string') invalid = true;
+        return {
+          id: `replace-${index}-${entryIndex}`,
+          from: pairs[0]?.[0] ?? '',
+          to: typeof pairs[0]?.[1] === 'string' ? pairs[0][1] : '',
+        };
+      }),
+      // Evaluated after mapping replacements, which can also flag malformed operands.
+      invalid: invalid || undefined,
     };
   });
 }
@@ -1052,6 +1216,57 @@ function syncPayloadRuleSequence(
   replaceSequenceItems(seq, items);
 }
 
+function syncPayloadReplaceSequence(
+  doc: YamlDocument,
+  baseline: PayloadReplaceRule[],
+  desired: PayloadReplaceRule[]
+): void {
+  const payload = doc.getIn(['requests', 'payload'], true);
+  if (!isMap(payload)) throw new Error('Expected payload map');
+  if (!desired.length) {
+    deleteMapValue(payload, 'replace');
+    return;
+  }
+  const seq = ensureSeqValue(doc, payload, 'replace');
+  const nodes = new Map(baseline.map((rule, index) => [rule.id, seq.items[index]]));
+  replaceSequenceItems(
+    seq,
+    desired.map((rule) => {
+      const existing = nodes.get(rule.id);
+      const node = isMap(existing) ? existing : (doc.createNode({}) as YAMLMap);
+      const prior = baseline.find((entry) => entry.id === rule.id);
+      syncPayloadModels(doc, node, prior?.models ?? [], rule.models);
+      const target = ensureMapValue(doc, node, 'target');
+      setMapValue(doc, target, 'role', rule.target.role);
+      setMapValue(doc, target, 'all', rule.target.all);
+      if (rule.target.all) deleteMapValue(target, 'positions');
+      else if (prior?.target.positions !== rule.target.positions || !mapPair(target, 'positions')) {
+        setMapValue(doc, target, 'positions', rule.target.positions.split(',').map(Number));
+      }
+      const replacements = ensureSeqValue(doc, node, 'replacements');
+      const entryNodes = new Map(
+        (prior?.replacements ?? []).map((entry, index) => [entry.id, replacements.items[index]])
+      );
+      replaceSequenceItems(
+        replacements,
+        rule.replacements.map((entry) => {
+          const existing = entryNodes.get(entry.id);
+          const map = isMap(existing) ? existing : (doc.createNode({}) as YAMLMap);
+          const pair = map.items[0];
+          if (pair) {
+            if (isScalar(pair.key)) pair.key.value = entry.from;
+            else pair.key = doc.createNode(entry.from);
+            updatePairValue(doc, pair, entry.to);
+            map.items = [pair];
+          } else map.items.push(doc.createPair(entry.from, entry.to));
+          return map;
+        })
+      );
+      return node;
+    })
+  );
+}
+
 function syncPayloadFilterSequence(
   doc: YamlDocument,
   baseline: PayloadFilterRule[],
@@ -1139,7 +1354,7 @@ function alignRebasedValues(
   baseline: VisualConfigValues,
   draft: VisualConfigValues
 ): VisualConfigValues {
-  const ruleIdentity = (rule: PayloadRule | PayloadFilterRule) =>
+  const ruleIdentity = (rule: PayloadRule | PayloadFilterRule | PayloadReplaceRule) =>
     JSON.stringify(rule.models.map((model) => [model.name, model.protocol, model.fromProtocol]));
   const alignRules = (prior: PayloadRule[], rules: PayloadRule[]) =>
     alignRebasedEntries(prior, rules, ruleIdentity, (rule, original) => ({
@@ -1159,6 +1374,20 @@ function alignRebasedValues(
     payloadOverrideRawRules: alignRules(
       baseline.payloadOverrideRawRules,
       draft.payloadOverrideRawRules
+    ),
+    payloadReplaceRules: alignRebasedEntries(
+      baseline.payloadReplaceRules,
+      draft.payloadReplaceRules,
+      ruleIdentity,
+      (rule, original) => ({
+        ...rule,
+        models: alignRebasedModels(rule.models, original?.models ?? []),
+        replacements: alignRebasedEntries(
+          original?.replacements ?? [],
+          rule.replacements,
+          (entry) => entry.from
+        ),
+      })
     ),
     payloadFilterRules: alignRebasedEntries(
       baseline.payloadFilterRules,
@@ -1385,6 +1614,13 @@ function getNextDirtyFields(
         nextValues.payloadOverrideRawRules,
         baselineValues.payloadOverrideRawRules
       )
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'payloadReplaceRules')) {
+    updateDirty(
+      'payloadReplaceRules',
+      withoutEditorIds(nextValues.payloadReplaceRules) ===
+        withoutEditorIds(baselineValues.payloadReplaceRules)
     );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'payloadFilterRules')) {
@@ -1620,6 +1856,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
     payloadOverrideRules: parsePayloadRules(payload?.override),
     payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
     payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+    payloadReplaceRules: parsePayloadReplaceRules(payload?.replace, document),
 
     streaming: {
       keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
@@ -1652,11 +1889,15 @@ export function useVisualConfig() {
   );
   const visualHasPayloadValidationErrors = useMemo(
     () =>
+      visualValues.payloadReplaceRules.some((rule) =>
+        Boolean(getPayloadReplaceValidationError(rule))
+      ) ||
       hasPayloadParamValidationErrors(visualValues.payloadDefaultRules) ||
       hasPayloadParamValidationErrors(visualValues.payloadDefaultRawRules) ||
       hasPayloadParamValidationErrors(visualValues.payloadOverrideRules) ||
       hasPayloadParamValidationErrors(visualValues.payloadOverrideRawRules),
     [
+      visualValues.payloadReplaceRules,
       visualValues.payloadDefaultRules,
       visualValues.payloadDefaultRawRules,
       visualValues.payloadOverrideRules,
@@ -1693,6 +1934,9 @@ export function useVisualConfig() {
 
   const applyVisualChangesToYaml = useCallback(
     (currentYaml: string, target: 'server' | 'draft' = 'server'): string => {
+      if (visualValues.payloadReplaceRules.some((rule) => getPayloadReplaceValidationError(rule))) {
+        throw new Error('Invalid payload.replace rules');
+      }
       try {
         const doc = parseDocument(currentYaml);
         if (doc.errors.length > 0) return currentYaml;
@@ -2224,6 +2468,13 @@ export function useVisualConfig() {
               payloadBaseline.payloadOverrideRawRules,
               values.payloadOverrideRawRules,
               true
+            );
+          }
+          if (dirtyFields.has('payloadReplaceRules')) {
+            syncPayloadReplaceSequence(
+              doc,
+              payloadBaseline.payloadReplaceRules,
+              values.payloadReplaceRules
             );
           }
           if (dirtyFields.has('payloadFilterRules')) {

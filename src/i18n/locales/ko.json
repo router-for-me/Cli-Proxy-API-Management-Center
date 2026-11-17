@@ -1612,7 +1612,11 @@
         "integer_range_1_3600": "1에서 3600 사이의 정수를 입력하세요",
         "payload_invalid_number": "유효한 숫자를 입력하세요",
         "payload_invalid_boolean": "true 또는 false를 선택하세요",
-        "payload_invalid_json": "유효한 JSON을 입력하세요"
+        "payload_invalid_json": "유효한 JSON을 입력하세요",
+        "payload_replace_invalid_target": "사용자 메시지만 지원됩니다. target.role은 user여야 합니다.",
+        "payload_replace_invalid_positions": "모든 사용자 메시지를 선택하거나 양의 정수로 된 비어 있지 않은 위치 목록을 입력하세요. 두 가지를 동시에 지정할 수 없습니다.",
+        "payload_replace_invalid_models": "비어 있지 않은 이름과 유효한 조건을 가진 모델을 하나 이상 추가하세요.",
+        "payload_replace_invalid_replacements": "치환을 하나 이상 추가하세요. 각 항목에는 문자열 간 매핑이 정확히 하나만 있어야 하며 원본 텍스트는 비어 있을 수 없습니다. 치환 텍스트를 비워 두면 원본 텍스트가 삭제됩니다."
       },
       "common": {
         "edit": "편집",
@@ -1620,6 +1624,22 @@
         "cancel": "취소",
         "update": "업데이트",
         "add": "추가"
+      },
+      "payload_replace": {
+        "title": "사용자 텍스트 치환",
+        "description": "재정의 규칙 적용 후, 필터 적용 전에 적용됩니다. 기존 사용자 텍스트에 나열된 순서대로 리터럴 치환을 수행합니다.",
+        "target": "적용 범위",
+        "replacements": "치환 항목",
+        "target_all": "모든 사용자 메시지",
+        "target_positions": "사용자 메시지 위치",
+        "target_hint": "최종 업스트림 요청 본문에서 사용자 메시지의 위치를 1부터 셉니다. 편집 가능한 텍스트가 없는 사용자 메시지도 포함됩니다. 모든 메시지를 선택하거나 쉼표로 구분된 위치를 입력하세요.",
+        "from": "원본 텍스트",
+        "to": "치환 텍스트 (비워 두면 삭제)",
+        "add_replacement": "치환 추가",
+        "move_up": "위로 이동",
+        "move_down": "아래로 이동",
+        "reset_invalid": "잘못된 규칙 초기화",
+        "invalid_hint": "이 규칙에는 지원되지 않거나 형식이 잘못된 값이 포함되어 있습니다. 편집하기 전에 YAML에서 수정하거나 규칙을 초기화하세요."
       }
     }
   },

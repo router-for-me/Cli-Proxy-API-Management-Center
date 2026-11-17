@@ -731,6 +731,13 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     keywords: ['payload', 'rule', 'json'],
   },
   {
+    fieldId: 'payloadReplaceRules',
+    yamlKeys: ['requests', 'payload', 'replace'],
+    sectionId: 'payload',
+    labelKey: L('payload_replace.title'),
+    keywords: ['payload', 'rule', 'replace', 'replacements', 'user', 'positions', 'literal'],
+  },
+  {
     fieldId: 'payloadFilterRules',
     yamlKeys: ['requests', 'payload', 'filter'],
     sectionId: 'payload',

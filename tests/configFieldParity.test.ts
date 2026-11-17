@@ -104,7 +104,6 @@ describe('search hints are explanations the page still renders', () => {
         createElement(sections[sectionId], {
           values: DEFAULT_VISUAL_VALUES,
           disabled: false,
-          hasPayloadValidationErrors: false,
           onChange: () => {},
         })
       )

@@ -1406,7 +1406,11 @@
         "udp_port_capacity": "Phạm vi UDP phải chứa số cổng tối thiểu bằng hai lần số lượng phiên tối đa hiệu dụng (0 phiên sẽ tính là 32)",
         "invalid_ice_servers": "Mỗi máy chủ ICE cần ít nhất một URL stun:, stuns:, turn:, hoặc turns: hợp lệ",
         "integer_range_0_65535": "Nhập số nguyên từ 0 đến 65535",
-        "integer": "Nhập một số nguyên"
+        "integer": "Nhập một số nguyên",
+        "payload_replace_invalid_target": "Chỉ hỗ trợ tin nhắn người dùng: target.role phải là user.",
+        "payload_replace_invalid_positions": "Chọn tất cả tin nhắn người dùng hoặc nhập danh sách vị trí không rỗng gồm các số nguyên dương, không được chọn cả hai.",
+        "payload_replace_invalid_models": "Thêm ít nhất một mô hình có tên không rỗng và các điều kiện hợp lệ.",
+        "payload_replace_invalid_replacements": "Thêm ít nhất một phép thay thế. Mỗi mục phải chứa đúng một ánh xạ từ chuỗi sang chuỗi với văn bản nguồn không rỗng; văn bản thay thế rỗng sẽ xóa văn bản nguồn."
       },
       "common": {
         "edit": "Chỉnh sửa",
@@ -1572,6 +1576,22 @@
           "label": "Máy chủ ICE",
           "hint": "Các máy chủ STUN/TURN tùy chọn dùng URL stun:, stuns:, turn:, hoặc turns:. Thông tin xác thực TURN được bỏ qua trong API cấu hình JSON. Nhập thông tin xác thực dưới dạng mật khẩu và không để lộ bí mật trong ảnh chụp màn hình hay log."
         }
+      },
+      "payload_replace": {
+        "title": "Thay thế văn bản người dùng",
+        "description": "Áp dụng sau các quy tắc ghi đè và trước các bộ lọc. Các phép thay thế nguyên văn được thực hiện theo thứ tự trong danh sách trên văn bản người dùng hiện có.",
+        "target": "Phạm vi áp dụng",
+        "replacements": "Các phép thay thế",
+        "target_all": "Tất cả tin nhắn người dùng",
+        "target_positions": "Vị trí tin nhắn người dùng",
+        "target_hint": "Vị trí được đánh số từ 1 trong các tin nhắn người dùng ở phần thân yêu cầu cuối cùng gửi đến máy chủ thượng nguồn, kể cả tin nhắn không có văn bản có thể chỉnh sửa. Chọn tất cả tin nhắn hoặc nhập các vị trí phân cách bằng dấu phẩy.",
+        "from": "Văn bản nguồn",
+        "to": "Văn bản thay thế (để trống để xóa)",
+        "add_replacement": "Thêm phép thay thế",
+        "move_up": "Di chuyển lên",
+        "move_down": "Di chuyển xuống",
+        "reset_invalid": "Đặt lại quy tắc không hợp lệ",
+        "invalid_hint": "Quy tắc này chứa giá trị không được hỗ trợ hoặc sai định dạng. Hãy sửa trong YAML hoặc đặt lại quy tắc trước khi chỉnh sửa."
       }
     },
     "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",
