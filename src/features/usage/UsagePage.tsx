@@ -23,7 +23,10 @@ import {
   API_KEY_STATS_WINDOWS,
   aggregateModelUsage,
   apiKeyPolicyUsageApi,
+  mergeAccounts,
   mergeDims,
+  type ApiKeyAccountUsage,
+  type ApiKeyRequestEntry,
   type ApiKeyDimUsage,
   type ApiKeyModelUsage,
   type ApiKeyPolicyUsage,
@@ -32,6 +35,7 @@ import {
 } from '@/services/api/apiKeyPolicyUsage';
 import { formatCompactNumber, formatDateTimeValue, maskApiKey } from '@/utils/format';
 import { Donut } from './components/Donut';
+import { RequestLog } from './components/RequestLog';
 import { SeriesLegend, TrendChart, type SeriesInfo } from './components/TrendChart';
 import {
   OTHER_SERIES,
@@ -446,13 +450,20 @@ export function UsagePage() {
   const [selectedKey, setSelectedKey] = useState<string>(ALL_KEYS);
   const [metric, setMetric] = useState<UsageMetric>('tokens');
   const [entries, setEntries] = useState<ApiKeyPolicyUsage[]>([]);
+  const [requestLog, setRequestLog] = useState<ApiKeyRequestEntry[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setEntries(await apiKeyPolicyUsageApi.list());
+      const [usage, requests] = await Promise.all([
+        apiKeyPolicyUsageApi.list(),
+        // Older backends have no request log; the page still works without it.
+        apiKeyPolicyUsageApi.requests().catch(() => null),
+      ]);
+      setEntries(usage);
+      setRequestLog(requests);
       setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -554,6 +565,50 @@ export function UsagePage() {
       ),
     [entries, period, metric, keyLabel]
   );
+
+  // Account colors follow all-time token rank across every key, like model colors.
+  const accountSlots = useMemo(() => {
+    const all = entries.reduce<ApiKeyAccountUsage[]>(
+      (acc, entry) => mergeAccounts(acc, entry.usage.total.accounts),
+      []
+    );
+    const ranked = [...all].sort((a, b) => b.tokens - a.tokens || a.id.localeCompare(b.id));
+    return new Map(ranked.slice(0, 7).map((row, index) => [row.id, index]));
+  }, [entries]);
+  const accountColor = useCallback((id: string) => slotColor(accountSlots.get(id)), [accountSlots]);
+  const accountRows = useMemo(
+    () =>
+      toShareRows(
+        scoped
+          .reduce<ApiKeyAccountUsage[]>(
+            (acc, entry) => mergeAccounts(acc, entry.usage[period].accounts),
+            []
+          )
+          .map((row) => ({
+            id: row.id,
+            label: row.plan ? `${row.name} · ${row.plan}` : row.name,
+            value: metric === 'cost' ? row.cost : metric === 'tokens' ? row.tokens : row.requests,
+          }))
+      ),
+    [scoped, period, metric]
+  );
+  const keySummary = useMemo(() => {
+    const lifetime = sumTotals(entries, 'total');
+    return [
+      [t(`${PREFIX}.sum_keys`), String(entries.length)],
+      [t(`${PREFIX}.sum_active`), String(entries.filter((e) => !e.disabled && !e.expired).length)],
+      [t(`${PREFIX}.sum_disabled`), String(entries.filter((e) => e.disabled).length)],
+      [t(`${PREFIX}.sum_expired`), String(entries.filter((e) => e.expired).length)],
+      [
+        t(`${PREFIX}.sum_used`, { period: periodName }),
+        String(entries.filter((e) => e.usage[period].requests > 0).length),
+      ],
+      [t(`${PREFIX}.sum_lifetime_requests`), formatCount(lifetime.requests)],
+      [t(`${PREFIX}.sum_lifetime_tokens`), formatTokens(lifetime.tokens)],
+      [t(`${PREFIX}.sum_lifetime_cost`), formatCost(lifetime.cost)],
+      [t(`${PREFIX}.sum_rejected`), formatCount(lifetime.rejected)],
+    ];
+  }, [entries, period, periodName, t]);
 
   const dimLabel = useDimLabel();
   const dimRows = useCallback(
@@ -835,6 +890,38 @@ export function UsagePage() {
         </section>
       </div>
 
+      <div className={styles.split}>
+        <section className={styles.panel}>
+          <header className={styles.panelHead}>
+            <h2>{t(`${PREFIX}.by_account`)}</h2>
+            <span>{t(`${PREFIX}.panel_sub`, { metric: metricName, period: periodName })}</span>
+          </header>
+          <Donut
+            rows={accountRows}
+            colorOf={accountColor}
+            format={formatMetric}
+            centerLabel={metricName}
+            centerValue={formatMetric(accountRows.reduce((sum, r) => sum + r.value, 0))}
+            emptyText={t(`${PREFIX}.no_dim_data`)}
+            ariaLabel={t(`${PREFIX}.by_account`)}
+          />
+        </section>
+        <section className={styles.panel}>
+          <header className={styles.panelHead}>
+            <h2>{t(`${PREFIX}.key_summary`)}</h2>
+            <span>{t(`${PREFIX}.key_summary_sub`)}</span>
+          </header>
+          <dl className={styles.summary}>
+            {keySummary.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+
       <section className={styles.panel}>
         <header className={styles.panelHead}>
           <h2>{t(`${PREFIX}.trend_title`, { metric: metricName })}</h2>
@@ -941,6 +1028,15 @@ export function UsagePage() {
         ) : (
           <p className={styles.mutedText}>{t(`${PREFIX}.no_usage`)}</p>
         )}
+      </section>
+
+      <h3 className={styles.sectionTitle}>{t(`${PREFIX}.log_section`)}</h3>
+      <section className={styles.panel}>
+        <RequestLog
+          entries={requestLog ?? []}
+          scopeKey={effectiveKey === ALL_KEYS ? '' : effectiveKey}
+          available={requestLog !== null || loading}
+        />
       </section>
 
       <p className={styles.footnote}>{t(`${PREFIX}.footnote`)}</p>

@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import {
   aggregateModelUsage,
+  mergeAccounts,
   mergeDims,
   normalizeApiKeyPolicyUsage,
+  normalizeApiKeyRequests,
 } from '@/services/api/apiKeyPolicyUsage';
 import {
   OTHER_SERIES,
@@ -13,6 +15,7 @@ import {
   toShareRows,
   trendPoints,
 } from '@/features/usage/usageModel';
+import { filterRequests, tokensPerSecond } from '@/features/usage/requestLogModel';
 
 const model = (name: string, tokens: number, extra: Record<string, number> = {}) => ({
   model: name,
@@ -112,6 +115,73 @@ describe('usage model', () => {
     // Aggregation must not mutate the per-key rows.
     expect(usage[0].usage.day.models[0].efforts[0].requests).toBe(2);
     expect(mergeDims([], [])).toEqual([]);
+  });
+
+  test('parses and merges account usage', () => {
+    const usage = normalizeApiKeyPolicyUsage({
+      keys: ['sk-a', 'sk-b'].map((key) => ({
+        key,
+        usage: {
+          day: {
+            accounts: [
+              { id: 'acc-1', name: 'a@example.com', plan: 'team', requests: 2, tokens: 20 },
+              { id: 'acc-2', requests: 5, tokens: 5 },
+              { name: 'no id' },
+            ],
+          },
+        },
+      })),
+    });
+    const day = usage[0].usage.day.accounts;
+    expect(day.map((a) => [a.id, a.name, a.plan])).toEqual([
+      ['acc-1', 'a@example.com', 'team'],
+      ['acc-2', 'acc-2', ''],
+    ]);
+    const merged = mergeAccounts(day, usage[1].usage.day.accounts);
+    expect(merged.map((a) => [a.id, a.name, a.requests, a.tokens])).toEqual([
+      ['acc-2', 'acc-2', 10, 10],
+      ['acc-1', 'a@example.com', 4, 40],
+    ]);
+    expect(day[0].requests).toBe(2);
+  });
+
+  test('normalizes and filters the request log', () => {
+    const log = normalizeApiKeyRequests({
+      requests: [
+        {
+          time: '2026-11-17T09:00:00+03:00',
+          key: 'sk-a',
+          key_name: 'Team A',
+          auth_id: 'acc-1',
+          account_name: 'a@example.com',
+          model: 'gpt-x',
+          effort: 'high',
+          stream: true,
+          latency_ms: 3000,
+          ttft_ms: 1000,
+          output_tokens: 100,
+          tokens: 500,
+          request_id: 'abc123',
+        },
+        {
+          time: '2026-11-17T09:01:00+03:00',
+          key: 'sk-b',
+          model: 'm2',
+          failed: true,
+          status_code: 429,
+        },
+        { model: 'no time' },
+      ],
+    });
+    expect(log).toHaveLength(2);
+    expect(tokensPerSecond(log[0])).toBe(50);
+    expect(tokensPerSecond(log[1])).toBe(0);
+    const base = { key: '', model: '', account: '', status: '', search: '' };
+    expect(filterRequests(log, { ...base, status: 'error' })).toEqual([log[1]]);
+    expect(filterRequests(log, { ...base, key: 'sk-a' })).toEqual([log[0]]);
+    expect(filterRequests(log, { ...base, search: 'ABC1' })).toEqual([log[0]]);
+    expect(filterRequests(log, { ...base, search: '429' })).toEqual([log[1]]);
+    expect(filterRequests(log, { ...base, account: 'acc-1', model: 'm2' })).toEqual([]);
   });
 
   test('parses history buckets', () => {

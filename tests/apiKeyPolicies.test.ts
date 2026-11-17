@@ -121,6 +121,7 @@ describe('api key policies', () => {
       failed: 0,
       resetAt: '2026-11-16T00:00:00+03:00',
       models: [],
+      accounts: [],
       rejected: 0,
       rejectedReasons: {},
       lastRejectedAt: '',

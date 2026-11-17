@@ -20,6 +20,40 @@ export interface ApiKeyDimUsage {
   latencyCount: number;
 }
 
+/** A key's usage through one upstream credential. */
+export interface ApiKeyAccountUsage extends ApiKeyDimUsage {
+  /** Credential ID; `name` is the display name (account e-mail or label). */
+  id: string;
+  provider: string;
+  plan: string;
+}
+
+/** One served request from the recent request log (metadata only). */
+export interface ApiKeyRequestEntry {
+  time: string;
+  key: string;
+  keyName: string;
+  authId: string;
+  accountName: string;
+  plan: string;
+  provider: string;
+  model: string;
+  effort: string;
+  tier: string;
+  stream: boolean;
+  failed: boolean;
+  statusCode: number;
+  latencyMs: number;
+  ttftMs: number;
+  inputTokens: number;
+  cachedTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  tokens: number;
+  cost: number;
+  requestId: string;
+}
+
 export interface ApiKeyModelUsage {
   model: string;
   requests: number;
@@ -53,6 +87,8 @@ export interface ApiKeyWindowUsage {
   /** Empty for the total window, which never resets. */
   resetAt: string;
   models: ApiKeyModelUsage[];
+  /** Usage by upstream credential, most requests first. */
+  accounts: ApiKeyAccountUsage[];
   /** Requests refused by the key policy (disabled, expired, over limit); not in `requests`. */
   rejected: number;
   /** Rejection count per backend reason code, e.g. `api_key_disabled`. */
@@ -106,6 +142,66 @@ const normalizeDims = (value: unknown): ApiKeyDimUsage[] =>
       },
     ];
   });
+
+const str = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+const normalizeAccounts = (value: unknown): ApiKeyAccountUsage[] => {
+  const raws = Array.isArray(value) ? value : [];
+  return raws.flatMap((raw) => {
+    if (!isRecord(raw) || !str(raw.id)) return [];
+    const [dim] = normalizeDims([{ ...raw, name: str(raw.name) || str(raw.id) }]);
+    return dim
+      ? [{ ...dim, id: str(raw.id), provider: str(raw.provider), plan: str(raw.plan) }]
+      : [];
+  });
+};
+
+/** Sums account rows by credential ID, most requests first. */
+export function mergeAccounts(
+  a: ApiKeyAccountUsage[],
+  b: ApiKeyAccountUsage[]
+): ApiKeyAccountUsage[] {
+  const meta = new Map<string, ApiKeyAccountUsage>();
+  for (const row of [...a, ...b]) if (!meta.has(row.id)) meta.set(row.id, row);
+  const asDims = (rows: ApiKeyAccountUsage[]) => rows.map((row) => ({ ...row, name: row.id }));
+  return mergeDims(asDims(a), asDims(b)).map((dim) => {
+    const info = meta.get(dim.name)!;
+    return { ...dim, id: info.id, name: info.name, provider: info.provider, plan: info.plan };
+  });
+}
+
+export function normalizeApiKeyRequests(payload: unknown): ApiKeyRequestEntry[] {
+  const rows = isRecord(payload) && Array.isArray(payload.requests) ? payload.requests : [];
+  return rows.flatMap((raw) => {
+    if (!isRecord(raw) || !str(raw.time)) return [];
+    return [
+      {
+        time: str(raw.time),
+        key: str(raw.key),
+        keyName: str(raw.key_name),
+        authId: str(raw.auth_id),
+        accountName: str(raw.account_name),
+        plan: str(raw.plan),
+        provider: str(raw.provider),
+        model: str(raw.model),
+        effort: str(raw.effort),
+        tier: str(raw.tier),
+        stream: raw.stream === true,
+        failed: raw.failed === true,
+        statusCode: toNumber(raw.status_code),
+        latencyMs: toNumber(raw.latency_ms),
+        ttftMs: toNumber(raw.ttft_ms),
+        inputTokens: toNumber(raw.input_tokens),
+        cachedTokens: toNumber(raw.cached_tokens),
+        outputTokens: toNumber(raw.output_tokens),
+        reasoningTokens: toNumber(raw.reasoning_tokens),
+        tokens: toNumber(raw.tokens),
+        cost: toNumber(raw.cost),
+        requestId: str(raw.request_id),
+      },
+    ];
+  });
+}
 
 /** Sums dimension rows by name, most requests first. */
 export function mergeDims(a: ApiKeyDimUsage[], b: ApiKeyDimUsage[]): ApiKeyDimUsage[] {
@@ -187,6 +283,7 @@ export function normalizeApiKeyPolicyUsage(payload: unknown): ApiKeyPolicyUsage[
         failed: toNumber(raw.failed),
         resetAt: typeof raw.reset_at === 'string' ? raw.reset_at : '',
         models: normalizeModels(raw.models),
+        accounts: normalizeAccounts(raw.accounts),
         rejected: toNumber(raw.rejected),
         rejectedReasons: normalizeReasons(raw.rejected_reasons),
         lastRejectedAt: typeof raw.last_rejected_at === 'string' ? raw.last_rejected_at : '',
@@ -250,4 +347,9 @@ export function aggregateModelUsage(
 export const apiKeyPolicyUsageApi = {
   list: async () =>
     normalizeApiKeyPolicyUsage(await apiClient.get<unknown>('/access/api-key-usage')),
+  /** Latest served requests, newest first; older backends without the endpoint reject. */
+  requests: async (limit = 500) =>
+    normalizeApiKeyRequests(
+      await apiClient.get<unknown>(`/access/api-key-requests?limit=${limit}`)
+    ),
 };
