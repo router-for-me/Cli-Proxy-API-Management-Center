@@ -512,3 +512,147 @@
   font-size: 12px;
   color: var(--text-tertiary);
 }
+
+/* ---------- model details (effort, tier, latency) ---------- */
+
+.expand {
+  @include button-reset;
+
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: transform var(--dur-hover) var(--ease-out-strong);
+
+  &:hover,
+  &:focus-visible {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.expandOpen {
+  transform: rotate(180deg);
+}
+
+.chips {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  strong {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.detailCell {
+  padding: 0 !important;
+  background: var(--bg-secondary);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 18px 18px;
+}
+
+.detailStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin: 0;
+
+  dt {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.dimGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 16px;
+}
+
+.dimBlock {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.dimTitle {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.dimTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+
+  th,
+  td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
+
+  td:first-child .dot {
+    margin-right: 8px;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+}

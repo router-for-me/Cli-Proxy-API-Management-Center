@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { normalizeApiKeyPolicyUsage } from '@/services/api/apiKeyPolicyUsage';
+import {
+  aggregateModelUsage,
+  mergeDims,
+  normalizeApiKeyPolicyUsage,
+} from '@/services/api/apiKeyPolicyUsage';
 import {
   OTHER_SERIES,
   buildTrend,
@@ -67,6 +71,47 @@ describe('usage model', () => {
     expect(entries[0].usage.day.lastRejectedAt).toBe('2026-11-17T08:39:49+03:00');
     expect(entries[0].usage.week.rejected).toBe(0);
     expect(sumTotals(entries, 'day').rejected).toBe(2);
+  });
+
+  test('parses and merges effort and tier breakdowns', () => {
+    const usage = normalizeApiKeyPolicyUsage({
+      keys: ['sk-a', 'sk-b'].map((key) => ({
+        key,
+        usage: {
+          day: {
+            models: [
+              {
+                model: 'm1',
+                requests: 3,
+                tokens: 30,
+                streamed: 2,
+                latency_ms: 6000,
+                latency_count: 2,
+                ttft_ms: 900,
+                ttft_count: 2,
+                efforts: [
+                  { name: 'high', requests: 2, tokens: 20, latency_ms: 6000, latency_count: 2 },
+                  { name: 'default', requests: 1, tokens: 10 },
+                  { requests: 9 },
+                ],
+                tiers: [{ name: 'priority', requests: 3, tokens: 30, cost: 0.5 }],
+              },
+            ],
+          },
+        },
+      })),
+    });
+    expect(usage[0].usage.day.models[0].efforts).toHaveLength(2);
+    const [row] = aggregateModelUsage(usage, 'day');
+    expect(row).toMatchObject({ streamed: 4, latencyMs: 12000, latencyCount: 4, ttftCount: 4 });
+    expect(row.efforts.map((e) => [e.name, e.requests, e.latencyCount])).toEqual([
+      ['high', 4, 4],
+      ['default', 2, 0],
+    ]);
+    expect(row.tiers[0]).toMatchObject({ name: 'priority', requests: 6, cost: 1 });
+    // Aggregation must not mutate the per-key rows.
+    expect(usage[0].usage.day.models[0].efforts[0].requests).toBe(2);
+    expect(mergeDims([], [])).toEqual([]);
   });
 
   test('parses history buckets', () => {

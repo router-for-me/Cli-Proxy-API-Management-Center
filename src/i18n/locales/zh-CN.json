@@ -2553,6 +2553,24 @@
     "reason_api_key_expired": "密钥已过期",
     "reason_api_key_quota_exceeded": "超出限额",
     "reason_other": "其他",
-    "part_cache_write": "缓存写入"
+    "part_cache_write": "缓存写入",
+    "col_effort": "推理强度",
+    "col_latency": "平均耗时",
+    "col_reasoning": "推理",
+    "toggle_details": "查看 {{model}} 详情",
+    "detail_avg_latency": "平均响应时间",
+    "detail_ttft": "平均首 Token 时间",
+    "detail_stream": "流式请求",
+    "detail_reasoning": "推理 Token",
+    "detail_reasoning_share": "推理占输出比例",
+    "detail_cache_write": "缓存写入",
+    "detail_tokens_per_request": "每次请求 Token",
+    "effort_title": "推理强度",
+    "tier_title": "服务等级",
+    "dim_default": "默认",
+    "dim_other": "其他",
+    "by_effort": "按推理强度",
+    "by_tier": "按服务等级",
+    "no_dim_data": "暂无数据。这些明细从此版本开始统计。"
   }
 }

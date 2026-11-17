@@ -2576,6 +2576,24 @@
     "reason_api_key_expired": "Срок истёк",
     "reason_api_key_quota_exceeded": "Лимит исчерпан",
     "reason_other": "Другое",
-    "part_cache_write": "Запись в кэш"
+    "part_cache_write": "Запись в кэш",
+    "col_effort": "Усилие",
+    "col_latency": "Ср. время",
+    "col_reasoning": "Рассуждение",
+    "toggle_details": "Показать детали {{model}}",
+    "detail_avg_latency": "Среднее время ответа",
+    "detail_ttft": "Среднее время до первого токена",
+    "detail_stream": "Потоковые запросы",
+    "detail_reasoning": "Токены рассуждения",
+    "detail_reasoning_share": "Доля рассуждения в выводе",
+    "detail_cache_write": "Запись в кэш",
+    "detail_tokens_per_request": "Токенов на запрос",
+    "effort_title": "Уровень рассуждения",
+    "tier_title": "Уровень сервиса",
+    "dim_default": "По умолчанию",
+    "dim_other": "Другое",
+    "by_effort": "По уровню рассуждения",
+    "by_tier": "По уровню сервиса",
+    "no_dim_data": "Данных пока нет. Эти сведения собираются начиная с этой версии."
   }
 }

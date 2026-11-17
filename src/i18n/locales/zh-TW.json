@@ -2581,6 +2581,24 @@
     "reason_api_key_expired": "金鑰已過期",
     "reason_api_key_quota_exceeded": "超出限額",
     "reason_other": "其他",
-    "part_cache_write": "快取寫入"
+    "part_cache_write": "快取寫入",
+    "col_effort": "推理強度",
+    "col_latency": "平均耗時",
+    "col_reasoning": "推理",
+    "toggle_details": "查看 {{model}} 詳細",
+    "detail_avg_latency": "平均回應時間",
+    "detail_ttft": "平均首個 Token 時間",
+    "detail_stream": "串流請求",
+    "detail_reasoning": "推理 Token",
+    "detail_reasoning_share": "推理占輸出比例",
+    "detail_cache_write": "快取寫入",
+    "detail_tokens_per_request": "每次請求 Token",
+    "effort_title": "推理強度",
+    "tier_title": "服務等級",
+    "dim_default": "預設",
+    "dim_other": "其他",
+    "by_effort": "依推理強度",
+    "by_tier": "依服務等級",
+    "no_dim_data": "尚無資料。這些明細從此版本開始統計。"
   }
 }

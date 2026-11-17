@@ -139,6 +139,13 @@ describe('api key policies', () => {
         reasoningTokens: 0,
         tokens: 12,
         cost: 0,
+        streamed: 0,
+        latencyMs: 0,
+        latencyCount: 0,
+        ttftMs: 0,
+        ttftCount: 0,
+        efforts: [],
+        tiers: [],
       },
     ]);
   });

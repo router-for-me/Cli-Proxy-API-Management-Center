@@ -6,6 +6,20 @@ export type ApiKeyUsageWindow = 'day' | 'week' | 'month';
 /** Limit windows plus the all-time total reported for statistics. */
 export type ApiKeyStatsWindow = ApiKeyUsageWindow | 'total';
 
+/** A model's usage for one reasoning effort or service tier (`default` when unset). */
+export interface ApiKeyDimUsage {
+  name: string;
+  requests: number;
+  failed: number;
+  tokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  cost: number;
+  /** Summed latency (ms) of the `latencyCount` requests that reported one. */
+  latencyMs: number;
+  latencyCount: number;
+}
+
 export interface ApiKeyModelUsage {
   model: string;
   requests: number;
@@ -19,6 +33,16 @@ export interface ApiKeyModelUsage {
   reasoningTokens: number;
   tokens: number;
   cost: number;
+  /** Streaming requests. */
+  streamed: number;
+  /** Summed latency / time to first token (ms) over the requests that reported them. */
+  latencyMs: number;
+  latencyCount: number;
+  ttftMs: number;
+  ttftCount: number;
+  /** Requests by reasoning effort and by service tier, most requests first. */
+  efforts: ApiKeyDimUsage[];
+  tiers: ApiKeyDimUsage[];
 }
 
 export interface ApiKeyWindowUsage {
@@ -65,6 +89,47 @@ const toNumber = (value: unknown): number => {
   return Number.isFinite(num) && num > 0 ? num : 0;
 };
 
+const normalizeDims = (value: unknown): ApiKeyDimUsage[] =>
+  (Array.isArray(value) ? value : []).flatMap((raw) => {
+    if (!isRecord(raw) || typeof raw.name !== 'string' || !raw.name) return [];
+    return [
+      {
+        name: raw.name,
+        requests: toNumber(raw.requests),
+        failed: toNumber(raw.failed),
+        tokens: toNumber(raw.tokens),
+        outputTokens: toNumber(raw.output_tokens),
+        reasoningTokens: toNumber(raw.reasoning_tokens),
+        cost: toNumber(raw.cost),
+        latencyMs: toNumber(raw.latency_ms),
+        latencyCount: toNumber(raw.latency_count),
+      },
+    ];
+  });
+
+/** Sums dimension rows by name, most requests first. */
+export function mergeDims(a: ApiKeyDimUsage[], b: ApiKeyDimUsage[]): ApiKeyDimUsage[] {
+  const byName = new Map<string, ApiKeyDimUsage>();
+  for (const row of [...a, ...b]) {
+    const acc = byName.get(row.name);
+    if (!acc) {
+      byName.set(row.name, { ...row });
+      continue;
+    }
+    acc.requests += row.requests;
+    acc.failed += row.failed;
+    acc.tokens += row.tokens;
+    acc.outputTokens += row.outputTokens;
+    acc.reasoningTokens += row.reasoningTokens;
+    acc.cost += row.cost;
+    acc.latencyMs += row.latencyMs;
+    acc.latencyCount += row.latencyCount;
+  }
+  return [...byName.values()].sort(
+    (x, y) => y.requests - x.requests || x.name.localeCompare(y.name)
+  );
+}
+
 const normalizeModels = (value: unknown): ApiKeyModelUsage[] =>
   (Array.isArray(value) ? value : []).flatMap((raw) => {
     if (!isRecord(raw) || typeof raw.model !== 'string' || !raw.model) return [];
@@ -80,6 +145,13 @@ const normalizeModels = (value: unknown): ApiKeyModelUsage[] =>
         reasoningTokens: toNumber(raw.reasoning_tokens),
         tokens: toNumber(raw.tokens),
         cost: toNumber(raw.cost),
+        streamed: toNumber(raw.streamed),
+        latencyMs: toNumber(raw.latency_ms),
+        latencyCount: toNumber(raw.latency_count),
+        ttftMs: toNumber(raw.ttft_ms),
+        ttftCount: toNumber(raw.ttft_count),
+        efforts: normalizeDims(raw.efforts),
+        tiers: normalizeDims(raw.tiers),
       },
     ];
   });
@@ -145,7 +217,11 @@ export function aggregateModelUsage(
     for (const row of entry.usage[window].models) {
       const acc = byModel.get(row.model);
       if (!acc) {
-        byModel.set(row.model, { ...row });
+        byModel.set(row.model, {
+          ...row,
+          efforts: mergeDims(row.efforts, []),
+          tiers: mergeDims(row.tiers, []),
+        });
         continue;
       }
       acc.requests += row.requests;
@@ -157,6 +233,13 @@ export function aggregateModelUsage(
       acc.reasoningTokens += row.reasoningTokens;
       acc.tokens += row.tokens;
       acc.cost += row.cost;
+      acc.streamed += row.streamed;
+      acc.latencyMs += row.latencyMs;
+      acc.latencyCount += row.latencyCount;
+      acc.ttftMs += row.ttftMs;
+      acc.ttftCount += row.ttftCount;
+      acc.efforts = mergeDims(acc.efforts, row.efforts);
+      acc.tiers = mergeDims(acc.tiers, row.tiers);
     }
   }
   return [...byModel.values()].sort(

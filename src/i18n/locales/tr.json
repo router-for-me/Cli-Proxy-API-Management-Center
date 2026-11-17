@@ -2564,6 +2564,24 @@
     "reason_api_key_expired": "Süresi dolmuş",
     "reason_api_key_quota_exceeded": "Limit aşımı",
     "reason_other": "Diğer",
-    "part_cache_write": "Önbelleğe yazılan"
+    "part_cache_write": "Önbelleğe yazılan",
+    "col_effort": "Efor",
+    "col_latency": "Ort. süre",
+    "col_reasoning": "Muhakeme",
+    "toggle_details": "{{model}} detaylarını göster",
+    "detail_avg_latency": "Ort. yanıt süresi",
+    "detail_ttft": "İlk token'a kadar ort. süre",
+    "detail_stream": "Akış (stream) istekleri",
+    "detail_reasoning": "Muhakeme token'ları",
+    "detail_reasoning_share": "Çıktıda muhakeme payı",
+    "detail_cache_write": "Önbelleğe yazılan",
+    "detail_tokens_per_request": "İstek başına token",
+    "effort_title": "Muhakeme eforu",
+    "tier_title": "Servis katmanı",
+    "dim_default": "Varsayılan",
+    "dim_other": "Diğer",
+    "by_effort": "Muhakeme eforuna göre kullanım",
+    "by_tier": "Servis katmanına göre kullanım",
+    "no_dim_data": "Henüz veri yok. Bu ayrıntılar bu sürümden itibaren toplanıyor."
   }
 }

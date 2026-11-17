@@ -2564,6 +2564,24 @@
     "reason_api_key_expired": "Expired key",
     "reason_api_key_quota_exceeded": "Limit reached",
     "reason_other": "Other",
-    "part_cache_write": "Cache writes"
+    "part_cache_write": "Cache writes",
+    "col_effort": "Effort",
+    "col_latency": "Avg time",
+    "col_reasoning": "Reasoning",
+    "toggle_details": "Show details for {{model}}",
+    "detail_avg_latency": "Avg response time",
+    "detail_ttft": "Avg time to first token",
+    "detail_stream": "Streaming requests",
+    "detail_reasoning": "Reasoning tokens",
+    "detail_reasoning_share": "Reasoning share of output",
+    "detail_cache_write": "Cache writes",
+    "detail_tokens_per_request": "Tokens per request",
+    "effort_title": "Reasoning effort",
+    "tier_title": "Service tier",
+    "dim_default": "Default",
+    "dim_other": "Other",
+    "by_effort": "Usage by reasoning effort",
+    "by_tier": "Usage by service tier",
+    "no_dim_data": "No data yet. These details are collected from this version on."
   }
 }

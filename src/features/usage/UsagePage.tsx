@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   IconAlertTriangle,
+  IconChevronDown,
   IconDollarSign,
   IconModelCluster,
   IconNetwork,
@@ -22,6 +23,8 @@ import {
   API_KEY_STATS_WINDOWS,
   aggregateModelUsage,
   apiKeyPolicyUsageApi,
+  mergeDims,
+  type ApiKeyDimUsage,
   type ApiKeyModelUsage,
   type ApiKeyPolicyUsage,
   type ApiKeyStatsWindow,
@@ -133,6 +136,164 @@ function RejectedNotice({ usage }: { usage: ApiKeyWindowUsage }) {
   );
 }
 
+const EFFORT_SLOTS: Record<string, number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  xhigh: 3,
+  minimal: 4,
+  max: 5,
+  none: 6,
+};
+const TIER_SLOTS: Record<string, number> = {
+  standard: 0,
+  priority: 1,
+  flex: 2,
+  fast: 3,
+  auto: 4,
+  scale: 5,
+  batch: 6,
+};
+const effortColor = (name: string) => slotColor(EFFORT_SLOTS[name]);
+const tierColor = (name: string) => slotColor(TIER_SLOTS[name]);
+
+const formatDuration = (ms: number) => {
+  if (ms <= 0) return '—';
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)}s`;
+  return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+};
+const avg = (sum: number, count: number) => (count > 0 ? sum / count : 0);
+
+function useDimLabel() {
+  const { t } = useTranslation();
+  return (name: string) =>
+    name === 'default'
+      ? t(`${PREFIX}.dim_default`)
+      : name === 'other'
+        ? t(`${PREFIX}.dim_other`)
+        : name;
+}
+
+function DimTable({
+  title,
+  rows,
+  colorOf,
+}: {
+  title: string;
+  rows: ApiKeyDimUsage[];
+  colorOf: (name: string) => string;
+}) {
+  const { t } = useTranslation();
+  const label = useDimLabel();
+  const total = rows.reduce((sum, row) => sum + row.requests, 0);
+  return (
+    <div className={styles.dimBlock}>
+      <h4 className={styles.dimTitle}>{title}</h4>
+      <table className={styles.dimTable}>
+        <thead>
+          <tr>
+            <th>{title}</th>
+            <th>{t(`${PREFIX}.col_requests`)}</th>
+            <th>{t(`${PREFIX}.col_share`)}</th>
+            <th>{t(`${PREFIX}.col_error_rate`)}</th>
+            <th>{t(`${PREFIX}.col_total`)}</th>
+            <th>{t(`${PREFIX}.col_reasoning`)}</th>
+            <th>{t(`${PREFIX}.col_latency`)}</th>
+            <th>{t(`${PREFIX}.col_cost`)}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const share = total > 0 ? row.requests / total : 0;
+            return (
+              <tr key={row.name}>
+                <td>
+                  <span className={styles.dot} style={{ background: colorOf(row.name) }} />
+                  {label(row.name)}
+                </td>
+                <td>{row.requests.toLocaleString()}</td>
+                <td>
+                  <span className={styles.shareCell}>
+                    <span className={styles.shareTrack}>
+                      <span
+                        className={styles.shareFill}
+                        style={{ width: `${share * 100}%`, background: colorOf(row.name) }}
+                      />
+                    </span>
+                    {formatPct(share)}
+                  </span>
+                </td>
+                <td className={row.failed > 0 ? styles.bad : styles.muted}>
+                  {row.requests > 0 ? formatPct(row.failed / row.requests) : '—'}
+                </td>
+                <td title={row.tokens.toLocaleString()}>{formatTokens(row.tokens)}</td>
+                <td title={row.reasoningTokens.toLocaleString()}>
+                  {formatTokens(row.reasoningTokens)}
+                </td>
+                <td>{formatDuration(avg(row.latencyMs, row.latencyCount))}</td>
+                <td>{row.cost > 0 ? formatCost(row.cost) : '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ModelDetail({ row }: { row: ApiKeyModelUsage }) {
+  const { t } = useTranslation();
+  const stats = [
+    [t(`${PREFIX}.detail_avg_latency`), formatDuration(avg(row.latencyMs, row.latencyCount))],
+    [t(`${PREFIX}.detail_ttft`), formatDuration(avg(row.ttftMs, row.ttftCount))],
+    [
+      t(`${PREFIX}.detail_stream`),
+      row.requests > 0 ? formatPct(Math.min(row.streamed / row.requests, 1)) : '—',
+    ],
+    [t(`${PREFIX}.detail_reasoning`), formatTokens(row.reasoningTokens)],
+    [
+      t(`${PREFIX}.detail_reasoning_share`),
+      row.outputTokens > 0 ? formatPct(Math.min(row.reasoningTokens / row.outputTokens, 1)) : '—',
+    ],
+    [t(`${PREFIX}.detail_cache_write`), formatTokens(row.cacheWriteTokens)],
+    [
+      t(`${PREFIX}.detail_tokens_per_request`),
+      row.requests > 0 ? formatTokens(row.tokens / row.requests) : '—',
+    ],
+  ];
+  return (
+    <div className={styles.detail}>
+      <dl className={styles.detailStats}>
+        {stats.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {row.efforts.length === 0 && row.tiers.length === 0 ? (
+        <p className={styles.mutedText}>{t(`${PREFIX}.no_dim_data`)}</p>
+      ) : (
+        <div className={styles.dimGrid}>
+          {row.efforts.length > 0 && (
+            <DimTable
+              title={t(`${PREFIX}.effort_title`)}
+              rows={row.efforts}
+              colorOf={effortColor}
+            />
+          )}
+          {row.tiers.length > 0 && (
+            <DimTable title={t(`${PREFIX}.tier_title`)} rows={row.tiers} colorOf={tierColor} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const MODEL_COLUMNS = 12;
+
 function ModelTable({
   rows,
   colorOf,
@@ -141,14 +302,25 @@ function ModelTable({
   colorOf: (m: string) => string;
 }) {
   const { t } = useTranslation();
+  const label = useDimLabel();
+  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set());
+  const toggle = (model: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(model)) next.add(model);
+      return next;
+    });
   const totalTokens = rows.reduce((sum, row) => sum + row.tokens, 0);
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead aria-label={t(`${PREFIX}.details`)} />
           <TableHead>{t(`${PREFIX}.col_model`)}</TableHead>
+          <TableHead>{t(`${PREFIX}.col_effort`)}</TableHead>
           <TableHead alignRight>{t(`${PREFIX}.col_requests`)}</TableHead>
           <TableHead alignRight>{t(`${PREFIX}.col_error_rate`)}</TableHead>
+          <TableHead alignRight>{t(`${PREFIX}.col_latency`)}</TableHead>
           <TableHead alignRight>{t(`${PREFIX}.col_input`)}</TableHead>
           <TableHead alignRight>{t(`${PREFIX}.col_cached`)}</TableHead>
           <TableHead alignRight>{t(`${PREFIX}.col_output`)}</TableHead>
@@ -160,57 +332,106 @@ function ModelTable({
       <TableBody>
         {rows.map((row) => {
           const share = totalTokens > 0 ? row.tokens / totalTokens : 0;
+          const expanded = open.has(row.model);
           return (
-            <TableRow key={row.model}>
-              <TableCell className={styles.model}>
-                <span className={styles.dot} style={{ background: colorOf(row.model) }} />
-                {row.model}
-              </TableCell>
-              <TableCell alignRight className={styles.num}>
-                {row.requests.toLocaleString()}
-              </TableCell>
-              <TableCell
-                alignRight
-                className={`${styles.num} ${row.failed > 0 ? styles.bad : styles.muted}`}
-                title={t(`${PREFIX}.failed_hint`, { count: row.failed })}
-              >
-                {row.requests > 0 ? formatPct(row.failed / row.requests) : '—'}
-              </TableCell>
-              <TableCell alignRight className={styles.num} title={row.inputTokens.toLocaleString()}>
-                {formatTokens(row.inputTokens)}
-              </TableCell>
-              <TableCell
-                alignRight
-                className={styles.num}
-                title={row.cachedTokens.toLocaleString()}
-              >
-                {formatTokens(row.cachedTokens)}
-              </TableCell>
-              <TableCell
-                alignRight
-                className={styles.num}
-                title={row.outputTokens.toLocaleString()}
-              >
-                {formatTokens(row.outputTokens)}
-              </TableCell>
-              <TableCell alignRight className={styles.num} title={row.tokens.toLocaleString()}>
-                <strong>{formatTokens(row.tokens)}</strong>
-              </TableCell>
-              <TableCell alignRight className={styles.num}>
-                <span className={styles.shareCell}>
-                  <span className={styles.shareTrack}>
-                    <span
-                      className={styles.shareFill}
-                      style={{ width: `${share * 100}%`, background: colorOf(row.model) }}
-                    />
+            <Fragment key={row.model}>
+              <TableRow>
+                <TableCell>
+                  <button
+                    type="button"
+                    className={`${styles.expand} ${expanded ? styles.expandOpen : ''}`}
+                    aria-expanded={expanded}
+                    aria-label={t(`${PREFIX}.toggle_details`, { model: row.model })}
+                    onClick={() => toggle(row.model)}
+                  >
+                    <IconChevronDown size={16} />
+                  </button>
+                </TableCell>
+                <TableCell className={styles.model}>
+                  <span className={styles.dot} style={{ background: colorOf(row.model) }} />
+                  {row.model}
+                </TableCell>
+                <TableCell>
+                  <span className={styles.chips}>
+                    {row.efforts.length === 0 ? (
+                      <span className={styles.muted}>—</span>
+                    ) : (
+                      row.efforts.slice(0, 3).map((effort) => (
+                        <span key={effort.name} className={styles.chip}>
+                          <span
+                            className={styles.chipDot}
+                            style={{ background: effortColor(effort.name) }}
+                          />
+                          {label(effort.name)}
+                          <strong>{effort.requests.toLocaleString()}</strong>
+                        </span>
+                      ))
+                    )}
+                    {row.efforts.length > 3 && (
+                      <span className={styles.chip}>+{row.efforts.length - 3}</span>
+                    )}
                   </span>
-                  {formatPct(share)}
-                </span>
-              </TableCell>
-              <TableCell alignRight className={styles.num}>
-                {row.cost > 0 ? formatCost(row.cost) : '—'}
-              </TableCell>
-            </TableRow>
+                </TableCell>
+                <TableCell alignRight className={styles.num}>
+                  {row.requests.toLocaleString()}
+                </TableCell>
+                <TableCell
+                  alignRight
+                  className={`${styles.num} ${row.failed > 0 ? styles.bad : styles.muted}`}
+                  title={t(`${PREFIX}.failed_hint`, { count: row.failed })}
+                >
+                  {row.requests > 0 ? formatPct(row.failed / row.requests) : '—'}
+                </TableCell>
+                <TableCell alignRight className={styles.num}>
+                  {formatDuration(avg(row.latencyMs, row.latencyCount))}
+                </TableCell>
+                <TableCell
+                  alignRight
+                  className={styles.num}
+                  title={row.inputTokens.toLocaleString()}
+                >
+                  {formatTokens(row.inputTokens)}
+                </TableCell>
+                <TableCell
+                  alignRight
+                  className={styles.num}
+                  title={row.cachedTokens.toLocaleString()}
+                >
+                  {formatTokens(row.cachedTokens)}
+                </TableCell>
+                <TableCell
+                  alignRight
+                  className={styles.num}
+                  title={row.outputTokens.toLocaleString()}
+                >
+                  {formatTokens(row.outputTokens)}
+                </TableCell>
+                <TableCell alignRight className={styles.num} title={row.tokens.toLocaleString()}>
+                  <strong>{formatTokens(row.tokens)}</strong>
+                </TableCell>
+                <TableCell alignRight className={styles.num}>
+                  <span className={styles.shareCell}>
+                    <span className={styles.shareTrack}>
+                      <span
+                        className={styles.shareFill}
+                        style={{ width: `${share * 100}%`, background: colorOf(row.model) }}
+                      />
+                    </span>
+                    {formatPct(share)}
+                  </span>
+                </TableCell>
+                <TableCell alignRight className={styles.num}>
+                  {row.cost > 0 ? formatCost(row.cost) : '—'}
+                </TableCell>
+              </TableRow>
+              {expanded && (
+                <TableRow>
+                  <TableCell colSpan={MODEL_COLUMNS} className={styles.detailCell}>
+                    <ModelDetail row={row} />
+                  </TableCell>
+                </TableRow>
+              )}
+            </Fragment>
           );
         })}
       </TableBody>
@@ -333,6 +554,23 @@ export function UsagePage() {
       ),
     [entries, period, metric, keyLabel]
   );
+
+  const dimLabel = useDimLabel();
+  const dimRows = useCallback(
+    (pick: (row: ApiKeyModelUsage) => ApiKeyDimUsage[]) =>
+      toShareRows(
+        models
+          .reduce<ApiKeyDimUsage[]>((acc, row) => mergeDims(acc, pick(row)), [])
+          .map((dim) => ({
+            id: dim.name,
+            label: dimLabel(dim.name),
+            value: metric === 'cost' ? dim.cost : metric === 'tokens' ? dim.tokens : dim.requests,
+          }))
+      ),
+    [models, metric, dimLabel]
+  );
+  const effortRows = useMemo(() => dimRows((row) => row.efforts), [dimRows]);
+  const tierRows = useMemo(() => dimRows((row) => row.tiers), [dimRows]);
 
   const compositionRows = useMemo(
     () =>
@@ -562,6 +800,39 @@ export function UsagePage() {
             />
           </section>
         )}
+      </div>
+
+      <div className={styles.split}>
+        <section className={styles.panel}>
+          <header className={styles.panelHead}>
+            <h2>{t(`${PREFIX}.by_effort`)}</h2>
+            <span>{t(`${PREFIX}.panel_sub`, { metric: metricName, period: periodName })}</span>
+          </header>
+          <Donut
+            rows={effortRows}
+            colorOf={effortColor}
+            format={formatMetric}
+            centerLabel={metricName}
+            centerValue={formatMetric(effortRows.reduce((sum, r) => sum + r.value, 0))}
+            emptyText={t(`${PREFIX}.no_dim_data`)}
+            ariaLabel={t(`${PREFIX}.by_effort`)}
+          />
+        </section>
+        <section className={styles.panel}>
+          <header className={styles.panelHead}>
+            <h2>{t(`${PREFIX}.by_tier`)}</h2>
+            <span>{t(`${PREFIX}.panel_sub`, { metric: metricName, period: periodName })}</span>
+          </header>
+          <Donut
+            rows={tierRows}
+            colorOf={tierColor}
+            format={formatMetric}
+            centerLabel={metricName}
+            centerValue={formatMetric(tierRows.reduce((sum, r) => sum + r.value, 0))}
+            emptyText={t(`${PREFIX}.no_dim_data`)}
+            ariaLabel={t(`${PREFIX}.by_tier`)}
+          />
+        </section>
       </div>
 
       <section className={styles.panel}>

@@ -2570,6 +2570,24 @@
     "reason_api_key_expired": "Key hết hạn",
     "reason_api_key_quota_exceeded": "Vượt giới hạn",
     "reason_other": "Khác",
-    "part_cache_write": "Ghi vào bộ nhớ đệm"
+    "part_cache_write": "Ghi vào bộ nhớ đệm",
+    "col_effort": "Mức suy luận",
+    "col_latency": "TG trung bình",
+    "col_reasoning": "Suy luận",
+    "toggle_details": "Xem chi tiết {{model}}",
+    "detail_avg_latency": "Thời gian phản hồi TB",
+    "detail_ttft": "Thời gian tới token đầu TB",
+    "detail_stream": "Yêu cầu streaming",
+    "detail_reasoning": "Token suy luận",
+    "detail_reasoning_share": "Tỷ lệ suy luận trong đầu ra",
+    "detail_cache_write": "Ghi vào bộ nhớ đệm",
+    "detail_tokens_per_request": "Token mỗi yêu cầu",
+    "effort_title": "Mức suy luận",
+    "tier_title": "Hạng dịch vụ",
+    "dim_default": "Mặc định",
+    "dim_other": "Khác",
+    "by_effort": "Theo mức suy luận",
+    "by_tier": "Theo hạng dịch vụ",
+    "no_dim_data": "Chưa có dữ liệu. Các chi tiết này được thu thập từ phiên bản này."
   }
 }

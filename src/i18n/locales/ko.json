@@ -2564,6 +2564,24 @@
     "reason_api_key_expired": "만료된 키",
     "reason_api_key_quota_exceeded": "한도 초과",
     "reason_other": "기타",
-    "part_cache_write": "캐시 쓰기"
+    "part_cache_write": "캐시 쓰기",
+    "col_effort": "추론 강도",
+    "col_latency": "평균 시간",
+    "col_reasoning": "추론",
+    "toggle_details": "{{model}} 상세 보기",
+    "detail_avg_latency": "평균 응답 시간",
+    "detail_ttft": "첫 토큰까지 평균 시간",
+    "detail_stream": "스트리밍 요청",
+    "detail_reasoning": "추론 토큰",
+    "detail_reasoning_share": "출력 중 추론 비율",
+    "detail_cache_write": "캐시 쓰기",
+    "detail_tokens_per_request": "요청당 토큰",
+    "effort_title": "추론 강도",
+    "tier_title": "서비스 등급",
+    "dim_default": "기본값",
+    "dim_other": "기타",
+    "by_effort": "추론 강도별 사용량",
+    "by_tier": "서비스 등급별 사용량",
+    "no_dim_data": "아직 데이터가 없습니다. 이 항목은 이 버전부터 수집됩니다."
   }
 }
