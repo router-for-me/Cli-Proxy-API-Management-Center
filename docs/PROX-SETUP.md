@@ -1,17 +1,17 @@
-# Prox iteration workspace
+# ProxUI iteration workspace
 
 This is a fork of [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center),
 independent of CPA-Manager-Plus at `usage.swervelab.xyz`. Upstream is MIT licensed;
 keep its license and attribution. Base commit: `64b4f5aed19b8f791eb21eb9e785ea379ea05b44`.
 
-The upstream navigation matches the supplied Prox screenshot, including Quota
+The upstream navigation matches the supplied ProxUI screenshot, including Quota
 Management, Quick Start, Auth Files, Plugin Store, and Management Center Info.
 Theo's exact private changes have not been obtained. The screenshot is a design
 reference, not proof that upstream supplies pooled forecasts.
 
 ## Run and deploy
 
-- Fork: `https://github.com/SwiggitySwerve/prox`
+- Fork: `https://github.com/SwiggitySwerve/ProxUI`
 - Checkout on homelab: `/home/swerve/src/prox`
 - Setup merged in PR #1; pooled dashboard branch: `feat/pooled-quota-dashboard`.
 - Public UI: `https://prox.swervelab.xyz`
@@ -31,8 +31,8 @@ bash scripts/deploy-homelab.sh
 ```
 
 This verifies and builds the single-file UI and quota-history server, checks
-Nginx configuration, installs their user services, and restarts only Prox and
-Prox history. The script uses the pinned Bun via npm
+Nginx configuration, installs their user services, and restarts only ProxUI and
+ProxUI history. The script uses the pinned Bun via npm
 exec, so it does not replace a machine's global Bun. Commit first when the image
 revision must identify an exact source tree.
 
@@ -49,7 +49,7 @@ Initial routing setup (operator access on homelab):
 
 ```sh
 kubectl apply -f deploy/kubernetes.yaml
-bash ~/swervebox/scripts/authentik-proxy-app.sh prox.swervelab.xyz 'Prox' prox
+bash ~/swervebox/scripts/authentik-proxy-app.sh prox.swervelab.xyz 'ProxUI' prox
 ```
 
 The new namespace, service, EndpointSlice, and ingress are managed by this fork's
@@ -117,7 +117,7 @@ it through these entry points:
 - `src/styles/themes.scss`: shared visual tokens.
 - `src/services/api/`: v8 API boundary and provider requests.
 
-Target: the supplied dark Prox layout, provider tabs, separate Claude/Codex pool
+Target: the supplied dark ProxUI layout, provider tabs, separate Claude/Codex pool
 cards, recorded versus projected lines, burn/drain intervals, account reset
 markers, and pool/first-account depletion estimates. Show stale/missing data
 explicitly; projections must remain distinguishable from observations.
@@ -140,7 +140,7 @@ its recent burn rate (or the selected multiplier) and resets on its reported
 cycle. Missing/stale/error balances remain unknown, and history gaps break the
 recorded line. No historical samples or plan multipliers are fabricated.
 
-For each subsequent UI change: run `bun run verify`, deploy Prox only, and inspect
+For each subsequent UI change: run `bun run verify`, deploy ProxUI only, and inspect
 the affected route at desktop and mobile widths against the screenshot. Keep
 browser screenshots free of credentials and account identities.
 
@@ -165,8 +165,8 @@ they do not certify the production database or replace its backup.
 Stop the new UI and collector with `systemctl --user stop prox prox-history`.
 Keep the data directory for later recovery. To remove its cluster
 routes, run `kubectl delete -f deploy/kubernetes.yaml`. This manifest contains only
-the new Prox namespace/resources. Existing proxy and usage services are untouched.
-Remove the Prox Authentik application/provider separately if retiring the service.
+the new ProxUI namespace/resources. Existing proxy and usage services are untouched.
+Remove the ProxUI Authentik application/provider separately if retiring the service.
 
 ## Setup verification (2026-10-27)
 
@@ -213,7 +213,7 @@ reviewer's original reproducer now returns HTTP 200.
 
 Remote CI was unavailable for the setup merge; these verification results are
 local checks. Inference and CPA-Manager-Plus container start timestamps remain
-unchanged from before the Prox work.
+unchanged from before the ProxUI work.
 # Analytics
 
 The Observe sidebar's **Analytics** page reads retained request events from
@@ -232,7 +232,7 @@ mounted and nothing new is exposed. The key is never sent to the browser. This g
 is for the trusted homelab administrator, not for tenants with different data
 permissions.
 
-The existing `/v8/management/prox/analytics` route reaches the authenticated Prox
+The existing `/v8/management/prox/analytics` route reaches the authenticated ProxUI
 server, which calls prox-usage's `/v0/management/monitoring/prox-analytics`, an
 alias of its `/v1/analytics` kept for this switch and removed in plan P10. The
 response contract is unchanged. The inference instances remain on v8. prox-usage
@@ -277,7 +277,7 @@ restart is needed. An unknown key appears as `key <first 8 hash characters>`;
 traffic without a key is `unknown`. Invalid edits retain the last good labels and
 set `client_alias_error` in the authenticated `/v1/exporter` response.
 
-The monitoring rollout first adds Prox source-health gauges beside the unchanged
+The monitoring rollout first adds ProxUI source-health gauges beside the unchanged
 CPAMP counters. At cutover Step E, require Step B's full history import to finish,
 then require `/v1/exporter` to report `rate_book_loaded: true` and
 `client_aliases_loaded: true`. A last-good reload error may retain valid values;
@@ -285,7 +285,7 @@ first-load failure must suppress the shim's usage counters. Use an explicit empt
 `client_alias` array if no friendly names are wanted.
 
 The cutover adds `source="prox-usage"` to usage counters and gauges. Their values
-become the canonical tokens and current-rate costs shown in Prox analytics, with
+become the canonical tokens and current-rate costs shown in ProxUI analytics, with
 requested-model/account/provider/client label values preserved. New series' first
 samples are not counted by Prometheus rate/increase; lifetime-total dashboards
 jump once. Fable/Terra pricing and removal of the old generic-cache, `-fast` and

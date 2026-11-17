@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./docs/assets/prox-mark.svg" alt="Prox" width="128">
+<img src="./docs/assets/prox-mark.svg" alt="ProxUI" width="128">
 
-# Prox
+# ProxUI
 
 **一个控制台，管理你运行的所有 CLI Proxy API 实例。**
 
@@ -15,18 +15,18 @@
 
 [English](README.md) · **简体中文**
 
-[Prox 新增功能](#prox-新增功能) · [截图](#截图) · [整体架构](#整体架构) · [构建与部署](#构建与部署) · [开发](#开发)
+[ProxUI 新增功能](#proxui-新增功能) · [截图](#截图) · [整体架构](#整体架构) · [构建与部署](#构建与部署) · [开发](#开发)
 
 </div>
 
 ---
 
-Prox 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 的分支。它保留上游的全部管理页面，并补充了在一个家庭实验室中运行多个 CLI Proxy API 实例时所需的功能：覆盖所有 Claude 与 Codex 账号的额度池、已保留用量的分析，以及通过各自管理源访问每个实例的统一登录。
+ProxUI 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 的分支。它保留上游的全部管理页面，并补充了在一个家庭实验室中运行多个 CLI Proxy API 实例时所需的功能：覆盖所有 Claude 与 Codex 账号的额度池、已保留用量的分析，以及通过各自管理源访问每个实例的统一登录。
 
 > [!IMPORTANT]
-> 需要 **CLI Proxy API ≥ 8.0.0**（v8 管理 API，`/v8/management`）。Prox 是管理界面，从不转发推理流量。用量分析来自 `prox-usage`，即 Prox 自己的用量采集与历史存储服务。
+> 需要 **CLI Proxy API ≥ 8.0.0**（v8 管理 API，`/v8/management`）。ProxUI 是管理界面，从不转发推理流量。用量分析来自 `prox-usage`，即 ProxUI 自己的用量采集与历史存储服务。
 
-## Prox 新增功能
+## ProxUI 新增功能
 
 | 模块 | 功能 |
 | --- | --- |
@@ -34,7 +34,7 @@ Prox 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-
 | **用量分析** | 汇总各实例的已保留用量：带迷你走势图的指标卡、按独立刻度绘制请求数/Token/成本的趋势图、按提供商与模型的分解、带详情的请求记录以及已配置的模型价格。分为概览、Token 与缓存、成本、性能、请求、模型价格六个标签页。 |
 | **快速、可分享的视图** | 用胶囊按钮选择时间范围（最近 1 小时、24 小时、今天、昨天、7 天、30 天）与分桶粒度（自动、按小时、按天）。地址栏保存当前视图——例如 `#/analytics?tab=tokens&range=7d&bucket=hour`——链接可直接打开该视图；本浏览器还会记住上次的视图与侧边栏状态。7 天视图的加载时间远低于一秒。 |
 | **适配屏幕** | 从 1024 到 3440 像素宽的各种桌面尺寸下（侧边栏展开或收起），首个图表在加载时完整可见，并由浏览器测试保证。手机上卡片堆叠显示，筛选项可折叠。 |
-| **如实的数据** | Prox 只显示后端报告的数值。成本是按已配置价格估算的 API 等价金额（缓存写入按缓存写入价格计费），存在未知成分时标记为 *部分*。空闲时段绘制为零，未测量时段保持空缺。 |
+| **如实的数据** | ProxUI 只显示后端报告的数值。成本是按已配置价格估算的 API 等价金额（缓存写入按缓存写入价格计费），存在未知成分时标记为 *部分*。空闲时段绘制为零，未测量时段保持空缺。 |
 | **多个运行时，一次登录** | 仓库中的清单（`deploy/provider-sources.json`）列出每个实例。账号、日志与配置页面作用于所选的 **管理源**；合并页面读取全部实例。 |
 
 上游的全部功能均已保留：仪表盘、可视化与 YAML 配置、AI 提供商、认证文件与 OAuth、各提供商额度、日志、插件以及系统信息。界面支持 **English、简体中文、繁體中文、Русский、한국어 与 Tiếng Việt**。
@@ -131,7 +131,7 @@ bun run dev
 
 - 请将管理密钥视为机密。启用 **记住密码** 后，密钥会以可逆混淆方式保存在浏览器存储中——**并非加密**。请使用可信设备或专用浏览器配置文件。
 - 分析授权可读取完整的已配置用量数据集；它面向单管理员的家庭实验室，不适用于共享或多租户访问。
-- 公开暴露 Prox 时，除管理密钥外还应放在认证网关之后（家庭实验室使用 Authentik）。
+- 公开暴露 ProxUI 时，除管理密钥外还应放在认证网关之后（家庭实验室使用 Authentik）。
 
 ## 故障排查
 
@@ -149,6 +149,6 @@ bun run dev
 
 <div align="center">
 
-[CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center)（Router-For.ME）的分支 · [CLI Proxy API](https://github.com/router-for-me/CLIProxyAPI) · [报告问题](https://github.com/SwiggitySwerve/prox/issues) · [MIT 许可证](LICENSE)
+[CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center)（Router-For.ME）的分支 · [CLI Proxy API](https://github.com/router-for-me/CLIProxyAPI) · [报告问题](https://github.com/SwiggitySwerve/ProxUI/issues) · [MIT 许可证](LICENSE)
 
 </div>
