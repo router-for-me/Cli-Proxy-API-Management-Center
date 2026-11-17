@@ -258,7 +258,7 @@ Collector, writer and service regressions use the ephemeral in-process proxy in
   flags and `query_only=1`; only the three price tables and `api_key_aliases` are
   read. It refuses existing output files and also writes
   `<book.json>.client-aliases.json` containing `client_alias` rows for a later
-  writer-worker import. Neither the Prox database nor configuration is updated.
+  writer-worker import. Neither the ProxUI database nor configuration is updated.
   D5's two missing models are added with null rates and source `pending D5`;
   approved prices are required before deploying that book.
 
@@ -523,13 +523,13 @@ The coordinator configures the off-pool target and records the restore drill.
 ## Offline parity evidence
 
 `scripts/usage-parity.ts` is the operator-only read exception during the dual run.
-It opens CPAMP and Prox with SQLite URI `mode=ro`, read-only flags and
+It opens CPAMP and ProxUI with SQLite URI `mode=ro`, read-only flags and
 `query_only=1`; it never imports/reconciles, writes events or joins either server's
 runtime graph. CPAMP reads force `idx_usage_events_timestamp`, use five-minute
 windows and 1,000-row keyset pages. The importer shares only its allowlisted SQL
 projection, metadata-key schema and diagnostic-counter factory with this reader.
 `scripts/usage-parity/cpampReference.ts` is an independent CPAMP-side oracle:
-no Prox normalizer or importer mapping supplies an expected value. Persisted
+no ProxUI normalizer or importer mapping supplies an expected value. Persisted
 columns are authoritative, including `service_tier`; raw tiers cannot override
 it. Model identities follow CPAMP's persisted-column aggregation expressions;
 metadata-only flags/kind/identifiers follow CPAMP's Go envelope contract. This
@@ -549,7 +549,7 @@ comparison is where they are checked. The import owner's account
 SQL fallback (`nullif(snapshot,'')`, then nullable label, then credential index)
 is applied to persisted fields, preserving empty labels, whitespace and key-hash
 case. No label snapshot timing exception is authorized by this harness. Missing
-Prox events require recorded gap evidence as defined below. Subscribed extras fail;
+ProxUI events require recorded gap evidence as defined below. Subscribed extras fail;
 optional outage provenance for reverse-only drained rows is counted separately.
 
 All operations share the existing IO governor and one serial query gate, with a
@@ -561,9 +561,9 @@ plan §3.3's four volatile fields, relative `cost.usd` (1e-9) and `average_laten
 equal-timestamp runs. Provider and trace provenance differences apply only to
 request-detail fields and are counted. A D5 price exception needs two read-only
 replays through `queryAnalytics`: the approved deployed book must reproduce the
-Prox value, and removing only the two D5 models must reproduce CPAMP's value.
+ProxUI value, and removing only the two D5 models must reproduce CPAMP's value.
 The `coverage-limitations` rule requires every CPAMP sentence except the exact
-successive-reads sentence. Extra Prox sentences must be the exact §2.7 conditions
+successive-reads sentence. Extra ProxUI sentences must be the exact §2.7 conditions
 or validated gap/prune forms (overlapping range and incomplete raw coverage).
 Missing required sentences, unknown extras and duplicate sentences fail. Both
 lists remain in evidence and each changed field/pair is counted. Other coverage
@@ -587,10 +587,10 @@ both values for every difference. The disabled nightly chain runs quick plus
 events for the previous UTC day only after maintenance succeeds; installation
 and the two-night cutover decision belong to the coordinator.
 
-Forward CPAMP→Prox event parity compares full fields across every ingest kind;
+Forward CPAMP→ProxUI event parity compares full fields across every ingest kind;
 reverse parity requires only subscribed (`ingest=0`) rows. Accepted matches and
 reverse-only rows outside that cohort are counted separately by ingest kind.
-Only CPAMP persisted TTFT zero → Prox null with CPAMP metadata decoding to
+Only CPAMP persisted TTFT zero → ProxUI null with CPAMP metadata decoding to
 unknown/unavailable instrumentation is accepted under `ttft-zero-null`.
 Measured zeros (first-byte, substantive-content, fallback-packet), latency and
 reverse null → zero stay strict. A missing row can use a recorded same-instance
@@ -664,8 +664,8 @@ separate nightly chain below serializes maintenance before invoking parity.
   fallback remains, including CPAMP's SQL LIKE wildcards, ASCII SQL lower(), and
   Unicode-lowercased query. It adds no search index or persisted projection.
   CPAMP keeps one search document per event (fields joined by a separator) and matches a
-  term one field at a time; Prox matches its stored fields. Three of the document's fields
-  that Prox once lacked are stored (migration 4, all nullable, no table rewrite):
+  term one field at a time; ProxUI matches its stored fields. Three of the document's fields
+  that ProxUI once lacked are stored (migration 4, all nullable, no table rewrite):
   - `fail_summary` (`event_detail.fail_summary`): CPAMP's FailSummaryFromBody of the
     proxy record's `fail.body`: the credential scrubber of `credentialText.ts`, e-mail
     addresses masked to their first character, capped at 4096 bytes
@@ -746,14 +746,14 @@ separate nightly chain below serializes maintenance before invoking parity.
   reasoning suffix), `resolved_model` (`billing_model_id`), `method`, `path`, `client_ip`,
   `user_agent`, `auth_index`, `account_snapshot`, `auth_label_snapshot`, `reasoning_effort`,
   `service_tier` (`tier_id`), `executor_type` and `api_key_hash` (`api_key_id`: the same
-  SHA-256 of the trimmed client key, so Prox stores and searches the value CPAMP's hash
+  SHA-256 of the trimmed client key, so ProxUI stores and searches the value CPAMP's hash
   column holds). `scripts/usage-search-probe.ts` checks the matching text of all 29, below.
   Three document fields are CPAMP's own hashes and stay CPAMP-only: `event_hash`,
   `source_hash` (a per-account SHA-256 derived from the raw source at ingest) and
-  `api_key_hash` (listed for symmetry; Prox does hold it, see above). A hex-like term such as
+  `api_key_hash` (listed for symmetry; ProxUI does hold it, see above). A hex-like term such as
   `429` matches a source hash of one account at random, which is why 3,366 of the 3,785
   CPAMP matches for `429` on 13 Nov were one account's events.
-  The reverse also holds: Prox searches execution, session, parent-session and trace IDs
+  The reverse also holds: ProxUI searches execution, session, parent-session and trace IDs
   by substring, and CPAMP's document holds none of them, so a hex-like or wildcard term
   returns events here that CPAMP does not. It also searches the record's provider, the
   response model and the requested and effective tier, which the document lacks
@@ -761,14 +761,14 @@ separate nightly chain below serializes maintenance before invoking parity.
   difference only for the three hash fields, a closed list in `searchCpampOnly.ts` that changes
   only with code and a test, and only when no single Prox-searchable field of the event
   matches the term. Even then each pair needs proof: CPAMP's own database lists the events,
-  they map to Prox by execution ID, and a replay of the Prox query that searches as CPAMP's
+  they map to ProxUI by execution ID, and a replay of the ProxUI query that searches as CPAMP's
   document does (request ID, failure text, response trace id and credential file, not the
   other identifiers) with exactly those events added must reproduce CPAMP's response value
-  for value, while Prox's served response must equal its own plain replay.
+  for value, while ProxUI's served response must equal its own plain replay.
   `scripts/usage-search-probe.ts` is the per-column proof: for a window it derives one real
   term for each of the 29 columns, a slice of the rarest value in CPAMP's own search
-  document, and compares the events both sides match. A CPAMP match Prox misses is
-  explained only through the hash list (the replay proof above); a Prox match CPAMP misses
+  document, and compares the events both sides match. A CPAMP match ProxUI misses is
+  explained only through the hash list (the replay proof above); a ProxUI match CPAMP misses
   only through a Prox-only field; anything else is unexplained and fails the probe. A column
   no event of the window fills (`x_forwarded_for`, say) cannot be probed there and is
   reported as not probed.
@@ -864,7 +864,7 @@ with no further submit. The report's `attempts` maps each submitted kind to its
 POST count, and a later successful admission clears the stale `refused`.
 
 **CPAMP subscribe guard.** CPAMP runs `auto` and, if it starts while a proxy is
-unreachable, falls back to polling a queue that stays empty once Prox holds the
+unreachable, falls back to polling a queue that stays empty once ProxUI holds the
 subscription, so its history would silently stop. At chain start, before any job,
 the nightly reads CPAMP's `GET http://127.0.0.1:18317/status` with the admin key in
 `~/.config/prox/cpa-admin-key` (read per request, sent only as the bearer header,
@@ -957,7 +957,7 @@ this endpoint and block on any difference; see the swap PR's label guard.
 
 For live events, CPAMP fills account/auth-label snapshots from its credential
 snapshot resolver: account first, then auth label, with provider-specific identity
-validation and name/email/file fallbacks. Prox `labels.ts` instead takes the
+validation and name/email/file fallbacks. ProxUI `labels.ts` instead takes the
 management listing's safe account, explicit label or auth index and captures that
 value at ingestion. Existing safe account/explicit-label cases match; differing
 refresh snapshots or missing fields can differ. No claim of universal live-label
