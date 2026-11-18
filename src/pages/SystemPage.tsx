@@ -540,7 +540,11 @@ export function SystemPage() {
                           title={model.description || ''}
                         >
                           <span className={styles.modelName}>{model.name}</span>
-                          {model.alias && <span className={styles.modelAlias}>{model.alias}</span>}
+                          {(model.alias || model.displayName) && (
+                            <span className={styles.modelAlias}>
+                              {model.alias || model.displayName}
+                            </span>
+                          )}
                         </span>
                       ))}
                     </div>

@@ -471,7 +471,7 @@ export function BaseProviderForm({
     const byKey = new Map<string, { id: string; displayName?: string }>();
     discovery.models.forEach((model) => {
       const id = model.name?.trim();
-      if (id) byKey.set(id.toLowerCase(), { id, displayName: model.alias || undefined });
+      if (id) byKey.set(id.toLowerCase(), { id, displayName: model.alias || model.displayName });
     });
     form.models.forEach((model) => {
       const id = model.name?.trim();

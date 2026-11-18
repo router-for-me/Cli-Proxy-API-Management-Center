@@ -325,6 +325,9 @@ export const modelsApi = {
           if (resolved.alias && resolved.alias.trim() === name) {
             resolved.alias = undefined;
           }
+          if (resolved.displayName?.trim() === name) {
+            resolved.displayName = undefined;
+          }
           collected.push(resolved);
         });
 
