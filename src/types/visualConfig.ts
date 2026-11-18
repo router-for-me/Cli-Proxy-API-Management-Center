@@ -90,11 +90,18 @@ export type PayloadRule = {
   params: PayloadParamEntry[];
 };
 
+export const PAYLOAD_REPLACE_ROLES = ['user', 'system', 'developer'] as const;
+
+export function isPayloadReplaceRole(value: string): boolean {
+  return PAYLOAD_REPLACE_ROLES.some((role) => role === value);
+}
+
 export type PayloadReplaceRule = {
   id: string;
   models: PayloadRule['models'];
-  target: { role: string; all: boolean; positions: string };
-  replacements: { id: string; from: string; to: string }[];
+  /** Paths select path mode when present, even if the draft list is empty. */
+  target: { role: string; all: boolean; positions: string; paths?: string[] };
+  replacements: { id: string; from: string; to: string; regex?: boolean }[];
   /** Malformed source shape; clear explicitly after repairing the draft. */
   invalid?: boolean;
 };

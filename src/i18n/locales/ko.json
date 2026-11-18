@@ -1558,10 +1558,11 @@
         "payload_invalid_number": "유효한 숫자를 입력하세요",
         "payload_invalid_boolean": "true 또는 false를 선택하세요",
         "payload_invalid_json": "유효한 JSON을 입력하세요",
-        "payload_replace_invalid_target": "사용자 메시지만 지원됩니다. target.role은 user여야 합니다.",
-        "payload_replace_invalid_positions": "모든 사용자 메시지를 선택하거나 양의 정수로 된 비어 있지 않은 위치 목록을 입력하세요. 두 가지를 동시에 지정할 수 없습니다.",
+        "payload_replace_invalid_target": "대상 역할은 user, system 또는 developer여야 합니다.",
+        "payload_replace_invalid_positions": "선택한 역할의 모든 메시지를 선택하거나 비어 있지 않은 양의 정수 위치 목록을 입력하세요. 둘을 함께 지정할 수 없습니다.",
+        "payload_replace_invalid_paths": "비어 있지 않은 JSON 경로를 하나 이상 입력하세요. 경로를 역할, all 또는 positions와 함께 지정할 수 없습니다.",
         "payload_replace_invalid_models": "비어 있지 않은 이름과 유효한 조건을 가진 모델을 하나 이상 추가하세요.",
-        "payload_replace_invalid_replacements": "치환을 하나 이상 추가하세요. 각 항목에는 문자열 간 매핑이 정확히 하나만 있어야 하며 원본 텍스트는 비어 있을 수 없습니다. 치환 텍스트를 비워 두면 원본 텍스트가 삭제됩니다."
+        "payload_replace_invalid_replacements": "유효한 치환을 하나 이상 추가하세요. 리터럴 원본은 비워 둘 수 없으며 정규식은 Go RE2를 사용합니다. 치환 텍스트를 비우면 일치한 텍스트가 삭제됩니다."
       },
       "common": {
         "edit": "편집",
@@ -1571,20 +1572,28 @@
         "add": "추가"
       },
       "payload_replace": {
-        "title": "사용자 텍스트 치환",
-        "description": "재정의 규칙 적용 후, 필터 적용 전에 적용됩니다. 기존 사용자 텍스트에 나열된 순서대로 리터럴 치환을 수행합니다.",
+        "title": "Payload 텍스트 치환",
+        "description": "덮어쓰기 후, 필터링 전에 기존 문자열을 목록 순서대로 치환합니다.",
         "target": "적용 범위",
         "replacements": "치환 항목",
-        "target_all": "모든 사용자 메시지",
-        "target_positions": "사용자 메시지 위치",
-        "target_hint": "최종 업스트림 요청 본문에서 사용자 메시지의 위치를 1부터 셉니다. 편집 가능한 텍스트가 없는 사용자 메시지도 포함됩니다. 모든 메시지를 선택하거나 쉼표로 구분된 위치를 입력하세요.",
+        "target_all": "이 역할의 모든 메시지",
+        "target_positions": "메시지 위치",
+        "target_hint": "최종 업스트림 페이로드에서 선택한 역할의 메시지를 1부터 셉니다. 편집할 텍스트가 없는 메시지도 포함합니다. 위치는 쉼표로 구분합니다.",
         "from": "원본 텍스트",
         "to": "치환 텍스트 (비워 두면 삭제)",
         "add_replacement": "치환 추가",
         "move_up": "위로 이동",
         "move_down": "아래로 이동",
         "reset_invalid": "잘못된 규칙 초기화",
-        "invalid_hint": "이 규칙에는 지원되지 않거나 형식이 잘못된 값이 포함되어 있습니다. 편집하기 전에 YAML에서 수정하거나 규칙을 초기화하세요."
+        "invalid_hint": "이 규칙에는 지원되지 않거나 형식이 잘못된 값이 포함되어 있습니다. 편집하기 전에 YAML에서 수정하거나 규칙을 초기화하세요.",
+        "target_selector": "대상 유형",
+        "target_paths": "JSON 경로",
+        "paths_hint": "경로는 업스트림 페이로드의 루트를 기준으로 합니다. 없거나 문자열이 아닌 값은 건너뜁니다.",
+        "from_or_pattern": "원본 텍스트 또는 패턴",
+        "replacement_type": "치환 유형",
+        "literal": "리터럴",
+        "regex": "정규식 (RE2)",
+        "pattern": "RE2 패턴"
       }
     }
   },

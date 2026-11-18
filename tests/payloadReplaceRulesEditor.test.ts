@@ -87,8 +87,39 @@ describe('payload replacement editor', () => {
     expect(html).toMatch(/<textarea[^>]*disabled=""/);
   });
 
+  test.each(['system', 'developer'])('renders %s as an editable role', (role) => {
+    const html = render([{ ...rule, target: { ...rule.target, role } }]);
+    expect(html).toMatch(
+      new RegExp(
+        `<button[^>]*aria-haspopup="listbox"[^>]*aria-label="${i18n.t(`${prefix}target_selector`)}"[^>]*><span[^>]*>${role}</span>`
+      )
+    );
+    expect(html).not.toContain('role="alert"');
+  });
+
+  test('path targets render paths instead of message positions', () => {
+    const html = render([
+      {
+        ...rule,
+        target: { role: '', all: false, positions: '', paths: ['metadata.description'] },
+        replacements: [{ ...rule.replacements[0], regex: true }],
+      },
+    ]);
+    expect(html).toContain('value="metadata.description"');
+    expect(html).toContain(i18n.t(`${prefix}paths_hint`));
+    expect(html).toContain(i18n.t(`${prefix}pattern`));
+    expect(html).toMatch(
+      new RegExp(
+        `<button[^>]*aria-haspopup="listbox"[^>]*aria-label="${i18n.t(`${prefix}replacement_type`)}"[^>]*>`
+      )
+    );
+    expect(html).not.toMatch(/<select\b/);
+    expect(html).not.toContain('role="radiogroup"');
+    expect(html).not.toContain('role="alert"');
+  });
+
   test('unsupported source role also offers reset instead of silently changing role', () => {
-    const html = render([{ ...rule, target: { ...rule.target, role: 'system' } }]);
+    const html = render([{ ...rule, target: { ...rule.target, role: 'assistant' } }]);
     expect(html).toContain('role="alert"');
     expect(html).toContain(i18n.t(`${prefix}reset_invalid`));
   });
@@ -124,6 +155,9 @@ describe('payload replacement editor', () => {
     const read = (name: string) =>
       readFileSync(`src/features/config/components/blocks/${name}.tsx`, 'utf8');
     const source = read('PayloadReplaceRulesEditor');
+    expect(source).toMatch(
+      /<Select\s+className=\{styles\.targetChoice\}[^>]*dropdownMinWidth=\{180\}/
+    );
     expect(source).toContain('<PayloadModelsEditor');
     expect(read('PayloadRulesEditor')).toContain('<PayloadModelsEditor');
     expect(source).toContain('{ ...rule, ...patch }');
