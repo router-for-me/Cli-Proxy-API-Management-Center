@@ -393,6 +393,9 @@ const normalizeOauthExcludedModels = (payload: unknown): Record<string, string[]
   return result;
 };
 
+export const oauthModelAliasEntryKey = (name: string, alias: string): string =>
+  `${name.trim().toLowerCase()}\0${alias.trim().toLowerCase()}`;
+
 export const normalizeOauthModelAlias = (
   payload: unknown
 ): Record<string, OAuthModelAliasEntry[]> => {
@@ -408,7 +411,9 @@ export const normalizeOauthModelAlias = (
     if (!Array.isArray(mappings)) return;
 
     const normalized = result[key] ?? [];
-    const seenAlias = new Set(normalized.map((entry) => entry.alias.toLowerCase()));
+    const seenEntry = new Set(
+      normalized.map((entry) => oauthModelAliasEntryKey(entry.name, entry.alias))
+    );
     mappings
       .map((item) => {
         if (!item || typeof item !== 'object') return null;
@@ -428,9 +433,9 @@ export const normalizeOauthModelAlias = (
       .filter(Boolean)
       .forEach((entry) => {
         const aliasEntry = entry as OAuthModelAliasEntry;
-        const aliasKey = aliasEntry.alias.toLowerCase();
-        if (seenAlias.has(aliasKey)) return;
-        seenAlias.add(aliasKey);
+        const entryKey = oauthModelAliasEntryKey(aliasEntry.name, aliasEntry.alias);
+        if (seenEntry.has(entryKey)) return;
+        seenEntry.add(entryKey);
         normalized.push(aliasEntry);
       });
 
