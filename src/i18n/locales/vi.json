@@ -1352,10 +1352,11 @@
         "invalid_ice_servers": "Mỗi máy chủ ICE cần ít nhất một URL stun:, stuns:, turn:, hoặc turns: hợp lệ",
         "integer_range_0_65535": "Nhập số nguyên từ 0 đến 65535",
         "integer": "Nhập một số nguyên",
-        "payload_replace_invalid_target": "Chỉ hỗ trợ tin nhắn người dùng: target.role phải là user.",
-        "payload_replace_invalid_positions": "Chọn tất cả tin nhắn người dùng hoặc nhập danh sách vị trí không rỗng gồm các số nguyên dương, không được chọn cả hai.",
+        "payload_replace_invalid_target": "Vai trò đích phải là user, system hoặc developer.",
+        "payload_replace_invalid_positions": "Chọn tất cả tin nhắn của vai trò đã chọn hoặc nhập danh sách vị trí gồm các số nguyên dương, không chọn cả hai.",
+        "payload_replace_invalid_paths": "Nhập ít nhất một đường dẫn JSON không rỗng. Không dùng đường dẫn cùng vai trò, all hoặc positions.",
         "payload_replace_invalid_models": "Thêm ít nhất một mô hình có tên không rỗng và các điều kiện hợp lệ.",
-        "payload_replace_invalid_replacements": "Thêm ít nhất một phép thay thế. Mỗi mục phải chứa đúng một ánh xạ từ chuỗi sang chuỗi với văn bản nguồn không rỗng; văn bản thay thế rỗng sẽ xóa văn bản nguồn."
+        "payload_replace_invalid_replacements": "Thêm ít nhất một phép thay thế hợp lệ. Văn bản nguồn không được rỗng; biểu thức chính quy dùng Go RE2. Văn bản thay thế rỗng sẽ xóa phần khớp."
       },
       "common": {
         "edit": "Chỉnh sửa",
@@ -1523,20 +1524,28 @@
         }
       },
       "payload_replace": {
-        "title": "Thay thế văn bản người dùng",
-        "description": "Áp dụng sau các quy tắc ghi đè và trước các bộ lọc. Các phép thay thế nguyên văn được thực hiện theo thứ tự trong danh sách trên văn bản người dùng hiện có.",
+        "title": "Thay thế văn bản trong payload",
+        "description": "Áp dụng sau khi ghi đè và trước khi lọc. Các phép thay thế chạy theo thứ tự trên những chuỗi hiện có.",
         "target": "Phạm vi áp dụng",
         "replacements": "Các phép thay thế",
-        "target_all": "Tất cả tin nhắn người dùng",
-        "target_positions": "Vị trí tin nhắn người dùng",
-        "target_hint": "Vị trí được đánh số từ 1 trong các tin nhắn người dùng ở phần thân yêu cầu cuối cùng gửi đến máy chủ thượng nguồn, kể cả tin nhắn không có văn bản có thể chỉnh sửa. Chọn tất cả tin nhắn hoặc nhập các vị trí phân cách bằng dấu phẩy.",
+        "target_all": "Tất cả tin nhắn của vai trò này",
+        "target_positions": "Vị trí tin nhắn",
+        "target_hint": "Đếm từ 1 trong số tin nhắn của vai trò đã chọn ở payload cuối cùng, kể cả tin nhắn không có văn bản chỉnh sửa được. Phân tách bằng dấu phẩy.",
         "from": "Văn bản nguồn",
         "to": "Văn bản thay thế (để trống để xóa)",
         "add_replacement": "Thêm phép thay thế",
         "move_up": "Di chuyển lên",
         "move_down": "Di chuyển xuống",
         "reset_invalid": "Đặt lại quy tắc không hợp lệ",
-        "invalid_hint": "Quy tắc này chứa giá trị không được hỗ trợ hoặc sai định dạng. Hãy sửa trong YAML hoặc đặt lại quy tắc trước khi chỉnh sửa."
+        "invalid_hint": "Quy tắc này chứa giá trị không được hỗ trợ hoặc sai định dạng. Hãy sửa trong YAML hoặc đặt lại quy tắc trước khi chỉnh sửa.",
+        "target_selector": "Loại đích",
+        "target_paths": "Đường dẫn JSON",
+        "paths_hint": "Đường dẫn tính từ gốc payload gửi đến nhà cung cấp. Bỏ qua giá trị không tồn tại hoặc không phải chuỗi.",
+        "from_or_pattern": "Văn bản nguồn hoặc mẫu",
+        "replacement_type": "Loại thay thế",
+        "literal": "Văn bản",
+        "regex": "Biểu thức chính quy (RE2)",
+        "pattern": "Mẫu RE2"
       }
     },
     "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",

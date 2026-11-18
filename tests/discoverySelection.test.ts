@@ -12,6 +12,7 @@ import {
 } from '@/features/providers/discoverySelection';
 import { ModelDiscoveryPanel } from '@/features/providers/sheets/forms/ModelDiscoveryPanel';
 import type { ModelEntryInput } from '@/features/providers/types';
+import { normalizeModelList } from '@/utils/models';
 
 const catalog = [{ name: 'a' }, { name: 'b' }, { name: 'c' }];
 
@@ -68,6 +69,30 @@ describe('discovery synchronization', () => {
     ).toEqual([{ name: 'b', alias: 'Bee' }]);
   });
 
+  test('imports only explicit aliases, not upstream display names or descriptions', () => {
+    const models = normalizeModelList({
+      data: [
+        { id: 'snake', display_name: 'Snake label', description: 'Description' },
+        { id: 'camel', displayName: 'Camel label' },
+        { id: 'explicit', alias: 'my-alias', displayName: 'Explicit label' },
+        { id: 'described', description: 'Description only' },
+      ],
+    });
+
+    expect(models).toEqual([
+      { name: 'snake', displayName: 'Snake label', description: 'Description' },
+      { name: 'camel', displayName: 'Camel label' },
+      { name: 'explicit', alias: 'my-alias', displayName: 'Explicit label' },
+      { name: 'described', description: 'Description only' },
+    ]);
+    expect(syncDiscoveredModels([], models, models)).toEqual([
+      { name: 'snake', alias: '' },
+      { name: 'camel', alias: '' },
+      { name: 'explicit', alias: 'my-alias' },
+      { name: 'described', alias: '' },
+    ]);
+  });
+
   test('filtered select-all and clear-all preserve hidden staged choices', () => {
     let choices = setDiscoveryChoices(new Map(), ['b'], true);
     choices = setDiscoveryChoices(choices, ['a', 'c'], true);
@@ -102,6 +127,27 @@ await i18n.init({
       },
     },
   },
+});
+
+test('panel still shows upstream display names', () => {
+  const html = renderToStaticMarkup(
+    createElement(
+      I18nextProvider,
+      { i18n },
+      createElement(ModelDiscoveryPanel, {
+        loading: false,
+        error: null,
+        models: [{ name: 'model-id', displayName: 'Friendly label' }],
+        hasFetched: true,
+        existingNames: new Set(),
+        onApply: () => {},
+        onReload: () => {},
+        onClose: () => {},
+      })
+    )
+  );
+  expect(html).toContain('model-id');
+  expect(html).toContain('Friendly label');
 });
 
 test.each([

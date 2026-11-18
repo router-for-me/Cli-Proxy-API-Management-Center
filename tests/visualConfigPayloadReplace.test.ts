@@ -198,6 +198,104 @@ describe('payload replace pipeline', () => {
     expect(output.indexOf('# second-entry')).toBeLessThan(output.indexOf('# first-entry'));
   });
 
+  test.each(['system', 'developer'])('loads and saves %s role targets', (role) => {
+    const source = yaml.replace('role: user', `role: ${role}`);
+    const output = applyPayloadEdit(source, (values) => {
+      const rule = values.payloadReplaceRules[0];
+      expect(getPayloadReplaceValidationError(rule)).toBeUndefined();
+      return { payloadReplaceRules: [{ ...rule, target: { role, all: true, positions: '' } }] };
+    });
+    expect(parseYaml(output).requests.payload.replace[0].target).toEqual({
+      role,
+      all: true,
+      'future-target': 'keep',
+    });
+  });
+
+  test('switches target modes without leaking inactive fields and preserves exact paths', () => {
+    const paths = ['tools.#(type=="function")#.description', 'metadata. description ', '1'];
+    const output = applyPayloadEdit(yaml, ({ payloadReplaceRules: [rule] }) => ({
+      payloadReplaceRules: [{ ...rule, target: { role: '', positions: '', all: false, paths } }],
+    }));
+    expect(parseYaml(output).requests.payload.replace[0].target).toEqual({
+      paths,
+      'future-target': 'keep',
+    });
+    const back = applyPayloadEdit(output, ({ payloadReplaceRules: [rule] }) => {
+      expect(rule.target.paths).toEqual(paths);
+      expect(getPayloadReplaceValidationError(rule)).toBeUndefined();
+      return {
+        payloadReplaceRules: [{ ...rule, target: { role: 'system', positions: '2', all: false } }],
+      };
+    });
+    expect(parseYaml(back).requests.payload.replace[0].target).toEqual({
+      role: 'system',
+      positions: [2],
+      all: false,
+      'future-target': 'keep',
+    });
+  });
+
+  test('preserves path comments, aliases, and Go RE2 entries while editing', () => {
+    const source = `path: &path metadata.description
+${yaml
+  .replace(
+    'role: user\n          positions: [1, 2]',
+    `paths:
+            # path-comment
+            - *path`
+  )
+  .replace(
+    "- ' a ': ' b '",
+    `- pattern: '(?i)(foo)'
+            replacement: '$1'`
+  )}`;
+    const output = applyPayloadEdit(source, ({ payloadReplaceRules: [rule] }) => {
+      expect(rule.replacements[0]).toMatchObject({ regex: true, from: '(?i)(foo)', to: '$1' });
+      return {
+        payloadReplaceRules: [
+          {
+            ...rule,
+            target: { ...rule.target, paths: [...rule.target.paths!, 'metadata.title'] },
+            replacements: [rule.replacements[1], { ...rule.replacements[0], to: '' }],
+          },
+        ],
+      };
+    });
+    const rule = parseYaml(output).requests.payload.replace[0];
+    expect(rule.target.paths).toEqual(['metadata.description', 'metadata.title']);
+    expect(rule.replacements).toEqual([
+      JSON.parse('{"__proto__":""}'),
+      { pattern: '(?i)(foo)', replacement: '' },
+    ]);
+    expect(output).toContain('# path-comment');
+    expect(output).toContain('- *path');
+  });
+
+  test.each(['[]', '[" "]', '[1]', 'metadata.description', '[true]'])(
+    'rejects invalid paths: %s',
+    (paths) => {
+      const source = yaml.replace('role: user\n          positions: [1, 2]', `paths: ${paths}`);
+      const rule = parseVisualValuesFromYaml(source).payloadReplaceRules[0];
+      expect(getPayloadReplaceValidationError(rule)).toBe('payload_replace_invalid_paths');
+      expect(() => applyPayloadEdit(source, () => ({ debug: true }))).toThrow();
+    }
+  );
+
+  test.each(['role: system', 'all: true', 'positions: [1]'])(
+    'rejects mixed path and role targets: %s',
+    (selector) => {
+      const source = yaml.replace(
+        'role: user\n          positions: [1, 2]',
+        `paths: [metadata.description]
+          ${selector}`
+      );
+      const rule = parseVisualValuesFromYaml(source).payloadReplaceRules[0];
+      expect(getPayloadReplaceValidationError(rule)).toBe('payload_replace_invalid_paths');
+      expect(rule.invalid).toBe(true);
+    }
+  );
+
   test('validates drafts and model conditions', () => {
     const rule = parseVisualValuesFromYaml(yaml).payloadReplaceRules[0];
     expect(getPayloadReplaceValidationError(rule)).toBeUndefined();

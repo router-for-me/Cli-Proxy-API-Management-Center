@@ -1,6 +1,7 @@
 import { memo, useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import {
   IconAlertTriangle,
   IconChevronDown,
@@ -10,8 +11,14 @@ import {
   IconX,
 } from '@/components/ui/icons';
 import { getPayloadReplaceValidationError } from '@/hooks/useVisualConfig';
-import { makeClientId, type PayloadReplaceRule } from '@/types/visualConfig';
+import {
+  isPayloadReplaceRole,
+  makeClientId,
+  PAYLOAD_REPLACE_ROLES,
+  type PayloadReplaceRule,
+} from '@/types/visualConfig';
 import { PayloadModelsEditor } from './PayloadModelsEditor';
+import { StringListEditor } from './StringListEditor';
 import blockStyles from './Blocks.module.scss';
 import styles from './PayloadReplaceRulesEditor.module.scss';
 
@@ -114,6 +121,14 @@ export const PayloadReplaceRulesEditor = memo(function PayloadReplaceRulesEditor
     down: copy('move_down'),
     remove: t('config_management.visual.common.delete'),
   };
+  const targetOptions = [
+    ...PAYLOAD_REPLACE_ROLES.map((role) => ({ value: role, label: role })),
+    { value: 'paths', label: copy('target_paths') },
+  ];
+  const replacementTypes = [
+    { value: 'literal', label: copy('literal') },
+    { value: 'regex', label: copy('regex') },
+  ];
   const update = (index: number, patch: Partial<PayloadReplaceRule>) =>
     onChange(value.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)));
 
@@ -148,7 +163,9 @@ export const PayloadReplaceRulesEditor = memo(function PayloadReplaceRulesEditor
             const error = getPayloadReplaceValidationError(rule);
             // Malformed source may contain data the visual draft cannot represent. Only an
             // explicit reset may discard it; unrelated edits must retain the invalid marker.
-            const needsReset = Boolean(rule.invalid) || rule.target.role !== 'user';
+            const pathMode = rule.target.paths !== undefined;
+            const needsReset =
+              Boolean(rule.invalid) || (!pathMode && !isPayloadReplaceRole(rule.target.role));
             const locked = disabled || needsReset;
             const radioName = `${groupName}-${rule.id}`;
             const setAll = (all: boolean) =>
@@ -213,59 +230,99 @@ export const PayloadReplaceRulesEditor = memo(function PayloadReplaceRulesEditor
 
                 <section className={styles.band}>
                   <div className={styles.bandLabel}>{copy('target')}</div>
-                  <div className={styles.target}>
-                    <div
-                      role="radiogroup"
-                      aria-label={copy('target')}
-                      className={styles.segmented}
-                      data-side={rule.target.all ? 'start' : 'end'}
-                      data-disabled={locked ? 'true' : undefined}
-                    >
-                      <span className={styles.segmentedThumb} aria-hidden="true" />
-                      <label className={styles.segment}>
-                        <input
-                          type="radio"
-                          name={radioName}
-                          checked={rule.target.all}
-                          disabled={locked}
-                          onChange={() => setAll(true)}
-                        />
-                        <span>{copy('target_all')}</span>
-                      </label>
-                      <label className={styles.segment}>
-                        <input
-                          type="radio"
-                          name={radioName}
-                          checked={!rule.target.all}
-                          disabled={locked}
-                          onChange={() => setAll(false)}
-                        />
-                        <span>{copy('target_positions')}</span>
-                      </label>
-                    </div>
-                    {!rule.target.all && (
-                      <input
-                        type="text"
-                        className={`input ${styles.positions}`}
-                        value={rule.target.positions}
-                        placeholder="1, 3"
-                        aria-label={copy('target_positions')}
-                        aria-describedby={`${radioName}-hint`}
-                        autoComplete="off"
-                        spellCheck={false}
+                  <Select
+                    className={styles.targetChoice}
+                    fullWidth={false}
+                    dropdownMinWidth={180}
+                    value={pathMode ? 'paths' : rule.target.role}
+                    options={targetOptions}
+                    placeholder={rule.target.role || '—'}
+                    ariaLabel={copy('target_selector')}
+                    disabled={locked}
+                    onChange={(role) => {
+                      const target =
+                        role === 'paths'
+                          ? { role: '', all: false, positions: '', paths: [''] }
+                          : pathMode
+                            ? { role, all: false, positions: '1' }
+                            : { ...rule.target, role };
+                      update(ruleIndex, { target });
+                    }}
+                  />
+                  {pathMode ? (
+                    <>
+                      <StringListEditor
+                        value={rule.target.paths ?? []}
+                        inputAriaLabel={copy('target_paths')}
+                        placeholder="metadata.description"
                         disabled={locked}
-                        onChange={(event) =>
-                          update(ruleIndex, {
-                            target: { ...rule.target, all: false, positions: event.target.value },
-                          })
+                        onChange={(paths) =>
+                          update(ruleIndex, { target: { ...rule.target, paths } })
                         }
                       />
-                    )}
-                  </div>
-                  {!rule.target.all && (
-                    <p id={`${radioName}-hint`} className={styles.hint}>
-                      {copy('target_hint')}
-                    </p>
+                      <p className={styles.hint}>{copy('paths_hint')}</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.target}>
+                        <div
+                          role="radiogroup"
+                          aria-label={copy('target')}
+                          className={styles.segmented}
+                          data-side={rule.target.all ? 'start' : 'end'}
+                          data-disabled={locked ? 'true' : undefined}
+                        >
+                          <span className={styles.segmentedThumb} aria-hidden="true" />
+                          <label className={styles.segment}>
+                            <input
+                              type="radio"
+                              name={radioName}
+                              checked={rule.target.all}
+                              disabled={locked}
+                              onChange={() => setAll(true)}
+                            />
+                            <span>{copy('target_all')}</span>
+                          </label>
+                          <label className={styles.segment}>
+                            <input
+                              type="radio"
+                              name={radioName}
+                              checked={!rule.target.all}
+                              disabled={locked}
+                              onChange={() => setAll(false)}
+                            />
+                            <span>{copy('target_positions')}</span>
+                          </label>
+                        </div>
+                        {!rule.target.all && (
+                          <input
+                            type="text"
+                            className={`input ${styles.positions}`}
+                            value={rule.target.positions}
+                            placeholder="1, 3"
+                            aria-label={copy('target_positions')}
+                            aria-describedby={`${radioName}-hint`}
+                            autoComplete="off"
+                            spellCheck={false}
+                            disabled={locked}
+                            onChange={(event) =>
+                              update(ruleIndex, {
+                                target: {
+                                  ...rule.target,
+                                  all: false,
+                                  positions: event.target.value,
+                                },
+                              })
+                            }
+                          />
+                        )}
+                      </div>
+                      {!rule.target.all && (
+                        <p id={`${radioName}-hint`} className={styles.hint}>
+                          {copy('target_hint')}
+                        </p>
+                      )}
+                    </>
                   )}
                 </section>
 
@@ -278,7 +335,7 @@ export const PayloadReplaceRulesEditor = memo(function PayloadReplaceRulesEditor
                     <div className={styles.pairs}>
                       <div className={styles.pairsHead} aria-hidden="true">
                         <span />
-                        <span>{copy('from')}</span>
+                        <span>{copy('from_or_pattern')}</span>
                         <span />
                         <span>{copy('to')}</span>
                         <span />
@@ -286,19 +343,36 @@ export const PayloadReplaceRulesEditor = memo(function PayloadReplaceRulesEditor
                       <ol className={styles.pairList}>
                         {rule.replacements.map((entry, index) => (
                           <li key={entry.id} className={styles.pair}>
-                            <span className={styles.pairIndex} aria-hidden="true">
-                              {index + 1}
-                            </span>
+                            <div className={styles.pairIndex}>
+                              <span aria-hidden="true">{index + 1}</span>
+                              <Select
+                                size="sm"
+                                fullWidth={false}
+                                dropdownMinWidth={200}
+                                ariaLabel={copy('replacement_type')}
+                                value={entry.regex ? 'regex' : 'literal'}
+                                options={replacementTypes}
+                                disabled={locked}
+                                onChange={(type) => {
+                                  const regex = type === 'regex' ? true : undefined;
+                                  update(ruleIndex, {
+                                    replacements: rule.replacements.map((item, i) =>
+                                      i === index ? { ...item, regex } : item
+                                    ),
+                                  });
+                                }}
+                              />
+                            </div>
                             {(['from', 'to'] as const).map((key) => (
                               <label key={key} className={styles.operand} data-operand={key}>
                                 <span className={styles.operandCaption} aria-hidden="true">
-                                  {copy(key)}
+                                  {copy(key === 'from' && entry.regex ? 'pattern' : key)}
                                 </span>
                                 <textarea
                                   className={`input ${styles.literal}`}
                                   rows={1}
                                   value={entry[key]}
-                                  aria-label={copy(key)}
+                                  aria-label={copy(key === 'from' && entry.regex ? 'pattern' : key)}
                                   disabled={locked}
                                   spellCheck={false}
                                   autoComplete="off"

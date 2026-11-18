@@ -1,4 +1,4 @@
-/* 用户文本替换：一条规则读作一句话——「对这些模型 / 在这些消息里 / 把 A 换成 B」。
+/* 文本替换：一条规则读作一句话——「对这些模型 / 在这些目标里 / 把 A 换成 B」。
    三段用发丝线分隔而不是套盒子；操作收成图标，让字面量本身成为每一行的主角。
    动效只碰 transform / opacity，时长与曲线全部取自主题 tokens。 */
 
@@ -7,7 +7,7 @@ $press: var(--dur-press, 160ms);
 $hover: var(--dur-hover, 200ms);
 $tool-size: 28px;
 $tools-width: $tool-size * 3 + 2px * 2;
-$index-width: 18px;
+$index-width: 136px;
 $arrow-width: 14px;
 $pair-columns: $index-width minmax(0, 1fr) $arrow-width minmax(0, 1fr) $tools-width;
 
@@ -319,6 +319,11 @@ $pair-columns: $index-width minmax(0, 1fr) $arrow-width minmax(0, 1fr) $tools-wi
   }
 }
 
+.targetChoice {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 .positions:global(.input) {
   flex: 0 1 180px;
   width: auto;
@@ -402,8 +407,21 @@ $pair-columns: $index-width minmax(0, 1fr) $arrow-width minmax(0, 1fr) $tools-wi
 }
 
 .pairIndex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   grid-column: 1;
   grid-row: 1;
+  min-width: 0;
+
+  > span {
+    min-width: 2ch;
+    text-align: right;
+  }
+
+  > div {
+    min-width: 0;
+  }
   font-family: $font-mono;
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;

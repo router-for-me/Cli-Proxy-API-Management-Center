@@ -1558,10 +1558,11 @@
         "payload_invalid_number": "Geçerli Bir Sayı Gir",
         "payload_invalid_boolean": "true veya false Seç",
         "payload_invalid_json": "Geçerli JSON Gir",
-        "payload_replace_invalid_target": "Yalnızca kullanıcı mesajları desteklenir: target.role değeri user olmalıdır.",
-        "payload_replace_invalid_positions": "Tüm kullanıcı mesajlarını seçin veya pozitif tam sayılardan oluşan, boş olmayan bir konum listesi girin. İkisi aynı anda belirtilemez.",
+        "payload_replace_invalid_target": "Hedef rol user, system veya developer olmalıdır.",
+        "payload_replace_invalid_positions": "Seçili rolün tüm mesajlarını seçin veya pozitif tam sayılardan oluşan boş olmayan bir konum listesi girin. İkisini birden seçmeyin.",
+        "payload_replace_invalid_paths": "En az bir boş olmayan JSON yolu girin. Yollar rol, all veya positions ile birlikte kullanılamaz.",
         "payload_replace_invalid_models": "Adı boş olmayan ve koşulları geçerli en az bir model ekleyin.",
-        "payload_replace_invalid_replacements": "En az bir değiştirme ekleyin. Her öğe, kaynak metni boş olmayan tam olarak bir dizeden dizeye eşleme içermelidir; yerine yazılacak metin boşsa kaynak metin silinir."
+        "payload_replace_invalid_replacements": "En az bir geçerli değiştirme ekleyin. Düz metin kaynağı boş olamaz; düzenli ifadeler Go RE2 kullanır. Boş değiştirme metni eşleşmeyi siler."
       },
       "common": {
         "edit": "Düzenle",
@@ -1571,20 +1572,28 @@
         "add": "Ekle"
       },
       "payload_replace": {
-        "title": "Kullanıcı metni değiştirmeleri",
-        "description": "Geçersiz kılma kurallarından sonra ve filtrelerden önce uygulanır. Birebir metin değiştirmeleri, mevcut kullanıcı metninde listedeki sırayla gerçekleştirilir.",
+        "title": "Payload metin değiştirmeleri",
+        "description": "Geçersiz kılmalardan sonra ve filtrelerden önce uygulanır. Mevcut dizeler listedeki sırayla değiştirilir.",
         "target": "Kapsam",
         "replacements": "Değiştirmeler",
-        "target_all": "Tüm kullanıcı mesajları",
-        "target_positions": "Kullanıcı mesajı konumları",
-        "target_hint": "Konumlar, üst sunucuya gönderilen son istek gövdesindeki kullanıcı mesajları arasında 1’den başlayarak sayılır; düzenlenebilir metin içermeyen kullanıcı mesajları da dahildir. Tüm mesajları seçin veya konumları virgülle ayırarak girin.",
+        "target_all": "Bu rolün tüm mesajları",
+        "target_positions": "Mesaj konumları",
+        "target_hint": "Son sağlayıcı yükündeki seçili rolün mesajları 1’den başlayarak sayılır. Düzenlenebilir metni olmayanlar da sayılır. Konumları virgülle ayırın.",
         "from": "Kaynak metin",
         "to": "Yerine yazılacak metin (boş bırakılırsa silinir)",
         "add_replacement": "Değiştirme ekle",
         "move_up": "Yukarı taşı",
         "move_down": "Aşağı taşı",
         "reset_invalid": "Geçersiz kuralı sıfırla",
-        "invalid_hint": "Bu kural desteklenmeyen veya hatalı biçimlendirilmiş değerler içeriyor. Düzenlemeden önce YAML içinde düzeltin veya kuralı sıfırlayın."
+        "invalid_hint": "Bu kural desteklenmeyen veya hatalı biçimlendirilmiş değerler içeriyor. Düzenlemeden önce YAML içinde düzeltin veya kuralı sıfırlayın.",
+        "target_selector": "Hedef türü",
+        "target_paths": "JSON yolları",
+        "paths_hint": "Yollar, sağlayıcıya gönderilen yükün köküne göredir. Eksik veya dize olmayan değerler atlanır.",
+        "from_or_pattern": "Kaynak metin veya desen",
+        "replacement_type": "Değiştirme türü",
+        "literal": "Düz metin",
+        "regex": "Düzenli ifade (RE2)",
+        "pattern": "RE2 deseni"
       }
     }
   },
