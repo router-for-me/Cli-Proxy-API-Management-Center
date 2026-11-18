@@ -371,7 +371,7 @@
   &:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 3px;
-    border-radius: var(--radius-sm);
+    border-radius: $radius-sm;
   }
 }
 
@@ -931,7 +931,7 @@
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: $radius-sm;
   transition: color $transition-fast;
 
   &:hover:not(:disabled) {
