@@ -220,11 +220,10 @@
     right: 0;
     z-index: $z-dropdown + 2;
     border: 1px solid color-mix(in srgb, var(--border-color) 74%, transparent);
-    background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
-    box-shadow: 0 20px 48px rgb(0 0 0 / 0.22);
-    --glass-blur: 16px;
-    backdrop-filter: var(--glass-backdrop-filter);
-    -webkit-backdrop-filter: var(--glass-backdrop-filter);
+    // Opaque like the other popovers: the theme turns the glass blur off on phones and for
+    // reduced motion or transparency, and the page would show through a translucent menu.
+    background: var(--floating-surface);
+    box-shadow: var(--floating-shadow);
   }
 
   .language-menu-popover {
@@ -263,7 +262,7 @@
     }
 
     &.active {
-      color: var(--primary-color);
+      color: var(--text-primary);
       font-weight: 600;
     }
   }
