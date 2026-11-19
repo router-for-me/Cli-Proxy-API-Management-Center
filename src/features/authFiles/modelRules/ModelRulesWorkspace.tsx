@@ -1,3 +1,4 @@
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
@@ -129,7 +130,9 @@ export function ProviderRail({ items, selected, total, disabled, onSelect }: Pro
               onClick={() => onSelect(item.key)}
             >
               <span className={styles.railIcon} aria-hidden="true">
-                {item.icon ? <img src={item.icon} alt="" /> : <IconNetwork size={15} />}
+                <ProviderArtwork provider={item.key} src={item.icon}>
+                  <IconNetwork size={15} />
+                </ProviderArtwork>
               </span>
               <span className={styles.railLabel}>{item.label}</span>
               {item.dirty ? (

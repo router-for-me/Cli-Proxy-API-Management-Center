@@ -1,3 +1,4 @@
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconEllipsis, IconGripVertical, IconLock } from '@/components/ui/icons';
@@ -202,7 +203,12 @@ export function MemberCard({
       )}
 
       <span className={styles.icon} aria-hidden="true">
-        {icon ? <img src={icon} alt="" /> : <span>{member.name.charAt(0).toUpperCase()}</span>}
+        <ProviderArtwork
+          provider={member.kind === 'credential' ? member.family : undefined}
+          src={icon}
+        >
+          <span>{member.name.charAt(0).toUpperCase()}</span>
+        </ProviderArtwork>
       </span>
 
       <span className={styles.body}>

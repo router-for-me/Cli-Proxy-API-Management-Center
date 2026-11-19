@@ -1,3 +1,4 @@
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronLeft, IconEyeOff, IconNetwork, IconRefreshCw } from '@/components/ui/icons';
@@ -86,7 +87,9 @@ function Door({
             const src = getAuthFileIcon(provider, resolvedTheme);
             return (
               <span key={provider} className={styles.provider} title={getTypeLabel(t, provider)}>
-                {src ? <img src={src} alt="" /> : provider.charAt(0).toUpperCase()}
+                <ProviderArtwork provider={provider} src={src}>
+                  {provider.charAt(0).toUpperCase()}
+                </ProviderArtwork>
               </span>
             );
           })}

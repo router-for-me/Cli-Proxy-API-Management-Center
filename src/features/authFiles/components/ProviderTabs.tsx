@@ -1,3 +1,4 @@
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconFilterAll } from '@/components/ui/icons';
@@ -69,11 +70,9 @@ export function ProviderTabs({
                     : undefined
                 }
               >
-                {iconSrc ? (
-                  <img src={iconSrc} alt="" className={styles.tabIcon} />
-                ) : (
+                <ProviderArtwork provider={type} src={iconSrc} className={styles.tabIcon}>
                   <span className={styles.tabIconFallback}>{label.slice(0, 1).toUpperCase()}</span>
-                )}
+                </ProviderArtwork>
               </span>
             )}
             <span className={styles.tabLabel}>{label}</span>
