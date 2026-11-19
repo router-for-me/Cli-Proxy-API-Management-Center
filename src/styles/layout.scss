@@ -33,6 +33,10 @@
     min-height: 100vh;
     overflow: visible;
     overflow-y: auto;
+
+    @supports (min-height: 100dvh) {
+      min-height: 100dvh;
+    }
   }
 
   &.plugin-resource-shell {
