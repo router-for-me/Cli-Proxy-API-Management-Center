@@ -91,6 +91,7 @@ function providerKeyToResource(
   return {
     id: buildId(brand, index, truncateForId(apiKey)),
     brand,
+    kind: 'key',
     originalIndex: index,
     name: typeof config.source?.group.name === 'string' ? config.source.group.name : null,
     identifier: maskApiKey(apiKey) || `#${index + 1}`,
@@ -106,6 +107,7 @@ function providerKeyToResource(
     headerCount: countHeaders(config.headers),
     excludedModelCount: stripDisableAllModelsRule(config.excludedModels).length,
     apiKeyEntryCount: 0,
+    overrideCount: 0,
     disabled,
     flags,
     selector,
@@ -115,6 +117,104 @@ function providerKeyToResource(
 
 export function geminiToResource(config: GeminiKeyConfig, index: number): ProviderResource {
   return providerKeyToResource('gemini', config, index);
+}
+
+const readGroupString = (value: unknown): string =>
+  typeof value === 'string' ? value.trim() : '';
+
+const readGroupModels = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const names: string[] = [];
+  value.forEach((entry) => {
+    if (entry === null || typeof entry !== 'object') return;
+    const record = entry as Record<string, unknown>;
+    const name = readGroupString(record.name);
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  });
+  return names;
+};
+
+const KEY_OVERRIDE_FIELDS = [
+  'models',
+  'excluded-models',
+  'priority',
+  'prefix',
+  'proxy-url',
+  'headers',
+  'disable-cooling',
+  'request-retry',
+  'request-scoped-errors',
+  'connection-pool',
+] as const;
+
+const countKeyOverrides = (keys: Record<string, unknown>[]): number =>
+  keys.filter((key) => KEY_OVERRIDE_FIELDS.some((field) => key[field] !== undefined && key[field] !== null))
+    .length;
+
+/** One row per upstream group; keys stay inside the group resource. */
+export function geminiGroupToResource(
+  group: Record<string, unknown>,
+  index: number,
+  groups: Record<string, unknown>[]
+): ProviderResource {
+  const name = readGroupString(group.name);
+  const keys = Array.isArray(group.keys)
+    ? group.keys.filter(
+        (entry): entry is Record<string, unknown> =>
+          entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+      )
+    : [];
+  const firstKey = readGroupString(keys[0]?.['api-key']);
+  const models = readGroupModels(group.models);
+  const excluded = Array.isArray(group['excluded-models'])
+    ? group['excluded-models'].map(readGroupString).filter(Boolean)
+    : [];
+  const effectiveExclusions = keys.map((key) =>
+    Array.isArray(key['excluded-models'])
+      ? (key['excluded-models'] as unknown[]).map(String)
+      : excluded
+  );
+  // A key-level list replaces the group list, so the row is only disabled when
+  // every key actually inherits the disable rule.
+  const disabled =
+    keys.length > 0
+      ? effectiveExclusions.every((list) => hasDisableAllModelsRule(list))
+      : hasDisableAllModelsRule(excluded);
+  const headers =
+    group.headers !== null && typeof group.headers === 'object' && !Array.isArray(group.headers)
+      ? Object.keys(group.headers as Record<string, unknown>).length
+      : 0;
+  const priority = typeof group.priority === 'number' && Number.isFinite(group.priority)
+    ? group.priority
+    : 0;
+  return {
+    id: buildId('gemini', index, `group:${truncateForId(name) || index}`),
+    brand: 'gemini',
+    kind: 'group',
+    originalIndex: index,
+    name: name || null,
+    identifier: name || `#${index + 1}`,
+    apiKeyPreview: firstKey ? maskApiKey(firstKey) : null,
+    apiKey: null,
+    authIndex: null,
+    baseUrl: readGroupString(group['base-url']) || null,
+    proxyUrl: readGroupString(group['proxy-url']) || null,
+    prefix: readGroupString(group.prefix) || null,
+    modelCount: models.length,
+    models,
+    priority,
+    headerCount: headers,
+    excludedModelCount: stripDisableAllModelsRule(excluded).length,
+    apiKeyEntryCount: keys.length,
+    overrideCount: countKeyOverrides(keys),
+    disabled,
+    flags: {},
+    selector: { brand: 'gemini', kind: 'group', groupIndex: index, group, groups },
+    raw: group,
+  };
 }
 
 export function interactionsToResource(config: GeminiKeyConfig, index: number): ProviderResource {
@@ -149,6 +249,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
   return {
     id: buildId('openaiCompatibility', sourceIndex, truncateForId(name) || `#${sourceIndex}`),
     brand: 'openaiCompatibility',
+    kind: 'key',
     originalIndex: sourceIndex,
     name: name || null,
     identifier: name || `#${sourceIndex + 1}`,
@@ -164,6 +265,7 @@ export function openaiToResource(config: OpenAIProviderConfig, index: number): P
     headerCount: countHeaders(config.headers),
     excludedModelCount: 0,
     apiKeyEntryCount: config.apiKeyEntries?.length ?? 0,
+    overrideCount: 0,
     disabled: config.disabled === true,
     flags: {},
     selector: { brand: 'openaiCompatibility', name, index: sourceIndex },
@@ -263,6 +365,7 @@ function sponsorRawToResource(
   return {
     id: buildId(brand, 0, 'sponsor'),
     brand,
+    kind: 'key',
     originalIndex: 0,
     name: options.displayName,
     identifier: options.displayName,
@@ -302,6 +405,7 @@ function sponsorRawToResource(
         0
       ),
     apiKeyEntryCount: openaiKeyCount + codexKeyCount + raw.claude.length + geminiKeyCount,
+    overrideCount: 0,
     disabled,
     flags: {
       protocols: [...options.protocolLabels],

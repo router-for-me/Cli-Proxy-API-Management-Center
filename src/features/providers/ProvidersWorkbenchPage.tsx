@@ -40,6 +40,7 @@ interface SheetState {
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+  variant?: 'key' | 'group';
 }
 
 interface ProvidersWorkbenchPageProps {
@@ -106,8 +107,8 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
 
-  const workbench = useProviderWorkbench();
   const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(readProvidersWorkbenchUiState);
+  const workbench = useProviderWorkbench({ geminiViewMode: uiState.geminiViewMode });
   const [sheetState, setSheetState] = useState<SheetState>({
     open: false,
     brand: 'gemini',
@@ -291,8 +292,9 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
 
   const openCreate = useCallback(() => {
     const brand = activeBrand;
-    setSheetState({ open: true, brand, mode: 'create', resource: null });
-  }, [activeBrand]);
+    const variant = brand === 'gemini' && uiState.geminiViewMode === 'group' ? 'group' : 'key';
+    setSheetState({ open: true, brand, mode: 'create', resource: null, variant });
+  }, [activeBrand, uiState.geminiViewMode]);
 
   const openView = useCallback((resource: ProviderResource) => {
     setSheetState({
@@ -315,6 +317,23 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
   const closeSheet = useCallback(() => {
     setSheetState((s) => ({ ...s, open: false }));
   }, []);
+
+  const handleViewModeChange = useCallback(
+    (mode: 'flat' | 'group') => {
+      const proceed =
+        sheetState.open && sheetRef.current
+          ? sheetRef.current.confirmDiscardIfDirty()
+          : Promise.resolve(true);
+      void proceed.then((ok) => {
+        if (!ok) return;
+        persistUiState((prev) =>
+          prev.geminiViewMode === mode ? prev : { ...prev, geminiViewMode: mode }
+        );
+        if (sheetState.open) closeSheet();
+      });
+    },
+    [closeSheet, persistUiState, sheetState.open]
+  );
 
   const handleDelete = useCallback(
     (resource: ProviderResource) => {
@@ -420,6 +439,8 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         showSummary={fixedBrand !== 'apikeyFun'}
         newLabel={t('providersPage.actions.new')}
         variant={fixedBrand === 'apikeyFun' ? 'quickStart' : undefined}
+        viewMode={activeGroup.id === 'gemini' ? uiState.geminiViewMode : undefined}
+        onViewModeChange={activeGroup.id === 'gemini' ? handleViewModeChange : undefined}
         onRefresh={() => void handleRefresh()}
         onNew={openCreate}
       />

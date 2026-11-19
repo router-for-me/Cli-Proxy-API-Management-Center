@@ -116,12 +116,15 @@ export function ProviderResourceTable({
       });
       return <div className={styles.metricsCell}>{items}</div>;
     }
-    if (r.brand === 'openaiCompatibility') {
+    if (r.brand === 'openaiCompatibility' || r.kind === 'group') {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
         renderMetric('keys', t('providersPage.table.metrics.keys'), r.apiKeyEntryCount),
         renderMetric('headers', t('providersPage.table.metrics.headers'), r.headerCount)
       );
+      if (r.kind === 'group' && r.overrideCount > 0) {
+        items.push(renderFlagTag('overrides', t('providersPage.table.overrides', { count: r.overrideCount })));
+      }
     } else {
       items.push(
         renderMetric('models', t('providersPage.table.metrics.models'), r.modelCount),
@@ -174,6 +177,17 @@ export function ProviderResourceTable({
         <div className={styles.primaryCell}>
           <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
           <span className={styles.primarySub}>{(r.apiKeyPreview ?? '—') + extra}</span>
+        </div>
+      );
+    }
+    if (r.kind === 'group') {
+      return (
+        <div className={styles.primaryCell}>
+          <span className={styles.primaryName}>{r.name ?? r.identifier}</span>
+          <span className={styles.primarySub}>
+            {t('providersPage.table.keysCount', { count: r.apiKeyEntryCount })}
+            {r.apiKeyPreview ? ` · ${r.apiKeyPreview}` : ''}
+          </span>
         </div>
       );
     }

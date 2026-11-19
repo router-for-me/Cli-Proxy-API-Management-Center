@@ -17,6 +17,11 @@ const DEFAULT_PROVIDER_FILTER_STATE: ProviderFilterState = {
   selectedModels: [],
 };
 
+export const GEMINI_VIEW_MODES = ['flat', 'group'] as const;
+export type GeminiViewMode = (typeof GEMINI_VIEW_MODES)[number];
+const GEMINI_VIEW_MODE_SET = new Set<GeminiViewMode>(GEMINI_VIEW_MODES);
+const DEFAULT_GEMINI_VIEW_MODE: GeminiViewMode = 'flat';
+
 const PROVIDER_BRAND_SET = new Set<ProviderBrand>(PROVIDER_BRAND_ORDER);
 const PROVIDER_SORT_BY_SET = new Set<ProviderSortBy>(PROVIDER_SORT_BY_VALUES);
 const SORT_DIR_SET = new Set<SortDir>(SORT_DIR_VALUES);
@@ -31,6 +36,8 @@ export interface ProviderFilterState {
 export interface ProvidersWorkbenchUiState {
   activeBrand: ProviderBrand;
   filtersByBrand: Partial<Record<ProviderBrand, ProviderFilterState>>;
+  /** Gemini provider list granularity: one row per key (flat) or per group. */
+  geminiViewMode: GeminiViewMode;
 }
 
 const isProviderBrand = (value: unknown): value is ProviderBrand =>
@@ -67,7 +74,11 @@ const normalizeProviderFilterState = (value: unknown): ProviderFilterState => {
 const createDefaultProvidersWorkbenchUiState = (): ProvidersWorkbenchUiState => ({
   activeBrand: DEFAULT_ACTIVE_BRAND,
   filtersByBrand: {},
+  geminiViewMode: DEFAULT_GEMINI_VIEW_MODE,
 });
+
+const isGeminiViewMode = (value: unknown): value is GeminiViewMode =>
+  typeof value === 'string' && GEMINI_VIEW_MODE_SET.has(value as GeminiViewMode);
 
 export const getProviderFilterState = (
   state: ProvidersWorkbenchUiState,
@@ -96,6 +107,9 @@ export const readProvidersWorkbenchUiState = (): ProvidersWorkbenchUiState => {
     return {
       activeBrand: isProviderBrand(parsed.activeBrand) ? parsed.activeBrand : DEFAULT_ACTIVE_BRAND,
       filtersByBrand,
+      geminiViewMode: isGeminiViewMode(parsed.geminiViewMode)
+        ? parsed.geminiViewMode
+        : DEFAULT_GEMINI_VIEW_MODE,
     };
   } catch {
     return createDefaultProvidersWorkbenchUiState();

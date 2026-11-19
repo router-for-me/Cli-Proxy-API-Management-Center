@@ -41,6 +41,13 @@ export type ProviderResourceSelector =
   | { brand: 'vertex'; apiKey: string; baseUrl?: string; index: number }
   | { brand: 'openaiCompatibility'; name: string; index: number }
   | {
+      brand: 'gemini';
+      kind: 'group';
+      groupIndex: number;
+      group: Record<string, unknown>;
+      groups: Record<string, unknown>[];
+    }
+  | {
       brand: 'apikeyFun';
       openaiIndices: number[];
       claudeIndices: number[];
@@ -83,10 +90,14 @@ export interface ProviderResourceFlags {
   protocols?: string[];
 }
 
+export type ProviderResourceKind = 'key' | 'group';
+
 export interface ProviderResource {
   /** 稳定 id,用作 React key 与选中态判断 */
   id: string;
   brand: ProviderBrand;
+  /** 行粒度:展开视图一行一个 key,聚合视图一行一个分组 */
+  kind: ProviderResourceKind;
   /** 在原数组中的下标 */
   originalIndex: number;
   /** 表格 key 列显示名(OpenAI=name,其余=null) */
@@ -110,6 +121,8 @@ export interface ProviderResource {
   excludedModelCount: number;
   /** 仅 OpenAI 有意义,其它 brand 该字段不展示但保留 */
   apiKeyEntryCount: number;
+  /** 分组行里带 key 级覆盖的 key 数量;非分组行为 0 */
+  overrideCount: number;
   /** 是否被禁用(各 brand 判定规则不同) */
   disabled: boolean;
   /** 额外能力旗标 */

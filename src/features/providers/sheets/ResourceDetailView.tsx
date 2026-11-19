@@ -121,6 +121,27 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
   const openaiConfig =
     resource.brand === 'openaiCompatibility' ? (resource.raw as OpenAIProviderConfig) : null;
   const apiKeyEntries = openaiConfig?.apiKeyEntries ?? [];
+  const groupRaw = resource.kind === 'group' ? (resource.raw as Record<string, unknown>) : null;
+  const groupKeys =
+    groupRaw && Array.isArray(groupRaw.keys)
+      ? (groupRaw.keys as unknown[]).flatMap((key) => {
+          if (key === null || typeof key !== 'object') return [];
+          const record = key as Record<string, unknown>;
+          const apiKey = typeof record['api-key'] === 'string' ? record['api-key'] : '';
+          if (!apiKey) return [];
+          return [
+            {
+              apiKey,
+              proxyUrl: typeof record['proxy-url'] === 'string' ? record['proxy-url'] : undefined,
+            },
+          ];
+        })
+      : [];
+  const keyEntryList = openaiConfig
+    ? apiKeyEntries.map((entry) => ({ apiKey: entry.apiKey, proxyUrl: entry.proxyUrl }))
+    : groupKeys;
+  const usageProvider = openaiConfig ? openaiConfig.name : 'gemini';
+  const usageBaseUrl = openaiConfig?.baseUrl ?? resource.baseUrl ?? undefined;
 
   return (
     <div>
@@ -137,20 +158,15 @@ export function ResourceDetailView({ resource, usageByProvider }: ResourceDetail
         ))}
       </dl>
 
-      {openaiConfig && apiKeyEntries.length > 0 ? (
+      {keyEntryList.length > 0 ? (
         <div className={styles.apiKeyEntriesSection}>
           <div className={styles.apiKeyEntriesLabel}>
-            {t('providersPage.form.apiKeyEntriesSection')}: {apiKeyEntries.length}
+            {t('providersPage.form.apiKeyEntriesSection')}: {keyEntryList.length}
           </div>
           <div className={styles.apiKeyEntryList}>
-            {apiKeyEntries.map((entry, entryIndex) => {
+            {keyEntryList.map((entry, entryIndex) => {
               const entryStats = usageByProvider
-                ? getProviderTotalStats(
-                    usageByProvider,
-                    openaiConfig.name,
-                    entry.apiKey,
-                    openaiConfig.baseUrl
-                  )
+                ? getProviderTotalStats(usageByProvider, usageProvider, entry.apiKey, usageBaseUrl)
                 : { success: 0, failure: 0 };
               return (
                 <div key={`${entry.apiKey}-${entryIndex}`} className={styles.apiKeyEntryCard}>

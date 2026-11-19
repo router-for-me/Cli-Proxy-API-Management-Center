@@ -14,6 +14,8 @@ interface ProviderHeaderCardProps {
   showSummary?: boolean;
   newLabel?: string;
   variant?: 'quickStart';
+  viewMode?: 'flat' | 'group';
+  onViewModeChange?: (mode: 'flat' | 'group') => void;
   onRefresh: () => void;
   onNew: () => void;
 }
@@ -30,6 +32,8 @@ export function ProviderHeaderCard({
   showSummary = true,
   newLabel,
   variant,
+  viewMode,
+  onViewModeChange,
   onRefresh,
   onNew,
 }: ProviderHeaderCardProps) {
@@ -45,6 +49,23 @@ export function ProviderHeaderCard({
           <h1 className={styles.title}>{title ?? t('providersPage.header.title')}</h1>
         </div>
         <div className={styles.actions}>
+          {viewMode && onViewModeChange ? (
+            <div className={styles.viewMode} role="group" aria-label={t('providersPage.viewMode.label')}>
+              {(['flat', 'group'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`${styles.viewModeBtn} ${
+                    viewMode === mode ? styles.viewModeActive : ''
+                  }`.trim()}
+                  aria-pressed={viewMode === mode}
+                  onClick={() => onViewModeChange(mode)}
+                >
+                  {t(`providersPage.viewMode.${mode}`)}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <button
             type="button"
             className={`${styles.btn} ${styles.btnOutline}`}

@@ -4,7 +4,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { IconLoader2, IconPencil } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
-import { PROVIDER_DESCRIPTORS } from '../descriptors';
+import { PROVIDER_DESCRIPTORS, type ProviderFormVariant } from '../descriptors';
 import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import type { ProviderBrand, ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
@@ -20,6 +20,8 @@ export interface ProviderSheetState {
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+  /** Creation granularity; edit/view derive it from resource.kind. */
+  variant?: ProviderFormVariant;
 }
 
 export interface ProviderSheetHandle {
@@ -67,6 +69,8 @@ export function ProviderSheet({
   }, []);
 
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
+  const formVariant: ProviderFormVariant =
+    state.resource?.kind === 'group' ? 'group' : (state.variant ?? 'key');
   const isEditingForm = state.mode === 'create' || state.mode === 'edit';
   const formMutating = submitting || mutationDisabled;
   const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
@@ -112,13 +116,13 @@ export function ProviderSheet({
       if (mutationDisabled) return;
       setSubmitting(true);
       try {
-        await workbench.createProvider(state.brand, input);
+        await workbench.createProvider(state.brand, input, formVariant);
         onCreated();
       } finally {
         setSubmitting(false);
       }
     },
-    [mutationDisabled, onCreated, state.brand, workbench]
+    [formVariant, mutationDisabled, onCreated, state.brand, workbench]
   );
 
   const handleUpdate = useCallback(
@@ -163,6 +167,7 @@ export function ProviderSheet({
         brand={state.brand}
         resource={state.resource}
         mode={state.mode}
+        variant={formVariant}
         mutating={formMutating}
         formId={formId}
         onSubmit={state.mode === 'create' ? handleCreate : handleUpdate}
