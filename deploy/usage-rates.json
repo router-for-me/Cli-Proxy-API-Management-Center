@@ -711,6 +711,196 @@
           ]
         }
       ]
+    },
+    "gemini-4-neon-xhigh": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-4-neon; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-4-hydrogen-xhigh": {
+      "input": 1.5,
+      "output": 7.5,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-4-hydrogen; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-4-carbon-high": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-4-carbon; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-4-argon-high": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-4-argon; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.8-flash-high": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3.8-flash; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.8-flash-tiered": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3.8-flash; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3-flash": {
+      "input": 0.5,
+      "output": 3,
+      "cache_read": 0.05,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3-flash-preview; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.1-flash-image": {
+      "input": 0.5,
+      "output": 3,
+      "cache_read": null,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3.1-flash-image; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.1-flash-lite": {
+      "input": 0.25,
+      "output": 1.5,
+      "cache_read": 0.025,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3.1-flash-lite; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.5-flash-lite": {
+      "input": 0.3,
+      "output": 2.5,
+      "cache_read": 0.03,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): gemini-3.5-flash-lite; ProxD 8321 Antigravity name, effort suffix priced as the base model",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-2.5-pro": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-4-neon-xhigh, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3-pro-preview": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-4-neon-xhigh, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.1-pro-preview": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-4-neon-xhigh, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.1-pro-preview-customtools": {
+      "input": 3,
+      "output": 15,
+      "cache_read": 0.15,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-4-neon-xhigh, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-3.8-flash-high, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3.5-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-3.8-flash-high, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "gemini-3-flash-preview": {
+      "input": 0.75,
+      "output": 3.75,
+      "cache_read": 0.075,
+      "cache_write": null,
+      "source": "models.dev google (fetched 2026-11-21): priced as gemini-3.8-flash-high, the model ProxD 8321 serves for this Gemini CLI alias",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "claude-opus-5-5-high": {
+      "input": 4,
+      "output": 20,
+      "cache_read": 0.2,
+      "cache_write": 5,
+      "source": "same per-token rates as claude-opus-5-5 (its book entry); served on ProxD 8321 through Antigravity, no fast mode",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
+    },
+    "claude-sonnet-5-5-high": {
+      "input": 2,
+      "output": 10,
+      "cache_read": 0.1,
+      "cache_write": 2.5,
+      "source": "same per-token rates as claude-sonnet-5-5 (its book entry); served on ProxD 8321 through Antigravity, no fast mode",
+      "updated_at_ms": 1795251835794,
+      "context_tiers": [],
+      "service_tiers": []
     }
   }
 }
