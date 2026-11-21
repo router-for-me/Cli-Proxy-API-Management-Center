@@ -373,11 +373,15 @@ export class QuotaCollector {
     if ('sources' in options) {
       this.revision = options.revision;
       const seen = new Set<string>();
-      this.collectionSources = options.sources.map((source) => {
+      this.collectionSources = options.sources.flatMap((source) => {
         if (!source.instanceId || seen.has(source.instanceId))
           throw new Error('Duplicate quota source');
         seen.add(source.instanceId);
-        return Object.freeze({ ...source, providers: QUOTA_PROVIDERS });
+        // A source that claims only other kinds (an Antigravity hub) holds no pooled quota.
+        const pooled =
+          !source.providers ||
+          source.providers.some((provider) => QUOTA_PROVIDERS.some((id) => id === provider));
+        return pooled ? [Object.freeze({ ...source, providers: QUOTA_PROVIDERS })] : [];
       });
     } else {
       if (!options.fetcher) throw new Error('Legacy quota injection requires a fetcher');

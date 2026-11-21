@@ -59,13 +59,17 @@ describe('credential provider ownership in the manifest', () => {
     }
   });
 
-  test('the deployed manifest gives Claude and Codex credentials their own instances', () => {
+  test('the deployed manifest gives each owned provider its own instance', () => {
     const path = fileURLToPath(new URL('../deploy/provider-sources.json', import.meta.url));
     const { manifest: deployed } = loadSourceManifest(path);
     const owners = Object.fromEntries(
       deployed.sources.flatMap((s) => (s.providers ?? []).map((p) => [p, s.instanceId]))
     );
-    expect(owners).toEqual({ claude: 'claude-primary', codex: 'codex-primary' });
+    expect(owners).toEqual({
+      claude: 'claude-primary',
+      codex: 'codex-primary',
+      antigravity: 'gemini-primary',
+    });
   });
 });
 

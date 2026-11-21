@@ -289,6 +289,7 @@ describe('provider source configuration loading', () => {
     expect(loaded.manifest.sources.map((source) => source.instanceId)).toEqual([
       'codex-primary',
       'claude-primary',
+      'gemini-primary',
     ]);
     expect(loaded.manifest.defaultInstanceId).toBe('codex-primary');
     expect(loaded.discovery).toEqual(publicSourceDiscovery(loaded.manifest, loaded.revision));

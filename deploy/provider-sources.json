@@ -30,6 +30,16 @@
       "providers": ["claude"],
       "upstreamOrigin": "http://127.0.0.1:8319",
       "managementKeyFile": "/run/secrets/proxy-management-key"
+    },
+    {
+      "instanceId": "gemini-primary",
+      "label": "Gemini / Antigravity",
+      "publicBasePath": "/gemini",
+      "aliases": [],
+      "authScope": "homelab-management",
+      "providers": ["antigravity"],
+      "upstreamOrigin": "http://127.0.0.1:8321",
+      "managementKeyFile": "/run/secrets/proxy-management-key"
     }
   ]
 }

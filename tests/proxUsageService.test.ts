@@ -139,6 +139,11 @@ test('deploy uses the history image, hashes both bundles and keeps the API on lo
   const script = read('scripts/deploy-homelab.sh');
   expect(script.match(/podman build /g)).toHaveLength(2);
   expect(script).toContain('sha256sum dist/usage/*.js');
+  // The manifest is baked into the image and the quadlet holds the key mount: either one changing
+  // must restart the collector, or it keeps the old sources and mount.
+  expect(script).toMatch(
+    /usage_hash=\$\(sha256sum dist\/usage\/\*\.js deploy\/provider-sources\.json deploy\/prox-usage\.container\s/
+  );
   expect(script).toContain('if [[ "$usage_hash" != "$previous_usage_hash" ]]');
   expect(script.match(/restart prox-usage.service/g)).toHaveLength(1);
   expect(read('deploy/prox-usage.container')).toContain('Image=localhost/prox-history:dev');

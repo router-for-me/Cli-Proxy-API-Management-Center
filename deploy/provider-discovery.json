@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": "c6885def5c13b0eabe941ed675f87121f1b783aff59e1c23e931979540fa505e",
+  "revision": "961cfbe4a8790fc8e8eb74073e181ba28871272812b925d4dc20b0c8c5e30d17",
   "defaultInstanceId": "codex-primary",
   "sources": [
     {
@@ -23,6 +23,16 @@
       "authScope": "homelab-management",
       "providers": [
         "claude"
+      ]
+    },
+    {
+      "instanceId": "gemini-primary",
+      "label": "Gemini / Antigravity",
+      "publicBasePath": "/gemini",
+      "aliases": [],
+      "authScope": "homelab-management",
+      "providers": [
+        "antigravity"
       ]
     }
   ]

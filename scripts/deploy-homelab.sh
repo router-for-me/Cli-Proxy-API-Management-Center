@@ -14,8 +14,10 @@ fi
 package_manager=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).packageManager")
 npm exec --yes --package="$package_manager" -- bun install --frozen-lockfile
 npm exec --yes --package="$package_manager" -- bun run verify
-# Hash both entry points: a writer-only change also requires a collector restart.
-usage_hash=$(sha256sum dist/usage/*.js | sha256sum | cut -d ' ' -f 1)
+# Hash both entry points: a writer-only change also requires a collector restart. The source
+# manifest is baked into the image and the quadlet holds the key mount, so they count too.
+usage_hash=$(sha256sum dist/usage/*.js deploy/provider-sources.json deploy/prox-usage.container |
+  sha256sum | cut -d ' ' -f 1)
 usage_hash_file="$HOME/.local/share/prox-usage/bundle.sha256"
 previous_usage_hash=$(cat "$usage_hash_file" 2>/dev/null || true)
 revision=$(git rev-parse HEAD)

@@ -12,7 +12,9 @@ credential UI. The store owns persistence; the collector uses only public APIs.
   it and restarting. Stopping aborts in-flight requests and prevents their
   subsequent writes.
   Each instance is inventoried once, including all supported Claude/Codex kinds.
-  Other kinds never trigger adapters, downloads or inference.
+  Other kinds never trigger adapters, downloads or inference. An instance whose
+  declared providers include neither Claude nor Codex (the Antigravity hub) is not
+  a quota source: it is never read and has no pools, issues or inventory status.
 - Identity and complete-inventory retirement belong to an instance/provider pair.
   Failed, incomplete or malformed inventories retire nothing in that instance;
   another instance continues independently. Issues carry their owning instance.

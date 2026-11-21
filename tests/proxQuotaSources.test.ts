@@ -638,6 +638,55 @@ describe('enumerated quota sources', () => {
     expect(f.store.listAccounts()).toEqual(before);
     expect(f.store.listSamples(0, NOW + MANUAL_REFRESH_INTERVAL_MS)).toHaveLength(8);
   });
+
+  test('a source that claims only non-pool providers is never collected or pooled', async () => {
+    const f = fixture();
+    const managementKeyFile = join(temporary(), 'antigravity-only.key');
+    writeFileSync(managementKeyFile, 'synthetic-key-antigravity-only');
+    f.inventories.set('antigravity-only', { files: [credential('claude')] });
+    const manifest = validateSourceManifest({
+      ...f.manifest,
+      sources: [
+        ...f.manifest.sources,
+        {
+          instanceId: 'antigravity-only',
+          label: 'Antigravity only',
+          publicBasePath: '/antigravity-only',
+          aliases: [],
+          authScope: 'antigravity-only',
+          providers: ['antigravity'],
+          upstreamOrigin: 'http://antigravity-only.invalid',
+          managementKeyFile,
+        },
+      ],
+    });
+    const collector = new QuotaCollector(f.store, {
+      sources: manifest.sources,
+      revision: 'synthetic-revision',
+      fetcher: f.fetcher,
+      now: () => NOW,
+    });
+    cleanups.push(() => collector.stop());
+    await collector.refresh();
+    expect(f.calls.some((call) => call.instanceId === 'antigravity-only')).toBe(false);
+    expect(collector.sources?.map((source) => source.instanceId)).toEqual([
+      'source-a',
+      'source-b',
+      'source-c',
+    ]);
+    expect(collector.inventorySources.some((s) => s.instanceId === 'antigravity-only')).toBe(false);
+    expect(collector.issues).toEqual([]);
+    const dashboard = buildDashboard(
+      f.store.listAccounts(),
+      f.store.listSamples(0, NOW),
+      { ...options, nowMs: NOW },
+      { ...state, issues: collector.issues, sources: collector.sources }
+    );
+    expect(dashboard.pools.some((pool) => pool.instanceId === 'antigravity-only')).toBe(false);
+    expect(dashboard.combinations?.map((c) => [c.provider, c.occurrenceCount])).toEqual([
+      ['claude', 3],
+    ]);
+  });
 });
 
 function legacyDatabase(path: string) {

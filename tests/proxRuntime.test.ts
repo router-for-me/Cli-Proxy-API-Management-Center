@@ -11,12 +11,16 @@ describe('Prox management runtime routes', () => {
   );
   test('root aliases resolve to the same enumerated owner', () => {
     const origin = 'https://prox.example.test';
-    for (const path of ['', '/codex', '/claude', '/claude/v8/management']) {
+    for (const path of ['', '/codex', '/claude', '/claude/v8/management', '/gemini']) {
       const result = resolveConnectionSources(origin + path, origin, discovery);
       expect(result.selectedInstanceId).toBe(
-        path.startsWith('/claude') ? 'claude-primary' : 'codex-primary'
+        path.startsWith('/claude')
+          ? 'claude-primary'
+          : path.startsWith('/gemini')
+            ? 'gemini-primary'
+            : 'codex-primary'
       );
-      expect(result.sources).toHaveLength(2);
+      expect(result.sources).toHaveLength(3);
     }
   });
   test('does not invent sibling routes for arbitrary backend connections', () => {
