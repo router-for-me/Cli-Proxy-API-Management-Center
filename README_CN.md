@@ -73,10 +73,11 @@ flowchart LR
   B[浏览器] --> P["prox<br/>nginx + 单文件界面<br/>:18318"]
   P -->|"/v8/management"| X["CLI Proxy API · Codex<br/>:8317"]
   P -->|"/claude/v8/management"| C["CLI Proxy API · Claude<br/>:8319"]
+  P -->|"/gemini/v8/management"| G["CLI Proxy API · Antigravity<br/>:8321"]
   P -->|"/v8/management/prox/*"| H["prox-history<br/>Bun 服务 · :18319"]
   H --> Q[("额度快照<br/>SQLite")]
   H -->|"分析查询"| U["prox-usage<br/>Bun 服务 · :18320"]
-  U -.->|"用量订阅"| X & C
+  U -.->|"用量订阅"| X & C & G
   H -.->|"读取额度"| X & C
 ```
 
