@@ -1,5 +1,5 @@
 /**
- * Which quota lane a window id belongs to, for Claude and Codex.
+ * Which quota lane a window id belongs to, for Claude, Codex and Antigravity (Gemini).
  *
  * One decision shared by the history collector, the pool card and the /quota
  * timeline. The weekly and five-hour lanes are the account-wide windows; every
@@ -9,7 +9,7 @@
 
 export type QuotaLane = 'weekly' | 'five-hour' | 'model' | 'monthly' | 'other';
 export type PoolLane = 'weekly' | 'five-hour';
-export type LaneProvider = 'claude' | 'codex';
+export type LaneProvider = 'claude' | 'codex' | 'antigravity';
 
 const CLAUDE_LANES: Readonly<Record<string, QuotaLane>> = {
   'five-hour': 'five-hour',
@@ -36,6 +36,10 @@ const CODEX_ADDITIONAL_LIMIT = /-(five-hour|weekly|monthly)-\d+$/;
 
 export function laneOf(provider: LaneProvider, windowId: string): QuotaLane {
   if (provider === 'claude') return CLAUDE_LANES[windowId] ?? 'other';
+  // Antigravity: the Gemini group's windows are the account's (`buildAntigravityQuotaWindows`);
+  // every other group (Claude and GPT models) is its own model-scoped allowance.
+  if (provider === 'antigravity')
+    return windowId === 'five-hour' || windowId === 'weekly' ? windowId : 'model';
   return CODEX_LANES[windowId] ?? (CODEX_ADDITIONAL_LIMIT.test(windowId) ? 'model' : 'other');
 }
 

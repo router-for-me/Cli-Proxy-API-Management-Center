@@ -31,7 +31,7 @@ const PLAN_WEIGHTS = [
   ['Claude Pro · ChatGPT Plus', 100],
   ['Claude Max', 500],
   ['ChatGPT Pro', 1000],
-  ['Claude Ultra', 2000],
+  ['Claude Ultra · Google AI Ultra', 2000],
   ['ChatGPT Pro 500', 2500],
 ] as const;
 
@@ -207,7 +207,7 @@ export function QuotaPoolPage() {
       {!chartUnavailable && (
         <div className={styles.controls}>
           <div className={styles.providerBar} role="group" aria-label={t('quota_pool.providers')}>
-            {(['all', 'claude', 'codex'] as const).map((item) => (
+            {(['all', 'claude', 'codex', 'antigravity'] as const).map((item) => (
               <button
                 type="button"
                 key={item}
@@ -510,7 +510,7 @@ export function QuotaPoolPage() {
           </div>
           {/* One placeholder per provider card, in the card's own order: headline and facts,
               chart, then the first account rows. */}
-          {(['claude', 'codex'] as const).map((item) => (
+          {(['claude', 'codex', 'antigravity'] as const).map((item) => (
             <div key={item} className={styles.loading} aria-hidden="true" inert>
               <div className={styles.loadingIdentity}>
                 <h2 className={styles.loadingTitle}>

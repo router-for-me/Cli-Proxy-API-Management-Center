@@ -639,25 +639,30 @@ describe('enumerated quota sources', () => {
     expect(f.store.listSamples(0, NOW + MANUAL_REFRESH_INTERVAL_MS)).toHaveLength(8);
   });
 
-  test('a source that claims only non-pool providers is never collected or pooled', async () => {
+  test('a source claiming only non-pool providers is never read; an Antigravity one only for Antigravity', async () => {
     const f = fixture();
-    const managementKeyFile = join(temporary(), 'antigravity-only.key');
-    writeFileSync(managementKeyFile, 'synthetic-key-antigravity-only');
-    f.inventories.set('antigravity-only', { files: [credential('claude')] });
+    const extra = (instanceId: string, providers: string[]) => {
+      const managementKeyFile = join(temporary(), `${instanceId}.key`);
+      writeFileSync(managementKeyFile, `synthetic-key-${instanceId}`);
+      // A Claude credential on each: neither source may pool it.
+      f.inventories.set(instanceId, { files: [credential('claude')] });
+      return {
+        instanceId,
+        label: instanceId,
+        publicBasePath: `/${instanceId}`,
+        aliases: [],
+        authScope: instanceId,
+        providers,
+        upstreamOrigin: `http://${instanceId}.invalid`,
+        managementKeyFile,
+      };
+    };
     const manifest = validateSourceManifest({
       ...f.manifest,
       sources: [
         ...f.manifest.sources,
-        {
-          instanceId: 'antigravity-only',
-          label: 'Antigravity only',
-          publicBasePath: '/antigravity-only',
-          aliases: [],
-          authScope: 'antigravity-only',
-          providers: ['antigravity'],
-          upstreamOrigin: 'http://antigravity-only.invalid',
-          managementKeyFile,
-        },
+        extra('xai-only', ['xai']),
+        extra('antigravity-only', ['antigravity']),
       ],
     });
     const collector = new QuotaCollector(f.store, {
@@ -668,13 +673,22 @@ describe('enumerated quota sources', () => {
     });
     cleanups.push(() => collector.stop());
     await collector.refresh();
-    expect(f.calls.some((call) => call.instanceId === 'antigravity-only')).toBe(false);
+    expect(f.calls.some((call) => call.instanceId === 'xai-only')).toBe(false);
+    // Inventoried, but it lists no Antigravity credential, so no usage API is called there.
+    expect(f.calls.filter((call) => call.instanceId === 'antigravity-only' && call.body)).toEqual(
+      []
+    );
     expect(collector.sources?.map((source) => source.instanceId)).toEqual([
       'source-a',
       'source-b',
       'source-c',
+      'antigravity-only',
     ]);
-    expect(collector.inventorySources.some((s) => s.instanceId === 'antigravity-only')).toBe(false);
+    expect(
+      collector.inventorySources
+        .filter((s) => s.instanceId === 'antigravity-only' || s.instanceId === 'xai-only')
+        .map((s) => [s.instanceId, s.provider])
+    ).toEqual([['antigravity-only', 'antigravity']]);
     expect(collector.issues).toEqual([]);
     const dashboard = buildDashboard(
       f.store.listAccounts(),
@@ -682,7 +696,11 @@ describe('enumerated quota sources', () => {
       { ...options, nowMs: NOW },
       { ...state, issues: collector.issues, sources: collector.sources }
     );
-    expect(dashboard.pools.some((pool) => pool.instanceId === 'antigravity-only')).toBe(false);
+    expect(
+      dashboard.pools
+        .filter((pool) => pool.instanceId === 'antigravity-only' || pool.instanceId === 'xai-only')
+        .map((pool) => [pool.instanceId, pool.provider, pool.accountCount])
+    ).toEqual([['antigravity-only', 'antigravity', 0]]);
     expect(dashboard.combinations?.map((c) => [c.provider, c.occurrenceCount])).toEqual([
       ['claude', 3],
     ]);

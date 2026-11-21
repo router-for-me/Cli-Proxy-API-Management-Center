@@ -30,7 +30,7 @@ ProxUI is a fork of [CLI Proxy API Management Center](https://github.com/router-
 
 | Area | What you get |
 | --- | --- |
-| **Quota Management** | One pool across all Claude and Codex accounts, in points weighted by plan (100 points = one base plan, such as Claude Pro or ChatGPT Plus). Recorded history and projected balances with scheduled resets, weekly and five-hour windows, remaining, drain and burn views, per-account windows, and a visible 60-second auto-refresh. |
+| **Quota Management** | One pool across all Claude, Codex and Gemini (Antigravity) accounts, in points weighted by plan (100 points = one base plan, such as Claude Pro or ChatGPT Plus). Recorded history and projected balances with scheduled resets, weekly and five-hour windows, remaining, drain and burn views, per-account windows, and a visible 60-second auto-refresh. |
 | **Analytics** | Retained usage across your instances: cards with sparklines, a trend chart of requests, tokens and cost on separate scales, provider and model breakdowns, a request log with details, and the configured model rates. Tabs for Overview, Tokens & Cache, Cost, Performance, Requests and Model Rates. |
 | **Fast, shareable views** | Pill selectors for the time range (Last hour, 24 hours, Today, Yesterday, 7 or 30 days) and bucket size (Auto, Hourly, Daily). The address carries the view — `#/analytics?tab=tokens&range=7d&bucket=hour` — so a link opens it directly, and the last view and sidebar state are remembered on this browser. A 7-day view loads in well under a second. |
 | **Fits your screen** | The first chart is fully visible on load at every desktop size from 1024 to 3440 pixels wide, sidebar open or collapsed; browser tests enforce it. Phones get stacked cards and collapsible filters. |

@@ -68,8 +68,9 @@ After Authentik sign-in, use the existing proxy management key at the UI's login
 | `https://prox.swervelab.xyz/claude` | Claude, port 8319 |
 | `https://prox.swervelab.xyz/gemini` | Gemini / Antigravity, port 8321 |
 
-The Gemini / Antigravity source declares only `antigravity`, so it has no pooled
-quota: prox-history never reads it and the pooled dashboard shows no cards for it.
+The Gemini / Antigravity source declares only `antigravity`, so prox-history reads
+it for Antigravity alone: its credentials form the Gemini pool on Quota Management,
+and it never gets Claude or Codex cards.
 
 The checked-in source manifest, `deploy/provider-sources.json`, owns instance
 membership, ports, paths, aliases, and explicit authentication-sharing scopes.

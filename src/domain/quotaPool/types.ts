@@ -1,6 +1,7 @@
 import type { AccountBilling } from '../accountBilling';
 /** Public contract for the server-owned quota history and forecast domain. */
-export type PoolProviderId = 'claude' | 'codex';
+/** `antigravity` is the Gemini (Google AI) pool, read from an Antigravity hub. */
+export type PoolProviderId = 'claude' | 'codex' | 'antigravity';
 export type PoolWindow = 'weekly' | 'five-hour';
 export type PoolForecastState =
   | 'ready'

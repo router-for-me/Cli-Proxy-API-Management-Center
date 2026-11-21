@@ -125,6 +125,8 @@ export class ResetClaims {
       );
     if (!account || account.disabled || account.retired)
       throw new ResetClaimRefusal(404, { error: 'Unknown account' });
+    if (account.provider === 'antigravity')
+      throw new ResetClaimRefusal(400, { error: 'Antigravity accounts have no resets to claim' });
     if (
       account.provider === 'claude' &&
       (!request.grantId || !ANTHROPIC_RESET_GRANT_ID_RE.test(request.grantId))

@@ -11,10 +11,21 @@ credential UI. The store owns persistence; the collector uses only public APIs.
   revision for its process lifetime; applying another revision requires stopping
   it and restarting. Stopping aborts in-flight requests and prevents their
   subsequent writes.
-  Each instance is inventoried once, including all supported Claude/Codex kinds.
-  Other kinds never trigger adapters, downloads or inference. An instance whose
-  declared providers include neither Claude nor Codex (the Antigravity hub) is not
-  a quota source: it is never read and has no pools, issues or inventory status.
+  Each instance is inventoried once, including all supported Claude/Codex kinds,
+  and Antigravity only on an instance that declares `antigravity` (the Gemini hub,
+  which therefore has an Antigravity pool and no Claude or Codex ones). Other kinds
+  never trigger adapters, downloads or inference. An instance whose declared
+  providers include none of the three is not a quota source: it is never read and
+  has no pools, issues or inventory status. Pools exist only for the providers a
+  source is collected for (`QuotaSourceView.providers`).
+- Antigravity (Gemini) quota is `retrieveUserQuotaSummary` for the credential's
+  `project_id` from the inventory, posted through `/requests/api-call` to the same
+  endpoints, in the same order, as the hub-direct card. Only the "Gemini Models"
+  group feeds the pool (user direction, 21 Nov 2026); the "Claude and GPT models"
+  group is shown as its own model-lane window. It has no resets: claims are refused
+  before anything is sent, and `/v1/accounts` leaves its accounts out (its cards
+  stay hub-direct). Databases from before it are migrated once: `quota_accounts`
+  is rebuilt to allow the provider, keeping every row and reference.
 - Identity and complete-inventory retirement belong to an instance/provider pair.
   Failed, incomplete or malformed inventories retire nothing in that instance;
   another instance continues independently. Issues carry their owning instance.
@@ -49,11 +60,13 @@ credential UI. The store owns persistence; the collector uses only public APIs.
 - Each enabled account contributes 100 quota points per base-plan unit of its
   subscription (`plans.ts`): one unit is the provider's $20 plan (Claude Pro,
   ChatGPT Plus), and plans count as the providers' published multiples (Claude
-  Max 5x/20x; ChatGPT Pro 10x, Pro 500 25x). A window's remaining percent times
+  Max 5x/20x; ChatGPT Pro 10x, Pro 500 25x). Google AI Ultra (`g1-ultra-tier`,
+  `g1-ultra-lite-tier`) counts 20 units, like Claude Ultra (user direction, 21 Nov 2026). A window's remaining percent times
   that weight gives pool points; resets restore each account to its own capacity.
   An unknown plan counts as one unit and is shown as unknown. Points are not tokens.
-- Plans come from provider responses only: Codex's usage `plan_type`, and Claude's
-  OAuth profile tier, read at most every six hours. A failed plan read changes
+- Plans come from provider responses only: Codex's usage `plan_type`, Claude's
+  OAuth profile tier and Antigravity's `loadCodeAssist` tier id (the paid tier
+  first), the last two read at most every six hours. A failed plan read changes
   nothing else.
 - An account with no five-hour limit is `no-limit` in the five-hour pool, not `missing-window`:
   outside its capacity and eligible count, and it never withholds the pool or combined five-hour

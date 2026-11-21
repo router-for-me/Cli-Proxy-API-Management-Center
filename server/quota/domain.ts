@@ -282,6 +282,13 @@ function recordedHistory(
   });
 }
 
+/** Default account names, used unless emails are revealed. */
+const POOL_PROVIDER_LABELS: Record<PoolProviderId, string> = {
+  claude: 'Claude',
+  codex: 'Codex',
+  antigravity: 'Gemini',
+};
+
 function buildPool(
   provider: PoolProviderId,
   source: StoredAccount[],
@@ -359,7 +366,7 @@ function buildPool(
     return {
       id: account.id,
       sourceAccountId: account.sourceAccountId ?? null,
-      label: `${provider === 'claude' ? 'Claude' : 'Codex'} ${index + 1}`,
+      label: `${POOL_PROVIDER_LABELS[provider]} ${index + 1}`,
       plan: {
         label: plan.label,
         capacityPoints: POINTS_PER_UNIT * plan.multiplier,
@@ -494,8 +501,18 @@ export function buildDashboard(
   const accountPlans = new Map(accounts.map((account) => [account.id, account.plan]));
   // From every window's samples (not `filtered`): the weekly view flags these accounts too.
   const weeklyOnly = suppliedWeeklyOnly ?? weeklyOnlyAccountIds(samples, options.nowMs);
-  const allPools = (scoped ? [...scopes.values()] : [undefined]).flatMap((source) =>
-    QUOTA_PROVIDERS.map((provider) => ({
+  // Pools only for the providers a source is collected for. Where that is unknown (legacy history,
+  // an instance no longer configured): Claude and Codex, and Antigravity once it has accounts.
+  const scopeProviders = (scope?: QuotaSourceView) =>
+    scope?.providers ??
+    QUOTA_PROVIDERS.filter(
+      (provider) =>
+        provider !== 'antigravity' ||
+        accounts.some((a) => a.instanceId === scope?.instanceId && a.provider === provider)
+    );
+  const allPools = (scoped ? [...scopes.values()] : [undefined]).flatMap((scope) => {
+    const source = scope && { instanceId: scope.instanceId, sourceLabel: scope.sourceLabel };
+    return scopeProviders(scope).map((provider) => ({
       ...buildPool(
         provider,
         accounts.filter((account) => account.instanceId === source?.instanceId),
@@ -514,8 +531,8 @@ export function buildDashboard(
         weeklyOnly
       ),
       ...source,
-    }))
-  );
+    }));
+  });
   // A source containing one supported provider does not create an empty sibling-provider card.
   // Retain empty results when the entire source is empty, and preserve failure visibility.
   const pools = allPools
@@ -590,6 +607,7 @@ export function buildDashboard(
       all: combined(pools),
       claude: combined(pools.filter((pool) => pool.provider === 'claude')),
       codex: combined(pools.filter((pool) => pool.provider === 'codex')),
+      antigravity: combined(pools.filter((pool) => pool.provider === 'antigravity')),
     },
     ...(scoped
       ? {

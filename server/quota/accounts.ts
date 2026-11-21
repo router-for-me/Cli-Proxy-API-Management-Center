@@ -22,6 +22,10 @@ import { weeklyOnlyAccountIds } from './values';
 const SAMPLE_LABEL_KEYS: Record<PoolProviderId, Record<PoolWindow, string>> = {
   claude: { 'five-hour': 'claude_quota.five_hour', weekly: 'claude_quota.seven_day' },
   codex: { 'five-hour': 'codex_quota.primary_window', weekly: 'codex_quota.secondary_window' },
+  antigravity: {
+    'five-hour': 'antigravity_quota.five_hour_limit',
+    weekly: 'antigravity_quota.weekly_limit',
+  },
 };
 
 export interface AccountsInput {
@@ -77,8 +81,9 @@ export function buildAccounts(input: AccountsInput): ServerAccountsBody {
     list.push(sample);
     samples.set(sample.accountId, list);
   }
+  // Claude and Codex only: Antigravity cards stay hub-direct, and browsers reject other providers.
   const live = input.accounts
-    .filter((account) => !account.retired)
+    .filter((account) => !account.retired && account.provider !== 'antigravity')
     .sort(
       (a, b) =>
         (a.instanceId ?? '').localeCompare(b.instanceId ?? '') ||

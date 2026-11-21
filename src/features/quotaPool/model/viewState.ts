@@ -22,7 +22,7 @@ export const DEFAULT_VIEW_STATE: QuotaViewState = {
 };
 
 const ALLOWED: { [K in keyof QuotaViewState]: readonly QuotaViewState[K][] } = {
-  provider: ['all', 'claude', 'codex'],
+  provider: ['all', 'claude', 'codex', 'antigravity'],
   window: ['weekly', 'five-hour'],
   mode: ['remaining', 'drain', 'burn'],
   lookback: [1, 3, 6],

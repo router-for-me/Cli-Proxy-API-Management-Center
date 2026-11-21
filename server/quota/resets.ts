@@ -13,6 +13,8 @@ export function readAccountResets(
   body: unknown,
   observedAtMs: number
 ): AccountResets | null {
+  // Antigravity has no reset grants or credits.
+  if (provider === 'antigravity') return null;
   const payload =
     provider === 'claude' ? parseClaudeUsagePayload(body) : parseCodexUsagePayload(body);
   if (!isRecord(payload)) return null;

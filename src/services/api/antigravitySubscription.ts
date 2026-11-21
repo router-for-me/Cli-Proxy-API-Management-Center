@@ -1,11 +1,8 @@
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
-import {
-  ANTIGRAVITY_CODE_ASSIST_URL,
-  ANTIGRAVITY_REQUEST_HEADERS,
-  createStatusError,
-  normalizeStringValue,
-  parseAntigravityPayload,
-} from '@/utils/quota';
+// Direct modules, not the `@/utils/quota` barrel: prox-history reads plans with this parser.
+import { ANTIGRAVITY_CODE_ASSIST_URL, ANTIGRAVITY_REQUEST_HEADERS } from '@/utils/quota/constants';
+import { createStatusError } from '@/utils/quota/formatters';
+import { normalizeStringValue, parseAntigravityPayload } from '@/utils/quota/parsers';
 
 export type AntigravitySubscriptionPlan = 'free' | 'pro' | 'ultra' | 'ultra-lite' | 'unknown';
 
@@ -25,7 +22,7 @@ type RawTierPayload = {
   name?: unknown;
 };
 
-const CODE_ASSIST_REQUEST_BODY = JSON.stringify({ metadata: { ideType: 'ANTIGRAVITY' } });
+export const CODE_ASSIST_REQUEST_BODY = JSON.stringify({ metadata: { ideType: 'ANTIGRAVITY' } });
 
 const PLAN_BY_TIER_ID = new Map<string, AntigravitySubscriptionPlan>([
   ['free-tier', 'free'],

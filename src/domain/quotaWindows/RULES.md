@@ -1,7 +1,10 @@
 # Provider quota windows
 
 This package owns Claude and Codex payload-to-window conversion for both the
-existing credential UI and the Prox history collector. Provider data modules
+existing credential UI and the Prox history collector, and Antigravity's for the
+collector (`antigravity.ts`, over the shared `buildAntigravityQuotaGroups`): the
+Gemini group's `gemini-5h`/`gemini-weekly` buckets are its `five-hour`/`weekly`
+windows; every other bucket keeps its id and the `model` lane. Provider data modules
 re-export the builders for existing callers. Keep IDs, reset parsing, periods,
 fallbacks, labels, and missing values consistent here; do not add a second raw
 payload parser in the history service or dashboard.

@@ -48,7 +48,7 @@ export class QuotaStore {
       PRAGMA busy_timeout = 5000;
       CREATE TABLE IF NOT EXISTS quota_accounts (
         id TEXT PRIMARY KEY,
-        provider TEXT NOT NULL CHECK (provider IN ('claude', 'codex')),
+        provider TEXT NOT NULL CHECK (provider IN ('claude', 'codex', 'antigravity')),
         name TEXT NOT NULL,
         email TEXT,
         disabled INTEGER NOT NULL CHECK (disabled IN (0, 1)),
@@ -128,6 +128,54 @@ export class QuotaStore {
           .run(RETIRED_ACCOUNT_NAME, this.now());
       })
       .immediate();
+    this.widenAccountProviders();
+  }
+
+  /**
+   * Databases created before Antigravity joined the pool limit `quota_accounts.provider` to
+   * claude/codex. SQLite cannot alter a CHECK, so the table is rebuilt once with every row, the
+   * way https://sqlite.org/lang_altertable.html#otheralter describes: foreign keys off, copy,
+   * drop, rename, index, then a foreign key check before commit. Reset events and legacy sources
+   * keep their claude/codex limit: Antigravity has neither.
+   */
+  private widenAccountProviders(): void {
+    const table = this.db
+      .query<{ sql: string }, []>(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'quota_accounts'"
+      )
+      .get();
+    if (!table?.sql.includes("CHECK (provider IN ('claude', 'codex'))")) return;
+    const columns =
+      'id, provider, name, email, disabled, retired, lastSeenAtMs, lastErrorAtMs, retiredAtMs';
+    this.db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      this.db
+        .transaction(() => {
+          this.db.exec(`
+            CREATE TABLE quota_accounts_widened (
+              id TEXT PRIMARY KEY,
+              provider TEXT NOT NULL CHECK (provider IN ('claude', 'codex', 'antigravity')),
+              name TEXT NOT NULL,
+              email TEXT,
+              disabled INTEGER NOT NULL CHECK (disabled IN (0, 1)),
+              retired INTEGER NOT NULL CHECK (retired IN (0, 1)),
+              lastSeenAtMs INTEGER NOT NULL,
+              lastErrorAtMs INTEGER,
+              retiredAtMs INTEGER
+            );
+            INSERT INTO quota_accounts_widened (${columns})
+              SELECT ${columns} FROM quota_accounts;
+            DROP TABLE quota_accounts;
+            ALTER TABLE quota_accounts_widened RENAME TO quota_accounts;
+            CREATE INDEX quota_accounts_provider ON quota_accounts(provider);
+          `);
+          if (this.db.query('PRAGMA foreign_key_check').all().length)
+            throw new Error('Quota account migration broke a reference');
+        })
+        .immediate();
+    } finally {
+      this.db.exec('PRAGMA foreign_keys = ON');
+    }
   }
 
   listAccounts(): StoredAccount[] {
