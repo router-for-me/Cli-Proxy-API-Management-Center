@@ -9,7 +9,7 @@ ContainerName=prox-usage
 Exec=bun /app/usage/main.js
 Network=host
 Volume=%h/.local/share/prox-usage:/data:rw
-Volume=%h/.config/cli-proxy-rerank/management-key:/run/secrets/proxy-management-key:ro
+Volume=%h/.config/proxd/management-key:/run/secrets/proxy-management-key:ro
 # CPA-Manager-Plus was retired on 15 Nov 2026 after an exact final reconcile; prox-usage is the only
 # usage store. Retired mode refuses CPAMP import/reconcile/verify, reports cpamp_retired on
 # /v1/status and /v1/exporter, and the nightly chain skips the CPAMP guard, reconcile and parity.

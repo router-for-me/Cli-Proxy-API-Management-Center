@@ -91,7 +91,7 @@ export function AuthFileModelsModal(props: AuthFileModelsModalProps) {
         <EmptyState
           title={t('auth_files.models_unsupported', { defaultValue: '当前版本不支持此功能' })}
           description={t('auth_files.models_unsupported_desc', {
-            defaultValue: '请更新 CLI Proxy API 到最新版本后重试',
+            defaultValue: '请更新 ProxD 到最新版本后重试',
           })}
         />
       );

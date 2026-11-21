@@ -4,7 +4,7 @@
 
 # ProxUI
 
-**One console for every CLI Proxy API instance you run.**
+**One console for every ProxD instance you run.**
 
 Pooled quota forecasts, usage analytics and every management page for your Claude and Codex runtimes — in a single HTML file.
 
@@ -21,10 +21,10 @@ Pooled quota forecasts, usage analytics and every management page for your Claud
 
 ---
 
-ProxUI is a fork of [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center). It keeps the upstream management pages and adds what you need when one homelab runs several CLI Proxy API instances: a quota pool across every Claude and Codex account, retained-usage analytics, and one login that reaches each instance through its own management source.
+ProxUI is a fork of [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center). It keeps the upstream management pages and adds what you need when one homelab runs several ProxD instances: a quota pool across every Claude and Codex account, retained-usage analytics, and one login that reaches each instance through its own management source.
 
 > [!IMPORTANT]
-> Requires **CLI Proxy API ≥ 8.0.0** (v8 Management API, `/v8/management`). ProxUI is a management UI; it never forwards inference traffic. Analytics comes from `prox-usage`, ProxUI's own usage collector and history store.
+> Requires **ProxD**, or another **CLIProxyAPI ≥ 8.0.0** build (v8 Management API, `/v8/management`). ProxUI is a management UI; it never forwards inference traffic. Analytics comes from `prox-usage`, ProxUI's own usage collector and history store.
 
 ## What ProxUI adds
 
@@ -71,9 +71,9 @@ All screenshots use the synthetic test fixtures, never real accounts or keys.
 ```mermaid
 flowchart LR
   B[Browser] --> P["prox<br/>nginx + single-file UI<br/>:18318"]
-  P -->|"/v8/management"| X["CLI Proxy API · Codex<br/>:8317"]
-  P -->|"/claude/v8/management"| C["CLI Proxy API · Claude<br/>:8319"]
-  P -->|"/gemini/v8/management"| G["CLI Proxy API · Antigravity<br/>:8321"]
+  P -->|"/v8/management"| X["ProxD · Codex<br/>:8317"]
+  P -->|"/claude/v8/management"| C["ProxD · Claude<br/>:8319"]
+  P -->|"/gemini/v8/management"| G["ProxD · Antigravity<br/>:8321"]
   P -->|"/v8/management/prox/*"| H["prox-history<br/>Bun server · :18319"]
   H --> Q[("Quota snapshots<br/>SQLite")]
   H -->|"analytics query"| U["prox-usage<br/>Bun server · :18320"]

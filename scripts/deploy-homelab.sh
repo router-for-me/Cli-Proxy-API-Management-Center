@@ -6,8 +6,8 @@ cd "$repo"
 # node, npm and bun live in ~/.local/bin, which only login shells add to PATH;
 # `systemd-run --user` starts with a bare PATH and fails with `node: command not found`.
 export PATH="$HOME/.local/bin:$PATH"
-if [[ ! -r "$HOME/.config/cli-proxy-rerank/management-key" ]] || \
-   [[ ! -s "$HOME/.config/cli-proxy-rerank/management-key" ]]; then
+if [[ ! -r "$HOME/.config/proxd/management-key" ]] || \
+   [[ ! -s "$HOME/.config/proxd/management-key" ]]; then
   echo 'Missing readable, non-empty proxy management key.' >&2
   exit 1
 fi

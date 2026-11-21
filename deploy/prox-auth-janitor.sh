@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove orphaned CLI-Proxy lock files. CLI-Proxy deletes an auth `X.json` but never `X.json.lock`.
+# Remove orphaned ProxD lock files. ProxD deletes an auth `X.json` but never `X.json.lock`.
 # Removes only top-level regular `*.json.lock` files that have no `X.json` and are older than
 # PROX_JANITOR_MIN_AGE_MINUTES (default 10): a fresh orphan can belong to a write in progress.
 # Never touches `.json` files or anything else. Prints the basename of each removed lock.
@@ -10,7 +10,8 @@ if [[ ! "$min_age" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 if (($# == 0)); then
-  set -- "$HOME/.local/share/cli-proxy-api/auth" "$HOME/.local/share/cli-proxy-claude/auth"
+  set -- "$HOME/.local/share/proxd/codex/auth" "$HOME/.local/share/proxd/claude/auth" \
+    "$HOME/.local/share/proxd/gemini/auth"
 fi
 for dir in "$@"; do
   [[ -d "$dir" ]] || continue

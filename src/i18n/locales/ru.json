@@ -38,7 +38,7 @@
     "alias": "Псевдоним",
     "failure": "Сбой",
     "unknown_error": "Неизвестная ошибка",
-    "quota_update_required": "Пожалуйста, обновите CPA или проверьте наличие обновлений",
+    "quota_update_required": "Пожалуйста, обновите ProxD или проверьте наличие обновлений",
     "quota_check_credential": "Пожалуйста, проверьте статус учётных данных",
     "copy": "Копировать",
     "expand": "Развернуть",
@@ -61,7 +61,7 @@
     "abbr": "CPAMC"
   },
   "login": {
-    "subtitle": "Подключение к CLI Proxy API v8 или новее",
+    "subtitle": "Подключение к ProxD v8 или новее",
     "connection_current": "Текущий URL",
     "connection_auto_hint": "Система автоматически использует текущий URL для подключения",
     "custom_connection_label": "Пользовательский URL подключения:",
@@ -79,8 +79,8 @@
     "error_timeout": "Время ожидания истекло, сервер не отвечает",
     "error_unauthorized": "Аутентификация не удалась, ключ управления отсутствует или неверен",
     "error_forbidden": "Доступ запрещён: удалённое управление отключено, ключ управления не настроен или IP временно заблокирован",
-    "error_not_found": "Management API v8 не найден. Проверьте адрес сервера и обновите CLIProxyAPI до v8 или новее; API v0 не поддерживается.",
-    "error_legacy_backend": "Этот сервер поддерживает Management API v0, но не v8. Обновите CLIProxyAPI до v8 или новее, чтобы использовать эту страницу управления.",
+    "error_not_found": "Management API v8 не найден. Проверьте адрес сервера и обновите ProxD до v8 или новее; API v0 не поддерживается.",
+    "error_legacy_backend": "Этот сервер поддерживает Management API v0, но не v8. Обновите ProxD до v8 или новее, чтобы использовать эту страницу управления.",
     "error_server": "Backend не смог обработать запрос управления, проверьте журналы сервера",
     "error_cors": "Блокировка CORS, проверьте конфигурацию сервера",
     "error_ssl": "Ошибка проверки SSL/TLS сертификата"
@@ -374,7 +374,7 @@
     "models_empty": "Для этих учётных данных нет доступных моделей",
     "models_empty_desc": "Возможно, учётные данные ещё не загружены сервером или к ним не привязаны модели.",
     "models_unsupported": "Функция не поддерживается в текущей версии",
-    "models_unsupported_desc": "Обновите CLI Proxy API до последней версии и повторите попытку",
+    "models_unsupported_desc": "Обновите ProxD до последней версии и повторите попытку",
     "models_excluded_badge": "Отключена",
     "models_excluded_hint": "Эта OAuth-модель отключена",
     "status_toggle_label": "Включено",
@@ -1008,9 +1008,9 @@
     "model_count": "Отключено моделей: {{count}}",
     "list_empty_all": "Отключений моделей пока нет — используйте \"Добавить отключение\".",
     "provider_required": "Сначала укажите провайдера",
-    "upgrade_required": "Текущая версия CPA не поддерживает отключение OAuth-моделей. Пожалуйста, обновите систему.",
-    "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите CPA (CLI Proxy API) до последней версии и повторите попытку."
+    "upgrade_required": "Текущая версия ProxD не поддерживает отключение OAuth-моделей. Пожалуйста, обновите систему.",
+    "upgrade_required_title": "Пожалуйста, обновите ProxD",
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает получение отключения OAuth-моделей. Обновите ProxD до последней версии и повторите попытку."
   },
   "excluded_models": {
     "trigger_summary": "Исключено: {{excluded}} · доступно: {{available}}",
@@ -1057,7 +1057,7 @@
     "provider_placeholder": "например: codex / vertex",
     "provider_hint": "По умолчанию используется текущий фильтр; выберите существующего провайдера или введите новое имя.",
     "model_source_loading": "Загрузка моделей...",
-    "model_source_unsupported": "Текущая версия CPA не поддерживает загрузку списка моделей (ручной ввод остаётся доступным).",
+    "model_source_unsupported": "Текущая версия ProxD не поддерживает загрузку списка моделей (ручной ввод остаётся доступным).",
     "model_source_loaded": "Загружено моделей: {{count}}. Используйте выпадающий список \"Исходная модель\" или введите своё значение. Сохранение пустого списка удаляет провайдера. Включите \"Сохранить оригинал\", чтобы оставить исходное имя вместе с псевдонимом.",
     "alias_label": "Псевдонимы моделей",
     "alias_name_placeholder": "Исходное имя модели",
@@ -1107,9 +1107,9 @@
     "view_mode_diagram": "Диаграмма",
     "view_mode_list": "Список",
     "provider_required": "Сначала укажите провайдера",
-    "upgrade_required": "Эта функция требует более новой версии CLI Proxy API (CPA). Обновите систему.",
-    "upgrade_required_title": "Пожалуйста, обновите CLI Proxy API",
-    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите CLI Proxy API (CPA) до последней версии."
+    "upgrade_required": "Эта функция требует более новой версии ProxD. Обновите систему.",
+    "upgrade_required_title": "Пожалуйста, обновите ProxD",
+    "upgrade_required_desc": "Текущая версия сервера не поддерживает API псевдонимов моделей OAuth. Обновите ProxD до последней версии."
   },
   "auth_login": {
     "devin_oauth_cancel": "Отменить вход в Devin",
@@ -1118,7 +1118,7 @@
     "devin_oauth_retry_hint": "Сервер может всё ещё ожидать авторизацию. Отмените эту попытку входа перед новой.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Войти в Devin",
-    "devin_oauth_hint": "Войдите в Devin / Cognition через OAuth в браузере для сохранения файла аутентификации. Требуется CLI Proxy API v7.3.1 или новее; завершите авторизацию в течение пяти минут.",
+    "devin_oauth_hint": "Войдите в Devin / Cognition через OAuth в браузере для сохранения файла аутентификации. Требуется ProxD v7.3.1 или новее; завершите авторизацию в течение пяти минут.",
     "devin_copy_link": "Копировать ссылку",
     "devin_open_link": "Открыть ссылку",
     "devin_oauth_status_waiting": "Ожидание аутентификации Devin...",
@@ -1227,7 +1227,7 @@
     "oauth_callback_required": "Сначала вставьте полный URL перенаправления.",
     "oauth_callback_success": "Callback URL отправлен. Продолжайте ожидать аутентификацию.",
     "oauth_callback_error": "Не удалось отправить Callback URL:",
-    "oauth_callback_upgrade_hint": "Обновите CLI Proxy API или проверьте подключение.",
+    "oauth_callback_upgrade_hint": "Обновите ProxD или проверьте подключение.",
     "oauth_callback_status_success": "Callback URL отправлен, ожидаем аутентификацию...",
     "oauth_callback_status_error": "Не удалось отправить Callback URL:",
     "missing_state": "Не удалось получить параметр состояния аутентификации",
@@ -1327,9 +1327,9 @@
     "request_log_download_success": "Журнал запросов успешно скачан",
     "empty_title": "Журналы недоступны",
     "empty_desc": "Когда включена опция \"Включить журналирование в файл\", журналы появятся здесь",
-    "cpa_file_logging_required": "Подключён режим CPA. Для просмотра журналов сначала включите запись журналов в файл.",
+    "cpa_file_logging_required": "Подключён режим ProxD. Для просмотра журналов сначала включите запись журналов в файл.",
     "cpa_file_logging_required_title": "Требуется файловое журналирование",
-    "cpa_file_logging_required_desc": "CPA читает этот журнал из локальных файлов. Включите logging-to-file в конфигурации и обновите страницу.",
+    "cpa_file_logging_required_desc": "ProxD читает этот журнал из локальных файлов. Включите logging-to-file в конфигурации и обновите страницу.",
     "file_logging_required": "Этот endpoint журналов требует включить запись журналов в файл перед чтением файловых журналов.",
     "file_logging_required_title": "Требуется файловое журналирование",
     "file_logging_required_desc": "Этот endpoint журналов читает локальные файлы. Включите logging-to-file в конфигурации и обновите страницу.",
@@ -2169,11 +2169,11 @@
     "toggle_collapse": "Свернуть боковую панель",
     "expand": "Развернуть",
     "collapse": "Свернуть",
-    "subtitle": "Консоль управления CLI Proxy API",
+    "subtitle": "Консоль управления ProxD",
     "auth_files_count": "Файлов аутентификации: {{count}}"
   },
   "footer": {
-    "api_version": "Версия CLI Proxy API",
+    "api_version": "Версия ProxD",
     "build_date": "Время сборки",
     "version": "Версия интерфейса управления"
   },

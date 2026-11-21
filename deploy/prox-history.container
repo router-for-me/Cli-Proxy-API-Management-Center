@@ -8,7 +8,7 @@ Image=localhost/prox-history:dev
 ContainerName=prox-history
 Network=host
 Volume=%h/.local/share/prox-history:/data:rw
-Volume=%h/.config/cli-proxy-rerank/management-key:/run/secrets/proxy-management-key:ro
+Volume=%h/.config/proxd/management-key:/run/secrets/proxy-management-key:ro
 
 [Service]
 Restart=always

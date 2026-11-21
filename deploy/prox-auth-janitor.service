@@ -1,5 +1,5 @@
 [Unit]
-Description=Remove orphaned CLI-Proxy auth lock files
+Description=Remove orphaned ProxD auth lock files
 # No start limit: a tripped limit would leave the unit failed and skip cleanups. Each run is cheap
 # and idempotent; only the 10-minute timer starts it.
 StartLimitIntervalSec=0

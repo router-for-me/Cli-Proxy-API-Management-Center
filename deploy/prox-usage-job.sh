@@ -5,7 +5,7 @@ case "${1:-}" in
   prune|reconcile|backup) kind=$1 ;;
   *) echo 'Unsupported usage job' >&2; exit 2 ;;
 esac
-key=$(cat "$HOME/.config/cli-proxy-rerank/management-key")
+key=$(cat "$HOME/.config/proxd/management-key")
 test -n "$key"
 body=$(printf '{"kind":"%s"}' "$kind")
 printf 'Authorization: Bearer %s\n' "$key" |
