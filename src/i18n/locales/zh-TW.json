@@ -38,7 +38,7 @@
     "alias": "別名",
     "failure": "失敗",
     "unknown_error": "未知錯誤",
-    "quota_update_required": "請更新 CPA 版本或檢查更新",
+    "quota_update_required": "請更新 ProxD 版本或檢查更新",
     "quota_check_credential": "請檢查憑證狀態",
     "copy": "複製",
     "expand": "展開",
@@ -61,7 +61,7 @@
     "abbr": "CPAMC"
   },
   "login": {
-    "subtitle": "連線至 CLI Proxy API v8 或更新版本",
+    "subtitle": "連線至 ProxD v8 或更新版本",
     "connection_current": "目前位址",
     "connection_auto_hint": "系統將自動使用目前存取位址進行連線",
     "custom_connection_label": "自訂連線位址:",
@@ -79,8 +79,8 @@
     "error_timeout": "連線逾時，伺服器無回應",
     "error_unauthorized": "驗證失敗，管理金鑰缺失或無效",
     "error_forbidden": "存取被拒絕，遠端管理未啟用、管理金鑰未設定或 IP 被暫時封鎖",
-    "error_not_found": "找不到 v8 Management API，請檢查服務位址並將 CLIProxyAPI 升級至 v8 或更新版本；不再支援 v0 介面。",
-    "error_legacy_backend": "目前後端可使用 v0 管理介面，但不支援 v8。請將 CLIProxyAPI 升級至 v8 或更新版本後再使用此管理頁面。",
+    "error_not_found": "找不到 v8 Management API，請檢查服務位址並將 ProxD 升級至 v8 或更新版本；不再支援 v0 介面。",
+    "error_legacy_backend": "目前後端可使用 v0 管理介面，但不支援 v8。請將 ProxD 升級至 v8 或更新版本後再使用此管理頁面。",
     "error_server": "後端處理管理介面時發生錯誤，請查看服務日誌",
     "error_cors": "跨域請求被阻擋，請檢查伺服器設定",
     "error_ssl": "SSL/TLS 憑證驗證失敗"
@@ -369,7 +369,7 @@
     "models_empty": "該憑證暫無可用模型",
     "models_empty_desc": "該驗證憑證可能尚未被伺服器載入或沒有綁定任何模型",
     "models_unsupported": "目前版本不支援此功能",
-    "models_unsupported_desc": "請更新 CLI Proxy API 到最新版本後重試",
+    "models_unsupported_desc": "請更新 ProxD 到最新版本後重試",
     "models_excluded_badge": "已停用",
     "models_excluded_hint": "此 OAuth 模型已被停用",
     "status_toggle_label": "啟用",
@@ -989,9 +989,9 @@
     "model_count": "停用 {{count}} 個模型",
     "list_empty_all": "暫無任何供應商的模型停用，點擊「新增停用」建立。",
     "provider_required": "請先填寫供應商名稱",
-    "upgrade_required": "目前 CPA 版本不支援 OAuth 模型停用，請升級 CPA 版本",
-    "upgrade_required_title": "需要升級 CPA 版本",
-    "upgrade_required_desc": "目前伺服器版本不支援取得 OAuth 模型停用功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
+    "upgrade_required": "目前 ProxD 版本不支援 OAuth 模型停用，請升級 ProxD 版本",
+    "upgrade_required_title": "需要升級 ProxD 版本",
+    "upgrade_required_desc": "目前伺服器版本不支援取得 OAuth 模型停用功能，請升級到最新版本的 ProxD 後重試。"
   },
   "excluded_models": {
     "trigger_summary": "已排除 {{excluded}} · {{available}} 可用",
@@ -1038,7 +1038,7 @@
     "provider_placeholder": "例如 codex / vertex",
     "provider_hint": "預設選取目前篩選的供應商，也可直接輸入或選擇其他名稱。",
     "model_source_loading": "正在載入模型清單...",
-    "model_source_unsupported": "目前 CPA 版本不支援取得模型清單（仍可手動輸入）。",
+    "model_source_unsupported": "目前 ProxD 版本不支援取得模型清單（仍可手動輸入）。",
     "model_source_loaded": "已載入 {{count}} 個模型，可在「原模型名稱」中下拉選擇；也可手動輸入。留空儲存將刪除該供應商記錄；開啟「保留原名」會在保留原模型名的同時新增別名。",
     "alias_label": "模型別名",
     "alias_name_placeholder": "原模型名稱",
@@ -1088,9 +1088,9 @@
     "view_mode_diagram": "概覽",
     "view_mode_list": "管理",
     "provider_required": "請先填寫供應商名稱",
-    "upgrade_required": "目前 CPA 版本不支援模型別名功能，請升級 CPA 版本",
-    "upgrade_required_title": "需要升級 CPA 版本",
-    "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 CPA（CLI Proxy API）後重試。"
+    "upgrade_required": "目前 ProxD 版本不支援模型別名功能，請升級 ProxD 版本",
+    "upgrade_required_title": "需要升級 ProxD 版本",
+    "upgrade_required_desc": "目前伺服器版本不支援 OAuth 模型別名功能，請升級到最新版本的 ProxD 後重試。"
   },
   "auth_login": {
     "devin_oauth_cancel": "取消 Devin 登入",
@@ -1099,7 +1099,7 @@
     "devin_oauth_retry_hint": "伺服器可能仍在等待授權。請先取消本次登入，再重新開始。",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "開始 Devin 登入",
-    "devin_oauth_hint": "透過瀏覽器 OAuth 登入 Devin / Cognition，自動儲存認證檔案。需要 CLI Proxy API v7.3.1 或更新版本，請在五分鐘內完成授權。",
+    "devin_oauth_hint": "透過瀏覽器 OAuth 登入 Devin / Cognition，自動儲存認證檔案。需要 ProxD v7.3.1 或更新版本，請在五分鐘內完成授權。",
     "devin_copy_link": "複製連結",
     "devin_open_link": "開啟連結",
     "devin_oauth_status_waiting": "等待 Devin 認證中...",
@@ -1219,7 +1219,7 @@
     "oauth_callback_required": "請先貼上完整的回調 URL。",
     "oauth_callback_success": "回調 URL 已提交，請繼續等待驗證。",
     "oauth_callback_error": "提交回調 URL 失敗:",
-    "oauth_callback_upgrade_hint": "請更新 CLI Proxy API 或檢查連線",
+    "oauth_callback_upgrade_hint": "請更新 ProxD 或檢查連線",
     "oauth_callback_status_success": "回調 URL 已提交，等待驗證中...",
     "oauth_callback_status_error": "回調 URL 提交失敗:",
     "missing_state": "無法取得驗證狀態參數",
@@ -1336,9 +1336,9 @@
     "request_log_download_success": "封包下載成功",
     "empty_title": "暫無記錄",
     "empty_desc": "當啟用「記錄到檔案」功能後，記錄將顯示在這裡",
-    "cpa_file_logging_required": "目前連線的是 CPA，記錄檢視需要先開啟「記錄到檔案」。",
+    "cpa_file_logging_required": "目前連線的是 ProxD，記錄檢視需要先開啟「記錄到檔案」。",
     "cpa_file_logging_required_title": "需要開啟檔案記錄",
-    "cpa_file_logging_required_desc": "CPA 的記錄介面會讀取本機記錄檔。請在設定中開啟 logging-to-file 後再重新整理查看。",
+    "cpa_file_logging_required_desc": "ProxD 的記錄介面會讀取本機記錄檔。請在設定中開啟 logging-to-file 後再重新整理查看。",
     "file_logging_required": "目前記錄介面需要先開啟「記錄到檔案」後才能讀取檔案記錄。",
     "file_logging_required_title": "需要開啟檔案記錄",
     "file_logging_required_desc": "目前記錄介面會讀取本機記錄檔。請在設定中開啟 logging-to-file 後再重新整理查看。",
@@ -2188,11 +2188,11 @@
     "toggle_collapse": "收起側邊欄",
     "expand": "展開",
     "collapse": "收起",
-    "subtitle": "CLI Proxy API 管理控制台",
+    "subtitle": "ProxD 管理控制台",
     "auth_files_count": "驗證檔案：{{count}} 個"
   },
   "footer": {
-    "api_version": "CLI Proxy API 版本",
+    "api_version": "ProxD 版本",
     "build_date": "建置時間",
     "version": "管理中心版本"
   },

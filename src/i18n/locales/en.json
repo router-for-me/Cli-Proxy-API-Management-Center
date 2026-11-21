@@ -38,7 +38,7 @@
     "alias": "Alias",
     "failure": "Failure",
     "unknown_error": "Unknown error",
-    "quota_update_required": "Please update the CPA version or check for updates",
+    "quota_update_required": "Please update the ProxD version or check for updates",
     "quota_check_credential": "Please check the credential status",
     "copy": "Copy",
     "expand": "Expand",
@@ -61,7 +61,7 @@
     "abbr": "CPAMC"
   },
   "login": {
-    "subtitle": "Connect to CLI Proxy API v8 or later",
+    "subtitle": "Connect to ProxD v8 or later",
     "connection_current": "Current URL",
     "connection_auto_hint": "The system will automatically use the current URL for connection",
     "custom_connection_label": "Custom Connection URL:",
@@ -79,8 +79,8 @@
     "error_timeout": "Connection timed out, server not responding",
     "error_unauthorized": "Authentication failed, management key is missing or invalid",
     "error_forbidden": "Access denied, remote management is disabled, the management key is not configured, or this IP is temporarily banned",
-    "error_not_found": "v8 Management API not found. Check the server address and upgrade CLIProxyAPI to v8 or later; v0 is not supported.",
-    "error_legacy_backend": "This backend accepts v0 Management API but does not provide v8. Upgrade CLIProxyAPI to v8 or later to use this management page.",
+    "error_not_found": "v8 Management API not found. Check the server address and upgrade ProxD to v8 or later; v0 is not supported.",
+    "error_legacy_backend": "This backend accepts v0 Management API but does not provide v8. Upgrade ProxD to v8 or later to use this management page.",
     "error_server": "Backend failed while handling the management request, check the server logs",
     "error_cors": "Cross-origin request blocked, please check server configuration",
     "error_ssl": "SSL/TLS certificate verification failed"
@@ -371,7 +371,7 @@
     "models_empty": "No available models for this credential",
     "models_empty_desc": "This credential may not be loaded by the server yet, or no models are bound to it.",
     "models_unsupported": "This feature is not supported in the current version",
-    "models_unsupported_desc": "Please update CLI Proxy API to the latest version and try again",
+    "models_unsupported_desc": "Please update ProxD to the latest version and try again",
     "models_excluded_badge": "Disabled",
     "models_excluded_hint": "This OAuth model is disabled",
     "status_toggle_label": "Enabled",
@@ -991,9 +991,9 @@
     "model_count": "{{count}} models disabled",
     "list_empty_all": "No provider model disablement yet; click “Add Disablement” to create one.",
     "provider_required": "Please enter a provider first",
-    "upgrade_required": "Current CPA version does not support OAuth model disablement. Please upgrade.",
-    "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server version does not support fetching OAuth model disablement. Please upgrade to the latest CPA (CLI Proxy API) version and try again."
+    "upgrade_required": "Current ProxD version does not support OAuth model disablement. Please upgrade.",
+    "upgrade_required_title": "Please upgrade ProxD",
+    "upgrade_required_desc": "The current server version does not support fetching OAuth model disablement. Please upgrade to the latest ProxD version and try again."
   },
   "excluded_models": {
     "trigger_summary": "{{excluded}} excluded · {{available}} available",
@@ -1040,7 +1040,7 @@
     "provider_placeholder": "e.g. codex / vertex",
     "provider_hint": "Defaults to the current filter; pick an existing provider or type a new name.",
     "model_source_loading": "Loading models...",
-    "model_source_unsupported": "The current CPA version does not support fetching model lists (manual input still works).",
+    "model_source_unsupported": "The current ProxD version does not support fetching model lists (manual input still works).",
     "model_source_loaded": "{{count}} models loaded. Use the dropdown in 'Source model name', or type custom values. Saving an empty list removes that provider. Enable 'Keep original' to keep the original name while adding the alias.",
     "alias_label": "Model aliases",
     "alias_name_placeholder": "Source model name",
@@ -1090,9 +1090,9 @@
     "view_mode_diagram": "Diagram",
     "view_mode_list": "List",
     "provider_required": "Please enter a provider first",
-    "upgrade_required": "This feature requires a newer CLI Proxy API (CPA) version. Please upgrade.",
-    "upgrade_required_title": "Please upgrade CLI Proxy API",
-    "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest CLI Proxy API (CPA) version."
+    "upgrade_required": "This feature requires a newer ProxD version. Please upgrade.",
+    "upgrade_required_title": "Please upgrade ProxD",
+    "upgrade_required_desc": "The current server does not support the OAuth model aliases API. Please upgrade to the latest ProxD version."
   },
   "auth_login": {
     "devin_oauth_cancel": "Cancel Devin Login",
@@ -1101,7 +1101,7 @@
     "devin_oauth_retry_hint": "The server may still be waiting for authorization. Cancel this login before starting again.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Start Devin Login",
-    "devin_oauth_hint": "Sign in to Devin / Cognition through browser OAuth to save an authentication file. Requires CLI Proxy API v7.3.1 or later; complete authorization within five minutes.",
+    "devin_oauth_hint": "Sign in to Devin / Cognition through browser OAuth to save an authentication file. Requires ProxD v7.3.1 or later; complete authorization within five minutes.",
     "devin_copy_link": "Copy Link",
     "devin_open_link": "Open Link",
     "devin_oauth_status_waiting": "Waiting for Devin authentication...",
@@ -1210,7 +1210,7 @@
     "oauth_callback_required": "Please paste the full redirect URL first.",
     "oauth_callback_success": "Callback URL submitted. Continue waiting for authentication.",
     "oauth_callback_error": "Failed to submit callback URL:",
-    "oauth_callback_upgrade_hint": "Please update CLI Proxy API or check the connection.",
+    "oauth_callback_upgrade_hint": "Please update ProxD or check the connection.",
     "oauth_callback_status_success": "Callback URL submitted, waiting for authentication...",
     "oauth_callback_status_error": "Callback URL submission failed:",
     "missing_state": "Unable to retrieve authentication state parameter",
@@ -1310,9 +1310,9 @@
     "request_log_download_success": "Request log downloaded successfully",
     "empty_title": "No Logs Available",
     "empty_desc": "When \"Enable logging to file\" is enabled, logs will be displayed here",
-    "cpa_file_logging_required": "The connected runtime is CPA. Log viewing requires logging to file to be enabled first.",
+    "cpa_file_logging_required": "The connected runtime is ProxD. Log viewing requires logging to file to be enabled first.",
     "cpa_file_logging_required_title": "File logging is required",
-    "cpa_file_logging_required_desc": "CPA reads this log view from local log files. Enable logging-to-file in the config, then refresh.",
+    "cpa_file_logging_required_desc": "ProxD reads this log view from local log files. Enable logging-to-file in the config, then refresh.",
     "file_logging_required": "This logs endpoint requires logging to file before file logs can be read.",
     "file_logging_required_title": "File logging is required",
     "file_logging_required_desc": "This logs endpoint reads local log files. Enable logging-to-file in the config, then refresh.",
@@ -2162,11 +2162,11 @@
     "toggle_collapse": "Collapse sidebar",
     "expand": "Expand",
     "collapse": "Collapse",
-    "subtitle": "CLI Proxy API Console",
+    "subtitle": "ProxD Console",
     "auth_files_count": "Authentication files: {{count}}"
   },
   "footer": {
-    "api_version": "CLI Proxy API Version",
+    "api_version": "ProxD Version",
     "build_date": "Build Time",
     "version": "Management UI Version"
   },

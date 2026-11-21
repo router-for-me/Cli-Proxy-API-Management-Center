@@ -40,7 +40,7 @@ The script also installs and enables the lock janitor: `prox-auth-janitor.timer`
 (a user unit in `~/.config/systemd/user/`) runs
 `~/.local/share/prox/prox-auth-janitor.sh` every 10 minutes. (An earlier
 `prox-auth-janitor.path` watcher fired on nearly every proxy request, because
-the proxy rewrites its cooldown-state files there; the deploy removes it.) CLI-Proxy deletes a credential's
+the proxy rewrites its cooldown-state files there; the deploy removes it.) ProxD deletes a credential's
 `.json` but never its `.json.lock`; the janitor removes only `*.json.lock` files
 that have no `.json` and are over 10 minutes old (a fresh one can belong to a
 write in progress), and never touches a `.json`.
@@ -377,7 +377,7 @@ immutable=1 ignores the `-wal`, so the open refuses a non-empty `-wal`, any `-sh
    `systemctl --user restart prox-usage.service`. The deploy script restarts it only when its
    JavaScript bundle changed, so a quadlet-only change needs this explicit restart.
 5. Start `systemctl --user start prox-usage-job@reconcile.service`, then read the result with
-   `printf 'Authorization: Bearer %s\n' "$(cat ~/.config/cli-proxy-rerank/management-key)" | curl -sS --header @- http://127.0.0.1:18320/v1/jobs`.
+   `printf 'Authorization: Bearer %s\n' "$(cat ~/.config/proxd/management-key)" | curl -sS --header @- http://127.0.0.1:18320/v1/jobs`.
 6. Accept only `state: "succeeded"` with `result.report.verification.exact: true` and
    `result.report.conflicts: 0`. An error `CPAMP source is not quiet: -wal, -shm or -journal present`
    means go back to step 3. Anything else stops the retirement; CPAMP can be unmasked and started.

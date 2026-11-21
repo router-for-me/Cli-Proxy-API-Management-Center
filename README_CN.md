@@ -4,7 +4,7 @@
 
 # ProxUI
 
-**一个控制台，管理你运行的所有 CLI Proxy API 实例。**
+**一个控制台，管理你运行的所有 ProxD 实例。**
 
 为 Claude 与 Codex 运行时提供合并额度预测、用量分析和全部管理页面——只需一个 HTML 文件。
 
@@ -21,10 +21,10 @@
 
 ---
 
-ProxUI 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 的分支。它保留上游的全部管理页面，并补充了在一个家庭实验室中运行多个 CLI Proxy API 实例时所需的功能：覆盖所有 Claude 与 Codex 账号的额度池、已保留用量的分析，以及通过各自管理源访问每个实例的统一登录。
+ProxUI 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cli-Proxy-API-Management-Center) 的分支。它保留上游的全部管理页面，并补充了在一个家庭实验室中运行多个 ProxD 实例时所需的功能：覆盖所有 Claude 与 Codex 账号的额度池、已保留用量的分析，以及通过各自管理源访问每个实例的统一登录。
 
 > [!IMPORTANT]
-> 需要 **CLI Proxy API ≥ 8.0.0**（v8 管理 API，`/v8/management`）。ProxUI 是管理界面，从不转发推理流量。用量分析来自 `prox-usage`，即 ProxUI 自己的用量采集与历史存储服务。
+> 需要 **ProxD**，或其他 **CLIProxyAPI ≥ 8.0.0** 构建（v8 管理 API，`/v8/management`）。ProxUI 是管理界面，从不转发推理流量。用量分析来自 `prox-usage`，即 ProxUI 自己的用量采集与历史存储服务。
 
 ## ProxUI 新增功能
 
@@ -71,9 +71,9 @@ ProxUI 是 [CLI Proxy API Management Center](https://github.com/router-for-me/Cl
 ```mermaid
 flowchart LR
   B[浏览器] --> P["prox<br/>nginx + 单文件界面<br/>:18318"]
-  P -->|"/v8/management"| X["CLI Proxy API · Codex<br/>:8317"]
-  P -->|"/claude/v8/management"| C["CLI Proxy API · Claude<br/>:8319"]
-  P -->|"/gemini/v8/management"| G["CLI Proxy API · Antigravity<br/>:8321"]
+  P -->|"/v8/management"| X["ProxD · Codex<br/>:8317"]
+  P -->|"/claude/v8/management"| C["ProxD · Claude<br/>:8319"]
+  P -->|"/gemini/v8/management"| G["ProxD · Antigravity<br/>:8321"]
   P -->|"/v8/management/prox/*"| H["prox-history<br/>Bun 服务 · :18319"]
   H --> Q[("额度快照<br/>SQLite")]
   H -->|"分析查询"| U["prox-usage<br/>Bun 服务 · :18320"]

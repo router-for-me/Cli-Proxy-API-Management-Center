@@ -38,7 +38,7 @@
     "alias": "별칭",
     "failure": "실패",
     "unknown_error": "알 수 없는 오류",
-    "quota_update_required": "CPA 버전을 업데이트하거나 업데이트를 확인하세요",
+    "quota_update_required": "ProxD 버전을 업데이트하거나 업데이트를 확인하세요",
     "quota_check_credential": "자격 증명 상태를 확인하세요",
     "copy": "복사",
     "expand": "펼치기",
@@ -61,7 +61,7 @@
     "abbr": "CPAMC"
   },
   "login": {
-    "subtitle": "CLI Proxy API v8 이상 버전에 연결",
+    "subtitle": "ProxD v8 이상 버전에 연결",
     "connection_current": "현재 URL",
     "connection_auto_hint": "시스템이 자동으로 현재 URL을 사용하여 연결합니다",
     "custom_connection_label": "사용자 지정 연결 URL:",
@@ -79,8 +79,8 @@
     "error_timeout": "연결 시간이 초과되었습니다. 서버가 응답하지 않습니다",
     "error_unauthorized": "인증에 실패했습니다. 관리 키가 없거나 유효하지 않습니다",
     "error_forbidden": "접근이 거부되었습니다. 원격 관리가 비활성화되었거나, 관리 키가 설정되지 않았거나, 이 IP가 일시적으로 차단되었습니다",
-    "error_not_found": "v8 관리 API를 찾을 수 없습니다. 서버 주소를 확인하고 CLIProxyAPI를 v8 이상으로 업그레이드하세요. v0은 지원되지 않습니다.",
-    "error_legacy_backend": "이 백엔드는 v0 관리 API를 허용하지만 v8을 제공하지 않습니다. 이 관리 페이지를 사용하려면 CLIProxyAPI를 v8 이상으로 업그레이드하세요.",
+    "error_not_found": "v8 관리 API를 찾을 수 없습니다. 서버 주소를 확인하고 ProxD를 v8 이상으로 업그레이드하세요. v0은 지원되지 않습니다.",
+    "error_legacy_backend": "이 백엔드는 v0 관리 API를 허용하지만 v8을 제공하지 않습니다. 이 관리 페이지를 사용하려면 ProxD를 v8 이상으로 업그레이드하세요.",
     "error_server": "백엔드에서 관리 요청을 처리하는 동안 오류가 발생했습니다. 서버 로그를 확인하세요",
     "error_cors": "교차 출처 요청(CORS)이 차단되었습니다. 서버 설정을 확인하세요",
     "error_ssl": "SSL/TLS 인증서 확인에 실패했습니다"
@@ -371,7 +371,7 @@
     "models_empty": "이 자격 증명에 사용 가능한 모델이 없습니다",
     "models_empty_desc": "서버에서 아직 이 자격 증명을 로드하지 않았거나 연결된 모델이 없을 수 있습니다.",
     "models_unsupported": "현재 버전에서는 이 기능을 지원하지 않습니다",
-    "models_unsupported_desc": "CLI Proxy API를 최신 버전으로 업데이트한 후 다시 시도하세요",
+    "models_unsupported_desc": "ProxD를 최신 버전으로 업데이트한 후 다시 시도하세요",
     "models_excluded_badge": "비활성화됨",
     "models_excluded_hint": "이 OAuth 모델은 비활성화되어 있습니다",
     "status_toggle_label": "활성화",
@@ -991,9 +991,9 @@
     "model_count": "모델 {{count}}개 비활성화됨",
     "list_empty_all": "아직 공급자 모델 비활성화 설정이 없습니다. “비활성화 추가”를 클릭하여 생성하세요.",
     "provider_required": "먼저 공급자를 입력하세요.",
-    "upgrade_required": "현재 CPA 버전에서는 OAuth 모델 비활성화를 지원하지 않습니다. 업그레이드하세요.",
-    "upgrade_required_title": "CLI Proxy API를 업그레이드하세요",
-    "upgrade_required_desc": "현재 서버 버전은 OAuth 모델 비활성화 조회를 지원하지 않습니다. 최신 CPA(CLI Proxy API) 버전으로 업그레이드한 후 다시 시도하세요."
+    "upgrade_required": "현재 ProxD 버전에서는 OAuth 모델 비활성화를 지원하지 않습니다. 업그레이드하세요.",
+    "upgrade_required_title": "ProxD를 업그레이드하세요",
+    "upgrade_required_desc": "현재 서버 버전은 OAuth 모델 비활성화 조회를 지원하지 않습니다. 최신 ProxD 버전으로 업그레이드한 후 다시 시도하세요."
   },
   "excluded_models": {
     "trigger_summary": "{{excluded}}개 제외됨 · {{available}}개 사용 가능",
@@ -1040,7 +1040,7 @@
     "provider_placeholder": "예: codex / vertex",
     "provider_hint": "현재 필터의 공급자가 기본으로 지정됩니다. 기존 공급자를 선택하거나 새 이름을 입력하세요.",
     "model_source_loading": "모델을 불러오는 중...",
-    "model_source_unsupported": "현재 CPA 버전은 모델 목록 가져오기를 지원하지 않습니다(수동 입력은 가능).",
+    "model_source_unsupported": "현재 ProxD 버전은 모델 목록 가져오기를 지원하지 않습니다(수동 입력은 가능).",
     "model_source_loaded": "{{count}}개 모델을 불러왔습니다. '원본 모델 이름' 드롭다운을 사용하거나 직접 값을 입력하세요. 목록을 비운 채로 저장하면 해당 공급자가 삭제됩니다. '원본 유지'를 활성화하면 원본 이름을 유지하면서 별칭을 추가합니다.",
     "alias_label": "모델 별칭",
     "alias_name_placeholder": "원본 모델 이름",
@@ -1090,9 +1090,9 @@
     "view_mode_diagram": "다이어그램",
     "view_mode_list": "목록",
     "provider_required": "먼저 공급자를 입력하세요",
-    "upgrade_required": "이 기능은 최신 버전의 CLI Proxy API(CPA)가 필요합니다. 업그레이드하세요.",
-    "upgrade_required_title": "CLI Proxy API를 업그레이드하세요",
-    "upgrade_required_desc": "현재 서버는 OAuth 모델 별칭 API를 지원하지 않습니다. 최신 버전의 CLI Proxy API(CPA)로 업그레이드하세요."
+    "upgrade_required": "이 기능은 최신 버전의 ProxD가 필요합니다. 업그레이드하세요.",
+    "upgrade_required_title": "ProxD를 업그레이드하세요",
+    "upgrade_required_desc": "현재 서버는 OAuth 모델 별칭 API를 지원하지 않습니다. 최신 버전의 ProxD로 업그레이드하세요."
   },
   "auth_login": {
     "devin_oauth_cancel": "Devin 로그인 취소",
@@ -1101,7 +1101,7 @@
     "devin_oauth_retry_hint": "서버가 여전히 인증을 기다리고 있을 수 있습니다. 다시 시작하기 전에 이 로그인을 취소하세요.",
     "devin_oauth_title": "Devin OAuth",
     "devin_oauth_button": "Devin 로그인 시작",
-    "devin_oauth_hint": "브라우저 OAuth를 통해 Devin / Cognition에 로그인하여 인증 파일을 저장합니다. CLI Proxy API v7.3.1 이상이 필요하며 5분 이내에 인증을 완료하세요.",
+    "devin_oauth_hint": "브라우저 OAuth를 통해 Devin / Cognition에 로그인하여 인증 파일을 저장합니다. ProxD v7.3.1 이상이 필요하며 5분 이내에 인증을 완료하세요.",
     "devin_copy_link": "링크 복사",
     "devin_open_link": "링크 열기",
     "devin_oauth_status_waiting": "Devin 인증 대기 중...",
@@ -1210,7 +1210,7 @@
     "oauth_callback_required": "먼저 전체 리디렉션 URL을 붙여넣으세요.",
     "oauth_callback_success": "콜백 URL이 제출되었습니다. 계속해서 인증을 기다려 주세요.",
     "oauth_callback_error": "콜백 URL 제출 실패:",
-    "oauth_callback_upgrade_hint": "CLI Proxy API를 업데이트하거나 연결을 확인하세요.",
+    "oauth_callback_upgrade_hint": "ProxD를 업데이트하거나 연결을 확인하세요.",
     "oauth_callback_status_success": "콜백 URL이 제출되었습니다. 인증 대기 중...",
     "oauth_callback_status_error": "콜백 URL 제출 실패:",
     "missing_state": "인증 상태 매개변수를 가져올 수 없습니다",
@@ -2162,11 +2162,11 @@
     "toggle_collapse": "사이드바 접기",
     "expand": "펼치기",
     "collapse": "접기",
-    "subtitle": "CLI Proxy API 콘솔",
+    "subtitle": "ProxD 콘솔",
     "auth_files_count": "인증 파일: {{count}}개"
   },
   "footer": {
-    "api_version": "CLI Proxy API 버전",
+    "api_version": "ProxD 버전",
     "build_date": "빌드 시간",
     "version": "관리 UI 버전"
   },
