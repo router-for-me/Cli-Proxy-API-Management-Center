@@ -1,5 +1,5 @@
 [Unit]
-Description=Periodic CLI-Proxy auth lock file cleanup
+Description=Periodic ProxD auth lock file cleanup
 # The script removes only orphan locks older than 10 minutes, so running every 10 minutes is as
 # prompt as watching the directories, which the proxy rewrites (cooldown state) on nearly every request.
 

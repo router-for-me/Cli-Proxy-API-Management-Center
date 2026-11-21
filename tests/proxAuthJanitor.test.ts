@@ -225,10 +225,29 @@ describe('prox auth janitor deployment files', () => {
     expect(timer).toContain('WantedBy=timers.target');
   });
 
-  test('script defaults to the two real auth directories', () => {
-    const script = read('deploy/prox-auth-janitor.sh');
-    expect(script).toContain('$HOME/.local/share/cli-proxy-api/auth');
-    expect(script).toContain('$HOME/.local/share/cli-proxy-claude/auth');
+  test('with no arguments it cleans the codex, claude and gemini ProxD auth directories', () => {
+    const home = authDir();
+    const locks = ['codex', 'claude', 'gemini'].map((instance) => {
+      const dir = join(home, '.local/share/proxd', instance, 'auth');
+      mkdirSync(dir, { recursive: true });
+      return write(dir, `${instance}-gone.json.lock`, 11);
+    });
+    const result = run([], { HOME: home });
+    expect(result.code).toBe(0);
+    expect(result.out.split('\n').filter(Boolean).sort()).toEqual([
+      'claude-gone.json.lock',
+      'codex-gone.json.lock',
+      'gemini-gone.json.lock',
+    ]);
+    for (const lock of locks) expect(existsSync(lock)).toBe(false);
+  });
+
+  test('units describe ProxD, not the old hub name', () => {
+    for (const unit of ['service', 'timer']) {
+      const text = read(`deploy/prox-auth-janitor.${unit}`);
+      expect(text).toContain('ProxD');
+      expect(text).not.toMatch(/CLI-?Proxy/i);
+    }
   });
 
   test('deploy script installs the script, service and timer and enables the timer', () => {

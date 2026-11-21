@@ -110,7 +110,7 @@ export function parseArgs(args: string[], now = Date.now()): ParityOptions {
     cpampUrl: get('cpamp-url', 'http://127.0.0.1:18317/v0/management/monitoring/prox-analytics'),
     proxUrl: get('prox-url', 'http://127.0.0.1:18320/v1/analytics'),
     cpampKeyFile: get('cpamp-key-file', `${home}/.config/prox/cpa-admin-key`),
-    proxKeyFile: get('prox-key-file', `${home}/.config/cli-proxy-rerank/management-key`),
+    proxKeyFile: get('prox-key-file', `${home}/.config/proxd/management-key`),
     rateBookFile: get('rate-book', `${home}/.local/share/prox-usage/usage-rates.json`),
     // Installed units set PROX_USAGE_EVIDENCE_DIR; a repo run keeps the checkout-relative default.
     output: resolve(

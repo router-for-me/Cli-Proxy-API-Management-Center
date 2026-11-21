@@ -385,7 +385,7 @@ if (import.meta.main) {
   const report = await runNightly(
     {
       url: 'http://127.0.0.1:18320',
-      keyFile: join(homedir(), '.config/cli-proxy-rerank/management-key'),
+      keyFile: join(homedir(), '.config/proxd/management-key'),
       // On unless the unit opts out with PROX_USAGE_ENABLE_PACED_BACKUP=0.
       backupEnabled: process.env.PROX_USAGE_ENABLE_PACED_BACKUP !== '0',
       pollMs: 10000,

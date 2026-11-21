@@ -9,7 +9,7 @@ afterEach(() => {
 test('installed job script sends exact JSON and keeps the bearer out of argv', () => {
   root = mkdtempSync('/dev/shm/prox-job-script-');
   const key = 'synthetic-private-job-key-$"x';
-  const config = join(root, '.config/cli-proxy-rerank');
+  const config = join(root, '.config/proxd');
   const bin = join(root, 'bin');
   mkdirSync(config, { recursive: true });
   mkdirSync(bin);
