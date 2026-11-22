@@ -111,19 +111,21 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         : allGroups.filter((group) => group.id !== 'apikeyFun'),
     [allGroups, fixedBrand]
   );
-  // The strip only lists connected brands; unconnected ones live in the "add provider" picker.
+  // Every brand stays in the strip (regular providers first, quick-connect partners after).
+  const stripGroups = useMemo(() => {
+    const { providers, quickFill } = partitionProviderGroups(groups);
+    return [...providers, ...quickFill];
+  }, [groups]);
   const connectedGroups = useMemo(
     () => groups.filter((group) => group.resources.length > 0),
     [groups]
   );
   const activeBrand: ProviderBrand =
     fixedBrand ??
-    (connectedGroups.some((group) => group.id === uiState.activeBrand)
+    (groups.some((group) => group.id === uiState.activeBrand)
       ? uiState.activeBrand
-      : (connectedGroups[0]?.id ?? 'gemini'));
-  const activeGroup = fixedBrand
-    ? (groups[0] ?? null)
-    : (connectedGroups.find((group) => group.id === activeBrand) ?? null);
+      : (connectedGroups[0]?.id ?? stripGroups[0]?.id ?? 'gemini'));
+  const activeGroup = groups.find((group) => group.id === activeBrand) ?? groups[0] ?? null;
   const partnerBrands = useMemo(
     () =>
       partitionProviderGroups(groups)
@@ -386,7 +388,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     />
   );
 
-  if (!fixedBrand && groups.length > 0 && !activeGroup) {
+  if (!fixedBrand && groups.length > 0 && connectedGroups.length === 0) {
     // First run: nothing connected yet, so the catalogue itself is the page.
     return (
       <div className={styles.page}>
@@ -440,7 +442,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       <div className={styles.workbench}>
         {!fixedBrand ? (
           <BrandTabs
-            groups={connectedGroups}
+            groups={stripGroups}
             activeBrand={activeGroup.id}
             onSelect={selectBrand}
             tabId={tabId}

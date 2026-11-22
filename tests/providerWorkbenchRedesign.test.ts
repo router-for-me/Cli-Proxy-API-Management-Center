@@ -188,10 +188,10 @@ describe('resource card', () => {
 });
 
 describe('brand tabs', () => {
-  test('render an accessible tablist and a quick-connect invitation for unconnected partners', () => {
+  test('list every brand and pin a quick-connect invitation for unconnected partners', () => {
     const html = render(
       createElement(BrandTabs, {
-        groups: [group('gemini', [alpha, beta]), group('codex', [disabled])],
+        groups: [group('gemini', [alpha, beta]), group('codex', [disabled]), group('fennoAI')],
         activeBrand: 'gemini',
         onSelect: () => {},
         tabId: (brand: string) => `tab-${brand}`,
@@ -202,7 +202,12 @@ describe('brand tabs', () => {
     );
     expect(html).toContain('role="tablist"');
     const tabs = [...html.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
-    expect(tabs).toHaveLength(2);
+    expect(tabs).toHaveLength(3);
+    // Partners stay in the strip, after a labelled divider, without a zero badge.
+    expect(html.indexOf(en.providersPage.categories.quickFill)).toBeLessThan(
+      html.indexOf('id="tab-fennoAI"')
+    );
+    expect(html).not.toContain('>0</span>');
     const active = tabs.find((tab) => tab.includes('id="tab-gemini"'))!;
     expect(active).toContain('aria-selected="true"');
     expect(active).toContain('tabindex="0"');

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scrollProviderTabs } from '@/features/authFiles/components/providerTabsWheel';
+import { isQuickFillBrand } from '../resourceView';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import { BrandLogo } from './BrandLogo';
 import styles from './BrandTabs.module.scss';
 
 interface BrandTabsProps {
-  /** Brands the user has connected (plus the active one), in display order. */
+  /** Every brand in display order; quick-connect partners follow a hairline divider. */
   groups: ProviderGroup[];
   activeBrand: ProviderBrand;
   onSelect: (brand: ProviderBrand) => void;
@@ -20,9 +21,9 @@ interface BrandTabsProps {
 }
 
 /**
- * Brand strip for what the user already runs: quiet underline tabs, brand colour only in the
- * mark. Unconnected brands live in the "add provider" catalogue instead of crowding the strip,
- * which keeps it short and leaves room for a permanent quick-connect invitation on the right.
+ * Brand strip: quiet underline tabs, brand colour only in the mark. The strip scrolls when
+ * it overflows, while the quick-connect invitation stays pinned on the right so partners
+ * remain visible at any width.
  */
 export function BrandTabs({
   groups,
@@ -95,11 +96,18 @@ export function BrandTabs({
         role="tablist"
         aria-label={t('providersPage.categories.title')}
       >
-        {groups.map((group) => {
+        {groups.map((group, index) => {
           const active = group.id === activeBrand;
+          const startsPartners =
+            isQuickFillBrand(group.id) && (index === 0 || !isQuickFillBrand(groups[index - 1].id));
           const total = group.resources.length;
           const disabledCount = group.resources.filter((resource) => resource.disabled).length;
-          return (
+          return [
+            startsPartners ? (
+              <span key="partners-divider" className={styles.divider} aria-hidden="true">
+                {t('providersPage.categories.quickFill')}
+              </span>
+            ) : null,
             <button
               key={group.id}
               id={tabId(group.id)}
@@ -125,8 +133,8 @@ export function BrandTabs({
                   {total}
                 </span>
               ) : null}
-            </button>
-          );
+            </button>,
+          ];
         })}
       </div>
 

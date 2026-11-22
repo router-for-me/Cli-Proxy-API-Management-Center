@@ -121,6 +121,25 @@
   }
 }
 
+/* 合作方分组：发丝线 + mono 小标，与常规品牌分开 */
+.divider {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  height: 18px;
+  margin: 0 4px 3px 6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber-text);
+  white-space: nowrap;
+}
+
 /* ---------- 快速接入邀请：右端常驻，品牌头像叠放 ---------- */
 
 .partners {
