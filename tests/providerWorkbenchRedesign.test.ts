@@ -281,6 +281,19 @@ describe('provider picker', () => {
     expect(html).toContain(`aria-label="${en.providersPage.actions.edit} FennoAI"`);
   });
 
+  test('only the sheet catalogue requests a return to picker on cancel', () => {
+    const page = readFileSync(
+      new URL('../src/features/providers/ProvidersWorkbenchPage.tsx', import.meta.url),
+      'utf8'
+    );
+    expect(page).toMatch(
+      /<ProviderSheet\b[^]*?onPick=\{\(brand\) => openConnectionForm\(brand, true\)/
+    );
+    expect(page).toMatch(
+      /variant="page"\s+onPick=\{\(brand\) => openConnectionForm\(brand, false\)/
+    );
+  });
+
   test('marks connected brands and keeps the custom entry last', () => {
     const html = render(createElement(ProviderPicker, { groups: catalogue, onPick: () => {} }));
     expect(html).toContain(en.providersPage.picker.connected.replace('{{count}}', '1'));

@@ -242,8 +242,6 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     }));
   }, []);
 
-  const pickBrand = (brand: ProviderBrand) => openConnectionForm(brand, true);
-
   const backToPicker = useCallback(() => {
     setSheetState((state) => ({ ...state, mode: 'pick', fromPicker: false }));
   }, []);
@@ -388,7 +386,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       mutationDisabled={disableMutations}
       usageByProvider={usageByProvider}
       pickerGroups={groups}
-      onPick={pickBrand}
+      onPick={(brand) => openConnectionForm(brand, true)}
       onBackToPicker={backToPicker}
     />
   );
@@ -403,7 +401,11 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
           <h2 id={`${domId}-onboarding`} className={styles.onboardingTitle}>
             {t('providersPage.picker.onboardingTitle')}
           </h2>
-          <ProviderPicker groups={groups} variant="page" onPick={pickBrand} />
+          <ProviderPicker
+            groups={groups}
+            variant="page"
+            onPick={(brand) => openConnectionForm(brand, false)}
+          />
         </section>
         {sheet}
       </div>
