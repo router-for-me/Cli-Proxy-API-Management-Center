@@ -1,0 +1,176 @@
+@use '../../../styles/mixins' as *;
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+}
+
+.label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.tab {
+  @include button-reset;
+  flex: 1;
+  text-align: center;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: background-color var(--dur-hover, 200ms), color var(--dur-hover, 200ms);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &[data-active='true'] {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.dropZone {
+  @include button-reset;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-primary);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  text-align: left;
+  transition:
+    transform var(--dur-press, 160ms) var(--ease-out-strong, ease-out),
+    border-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out),
+    background-color var(--dur-hover, 200ms) var(--ease-out-strong, ease-out);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+  }
+
+  &:hover {
+    border-color: var(--border-secondary);
+    background: var(--bg-hover, var(--bg-secondary));
+  }
+
+  &[data-dragging='true'] {
+    border-style: solid;
+    border-color: var(--accent);
+    background: var(--accent-subtle, var(--bg-secondary));
+  }
+
+  &[data-filled='true'] {
+    border-style: solid;
+    border-color: var(--border-primary);
+  }
+}
+
+.dropGlyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.dropText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dropTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dropHint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.fileName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--focus-ring);
+  }
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.fact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  gap: 12px;
+
+  dt {
+    color: var(--text-tertiary);
+  }
+
+  dd {
+    font-weight: 500;
+    color: var(--text-primary);
+    word-break: break-all;
+  }
+}

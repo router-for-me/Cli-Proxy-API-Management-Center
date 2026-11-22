@@ -2100,7 +2100,7 @@
       "activeCount": "{{active}}/{{total}} активных"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2161,8 +2161,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
-         "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
+        "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
+        "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
         "standard": "Обычный URL",
         "direct": "Прямой URL",
         "domestic": "Маршрут для материкового Китая",
@@ -2171,8 +2171,8 @@
         "global": "Глобальный"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
-         "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
+        "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
+        "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
         "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
         "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели.",
         "mainlandChinaRecommended": "Рекомендуется для пользователей и нагрузок в сетях материкового Китая.",
@@ -2473,5 +2473,26 @@
     "remove_pattern": "Удалить правило regex {{row}}",
     "move_up": "Переместить правило regex {{row}} вверх",
     "move_down": "Переместить правило regex {{row}} вниз"
+  },
+  "kiro_import": {
+    "title": "Kiro JSON Login",
+    "file_label": "Kiro CLI token JSON",
+    "file_hint": "JSON file from kiro-cli (typically located at ~/.aws/sso/cache/kiro-auth-token.json).",
+    "tab_file": "JSON File",
+    "tab_text": "Paste JSON",
+    "text_label": "Paste Token JSON",
+    "text_placeholder": "{\n  \"accessToken\": \"...\",\n  \"refreshToken\": \"...\"\n}",
+    "choose_file": "Choose File",
+    "import_button": "Import Kiro Credential",
+    "file_required": "Select a .json credential file first",
+    "text_required": "Paste the token JSON payload first",
+    "success": "Kiro credential imported successfully",
+    "result_title": "Credential saved",
+    "result_id": "Credential ID",
+    "result_label": "Account label",
+    "result_email": "Account email",
+    "result_file": "Persisted file",
+    "drop_hint": "Choose or drop kiro-auth-token.json",
+    "import_another": "Import another"
   }
 }

@@ -13,6 +13,7 @@ import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconQwen from '@/assets/icons/qwen.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconKiro from '@/assets/icons/kiro.svg';
 import type { AuthFileItem, ResolvedTheme, ThemeColors } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 import { parseTimestamp } from '@/utils/timestamp';
@@ -53,6 +54,7 @@ export const QUOTA_PROVIDER_TYPES = new Set<QuotaProviderType>([
 export const OAUTH_PROVIDER_PRESETS = [
   'meta',
   'vertex',
+  'kiro',
   'aistudio',
   'antigravity',
   'xai',
@@ -79,6 +81,7 @@ export const AUTH_FILE_MANUAL_REFRESH_PROVIDERS = new Set([
   'codex',
   'kimi',
   'xai',
+  'kiro',
 ]);
 
 // 标签类型颜色配置：权威版本在 @/utils/quota/constants.ts，此处仅转发
@@ -97,6 +100,7 @@ export const AUTH_FILE_ICONS: Record<string, AuthFileIconAsset> = {
   kimi: { light: iconKimiDark, dark: iconKimiLight },
   qwen: iconQwen,
   vertex: iconVertex,
+  kiro: iconKiro,
 };
 
 export const clampCardPageSize = (value: number) =>

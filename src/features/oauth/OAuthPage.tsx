@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useThemeStore } from '@/stores';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconKiro from '@/assets/icons/kiro.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import { KIMI_DISPLAY_NAME } from '@/features/providers/kimi';
 import { OAuthHeader } from './components/OAuthHeader';
@@ -12,6 +13,7 @@ import { ProviderTile } from './components/ProviderTile';
 import { SponsorCard, type SponsorCardSite } from './components/SponsorCard';
 import { OAuthFlowDialog, type DialogHeading } from './components/OAuthFlowDialog';
 import { VertexImportDialog } from './components/VertexImportDialog';
+import { KiroImportDialog } from './components/KiroImportDialog';
 import { SiwcBindDialog } from './components/SiwcBindDialog';
 import {
   useOAuthFlows,
@@ -19,6 +21,7 @@ import {
   type ProviderFlowState,
 } from './hooks/useOAuthFlows';
 import { useVertexImport } from './hooks/useVertexImport';
+import { useKiroImport } from './hooks/useKiroImport';
 import {
   isSponsor,
   OAUTH_PROVIDERS,
@@ -31,8 +34,9 @@ import styles from './OAuthPage.module.scss';
 /** 对话框焦点标识：Vertex 不是 OAuth 提供商，用保留 id 避免与提供商冲突。 */
 const VERTEX_DIALOG_ID = '__vertex__';
 const VERTEX_LABEL = 'Vertex AI';
+const KIRO_DIALOG_ID = '__kiro__';
 
-type DialogTarget = { kind: 'oauth'; id: string } | { kind: 'vertex' };
+type DialogTarget = { kind: 'oauth'; id: string } | { kind: 'vertex' } | { kind: 'kiro' };
 
 /**
  * OAuth 登录：提供商画廊（一屏看全）+ 聚焦的授权对话框。
@@ -71,6 +75,10 @@ export function OAuthPage() {
   });
   const vertexImport = useVertexImport({
     isFocused: () => focusedRef.current === VERTEX_DIALOG_ID,
+    onCredentialAdded: flows.recordCredentialAdded,
+  });
+  const kiroImport = useKiroImport({
+    isFocused: () => focusedRef.current === KIRO_DIALOG_ID,
     onCredentialAdded: flows.recordCredentialAdded,
   });
 
@@ -132,9 +140,16 @@ export function OAuthPage() {
     setDialogOpen(true);
   };
 
+  const openKiro = () => {
+    focusedRef.current = KIRO_DIALOG_ID;
+    setDialog({ kind: 'kiro' });
+    setDialogOpen(true);
+  };
+
   const closeDialog = () => {
     if (dialog?.kind === 'oauth') flows.dismissSuccess(dialog.id);
     if (dialog?.kind === 'vertex' && vertexImport.vertex.result) vertexImport.resetForAnother();
+    if (dialog?.kind === 'kiro' && kiroImport.kiro.result) kiroImport.resetForAnother();
     focusedRef.current = null;
     setDialogOpen(false);
   };
@@ -225,10 +240,17 @@ export function OAuthPage() {
             onOpen={openVertex}
           />
           <ProviderTile
+            label="Kiro"
+            caption={t('kiro_import.file_label')}
+            icon={iconKiro}
+            index={regularCards.length + tileIndexOffset + 1}
+            onOpen={openKiro}
+          />
+          <ProviderTile
             label={t('siwc.bind')}
             caption={t('siwc.tile_caption')}
             icon={iconCodex}
-            index={regularCards.length + tileIndexOffset + 1}
+            index={regularCards.length + tileIndexOffset + 2}
             onOpen={openSiwc}
           />
         </div>
@@ -265,6 +287,23 @@ export function OAuthPage() {
         onLocationChange={vertexImport.setLocation}
         onImport={() => void vertexImport.importCredential()}
         onImportAnother={vertexImport.resetForAnother}
+        onViewAuthFiles={viewAuthFiles}
+        onClose={closeDialog}
+      />
+
+      <KiroImportDialog
+        open={dialogOpen && dialog?.kind === 'kiro'}
+        heading={{
+          title: t('kiro_import.title'),
+          caption: t('kiro_import.file_label'),
+          icon: iconKiro,
+        }}
+        kiro={kiroImport.kiro}
+        onPickFile={kiroImport.pickFile}
+        onRawJsonChange={kiroImport.setRawJson}
+        onModeChange={kiroImport.setMode}
+        onImport={() => void kiroImport.importCredential()}
+        onImportAnother={kiroImport.resetForAnother}
         onViewAuthFiles={viewAuthFiles}
         onClose={closeDialog}
       />

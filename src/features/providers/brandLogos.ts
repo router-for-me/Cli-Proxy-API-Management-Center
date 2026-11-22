@@ -7,6 +7,7 @@ import geminiLogo from '@/assets/icons/gemini.svg';
 import openaiLightLogo from '@/assets/icons/openai-light.svg';
 import openaiDarkLogo from '@/assets/icons/openai-dark.svg';
 import vertexLogo from '@/assets/icons/vertex.svg';
+import kiroLogo from '@/assets/icons/kiro.svg';
 import apikeyFunLogo from '@/assets/icons/apikey-fun.png';
 import fennoAILogo from '@/assets/icons/fenno-ai.png';
 import qiniuCloudLogo from '@/assets/icons/qiniu-cloud.png';
@@ -25,7 +26,7 @@ export interface ProviderBrandLogo {
   invertOnDark?: boolean;
 }
 
-export type ProviderBrandLogoKey = ProviderBrand | 'devin';
+export type ProviderBrandLogoKey = ProviderBrand | 'devin' | 'kiro';
 
 export const PROVIDER_LOGOS: Record<ProviderBrandLogoKey, ProviderBrandLogo> = {
   gemini: { src: geminiLogo },
@@ -36,6 +37,7 @@ export const PROVIDER_LOGOS: Record<ProviderBrandLogoKey, ProviderBrandLogo> = {
   devin: { src: devinLightLogo, darkSrc: devinDarkLogo, transparent: true },
   xai: { src: xaiLightLogo, darkSrc: xaiDarkLogo, transparent: true },
   vertex: { src: vertexLogo },
+  kiro: { src: kiroLogo, transparent: true },
   openaiCompatibility: { src: openaiLightLogo, darkSrc: openaiDarkLogo, transparent: true },
   apikeyFun: { src: apikeyFunLogo },
   fennoAI: { src: fennoAILogo, transparent: true },

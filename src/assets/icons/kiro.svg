@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="24" height="24" rx="5" fill="url(#kiro-grad)"/>
+  <path d="M7 6V18M7 12L16 6M10.5 10L17 18" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="kiro-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9900"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+</svg>

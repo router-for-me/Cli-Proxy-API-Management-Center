@@ -2117,7 +2117,7 @@
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2178,8 +2178,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保線路",
-         "aiCodeMirrorDomestic": "國內優化線路",
+        "aiCodeMirrorGlobal": "全球高保線路",
+        "aiCodeMirrorDomestic": "國內優化線路",
         "standard": "普通 URL",
         "direct": "專線直連 URL",
         "domestic": "中國大陸線路",
@@ -2188,8 +2188,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
-         "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
+        "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
+        "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
         "domestic": "面向中國大陸使用者和部署在中國大陸網路環境中的業務，通常可獲得更低延遲。",
         "overseas": "面向海外部署、跨境存取或需要存取境外模型的業務。",
         "mainlandChinaRecommended": "推薦中國大陸使用者和部署在中國大陸網路環境中的業務使用。",
@@ -2490,5 +2490,26 @@
     "remove_pattern": "刪除第 {{row}} 列正規規則",
     "move_up": "上移第 {{row}} 列正規規則",
     "move_down": "下移第 {{row}} 列正規規則"
+  },
+  "kiro_import": {
+    "title": "Kiro JSON 登入",
+    "file_label": "Kiro CLI 權杖 JSON",
+    "file_hint": "來自 kiro-cli 的憑證檔案（通常位於 ~/.aws/sso/cache/kiro-auth-token.json）。",
+    "tab_file": "JSON 檔案",
+    "tab_text": "貼上 JSON",
+    "text_label": "貼上權杖 JSON",
+    "text_placeholder": "{\n  \"accessToken\": \"...\",\n  \"refreshToken\": \"...\"\n}",
+    "choose_file": "選擇檔案",
+    "import_button": "匯入 Kiro 憑證",
+    "file_required": "請先選擇 .json 憑證檔案",
+    "text_required": "請先輸入權杖 JSON 內容",
+    "success": "Kiro 憑證匯入成功",
+    "result_title": "憑證已儲存",
+    "result_id": "憑證 ID",
+    "result_label": "帳號標籤",
+    "result_email": "帳號電子郵件",
+    "result_file": "儲存檔案",
+    "drop_hint": "選擇或拖入 kiro-auth-token.json",
+    "import_another": "再匯入一個"
   }
 }

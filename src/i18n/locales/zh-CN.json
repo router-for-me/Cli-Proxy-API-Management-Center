@@ -2089,7 +2089,7 @@
       "activeCount": "{{active}}/{{total}} 活跃"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2150,8 +2150,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保线路",
-         "aiCodeMirrorDomestic": "国内优化线路",
+        "aiCodeMirrorGlobal": "全球高保线路",
+        "aiCodeMirrorDomestic": "国内优化线路",
         "standard": "普通 URL",
         "direct": "专线直连 URL",
         "domestic": "国内线路",
@@ -2160,8 +2160,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
-         "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
+        "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
+        "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
         "domestic": "面向中国大陆用户和部署在中国大陆网络环境中的业务，通常可获得更低延迟。",
         "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。",
         "mainlandChinaRecommended": "推荐中国大陆用户和部署在中国大陆网络环境中的业务使用。",
@@ -2462,5 +2462,26 @@
     "remove_pattern": "删除第 {{row}} 行正则规则",
     "move_up": "上移第 {{row}} 行正则规则",
     "move_down": "下移第 {{row}} 行正则规则"
+  },
+  "kiro_import": {
+    "title": "Kiro JSON 登录",
+    "file_label": "Kiro CLI 令牌 JSON",
+    "file_hint": "来自 kiro-cli 的凭证文件（通常位于 ~/.aws/sso/cache/kiro-auth-token.json）。",
+    "tab_file": "JSON 文件",
+    "tab_text": "粘贴 JSON",
+    "text_label": "粘贴令牌 JSON",
+    "text_placeholder": "{\n  \"accessToken\": \"...\",\n  \"refreshToken\": \"...\"\n}",
+    "choose_file": "选择文件",
+    "import_button": "导入 Kiro 凭证",
+    "file_required": "请先选择 .json 凭证文件",
+    "text_required": "请先输入令牌 JSON 内容",
+    "success": "Kiro 凭证导入成功",
+    "result_title": "凭证已保存",
+    "result_id": "凭证 ID",
+    "result_label": "账号标签",
+    "result_email": "账号邮箱",
+    "result_file": "存储文件",
+    "drop_hint": "选择或拖入 kiro-auth-token.json",
+    "import_another": "再导入一个"
   }
 }
