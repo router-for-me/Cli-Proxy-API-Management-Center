@@ -13,6 +13,7 @@ export interface ErrorRuleDraft {
   matches: ErrorMatchDraft[];
   /** Preserve untouched optional fields and backend-supported action spelling. */
   original?: RequestScopedErrorRule;
+  sourceIndex?: number;
 }
 
 export const ERROR_RULE_ACTIONS = [
@@ -55,6 +56,7 @@ export function readErrorRules(rules: RequestScopedErrorRule[] = []): ErrorRuleD
           value,
         })),
       ],
+      sourceIndex: index,
       original: {
         ...rule,
         ...(rule.match !== undefined ? { match: [...rule.match] } : {}),
@@ -91,7 +93,7 @@ export function isInvalidErrorMatch(rule: ErrorRuleDraft, match: ErrorMatchDraft
   );
 }
 
-export function validateErrorRule(rule: ErrorRuleDraft): string | null {
+export function validateErrorRule(rule: ErrorRuleDraft, trimMatches = false): string | null {
   // Existing inert rules are accepted by the backend; unrelated edits must not discard them.
   if (isUnchangedRule(rule)) return null;
   const status = rule.status.trim();
@@ -99,7 +101,8 @@ export function validateErrorRule(rule: ErrorRuleDraft): string | null {
     return 'providersPage.errorRules.invalidStatus';
   }
   if (!isAction(normalizedAction(rule.action))) return 'providersPage.errorRules.invalidAction';
-  if (!rule.matches.length) return 'providersPage.errorRules.missingMatch';
+  if (!rule.matches.length || (trimMatches && !rule.matches.some((match) => match.value.trim())))
+    return 'providersPage.errorRules.missingMatch';
   if (rule.matches.some((match) => isInvalidErrorMatch(rule, match))) {
     return 'providersPage.errorRules.invalidMatch';
   }

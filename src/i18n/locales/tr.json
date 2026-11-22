@@ -1162,6 +1162,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "Dağıtım kimliği",
+          "hint": "Bu dağıtımın sabit UUID değeri. Boş kaydedilirse yeni bir kimlik oluşturulur."
+        },
         "trustedProxies": {
           "label": "Güvenilen Proxy'ler",
           "hint": "IP Adresleri veya CIDR Değerleri. Boş, İletilen Üst Bilgilere Güvenilmediği Anlamına Gelir. Tüm Adres Aralıklarına Güvenmek İstemci IP Sahteciliği Riski Doğurur. Arka Uç Yeniden Başlatması Gerekir."
@@ -1201,6 +1205,11 @@
         "discoveryHint": "Çoklu Yayını Destekleyen Fiziksel Arayüzler ve Geri Döngü Olmayan Bir Dinleyici Gerekir. Docker Genellikle Host Ağı İster. Erişilebilirlik Garanti Değildir."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth istek hata kuralları",
+          "hint": "Her OAuth kanalı için üst sunucu hatalarını sırayla eşleştirerek başka kimlik bilgilerine geçişi ve beklemeyi yönetin.",
+          "channel": "OAuth kanalı (eklenti kanalı da girilebilir)"
+        },
         "oauthTitle": "OAuth Sağlayıcı Davranışı",
         "oauthHint": "Bu Sağlayıcı Ayarları Yalnızca OAuth/Dosya Destekli Kimlik Bilgilerine Uygulanır. API Anahtarı Kimlik Bilgilerine Değil.",
         "claudeTitle": "Claude",
@@ -1284,7 +1293,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "Ana Makine Başına En Fazla Boşta Bağlantı",
-          "hint": "Kimlik Bilgisi Başına Her Yukarı Akış Ana Makinesi için Tutulan En Fazla Boşta Bağlantı. Varsayılan: 2. Üst Sınır 100. Sıfır, Go Varsayılanı 2 Değerini Kullanır. Negatif Değer Kısa Ömürlü Bağlantılara Geçirir."
+          "hint": "Kimlik bilgisi başına her üst sunucu için en fazla boşta bağlantı sayısı. Boş bırakılırsa varsayılan 2 kullanılır. Üst sınır 100’dür. Sıfır veya negatif değer kısa süreli bağlantı kullanır."
         },
         "xaiInjectXSearch": {
           "label": "x_search Ekle",
@@ -1561,6 +1570,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "Tire içeren ve sıfır olmayan bir UUID girin.",
+        "invalid_oauth_error_rules": "{{channel}} için durum kodunu, eşleşmeleri ve eylemi kontrol edin.",
         "invalid_trusted_proxies": "Her Güvenilen Proxy Geçerli Bir IP Adresi veya CIDR Olmalıdır.",
         "invalid_discovery_service_type": "_name._tcp Kullan: Ad 1–15 Harf, Rakam veya Tire Olmalı. Başta veya Sonda Tire Olmamalı.",
         "validation_blocked": "Kaydetmeden Önce Doğrulama Hatalarını Düzelt",

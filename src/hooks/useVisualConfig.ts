@@ -1,3 +1,8 @@
+import {
+  readOAuthErrorRules,
+  writeOAuthErrorRules,
+  invalidOAuthChannel,
+} from '@/features/config/visualOAuthErrorRules';
 import { useCallback, useMemo, useReducer } from 'react';
 import { isAlias, isMap, isScalar, isSeq, parse as parseYaml, parseDocument } from 'yaml';
 import type { Node, Pair, YAMLMap, YAMLSeq } from 'yaml';
@@ -310,6 +315,9 @@ export function getVisualConfigValidationErrors(
   return {
     ...validateVisualAdditions(values, dirtyFields),
     ...validateVisualServer(values),
+    oauthErrorRules: invalidOAuthChannel(values.oauthErrorRules)
+      ? 'invalid_oauth_error_rules'
+      : undefined,
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -1592,6 +1600,13 @@ function getNextDirtyFields(
     }
   };
 
+  if (Object.prototype.hasOwnProperty.call(patch, 'oauthErrorRules')) {
+    updateDirty(
+      'oauthErrorRules',
+      withoutEditorIds(nextValues.oauthErrorRules) ===
+        withoutEditorIds(baselineValues.oauthErrorRules)
+    );
+  }
   SERVER_FIELDS.forEach(({ key }) => {
     if (Object.prototype.hasOwnProperty.call(patch, key)) {
       updateDirty(key, JSON.stringify(nextValues[key]) === JSON.stringify(baselineValues[key]));
@@ -1847,6 +1862,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
   const newValues: VisualConfigValues = {
     ...readVisualAdditions(document),
     ...readVisualServer(document),
+    oauthErrorRules: readOAuthErrorRules(v8Oauth?.['request-scoped-errors']),
     host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
     port: String(v8Server?.['port'] ?? ''),
 
@@ -2071,6 +2087,16 @@ export function useVisualConfig() {
           rebasedPayload?.serverYaml ?? baselineYaml,
           target === 'server'
         );
+        if (dirtyFields.has('oauthErrorRules')) {
+          writeOAuthErrorRules(
+            doc,
+            baselineValues.oauthErrorRules,
+            values.oauthErrorRules,
+            rebasedPayload?.yaml ?? baselineYaml,
+            rebasedPayload?.serverYaml ?? baselineYaml,
+            target === 'server'
+          );
+        }
         if (dirtyFields.has(ICE_KEY)) {
           writeICEServers(
             doc,

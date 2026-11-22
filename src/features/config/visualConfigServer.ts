@@ -6,6 +6,7 @@ import { readConfigBoolean } from './visualConfigBoolean';
 
 // Backend: config_v8.go, trusted_proxies.go and discovery/service.go.
 export const SERVER_FIELDS = [
+  { key: 'serverId', path: ['server', 'server-id'], kind: 'string' },
   { key: 'githubToken', path: ['server', 'github-token'], kind: 'string' },
   { key: 'trustedProxies', path: ['server', 'trusted-proxies'], kind: 'list' },
   { key: 'discoveryEnabled', path: ['server', 'discovery', 'enabled'], kind: 'boolean' },
@@ -142,6 +143,12 @@ export function validTrustedProxy(raw: string): boolean {
 export function validateVisualServer(values: VisualConfigValues): VisualConfigValidationErrors {
   const serviceType = values.discoveryServiceType.trim();
   return {
+    serverId:
+      !values.serverId.trim() ||
+      (/^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(values.serverId.trim()) &&
+        values.serverId.trim() !== '00000000-0000-0000-0000-000000000000')
+        ? undefined
+        : 'invalid_server_id',
     trustedProxies: cleanList(values.trustedProxies).every(validTrustedProxy)
       ? undefined
       : 'invalid_trusted_proxies',

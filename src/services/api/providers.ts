@@ -3,6 +3,7 @@ import { apiClient } from './client';
 import { guardConfigConnection } from './configValue';
 import { isRecord } from '@/utils/helpers';
 import { normalizeApiKeyEntry, normalizeProviderGroups } from './transformers';
+import { serializeErrorRule } from './errorRules';
 import { serializeModelOptions } from './providerModels';
 import type {
   GeminiKeyConfig,
@@ -49,12 +50,7 @@ const serializeRuntimePolicy = (config: ProviderRuntimePolicy, supportsErrors = 
   const payload: Record<string, unknown> = {};
   if (config.requestRetry !== undefined) payload['request-retry'] = config.requestRetry;
   if (supportsErrors && config.requestScopedErrors !== undefined) {
-    payload['request-scoped-errors'] = config.requestScopedErrors.map((rule) => ({
-      ...(rule.status !== undefined ? { status: rule.status } : {}),
-      ...(rule.match !== undefined ? { match: rule.match } : {}),
-      ...(rule.matchRegex !== undefined ? { 'match-regexr': rule.matchRegex } : {}),
-      ...(rule.action !== undefined ? { action: rule.action } : {}),
-    }));
+    payload['request-scoped-errors'] = config.requestScopedErrors.map(serializeErrorRule);
   }
   return payload;
 };

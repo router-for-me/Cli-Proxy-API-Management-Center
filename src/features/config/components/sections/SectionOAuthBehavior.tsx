@@ -2,6 +2,8 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Collapsible } from '@/components/ui/Collapsible';
 import type { ConfigSectionProps } from '../../types';
+import { OAuthErrorRulesEditor } from '../blocks/OAuthErrorRulesEditor';
+import { invalidOAuthChannel } from '../../visualOAuthErrorRules';
 import { CodexLiveICEServersEditor } from '../blocks/CodexLiveICEServersEditor';
 import { getValidationMessage } from '../blocks/shared';
 import {
@@ -31,6 +33,27 @@ export function SectionOAuthBehavior({
     >
       <FieldStack>
         <FieldHint id={scopeId}>{t('config_management.visual.additions.oauthHint')}</FieldHint>
+
+        <SettingList>
+          <BlockSetting
+            fieldId="oauthErrorRules"
+            label={t('config_management.visual.additions.oauthErrorRules.label')}
+            description={t('config_management.visual.additions.oauthErrorRules.hint')}
+            error={
+              validationErrors?.oauthErrorRules
+                ? t('config_management.visual.validation.invalid_oauth_error_rules', {
+                    channel: invalidOAuthChannel(values.oauthErrorRules),
+                  })
+                : undefined
+            }
+          >
+            <OAuthErrorRulesEditor
+              value={values.oauthErrorRules}
+              disabled={disabled}
+              onChange={(oauthErrorRules) => onChange({ oauthErrorRules })}
+            />
+          </BlockSetting>
+        </SettingList>
 
         <SettingList title={t('config_management.visual.additions.claudeTitle')}>
           <ToggleSetting

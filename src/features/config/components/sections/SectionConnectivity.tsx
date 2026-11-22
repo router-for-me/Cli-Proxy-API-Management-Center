@@ -53,6 +53,15 @@ export function SectionConnectivity({
 
       <SettingList>
         <TextSetting
+          fieldId="serverId"
+          label={t('config_management.visual.serverExtras.serverId.label')}
+          description={t('config_management.visual.serverExtras.serverId.hint')}
+          value={values.serverId}
+          onChange={(serverId) => onChange({ serverId })}
+          disabled={disabled}
+          error={getValidationMessage(t, validationErrors?.serverId)}
+        />
+        <TextSetting
           fieldId="githubToken"
           label={t('config_management.visual.sections.server.github_token')}
           description={t('config_management.visual.sections.server.github_token_hint')}

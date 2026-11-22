@@ -1162,6 +1162,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "배포 ID",
+          "hint": "이 배포의 고정 UUID입니다. 빈 값으로 저장하면 새 ID가 생성됩니다."
+        },
         "trustedProxies": {
           "label": "신뢰할 수 있는 프록시",
           "hint": "IP 주소 또는 CIDR입니다. 비워 두면 전달된 헤더를 신뢰하지 않습니다. 모든 주소 범위를 신뢰하면 클라이언트 IP 위조 위험이 있습니다. 백엔드 재시작이 필요합니다."
@@ -1201,6 +1205,11 @@
         "discoveryHint": "멀티캐스트를 지원하는 물리적 인터페이스와 루프백이 아닌 수신 대기 주소가 필요합니다. Docker는 일반적으로 호스트 네트워킹이 필요하며 연결 가능성이 보장되지 않습니다."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth 요청 오류 규칙",
+          "hint": "OAuth 채널별로 업스트림 오류를 순서대로 대조하여 다른 자격 증명으로 재시도할지, 대기 상태로 전환할지 결정합니다.",
+          "channel": "OAuth 채널 (플러그인 채널 입력 가능)"
+        },
         "oauthTitle": "OAuth 공급자 동작",
         "oauthHint": "이 공급자 설정은 OAuth/파일 기반 자격 증명에만 적용되며, API 키 자격 증명에는 적용되지 않습니다.",
         "claudeTitle": "Claude",
@@ -1284,7 +1293,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "호스트당 최대 유휴 연결 수",
-          "hint": "자격 증명당 업스트림 호스트별로 유지되는 최대 유휴 연결 수입니다. 기본값: 2, 최대 100. 0은 Go 기본값인 2를 사용하며, 음수 값은 단기 연결로 전환됩니다."
+          "hint": "자격 증명별 업스트림 호스트당 최대 유휴 연결 수입니다. 비워 두면 기본값 2를 사용하며 상한은 100입니다. 0 또는 음수는 단기 연결을 사용합니다."
         },
         "xaiInjectXSearch": {
           "label": "x_search 주입",
@@ -1561,6 +1570,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "하이픈이 포함된 0이 아닌 UUID를 입력하세요.",
+        "invalid_oauth_error_rules": "{{channel}}의 상태 코드, 일치 조건 및 동작을 확인하세요.",
         "invalid_trusted_proxies": "각 신뢰할 수 있는 프록시는 유효한 IP 주소 또는 CIDR이어야 합니다.",
         "invalid_discovery_service_type": "_name._tcp 형식을 사용하세요: 이름은 1~15자의 영문자, 숫자 또는 하이픈이어야 하며, 시작이나 끝에 하이픈이 올 수 없습니다.",
         "validation_blocked": "저장하기 전에 유효성 검사 오류를 수정하세요",

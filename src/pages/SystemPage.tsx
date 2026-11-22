@@ -406,6 +406,12 @@ export function SystemPage() {
               <div className={styles.tileLabel}>{t('connection.status')}</div>
               <div className={styles.tileValue}>{t(`common.${auth.connectionStatus}_status`)}</div>
               <div className={styles.tileSub}>{auth.apiBase || '-'}</div>
+              {config?.serverId && (
+                <div className={styles.tileSub}>
+                  {t('config_management.visual.serverExtras.serverId.label')}{' '}
+                  <code>{config.serverId}</code>
+                </div>
+              )}
             </div>
           </div>
         </Card>

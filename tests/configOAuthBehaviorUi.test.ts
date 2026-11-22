@@ -35,7 +35,7 @@ describe('OAuth behavior configuration UI', () => {
     const additions = CONFIG_FIELD_SEARCH_INDEX.filter((entry) =>
       entry.labelKey.includes('.additions.')
     );
-    expect(additions).toHaveLength(26);
+    expect(additions).toHaveLength(27);
     for (const entry of additions) {
       const own = entry.sectionId === 'network' ? network : advanced;
       const other = entry.sectionId === 'network' ? advanced : network;

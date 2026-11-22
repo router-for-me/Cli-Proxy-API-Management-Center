@@ -1351,6 +1351,8 @@
         "payload_invalid_number": "Nhập số hợp lệ",
         "payload_invalid_boolean": "Chọn true hoặc false",
         "payload_invalid_json": "Nhập JSON hợp lệ",
+        "invalid_server_id": "Nhập UUID khác không có dấu gạch nối.",
+        "invalid_oauth_error_rules": "Kiểm tra mã trạng thái, điều kiện khớp và hành động của {{channel}}.",
         "invalid_trusted_proxies": "Mỗi proxy đáng tin cậy phải là một địa chỉ IP hoặc CIDR hợp lệ.",
         "invalid_discovery_service_type": "Sử dụng định dạng _tên._tcp: tên phải gồm 1–15 chữ cái, chữ số hoặc dấu gạch nối, không bắt đầu hoặc kết thúc bằng dấu gạch nối.",
         "invalid_duration": "Nhập khoảng thời gian hợp lệ, chẳng hạn như 30s hoặc 3h",
@@ -1376,6 +1378,10 @@
         "add": "Thêm"
       },
       "serverExtras": {
+        "serverId": {
+          "label": "ID triển khai",
+          "hint": "UUID cố định của bản triển khai. Lưu giá trị trống sẽ tạo ID mới."
+        },
         "trustedProxies": {
           "label": "Proxy đáng tin cậy",
           "hint": "Địa chỉ IP hoặc CIDR; để trống nghĩa là các header chuyển tiếp không được tin cậy. Tin cậy dải mạng chứa tất cả địa chỉ có nguy cơ giả mạo IP client. Yêu cầu khởi động lại backend."
@@ -1415,6 +1421,11 @@
         "discoveryHint": "Yêu cầu giao diện mạng vật lý hỗ trợ multicast và địa chỉ lắng nghe non-loopback. Docker thường cần host networking; không đảm bảo khả năng tiếp cận."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "Quy tắc lỗi yêu cầu OAuth",
+          "hint": "Đối chiếu lỗi từ máy chủ nguồn theo thứ tự cho từng kênh OAuth để quyết định chuyển thông tin xác thực và thời gian chờ.",
+          "channel": "Kênh OAuth (có thể nhập kênh của plugin)"
+        },
         "oauthTitle": "Hành vi của provider OAuth",
         "oauthHint": "Các cài đặt provider này chỉ áp dụng cho credential OAuth / file xác thực, không áp dụng cho credential API key.",
         "claudeTitle": "Claude",
@@ -1498,7 +1509,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "Số kết nối nhàn rỗi tối đa trên mỗi host",
-          "hint": "Số kết nối nhàn rỗi tối đa được duy trì cho mỗi host upstream trên mỗi credential. Mặc định: 2; giới hạn tối đa 100. Bằng 0 sẽ dùng mặc định của Go là 2; giá trị âm sẽ chuyển sang kết nối ngắn hạn."
+          "hint": "Số kết nối nhàn rỗi tối đa cho mỗi máy chủ nguồn và mỗi thông tin xác thực. Để trống để dùng mặc định 2, giới hạn là 100. Giá trị 0 hoặc âm sử dụng kết nối ngắn hạn."
         },
         "xaiInjectXSearch": {
           "label": "Chèn x_search",

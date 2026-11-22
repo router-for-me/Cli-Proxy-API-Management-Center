@@ -1162,6 +1162,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "Deployment ID",
+          "hint": "Stable UUID for this deployment. Saving an empty value generates a new ID."
+        },
         "trustedProxies": {
           "label": "Trusted proxies",
           "hint": "IP addresses or CIDRs; empty means forwarded headers are not trusted. Trusting all-address ranges risks client IP spoofing. Requires a backend restart."
@@ -1201,6 +1205,11 @@
         "discoveryHint": "Requires multicast-capable physical interfaces and a non-loopback listener. Docker usually needs host networking; reachability is not guaranteed."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth request error rules",
+          "hint": "Match upstream errors in order for each OAuth channel to control credential failover and cooldown.",
+          "channel": "OAuth channel (or enter a plugin channel)"
+        },
         "oauthTitle": "OAuth provider behavior",
         "oauthHint": "These provider settings apply only to OAuth/file-backed credentials, not API-key credentials.",
         "claudeTitle": "Claude",
@@ -1284,7 +1293,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "Maximum idle connections per host",
-          "hint": "Maximum idle connections retained per upstream host per credential. Default: 2; capped at 100. Zero uses Go's default of 2; a negative value switches to short-lived connections."
+          "hint": "Maximum idle connections per upstream host per credential. Leave blank for the default of 2. The limit is 100. Zero or a negative value uses short-lived connections."
         },
         "xaiInjectXSearch": {
           "label": "Inject x_search",
@@ -1561,6 +1570,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "Enter a nonzero UUID with hyphens.",
+        "invalid_oauth_error_rules": "Check the status, matches and action for {{channel}}.",
         "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
         "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
         "validation_blocked": "Fix validation errors before saving",

@@ -1155,6 +1155,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "部署 ID",
+          "hint": "部署的稳定 UUID。留空并保存会生成新的 ID。"
+        },
         "trustedProxies": {
           "label": "可信代理",
           "hint": "填写 IP 地址或 CIDR；留空不信任转发头。信任覆盖所有地址的网段有客户端 IP 伪造风险。重启后端后生效。"
@@ -1194,6 +1198,11 @@
         "discoveryHint": "需要支持组播的物理网卡及非回环监听地址。Docker 通常需使用 host 网络；不保证服务可达。"
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth 请求错误规则",
+          "hint": "按 OAuth 渠道依次匹配上游错误，决定是否重试其他凭据或进入冷却。",
+          "channel": "OAuth 渠道（可输入插件渠道名）"
+        },
         "oauthTitle": "OAuth 提供商行为",
         "oauthHint": "本组提供商设置仅适用于 OAuth/认证文件凭据，不影响 API Key 凭据。",
         "claudeTitle": "Claude",
@@ -1277,7 +1286,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "每主机最大空闲连接数",
-          "hint": "每个凭据为每个上游主机保留的最大空闲连接数，默认 2，上限 100。0 使用 Go 默认值 2，负数切换为短连接。"
+          "hint": "每个凭据为每个上游主机保留的最大空闲连接数。留空使用默认值 2，上限 100。设为 0 或负数时使用短连接。"
         },
         "xaiInjectXSearch": {
           "label": "注入 x_search",
@@ -1554,6 +1563,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "请输入带连字符的非零 UUID。",
+        "invalid_oauth_error_rules": "请检查 {{channel}} 的状态码、匹配条件和动作。",
         "invalid_trusted_proxies": "每个可信代理必须是有效的 IP 地址或 CIDR。",
         "invalid_discovery_service_type": "请使用 _名称._tcp 格式：名称为 1–15 位英文字母、数字或连字符，首尾不能是连字符。",
         "validation_blocked": "请先修复表单校验错误再保存",
