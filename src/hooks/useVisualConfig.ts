@@ -176,6 +176,7 @@ function writeClientKeys(doc: YamlDocument, keys: string[]): void {
   for (let i = seq.items.length - 1; i >= 0; i--) {
     const item = seq.items[i];
     if (!isScalar(item) || typeof item.value !== 'string') continue;
+    if (item.tag && item.tag !== 'tag:yaml.org,2002:str') continue;
     const bucket = indices.get(item.value);
     if (bucket) bucket.push(i);
     else indices.set(item.value, [i]);
@@ -187,6 +188,13 @@ function writeClientKeys(doc: YamlDocument, keys: string[]): void {
     if (match !== undefined) return seq.items[match];
     const previous = seq.items[index];
     if (!reserved.has(index) && isScalar(previous) && !previous.anchor) {
+      // A non-string tag or numeric format would be serialized with the new key.
+      if (
+        typeof previous.value !== 'string' ||
+        (previous.tag && previous.tag !== 'tag:yaml.org,2002:str')
+      ) {
+        return preserveNodeComments(previous, doc.createNode(key));
+      }
       previous.value = key;
       return previous;
     }

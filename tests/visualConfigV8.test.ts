@@ -66,6 +66,16 @@ describe('v8 visual config contract', () => {
     );
   });
 
+  test('replacing a tagged non-string client key writes a string and retains its comment', () => {
+    const before = 'access:\n  api-keys:\n    - !!int 42 # changed\n    - !!str keep # unchanged\n';
+    const output = runVisualConfig(before, [{ apiKeysText: '123\nkeep' }]).applyVisualChangesToYaml(
+      before
+    );
+    expect(parseYaml(output).access['api-keys']).toEqual(['123', 'keep']);
+    expect(output).toContain('# changed');
+    expect(output).toContain('!!str keep # unchanged');
+  });
+
   test('OAuth edits stay OAuth-only and preserve unmoved routing and plugin fields', () => {
     const config = runVisualConfig(fixture, [
       {
