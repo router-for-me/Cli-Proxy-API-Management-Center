@@ -163,6 +163,8 @@ export function ProviderSheet({
     [isDirty, mutationDisabled, onUpdated, state.resource, workbench]
   );
 
+  const viewKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
+
   const renderBody = () => {
     if (state.mode === 'pick') {
       return <ProviderPicker groups={pickerGroups} onPick={(brand) => onPick?.(brand)} />;
@@ -173,11 +175,10 @@ export function ProviderSheet({
       }
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
-    const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
     if (isMultiProtocolSponsorBrand(state.brand)) {
       return (
         <SponsorProviderForm
-          key={formKey}
+          key={viewKey}
           brand={state.brand}
           resource={state.resource}
           mode={state.mode}
@@ -190,7 +191,7 @@ export function ProviderSheet({
     }
     return (
       <BaseProviderForm
-        key={formKey}
+        key={viewKey}
         brand={state.brand}
         resource={state.resource}
         mode={state.mode}
@@ -260,6 +261,7 @@ export function ProviderSheet({
   return (
     <Sheet
       open={state.open}
+      viewKey={viewKey}
       onClose={onClose}
       size={descriptor.sheetSize}
       // The title carries mode and provider together; no eyebrow or route subtitle repeats them.
