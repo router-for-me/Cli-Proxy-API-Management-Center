@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronLeft, IconExternalLink } from '@/components/ui/icons';
 import { getKimiAffiliateUrl } from '../kimi';
-import { isQuickFillBrand, QUICK_FILL_BRAND_ORDER } from '../resourceView';
+import { getConnectionFormTarget, isQuickFillBrand, QUICK_FILL_BRAND_ORDER } from '../resourceView';
 import { getSponsorProviderDefinition } from '../sponsorDefinitions';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -40,6 +40,13 @@ export function ProviderPicker({ groups, variant = 'sheet', onPick }: ProviderPi
     ) : null;
   };
 
+  const actionLabel = (brand: ProviderBrand) => {
+    const group = groups.find((item) => item.id === brand);
+    return group && getConnectionFormTarget(group).mode === 'edit'
+      ? t('providersPage.actions.edit')
+      : t('providersPage.picker.connect');
+  };
+
   const registerLink = (href: string | undefined, label: string) =>
     href ? (
       <a className={styles.registerLink} href={href} target="_blank" rel="noreferrer">
@@ -63,9 +70,9 @@ export function ProviderPicker({ groups, variant = 'sheet', onPick }: ProviderPi
           type="button"
           className={styles.connectButton}
           onClick={() => onPick(brand)}
-          aria-label={`${t('providersPage.picker.connect')} ${name(brand)}`}
+          aria-label={`${actionLabel(brand)} ${name(brand)}`}
         >
-          {t('providersPage.picker.connect')}
+          {actionLabel(brand)}
         </button>
         {registerLink(href, t('providersPage.sponsor.registerLink'))}
       </div>

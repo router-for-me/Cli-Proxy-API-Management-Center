@@ -45,6 +45,14 @@ export const partitionProviderGroups = (
     ),
 });
 
+/** A multi-protocol partner is one bundle: its save replaces the whole configuration. */
+export const getConnectionFormTarget = (group: ProviderGroup) => {
+  const bundle = isMultiProtocolSponsorBrand(group.id) ? group.resources[0] : undefined;
+  return bundle
+    ? { mode: 'edit' as const, resource: bundle }
+    : { mode: 'create' as const, resource: null };
+};
+
 export const isSponsorResource = (resource: ProviderResource): boolean =>
   isMultiProtocolSponsorBrand(resource.brand);
 

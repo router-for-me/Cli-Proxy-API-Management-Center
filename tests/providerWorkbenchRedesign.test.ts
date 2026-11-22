@@ -18,6 +18,7 @@ import { ResourceCard } from '@/features/providers/components/ResourceCard';
 import { FormDisclosure } from '@/features/providers/sheets/forms/FormSection';
 import {
   collectGroupModels,
+  getConnectionFormTarget,
   getResourceDisplayName,
   matchesResourceFilter,
   partitionProviderGroups,
@@ -263,6 +264,21 @@ describe('provider picker', () => {
     expect(links).toHaveLength(4);
     expect(html).toContain(en.providersPage.sponsor.kimiPromo);
     expect(html).toContain(en.providersPage.picker.oneKey.replace('{{count}}', '2'));
+  });
+
+  test('edits the full connected partner bundle but allows another ordinary connection', () => {
+    const bundle = fennoAIToResource({
+      openai: [],
+      gemini: [],
+      claude: [{ config: { apiKey: 'fixture-claude' }, index: 0 }],
+      codex: [{ config: { apiKey: 'fixture-codex' }, index: 0 }],
+    })!;
+    const partner = group('fennoAI', [bundle]);
+    expect(getConnectionFormTarget(partner)).toEqual({ mode: 'edit', resource: bundle });
+    expect(getConnectionFormTarget(group('fennoAI'))).toEqual({ mode: 'create', resource: null });
+    expect(getConnectionFormTarget(group('gemini', [alpha])).mode).toBe('create');
+    const html = render(createElement(ProviderPicker, { groups: [partner], onPick: () => {} }));
+    expect(html).toContain(`aria-label="${en.providersPage.actions.edit} FennoAI"`);
   });
 
   test('marks connected brands and keeps the custom entry last', () => {

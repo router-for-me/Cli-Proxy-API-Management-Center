@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconExternalLink, IconPlus } from '@/components/ui/icons';
+import { IconExternalLink, IconPencil, IconPlus } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { getKimiAffiliateUrl } from '../kimi';
-import { resolveResourceUsage } from '../resourceView';
+import { getConnectionFormTarget, resolveResourceUsage } from '../resourceView';
 import { getSponsorProviderDefinition } from '../sponsorDefinitions';
 import type { ProviderGroup, ProviderResource, ProviderSortBy, SortDir } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -85,6 +85,7 @@ export function BrandPanel({
   const registrationLabel = t(
     group.id === 'kimi' ? 'providersPage.sponsor.registerNow' : 'providersPage.sponsor.registerLink'
   );
+  const editBundle = getConnectionFormTarget(group).mode === 'edit';
   const hasResources = group.resources.length > 0;
   const filtersActive = controls.filter.trim() !== '' || controls.selectedModels.size > 0;
 
@@ -130,8 +131,10 @@ export function BrandPanel({
             onClick={onCreate}
             disabled={disableMutations}
           >
-            <IconPlus size={14} />
-            {t('providersPage.actions.newFor', { provider: providerName })}
+            {editBundle ? <IconPencil size={14} /> : <IconPlus size={14} />}
+            {editBundle
+              ? t('providersPage.actions.edit')
+              : t('providersPage.actions.newFor', { provider: providerName })}
           </button>
         </div>
       ) : null}

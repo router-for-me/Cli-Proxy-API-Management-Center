@@ -14,6 +14,7 @@ import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
 import {
   collectGroupModels,
+  getConnectionFormTarget,
   getResourceDisplayName,
   partitionProviderGroups,
   selectVisibleResources,
@@ -221,9 +222,15 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       ? APIKEY_FUN_DISPLAY_NAME
       : t('nav.quick_start')
     : t('providersPage.header.title');
-  const openCreate = useCallback(() => {
-    setSheetState({ open: true, brand: activeBrand, mode: 'create', resource: null });
-  }, [activeBrand]);
+  const openConnectionForm = useCallback(
+    (brand: ProviderBrand, fromPicker: boolean) => {
+      const group = groups.find((item) => item.id === brand);
+      if (!group) return;
+      setSheetState({ open: true, brand, fromPicker, ...getConnectionFormTarget(group) });
+    },
+    [groups]
+  );
+  const openCreate = () => openConnectionForm(activeBrand, false);
 
   const openPicker = useCallback(() => {
     setSheetState((state) => ({
@@ -235,9 +242,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     }));
   }, []);
 
-  const pickBrand = useCallback((brand: ProviderBrand) => {
-    setSheetState({ open: true, brand, mode: 'create', resource: null, fromPicker: true });
-  }, []);
+  const pickBrand = (brand: ProviderBrand) => openConnectionForm(brand, true);
 
   const backToPicker = useCallback(() => {
     setSheetState((state) => ({ ...state, mode: 'pick', fromPicker: false }));
