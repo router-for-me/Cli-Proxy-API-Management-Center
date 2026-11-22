@@ -8,9 +8,18 @@ import {
   normalizeExcludedRules,
   parseExcludedRulesText,
   replaceCustomExcludedRules,
+  ruleEditorText,
   splitExcludedRules,
   toggleExcludedRule,
 } from '../src/components/excludedModels/excludedModelRules';
+
+test('rule editor retains Enter after normalized feedback, but follows external changes', () => {
+  const firstLine = ruleEditorText('gpt-*\n', ['gpt-*']);
+  expect(firstLine).toBe('gpt-*\n');
+  expect(replaceCustomExcludedRules([], [], firstLine + 'claude-*')).toEqual(['gpt-*', 'claude-*']);
+  expect(ruleEditorText(firstLine, ['other-*'])).toBe('other-*');
+  expect(ruleEditorText(null, ['gpt-*'])).toBe('gpt-*');
+});
 
 describe('normalizeExcludedRules / parseExcludedRulesText', () => {
   test('trims, drops blanks, and removes case-insensitive duplicates', () => {

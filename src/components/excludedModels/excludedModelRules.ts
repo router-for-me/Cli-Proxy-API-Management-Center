@@ -38,6 +38,14 @@ export const parseExcludedRulesText = (text: string): string[] =>
 
 export const formatExcludedRulesText = (rules: readonly string[]): string => rules.join('\n');
 
+/** Keep editing whitespace while the parent still represents the same custom rules. */
+export function ruleEditorText(draft: string | null, customRules: readonly string[]): string {
+  const formatted = formatExcludedRulesText(customRules);
+  return draft !== null && formatExcludedRulesText(parseExcludedRulesText(draft)) === formatted
+    ? draft
+    : formatted;
+}
+
 export function matchesExcludedRule(rule: string, modelId: string): boolean {
   const normalizedRule = ruleKey(rule);
   const normalizedModel = ruleKey(modelId);
