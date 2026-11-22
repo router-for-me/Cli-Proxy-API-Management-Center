@@ -15,6 +15,7 @@ import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ResourceToolbar.module.scss';
 
 interface ResourceToolbarProps {
+  searchLabel?: string;
   filter: string;
   onFilterChange: (value: string) => void;
   sortBy: ProviderSortBy;
@@ -28,6 +29,7 @@ interface ResourceToolbarProps {
 
 /** High-frequency controls: no entrance motion, feedback is immediate. */
 export function ResourceToolbar({
+  searchLabel,
   filter,
   onFilterChange,
   sortBy,
@@ -105,8 +107,8 @@ export function ResourceToolbar({
           className={styles.searchInput}
           value={filter}
           onChange={(event) => onFilterChange(event.target.value)}
-          placeholder={t('providersPage.table.filterPlaceholder')}
-          aria-label={t('providersPage.table.filterPlaceholder')}
+          placeholder={searchLabel ?? t('providersPage.table.filterPlaceholder')}
+          aria-label={searchLabel ?? t('providersPage.table.filterPlaceholder')}
         />
         {filter ? (
           <button

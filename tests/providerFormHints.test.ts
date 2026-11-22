@@ -10,11 +10,8 @@ import { SponsorProviderForm } from '@/features/providers/sheets/forms/SponsorPr
 import { CheckboxField } from '@/features/providers/sheets/forms/CheckboxField';
 import { ResourceDetailView } from '@/features/providers/sheets/ResourceDetailView';
 import { getSponsorProviderDefinition } from '@/features/providers/sponsorDefinitions';
-import type {
-  ProviderBrand,
-  ProviderResource,
-  SponsorProviderBrand,
-} from '@/features/providers/types';
+import type { NativeProviderFamily } from '@/services/api/providers';
+import type { ProviderResource, SponsorProviderBrand } from '@/features/providers/types';
 
 const i18n = createInstance();
 await i18n.init({ lng: 'en', resources: { en: { translation: en } } });
@@ -35,7 +32,7 @@ const REMOVED = {
   protocolModels: 'config models. Fetch from',
 };
 
-const renderBase = (brand: ProviderBrand) =>
+const renderBase = (brand: NativeProviderFamily) =>
   render(
     createElement(BaseProviderForm, {
       brand,
@@ -43,7 +40,7 @@ const renderBase = (brand: ProviderBrand) =>
       mode: 'create',
       mutating: false,
       formId: 'f',
-      onSubmit: async () => {},
+      onNativeSubmit: async () => {},
     })
   );
 

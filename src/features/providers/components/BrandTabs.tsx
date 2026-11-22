@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scrollProviderTabs } from '@/features/authFiles/components/providerTabsWheel';
-import { isQuickFillBrand } from '../resourceView';
+import { connectionCounts, isQuickFillBrand } from '../resourceView';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import { BrandLogo } from './BrandLogo';
 import styles from './BrandTabs.module.scss';
@@ -100,8 +100,8 @@ export function BrandTabs({
           const active = group.id === activeBrand;
           const startsPartners =
             isQuickFillBrand(group.id) && (index === 0 || !isQuickFillBrand(groups[index - 1].id));
-          const total = group.resources.length;
-          const disabledCount = group.resources.filter((resource) => resource.disabled).length;
+          const counts = connectionCounts(group);
+          const total = counts.total;
           return [
             startsPartners ? (
               <span key="partners-divider" className={styles.divider} aria-hidden="true">
@@ -126,7 +126,7 @@ export function BrandTabs({
                 <span
                   className={styles.count}
                   title={t('providersPage.categories.activeCount', {
-                    active: total - disabledCount,
+                    active: counts.active,
                     total,
                   })}
                 >

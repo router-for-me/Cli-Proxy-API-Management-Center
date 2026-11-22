@@ -11,9 +11,14 @@ import { BrandPanel, type BrandPanelControls } from './components/BrandPanel';
 import { ProviderPicker } from './components/ProviderPicker';
 import { SponsorCampaignCard } from './components/SponsorCampaignCard';
 import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
-import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
+import {
+  ProviderSheet,
+  type ProviderSheetHandle,
+  type ProviderSheetState,
+} from './sheets/ProviderSheet';
 import {
   collectGroupModels,
+  connectionCounts,
   getConnectionFormTarget,
   getResourceDisplayName,
   partitionProviderGroups,
@@ -29,18 +34,15 @@ import {
   type ProviderFilterState,
   type ProvidersWorkbenchUiState,
 } from './uiState';
-import type { ProviderBrand, ProviderResource, ProviderSortBy, SortDir } from './types';
+import { isNativeFamily, selectVisibleSections } from './nativeSections';
+import type {
+  NativeSection,
+  ProviderBrand,
+  ProviderResource,
+  ProviderSortBy,
+  SortDir,
+} from './types';
 import styles from './ProvidersWorkbenchPage.module.scss';
-
-type SheetMode = 'pick' | 'detail' | 'create' | 'edit';
-
-interface SheetState {
-  open: boolean;
-  brand: ProviderBrand;
-  mode: SheetMode;
-  resource: ProviderResource | null;
-  fromPicker?: boolean;
-}
 
 interface ProvidersWorkbenchPageProps {
   fixedBrand?: ProviderBrand;
@@ -71,7 +73,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
 
   const workbench = useProviderWorkbench();
   const [uiState, setUiState] = useState<ProvidersWorkbenchUiState>(readProvidersWorkbenchUiState);
-  const [sheetState, setSheetState] = useState<SheetState>({
+  const [sheetState, setSheetState] = useState<ProviderSheetState>({
     open: false,
     brand: 'gemini',
     mode: 'detail',
@@ -118,7 +120,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     return [...providers, ...quickFill];
   }, [groups]);
   const connectedGroups = useMemo(
-    () => groups.filter((group) => group.resources.length > 0),
+    () => groups.filter((group) => group.resources.length > 0 || group.nativeSections?.length),
     [groups]
   );
   const activeBrand: ProviderBrand =
@@ -156,29 +158,23 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     return new Set(activeFilterState.selectedModels.filter((name) => available.has(name)));
   }, [activeFilterState.selectedModels, availableModels]);
 
-  const visibleResources = useMemo(
-    () =>
-      activeGroup
-        ? selectVisibleResources(
-            activeGroup.resources,
-            {
-              filter: activeFilterState.filter,
-              selectedModels,
-              sortBy: activeFilterState.sortBy,
-              sortDir: activeFilterState.sortDir,
-            },
-            usageByProvider
-          )
-        : [],
-    [
-      activeFilterState.filter,
-      activeFilterState.sortBy,
-      activeFilterState.sortDir,
-      activeGroup,
-      selectedModels,
-      usageByProvider,
-    ]
-  );
+  const { visibleResources, nativeSections } = useMemo(() => {
+    const query = { ...activeFilterState, selectedModels };
+    if (activeGroup?.nativeSections) {
+      const sections = selectVisibleSections(activeGroup.nativeSections, query, usageByProvider);
+      return {
+        nativeSections: sections,
+        visibleResources: sections.flatMap((section) => section.members),
+      };
+    }
+    return {
+      visibleResources: selectVisibleResources(
+        activeGroup?.resources ?? [],
+        query,
+        usageByProvider
+      ),
+    };
+  }, [activeGroup, activeFilterState, selectedModels, usageByProvider]);
 
   const panelControls = useMemo<BrandPanelControls>(
     () => ({
@@ -201,12 +197,11 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
 
   const summary = useMemo<ProvidersHeaderSummary>(
     () => ({
-      totalResources: groups.reduce((sum, group) => sum + group.resources.length, 0),
-      totalActive: groups.reduce(
-        (sum, group) => sum + group.resources.filter((resource) => !resource.disabled).length,
-        0
-      ),
-      providerFamilies: groups.filter((group) => group.resources.length > 0).length,
+      totalResources: groups.reduce((sum, group) => sum + connectionCounts(group).total, 0),
+      totalActive: groups.reduce((sum, group) => sum + connectionCounts(group).active, 0),
+      providerFamilies: groups.filter(
+        (group) => group.resources.length > 0 || group.nativeSections?.length
+      ).length,
       updatedAtLabel: workbench.snapshot
         ? formatDateTime(workbench.snapshot.fetchedAt, i18n.language)
         : t('providersPage.modelCatalog.notLoaded'),
@@ -280,7 +275,9 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     (resource: ProviderResource) => {
       showConfirmation({
         title: t('providersPage.delete.title'),
-        message: t('providersPage.delete.confirm', { name: getResourceDisplayName(resource) }),
+        message: t('providersPage.delete.confirm', {
+          name: getResourceDisplayName(resource),
+        }),
         variant: 'danger',
         confirmText: t('providersPage.actions.delete'),
         onConfirm: async () => {
@@ -299,6 +296,46 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     },
     [showConfirmation, showNotification, t, workbench]
   );
+
+  const deleteGroup = (section: NativeSection) => {
+    const brand = sheetState.brand;
+    if (!isNativeFamily(brand)) return;
+    showConfirmation({
+      title: t('providersPage.groupActions.delete'),
+      message: t('providersPage.groupActions.confirm', {
+        name: section.name,
+        count: section.keyCount,
+      }),
+      variant: 'danger',
+      confirmText: t('providersPage.actions.delete'),
+      onConfirm: async () => {
+        try {
+          await workbench.deleteNativeConnection(brand, section.source);
+          finishSave();
+          showNotification(t('providersPage.toast.deleted'), 'success');
+        } catch (err) {
+          showNotification(`${t('notification.delete_failed')}: ${errorMessageOf(err)}`, 'error');
+        }
+      },
+    });
+  };
+
+  const toggleGroup = async (section: NativeSection, disabled: boolean) => {
+    if (!isNativeFamily(activeBrand)) return;
+    try {
+      await workbench.setConnectionDisabled(activeBrand, section, disabled);
+      showNotification(
+        t(disabled ? 'providersPage.toast.disabled' : 'providersPage.toast.enabled'),
+        'success'
+      );
+    } catch (err) {
+      showNotification(`${t('providersPage.toast.toggleFailed')}: ${errorMessageOf(err)}`, 'error');
+    }
+  };
+
+  const finishSave = useCallback(() => {
+    setSheetState((current) => (current === sheetState ? { ...current, open: false } : current));
+  }, [sheetState]);
 
   const handleToggleDisabled = useCallback(
     async (resource: ProviderResource, disabled: boolean) => {
@@ -329,13 +366,13 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
     persistUiState((prev) =>
       prev.activeBrand === createdBrand ? prev : { ...prev, activeBrand: createdBrand }
     );
-    closeSheet();
-  }, [closeSheet, persistUiState, sheetState.brand, showNotification, t]);
+    finishSave();
+  }, [finishSave, persistUiState, sheetState.brand, showNotification, t]);
 
   const handleUpdated = useCallback(() => {
     showNotification(t('providersPage.toast.updated'), 'success');
-    closeSheet();
-  }, [closeSheet, showNotification, t]);
+    finishSave();
+  }, [finishSave, showNotification, t]);
 
   const errorBanner = workbench.errorMessage ? (
     <div className={styles.errorBanner} role="alert">
@@ -381,6 +418,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         setSheetState((state) => (state.resource ? { ...state, mode: 'edit' } : state));
       }}
       workbench={workbench}
+      onDeleteConnection={deleteGroup}
       onCreated={handleCreated}
       onUpdated={handleUpdated}
       mutationDisabled={disableMutations}
@@ -464,6 +502,22 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
           labelledBy={tabId(activeGroup.id)}
           group={activeGroup}
           resources={visibleResources}
+          nativeSections={nativeSections}
+          selectedGroupIndex={
+            sheetState.open && sheetState.brand === activeBrand
+              ? (sheetState.section?.source.groupIndex ?? null)
+              : null
+          }
+          onToggleGroup={toggleGroup}
+          onEditGroup={(section) =>
+            setSheetState({
+              open: true,
+              brand: activeBrand,
+              mode: 'edit',
+              section,
+              resource: null,
+            })
+          }
           controls={panelControls}
           selectedId={sheetState.open ? (sheetState.resource?.id ?? null) : null}
           disableMutations={disableMutations}

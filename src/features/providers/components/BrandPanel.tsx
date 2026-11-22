@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconExternalLink, IconPencil, IconPlus } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
+import { connectionCardSummary } from '../connectionCardSummary';
 import { getKimiAffiliateUrl } from '../kimi';
 import { getConnectionFormTarget, resolveResourceUsage } from '../resourceView';
 import { getSponsorProviderDefinition } from '../sponsorDefinitions';
-import type { ProviderGroup, ProviderResource, ProviderSortBy, SortDir } from '../types';
+import type {
+  NativeSection,
+  ProviderGroup,
+  ProviderResource,
+  ProviderSortBy,
+  SortDir,
+} from '../types';
 import { BrandLogo } from './BrandLogo';
+import { ConnectionCard } from './ConnectionCard';
 import { ResourceCard } from './ResourceCard';
 import { ResourceToolbar } from './ResourceToolbar';
 import styles from './BrandPanel.module.scss';
@@ -43,6 +51,11 @@ interface BrandPanelProps {
   onDelete: (resource: ProviderResource) => void;
   onToggleDisabled: (resource: ProviderResource, disabled: boolean) => void;
   onCreate: () => void;
+  nativeSections?: NativeSection[];
+  /** Group index of the connection open in the editor, if any. */
+  selectedGroupIndex?: number | null;
+  onEditGroup: (section: NativeSection) => void;
+  onToggleGroup: (section: NativeSection, disabled: boolean) => void;
 }
 
 const resolveRegistrationUrl = (group: ProviderGroup, language: string): string | null => {
@@ -52,6 +65,17 @@ const resolveRegistrationUrl = (group: ProviderGroup, language: string): string 
   }
   return null;
 };
+
+// Connection URLs may include userinfo or query-string credentials; don't put them in the DOM.
+function connectionEndpoint(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    return `${url.origin}${url.pathname === '/' ? '' : url.pathname}`;
+  } catch {
+    return null;
+  }
+}
 
 export function BrandPanel({
   id,
@@ -67,6 +91,10 @@ export function BrandPanel({
   onDelete,
   onToggleDisabled,
   onCreate,
+  nativeSections,
+  selectedGroupIndex = null,
+  onEditGroup,
+  onToggleGroup,
 }: BrandPanelProps) {
   const { t, i18n } = useTranslation();
   // Cards present on first mount cascade in once; brand switches and filtering never replay it.
@@ -86,7 +114,7 @@ export function BrandPanel({
     group.id === 'kimi' ? 'providersPage.sponsor.registerNow' : 'providersPage.sponsor.registerLink'
   );
   const editBundle = getConnectionFormTarget(group).mode === 'edit';
-  const hasResources = group.resources.length > 0;
+  const hasResources = group.resources.length > 0 || Boolean(group.nativeSections?.length);
   const filtersActive = controls.filter.trim() !== '' || controls.selectedModels.size > 0;
 
   const registrationLink = registrationUrl ? (
@@ -95,6 +123,29 @@ export function BrandPanel({
       <IconExternalLink size={13} aria-hidden="true" />
     </a>
   ) : null;
+
+  const grid = (items: ProviderResource[]) => (
+    <div className={styles.grid}>
+      {items.map((resource, index) => (
+        <ResourceCard
+          key={resource.id}
+          resource={resource}
+          selected={resource.id === selectedId}
+          disableMutations={disableMutations}
+          usage={resolveResourceUsage(resource, usageByProvider)}
+          enterDelayMs={
+            cascadeIds.has(resource.id)
+              ? Math.min(index * CASCADE_STEP_MS, CASCADE_MAX_MS)
+              : undefined
+          }
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onToggleDisabled={onToggleDisabled}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <section id={id} role="tabpanel" aria-labelledby={labelledBy} className={styles.panel}>
@@ -115,6 +166,7 @@ export function BrandPanel({
         <div className={styles.toolbarRow}>
           <ResourceToolbar
             key={group.id}
+            searchLabel={nativeSections ? t('providersPage.connections.search') : undefined}
             filter={controls.filter}
             onFilterChange={controls.onFilterChange}
             sortBy={controls.sortBy}
@@ -134,7 +186,9 @@ export function BrandPanel({
             {editBundle ? <IconPencil size={14} /> : <IconPlus size={14} />}
             {editBundle
               ? t('providersPage.actions.edit')
-              : t('providersPage.actions.newFor', { provider: providerName })}
+              : nativeSections
+                ? t('providersPage.connections.create')
+                : t('providersPage.actions.newFor', { provider: providerName })}
           </button>
         </div>
       ) : null}
@@ -153,11 +207,13 @@ export function BrandPanel({
               disabled={disableMutations}
             >
               <IconPlus size={15} />
-              {t('providersPage.actions.newFor', { provider: providerName })}
+              {nativeSections
+                ? t('providersPage.connections.create')
+                : t('providersPage.actions.newFor', { provider: providerName })}
             </button>
           </div>
         </div>
-      ) : resources.length === 0 ? (
+      ) : (nativeSections?.length ?? resources.length) === 0 ? (
         <div className={`${styles.empty} ${styles.emptyCompact}`}>
           <h2 className={styles.emptyTitle}>{t('providersPage.table.noMatch')}</h2>
           {filtersActive ? (
@@ -168,27 +224,28 @@ export function BrandPanel({
             </div>
           ) : null}
         </div>
-      ) : (
+      ) : nativeSections ? (
         <div className={styles.grid}>
-          {resources.map((resource, index) => (
-            <ResourceCard
-              key={resource.id}
-              resource={resource}
-              selected={resource.id === selectedId}
+          {nativeSections.map((section) => (
+            <ConnectionCard
+              key={`${group.id}:${section.source.groupIndex}`}
+              connection={{
+                title: section.name,
+                prefix: section.prefix,
+                defaultClaudeEndpoint: group.id === 'claude' && !section.baseUrl,
+                endpoint: section.baseUrl ? connectionEndpoint(section.baseUrl) : null,
+                keyCount: section.keyCount,
+                ...connectionCardSummary(section, usageByProvider),
+              }}
+              selected={section.source.groupIndex === selectedGroupIndex}
               disableMutations={disableMutations}
-              usage={resolveResourceUsage(resource, usageByProvider)}
-              enterDelayMs={
-                cascadeIds.has(resource.id)
-                  ? Math.min(index * CASCADE_STEP_MS, CASCADE_MAX_MS)
-                  : undefined
-              }
-              onView={onView}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleDisabled={onToggleDisabled}
+              onEdit={() => onEditGroup(section)}
+              onToggleDisabled={(disabled) => onToggleGroup(section, disabled)}
             />
           ))}
         </div>
+      ) : (
+        grid(resources)
       )}
     </section>
   );

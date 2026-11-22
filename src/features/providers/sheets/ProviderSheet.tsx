@@ -7,6 +7,7 @@ import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
 import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import type {
+  NativeSection,
   ProviderBrand,
   ProviderEntryFormInput,
   ProviderGroup,
@@ -21,6 +22,9 @@ import { ProviderPicker } from '../components/ProviderPicker';
 import formStyles from './forms/sharedForm.module.scss';
 import styles from './ProviderSheet.module.scss';
 
+import { isNativeFamily } from '../nativeSections';
+import type { NativeConnectionFormOutput } from '../nativeConnectionForm';
+
 type SheetMode = 'pick' | 'detail' | 'create' | 'edit';
 
 export interface ProviderSheetState {
@@ -30,6 +34,7 @@ export interface ProviderSheetState {
   resource: ProviderResource | null;
   /** A create form opened from the picker returns to it on cancel. */
   fromPicker?: boolean;
+  section?: NativeSection;
 }
 
 export interface ProviderSheetHandle {
@@ -43,6 +48,7 @@ interface ProviderSheetProps {
   workbench: UseProviderWorkbenchResult;
   onCreated: () => void;
   onUpdated: () => void;
+  onDeleteConnection: (section: NativeSection) => void;
   mutationDisabled?: boolean;
   usageByProvider?: ProviderRecentUsageMap;
   /** Brands offered by the "add provider" picker. */
@@ -59,6 +65,7 @@ export function ProviderSheet({
   workbench,
   onCreated,
   onUpdated,
+  onDeleteConnection,
   mutationDisabled = false,
   usageByProvider,
   pickerGroups = [],
@@ -77,14 +84,14 @@ export function ProviderSheet({
   // re-report its own dirty state.
   useEffect(() => {
     setIsDirty(false);
-  }, [state.brand, state.mode, state.resource?.id, state.open]);
+  }, [state.brand, state.mode, state.resource?.id, state.section?.source.groupIndex, state.open]);
 
   const handleDirtyChange = useCallback((dirty: boolean) => {
     setIsDirty(dirty);
   }, []);
 
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
-  const isEditingForm = state.mode === 'create' || state.mode === 'edit';
+  const isEditingForm = state.mode !== 'pick' && state.mode !== 'detail';
   const formMutating = submitting || mutationDisabled;
   const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
 
@@ -117,11 +124,16 @@ export function ProviderSheet({
   }, [backToPicker, confirmDiscardIfDirty, onClose]);
 
   const modeLabel =
-    state.mode === 'create'
-      ? t('providersPage.form.createEyebrow')
-      : state.mode === 'edit'
-        ? t('providersPage.form.editEyebrow')
-        : t('providersPage.detail.title');
+    isNativeFamily(state.brand) && isEditingForm
+      ? state.section
+        ? // The title becomes the connection name, so the eyebrow keeps the provider visible.
+          `${t(`providersPage.providerNames.${state.brand}`)} · ${t('providersPage.groupActions.edit')}`
+        : t('providersPage.groupActions.create')
+      : state.mode === 'create'
+        ? t('providersPage.form.createEyebrow')
+        : state.mode === 'edit'
+          ? t('providersPage.form.editEyebrow')
+          : t('providersPage.detail.title');
   const titleText =
     state.mode === 'pick' ? (
       t('providersPage.actions.addProvider')
@@ -130,7 +142,7 @@ export function ProviderSheet({
         <BrandLogo brand={state.brand} size={26} />
         <span className={styles.sheetTitleText}>
           <span className={styles.sheetTitleMode}>{modeLabel}</span>
-          <span>{t(`providersPage.providerNames.${state.brand}`)}</span>
+          <span>{state.section?.name ?? t(`providersPage.providerNames.${state.brand}`)}</span>
         </span>
       </span>
     );
@@ -163,7 +175,19 @@ export function ProviderSheet({
     [isDirty, mutationDisabled, onUpdated, state.resource, workbench]
   );
 
-  const viewKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
+  const handleNativeSubmit = async (draft: NativeConnectionFormOutput) => {
+    if (submitDisabled || !isNativeFamily(state.brand)) return;
+    setSubmitting(true);
+    try {
+      await workbench.saveNativeConnection(state.brand, state.section, draft);
+      if (state.section) onUpdated();
+      else onCreated();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const viewKey = `${state.brand}:${state.section?.source.groupIndex ?? state.resource?.id ?? 'new'}:${state.mode}`;
 
   const renderBody = () => {
     if (state.mode === 'pick') {
@@ -174,6 +198,21 @@ export function ProviderSheet({
         return null;
       }
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
+    }
+    if (isNativeFamily(state.brand)) {
+      return (
+        <BaseProviderForm
+          key={viewKey}
+          brand={state.brand}
+          resource={null}
+          nativeSection={state.section}
+          mode={state.mode}
+          mutating={formMutating}
+          formId={formId}
+          onNativeSubmit={handleNativeSubmit}
+          onDirtyChange={handleDirtyChange}
+        />
+      );
     }
     if (isMultiProtocolSponsorBrand(state.brand)) {
       return (
@@ -235,6 +274,16 @@ export function ProviderSheet({
       </>
     ) : (
       <>
+        {state.section && (
+          <button
+            type="button"
+            className={`${formStyles.footerBtn} ${styles.deleteConnection}`}
+            disabled={formMutating}
+            onClick={() => state.section && onDeleteConnection(state.section)}
+          >
+            {t('providersPage.groupActions.delete')}
+          </button>
+        )}
         <button
           type="button"
           className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
@@ -251,7 +300,7 @@ export function ProviderSheet({
           aria-busy={submitting || undefined}
         >
           {submitting ? <IconLoader2 size={14} className={formStyles.spin} /> : null}
-          {state.mode === 'create'
+          {state.mode === 'create' && !isNativeFamily(state.brand)
             ? t('providersPage.actions.create')
             : t('providersPage.actions.save')}
         </button>

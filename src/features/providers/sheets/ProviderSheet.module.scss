@@ -26,3 +26,10 @@
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
+
+.deleteConnection {
+  margin-inline-end: auto;
+  color: var(--danger-color);
+  background: transparent;
+  border: 1px solid var(--border-color);
+}

@@ -2019,6 +2019,43 @@
     "version": "관리 UI 버전"
   },
   "providersPage": {
+    "connections": {
+      "edit": "연결 편집",
+      "create": "연결 추가",
+      "search": "연결, 키, URL 또는 접두사 검색…",
+      "keyCount_one": "키 {{count}}개",
+      "keyCount_other": "키 {{count}}개",
+      "keysActive_one": "키 {{active}}/{{count}}개 사용 중",
+      "keysActive_other": "키 {{active}}/{{count}}개 사용 중",
+      "disableKeys": "“{{name}}”의 모든 키 비활성화",
+      "enableKeys": "“{{name}}”의 모든 키 활성화"
+    },
+    "nativeGroup": {
+      "defaults": "연결 기본값",
+      "description": "별도로 재정의하지 않은 키에는 이 설정이 적용됩니다. 기본 URL은 모든 키에 적용됩니다.",
+      "name": "연결 이름",
+      "headersJson": "요청 헤더(JSON 객체)",
+      "excluded": "제외할 모델(한 줄에 하나씩)",
+      "pool": "연결 풀",
+      "configurePool": "연결 풀 구성",
+      "poolHint": "풀을 추가하면 기본적으로 연결을 재사용합니다. 연결은 키별로 분리됩니다. 제한 시간 또는 연결 수 한도가 0 이하이면 연결을 재사용하지 않습니다.",
+      "poolEnabled": "연결 재사용",
+      "poolAuto": "기본값(활성화)",
+      "poolTimeout": "유휴 연결 제한 시간",
+      "poolLimit": "호스트당 최대 유휴 연결 수",
+      "invalidLimit": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
+      "modelNameRequired": "각 모델의 업스트림 이름을 입력하세요.",
+      "disabled": "이 키 그룹 비활성화"
+    },
+    "groupActions": {
+      "search": "연결, 키, URL, 접두사 검색…",
+      "create": "연결 만들기",
+      "edit": "연결 편집",
+      "delete": "연결 삭제",
+      "append": "키 추가",
+      "confirm": "“{{name}}” 연결과 해당 키 {{count}}개를 모두 삭제할까요?",
+      "settings": "연결 설정"
+    },
     "behavior": {
       "title": "공급자 전용 동작",
       "alphaSearch": "Alpha Search 활성화",
@@ -2059,6 +2096,22 @@
       "removeModel": "모델 삭제",
       "modelName": "모델 이름",
       "modelAlias": "별칭(선택 사항)"
+    },
+    "nativeKey": {
+      "routing": "프로토콜 설정",
+      "nativeToolSearch": "사용자 지정 엔드포인트에서 Anthropic 기본 도구 검색 허용",
+      "interactions": "Vertex Interactions API 사용",
+      "openapi": "Vertex OpenAPI 엔드포인트 사용",
+      "location": "OpenAPI 리전",
+      "pool": "연결 풀",
+      "poolHint": "사용자 지정 설정을 선택하면 여기 또는 그룹에서 비활성화하지 않는 한 연결 풀을 사용합니다. 빈 필드는 상속됩니다. 시간 제한이나 최댓값이 0 이하이면 연결을 재사용하지 않습니다.",
+      "reuse": "업스트림 연결 재사용",
+      "timeout": "유휴 시간 제한(예: 5m)",
+      "maxIdle": "호스트당 최대 유휴 연결 수",
+      "invalidMaxIdle": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
+      "inheritHint": "이 키에만 다르게 적용할 값만 입력하세요. 비워 둔 필드는 연결 설정을 상속합니다.",
+      "disableKey": "이 키 비활성화",
+      "disableShort": "끄기"
     },
     "runtimePolicy": {
       "title": "고급 런타임 정책",

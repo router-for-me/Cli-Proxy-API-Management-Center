@@ -121,7 +121,7 @@ describe('provider probe proxy forwarding', () => {
       'src/features/providers/sheets/forms/SponsorProviderForm.tsx',
       'utf8'
     );
-    expect(base.match(/proxyUrl: form\.proxyUrl/g)).toHaveLength(2);
+    expect(base.match(/proxyUrl: probeProxyUrl \?\? form\.proxyUrl/g)).toHaveLength(2);
     expect(sponsor).toContain('proxyUrl: entry.proxyUrl,\n    formHeaders: discoveryHeaders');
   });
 });

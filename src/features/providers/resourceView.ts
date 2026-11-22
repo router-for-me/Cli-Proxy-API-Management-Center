@@ -45,6 +45,20 @@ export const partitionProviderGroups = (
     ),
 });
 
+/** Count the connections shown as cards, not the credentials inside each connection. */
+export const connectionCounts = (group: ProviderGroup) =>
+  group.nativeSections
+    ? {
+        total: group.nativeSections.length,
+        active: group.nativeSections.filter((section) =>
+          section.members.some((member) => !member.disabled)
+        ).length,
+      }
+    : {
+        total: group.resources.length,
+        active: group.resources.filter((resource) => !resource.disabled).length,
+      };
+
 /** A multi-protocol partner is one bundle: its save replaces the whole configuration. */
 export const getConnectionFormTarget = (group: ProviderGroup) => {
   const bundle = isMultiProtocolSponsorBrand(group.id) ? group.resources[0] : undefined;

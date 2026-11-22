@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { OptionalBooleanField } from './NativeKeyFields';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { FieldLabel } from '@/components/ui/FieldLabel';
@@ -112,6 +113,14 @@ export function ModelAdvancedFields({
       ) : (
         textField('displayName')
       )}
+      {providerBrand === 'vertex' ? (
+        <OptionalBooleanField
+          label={t('providersPage.nativeKey.openapi')}
+          value={entry.openapi}
+          disabled={disabled}
+          onChange={(openapi) => onUpdate({ openapi })}
+        />
+      ) : null}
       {capabilities.modalities ? (
         <div className={styles.fieldRow}>
           {textField('inputModalitiesText')}

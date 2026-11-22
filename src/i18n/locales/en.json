@@ -2019,6 +2019,43 @@
     "version": "Management UI Version"
   },
   "providersPage": {
+    "connections": {
+      "edit": "Edit connection",
+      "create": "Add connection",
+      "search": "Search by connection, key, URL or prefix…",
+      "keyCount_one": "{{count}} key",
+      "keyCount_other": "{{count}} keys",
+      "keysActive_one": "{{active}}/{{count}} key enabled",
+      "keysActive_other": "{{active}}/{{count}} keys enabled",
+      "disableKeys": "Disable all keys in “{{name}}”",
+      "enableKeys": "Enable all keys in “{{name}}”"
+    },
+    "nativeGroup": {
+      "defaults": "Connection defaults",
+      "description": "Keys inherit these settings unless they provide their own override. The base URL applies to every key.",
+      "name": "Connection name",
+      "headersJson": "Request headers (JSON object)",
+      "excluded": "Excluded models (one per line)",
+      "pool": "Connection pool",
+      "configurePool": "Configure connection pool",
+      "poolHint": "Adding a pool enables connection reuse by default. Connections are kept separately for each key. A timeout or limit of zero or less disables reuse.",
+      "poolEnabled": "Reuse connections",
+      "poolAuto": "Default (enabled)",
+      "poolTimeout": "Idle connection timeout",
+      "poolLimit": "Maximum idle connections per host",
+      "invalidLimit": "Maximum idle connections must be a safe integer.",
+      "modelNameRequired": "Enter an upstream name for each model.",
+      "disabled": "Disable this key group"
+    },
+    "groupActions": {
+      "search": "Search connections, keys, URLs, prefixes…",
+      "create": "Create connection",
+      "edit": "Edit connection",
+      "delete": "Delete connection",
+      "append": "Add key",
+      "confirm": "Delete connection “{{name}}” and all its keys ({{count}})?",
+      "settings": "Connection settings"
+    },
     "behavior": {
       "title": "Provider-specific behavior",
       "alphaSearch": "Enable Alpha Search",
@@ -2059,6 +2096,22 @@
       "removeModel": "Remove model",
       "modelName": "Model name",
       "modelAlias": "Alias (optional)"
+    },
+    "nativeKey": {
+      "routing": "Protocol settings",
+      "nativeToolSearch": "Trust custom endpoint for Anthropic native tool search",
+      "interactions": "Use Vertex Interactions API",
+      "openapi": "Use Vertex OpenAPI endpoint",
+      "location": "OpenAPI location",
+      "pool": "Connection pool",
+      "poolHint": "A custom block enables pooling unless disabled here or by the group. Blank fields inherit. A non-positive timeout or limit disables reuse.",
+      "reuse": "Reuse upstream connections",
+      "timeout": "Idle timeout (e.g. 5m)",
+      "maxIdle": "Maximum idle connections per host",
+      "invalidMaxIdle": "Maximum idle connections must be a safe integer.",
+      "inheritHint": "Only fill in what this key does differently; blank fields inherit the connection settings.",
+      "disableKey": "Disable this key",
+      "disableShort": "Off"
     },
     "runtimePolicy": {
       "title": "Advanced runtime policy",

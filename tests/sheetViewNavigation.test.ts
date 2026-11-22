@@ -7,7 +7,7 @@ const provider = source('../src/features/providers/sheets/ProviderSheet.tsx');
 
 test('provider navigation changes the sheet view key without remounting the dialog', () => {
   expect(provider).toContain(
-    "const viewKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`"
+    "const viewKey = `${state.brand}:${state.section?.source.groupIndex ?? state.resource?.id ?? 'new'}:${state.mode}`"
   );
   const props = provider.match(/<Sheet\s+([\s\S]*?)\n\s*>/u)?.[1];
   expect(props).toContain('viewKey={viewKey}');

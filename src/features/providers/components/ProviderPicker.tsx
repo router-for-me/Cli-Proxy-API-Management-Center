@@ -2,7 +2,12 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronLeft, IconExternalLink } from '@/components/ui/icons';
 import { getKimiAffiliateUrl } from '../kimi';
-import { getConnectionFormTarget, isQuickFillBrand, QUICK_FILL_BRAND_ORDER } from '../resourceView';
+import {
+  connectionCounts,
+  getConnectionFormTarget,
+  isQuickFillBrand,
+  QUICK_FILL_BRAND_ORDER,
+} from '../resourceView';
 import { getSponsorProviderDefinition } from '../sponsorDefinitions';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import { BrandLogo } from './BrandLogo';
@@ -24,8 +29,10 @@ const CUSTOM_BRANDS: ReadonlySet<ProviderBrand> = new Set(['openaiCompatibility'
  */
 export function ProviderPicker({ groups, variant = 'sheet', onPick }: ProviderPickerProps) {
   const { t, i18n } = useTranslation();
-  const countOf = (brand: ProviderBrand) =>
-    groups.find((group) => group.id === brand)?.resources.length ?? 0;
+  const countOf = (brand: ProviderBrand) => {
+    const group = groups.find((item) => item.id === brand);
+    return group ? connectionCounts(group).total : 0;
+  };
   const available = new Set(groups.map((group) => group.id));
   const featured = QUICK_FILL_BRAND_ORDER.filter((brand) => available.has(brand));
   const official = groups

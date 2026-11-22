@@ -2012,6 +2012,41 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "connections": {
+      "edit": "编辑连接",
+      "create": "添加连接",
+      "search": "搜索连接、Key、URL 或前缀…",
+      "keyCount": "{{count}} 个密钥",
+      "keysActive": "{{active}}/{{count}} 个密钥启用",
+      "disableKeys": "停用「{{name}}」的全部密钥",
+      "enableKeys": "启用「{{name}}」的全部密钥"
+    },
+    "nativeGroup": {
+      "defaults": "连接默认设置",
+      "description": "密钥未单独配置的字段会继承连接设置。基础 URL 适用于所有密钥。",
+      "name": "连接名称",
+      "headersJson": "请求头（JSON 对象）",
+      "excluded": "排除的模型（每行一个）",
+      "pool": "连接池",
+      "configurePool": "配置连接池",
+      "poolHint": "添加连接池后默认启用连接复用。每个密钥使用独立的连接。超时或连接数上限小于等于零时，不会复用连接。",
+      "poolEnabled": "复用连接",
+      "poolAuto": "默认（启用）",
+      "poolTimeout": "空闲连接超时",
+      "poolLimit": "每个主机的最大空闲连接数",
+      "invalidLimit": "最大空闲连接数必须是安全整数。",
+      "modelNameRequired": "请为每个模型填写上游名称。",
+      "disabled": "停用此组密钥"
+    },
+    "groupActions": {
+      "search": "搜索连接、密钥、URL 或前缀…",
+      "create": "创建连接",
+      "edit": "编辑连接",
+      "delete": "删除连接",
+      "append": "添加密钥",
+      "confirm": "删除连接「{{name}}」及其全部 {{count}} 个密钥？",
+      "settings": "连接设置"
+    },
     "behavior": {
       "title": "提供商专属行为",
       "alphaSearch": "启用 Alpha Search",
@@ -2052,6 +2087,22 @@
       "removeModel": "移除模型",
       "modelName": "模型名称",
       "modelAlias": "别名（可选）"
+    },
+    "nativeKey": {
+      "routing": "协议设置",
+      "nativeToolSearch": "允许自定义端点使用 Anthropic 原生工具搜索",
+      "interactions": "使用 Vertex Interactions API",
+      "openapi": "使用 Vertex OpenAPI 端点",
+      "location": "OpenAPI 地区",
+      "pool": "连接池",
+      "poolHint": "自定义配置会启用连接池，除非此处或组设置已禁用。空白字段表示继承。超时或上限不大于零时不复用连接。",
+      "reuse": "复用上游连接",
+      "timeout": "空闲超时（如 5m）",
+      "maxIdle": "每个主机的最大空闲连接数",
+      "invalidMaxIdle": "最大空闲连接数必须是安全整数。",
+      "inheritHint": "仅在此密钥需要不同设置时填写；留空的字段继承连接设置。",
+      "disableKey": "停用此密钥",
+      "disableShort": "停用"
     },
     "runtimePolicy": {
       "title": "高级运行策略",

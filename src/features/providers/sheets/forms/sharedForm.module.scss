@@ -397,6 +397,93 @@
   min-width: 0;
 }
 
+.inlineKeyRow {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 6px;
+
+  /* 停用的密钥只弱化输入，开关与操作保持清晰 */
+  &[data-off] > .passwordField,
+  &[data-off] > .keyIndex {
+    opacity: 0.5;
+  }
+}
+
+.keySwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 组开关：表单顶部的高频热区，独立于各配置分区 */
+.groupSwitch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
+  cursor: pointer;
+}
+
+.groupSwitchText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.groupSwitchLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.groupSwitchHint {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+/* 序号固定列宽，输入框左缘不随位数抖动；完整标签仅供辅助技术 */
+.keyIndex {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+/* 单密钥覆盖项：嵌在输入列下方的内嵌面板，层级低于连接设置 */
+.memberPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  margin: 8px 0 4px 26px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
+}
+
+.memberPanelHint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
 .entriesToolbar {
   display: flex;
   align-items: center;

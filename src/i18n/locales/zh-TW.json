@@ -2040,6 +2040,41 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "connections": {
+      "edit": "編輯連線",
+      "create": "新增連線",
+      "search": "搜尋連線、Key、URL 或前綴…",
+      "keyCount": "{{count}} 個金鑰",
+      "keysActive": "{{active}}/{{count}} 個金鑰啟用",
+      "disableKeys": "停用「{{name}}」的全部金鑰",
+      "enableKeys": "啟用「{{name}}」的全部金鑰"
+    },
+    "nativeGroup": {
+      "defaults": "連線預設設定",
+      "description": "金鑰未個別設定的欄位會繼承連線設定。基礎 URL 適用於所有金鑰。",
+      "name": "連線名稱",
+      "headersJson": "要求標頭（JSON 物件）",
+      "excluded": "排除的模型（每行一個）",
+      "pool": "連線集區",
+      "configurePool": "設定連線集區",
+      "poolHint": "新增連線集區後預設啟用連線重用。每個金鑰使用獨立的連線。逾時或連線數上限小於等於零時，不會重用連線。",
+      "poolEnabled": "重用連線",
+      "poolAuto": "預設（啟用）",
+      "poolTimeout": "閒置連線逾時",
+      "poolLimit": "每部主機的最大閒置連線數",
+      "invalidLimit": "最大閒置連線數必須是安全整數。",
+      "modelNameRequired": "請為每個模型輸入上游名稱。",
+      "disabled": "停用此組金鑰"
+    },
+    "groupActions": {
+      "search": "搜尋連線、金鑰、網址或前綴…",
+      "create": "建立連線",
+      "edit": "編輯連線",
+      "delete": "刪除連線",
+      "append": "新增金鑰",
+      "confirm": "刪除連線「{{name}}」及其全部 {{count}} 個金鑰？",
+      "settings": "連線設定"
+    },
     "behavior": {
       "title": "提供商專屬行為",
       "alphaSearch": "啟用 Alpha Search",
@@ -2080,6 +2115,22 @@
       "removeModel": "移除模型",
       "modelName": "模型名稱",
       "modelAlias": "別名（選填）"
+    },
+    "nativeKey": {
+      "routing": "協定設定",
+      "nativeToolSearch": "允許自訂端點使用 Anthropic 原生工具搜尋",
+      "interactions": "使用 Vertex Interactions API",
+      "openapi": "使用 Vertex OpenAPI 端點",
+      "location": "OpenAPI 地區",
+      "pool": "連線池",
+      "poolHint": "自訂設定會啟用連線池，除非此處或群組設定已停用。空白欄位表示繼承。逾時或上限不大於零時不重用連線。",
+      "reuse": "重用上游連線",
+      "timeout": "閒置逾時（例如 5m）",
+      "maxIdle": "每個主機的最大閒置連線數",
+      "invalidMaxIdle": "最大閒置連線數必須是安全整數。",
+      "inheritHint": "僅在此金鑰需要不同設定時填寫；留空的欄位會繼承連線設定。",
+      "disableKey": "停用此金鑰",
+      "disableShort": "停用"
     },
     "runtimePolicy": {
       "title": "進階執行策略",

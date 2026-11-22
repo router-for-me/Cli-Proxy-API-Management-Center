@@ -58,9 +58,13 @@ describe('Meta Muse API key provider', () => {
       baseUrl: 'https://api.meta.ai/v1',
       index: 0,
     });
-    expect(
-      buildProviderGroups(config).find((group) => group.id === 'meta')?.resources
-    ).toHaveLength(1);
+    const groups = buildProviderGroups(config);
+    expect(groups.find((group) => group.id === 'meta')?.resources).toHaveLength(1);
+    // Every api-keys family the backend accepts gets a workbench tab.
+    const visibleBrands = groups.map((group) => group.id);
+    for (const family of ['gemini', 'interactions', 'codex', 'meta', 'xai', 'claude', 'vertex']) {
+      expect(visibleBrands).toContain(family);
+    }
     expect(PROVIDER_DESCRIPTORS.meta.baseUrlRequired).toBe(false);
     expect(PROVIDER_DESCRIPTORS.meta.supportsWebsockets).toBe(false);
     expect(PROVIDER_DESCRIPTORS.meta.supportsTestModel).toBe(true);

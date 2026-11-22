@@ -1964,6 +1964,43 @@
     "version": "Phiên bản giao diện quản lý"
   },
   "providersPage": {
+    "connections": {
+      "edit": "Chỉnh sửa kết nối",
+      "create": "Thêm kết nối",
+      "search": "Tìm theo kết nối, khóa, URL hoặc tiền tố…",
+      "keyCount_one": "{{count}} khóa",
+      "keyCount_other": "{{count}} khóa",
+      "keysActive_one": "{{active}}/{{count}} khóa đang bật",
+      "keysActive_other": "{{active}}/{{count}} khóa đang bật",
+      "disableKeys": "Tắt tất cả khóa trong “{{name}}”",
+      "enableKeys": "Bật tất cả khóa trong “{{name}}”"
+    },
+    "nativeGroup": {
+      "defaults": "Thiết lập mặc định của kết nối",
+      "description": "Các khóa kế thừa thiết lập này trừ khi có giá trị ghi đè riêng. URL cơ sở áp dụng cho mọi khóa.",
+      "name": "Tên kết nối",
+      "headersJson": "Tiêu đề yêu cầu (đối tượng JSON)",
+      "excluded": "Mô hình bị loại trừ (mỗi dòng một mô hình)",
+      "pool": "Nhóm kết nối",
+      "configurePool": "Cấu hình nhóm kết nối",
+      "poolHint": "Khi thêm nhóm kết nối, tính năng tái sử dụng kết nối được bật theo mặc định. Mỗi khóa có các kết nối riêng. Nếu thời gian chờ hoặc giới hạn bằng 0 hay âm, kết nối sẽ không được tái sử dụng.",
+      "poolEnabled": "Tái sử dụng kết nối",
+      "poolAuto": "Mặc định (bật)",
+      "poolTimeout": "Thời gian chờ của kết nối nhàn rỗi",
+      "poolLimit": "Số kết nối nhàn rỗi tối đa trên mỗi máy chủ",
+      "invalidLimit": "Số kết nối nhàn rỗi tối đa phải là số nguyên an toàn.",
+      "modelNameRequired": "Nhập tên mô hình phía nhà cung cấp cho từng mô hình.",
+      "disabled": "Tắt nhóm khóa này"
+    },
+    "groupActions": {
+      "search": "Tìm kết nối, khóa, URL hoặc tiền tố…",
+      "create": "Tạo kết nối",
+      "edit": "Sửa kết nối",
+      "delete": "Xóa kết nối",
+      "append": "Thêm khóa",
+      "confirm": "Xóa kết nối “{{name}}” và tất cả {{count}} khóa?",
+      "settings": "Cài đặt kết nối"
+    },
     "header": {
       "title": "AI Provider",
       "activeResources": "{{active}}/{{total}} tài nguyên đang hoạt động",
@@ -2308,6 +2345,22 @@
       "removeModel": "Xóa model",
       "modelName": "Tên model",
       "modelAlias": "Bí danh (tùy chọn)"
+    },
+    "nativeKey": {
+      "routing": "Cài đặt giao thức",
+      "nativeToolSearch": "Tin cậy điểm cuối tùy chỉnh để tìm công cụ gốc của Anthropic",
+      "interactions": "Dùng Vertex Interactions API",
+      "openapi": "Dùng điểm cuối Vertex OpenAPI",
+      "location": "Khu vực OpenAPI",
+      "pool": "Nhóm kết nối",
+      "poolHint": "Cấu hình tùy chỉnh bật nhóm kết nối trừ khi bị tắt tại đây hoặc ở nhóm cha. Trường trống sẽ kế thừa. Thời gian chờ hoặc giới hạn không dương sẽ tắt tái sử dụng.",
+      "reuse": "Tái sử dụng kết nối đến máy chủ",
+      "timeout": "Thời gian chờ khi rảnh (ví dụ: 5m)",
+      "maxIdle": "Số kết nối rảnh tối đa mỗi máy chủ",
+      "invalidMaxIdle": "Số kết nối rảnh tối đa phải là số nguyên an toàn.",
+      "inheritHint": "Chỉ điền những gì khóa này khác biệt; trường để trống sẽ kế thừa cài đặt kết nối.",
+      "disableKey": "Tắt khóa này",
+      "disableShort": "Tắt"
     },
     "runtimePolicy": {
       "title": "Chính sách thực thi nâng cao",

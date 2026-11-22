@@ -332,6 +332,101 @@
   white-space: nowrap;
 }
 
+/* ---------- 连接卡：整卡即编辑入口，开关是唯一的原地操作 ---------- */
+
+.connectionCard {
+  transition:
+    border-color var(--dur-press) var(--ease-out-strong),
+    box-shadow var(--dur-hover) var(--ease-out-strong),
+    transform var(--dur-press) var(--ease-out-strong);
+
+  &:has(.cardLink:active:not(:disabled)) {
+    transform: scale(0.99);
+  }
+
+  &:has(.cardLink:focus-visible) {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* 标题按钮的伪元素铺满卡片：一个可聚焦目标、一个可访问名称，整面可点 */
+.cardLink {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+/* 浮在整卡热区之上、保持原地交互的控件（开关、状态条 tooltip） */
+.cardControl {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+/* 开关是 inline-flex，放在块级容器里会按基线对齐并带出行高空隙；用 flex 与标题居中对齐 */
+.head > .cardControl {
+  display: flex;
+  align-items: center;
+}
+
+.editHint {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  opacity: 0;
+  transition: opacity var(--dur-hover) var(--ease-out-strong);
+}
+
+.connectionCard:has(.cardLink:focus-visible) .editHint {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .connectionCard:has(.cardLink:not(:disabled)):hover {
+    box-shadow: 0 6px 20px -12px color-mix(in srgb, var(--text-primary) 30%, transparent);
+
+    .editHint {
+      opacity: 1;
+    }
+
+    .title {
+      text-decoration-color: transparent;
+    }
+  }
+}
+
+/* 全部密钥停用时只弱化内容，开关保持清晰便于重新启用 */
+.connectionCard.cardDisabled .head > :not(.cardControl),
+.connectionCard.cardDisabled .head ~ * {
+  opacity: 0.62;
+}
+
+.connectionCard.cardDisabled > .body {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connectionCard,
+  .editHint {
+    transition: none;
+  }
+
+  .connectionCard:has(.cardLink:active:not(:disabled)) {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card,
   .title,

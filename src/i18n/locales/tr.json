@@ -2019,6 +2019,43 @@
     "version": "Yönetim Arayüzü Sürümü"
   },
   "providersPage": {
+    "connections": {
+      "edit": "Bağlantıyı düzenle",
+      "create": "Bağlantı ekle",
+      "search": "Bağlantı, anahtar, URL veya ön ek ara…",
+      "keyCount_one": "{{count}} anahtar",
+      "keyCount_other": "{{count}} anahtar",
+      "keysActive_one": "{{active}}/{{count}} anahtar etkin",
+      "keysActive_other": "{{active}}/{{count}} anahtar etkin",
+      "disableKeys": "“{{name}}” içindeki tüm anahtarları devre dışı bırak",
+      "enableKeys": "“{{name}}” içindeki tüm anahtarları etkinleştir"
+    },
+    "nativeGroup": {
+      "defaults": "Bağlantı varsayılanları",
+      "description": "Anahtarlar kendi ayarlarını belirtmedikçe bu değerleri devralır. Temel URL tüm anahtarlar için geçerlidir.",
+      "name": "Bağlantı adı",
+      "headersJson": "İstek başlıkları (JSON nesnesi)",
+      "excluded": "Hariç tutulan modeller (her satıra bir model)",
+      "pool": "Bağlantı havuzu",
+      "configurePool": "Bağlantı havuzunu yapılandır",
+      "poolHint": "Havuz eklemek varsayılan olarak bağlantıları yeniden kullanmayı etkinleştirir. Her anahtarın bağlantıları ayrıdır. Zaman aşımı veya sınır sıfır ya da negatifse bağlantılar yeniden kullanılmaz.",
+      "poolEnabled": "Bağlantıları yeniden kullan",
+      "poolAuto": "Varsayılan (etkin)",
+      "poolTimeout": "Boşta kalan bağlantı zaman aşımı",
+      "poolLimit": "Sunucu başına en fazla boşta kalan bağlantı",
+      "invalidLimit": "En fazla boşta kalan bağlantı sayısı güvenli bir tam sayı olmalıdır.",
+      "modelNameRequired": "Her model için sağlayıcıdaki model adını girin.",
+      "disabled": "Bu anahtar grubunu devre dışı bırak"
+    },
+    "groupActions": {
+      "search": "Bağlantı, anahtar, URL veya önek ara…",
+      "create": "Bağlantı oluştur",
+      "edit": "Bağlantıyı düzenle",
+      "delete": "Bağlantıyı sil",
+      "append": "Anahtar ekle",
+      "confirm": "“{{name}}” bağlantısı ve tüm anahtarları ({{count}}) silinsin mi?",
+      "settings": "Bağlantı ayarları"
+    },
     "behavior": {
       "title": "Sağlayıcıya Özel Davranış",
       "alphaSearch": "Alpha Search Etkinleştir",
@@ -2059,6 +2096,22 @@
       "removeModel": "Modeli Kaldır",
       "modelName": "Model Adı",
       "modelAlias": "Takma Ad (İsteğe Bağlı)"
+    },
+    "nativeKey": {
+      "routing": "Protokol ayarları",
+      "nativeToolSearch": "Anthropic yerel araç araması için özel uç noktaya güven",
+      "interactions": "Vertex Interactions API kullan",
+      "openapi": "Vertex OpenAPI uç noktasını kullan",
+      "location": "OpenAPI bölgesi",
+      "pool": "Bağlantı havuzu",
+      "poolHint": "Özel ayarlar, burada veya grupta devre dışı bırakılmadıkça havuzu etkinleştirir. Boş alanlar üst ayarları kullanır. Sıfır veya negatif zaman aşımı ya da sınır yeniden kullanımı kapatır.",
+      "reuse": "Sunucu bağlantılarını yeniden kullan",
+      "timeout": "Boşta kalma süresi (ör. 5m)",
+      "maxIdle": "Sunucu başına en fazla boşta bağlantı",
+      "invalidMaxIdle": "Boşta bağlantı sınırı güvenli bir tam sayı olmalıdır.",
+      "inheritHint": "Yalnızca bu anahtar için farklı olan alanları doldurun; boş alanlar bağlantı ayarlarını devralır.",
+      "disableKey": "Bu anahtarı devre dışı bırak",
+      "disableShort": "Kapalı"
     },
     "runtimePolicy": {
       "title": "Gelişmiş Çalışma Zamanı İlkesi",
