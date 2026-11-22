@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
+import { getModelPickerView } from '../resourceView';
 import type { ProviderSortBy, SortDir } from '../types';
 import styles from './ResourceToolbar.module.scss';
 
@@ -71,10 +72,10 @@ export function ResourceToolbar({
     };
   }, [modelsOpen]);
 
-  const visibleModels = useMemo(() => {
-    const q = modelQuery.trim().toLowerCase();
-    return q ? availableModels.filter((name) => name.toLowerCase().includes(q)) : availableModels;
-  }, [availableModels, modelQuery]);
+  const { showSearch, visibleModels } = useMemo(
+    () => getModelPickerView(availableModels, modelQuery),
+    [availableModels, modelQuery]
+  );
 
   const toggleModel = (name: string) => {
     const next = new Set(selectedModels);
@@ -165,7 +166,7 @@ export function ResourceToolbar({
             role="dialog"
             aria-label={t('providersPage.toolbar.filter.allModels')}
           >
-            {availableModels.length > 8 ? (
+            {showSearch ? (
               <input
                 type="search"
                 className={styles.popoverSearch}

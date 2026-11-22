@@ -92,6 +92,14 @@ export const collectGroupModels = (group: ProviderGroup | null): string[] => {
   return Array.from(seen).sort();
 };
 
+/** An unavailable search field must not narrow the model picker. */
+export const getModelPickerView = (models: readonly string[], query: string) => {
+  const showSearch = models.length > 8;
+  const term = showSearch ? query.trim().toLowerCase() : '';
+  const visibleModels = term ? models.filter((name) => name.toLowerCase().includes(term)) : models;
+  return { showSearch, visibleModels };
+};
+
 export interface ResourceListQuery {
   filter: string;
   selectedModels: ReadonlySet<string>;
