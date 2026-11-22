@@ -7,6 +7,20 @@ export interface RequestScopedErrorRule {
   action?: 'stop' | 'stop-and-cooldown' | 'continue' | 'continue-and-cooldown';
 }
 
+export interface ConnectionPool {
+  enabled?: boolean;
+  idleConnTimeout?: string;
+  maxIdleConnsPerHost?: number;
+}
+
+export interface NativeKeyOptions {
+  connectionPool?: ConnectionPool;
+  nativeToolSearch?: boolean;
+  interactions?: boolean;
+  openapi?: boolean;
+  openapiLocation?: string;
+}
+
 export interface ProviderBehaviorOptions {
   alphaSearch?: boolean;
   disableCodexCloaking?: boolean;
@@ -43,6 +57,7 @@ export interface ModelAlias {
   image?: boolean;
   displayName?: string;
   maxContextLength?: number;
+  openapi?: boolean;
   forceMapping?: boolean;
   isCompat?: boolean;
   supportConfigurationUpdate?: boolean;
@@ -69,7 +84,8 @@ export interface CloakConfig {
   cacheUserId?: boolean;
 }
 
-export interface GeminiKeyConfig extends ProviderRuntimePolicy {
+export interface GeminiKeyConfig
+  extends ProviderRuntimePolicy, Pick<NativeKeyOptions, 'connectionPool'> {
   source?: ProviderSource;
   apiKey: string;
   priority?: number;
@@ -84,7 +100,8 @@ export interface GeminiKeyConfig extends ProviderRuntimePolicy {
   authIndex?: string;
 }
 
-export interface ProviderKeyConfig extends ProviderRuntimePolicy, ProviderBehaviorOptions {
+export interface ProviderKeyConfig
+  extends ProviderRuntimePolicy, NativeKeyOptions, ProviderBehaviorOptions {
   source?: ProviderSource;
   apiKey: string;
   priority?: number;

@@ -123,6 +123,7 @@
 }
 
 .tileSub {
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: var(--text-tertiary);
   line-height: 1.4;

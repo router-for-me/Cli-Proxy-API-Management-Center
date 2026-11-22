@@ -337,6 +337,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -615,6 +616,17 @@
     "empty_title": "Devin 자격 증명 없음",
     "empty_desc": "Devin 자격 증명 파일을 업로드하거나 백엔드 CLI로 로그인하여 할당량을 조회하세요."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot 할당량",
+    "empty_title": "GitHub Copilot 자격 증명 없음",
+    "empty_desc": "GitHub Copilot OAuth로 로그인하거나 GitHub Copilot 자격 증명 파일을 업로드하여 할당량을 조회하세요.",
+    "idle": "클릭하여 GitHub Copilot 할당량 조회",
+    "loading": "GitHub Copilot 할당량 조회 중…",
+    "load_failed": "할당량 조회 실패: {{message}}",
+    "remaining": "{{percent}}% 남음",
+    "premium": "프리미엄 상호작용",
+    "unavailable": "할당량을 확인할 수 없습니다. Copilot 자격 증명을 확인한 후 다시 시도하세요."
+  },
   "meta_quota": {
     "title": "Muse (Meta) 할당량",
     "empty_title": "Muse 자격 증명 없음",
@@ -880,6 +892,15 @@
     "antigravity_oauth_status_error": "인증 실패:",
     "antigravity_oauth_start_error": "Antigravity OAuth 시작 실패:",
     "antigravity_oauth_polling_error": "인증 상태 확인 실패:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "GitHub Copilot로 로그인",
+    "copilot_open_link": "링크 열기",
+    "copilot_copy_link": "링크 복사",
+    "copilot_oauth_status_waiting": "인증 대기 중...",
+    "copilot_oauth_status_success": "인증에 성공했습니다!",
+    "copilot_oauth_status_error": "인증 실패:",
+    "copilot_oauth_start_error": "GitHub Copilot OAuth 시작 실패:",
+    "copilot_oauth_polling_error": "인증 상태 확인 실패:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Muse로 로그인",
     "meta_open_link": "링크 열기",
@@ -1141,6 +1162,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "배포 ID",
+          "hint": "이 배포의 고정 UUID입니다. 빈 값으로 저장하면 새 ID가 생성됩니다."
+        },
         "trustedProxies": {
           "label": "신뢰할 수 있는 프록시",
           "hint": "IP 주소 또는 CIDR입니다. 비워 두면 전달된 헤더를 신뢰하지 않습니다. 모든 주소 범위를 신뢰하면 클라이언트 IP 위조 위험이 있습니다. 백엔드 재시작이 필요합니다."
@@ -1180,6 +1205,11 @@
         "discoveryHint": "멀티캐스트를 지원하는 물리적 인터페이스와 루프백이 아닌 수신 대기 주소가 필요합니다. Docker는 일반적으로 호스트 네트워킹이 필요하며 연결 가능성이 보장되지 않습니다."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth 요청 오류 규칙",
+          "hint": "OAuth 채널별로 업스트림 오류를 순서대로 대조하여 다른 자격 증명으로 재시도할지, 대기 상태로 전환할지 결정합니다.",
+          "channel": "OAuth 채널 (플러그인 채널 입력 가능)"
+        },
         "oauthTitle": "OAuth 공급자 동작",
         "oauthHint": "이 공급자 설정은 OAuth/파일 기반 자격 증명에만 적용되며, API 키 자격 증명에는 적용되지 않습니다.",
         "claudeTitle": "Claude",
@@ -1263,7 +1293,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "호스트당 최대 유휴 연결 수",
-          "hint": "자격 증명당 업스트림 호스트별로 유지되는 최대 유휴 연결 수입니다. 기본값: 2, 최대 100. 0은 Go 기본값인 2를 사용하며, 음수 값은 단기 연결로 전환됩니다."
+          "hint": "자격 증명별 업스트림 호스트당 최대 유휴 연결 수입니다. 비워 두면 기본값 2를 사용하며 상한은 100입니다. 0 또는 음수는 단기 연결을 사용합니다."
         },
         "xaiInjectXSearch": {
           "label": "x_search 주입",
@@ -1540,6 +1570,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "하이픈이 포함된 0이 아닌 UUID를 입력하세요.",
+        "invalid_oauth_error_rules": "{{channel}}의 상태 코드, 일치 조건 및 동작을 확인하세요.",
         "invalid_trusted_proxies": "각 신뢰할 수 있는 프록시는 유효한 IP 주소 또는 CIDR이어야 합니다.",
         "invalid_discovery_service_type": "_name._tcp 형식을 사용하세요: 이름은 1~15자의 영문자, 숫자 또는 하이픈이어야 하며, 시작이나 끝에 하이픈이 올 수 없습니다.",
         "validation_blocked": "저장하기 전에 유효성 검사 오류를 수정하세요",
@@ -1987,6 +2019,43 @@
     "version": "관리 UI 버전"
   },
   "providersPage": {
+    "connections": {
+      "edit": "연결 편집",
+      "create": "연결 추가",
+      "search": "연결, 키, URL 또는 접두사 검색…",
+      "keyCount_one": "키 {{count}}개",
+      "keyCount_other": "키 {{count}}개",
+      "keysActive_one": "키 {{active}}/{{count}}개 사용 중",
+      "keysActive_other": "키 {{active}}/{{count}}개 사용 중",
+      "disableKeys": "“{{name}}”의 모든 키 비활성화",
+      "enableKeys": "“{{name}}”의 모든 키 활성화"
+    },
+    "nativeGroup": {
+      "defaults": "연결 기본값",
+      "description": "별도로 재정의하지 않은 키에는 이 설정이 적용됩니다. 기본 URL은 모든 키에 적용됩니다.",
+      "name": "연결 이름",
+      "headersJson": "요청 헤더(JSON 객체)",
+      "excluded": "제외할 모델(한 줄에 하나씩)",
+      "pool": "연결 풀",
+      "configurePool": "연결 풀 구성",
+      "poolHint": "풀을 추가하면 기본적으로 연결을 재사용합니다. 연결은 키별로 분리됩니다. 제한 시간 또는 연결 수 한도가 0 이하이면 연결을 재사용하지 않습니다.",
+      "poolEnabled": "연결 재사용",
+      "poolAuto": "기본값(활성화)",
+      "poolTimeout": "유휴 연결 제한 시간",
+      "poolLimit": "호스트당 최대 유휴 연결 수",
+      "invalidLimit": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
+      "modelNameRequired": "각 모델의 업스트림 이름을 입력하세요.",
+      "disabled": "이 키 그룹 비활성화"
+    },
+    "groupActions": {
+      "search": "연결, 키, URL, 접두사 검색…",
+      "create": "연결 만들기",
+      "edit": "연결 편집",
+      "delete": "연결 삭제",
+      "append": "키 추가",
+      "confirm": "“{{name}}” 연결과 해당 키 {{count}}개를 모두 삭제할까요?",
+      "settings": "연결 설정"
+    },
     "behavior": {
       "title": "공급자 전용 동작",
       "alphaSearch": "Alpha Search 활성화",
@@ -2027,6 +2096,22 @@
       "removeModel": "모델 삭제",
       "modelName": "모델 이름",
       "modelAlias": "별칭(선택 사항)"
+    },
+    "nativeKey": {
+      "routing": "프로토콜 설정",
+      "nativeToolSearch": "사용자 지정 엔드포인트에서 Anthropic 기본 도구 검색 허용",
+      "interactions": "Vertex Interactions API 사용",
+      "openapi": "Vertex OpenAPI 엔드포인트 사용",
+      "location": "OpenAPI 리전",
+      "pool": "연결 풀",
+      "poolHint": "사용자 지정 설정을 선택하면 여기 또는 그룹에서 비활성화하지 않는 한 연결 풀을 사용합니다. 빈 필드는 상속됩니다. 시간 제한이나 최댓값이 0 이하이면 연결을 재사용하지 않습니다.",
+      "reuse": "업스트림 연결 재사용",
+      "timeout": "유휴 시간 제한(예: 5m)",
+      "maxIdle": "호스트당 최대 유휴 연결 수",
+      "invalidMaxIdle": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
+      "inheritHint": "이 키에만 다르게 적용할 값만 입력하세요. 비워 둔 필드는 연결 설정을 상속합니다.",
+      "disableKey": "이 키 비활성화",
+      "disableShort": "끄기"
     },
     "runtimePolicy": {
       "title": "고급 런타임 정책",
@@ -2088,7 +2173,9 @@
       "save": "저장",
       "create": "생성",
       "enable": "활성화",
-      "disable": "비활성화"
+      "disable": "비활성화",
+      "newFor": "{{provider}} 추가",
+      "addProvider": "제공자 추가"
     },
     "categories": {
       "title": "공급자",
@@ -2096,7 +2183,7 @@
       "activeCount": "활성 {{active}}/{{total}}"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2111,12 +2198,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "키",
-      "baseUrl": "기본 URL",
-      "prefix": "접두사",
-      "models": "모델/헤더",
-      "status": "상태",
-      "actions": "작업",
       "metrics": {
         "models": "모델",
         "keys": "키",
@@ -2125,8 +2206,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 프로필",
-      "empty": "아직 리소스가 없습니다. \"새로 만들기\"를 클릭하여 추가하세요.",
-      "filterPlaceholder": "키, URL, 접두사 검색…"
+      "filterPlaceholder": "키, URL, 접두사 검색…",
+      "emptyBrand": "아직 {{provider}} 구성이 없습니다",
+      "noMatch": "현재 필터와 일치하는 리소스가 없습니다"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2157,8 +2239,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "모든 URL은 동일한 API 규칙을 사용합니다. 저장 시 현재 그룹화된 프로토콜의 엔드포인트만 기록됩니다.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "글로벌 고보호 경로",
-         "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
+        "aiCodeMirrorGlobal": "글로벌 고보호 경로",
+        "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
         "standard": "표준 URL",
         "direct": "직접 연결 URL",
         "domestic": "중국 본토 경로",
@@ -2167,8 +2249,8 @@
         "global": "글로벌"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
-         "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
+        "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
+        "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
         "domestic": "중국 본토의 사용자 및 워크로드용입니다. 본토 네트워크에서 일반적으로 대기 시간이 더 짧습니다.",
         "overseas": "해외 배포, 국경 간 액세스 또는 해외 모델이 필요한 워크로드용입니다.",
         "mainlandChinaRecommended": "중국 본토 네트워크의 사용자 및 워크로드에 권장됩니다.",
@@ -2296,7 +2378,15 @@
         "baseUrlRequired": "기본 URL은 필수입니다.",
         "weightInteger": "스케줄링 가중치는 정수여야 합니다.",
         "weightMax": "스케줄링 가중치는 {{max}}을(를) 초과할 수 없습니다."
-      }
+      },
+      "sections": {
+        "connection": "연결",
+        "connectivity": "연결 테스트",
+        "routing": "라우팅",
+        "advanced": "고급"
+      },
+      "headerName": "헤더 이름",
+      "headerValue": "헤더 값"
     },
     "delete": {
       "title": "리소스 삭제",
@@ -2358,10 +2448,26 @@
         "selectAll": "모두 선택",
         "clear": "선택 해제",
         "empty": "아직 설정된 모델이 없습니다."
-      }
+      },
+      "clearFilters": "필터 지우기"
     },
     "modelCatalog": {
       "notLoaded": "로드되지 않음"
+    },
+    "card": {
+      "requests": "요청 기록"
+    },
+    "picker": {
+      "featured": "빠른 연결",
+      "featuredBadge": "추천",
+      "oneKey": "키 하나로 {{count}}개 프로토콜",
+      "official": "공식 API",
+      "custom": "사용자 지정",
+      "connect": "연결",
+      "connected": "{{count}}개 연결됨",
+      "offer": "혜택",
+      "onboardingTitle": "첫 AI 제공자를 연결하세요",
+      "moreQuickConnect": "빠른 연결 파트너 더 보기"
     }
   },
   "claude_reset": {

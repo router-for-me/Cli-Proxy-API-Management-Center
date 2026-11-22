@@ -1,3 +1,4 @@
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 import { useId, type ReactNode } from 'react';
 import { IconNetwork } from '@/components/ui/icons';
 import styles from './ModelRules.module.scss';
@@ -30,7 +31,9 @@ export function RuleGroup({
     <section className={styles.group} aria-labelledby={headingId}>
       <header className={styles.groupHead}>
         <span className={styles.groupIcon} aria-hidden="true">
-          {icon ? <img src={icon} alt="" /> : <IconNetwork size={16} />}
+          <ProviderArtwork provider={provider} src={icon}>
+            <IconNetwork size={16} />
+          </ProviderArtwork>
         </span>
         <div className={styles.groupCopy}>
           <h2 className={styles.groupTitle} id={headingId}>

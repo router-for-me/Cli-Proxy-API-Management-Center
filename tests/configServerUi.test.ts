@@ -31,9 +31,9 @@ const populated = {
 };
 
 describe('server configuration UI', () => {
-  test('keeps nine searchable anchors in connectivity without adding a tab', () => {
+  test('keeps ten searchable anchors in connectivity without adding a tab', () => {
     expect(CONFIG_SECTION_IDS).toHaveLength(6);
-    expect(extras).toHaveLength(9);
+    expect(extras).toHaveLength(10);
     const markup = render(createElement(SectionConnectivity, props));
     for (const entry of extras) {
       expect(entry.sectionId).toBe('connectivity');
@@ -42,13 +42,14 @@ describe('server configuration UI', () => {
       expect(markup).toContain(escapeText(translations.t(entry.labelKey)));
       if (entry.hintKey) expect(markup).toContain(escapeText(translations.t(entry.hintKey)));
       const path = entry.yamlKeys!.join('.');
-      expect(path).toMatch(/^server\.(trusted-proxies|discovery\.)/);
+      expect(path).toMatch(/^server\.(server-id|trusted-proxies|discovery\.)/);
       expect(
         searchConfigFields(path, (key) => translations.t(key)).map((e) => e.fieldId)
       ).toContain(entry.fieldId);
     }
     expect(SECTION_VALIDATION_FIELDS.connectivity).toEqual([
       'port',
+      'serverId',
       'trustedProxies',
       'discoveryServiceType',
     ]);
@@ -61,7 +62,7 @@ describe('server configuration UI', () => {
     expect(markup).toContain(
       escapeText(translations.t('config_management.visual.serverExtras.discoveryTitle'))
     );
-    for (const entry of extras.filter((e) => e.fieldId !== 'trustedProxies')) {
+    for (const entry of extras.filter((e) => e.yamlKeys?.[1] === 'discovery')) {
       expect(markup).toContain(`id="cfg-field-${entry.fieldId}"`);
     }
     expect(DEFAULT_VISUAL_VALUES.discoveryEnabled).toBe(false);

@@ -337,6 +337,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -615,6 +616,17 @@
     "empty_title": "Devin Kimlik Bilgisi Yok",
     "empty_desc": "Kotayı Sormak için Bir Devin Kimlik Dosyası Yükle veya Arka Uç CLI ile Giriş Yap."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot Kotası",
+    "empty_title": "GitHub Copilot Kimlik Bilgisi Yok",
+    "empty_desc": "Kotayı Sormak için GitHub Copilot OAuth ile Giriş Yap veya Bir GitHub Copilot Kimlik Dosyası Yükle.",
+    "idle": "GitHub Copilot Kotasını Sormak için Tıkla",
+    "loading": "GitHub Copilot Kotası Sorgulanıyor…",
+    "load_failed": "Kota Sorgulanamadı: {{message}}",
+    "remaining": "%{{percent}} Kaldı",
+    "premium": "Premium etkileşimler",
+    "unavailable": "Kota alınamadı. Copilot kimlik bilgilerini kontrol edip tekrar deneyin."
+  },
   "meta_quota": {
     "title": "Muse (Meta) Kotası",
     "empty_title": "Muse Kimlik Bilgisi Yok",
@@ -880,6 +892,15 @@
     "antigravity_oauth_status_error": "Kimlik Doğrulama Başarısız:",
     "antigravity_oauth_start_error": "Antigravity OAuth Başlatılamadı:",
     "antigravity_oauth_polling_error": "Kimlik Doğrulama Durumu Kontrol Edilemedi:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "GitHub Copilot ile Giriş Yap",
+    "copilot_open_link": "Bağlantıyı Aç",
+    "copilot_copy_link": "Bağlantıyı Kopyala",
+    "copilot_oauth_status_waiting": "Kimlik Doğrulama Bekleniyor...",
+    "copilot_oauth_status_success": "Kimlik Doğrulama Başarılı!",
+    "copilot_oauth_status_error": "Kimlik Doğrulama Başarısız:",
+    "copilot_oauth_start_error": "GitHub Copilot OAuth Başlatılamadı:",
+    "copilot_oauth_polling_error": "Kimlik Doğrulama Durumu Kontrol Edilemedi:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Muse ile Giriş Yap",
     "meta_open_link": "Bağlantıyı Aç",
@@ -1141,6 +1162,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "Dağıtım kimliği",
+          "hint": "Bu dağıtımın sabit UUID değeri. Boş kaydedilirse yeni bir kimlik oluşturulur."
+        },
         "trustedProxies": {
           "label": "Güvenilen Proxy'ler",
           "hint": "IP Adresleri veya CIDR Değerleri. Boş, İletilen Üst Bilgilere Güvenilmediği Anlamına Gelir. Tüm Adres Aralıklarına Güvenmek İstemci IP Sahteciliği Riski Doğurur. Arka Uç Yeniden Başlatması Gerekir."
@@ -1180,6 +1205,11 @@
         "discoveryHint": "Çoklu Yayını Destekleyen Fiziksel Arayüzler ve Geri Döngü Olmayan Bir Dinleyici Gerekir. Docker Genellikle Host Ağı İster. Erişilebilirlik Garanti Değildir."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth istek hata kuralları",
+          "hint": "Her OAuth kanalı için üst sunucu hatalarını sırayla eşleştirerek başka kimlik bilgilerine geçişi ve beklemeyi yönetin.",
+          "channel": "OAuth kanalı (eklenti kanalı da girilebilir)"
+        },
         "oauthTitle": "OAuth Sağlayıcı Davranışı",
         "oauthHint": "Bu Sağlayıcı Ayarları Yalnızca OAuth/Dosya Destekli Kimlik Bilgilerine Uygulanır. API Anahtarı Kimlik Bilgilerine Değil.",
         "claudeTitle": "Claude",
@@ -1263,7 +1293,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "Ana Makine Başına En Fazla Boşta Bağlantı",
-          "hint": "Kimlik Bilgisi Başına Her Yukarı Akış Ana Makinesi için Tutulan En Fazla Boşta Bağlantı. Varsayılan: 2. Üst Sınır 100. Sıfır, Go Varsayılanı 2 Değerini Kullanır. Negatif Değer Kısa Ömürlü Bağlantılara Geçirir."
+          "hint": "Kimlik bilgisi başına her üst sunucu için en fazla boşta bağlantı sayısı. Boş bırakılırsa varsayılan 2 kullanılır. Üst sınır 100’dür. Sıfır veya negatif değer kısa süreli bağlantı kullanır."
         },
         "xaiInjectXSearch": {
           "label": "x_search Ekle",
@@ -1540,6 +1570,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "Tire içeren ve sıfır olmayan bir UUID girin.",
+        "invalid_oauth_error_rules": "{{channel}} için durum kodunu, eşleşmeleri ve eylemi kontrol edin.",
         "invalid_trusted_proxies": "Her Güvenilen Proxy Geçerli Bir IP Adresi veya CIDR Olmalıdır.",
         "invalid_discovery_service_type": "_name._tcp Kullan: Ad 1–15 Harf, Rakam veya Tire Olmalı. Başta veya Sonda Tire Olmamalı.",
         "validation_blocked": "Kaydetmeden Önce Doğrulama Hatalarını Düzelt",
@@ -1987,6 +2019,43 @@
     "version": "Yönetim Arayüzü Sürümü"
   },
   "providersPage": {
+    "connections": {
+      "edit": "Bağlantıyı düzenle",
+      "create": "Bağlantı ekle",
+      "search": "Bağlantı, anahtar, URL veya ön ek ara…",
+      "keyCount_one": "{{count}} anahtar",
+      "keyCount_other": "{{count}} anahtar",
+      "keysActive_one": "{{active}}/{{count}} anahtar etkin",
+      "keysActive_other": "{{active}}/{{count}} anahtar etkin",
+      "disableKeys": "“{{name}}” içindeki tüm anahtarları devre dışı bırak",
+      "enableKeys": "“{{name}}” içindeki tüm anahtarları etkinleştir"
+    },
+    "nativeGroup": {
+      "defaults": "Bağlantı varsayılanları",
+      "description": "Anahtarlar kendi ayarlarını belirtmedikçe bu değerleri devralır. Temel URL tüm anahtarlar için geçerlidir.",
+      "name": "Bağlantı adı",
+      "headersJson": "İstek başlıkları (JSON nesnesi)",
+      "excluded": "Hariç tutulan modeller (her satıra bir model)",
+      "pool": "Bağlantı havuzu",
+      "configurePool": "Bağlantı havuzunu yapılandır",
+      "poolHint": "Havuz eklemek varsayılan olarak bağlantıları yeniden kullanmayı etkinleştirir. Her anahtarın bağlantıları ayrıdır. Zaman aşımı veya sınır sıfır ya da negatifse bağlantılar yeniden kullanılmaz.",
+      "poolEnabled": "Bağlantıları yeniden kullan",
+      "poolAuto": "Varsayılan (etkin)",
+      "poolTimeout": "Boşta kalan bağlantı zaman aşımı",
+      "poolLimit": "Sunucu başına en fazla boşta kalan bağlantı",
+      "invalidLimit": "En fazla boşta kalan bağlantı sayısı güvenli bir tam sayı olmalıdır.",
+      "modelNameRequired": "Her model için sağlayıcıdaki model adını girin.",
+      "disabled": "Bu anahtar grubunu devre dışı bırak"
+    },
+    "groupActions": {
+      "search": "Bağlantı, anahtar, URL veya önek ara…",
+      "create": "Bağlantı oluştur",
+      "edit": "Bağlantıyı düzenle",
+      "delete": "Bağlantıyı sil",
+      "append": "Anahtar ekle",
+      "confirm": "“{{name}}” bağlantısı ve tüm anahtarları ({{count}}) silinsin mi?",
+      "settings": "Bağlantı ayarları"
+    },
     "behavior": {
       "title": "Sağlayıcıya Özel Davranış",
       "alphaSearch": "Alpha Search Etkinleştir",
@@ -2027,6 +2096,22 @@
       "removeModel": "Modeli Kaldır",
       "modelName": "Model Adı",
       "modelAlias": "Takma Ad (İsteğe Bağlı)"
+    },
+    "nativeKey": {
+      "routing": "Protokol ayarları",
+      "nativeToolSearch": "Anthropic yerel araç araması için özel uç noktaya güven",
+      "interactions": "Vertex Interactions API kullan",
+      "openapi": "Vertex OpenAPI uç noktasını kullan",
+      "location": "OpenAPI bölgesi",
+      "pool": "Bağlantı havuzu",
+      "poolHint": "Özel ayarlar, burada veya grupta devre dışı bırakılmadıkça havuzu etkinleştirir. Boş alanlar üst ayarları kullanır. Sıfır veya negatif zaman aşımı ya da sınır yeniden kullanımı kapatır.",
+      "reuse": "Sunucu bağlantılarını yeniden kullan",
+      "timeout": "Boşta kalma süresi (ör. 5m)",
+      "maxIdle": "Sunucu başına en fazla boşta bağlantı",
+      "invalidMaxIdle": "Boşta bağlantı sınırı güvenli bir tam sayı olmalıdır.",
+      "inheritHint": "Yalnızca bu anahtar için farklı olan alanları doldurun; boş alanlar bağlantı ayarlarını devralır.",
+      "disableKey": "Bu anahtarı devre dışı bırak",
+      "disableShort": "Kapalı"
     },
     "runtimePolicy": {
       "title": "Gelişmiş Çalışma Zamanı İlkesi",
@@ -2088,7 +2173,9 @@
       "save": "Kaydet",
       "create": "Oluştur",
       "enable": "Etkinleştir",
-      "disable": "Devre Dışı Bırak"
+      "disable": "Devre Dışı Bırak",
+      "newFor": "{{provider}} ekle",
+      "addProvider": "Sağlayıcı ekle"
     },
     "categories": {
       "title": "Sağlayıcılar",
@@ -2096,7 +2183,7 @@
       "activeCount": "{{active}} / {{total}} Aktif"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2111,12 +2198,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "Anahtar",
-      "baseUrl": "Temel URL",
-      "prefix": "Önek",
-      "models": "Modeller/Üst Bilgiler",
-      "status": "Durum",
-      "actions": "Eylemler",
       "metrics": {
         "models": "Modeller",
         "keys": "Anahtarlar",
@@ -2125,8 +2206,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI Profili",
-      "empty": "Henüz Kaynak Yok. Eklemek için \"Yeni\" Seçeneğine Tıkla.",
-      "filterPlaceholder": "Anahtar, URL veya Önek Ara…"
+      "filterPlaceholder": "Anahtar, URL veya Önek Ara…",
+      "emptyBrand": "Henüz {{provider}} yapılandırması yok",
+      "noMatch": "Geçerli filtrelerle eşleşen kaynak yok"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2157,8 +2239,8 @@
       "urlMode": "{{provider}} URL'si",
       "urlHint": "Tüm URL'ler Aynı API Kurallarını Kullanır. Kayıt Yalnızca Geçerli Gruplanmış Protokolün Uç Noktasını Yazar.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Yüksek Korumalı Küresel Rota",
-         "aiCodeMirrorDomestic": "Çin Ana Karası için Optimize Edilmiş Rota",
+        "aiCodeMirrorGlobal": "Yüksek Korumalı Küresel Rota",
+        "aiCodeMirrorDomestic": "Çin Ana Karası için Optimize Edilmiş Rota",
         "standard": "Standart URL",
         "direct": "Doğrudan URL",
         "domestic": "Çin Ana Karası Rotası",
@@ -2167,8 +2249,8 @@
         "global": "Küresel"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Küresel erişim için yüksek korumalı bir rota.",
-         "aiCodeMirrorDomestic": "Çin ana karasındaki ağlar için optimize edilmiş bir rota.",
+        "aiCodeMirrorGlobal": "Küresel erişim için yüksek korumalı bir rota.",
+        "aiCodeMirrorDomestic": "Çin ana karasındaki ağlar için optimize edilmiş bir rota.",
         "domestic": "Çin Ana Karasındaki Kullanıcılar ve İş Yükleri için. Ana Kara Ağlarında Genellikle Daha Düşük Gecikme.",
         "overseas": "Yurt Dışı Dağıtımlar, Sınır Ötesi Erişim veya Yurt Dışı Modeller Gerektiren İş Yükleri için.",
         "mainlandChinaRecommended": "Çin Ana Karası Ağlarındaki Kullanıcılar ve İş Yükleri için Önerilir.",
@@ -2296,7 +2378,15 @@
         "baseUrlRequired": "Temel URL Zorunlu",
         "weightInteger": "Zamanlama Ağırlığı Tam Sayı Olmalıdır",
         "weightMax": "Zamanlama Ağırlığı {{max}} Değerini Aşamaz"
-      }
+      },
+      "sections": {
+        "connection": "Bağlantı",
+        "connectivity": "Bağlantı testi",
+        "routing": "Yönlendirme",
+        "advanced": "Gelişmiş"
+      },
+      "headerName": "Başlık adı",
+      "headerValue": "Başlık değeri"
     },
     "delete": {
       "title": "Kaynağı Sil",
@@ -2358,10 +2448,26 @@
         "selectAll": "Tümünü Seç",
         "clear": "Temizle",
         "empty": "Henüz Yapılandırılmış Model Yok"
-      }
+      },
+      "clearFilters": "Filtreleri temizle"
     },
     "modelCatalog": {
       "notLoaded": "Yüklenmedi"
+    },
+    "card": {
+      "requests": "İstekler"
+    },
+    "picker": {
+      "featured": "Hızlı bağlantı",
+      "featuredBadge": "Önerilen",
+      "oneKey": "Tek anahtarla {{count}} protokol",
+      "official": "Resmî API’ler",
+      "custom": "Özel",
+      "connect": "Bağla",
+      "connected": "{{count}} bağlı",
+      "offer": "Fırsat",
+      "onboardingTitle": "İlk yapay zekâ sağlayıcınızı bağlayın",
+      "moreQuickConnect": "Diğer hızlı bağlantı ortakları"
     }
   },
   "claude_reset": {

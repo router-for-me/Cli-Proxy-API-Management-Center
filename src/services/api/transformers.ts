@@ -7,10 +7,12 @@ import type {
   ProviderKeyConfig,
 } from '@/types';
 import type { Config } from '@/types/config';
-import type { ProviderRuntimePolicy, RequestScopedErrorRule } from '@/types/provider';
+import type { ProviderRuntimePolicy } from '@/types/provider';
 import { buildHeaderObject } from '@/utils/headers';
 import { isRecord } from '@/utils/helpers';
 import { readCredentialWeight } from '@/utils/credentialWeight';
+import { normalizeConnectionPool } from './connectionPool';
+import { normalizeErrorRule } from './errorRules';
 import { normalizeModelOptions, normalizeModelThinking } from './providerModels';
 
 const normalizeBoolean = (value: unknown): boolean | undefined =>
@@ -123,18 +125,7 @@ const normalizeRuntimePolicy = (record: Record<string, unknown> | null): Provide
   if (typeof retry === 'number' && Number.isSafeInteger(retry)) policy.requestRetry = retry;
   const rules = record?.['request-scoped-errors'];
   if (Array.isArray(rules)) {
-    policy.requestScopedErrors = rules.filter(isRecord).map((rule) => ({
-      ...(typeof rule.status === 'number' ? { status: rule.status } : {}),
-      ...(Array.isArray(rule.match)
-        ? { match: rule.match.filter((v): v is string => typeof v === 'string') }
-        : {}),
-      ...(Array.isArray(rule['match-regexr'])
-        ? { matchRegex: rule['match-regexr'].filter((v): v is string => typeof v === 'string') }
-        : {}),
-      ...(typeof rule.action === 'string'
-        ? { action: rule.action as RequestScopedErrorRule['action'] }
-        : {}),
-    }));
+    policy.requestScopedErrors = rules.filter(isRecord).map(normalizeErrorRule);
   }
   return policy;
 };
@@ -147,7 +138,14 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
   if (!trimmed) return null;
 
   const config: ProviderKeyConfig = { apiKey: trimmed, ...normalizeRuntimePolicy(record) };
+  const pool = normalizeConnectionPool(record?.['connection-pool']);
+  if (pool) config.connectionPool = pool;
+  const location = record?.['openapi-location'];
+  if (typeof location === 'string') config.openapiLocation = location.trim();
   for (const [key, wire] of [
+    ['interactions', 'interactions'],
+    ['openapi', 'openapi'],
+    ['nativeToolSearch', 'native-tool-search'],
     ['alphaSearch', 'alpha-search'],
     ['disableCodexCloaking', 'disable-codex-cloaking'],
     ['rebuildMidSystemMessage', 'rebuild-mid-system-message'],
@@ -242,6 +240,8 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   if (!trimmed) return null;
 
   const config: GeminiKeyConfig = { apiKey: trimmed, ...normalizeRuntimePolicy(record) };
+  const pool = normalizeConnectionPool(record?.['connection-pool']);
+  if (pool) config.connectionPool = pool;
   const weight = readCredentialWeight(record?.weight);
   if (weight !== undefined) config.weight = weight;
   const priority = record?.priority;
@@ -347,6 +347,8 @@ export const normalizeProviderGroups = (groups: unknown, openai = false) => {
       Object.entries(key).forEach(([field, value]) => {
         if (value !== null) effective[field] = value;
       });
+      // Pool settings are edited as sparse overrides, never as a flattened group copy.
+      effective['connection-pool'] = key['connection-pool'];
       const config = normalizeProviderKeyConfig(effective);
       return config ? [{ ...config, source: { groupIndex, keyIndex, group, groups } }] : [];
     });
@@ -360,6 +362,8 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
     path
       .split('.')
       .reduce<unknown>((value, key) => (isRecord(value) ? value[key] : undefined), raw);
+  const serverId = at('server.server-id');
+  if (typeof serverId === 'string' && serverId.trim()) config.serverId = serverId.trim();
   config.debug = normalizeBoolean(at('observability.logs.debug'));
   config.requestLog = normalizeBoolean(at('observability.logs.request-log'));
   config.loggingToFile = normalizeBoolean(at('observability.logs.logging-to-file'));

@@ -340,6 +340,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -604,6 +605,17 @@
     "load_failed": "Не удалось запросить квоту: {{message}}",
     "empty_title": "Нет учётных данных Devin",
     "empty_desc": "Загрузите файл учётных данных Devin или войдите через CLI сервера для запроса квоты."
+  },
+  "copilot_quota": {
+    "title": "Квота GitHub Copilot",
+    "empty_title": "Нет учётных данных GitHub Copilot",
+    "empty_desc": "Войдите через GitHub Copilot OAuth или загрузите файл учётных данных GitHub Copilot для запроса квоты.",
+    "idle": "Нажмите для запроса квоты GitHub Copilot",
+    "loading": "Запрос квоты GitHub Copilot…",
+    "load_failed": "Не удалось запросить квоту: {{message}}",
+    "remaining": "Осталось {{percent}}%",
+    "premium": "Премиальные взаимодействия",
+    "unavailable": "Квота недоступна. Проверьте учётные данные Copilot и повторите попытку."
   },
   "meta_quota": {
     "title": "Квота Muse (Meta)",
@@ -893,6 +905,15 @@
     "antigravity_oauth_status_error": "Ошибка аутентификации:",
     "antigravity_oauth_start_error": "Не удалось запустить Antigravity OAuth:",
     "antigravity_oauth_polling_error": "Не удалось проверить статус аутентификации:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "Войти через GitHub Copilot",
+    "copilot_open_link": "Открыть ссылку",
+    "copilot_copy_link": "Скопировать ссылку",
+    "copilot_oauth_status_waiting": "Ожидание аутентификации...",
+    "copilot_oauth_status_success": "Аутентификация успешна!",
+    "copilot_oauth_status_error": "Ошибка аутентификации:",
+    "copilot_oauth_start_error": "Не удалось запустить GitHub Copilot OAuth:",
+    "copilot_oauth_polling_error": "Не удалось проверить статус аутентификации:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Войти через Muse",
     "meta_open_link": "Открыть ссылку",
@@ -1154,6 +1175,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "ID развёртывания",
+          "hint": "Постоянный UUID развёртывания. При сохранении пустого значения создаётся новый ID."
+        },
         "trustedProxies": {
           "label": "Доверенные прокси",
           "hint": "IP-адреса или CIDR; пустой список отключает доверие к заголовкам пересылки. Доверие ко всем адресам создаёт риск подмены IP клиента. Нужен перезапуск бэкенда."
@@ -1193,6 +1218,11 @@
         "discoveryHint": "Нужны физические интерфейсы с поддержкой multicast и прослушивание не на loopback. Docker обычно требует сеть host; доступность не гарантируется."
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "Правила ошибок запросов OAuth",
+          "hint": "Правила каждого канала OAuth проверяются по порядку и определяют смену учётных данных и период ожидания при ошибках.",
+          "channel": "Канал OAuth (можно ввести канал плагина)"
+        },
         "oauthTitle": "Поведение OAuth-провайдеров",
         "oauthHint": "Эти настройки провайдеров применяются только к OAuth и учётным данным из файлов, но не к API-ключам.",
         "claudeTitle": "Claude",
@@ -1276,7 +1306,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "Максимум простаивающих соединений на хост",
-          "hint": "Максимум простаивающих соединений на хост для каждого набора учётных данных. По умолчанию: 2; предел: 100. Ноль использует стандартное значение Go (2), отрицательное число включает короткоживущие соединения."
+          "hint": "Максимум простаивающих соединений с каждым сервером на учётные данные. Пустое поле означает 2, верхний предел — 100. При нуле или отрицательном значении соединения кратковременные."
         },
         "xaiInjectXSearch": {
           "label": "Добавлять x_search",
@@ -1553,6 +1583,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "Введите ненулевой UUID с дефисами.",
+        "invalid_oauth_error_rules": "Проверьте код состояния, условия и действие для {{channel}}.",
         "invalid_trusted_proxies": "Каждый доверенный прокси должен быть корректным IP-адресом или CIDR.",
         "invalid_discovery_service_type": "Используйте _имя._tcp: имя — 1–15 латинских букв, цифр или дефисов, без дефиса в начале и конце.",
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",
@@ -1991,6 +2023,47 @@
     "version": "Версия интерфейса управления"
   },
   "providersPage": {
+    "connections": {
+      "edit": "Изменить подключение",
+      "create": "Добавить подключение",
+      "search": "Поиск по подключению, ключу, URL или префиксу…",
+      "keyCount_one": "{{count}} ключ",
+      "keyCount_few": "{{count}} ключа",
+      "keyCount_many": "{{count}} ключей",
+      "keyCount_other": "{{count}} ключа",
+      "keysActive_one": "Включено ключей: {{active}}/{{count}}",
+      "keysActive_few": "Включено ключей: {{active}}/{{count}}",
+      "keysActive_many": "Включено ключей: {{active}}/{{count}}",
+      "keysActive_other": "Включено ключей: {{active}}/{{count}}",
+      "disableKeys": "Отключить все ключи «{{name}}»",
+      "enableKeys": "Включить все ключи «{{name}}»"
+    },
+    "nativeGroup": {
+      "defaults": "Настройки подключения по умолчанию",
+      "description": "Ключи наследуют эти настройки, если не заданы свои значения. Базовый URL общий для всех ключей.",
+      "name": "Название подключения",
+      "headersJson": "Заголовки запроса (объект JSON)",
+      "excluded": "Исключённые модели (по одной в строке)",
+      "pool": "Пул соединений",
+      "configurePool": "Настроить пул соединений",
+      "poolHint": "Добавление пула по умолчанию включает повторное использование соединений. У каждого ключа свои соединения. Нулевой или отрицательный тайм-аут либо лимит отключает повторное использование.",
+      "poolEnabled": "Повторно использовать соединения",
+      "poolAuto": "По умолчанию (включено)",
+      "poolTimeout": "Тайм-аут простоя соединения",
+      "poolLimit": "Максимум простаивающих соединений на хост",
+      "invalidLimit": "Максимум простаивающих соединений должен быть безопасным целым числом.",
+      "modelNameRequired": "Укажите имя каждой модели у провайдера.",
+      "disabled": "Отключить эту группу ключей"
+    },
+    "groupActions": {
+      "search": "Поиск по подключениям, ключам, URL и префиксам…",
+      "create": "Создать подключение",
+      "edit": "Изменить подключение",
+      "delete": "Удалить подключение",
+      "append": "Добавить ключ",
+      "confirm": "Удалить подключение «{{name}}» и все его ключи ({{count}})?",
+      "settings": "Настройки подключения"
+    },
     "behavior": {
       "title": "Поведение, специфичное для провайдера",
       "alphaSearch": "Включить Alpha Search",
@@ -2031,6 +2104,22 @@
       "removeModel": "Удалить модель",
       "modelName": "Имя модели",
       "modelAlias": "Псевдоним (необязательно)"
+    },
+    "nativeKey": {
+      "routing": "Настройки протокола",
+      "nativeToolSearch": "Доверять сторонней точке доступа для нативного поиска инструментов Anthropic",
+      "interactions": "Использовать Vertex Interactions API",
+      "openapi": "Использовать точку доступа Vertex OpenAPI",
+      "location": "Регион OpenAPI",
+      "pool": "Пул соединений",
+      "poolHint": "Пользовательский блок включает пул, если он не отключён здесь или в группе. Пустые поля наследуются. Неположительный тайм-аут или лимит отключает повторное использование.",
+      "reuse": "Повторно использовать соединения с сервером",
+      "timeout": "Тайм-аут простоя (например, 5m)",
+      "maxIdle": "Лимит простаивающих соединений на узел",
+      "invalidMaxIdle": "Лимит простаивающих соединений должен быть безопасным целым числом.",
+      "inheritHint": "Заполняйте только то, что отличается для этого ключа; пустые поля наследуют настройки подключения.",
+      "disableKey": "Отключить этот ключ",
+      "disableShort": "Выкл."
     },
     "runtimePolicy": {
       "title": "Расширенная политика выполнения",
@@ -2092,7 +2181,9 @@
       "save": "Сохранить",
       "create": "Создать",
       "enable": "Включить",
-      "disable": "Отключить"
+      "disable": "Отключить",
+      "newFor": "Добавить {{provider}}",
+      "addProvider": "Добавить провайдера"
     },
     "categories": {
       "title": "Провайдеры",
@@ -2100,7 +2191,7 @@
       "activeCount": "{{active}}/{{total}} активных"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2115,12 +2206,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "Ключ",
-      "baseUrl": "Base URL",
-      "prefix": "Префикс",
-      "models": "Модели/Заголовки",
-      "status": "Статус",
-      "actions": "Действия",
       "metrics": {
         "models": "Модели",
         "keys": "Ключи",
@@ -2129,8 +2214,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI-профиль",
-      "empty": "Нет ресурсов, нажмите \"Создать\".",
-      "filterPlaceholder": "Поиск по ключам, URL, префиксам…"
+      "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
+      "emptyBrand": "Конфигураций {{provider}} пока нет",
+      "noMatch": "Нет ресурсов, подходящих под фильтры"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2161,8 +2247,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
-         "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
+        "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
+        "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
         "standard": "Обычный URL",
         "direct": "Прямой URL",
         "domestic": "Маршрут для материкового Китая",
@@ -2171,8 +2257,8 @@
         "global": "Глобальный"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
-         "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
+        "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
+        "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
         "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
         "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели.",
         "mainlandChinaRecommended": "Рекомендуется для пользователей и нагрузок в сетях материкового Китая.",
@@ -2300,7 +2386,15 @@
         "baseUrlRequired": "Base URL обязателен",
         "weightInteger": "Вес планирования должен быть целым числом",
         "weightMax": "Вес планирования не может превышать {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "Подключение",
+        "connectivity": "Проверка связи",
+        "routing": "Маршрутизация",
+        "advanced": "Дополнительно"
+      },
+      "headerName": "Имя заголовка",
+      "headerValue": "Значение заголовка"
     },
     "delete": {
       "title": "Удалить ресурс",
@@ -2362,10 +2456,26 @@
         "selectAll": "Выбрать все",
         "clear": "Очистить",
         "empty": "Модели ещё не настроены"
-      }
+      },
+      "clearFilters": "Сбросить фильтры"
     },
     "modelCatalog": {
       "notLoaded": "Не загружено"
+    },
+    "card": {
+      "requests": "Запросы"
+    },
+    "picker": {
+      "featured": "Быстрое подключение",
+      "featuredBadge": "Рекомендуем",
+      "oneKey": "Один ключ для {{count}} протоколов",
+      "official": "Официальные API",
+      "custom": "Свои",
+      "connect": "Подключить",
+      "connected": "Подключено: {{count}}",
+      "offer": "Акция",
+      "onboardingTitle": "Подключите первого AI-провайдера",
+      "moreQuickConnect": "Другие партнёры быстрого подключения"
     }
   },
   "claude_reset": {

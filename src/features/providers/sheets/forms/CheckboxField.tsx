@@ -14,13 +14,17 @@ interface CheckboxFieldProps {
   hint?: ReactNode;
 }
 
-/** Checkbox row for the provider forms; the InfoTip sits outside the `<label>`. */
+/**
+ * Switch row for the provider forms (a checkbox presented as a switch); the InfoTip sits
+ * outside the `<label>` so it never leaks into the control's accessible name.
+ */
 export function CheckboxField({ label, checked, disabled, onChange, hint }: CheckboxFieldProps) {
   const hintId = useId();
   const row = (
     <label className={styles.checkboxRow}>
       <input
         type="checkbox"
+        role="switch"
         className={styles.checkboxBox}
         checked={checked}
         disabled={disabled}

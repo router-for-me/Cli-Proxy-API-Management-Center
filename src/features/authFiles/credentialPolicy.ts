@@ -80,7 +80,7 @@ export function credentialPolicyError(draft?: CredentialPolicyDraft): Credential
   if (
     draft.touched.errorRules &&
     draft.errorRules.mode === 'custom' &&
-    draft.errorRules.rows?.some(validateErrorRule)
+    draft.errorRules.rows?.some((rule) => validateErrorRule(rule))
   )
     return 'auth_files.policy_rules_invalid';
   return null;

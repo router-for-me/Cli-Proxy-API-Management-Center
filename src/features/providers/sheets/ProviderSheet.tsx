@@ -6,20 +6,35 @@ import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
 import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
-import type { ProviderBrand, ProviderEntryFormInput, ProviderResource } from '../types';
+import type {
+  NativeSection,
+  ProviderBrand,
+  ProviderEntryFormInput,
+  ProviderGroup,
+  ProviderResource,
+} from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
 import { SponsorProviderForm } from './forms/SponsorProviderForm';
-import styles from './forms/sharedForm.module.scss';
+import { BrandLogo } from '../components/BrandLogo';
+import { ProviderPicker } from '../components/ProviderPicker';
+import formStyles from './forms/sharedForm.module.scss';
+import styles from './ProviderSheet.module.scss';
 
-type SheetMode = 'detail' | 'create' | 'edit';
+import { isNativeFamily } from '../nativeSections';
+import type { NativeConnectionFormOutput } from '../nativeConnectionForm';
+
+type SheetMode = 'pick' | 'detail' | 'create' | 'edit';
 
 export interface ProviderSheetState {
   open: boolean;
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+  /** A create form opened from the picker returns to it on cancel. */
+  fromPicker?: boolean;
+  section?: NativeSection;
 }
 
 export interface ProviderSheetHandle {
@@ -33,8 +48,13 @@ interface ProviderSheetProps {
   workbench: UseProviderWorkbenchResult;
   onCreated: () => void;
   onUpdated: () => void;
+  onDeleteConnection: (section: NativeSection) => void;
   mutationDisabled?: boolean;
   usageByProvider?: ProviderRecentUsageMap;
+  /** Brands offered by the "add provider" picker. */
+  pickerGroups?: ProviderGroup[];
+  onPick?: (brand: ProviderBrand) => void;
+  onBackToPicker?: () => void;
   ref?: Ref<ProviderSheetHandle>;
 }
 
@@ -45,8 +65,12 @@ export function ProviderSheet({
   workbench,
   onCreated,
   onUpdated,
+  onDeleteConnection,
   mutationDisabled = false,
   usageByProvider,
+  pickerGroups = [],
+  onPick,
+  onBackToPicker,
   ref,
 }: ProviderSheetProps) {
   const { t } = useTranslation();
@@ -60,14 +84,14 @@ export function ProviderSheet({
   // re-report its own dirty state.
   useEffect(() => {
     setIsDirty(false);
-  }, [state.brand, state.mode, state.resource?.id, state.open]);
+  }, [state.brand, state.mode, state.resource?.id, state.section?.source.groupIndex, state.open]);
 
   const handleDirtyChange = useCallback((dirty: boolean) => {
     setIsDirty(dirty);
   }, []);
 
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
-  const isEditingForm = state.mode === 'create' || state.mode === 'edit';
+  const isEditingForm = state.mode !== 'pick' && state.mode !== 'detail';
   const formMutating = submitting || mutationDisabled;
   const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
 
@@ -90,22 +114,38 @@ export function ProviderSheet({
 
   useImperativeHandle(ref, () => ({ confirmDiscardIfDirty }), [confirmDiscardIfDirty]);
 
+  const backToPicker = state.mode === 'create' && state.fromPicker ? onBackToPicker : undefined;
   const handleCancelClick = useCallback(() => {
     void confirmDiscardIfDirty().then((ok) => {
-      if (ok) onClose();
+      if (!ok) return;
+      if (backToPicker) backToPicker();
+      else onClose();
     });
-  }, [confirmDiscardIfDirty, onClose]);
+  }, [backToPicker, confirmDiscardIfDirty, onClose]);
 
+  const modeLabel =
+    isNativeFamily(state.brand) && isEditingForm
+      ? state.section
+        ? // The title becomes the connection name, so the eyebrow keeps the provider visible.
+          `${t(`providersPage.providerNames.${state.brand}`)} · ${t('providersPage.groupActions.edit')}`
+        : t('providersPage.groupActions.create')
+      : state.mode === 'create'
+        ? t('providersPage.form.createEyebrow')
+        : state.mode === 'edit'
+          ? t('providersPage.form.editEyebrow')
+          : t('providersPage.detail.title');
   const titleText =
-    state.mode === 'create'
-      ? `${t('providersPage.form.createEyebrow')} · ${t(
-          `providersPage.providerNames.${state.brand}`
-        )}`
-      : state.mode === 'edit'
-        ? `${t('providersPage.form.editEyebrow')} · ${t(
-            `providersPage.providerNames.${state.brand}`
-          )}`
-        : `${t('providersPage.detail.title')} · ${t(`providersPage.providerNames.${state.brand}`)}`;
+    state.mode === 'pick' ? (
+      t('providersPage.actions.addProvider')
+    ) : (
+      <span className={styles.sheetTitle}>
+        <BrandLogo brand={state.brand} size={26} />
+        <span className={styles.sheetTitleText}>
+          <span className={styles.sheetTitleMode}>{modeLabel}</span>
+          <span>{state.section?.name ?? t(`providersPage.providerNames.${state.brand}`)}</span>
+        </span>
+      </span>
+    );
 
   const handleCreate = useCallback(
     async (input: ProviderEntryFormInput) => {
@@ -135,18 +175,49 @@ export function ProviderSheet({
     [isDirty, mutationDisabled, onUpdated, state.resource, workbench]
   );
 
+  const handleNativeSubmit = async (draft: NativeConnectionFormOutput) => {
+    if (submitDisabled || !isNativeFamily(state.brand)) return;
+    setSubmitting(true);
+    try {
+      await workbench.saveNativeConnection(state.brand, state.section, draft);
+      if (state.section) onUpdated();
+      else onCreated();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const viewKey = `${state.brand}:${state.section?.source.groupIndex ?? state.resource?.id ?? 'new'}:${state.mode}`;
+
   const renderBody = () => {
+    if (state.mode === 'pick') {
+      return <ProviderPicker groups={pickerGroups} onPick={(brand) => onPick?.(brand)} />;
+    }
     if (state.mode === 'detail') {
       if (!state.resource) {
         return null;
       }
       return <ResourceDetailView resource={state.resource} usageByProvider={usageByProvider} />;
     }
-    const formKey = `${state.brand}:${state.resource?.id ?? 'new'}:${state.mode}`;
+    if (isNativeFamily(state.brand)) {
+      return (
+        <BaseProviderForm
+          key={viewKey}
+          brand={state.brand}
+          resource={null}
+          nativeSection={state.section}
+          mode={state.mode}
+          mutating={formMutating}
+          formId={formId}
+          onNativeSubmit={handleNativeSubmit}
+          onDirtyChange={handleDirtyChange}
+        />
+      );
+    }
     if (isMultiProtocolSponsorBrand(state.brand)) {
       return (
         <SponsorProviderForm
-          key={formKey}
+          key={viewKey}
           brand={state.brand}
           resource={state.resource}
           mode={state.mode}
@@ -159,7 +230,7 @@ export function ProviderSheet({
     }
     return (
       <BaseProviderForm
-        key={formKey}
+        key={viewKey}
         brand={state.brand}
         resource={state.resource}
         mode={state.mode}
@@ -172,53 +243,64 @@ export function ProviderSheet({
   };
 
   const footer =
-    state.mode === 'detail' ? (
-      state.resource ? (
-        <>
+    state.mode === 'pick' ? (
+      <button
+        type="button"
+        className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
+        onClick={onClose}
+      >
+        {t('common.close')}
+      </button>
+    ) : state.mode === 'detail' ? (
+      <>
+        <button
+          type="button"
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
+          onClick={onClose}
+        >
+          {t('common.close')}
+        </button>
+        {state.resource ? (
           <button
             type="button"
-            className={`${styles.footerBtn} ${styles.footerBtnGhost}`}
-            onClick={onClose}
-          >
-            {t('providersPage.actions.cancel')}
-          </button>
-          <button
-            type="button"
-            className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
+            className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
             onClick={onSwitchToEdit}
             disabled={formMutating}
           >
             <IconPencil size={14} />
             {t('providersPage.actions.edit')}
           </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
-          onClick={onClose}
-        >
-          {t('providersPage.actions.cancel')}
-        </button>
-      )
+        ) : null}
+      </>
     ) : (
       <>
+        {state.section && (
+          <button
+            type="button"
+            className={`${formStyles.footerBtn} ${styles.deleteConnection}`}
+            disabled={formMutating}
+            onClick={() => state.section && onDeleteConnection(state.section)}
+          >
+            {t('providersPage.groupActions.delete')}
+          </button>
+        )}
         <button
           type="button"
-          className={`${styles.footerBtn} ${styles.footerBtnGhost}`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
           onClick={handleCancelClick}
           disabled={submitting}
         >
-          {t('providersPage.actions.cancel')}
+          {backToPicker ? t('common.back') : t('providersPage.actions.cancel')}
         </button>
         <button
           type="submit"
           form={formId}
-          className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
           disabled={submitDisabled}
+          aria-busy={submitting || undefined}
         >
-          {submitting ? <IconLoader2 size={14} /> : null}
-          {state.mode === 'create'
+          {submitting ? <IconLoader2 size={14} className={formStyles.spin} /> : null}
+          {state.mode === 'create' && !isNativeFamily(state.brand)
             ? t('providersPage.actions.create')
             : t('providersPage.actions.save')}
         </button>
@@ -228,9 +310,10 @@ export function ProviderSheet({
   return (
     <Sheet
       open={state.open}
+      viewKey={viewKey}
       onClose={onClose}
       size={descriptor.sheetSize}
-      // The title already reads "<mode> · <provider>"; no eyebrow or route subtitle to repeat it.
+      // The title carries mode and provider together; no eyebrow or route subtitle repeats them.
       title={titleText}
       footer={footer}
       closeDisabled={submitting}

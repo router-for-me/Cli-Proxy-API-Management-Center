@@ -24,6 +24,7 @@ export interface ErrorRulesEditorProps {
    * in an InfoTip on their own label (the provider runtime policy) turn it off.
    */
   showOrderHint?: boolean;
+  trimMatches?: boolean;
 }
 
 const actions: readonly string[] = ERROR_RULE_ACTIONS;
@@ -34,6 +35,7 @@ export function ErrorRulesEditor({
   onChange,
   disabled,
   showOrderHint = true,
+  trimMatches = false,
 }: ErrorRulesEditorProps) {
   const { t } = useTranslation();
   const id = useId();
@@ -61,7 +63,7 @@ export function ErrorRulesEditor({
       {showOrderHint && <p className={form.sectionDesc}>{t(`${key}.hint`)}</p>}
       {rules.length === 0 && <p className={form.sectionDesc}>{t(`${key}.empty`)}</p>}
       {rules.map((rule, index) => {
-        const error = touched.has(rule.id) ? validateErrorRule(rule) : null;
+        const error = touched.has(rule.id) ? validateErrorRule(rule, trimMatches) : null;
         const errorId = `${id}-${rule.id}-error`;
         const statusError = error === `${key}.invalidStatus`;
         const actionError = error === `${key}.invalidAction`;
@@ -72,7 +74,7 @@ export function ErrorRulesEditor({
             role="group"
             aria-labelledby={`${id}-${rule.id}-title`}
             aria-describedby={error ? errorId : undefined}
-            className={form.entryCard}
+            className={`${form.entryCard} ${styles.rule}`}
             onBlur={() => setTouched((previous) => new Set(previous).add(rule.id))}
           >
             <div className={form.entryCardHeader}>

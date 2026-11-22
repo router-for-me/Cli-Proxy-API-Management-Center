@@ -335,6 +335,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -599,6 +600,17 @@
     "load_failed": "額度查詢失敗：{{message}}",
     "empty_title": "暫無 Devin 憑證",
     "empty_desc": "上傳 Devin 憑證檔案或透過後端 CLI 登入後，即可查詢額度。"
+  },
+  "copilot_quota": {
+    "title": "GitHub Copilot 額度",
+    "empty_title": "暫無 GitHub Copilot 憑證",
+    "empty_desc": "使用 GitHub Copilot OAuth 登入或上傳 GitHub Copilot 驗證檔案以查詢額度。",
+    "idle": "點擊查詢 GitHub Copilot 額度",
+    "loading": "正在查詢 GitHub Copilot 額度…",
+    "load_failed": "額度查詢失敗：{{message}}",
+    "remaining": "剩餘 {{percent}}%",
+    "premium": "進階互動",
+    "unavailable": "額度無法取得。請檢查 Copilot 憑證後重試。"
   },
   "meta_quota": {
     "title": "Muse (Meta) 額度",
@@ -873,6 +885,15 @@
     "antigravity_oauth_status_error": "驗證失敗:",
     "antigravity_oauth_start_error": "啟動 Antigravity OAuth 失敗:",
     "antigravity_oauth_polling_error": "檢查驗證狀態失敗:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "使用 GitHub Copilot 登入",
+    "copilot_open_link": "開啟連結",
+    "copilot_copy_link": "複製連結",
+    "copilot_oauth_status_waiting": "等待驗證中...",
+    "copilot_oauth_status_success": "驗證成功！",
+    "copilot_oauth_status_error": "驗證失敗:",
+    "copilot_oauth_start_error": "啟動 GitHub Copilot OAuth 失敗:",
+    "copilot_oauth_polling_error": "檢查驗證狀態失敗:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "使用 Muse 登入",
     "meta_open_link": "開啟連結",
@@ -1162,6 +1183,10 @@
     },
     "visual": {
       "serverExtras": {
+        "serverId": {
+          "label": "部署 ID",
+          "hint": "部署的固定 UUID。留空並儲存會產生新的 ID。"
+        },
         "trustedProxies": {
           "label": "可信任代理",
           "hint": "填寫 IP 位址或 CIDR；留空不信任轉送標頭。信任涵蓋所有位址的網段有用戶端 IP 偽造風險。重新啟動後端後生效。"
@@ -1201,6 +1226,11 @@
         "discoveryHint": "需要支援多播的實體網卡及非回環監聽位址。Docker 通常需使用 host 網路；不保證服務可連線。"
       },
       "additions": {
+        "oauthErrorRules": {
+          "label": "OAuth 請求錯誤規則",
+          "hint": "依 OAuth 管道順序比對上游錯誤，決定是否重試其他憑證或進入冷卻。",
+          "channel": "OAuth 管道（可輸入外掛管道名稱）"
+        },
         "oauthTitle": "OAuth 供應商行為",
         "oauthHint": "本組供應商設定僅適用於 OAuth/驗證檔案憑證，不影響 API Key 憑證。",
         "claudeTitle": "Claude",
@@ -1284,7 +1314,7 @@
         },
         "antigravityConnectionPoolMaxIdleConnsPerHost": {
           "label": "每主機最大閒置連線數",
-          "hint": "每個憑證為每個上游主機保留的最大閒置連線數，預設 2，上限 100。0 使用 Go 預設值 2，負數切換為短連線。"
+          "hint": "每個憑證為每個上游主機保留的最大閒置連線數。留空使用預設值 2，上限 100。設為 0 或負數時使用短連線。"
         },
         "xaiInjectXSearch": {
           "label": "注入 x_search",
@@ -1561,6 +1591,8 @@
         "boolean_false": "false"
       },
       "validation": {
+        "invalid_server_id": "請輸入含連字號的非零 UUID。",
+        "invalid_oauth_error_rules": "請檢查 {{channel}} 的狀態碼、比對條件與動作。",
         "invalid_trusted_proxies": "每個可信任代理必須是有效的 IP 位址或 CIDR。",
         "invalid_discovery_service_type": "請使用 _名稱._tcp 格式：名稱為 1–15 位英文字母、數字或連字號，首尾不能是連字號。",
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
@@ -2008,6 +2040,41 @@
     "version": "管理中心版本"
   },
   "providersPage": {
+    "connections": {
+      "edit": "編輯連線",
+      "create": "新增連線",
+      "search": "搜尋連線、Key、URL 或前綴…",
+      "keyCount": "{{count}} 個金鑰",
+      "keysActive": "{{active}}/{{count}} 個金鑰啟用",
+      "disableKeys": "停用「{{name}}」的全部金鑰",
+      "enableKeys": "啟用「{{name}}」的全部金鑰"
+    },
+    "nativeGroup": {
+      "defaults": "連線預設設定",
+      "description": "金鑰未個別設定的欄位會繼承連線設定。基礎 URL 適用於所有金鑰。",
+      "name": "連線名稱",
+      "headersJson": "要求標頭（JSON 物件）",
+      "excluded": "排除的模型（每行一個）",
+      "pool": "連線集區",
+      "configurePool": "設定連線集區",
+      "poolHint": "新增連線集區後預設啟用連線重用。每個金鑰使用獨立的連線。逾時或連線數上限小於等於零時，不會重用連線。",
+      "poolEnabled": "重用連線",
+      "poolAuto": "預設（啟用）",
+      "poolTimeout": "閒置連線逾時",
+      "poolLimit": "每部主機的最大閒置連線數",
+      "invalidLimit": "最大閒置連線數必須是安全整數。",
+      "modelNameRequired": "請為每個模型輸入上游名稱。",
+      "disabled": "停用此組金鑰"
+    },
+    "groupActions": {
+      "search": "搜尋連線、金鑰、網址或前綴…",
+      "create": "建立連線",
+      "edit": "編輯連線",
+      "delete": "刪除連線",
+      "append": "新增金鑰",
+      "confirm": "刪除連線「{{name}}」及其全部 {{count}} 個金鑰？",
+      "settings": "連線設定"
+    },
     "behavior": {
       "title": "提供商專屬行為",
       "alphaSearch": "啟用 Alpha Search",
@@ -2048,6 +2115,22 @@
       "removeModel": "移除模型",
       "modelName": "模型名稱",
       "modelAlias": "別名（選填）"
+    },
+    "nativeKey": {
+      "routing": "協定設定",
+      "nativeToolSearch": "允許自訂端點使用 Anthropic 原生工具搜尋",
+      "interactions": "使用 Vertex Interactions API",
+      "openapi": "使用 Vertex OpenAPI 端點",
+      "location": "OpenAPI 地區",
+      "pool": "連線池",
+      "poolHint": "自訂設定會啟用連線池，除非此處或群組設定已停用。空白欄位表示繼承。逾時或上限不大於零時不重用連線。",
+      "reuse": "重用上游連線",
+      "timeout": "閒置逾時（例如 5m）",
+      "maxIdle": "每個主機的最大閒置連線數",
+      "invalidMaxIdle": "最大閒置連線數必須是安全整數。",
+      "inheritHint": "僅在此金鑰需要不同設定時填寫；留空的欄位會繼承連線設定。",
+      "disableKey": "停用此金鑰",
+      "disableShort": "停用"
     },
     "runtimePolicy": {
       "title": "進階執行策略",
@@ -2109,7 +2192,9 @@
       "save": "儲存",
       "create": "建立",
       "enable": "啟用",
-      "disable": "停用"
+      "disable": "停用",
+      "newFor": "新增 {{provider}}",
+      "addProvider": "新增提供商"
     },
     "categories": {
       "title": "提供商",
@@ -2117,7 +2202,7 @@
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2132,12 +2217,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "金鑰",
-      "baseUrl": "服務位址",
-      "prefix": "前綴",
-      "models": "模型/請求標頭",
-      "status": "狀態",
-      "actions": "操作",
       "metrics": {
         "models": "模型",
         "keys": "金鑰",
@@ -2146,8 +2225,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 指紋",
-      "empty": "尚未新增設定,點擊右上角新增。",
-      "filterPlaceholder": "搜尋金鑰、位址、前綴…"
+      "filterPlaceholder": "搜尋金鑰、位址、前綴…",
+      "emptyBrand": "尚未新增 {{provider}} 設定",
+      "noMatch": "沒有符合篩選條件的資源"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2178,8 +2258,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保線路",
-         "aiCodeMirrorDomestic": "國內優化線路",
+        "aiCodeMirrorGlobal": "全球高保線路",
+        "aiCodeMirrorDomestic": "國內優化線路",
         "standard": "普通 URL",
         "direct": "專線直連 URL",
         "domestic": "中國大陸線路",
@@ -2188,8 +2268,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
-         "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
+        "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
+        "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
         "domestic": "面向中國大陸使用者和部署在中國大陸網路環境中的業務，通常可獲得更低延遲。",
         "overseas": "面向海外部署、跨境存取或需要存取境外模型的業務。",
         "mainlandChinaRecommended": "推薦中國大陸使用者和部署在中國大陸網路環境中的業務使用。",
@@ -2317,7 +2397,15 @@
         "baseUrlRequired": "服務位址必填",
         "weightInteger": "調度權重必須是整數",
         "weightMax": "調度權重不能超過 {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "連線",
+        "connectivity": "連通性測試",
+        "routing": "排程",
+        "advanced": "進階"
+      },
+      "headerName": "請求標頭名稱",
+      "headerValue": "請求標頭值"
     },
     "delete": {
       "title": "刪除資源",
@@ -2379,10 +2467,26 @@
         "selectAll": "全選",
         "clear": "清空",
         "empty": "尚無已設定模型"
-      }
+      },
+      "clearFilters": "清除篩選"
     },
     "modelCatalog": {
       "notLoaded": "未載入"
+    },
+    "card": {
+      "requests": "請求記錄"
+    },
+    "picker": {
+      "featured": "快速接入",
+      "featuredBadge": "推薦",
+      "oneKey": "一個 Key 接入 {{count}} 種協定",
+      "official": "官方 API",
+      "custom": "自訂",
+      "connect": "接入",
+      "connected": "已接入 {{count}}",
+      "offer": "優惠",
+      "onboardingTitle": "接入第一個 AI 提供商",
+      "moreQuickConnect": "更多快速接入"
     }
   },
   "claude_reset": {

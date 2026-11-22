@@ -10,6 +10,7 @@ const MODEL_BOOLEAN_FIELDS = [
 
 export function normalizeModelOptions(raw: Record<string, unknown>): Partial<ModelAlias> {
   const result: Partial<ModelAlias> = {};
+  if (typeof raw.openapi === 'boolean') result.openapi = raw.openapi;
   if (typeof raw['display-name'] === 'string') result.displayName = raw['display-name'];
   const context = raw['max-context-length'];
   if (typeof context === 'number' && Number.isSafeInteger(context))
@@ -65,6 +66,7 @@ export function serializeModelOptions(
   vertex = false
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
+  if (vertex && model.openapi !== undefined) result.openapi = model.openapi;
   if (model.displayName !== undefined) result['display-name'] = model.displayName;
   if (!vertex && model.maxContextLength !== undefined)
     result['max-context-length'] = model.maxContextLength;

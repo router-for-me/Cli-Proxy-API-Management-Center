@@ -6,6 +6,7 @@ import {
 } from '@/features/providers/kimi';
 import type { PluginListEntry } from '@/types';
 import iconMeta from '@/assets/icons/meta.svg';
+import iconCopilot from '@/assets/icons/copilot.svg';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
@@ -85,6 +86,14 @@ export const OAUTH_PROVIDERS: BuiltInOAuthProviderCard[] = [
       signUpUrl: KIMI_INTERNATIONAL_AFFILIATE_URL,
       siteKey: 'auth_login.sponsor_site_international',
     },
+  },
+  {
+    kind: 'builtin',
+    id: 'copilot',
+    label: 'GitHub Copilot',
+    titleKey: 'auth_login.copilot_oauth_title',
+    icon: iconCopilot,
+    flow: 'device',
   },
   {
     kind: 'builtin',

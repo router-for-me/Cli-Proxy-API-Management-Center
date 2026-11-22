@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
+import { OptionalBooleanField } from './NativeKeyFields';
 import { Select } from '@/components/ui/Select';
 import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { FieldLabel } from '@/components/ui/FieldLabel';
@@ -88,6 +89,7 @@ export function ModelAdvancedFields({
     <label className={styles.checkboxRow}>
       <input
         type="checkbox"
+        role="switch"
         className={styles.checkboxBox}
         checked={entry[key] === true}
         disabled={disabled || (budget && !enabled)}
@@ -103,18 +105,34 @@ export function ModelAdvancedFields({
   );
   return (
     <>
-      {textField('displayName')}
-      {capabilities.maxContextLength ? textField('maxContextLength', true) : null}
-      {checkbox('forceMapping')}
-      {capabilities.isCompat ? checkbox('isCompat') : null}
-      {capabilities.configurationUpdate ? checkbox('supportConfigurationUpdate') : null}
+      {capabilities.maxContextLength ? (
+        <div className={styles.fieldRow}>
+          {textField('displayName')}
+          {textField('maxContextLength', true)}
+        </div>
+      ) : (
+        textField('displayName')
+      )}
+      {providerBrand === 'vertex' ? (
+        <OptionalBooleanField
+          label={t('providersPage.nativeKey.openapi')}
+          value={entry.openapi}
+          disabled={disabled}
+          onChange={(openapi) => onUpdate({ openapi })}
+        />
+      ) : null}
       {capabilities.modalities ? (
-        <>
+        <div className={styles.fieldRow}>
           {textField('inputModalitiesText')}
           {textField('outputModalitiesText')}
-          {checkbox('useMaxCompletionTokens')}
-        </>
+        </div>
       ) : null}
+      <div className={styles.switchList}>
+        {checkbox('forceMapping')}
+        {capabilities.isCompat ? checkbox('isCompat') : null}
+        {capabilities.configurationUpdate ? checkbox('supportConfigurationUpdate') : null}
+        {capabilities.modalities ? checkbox('useMaxCompletionTokens') : null}
+      </div>
       {supportsThinking ? (
         <fieldset className={styles.thinkingFieldset}>
           <legend className={styles.label}>{t('providersPage.form.thinkingConfig')}</legend>
@@ -153,8 +171,10 @@ export function ModelAdvancedFields({
             {textField('thinkingMin', true, true)}
             {textField('thinkingMax', true, true)}
           </div>
-          {checkbox('thinkingZeroAllowed', true)}
-          {checkbox('thinkingDynamicAllowed', true)}
+          <div className={styles.switchList}>
+            {checkbox('thinkingZeroAllowed', true)}
+            {checkbox('thinkingDynamicAllowed', true)}
+          </div>
           <div className={styles.thinkingLevelGrid}>
             {THINKING_LEVELS.map((level) => (
               <SelectionCheckbox

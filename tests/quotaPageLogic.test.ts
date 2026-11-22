@@ -41,6 +41,7 @@ describe('refresh-all list handoff', () => {
 describe('resolveQuotaProviderType', () => {
   test('maps provider aliases and rejects unsupported or disabled files', () => {
     expect(resolveQuotaProviderType(file('a', 'grok'))).toBe('xai');
+    expect(resolveQuotaProviderType(file('a', 'copilot'))).toBe('copilot');
     expect(resolveQuotaProviderType(file('a', 'antigravity'))).toBe('antigravity');
     expect(resolveQuotaProviderType(file('a', 'gemini'))).toBeNull();
     expect(resolveQuotaProviderType(file('a', 'claude', { disabled: true }))).toBeNull();
@@ -80,6 +81,7 @@ describe('buildTabCounts', () => {
       kimi: 1,
       devin: 0,
       meta: 0,
+      copilot: 0,
       plugin: 0,
     });
   });
