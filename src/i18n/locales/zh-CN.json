@@ -2082,7 +2082,8 @@
       "create": "创建",
       "enable": "启用",
       "disable": "停用",
-      "newFor": "新建 {{provider}}"
+      "newFor": "新建 {{provider}}",
+      "addProvider": "添加提供商"
     },
     "categories": {
       "title": "提供商",
@@ -2363,6 +2364,18 @@
     },
     "card": {
       "requests": "请求记录"
+    },
+    "picker": {
+      "featured": "快速接入",
+      "featuredBadge": "推荐",
+      "oneKey": "一个 Key 接入 {{count}} 种协议",
+      "official": "官方 API",
+      "custom": "自定义",
+      "connect": "接入",
+      "connected": "已接入 {{count}}",
+      "offer": "优惠",
+      "onboardingTitle": "接入第一个 AI 提供商",
+      "moreQuickConnect": "更多快速接入"
     }
   },
   "claude_reset": {

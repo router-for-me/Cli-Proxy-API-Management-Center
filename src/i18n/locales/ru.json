@@ -2093,7 +2093,8 @@
       "create": "Создать",
       "enable": "Включить",
       "disable": "Отключить",
-      "newFor": "Добавить {{provider}}"
+      "newFor": "Добавить {{provider}}",
+      "addProvider": "Добавить провайдера"
     },
     "categories": {
       "title": "Провайдеры",
@@ -2374,6 +2375,18 @@
     },
     "card": {
       "requests": "Запросы"
+    },
+    "picker": {
+      "featured": "Быстрое подключение",
+      "featuredBadge": "Рекомендуем",
+      "oneKey": "Один ключ для {{count}} протоколов",
+      "official": "Официальные API",
+      "custom": "Свои",
+      "connect": "Подключить",
+      "connected": "Подключено: {{count}}",
+      "offer": "Акция",
+      "onboardingTitle": "Подключите первого AI-провайдера",
+      "moreQuickConnect": "Другие партнёры быстрого подключения"
     }
   },
   "claude_reset": {

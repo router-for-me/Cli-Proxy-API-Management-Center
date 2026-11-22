@@ -2089,7 +2089,8 @@
       "create": "Oluştur",
       "enable": "Etkinleştir",
       "disable": "Devre Dışı Bırak",
-      "newFor": "{{provider}} ekle"
+      "newFor": "{{provider}} ekle",
+      "addProvider": "Sağlayıcı ekle"
     },
     "categories": {
       "title": "Sağlayıcılar",
@@ -2370,6 +2371,18 @@
     },
     "card": {
       "requests": "İstekler"
+    },
+    "picker": {
+      "featured": "Hızlı bağlantı",
+      "featuredBadge": "Önerilen",
+      "oneKey": "Tek anahtarla {{count}} protokol",
+      "official": "Resmî API’ler",
+      "custom": "Özel",
+      "connect": "Bağla",
+      "connected": "{{count}} bağlı",
+      "offer": "Fırsat",
+      "onboardingTitle": "İlk yapay zekâ sağlayıcınızı bağlayın",
+      "moreQuickConnect": "Diğer hızlı bağlantı ortakları"
     }
   },
   "claude_reset": {

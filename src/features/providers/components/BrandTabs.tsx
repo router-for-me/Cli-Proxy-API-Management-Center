@@ -1,31 +1,41 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { scrollProviderTabs } from '@/features/authFiles/components/providerTabsWheel';
-import { partitionProviderGroups } from '../resourceView';
 import type { ProviderBrand, ProviderGroup } from '../types';
 import { BrandLogo } from './BrandLogo';
 import styles from './BrandTabs.module.scss';
 
 interface BrandTabsProps {
+  /** Brands the user has connected (plus the active one), in display order. */
   groups: ProviderGroup[];
   activeBrand: ProviderBrand;
   onSelect: (brand: ProviderBrand) => void;
   /** Builds the id shared by a tab and the panel it controls. */
   tabId: (brand: ProviderBrand) => string;
   panelId: string;
+  onAdd: () => void;
+  /** Opens the "add provider" catalogue from the quick-connect invitation. */
+  partnerBrands?: ProviderBrand[];
+  addDisabled?: boolean;
 }
 
 /**
- * Brand strip: quiet underline tabs, brand colour only in the mark. Partner
- * "quick fill" brands sit after a hairline so the regular providers read first.
- * Arrow keys move selection (automatic activation; switching is cheap).
+ * Brand strip for what the user already runs: quiet underline tabs, brand colour only in the
+ * mark. Unconnected brands live in the "add provider" catalogue instead of crowding the strip,
+ * which keeps it short and leaves room for a permanent quick-connect invitation on the right.
  */
-export function BrandTabs({ groups, activeBrand, onSelect, tabId, panelId }: BrandTabsProps) {
+export function BrandTabs({
+  groups,
+  activeBrand,
+  onSelect,
+  tabId,
+  panelId,
+  onAdd,
+  partnerBrands = [],
+  addDisabled = false,
+}: BrandTabsProps) {
   const { t } = useTranslation();
   const stripRef = useRef<HTMLDivElement>(null);
-  const { providers, quickFill } = partitionProviderGroups(groups);
-  const ordered = [...providers, ...quickFill];
-
   const [overflow, setOverflow] = useState({ start: false, end: false });
 
   useEffect(() => {
@@ -63,69 +73,81 @@ export function BrandTabs({ groups, activeBrand, onSelect, tabId, panelId }: Bra
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const index = ordered.findIndex((group) => group.id === activeBrand);
-    if (index < 0 || ordered.length === 0) return;
+    const index = groups.findIndex((group) => group.id === activeBrand);
+    if (index < 0 || groups.length === 0) return;
     let next = -1;
-    if (event.key === 'ArrowRight') next = (index + 1) % ordered.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + ordered.length) % ordered.length;
+    if (event.key === 'ArrowRight') next = (index + 1) % groups.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + groups.length) % groups.length;
     else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = ordered.length - 1;
+    else if (event.key === 'End') next = groups.length - 1;
     if (next < 0) return;
     event.preventDefault();
-    focusBrand(ordered[next].id);
-  };
-
-  const renderTab = (group: ProviderGroup) => {
-    const active = group.id === activeBrand;
-    const total = group.resources.length;
-    const disabledCount = group.resources.filter((resource) => resource.disabled).length;
-    return (
-      <button
-        key={group.id}
-        id={tabId(group.id)}
-        type="button"
-        role="tab"
-        aria-selected={active}
-        aria-controls={panelId}
-        tabIndex={active ? 0 : -1}
-        className={`${styles.tab} ${active ? styles.tabActive : ''}`}
-        onClick={() => onSelect(group.id)}
-        onKeyDown={handleKeyDown}
-      >
-        <BrandLogo brand={group.id} size={18} />
-        <span className={styles.label}>{t(`providersPage.providerNames.${group.id}`)}</span>
-        {total > 0 ? (
-          <span
-            className={styles.count}
-            title={t('providersPage.categories.activeCount', {
-              active: total - disabledCount,
-              total,
-            })}
-          >
-            {total}
-          </span>
-        ) : null}
-      </button>
-    );
+    focusBrand(groups[next].id);
   };
 
   return (
-    <div
-      ref={stripRef}
-      className={styles.strip}
-      data-overflow-start={overflow.start || undefined}
-      data-overflow-end={overflow.end || undefined}
-      role="tablist"
-      aria-label={t('providersPage.categories.title')}
-    >
-      {providers.map(renderTab)}
-      {quickFill.length > 0 ? (
-        <>
-          <span className={styles.divider} aria-hidden="true">
-            <span className={styles.dividerLabel}>{t('providersPage.categories.quickFill')}</span>
+    <div className={styles.bar}>
+      <div
+        ref={stripRef}
+        className={styles.strip}
+        data-overflow-start={overflow.start || undefined}
+        data-overflow-end={overflow.end || undefined}
+        role="tablist"
+        aria-label={t('providersPage.categories.title')}
+      >
+        {groups.map((group) => {
+          const active = group.id === activeBrand;
+          const total = group.resources.length;
+          const disabledCount = group.resources.filter((resource) => resource.disabled).length;
+          return (
+            <button
+              key={group.id}
+              id={tabId(group.id)}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-controls={panelId}
+              tabIndex={active ? 0 : -1}
+              className={`${styles.tab} ${active ? styles.tabActive : ''}`}
+              onClick={() => onSelect(group.id)}
+              onKeyDown={handleKeyDown}
+            >
+              <BrandLogo brand={group.id} size={18} />
+              <span className={styles.label}>{t(`providersPage.providerNames.${group.id}`)}</span>
+              {total > 0 ? (
+                <span
+                  className={styles.count}
+                  title={t('providersPage.categories.activeCount', {
+                    active: total - disabledCount,
+                    total,
+                  })}
+                >
+                  {total}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      {partnerBrands.length > 0 ? (
+        <button
+          type="button"
+          className={styles.partners}
+          onClick={onAdd}
+          disabled={addDisabled}
+          aria-label={t('providersPage.picker.moreQuickConnect')}
+          title={partnerBrands
+            .map((brand) => t(`providersPage.providerNames.${brand}`))
+            .join(' · ')}
+        >
+          <span className={styles.partnersLabel}>{t('providersPage.picker.featured')}</span>
+          <span className={styles.partnersStack} aria-hidden="true">
+            {partnerBrands.map((brand) => (
+              <BrandLogo key={brand} brand={brand} size={24} className={styles.partnerLogo} />
+            ))}
           </span>
-          {quickFill.map(renderTab)}
-        </>
+        </button>
       ) : null}
     </div>
   );

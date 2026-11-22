@@ -13,6 +13,7 @@ import {
   openaiToResource,
 } from '@/features/providers/adapters';
 import { BrandTabs } from '@/features/providers/components/BrandTabs';
+import { ProviderPicker } from '@/features/providers/components/ProviderPicker';
 import { ResourceCard } from '@/features/providers/components/ResourceCard';
 import { FormDisclosure } from '@/features/providers/sheets/forms/FormSection';
 import {
@@ -173,34 +174,101 @@ describe('resource card', () => {
     expect(html).toContain('+1');
     expect(html).toContain(en.providersPage.table.metrics.keys);
   });
+  test('sponsor bundles show their resolved endpoint instead of repeating protocols', () => {
+    const fenno = fennoAIToResource({
+      openai: [],
+      claude: [],
+      codex: [{ config: { apiKey: 'fenno-key', baseUrl: 'https://api.fenno.ai/v1' }, index: 0 }],
+      gemini: [],
+    })!;
+    const html = card(fenno);
+    expect(html).toMatch(/title="https:\/\/api\.fenno\.ai[^"]*"/);
+    expect(html).not.toContain(en.providersPage.card.requests);
+  });
 });
 
 describe('brand tabs', () => {
-  test('render an accessible tablist with roving focus and quiet empty brands', () => {
+  test('render an accessible tablist and a quick-connect invitation for unconnected partners', () => {
     const html = render(
       createElement(BrandTabs, {
-        groups: [group('gemini', [alpha, beta]), group('codex'), group('fennoAI')],
+        groups: [group('gemini', [alpha, beta]), group('codex', [disabled])],
         activeBrand: 'gemini',
         onSelect: () => {},
         tabId: (brand: string) => `tab-${brand}`,
         panelId: 'panel',
+        onAdd: () => {},
+        partnerBrands: ['fennoAI', 'qiniuCloud'],
       })
     );
     expect(html).toContain('role="tablist"');
     const tabs = [...html.matchAll(/<button[^>]*role="tab"[^>]*>/g)].map((m) => m[0]);
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(2);
     const active = tabs.find((tab) => tab.includes('id="tab-gemini"'))!;
     expect(active).toContain('aria-selected="true"');
     expect(active).toContain('tabindex="0"');
     expect(active).toContain('aria-controls="panel"');
-    const codex = tabs.find((tab) => tab.includes('id="tab-codex"'))!;
-    expect(codex).toContain('tabindex="-1"');
-    // Partner brands follow a labelled divider; empty brands carry no zero badge.
-    expect(html.indexOf(en.providersPage.categories.quickFill)).toBeLessThan(
-      html.indexOf('id="tab-fennoAI"')
+    expect(tabs.find((tab) => tab.includes('id="tab-codex"'))).toContain('tabindex="-1"');
+    const invite = new RegExp(
+      `<button[^>]*aria-label="${en.providersPage.picker.moreQuickConnect}"[^>]*>`
+    ).exec(html);
+    expect(invite).not.toBeNull();
+    expect(invite![0]).toContain('FennoAI');
+    // The invitation sits outside the tablist so it is not announced as a tab.
+    expect(html.indexOf('</div>')).toBeLessThan(html.indexOf(invite![0]));
+  });
+
+  test('omit the invitation once every partner is connected', () => {
+    const html = render(
+      createElement(BrandTabs, {
+        groups: [group('gemini', [alpha])],
+        activeBrand: 'gemini',
+        onSelect: () => {},
+        tabId: (brand: string) => `tab-${brand}`,
+        panelId: 'panel',
+        onAdd: () => {},
+      })
     );
-    expect(html).toContain('>2</span>');
-    expect(html).not.toContain('>0</span>');
+    expect(html).not.toContain(en.providersPage.picker.moreQuickConnect);
+  });
+});
+
+describe('provider picker', () => {
+  const catalogue = [
+    group('kimi'),
+    group('gemini', [alpha]),
+    group('codex'),
+    group('openaiCompatibility'),
+    group('fennoAI'),
+    group('qiniuCloud'),
+    group('aiCodeMirror'),
+  ];
+
+  test('features quick-connect partners first with connect and register actions', () => {
+    const html = render(createElement(ProviderPicker, { groups: catalogue, onPick: () => {} }));
+    const featured = html.indexOf(en.providersPage.picker.featured);
+    const official = html.indexOf(en.providersPage.picker.official);
+    expect(featured).toBeGreaterThanOrEqual(0);
+    expect(featured).toBeLessThan(official);
+    for (const name of ['FennoAI', en.providersPage.providerNames.qiniuCloud]) {
+      expect(html).toContain(`aria-label="${en.providersPage.picker.connect} ${name}"`);
+      expect(html.indexOf(name)).toBeLessThan(official);
+    }
+    const links = [...html.matchAll(/<a[^>]*target="_blank"[^>]*>/g)];
+    // Three partners plus the Kimi offer.
+    expect(links).toHaveLength(4);
+    expect(html).toContain(en.providersPage.sponsor.kimiPromo);
+    expect(html).toContain(en.providersPage.picker.oneKey.replace('{{count}}', '2'));
+  });
+
+  test('marks connected brands and keeps the custom entry last', () => {
+    const html = render(createElement(ProviderPicker, { groups: catalogue, onPick: () => {} }));
+    expect(html).toContain(en.providersPage.picker.connected.replace('{{count}}', '1'));
+    expect(html.indexOf(en.providersPage.picker.custom)).toBeGreaterThan(
+      html.indexOf(en.providersPage.picker.official)
+    );
+    expect(html.lastIndexOf(en.providersPage.providerNames.openaiCompatibility)).toBeGreaterThan(
+      html.indexOf(en.providersPage.picker.custom)
+    );
   });
 });
 
@@ -227,6 +295,17 @@ describe('workbench locales', () => {
     ['toolbar', 'clearFilters'],
     ['form', 'headerName'],
     ['form', 'headerValue'],
+    ['actions', 'addProvider'],
+    ['picker', 'featured'],
+    ['picker', 'featuredBadge'],
+    ['picker', 'oneKey'],
+    ['picker', 'official'],
+    ['picker', 'custom'],
+    ['picker', 'connect'],
+    ['picker', 'connected'],
+    ['picker', 'offer'],
+    ['picker', 'onboardingTitle'],
+    ['picker', 'moreQuickConnect'],
   ];
   const sections = ['connection', 'connectivity', 'routing', 'advanced'];
 

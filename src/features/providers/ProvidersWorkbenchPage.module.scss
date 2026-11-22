@@ -25,6 +25,23 @@
   max-width: 880px;
 }
 
+/* 首次引导：目录即页面 */
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  max-width: 1080px;
+}
+
+.onboardingTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
 .errorBanner {
   font-size: 12.5px;
   line-height: 1.5;

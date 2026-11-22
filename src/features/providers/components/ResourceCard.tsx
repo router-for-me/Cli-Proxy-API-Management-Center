@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { IconEye, IconPencil, IconTrash2 } from '@/components/ui/icons';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
-import { isSponsorResource, type ResourceUsage } from '../resourceView';
+import { getSponsorBaseUrl, isSponsorResource, type ResourceUsage } from '../resourceView';
 import type { ProviderResource } from '../types';
 import styles from './ResourceCard.module.scss';
 import statusBarStyles from './providerStatusBar.module.scss';
@@ -58,10 +58,11 @@ export function ResourceCard({
   }
 
   let endpoint: ReactNode;
-  if (sponsor) {
-    endpoint = protocols
-      .map((protocol) => t(`providersPage.sponsor.protocols.${protocol}`))
-      .join(' / ');
+  const sponsorBaseUrl = sponsor ? getSponsorBaseUrl(resource) : null;
+  if (sponsorBaseUrl) {
+    endpoint = sponsorBaseUrl;
+  } else if (sponsor) {
+    endpoint = <span className={styles.endpointNote}>{t('providersPage.status.notSet')}</span>;
   } else if (resource.baseUrl) {
     endpoint = resource.baseUrl;
   } else if (resource.brand === 'claude') {
@@ -75,7 +76,7 @@ export function ResourceCard({
     endpoint = <span className={styles.endpointNote}>{t('providersPage.status.notSet')}</span>;
   }
   const endpointTitle = sponsor
-    ? undefined
+    ? (sponsorBaseUrl ?? undefined)
     : (resource.baseUrl ?? (resource.brand === 'claude' ? CLAUDE_DEFAULT_BASE_URL : undefined));
 
   const chips: ReactNode[] = [];

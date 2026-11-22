@@ -2089,7 +2089,8 @@
       "create": "생성",
       "enable": "활성화",
       "disable": "비활성화",
-      "newFor": "{{provider}} 추가"
+      "newFor": "{{provider}} 추가",
+      "addProvider": "제공자 추가"
     },
     "categories": {
       "title": "공급자",
@@ -2370,6 +2371,18 @@
     },
     "card": {
       "requests": "요청 기록"
+    },
+    "picker": {
+      "featured": "빠른 연결",
+      "featuredBadge": "추천",
+      "oneKey": "키 하나로 {{count}}개 프로토콜",
+      "official": "공식 API",
+      "custom": "사용자 지정",
+      "connect": "연결",
+      "connected": "{{count}}개 연결됨",
+      "offer": "혜택",
+      "onboardingTitle": "첫 AI 제공자를 연결하세요",
+      "moreQuickConnect": "빠른 연결 파트너 더 보기"
     }
   },
   "claude_reset": {

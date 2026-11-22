@@ -8,10 +8,16 @@ import { useProviderRecentRequests } from '@/components/providers/hooks/useProvi
 import { ProvidersHeader, type ProvidersHeaderSummary } from './components/ProvidersHeader';
 import { BrandTabs } from './components/BrandTabs';
 import { BrandPanel, type BrandPanelControls } from './components/BrandPanel';
+import { ProviderPicker } from './components/ProviderPicker';
 import { SponsorCampaignCard } from './components/SponsorCampaignCard';
 import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import { ProviderSheet, type ProviderSheetHandle } from './sheets/ProviderSheet';
-import { collectGroupModels, getResourceDisplayName, selectVisibleResources } from './resourceView';
+import {
+  collectGroupModels,
+  getResourceDisplayName,
+  partitionProviderGroups,
+  selectVisibleResources,
+} from './resourceView';
 import { APIKEY_FUN_DISPLAY_NAME } from './sponsor';
 import { isSponsorPartialMutationError } from './sponsorMutationRecovery';
 import { useProviderWorkbench } from './useProviderWorkbench';
@@ -25,13 +31,14 @@ import {
 import type { ProviderBrand, ProviderResource, ProviderSortBy, SortDir } from './types';
 import styles from './ProvidersWorkbenchPage.module.scss';
 
-type SheetMode = 'detail' | 'create' | 'edit';
+type SheetMode = 'pick' | 'detail' | 'create' | 'edit';
 
 interface SheetState {
   open: boolean;
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+  fromPicker?: boolean;
 }
 
 interface ProvidersWorkbenchPageProps {
@@ -104,13 +111,26 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         : allGroups.filter((group) => group.id !== 'apikeyFun'),
     [allGroups, fixedBrand]
   );
-  const firstVisibleBrand = groups[0]?.id ?? fixedBrand ?? 'gemini';
-  const activeBrand =
+  // The strip only lists connected brands; unconnected ones live in the "add provider" picker.
+  const connectedGroups = useMemo(
+    () => groups.filter((group) => group.resources.length > 0),
+    [groups]
+  );
+  const activeBrand: ProviderBrand =
     fixedBrand ??
-    (groups.some((group) => group.id === uiState.activeBrand)
+    (connectedGroups.some((group) => group.id === uiState.activeBrand)
       ? uiState.activeBrand
-      : firstVisibleBrand);
-  const activeGroup = groups.find((group) => group.id === activeBrand) ?? groups[0] ?? null;
+      : (connectedGroups[0]?.id ?? 'gemini'));
+  const activeGroup = fixedBrand
+    ? (groups[0] ?? null)
+    : (connectedGroups.find((group) => group.id === activeBrand) ?? null);
+  const partnerBrands = useMemo(
+    () =>
+      partitionProviderGroups(groups)
+        .quickFill.filter((group) => group.resources.length === 0)
+        .map((group) => group.id),
+    [groups]
+  );
   const activeFilterState = getProviderFilterState(uiState, activeBrand);
 
   const updateActiveFilterState = useCallback(
@@ -199,11 +219,27 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       ? APIKEY_FUN_DISPLAY_NAME
       : t('nav.quick_start')
     : t('providersPage.header.title');
-  const activeBrandName = t(`providersPage.providerNames.${activeBrand}`);
-
   const openCreate = useCallback(() => {
     setSheetState({ open: true, brand: activeBrand, mode: 'create', resource: null });
   }, [activeBrand]);
+
+  const openPicker = useCallback(() => {
+    setSheetState((state) => ({
+      open: true,
+      brand: state.brand,
+      mode: 'pick',
+      resource: null,
+      fromPicker: false,
+    }));
+  }, []);
+
+  const pickBrand = useCallback((brand: ProviderBrand) => {
+    setSheetState({ open: true, brand, mode: 'create', resource: null, fromPicker: true });
+  }, []);
+
+  const backToPicker = useCallback(() => {
+    setSheetState((state) => ({ ...state, mode: 'pick', fromPicker: false }));
+  }, []);
 
   const openView = useCallback((resource: ProviderResource) => {
     setSheetState({ open: true, brand: resource.brand, mode: 'detail', resource });
@@ -283,8 +319,13 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
 
   const handleCreated = useCallback(() => {
     showNotification(t('providersPage.toast.created'), 'success');
+    // Land on the brand that was just connected so the new card is in view.
+    const createdBrand = sheetState.brand;
+    persistUiState((prev) =>
+      prev.activeBrand === createdBrand ? prev : { ...prev, activeBrand: createdBrand }
+    );
     closeSheet();
-  }, [closeSheet, showNotification, t]);
+  }, [closeSheet, persistUiState, sheetState.brand, showNotification, t]);
 
   const handleUpdated = useCallback(() => {
     showNotification(t('providersPage.toast.updated'), 'success');
@@ -320,15 +361,47 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       summary={isQuickStart ? undefined : summary}
       isFetching={workbench.isFetching}
       onRefresh={() => void handleRefresh()}
-      newLabel={
-        fixedBrand || !activeGroup
-          ? undefined
-          : t('providersPage.actions.newFor', { provider: activeBrandName })
-      }
+      newLabel={fixedBrand ? undefined : t('providersPage.actions.addProvider')}
       newDisabled={disableMutations}
-      onNew={openCreate}
+      onNew={openPicker}
     />
   );
+
+  const sheet = (
+    <ProviderSheet
+      ref={sheetRef}
+      state={sheetState}
+      onClose={closeSheet}
+      onSwitchToEdit={() => {
+        setSheetState((state) => (state.resource ? { ...state, mode: 'edit' } : state));
+      }}
+      workbench={workbench}
+      onCreated={handleCreated}
+      onUpdated={handleUpdated}
+      mutationDisabled={disableMutations}
+      usageByProvider={usageByProvider}
+      pickerGroups={groups}
+      onPick={pickBrand}
+      onBackToPicker={backToPicker}
+    />
+  );
+
+  if (!fixedBrand && groups.length > 0 && !activeGroup) {
+    // First run: nothing connected yet, so the catalogue itself is the page.
+    return (
+      <div className={styles.page}>
+        {header}
+        {errorBanner}
+        <section className={styles.onboarding} aria-labelledby={`${domId}-onboarding`}>
+          <h2 id={`${domId}-onboarding`} className={styles.onboardingTitle}>
+            {t('providersPage.picker.onboardingTitle')}
+          </h2>
+          <ProviderPicker groups={groups} variant="page" onPick={pickBrand} />
+        </section>
+        {sheet}
+      </div>
+    );
+  }
 
   if (!activeGroup) {
     return (
@@ -367,11 +440,14 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
       <div className={styles.workbench}>
         {!fixedBrand ? (
           <BrandTabs
-            groups={groups}
+            groups={connectedGroups}
             activeBrand={activeGroup.id}
             onSelect={selectBrand}
             tabId={tabId}
             panelId={panelId}
+            onAdd={openPicker}
+            partnerBrands={partnerBrands}
+            addDisabled={disableMutations}
           />
         ) : null}
         <BrandPanel
@@ -391,19 +467,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         />
       </div>
 
-      <ProviderSheet
-        ref={sheetRef}
-        state={sheetState}
-        onClose={closeSheet}
-        onSwitchToEdit={() => {
-          setSheetState((state) => (state.resource ? { ...state, mode: 'edit' } : state));
-        }}
-        workbench={workbench}
-        onCreated={handleCreated}
-        onUpdated={handleUpdated}
-        mutationDisabled={disableMutations}
-        usageByProvider={usageByProvider}
-      />
+      {sheet}
     </div>
   );
 }

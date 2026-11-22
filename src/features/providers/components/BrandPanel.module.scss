@@ -79,6 +79,20 @@
   }
 }
 
+/* ---------- 工具栏行：筛选在左，为当前品牌追加在右 ---------- */
+
+.toolbarRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
 /* ---------- 网格 ---------- */
 
 .grid {
@@ -166,7 +180,7 @@
 }
 
 .ghostPill {
-  padding: 9px 16px;
+  padding: 8px 14px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   color: var(--text-secondary);

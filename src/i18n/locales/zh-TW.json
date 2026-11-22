@@ -2110,7 +2110,8 @@
       "create": "建立",
       "enable": "啟用",
       "disable": "停用",
-      "newFor": "新增 {{provider}}"
+      "newFor": "新增 {{provider}}",
+      "addProvider": "新增提供商"
     },
     "categories": {
       "title": "提供商",
@@ -2391,6 +2392,18 @@
     },
     "card": {
       "requests": "請求記錄"
+    },
+    "picker": {
+      "featured": "快速接入",
+      "featuredBadge": "推薦",
+      "oneKey": "一個 Key 接入 {{count}} 種協定",
+      "official": "官方 API",
+      "custom": "自訂",
+      "connect": "接入",
+      "connected": "已接入 {{count}}",
+      "offer": "優惠",
+      "onboardingTitle": "接入第一個 AI 提供商",
+      "moreQuickConnect": "更多快速接入"
     }
   },
   "claude_reset": {

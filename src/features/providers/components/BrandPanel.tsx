@@ -111,18 +111,29 @@ export function BrandPanel({
       ) : null}
 
       {hasResources ? (
-        <ResourceToolbar
-          key={group.id}
-          filter={controls.filter}
-          onFilterChange={controls.onFilterChange}
-          sortBy={controls.sortBy}
-          sortDir={controls.sortDir}
-          onSortBy={controls.onSortBy}
-          onSortDir={controls.onSortDir}
-          availableModels={controls.availableModels}
-          selectedModels={controls.selectedModels}
-          onSelectedModelsChange={controls.onSelectedModelsChange}
-        />
+        <div className={styles.toolbarRow}>
+          <ResourceToolbar
+            key={group.id}
+            filter={controls.filter}
+            onFilterChange={controls.onFilterChange}
+            sortBy={controls.sortBy}
+            sortDir={controls.sortDir}
+            onSortBy={controls.onSortBy}
+            onSortDir={controls.onSortDir}
+            availableModels={controls.availableModels}
+            selectedModels={controls.selectedModels}
+            onSelectedModelsChange={controls.onSelectedModelsChange}
+          />
+          <button
+            type="button"
+            className={styles.ghostPill}
+            onClick={onCreate}
+            disabled={disableMutations}
+          >
+            <IconPlus size={14} />
+            {t('providersPage.actions.newFor', { provider: providerName })}
+          </button>
+        </div>
       ) : null}
 
       {!hasResources ? (

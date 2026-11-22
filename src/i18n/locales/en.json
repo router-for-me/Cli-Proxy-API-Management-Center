@@ -2089,7 +2089,8 @@
       "create": "Create",
       "enable": "Enable",
       "disable": "Disable",
-      "newFor": "New {{provider}}"
+      "newFor": "New {{provider}}",
+      "addProvider": "Add provider"
     },
     "categories": {
       "title": "Providers",
@@ -2370,6 +2371,18 @@
     },
     "card": {
       "requests": "Requests"
+    },
+    "picker": {
+      "featured": "Quick connect",
+      "featuredBadge": "Recommended",
+      "oneKey": "One key for {{count}} protocols",
+      "official": "Official APIs",
+      "custom": "Custom",
+      "connect": "Connect",
+      "connected": "{{count}} connected",
+      "offer": "Offer",
+      "onboardingTitle": "Connect your first AI provider",
+      "moreQuickConnect": "More quick-connect partners"
     }
   },
   "claude_reset": {

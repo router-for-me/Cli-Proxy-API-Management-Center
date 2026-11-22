@@ -1961,7 +1961,8 @@
       "create": "Tạo",
       "enable": "Bật",
       "disable": "Tắt",
-      "newFor": "Thêm {{provider}}"
+      "newFor": "Thêm {{provider}}",
+      "addProvider": "Thêm nhà cung cấp"
     },
     "categories": {
       "title": "Provider",
@@ -2332,6 +2333,18 @@
     },
     "card": {
       "requests": "Yêu cầu"
+    },
+    "picker": {
+      "featured": "Kết nối nhanh",
+      "featuredBadge": "Đề xuất",
+      "oneKey": "Một key cho {{count}} giao thức",
+      "official": "API chính thức",
+      "custom": "Tùy chỉnh",
+      "connect": "Kết nối",
+      "connected": "Đã kết nối {{count}}",
+      "offer": "Ưu đãi",
+      "onboardingTitle": "Kết nối nhà cung cấp AI đầu tiên",
+      "moreQuickConnect": "Thêm đối tác kết nối nhanh"
     }
   },
   "devin_quota": {

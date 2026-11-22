@@ -15,8 +15,14 @@ import {
 } from '@/components/providers/utils';
 import type { OpenAIProviderConfig } from '@/types';
 import type { StatusBarData } from '@/utils/recentRequests';
-import { isMultiProtocolSponsorBrand } from './sponsorDefinitions';
-import type { ProviderGroup, ProviderResource, ProviderSortBy, SortDir } from './types';
+import { getSponsorProviderDefinition, isMultiProtocolSponsorBrand } from './sponsorDefinitions';
+import type {
+  ProviderGroup,
+  ProviderResource,
+  ProviderSortBy,
+  SortDir,
+  SponsorProviderRaw,
+} from './types';
 
 /** Brands that live in the "quick fill" partner section of the brand strip, in display order. */
 export const QUICK_FILL_BRAND_ORDER = ['fennoAI', 'qiniuCloud', 'aiCodeMirror'] as const;
@@ -148,3 +154,15 @@ export const resolveResourceUsage = (
 /** Human label used in confirmations and titles. */
 export const getResourceDisplayName = (resource: ProviderResource): string =>
   resource.name ?? resource.apiKeyPreview ?? resource.identifier ?? '';
+
+/** Base URL a sponsor bundle points at, resolved the same way its detail view does. */
+export const getSponsorBaseUrl = (resource: ProviderResource): string | null => {
+  if (!isMultiProtocolSponsorBrand(resource.brand)) return null;
+  const raw = resource.raw as SponsorProviderRaw;
+  return getSponsorProviderDefinition(resource.brand).resolveBaseUrl(
+    raw.openai[0]?.config.baseUrl ??
+      raw.codex[0]?.config.baseUrl ??
+      raw.claude[0]?.config.baseUrl ??
+      raw.gemini[0]?.config.baseUrl
+  );
+};

@@ -553,7 +553,6 @@
   background: color-mix(in srgb, var(--text-primary) 7%, transparent);
 }
 
-
 .showMoreBtn {
   align-self: center;
   border: 0;
@@ -1214,7 +1213,6 @@
   background: var(--text-primary);
   color: var(--bg-secondary);
 }
-
 
 @media (hover: hover) and (pointer: fine) {
   .footerBtnGhost:hover:not(:disabled) {

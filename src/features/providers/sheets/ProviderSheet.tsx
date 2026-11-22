@@ -6,22 +6,30 @@ import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
 import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
-import type { ProviderBrand, ProviderEntryFormInput, ProviderResource } from '../types';
+import type {
+  ProviderBrand,
+  ProviderEntryFormInput,
+  ProviderGroup,
+  ProviderResource,
+} from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
 import { SponsorProviderForm } from './forms/SponsorProviderForm';
 import { BrandLogo } from '../components/BrandLogo';
+import { ProviderPicker } from '../components/ProviderPicker';
 import formStyles from './forms/sharedForm.module.scss';
 import styles from './ProviderSheet.module.scss';
 
-type SheetMode = 'detail' | 'create' | 'edit';
+type SheetMode = 'pick' | 'detail' | 'create' | 'edit';
 
 export interface ProviderSheetState {
   open: boolean;
   brand: ProviderBrand;
   mode: SheetMode;
   resource: ProviderResource | null;
+  /** A create form opened from the picker returns to it on cancel. */
+  fromPicker?: boolean;
 }
 
 export interface ProviderSheetHandle {
@@ -37,6 +45,10 @@ interface ProviderSheetProps {
   onUpdated: () => void;
   mutationDisabled?: boolean;
   usageByProvider?: ProviderRecentUsageMap;
+  /** Brands offered by the "add provider" picker. */
+  pickerGroups?: ProviderGroup[];
+  onPick?: (brand: ProviderBrand) => void;
+  onBackToPicker?: () => void;
   ref?: Ref<ProviderSheetHandle>;
 }
 
@@ -49,6 +61,9 @@ export function ProviderSheet({
   onUpdated,
   mutationDisabled = false,
   usageByProvider,
+  pickerGroups = [],
+  onPick,
+  onBackToPicker,
   ref,
 }: ProviderSheetProps) {
   const { t } = useTranslation();
@@ -92,11 +107,14 @@ export function ProviderSheet({
 
   useImperativeHandle(ref, () => ({ confirmDiscardIfDirty }), [confirmDiscardIfDirty]);
 
+  const backToPicker = state.mode === 'create' && state.fromPicker ? onBackToPicker : undefined;
   const handleCancelClick = useCallback(() => {
     void confirmDiscardIfDirty().then((ok) => {
-      if (ok) onClose();
+      if (!ok) return;
+      if (backToPicker) backToPicker();
+      else onClose();
     });
-  }, [confirmDiscardIfDirty, onClose]);
+  }, [backToPicker, confirmDiscardIfDirty, onClose]);
 
   const modeLabel =
     state.mode === 'create'
@@ -104,15 +122,18 @@ export function ProviderSheet({
       : state.mode === 'edit'
         ? t('providersPage.form.editEyebrow')
         : t('providersPage.detail.title');
-  const titleText = (
-    <span className={styles.sheetTitle}>
-      <BrandLogo brand={state.brand} size={26} />
-      <span className={styles.sheetTitleText}>
-        <span className={styles.sheetTitleMode}>{modeLabel}</span>
-        <span>{t(`providersPage.providerNames.${state.brand}`)}</span>
+  const titleText =
+    state.mode === 'pick' ? (
+      t('providersPage.actions.addProvider')
+    ) : (
+      <span className={styles.sheetTitle}>
+        <BrandLogo brand={state.brand} size={26} />
+        <span className={styles.sheetTitleText}>
+          <span className={styles.sheetTitleMode}>{modeLabel}</span>
+          <span>{t(`providersPage.providerNames.${state.brand}`)}</span>
+        </span>
       </span>
-    </span>
-  );
+    );
 
   const handleCreate = useCallback(
     async (input: ProviderEntryFormInput) => {
@@ -143,6 +164,9 @@ export function ProviderSheet({
   );
 
   const renderBody = () => {
+    if (state.mode === 'pick') {
+      return <ProviderPicker groups={pickerGroups} onPick={(brand) => onPick?.(brand)} />;
+    }
     if (state.mode === 'detail') {
       if (!state.resource) {
         return null;
@@ -179,7 +203,15 @@ export function ProviderSheet({
   };
 
   const footer =
-    state.mode === 'detail' ? (
+    state.mode === 'pick' ? (
+      <button
+        type="button"
+        className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
+        onClick={onClose}
+      >
+        {t('common.close')}
+      </button>
+    ) : state.mode === 'detail' ? (
       <>
         <button
           type="button"
@@ -208,7 +240,7 @@ export function ProviderSheet({
           onClick={handleCancelClick}
           disabled={submitting}
         >
-          {t('providersPage.actions.cancel')}
+          {backToPicker ? t('common.back') : t('providersPage.actions.cancel')}
         </button>
         <button
           type="submit"
