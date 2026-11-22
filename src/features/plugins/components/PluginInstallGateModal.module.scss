@@ -72,7 +72,7 @@
   }
 
   &:hover {
-    color: var(--accent-color);
+    color: var(--text-primary);
     text-decoration: underline;
 
     svg {
@@ -81,7 +81,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--focus-ring-color, var(--accent-color));
+    outline: 2px solid var(--primary-color);
     outline-offset: 3px;
     border-radius: $radius-sm;
   }
