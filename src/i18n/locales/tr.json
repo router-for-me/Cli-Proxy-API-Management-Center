@@ -616,6 +616,17 @@
     "empty_title": "Devin Kimlik Bilgisi Yok",
     "empty_desc": "Kotayı Sormak için Bir Devin Kimlik Dosyası Yükle veya Arka Uç CLI ile Giriş Yap."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot Kotası",
+    "empty_title": "GitHub Copilot Kimlik Bilgisi Yok",
+    "empty_desc": "Kotayı Sormak için GitHub Copilot OAuth ile Giriş Yap veya Bir GitHub Copilot Kimlik Dosyası Yükle.",
+    "idle": "GitHub Copilot Kotasını Sormak için Tıkla",
+    "loading": "GitHub Copilot Kotası Sorgulanıyor…",
+    "load_failed": "Kota Sorgulanamadı: {{message}}",
+    "remaining": "%{{percent}} Kaldı",
+    "premium": "Premium etkileşimler",
+    "unavailable": "Kota alınamadı. Copilot kimlik bilgilerini kontrol edip tekrar deneyin."
+  },
   "meta_quota": {
     "title": "Muse (Meta) Kotası",
     "empty_title": "Muse Kimlik Bilgisi Yok",

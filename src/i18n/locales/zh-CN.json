@@ -601,6 +601,17 @@
     "empty_title": "暂无 Devin 凭据",
     "empty_desc": "上传 Devin 凭据文件或通过后端 CLI 登录后，即可查询额度。"
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot 额度",
+    "empty_title": "暂无 GitHub Copilot 凭据",
+    "empty_desc": "使用 GitHub Copilot OAuth 登录或上传 GitHub Copilot 认证文件以查询额度。",
+    "idle": "点击查询 GitHub Copilot 额度",
+    "loading": "正在查询 GitHub Copilot 额度…",
+    "load_failed": "额度查询失败：{{message}}",
+    "remaining": "剩余 {{percent}}%",
+    "premium": "高级交互",
+    "unavailable": "额度不可用。请检查 Copilot 凭证后重试。"
+  },
   "meta_quota": {
     "title": "Muse (Meta) 额度",
     "empty_title": "暂无 Muse 凭据",

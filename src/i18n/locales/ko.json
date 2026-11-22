@@ -616,6 +616,17 @@
     "empty_title": "Devin 자격 증명 없음",
     "empty_desc": "Devin 자격 증명 파일을 업로드하거나 백엔드 CLI로 로그인하여 할당량을 조회하세요."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot 할당량",
+    "empty_title": "GitHub Copilot 자격 증명 없음",
+    "empty_desc": "GitHub Copilot OAuth로 로그인하거나 GitHub Copilot 자격 증명 파일을 업로드하여 할당량을 조회하세요.",
+    "idle": "클릭하여 GitHub Copilot 할당량 조회",
+    "loading": "GitHub Copilot 할당량 조회 중…",
+    "load_failed": "할당량 조회 실패: {{message}}",
+    "remaining": "{{percent}}% 남음",
+    "premium": "프리미엄 상호작용",
+    "unavailable": "할당량을 확인할 수 없습니다. Copilot 자격 증명을 확인한 후 다시 시도하세요."
+  },
   "meta_quota": {
     "title": "Muse (Meta) 할당량",
     "empty_title": "Muse 자격 증명 없음",

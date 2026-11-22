@@ -606,6 +606,17 @@
     "empty_title": "Нет учётных данных Devin",
     "empty_desc": "Загрузите файл учётных данных Devin или войдите через CLI сервера для запроса квоты."
   },
+  "copilot_quota": {
+    "title": "Квота GitHub Copilot",
+    "empty_title": "Нет учётных данных GitHub Copilot",
+    "empty_desc": "Войдите через GitHub Copilot OAuth или загрузите файл учётных данных GitHub Copilot для запроса квоты.",
+    "idle": "Нажмите для запроса квоты GitHub Copilot",
+    "loading": "Запрос квоты GitHub Copilot…",
+    "load_failed": "Не удалось запросить квоту: {{message}}",
+    "remaining": "Осталось {{percent}}%",
+    "premium": "Премиальные взаимодействия",
+    "unavailable": "Квота недоступна. Проверьте учётные данные Copilot и повторите попытку."
+  },
   "meta_quota": {
     "title": "Квота Muse (Meta)",
     "empty_title": "Нет учётных данных Muse",

@@ -601,6 +601,17 @@
     "empty_title": "暫無 Devin 憑證",
     "empty_desc": "上傳 Devin 憑證檔案或透過後端 CLI 登入後，即可查詢額度。"
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot 額度",
+    "empty_title": "暫無 GitHub Copilot 憑證",
+    "empty_desc": "使用 GitHub Copilot OAuth 登入或上傳 GitHub Copilot 驗證檔案以查詢額度。",
+    "idle": "點擊查詢 GitHub Copilot 額度",
+    "loading": "正在查詢 GitHub Copilot 額度…",
+    "load_failed": "額度查詢失敗：{{message}}",
+    "remaining": "剩餘 {{percent}}%",
+    "premium": "進階互動",
+    "unavailable": "額度無法取得。請檢查 Copilot 憑證後重試。"
+  },
   "meta_quota": {
     "title": "Muse (Meta) 額度",
     "empty_title": "暫無 Muse 憑證",

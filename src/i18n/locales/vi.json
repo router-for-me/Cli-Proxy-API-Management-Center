@@ -2375,6 +2375,17 @@
     "empty_title": "Không có credential Devin",
     "empty_desc": "Tải lên file credential Devin hoặc đăng nhập bằng CLI backend để truy vấn quota."
   },
+  "copilot_quota": {
+    "title": "Quota GitHub Copilot",
+    "empty_title": "Không có credential GitHub Copilot",
+    "empty_desc": "Đăng nhập bằng GitHub Copilot OAuth hoặc tải lên file credential GitHub Copilot để truy vấn quota.",
+    "idle": "Nhấn để truy vấn quota GitHub Copilot",
+    "loading": "Đang truy vấn quota GitHub Copilot…",
+    "load_failed": "Truy vấn quota thất bại: {{message}}",
+    "remaining": "Còn lại {{percent}}%",
+    "premium": "Tương tác cao cấp",
+    "unavailable": "Không thể lấy hạn mức. Hãy kiểm tra thông tin xác thực Copilot và thử lại."
+  },
   "meta_quota": {
     "title": "Quota Muse (Meta)",
     "empty_title": "Không có credential Muse",
