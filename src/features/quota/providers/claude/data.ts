@@ -208,6 +208,16 @@ export const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): st
   return null;
 };
 
+async function observeClaudeQuota(authIndex: string, t: TFunction): Promise<ClaudeQuotaData> {
+  const observation = await claudeQuotaApi.observe(authIndex);
+  if (!observation) throw new Error(t('claude_quota.empty_windows'));
+  return {
+    windows: buildClaudeQuotaWindows(observation.payload, t),
+    dollarWindows: [],
+    observedAt: observation.observedAt,
+  };
+}
+
 const fetchClaudeQuota = async (
   file: AuthFileItem,
   t: TFunction,
@@ -217,6 +227,9 @@ const fetchClaudeQuota = async (
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('claude_quota.missing_auth_index'));
+  }
+  if (allowProbe && file.claudeSetupToken) {
+    return observeClaudeQuota(authIndex, t);
   }
 
   const assertConnection = guardConfigConnection();
@@ -255,16 +268,10 @@ const fetchClaudeQuota = async (
     }
 
     assertConnection();
-    const observation = await claudeQuotaApi.observe(authIndex).catch((error: unknown) => {
+    return observeClaudeQuota(authIndex, t).catch((error: unknown) => {
       if (getStatusFromError(error) === 404) throw usageError;
       throw error;
     });
-    if (!observation) throw new Error(t('claude_quota.empty_windows'));
-    return {
-      windows: buildClaudeQuotaWindows(observation.payload, t),
-      dollarWindows: [],
-      observedAt: observation.observedAt,
-    };
   }
 
   const payload = parseClaudeUsagePayload(result.body ?? result.bodyText);

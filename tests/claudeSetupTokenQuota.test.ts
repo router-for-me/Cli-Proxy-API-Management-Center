@@ -2,6 +2,7 @@ import { afterEach, expect, spyOn, test } from 'bun:test';
 import type { TFunction } from 'i18next';
 import { CLAUDE_CONFIG } from '@/features/quota/providers/claude/data';
 import { apiCallApi } from '@/services/api';
+import { normalizeAuthFilesResponse } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
 
 const t = ((key: string) => key) as TFunction;
@@ -72,6 +73,25 @@ test('background loads and unrelated permission errors do not trigger inference'
   });
   await expect(CLAUDE_CONFIG.refreshQuota!(credential, t)).rejects.toMatchObject({ status: 403 });
   expect(post).not.toHaveBeenCalled();
+});
+
+test('a marked setup token refresh skips the OAuth endpoints entirely', async () => {
+  const upstream = mockScopeError();
+  const post = mockObservation({
+    quota: {
+      observed_at: observedAt,
+      signals: { 'anthropic-ratelimit-unified-7d-utilization': '0.99' },
+    },
+  });
+  const [file] = normalizeAuthFilesResponse({
+    files: [{ ...credential, claude_setup_token: true }],
+  }).files;
+
+  const result = await CLAUDE_CONFIG.refreshQuota!(file, t);
+
+  expect(result.windows[0]?.usedPercent).toBe(99);
+  expect(post).toHaveBeenCalledTimes(1);
+  expect(upstream).not.toHaveBeenCalled();
 });
 
 test('the existing usage endpoint still supplies the normal refresh result', async () => {
