@@ -1,9 +1,46 @@
 /**
  * Read-only normalization of the raw Claude OAuth usage response.
  */
-import type { ClaudeDollarWindow, ClaudeUsageSnapshot } from '@/types/quota';
+import type { ClaudeDollarWindow, ClaudeUsagePayload, ClaudeUsageSnapshot } from '@/types/quota';
 import { isRecord } from '@/utils/helpers';
 import { normalizeNumberValue, normalizeStringValue } from '@/utils/quota/parsers';
+import { apiClient } from './client';
+
+type ClaudeQuotaObservation = { payload: ClaudeUsagePayload; observedAt: string };
+
+function normalizeClaudeQuotaObservation(value: unknown): ClaudeQuotaObservation | null {
+  if (!isRecord(value) || !isRecord(value.quota) || !isRecord(value.quota.signals)) return null;
+  const observedAt = normalizeStringValue(value.quota.observed_at);
+  if (!observedAt || !Number.isFinite(Date.parse(observedAt))) return null;
+  const signals = new Map(
+    Object.entries(value.quota.signals).map(([name, signal]) => [name.toLowerCase(), signal])
+  );
+  const payload: ClaudeUsagePayload = {};
+  for (const [window, key] of [
+    ['5h', 'five_hour'],
+    ['7d', 'seven_day'],
+  ] as const) {
+    const prefix = `anthropic-ratelimit-unified-${window}`;
+    const fraction = normalizeNumberValue(signals.get(`${prefix}-utilization`));
+    if (fraction === null || fraction < 0 || !Number.isFinite(fraction * 100)) continue;
+    const reset = normalizeNumberValue(signals.get(`${prefix}-reset`));
+    const resetTime = reset !== null && reset > 0 ? new Date(reset * 1000) : null;
+    payload[key] = {
+      utilization: fraction * 100,
+      resets_at: resetTime && Number.isFinite(resetTime.getTime()) ? resetTime.toISOString() : null,
+    };
+  }
+  return Object.keys(payload).length > 0 ? { payload, observedAt } : null;
+}
+
+export const claudeQuotaApi = {
+  observe: async (authIndex: string) => {
+    const value = await apiClient.captureConnection().post<unknown>('/credentials/claude-quota', {
+      auth_index: authIndex,
+    });
+    return normalizeClaudeQuotaObservation(value);
+  },
+};
 
 const nullableBoolean = (value: unknown): boolean | null =>
   typeof value === 'boolean' ? value : null;

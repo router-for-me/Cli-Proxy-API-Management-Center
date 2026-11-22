@@ -15,7 +15,9 @@ import type {
   ClaudeUsagePayload,
 } from '@/types';
 import { apiCallApi, getApiCallErrorMessage } from '@/services/api';
-import { normalizeClaudeUsageSnapshot } from '@/services/api/claudeUsage';
+import { claudeQuotaApi, normalizeClaudeUsageSnapshot } from '@/services/api/claudeUsage';
+import { guardConfigConnection } from '@/services/api/configValue';
+import { isRecord } from '@/utils/helpers';
 import {
   CLAUDE_PROFILE_URL,
   CLAUDE_USAGE_URL,
@@ -28,6 +30,7 @@ import {
   formatQuotaResetTime,
   resolveResetMs,
   createStatusError,
+  getStatusFromError,
   isClaudeFile,
   isDisabledAuthFile,
 } from '@/utils/quota';
@@ -205,13 +208,18 @@ export const resolveClaudePlanType = (profile: ClaudeProfileResponse | null): st
   return null;
 };
 
-const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<ClaudeQuotaData> => {
+const fetchClaudeQuota = async (
+  file: AuthFileItem,
+  t: TFunction,
+  allowProbe = false
+): Promise<ClaudeQuotaData> => {
   const rawAuthIndex = file['auth_index'] ?? file.authIndex;
   const authIndex = normalizeAuthIndex(rawAuthIndex);
   if (!authIndex) {
     throw new Error(t('claude_quota.missing_auth_index'));
   }
 
+  const assertConnection = guardConfigConnection();
   const [usageResult, profileResult] = await Promise.allSettled([
     apiCallApi.request({
       authIndex,
@@ -234,7 +242,29 @@ const fetchClaudeQuota = async (file: AuthFileItem, t: TFunction): Promise<Claud
   const result = usageResult.value;
 
   if (result.statusCode < 200 || result.statusCode >= 300) {
-    throw createStatusError(getApiCallErrorMessage(result), result.statusCode);
+    const usageError = createStatusError(getApiCallErrorMessage(result), result.statusCode);
+    const detail = isRecord(result.body) && isRecord(result.body.error) ? result.body.error : null;
+    if (
+      !allowProbe ||
+      result.statusCode !== 403 ||
+      detail?.type !== 'permission_error' ||
+      typeof detail.message !== 'string' ||
+      !/\bscope\b.*\buser:profile\b/i.test(detail.message)
+    ) {
+      throw usageError;
+    }
+
+    assertConnection();
+    const observation = await claudeQuotaApi.observe(authIndex).catch((error: unknown) => {
+      if (getStatusFromError(error) === 404) throw usageError;
+      throw error;
+    });
+    if (!observation) throw new Error(t('claude_quota.empty_windows'));
+    return {
+      windows: buildClaudeQuotaWindows(observation.payload, t),
+      dollarWindows: [],
+      observedAt: observation.observedAt,
+    };
   }
 
   const payload = parseClaudeUsagePayload(result.body ?? result.bodyText);
@@ -276,6 +306,7 @@ export const CLAUDE_CONFIG: QuotaProviderData<ClaudeQuotaState, ClaudeQuotaData>
   i18nPrefix: 'claude_quota',
   filterFn: (file) => isClaudeFile(file) && !isDisabledAuthFile(file),
   fetchQuota: fetchClaudeQuota,
+  refreshQuota: (file, t) => fetchClaudeQuota(file, t, true),
   storeSelector: (state) => state.claudeQuota,
   storeSetter: 'setClaudeQuota',
   buildLoadingState: () => ({ status: 'loading', windows: [] }),
