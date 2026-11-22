@@ -1,48 +1,60 @@
 @use '../../../styles/mixins' as *;
-@use '../../../styles/variables' as *;
+
+/* ProviderStatusBar 注入样式（契约类名），与凭证卡的健康条同配方 */
 
 .statusBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  width: 100%;
-  max-width: 100%;
+  gap: 8px;
 }
 
 .statusBlocks {
   display: flex;
   gap: 2px;
-  width: 100%;
+  flex: 1;
   min-width: 0;
-  position: relative;
 }
 
 .statusBlockWrapper {
-  flex: 1 1 0;
-  min-width: 0;
   position: relative;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  flex: 1 1 0;
+  min-width: 3px;
 }
 
 .statusBlock {
-  width: 100%;
-  height: 6px;
+  height: 14px;
   border-radius: 2px;
-  transition:
-    transform 0.15s ease,
-    opacity 0.15s ease;
-
-  .statusBlockWrapper:hover &,
-  .statusBlockWrapper.statusBlockActive & {
-    transform: scaleY(1.8);
-    opacity: 0.9;
-  }
 }
 
 .statusBlockIdle {
-  background-color: var(--border-color);
+  background: color-mix(in srgb, var(--text-quaternary) 26%, transparent);
+}
+
+.statusBlockActive .statusBlock {
+  outline: 1px solid var(--text-secondary);
+  outline-offset: 1px;
+}
+
+.statusRate {
+  font-family: $font-mono;
+  font-size: 11.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-quaternary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.statusRateHigh {
+  color: var(--viz-success);
+}
+
+.statusRateMedium {
+  color: var(--quota-medium-color);
+}
+
+.statusRateLow {
+  color: var(--viz-failure);
 }
 
 .statusTooltip {
@@ -50,114 +62,54 @@
   bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-primary);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--floating-surface);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 12px;
+  box-shadow: var(--floating-shadow);
+  pointer-events: none;
+  font-family: $font-mono;
+  font-size: 11px;
   line-height: 1.5;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  z-index: $z-dropdown;
-  pointer-events: none;
-  color: var(--text-primary);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: var(--bg-primary);
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent;
-    border-top-color: var(--border-color);
-  }
 }
 
 .statusTooltipLeft {
   left: 0;
-  transform: translateX(0);
-
-  &::after,
-  &::before {
-    left: 8px;
-    transform: none;
-  }
+  transform: none;
 }
 
 .statusTooltipRight {
   left: auto;
   right: 0;
-  transform: translateX(0);
-
-  &::after,
-  &::before {
-    left: auto;
-    right: 8px;
-    transform: none;
-  }
+  transform: none;
 }
 
 .tooltipTime {
-  color: var(--text-secondary);
-  display: block;
-  margin-bottom: 2px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
 }
 
 .tooltipStats {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
 }
 
 .tooltipSuccess {
-  color: var(--success-color, #22c55e);
+  color: var(--viz-success);
 }
 
 .tooltipFailure {
-  color: var(--danger-color, #ef4444);
+  color: var(--viz-failure);
 }
 
 .tooltipRate {
   color: var(--text-secondary);
-  margin-left: 2px;
-}
-
-.statusRate {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 48px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.statusRateHigh {
-  color: var(--success-badge-text, #065f46);
-  background: var(--success-badge-bg, #d1fae5);
-}
-
-.statusRateMedium {
-  color: var(--warning-text, #92400e);
-  background: var(--warning-bg, #fef3c7);
-}
-
-.statusRateLow {
-  color: var(--failure-badge-text);
-  background: var(--failure-badge-bg);
 }

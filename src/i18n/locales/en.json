@@ -2088,7 +2088,8 @@
       "save": "Save",
       "create": "Create",
       "enable": "Enable",
-      "disable": "Disable"
+      "disable": "Disable",
+      "newFor": "New {{provider}}"
     },
     "categories": {
       "title": "Providers",
@@ -2096,7 +2097,7 @@
       "activeCount": "{{active}}/{{total}} active"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2111,12 +2112,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "Key",
-      "baseUrl": "Base URL",
-      "prefix": "Prefix",
-      "models": "Models/Headers",
-      "status": "Status",
-      "actions": "Actions",
       "metrics": {
         "models": "Models",
         "keys": "Keys",
@@ -2125,8 +2120,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI Profile",
-      "empty": "No resources yet, click \"New\" to add.",
-      "filterPlaceholder": "Search keys, URLs, prefixes…"
+      "filterPlaceholder": "Search keys, URLs, prefixes…",
+      "emptyBrand": "No {{provider}} configuration yet",
+      "noMatch": "No resources match the current filters"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2157,8 +2153,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Global high-protection route",
-         "aiCodeMirrorDomestic": "Mainland China optimized route",
+        "aiCodeMirrorGlobal": "Global high-protection route",
+        "aiCodeMirrorDomestic": "Mainland China optimized route",
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
@@ -2167,8 +2163,8 @@
         "global": "Global"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "A high-protection route for global access.",
-         "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
+        "aiCodeMirrorGlobal": "A high-protection route for global access.",
+        "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
         "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
         "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
@@ -2296,7 +2292,15 @@
         "baseUrlRequired": "Base URL is required",
         "weightInteger": "Scheduling weight must be an integer",
         "weightMax": "Scheduling weight cannot exceed {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "Connection",
+        "connectivity": "Connectivity test",
+        "routing": "Routing",
+        "advanced": "Advanced"
+      },
+      "headerName": "Header name",
+      "headerValue": "Header value"
     },
     "delete": {
       "title": "Delete resource",
@@ -2358,10 +2362,14 @@
         "selectAll": "Select all",
         "clear": "Clear",
         "empty": "No models configured yet"
-      }
+      },
+      "clearFilters": "Clear filters"
     },
     "modelCatalog": {
       "notLoaded": "Not loaded"
+    },
+    "card": {
+      "requests": "Requests"
     }
   },
   "claude_reset": {

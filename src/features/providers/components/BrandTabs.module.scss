@@ -1,0 +1,142 @@
+@use '../../../styles/mixins' as *;
+
+/* 品牌分段：安静的下划线式 tabs，与认证文件页 ProviderTabs 同配方。
+   高频切换，不做入场动画；只有颜色与下划线随状态过渡。 */
+
+.strip {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color);
+  scrollbar-width: none;
+  --fade-start: 0px;
+  --fade-end: 0px;
+  /* 边缘渐隐只出现在确有品牌被遮住的一侧，不画硬分隔 */
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent
+  );
+
+  &[data-overflow-start] {
+    --fade-start: 32px;
+  }
+
+  &[data-overflow-end] {
+    --fade-end: 32px;
+  }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 8px 11px 11px;
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition:
+    color var(--dur-hover) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: -1px;
+    height: 2px;
+    border-radius: $radius-full;
+    background: transparent;
+    transition: background-color var(--dur-hover) var(--ease-out-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover:not(.tabActive) {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--bg-tertiary) 55%, transparent);
+  }
+}
+
+.tabActive {
+  color: var(--text-primary);
+  font-weight: 650;
+
+  &::after {
+    background: var(--text-primary);
+  }
+}
+
+.label {
+  line-height: 1.4;
+}
+
+.count {
+  font-family: $font-mono;
+  font-size: 10.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  min-width: 18px;
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 0 6px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+
+  .tabActive & {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 11%, transparent);
+  }
+}
+
+.divider {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin: 0 6px 3px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+  align-self: center;
+  height: 18px;
+}
+
+.dividerLabel {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab,
+  .tab::after {
+    transition: none;
+  }
+}

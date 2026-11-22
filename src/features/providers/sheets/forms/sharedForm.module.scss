@@ -1,726 +1,864 @@
 @use '../../../../styles/mixins' as *;
-@use '../../../../styles/variables' as *;
+
+/* ============================================================
+ * 提供商表单语汇
+ * 分区标题（mono eyebrow）→ 常驻字段 → 设置式折叠分组。
+ * 控件统一 36px / 9px 圆角；按钮沿用页面的药丸语汇。
+ * ============================================================ */
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 26px;
   min-width: 0;
-  max-width: 100%;
 }
 
 .quickStartForm {
   gap: 20px;
-
-  .section {
-    gap: 14px;
-  }
-
-  .sectionTitle {
-    font-size: 17px;
-    font-weight: 700;
-    line-height: 1.35;
-    letter-spacing: 0;
-  }
-
-  .sectionDesc {
-    max-width: 72ch;
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--text-secondary);
-  }
-
-  .field {
-    gap: 7px;
-  }
-
-  .label,
-  .labelLine {
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .label {
-    font-weight: 600;
-  }
-
-  .input,
-  .textarea,
-  .discoverySearch {
-    font-size: 14px;
-    line-height: 1.45;
-  }
-
-  .entryCard {
-    gap: 12px;
-  }
-
-  .entryCardHeader {
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .sponsorGroupTitle {
-    gap: 3px;
-
-    strong {
-      font-size: 14px;
-      font-weight: 650;
-      line-height: 1.4;
-    }
-  }
-
-  .sponsorUrlOptionText,
-  .checkboxText {
-    font-size: 14px;
-    line-height: 1.45;
-  }
-
-  .sponsorUrlOptionText small,
-  .sponsorProtocolUrl,
-  .sponsorUsageResult,
-  .connectivityError,
-  .discoveryEmpty,
-  .discoveryItem,
-  .discoveryBatchLabel,
-  .discoveryName {
-    font-size: 12px;
-    line-height: 1.6;
-  }
-
-  .sponsorProtocolName {
-    font-size: 13px;
-    font-weight: 650;
-    line-height: 1.4;
-  }
-
-  .sponsorUsageMain {
-    line-height: 1.45;
-  }
-
-  .sponsorUsageMeta,
-  .discoveryAlias,
-  .discoveryCount,
-  .discoveryAddedTag {
-    font-size: 12px;
-    line-height: 1.55;
-  }
-
-  .connectivityBtn,
-  .discoveryApplyBtn,
-  .addBtn,
-  .removeBtn {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1;
-  }
-
-  .footerBtn {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1;
-  }
-
-  details summary {
-    font-size: 14px;
-    font-weight: 650;
-    line-height: 1.45;
-  }
 }
+
+/* ---------- 分区 ---------- */
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
-.sectionTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+.sectionHeading {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-family: $font-mono;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+
+  /* 标题后的发丝线把分区切开，不再需要卡片边框 */
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--border-color) 80%, transparent);
+  }
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-primary);
 }
 
 .sectionDesc {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  line-height: 1.5;
   margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
 
+/* ---------- 字段 ---------- */
+
 .field {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 12.5px;
+  font-weight: 550;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
-/* Label + InfoTip (FieldLabel). Plain inline flow at the label's own size, so the InfoTip
-   brings its own spacing and follows the last word when a long label wraps. */
 .labelLine {
-  display: block;
-  min-width: 0;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .input,
 .textarea {
   width: 100%;
-  height: 36px;
-  padding: 8px 12px;
-  border-radius: var(--radius-md);
+  min-width: 0;
+  /* 与共享 Select 触发器同高同圆角，表单行在视觉上对齐 */
+  height: 40px;
+  padding: 0 12px;
   border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  border-radius: $radius-md;
+  background: var(--bg-secondary);
   color: var(--text-primary);
+  font: inherit;
   font-size: 13px;
-  font-family: inherit;
   box-sizing: border-box;
+  transition:
+    border-color var(--dur-hover) var(--ease-out-strong),
+    box-shadow var(--dur-hover) var(--ease-out-strong);
 
   &::placeholder {
-    color: var(--text-tertiary);
+    color: var(--text-quaternary);
   }
 
   &:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--border-hover);
     box-shadow: 0 0 0 3px var(--primary-10);
   }
 
   &:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: color-mix(in srgb, var(--danger-color) 55%, transparent);
   }
 }
 
 .textarea {
   height: auto;
-  min-height: 80px;
-  resize: vertical;
-  font-family: $font-mono;
+  min-height: 76px;
+  padding: 9px 11px;
   line-height: 1.5;
+  resize: vertical;
 }
 
+/* ---------- 开关行（复选框以开关形态呈现，语义仍为 checkbox） ---------- */
+
 .checkboxRow {
-  display: flex;
-  align-items: flex-start;
+  display: inline-flex;
+  align-items: center;
   gap: 10px;
   cursor: pointer;
-  user-select: none;
+  min-height: 24px;
+  font-size: 13px;
+  color: var(--text-primary);
 }
 
 .checkboxBox {
-  margin-top: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
   appearance: none;
   position: relative;
+  flex-shrink: 0;
+  width: 30px;
+  height: 18px;
+  margin: 0;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-primary) 16%, transparent);
+  cursor: pointer;
+  transition: background-color var(--dur-hover) var(--ease-out-strong);
 
-  &:checked {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+  &::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+    transition: transform var(--dur-hover) var(--ease-out-strong);
   }
 
-  &:checked::after {
-    content: '';
-    width: 8px;
-    height: 4px;
-    border-left: 2px solid var(--primary-contrast);
-    border-bottom: 2px solid var(--primary-contrast);
-    transform: rotate(-45deg) translateY(-2px);
+  &:checked {
+    background: var(--text-primary);
+  }
+
+  &:checked::before {
+    transform: translateX(12px);
+    background: var(--bg-secondary);
   }
 
   &:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 .checkboxText {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 13px;
-  color: var(--text-primary);
+  line-height: 1.45;
 }
 
-/* Checkbox row + InfoTip (CheckboxField). The InfoTip stays outside the <label>; the row
-   shrinks to its content so the icon sits right after the text. */
 .checkboxLine {
   display: flex;
   align-items: center;
-  min-width: 0;
-  font-size: 13px;
+  gap: 4px;
 }
 
-.fieldRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  min-width: 0;
-}
-
-.divider {
-  border: 0;
-  border-top: 1px solid var(--border-color);
-  margin: 4px 0;
-}
-
-.errorBox {
-  border: 1px solid var(--destructive-30);
-  background: var(--destructive-10);
-  color: var(--destructive-color);
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.dl {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 16px;
-  margin: 0;
-}
-
-.dt {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  font-weight: 500;
-}
-
-.dd {
-  margin: 0;
-  margin-top: 2px;
-  font-size: 12px;
-  font-family: $font-mono;
-  color: var(--text-primary);
-  word-break: break-word;
-}
-
-.detailHeader {
-  margin-bottom: 4px;
-}
-
-/* Sponsor detail: name + InfoTip on one line, in normal inline flow. */
-.detailTitleLine {
-  display: block;
-  min-width: 0;
-  font-size: 13px;
-}
-
-.detailTitle {
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.entryCard {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 12px;
+/* 连续的开关行：比字段间距更紧，读作一组 */
+.switchList {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: var(--bg-secondary);
-}
 
-.entryCardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-}
-
-.entryCardToggle {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 3px;
-    border-radius: var(--radius-sm);
+  &:empty {
+    display: none;
   }
 }
 
-.sponsorGroupTitle {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
+/* ---------- 密码 ---------- */
 
-  strong {
-    color: var(--text-primary);
+.passwordField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput {
+  padding-right: 40px;
+  font-family: $font-mono;
+  font-size: 12.5px;
+
+  &::placeholder {
+    font-family: $font-family;
     font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 
-.sponsorGroupSummary {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-}
-
-.sponsorSummaryKey,
-.sponsorSummaryUrl {
-  display: inline-block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sponsorSummaryKey {
-  max-width: 140px;
-  font-family: $font-mono;
-  color: var(--text-primary);
-}
-
-.sponsorSummaryUrl {
-  max-width: min(360px, 45vw);
-  font-family: $font-mono;
-  color: var(--muted-foreground);
-}
-
-.entryCardHeaderRight {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.entryCardBody {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.entryCardIconBtn {
+.passwordToggle {
+  position: absolute;
+  right: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
+  width: 30px;
   height: 28px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  background: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition:
-    background-color $transition-fast,
-    color $transition-fast;
 
-  &:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 
   &:focus-visible {
     outline: 2px solid var(--primary-color);
-    outline-offset: -1px;
+    outline-offset: -2px;
   }
 }
 
-.entryCardChevron {
-  transition: transform $transition-fast;
+@media (hover: hover) and (pointer: fine) {
+  .passwordToggle:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
 }
 
-.entryCardChevronOpen {
-  transform: rotate(180deg);
+/* ---------- 错误 ---------- */
+
+.errorBox {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 设置式折叠分组 ---------- */
+
+.disclosureGroup {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  overflow: hidden;
+
+  &:empty {
+    display: none;
+  }
+
+  > .disclosure + .disclosure {
+    border-top: 1px solid var(--border-color);
+  }
+
+  > .disclosure {
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+}
+
+.disclosure {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  min-width: 0;
+}
+
+.disclosureSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 14px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background-color var(--dur-hover) var(--ease-out-strong);
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+    border-radius: 12px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .disclosureSummary:hover {
+    background: color-mix(in srgb, var(--bg-tertiary) 50%, transparent);
+  }
+}
+
+.disclosureLabel {
+  min-width: 0;
+  @include text-ellipsis;
+}
+
+.disclosureCount {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  padding: 0 7px;
+  border-radius: $radius-full;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+.disclosureChevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition: transform var(--dur-hover) var(--ease-out-strong);
+
+  .disclosure[open] > .disclosureSummary > & {
+    transform: rotate(180deg);
+  }
+}
+
+.disclosureBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 14px 16px;
+  min-width: 0;
+}
+
+.disclosure[open] > .disclosureBody {
+  animation: disclosure-in var(--dur-press) var(--ease-out-strong);
+}
+
+@keyframes disclosure-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- 条目列表（密钥 / 模型 / 规则） ---------- */
+
+.entriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
 .entriesToolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
-  margin-bottom: 2px;
+  flex-wrap: wrap;
 }
 
 .entriesToolbarSplit {
   justify-content: space-between;
 }
 
-.sponsorUrlOptions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-
-  @media (min-width: 560px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.sponsorUrlOption {
+.entryCard {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  cursor: pointer;
-  transition:
-    border-color $transition-fast,
-    background-color $transition-fast;
-
-  input {
-    margin: 2px 0 0;
-    accent-color: var(--primary-color);
-    flex-shrink: 0;
-
-    &:disabled {
-      cursor: not-allowed;
-    }
-  }
-
-  &:hover {
-    border-color: var(--primary-color);
-  }
-}
-
-.sponsorUrlOptionActive {
-  border-color: var(--primary-color);
-  background: var(--primary-10);
-}
-
-.sponsorUrlOptionText {
-  display: flex;
-  min-width: 0;
   flex-direction: column;
-  gap: 2px;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.entryCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 6px 0 12px;
   font-size: 13px;
-  color: var(--text-primary);
-
-  small {
-    font-family: $font-mono;
-    font-size: 11px;
-    line-height: 1.4;
-    color: var(--muted-foreground);
-    overflow-wrap: anywhere;
-  }
-}
-
-.sponsorUrlOptionText .sponsorUrlOptionDescription {
-  font-family: inherit;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.sponsorProtocolGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-
-  @media (min-width: 560px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.sponsorProtocolCard {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-}
-
-.sponsorProtocolName {
-  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.sponsorProtocolUrl {
-  font-family: $font-mono;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--muted-foreground);
-  overflow-wrap: anywhere;
+.entryCardToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
 
-.sponsorUsageSection {
+.entryCardHeaderRight {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.sponsorUsageResult {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 4px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--success-color) 34%, var(--border-color));
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--success-color) 8%, var(--bg-primary));
-  color: var(--text-primary);
-  font-size: 11px;
-  line-height: 1.4;
+  flex-shrink: 0;
 }
 
-.sponsorUsageResultWarning {
-  color: var(--warning-text);
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
+.entryCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+  min-width: 0;
 }
 
-.sponsorUsageMain {
+/* 合作方分组卡：正文承载多个分区，留白更宽 */
+.entryCardBodyRoomy {
+  gap: 24px;
+  padding: 16px 14px 18px;
+}
+
+.entryCardIconBtn,
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-hover) var(--ease-out-strong),
+    color var(--dur-hover) var(--ease-out-strong),
+    transform var(--dur-press) var(--ease-out-strong);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .entryCardIconBtn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .removeBtn:hover:not(:disabled) {
+    color: var(--danger-color);
+    background: var(--destructive-10);
+  }
+}
+
+.entryCardChevron {
+  transition: transform var(--dur-hover) var(--ease-out-strong);
+}
+
+.entryCardChevronOpen {
+  transform: rotate(180deg);
+}
+
+.entrySummary {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-weight: 500;
+  min-width: 0;
+  margin-left: auto;
 }
 
-.sponsorUsageMeta {
-  color: var(--muted-foreground);
+.entrySummaryKey {
+  font-family: $font-mono;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  @include text-ellipsis;
 }
+
+.entryBadge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: $radius-full;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+}
+
+
+.showMoreBtn {
+  align-self: center;
+  border: 0;
+  background: none;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .showMoreBtn:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+}
+
+/* 添加：虚线行按钮，占满宽度，暗示「在这里追加一行」 */
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px dashed var(--border-primary);
+  border-radius: 9px;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--dur-hover) var(--ease-out-strong),
+    border-color var(--dur-hover) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong),
+    transform var(--dur-press) var(--ease-out-strong);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .addBtn:hover:not(:disabled) {
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+    background: color-mix(in srgb, var(--bg-tertiary) 45%, transparent);
+  }
+}
+
+/* ---------- 次级动作按钮（测试 / 发现 / 查询） ---------- */
 
 .connectivityRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  flex-wrap: wrap;
 }
 
-.connectivityBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color $transition-fast,
-    border-color $transition-fast;
-
-  &:hover:not(:disabled) {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
+.connectivityBtn,
 .connectivityBtnGhost {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  height: 24px;
-  padding: 0 8px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 500;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: $radius-full;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color $transition-fast,
-    color $transition-fast;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-  }
+    color var(--dur-hover) var(--ease-out-strong),
+    border-color var(--dur-hover) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong),
+    transform var(--dur-press) var(--ease-out-strong);
 
   &:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+}
+
+.connectivityBtn {
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.connectivityBtnGhost {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .connectivityBtn:hover:not(:disabled) {
+    border-color: var(--text-tertiary);
+  }
+
+  .connectivityBtnGhost:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
   }
 }
 
 .connectivityError {
-  border: 1px solid var(--destructive-30);
-  background: var(--destructive-10);
-  color: var(--destructive-color);
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  font-size: 11px;
-  line-height: 1.4;
-  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  border-radius: 8px;
+  padding: 7px 10px;
+  overflow-wrap: anywhere;
+
+  .entryCard > & {
+    margin: 0 10px 10px;
+  }
 }
 
 .connectivityHintSuccess {
-  font-size: 11px;
-  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--viz-success);
 }
 
 .statusIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  flex-shrink: 0;
 }
 
 .statusIconLoading {
-  color: var(--text-secondary);
-  animation: spin 0.8s linear infinite;
+  color: var(--text-tertiary);
+  animation: provider-form-spin 0.8s linear infinite;
 }
 
 .statusIconSuccess {
-  color: var(--success-color);
+  color: var(--viz-success);
 }
 
 .statusIconError {
-  color: var(--destructive-color);
+  color: var(--danger-color);
 }
+
+@keyframes provider-form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- 测试模型：选择器与测试按钮同一行 ---------- */
+
+.inlineControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.mono {
+  font-family: $font-mono;
+  font-size: 12.5px;
+}
+
+/* ---------- 请求头行 ---------- */
+
+.headerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ---------- 模型条目 ---------- */
+
+.modelEntry {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+}
+
+.modelAliasRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 6px 6px 6px;
+
+  .input {
+    height: 32px;
+    border-color: transparent;
+    background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+
+    &:focus {
+      border-color: var(--border-hover);
+    }
+  }
+}
+
+.modelEntryActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.modelEntryDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
+}
+
+.thinkingFieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  min-width: 0;
+
+  > legend {
+    padding: 0 6px;
+  }
+}
+
+.thinkingLevelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 6px;
+}
+
+.thinkingLevelOption {
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  transition:
+    border-color var(--dur-hover) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong);
+}
+
+.thinkingLevelOptionSelected {
+  border-color: color-mix(in srgb, var(--text-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-secondary));
+}
+
+.thinkingLevelLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+
+  code {
+    font-family: $font-mono;
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+  }
+}
+
+/* ---------- 模型发现面板 ---------- */
 
 .discoveryPanel {
   display: flex;
@@ -728,8 +866,9 @@
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .discoveryToolbar {
@@ -741,130 +880,90 @@
 .discoverySearchWrap {
   position: relative;
   flex: 1;
-  display: flex;
-  align-items: center;
+  min-width: 0;
 }
 
 .discoverySearchIcon {
   position: absolute;
+  top: 50%;
   left: 10px;
   display: inline-flex;
-  align-items: center;
-  color: var(--muted-foreground);
+  transform: translateY(-50%);
+  color: var(--text-quaternary);
   pointer-events: none;
 }
 
 .discoverySearch {
-  width: 100%;
   height: 32px;
-  padding: 6px 10px 6px 30px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  padding-left: 30px;
+}
+
+.discoveryCount {
+  margin: 0;
   font-size: 12px;
-  box-sizing: border-box;
-
-  &::placeholder {
-    color: var(--text-tertiary);
-  }
-
-  &:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px var(--primary-10);
-  }
+  line-height: 1.5;
+  color: var(--text-tertiary);
 }
 
 .discoveryEmpty {
-  padding: 16px;
+  padding: 18px 8px;
+  font-size: 12.5px;
   text-align: center;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
+  color: var(--text-tertiary);
 }
 
 .discoveryBatchRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 4px;
+  gap: 8px;
+  padding: 0 4px;
 }
 
 .discoveryBatchLabel {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.discoveryCount {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  font-weight: 550;
 }
 
 .discoveryList {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-height: 240px;
+  padding: 4px;
+  max-height: 300px;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
+  border-radius: 9px;
+  background: var(--bg-secondary);
 }
 
 .discoveryItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 12px;
-  color: var(--text-primary);
+  padding: 5px 6px;
+  border-radius: 7px;
+}
 
-  &:last-child {
-    border-bottom: 0;
+@media (hover: hover) and (pointer: fine) {
+  .discoveryItem:hover {
+    background: var(--bg-tertiary);
   }
 }
 
-.discoveryItemExisting {
-  background: var(--muted-bg);
-  color: var(--muted-foreground);
+.discoveryNameGroup {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  min-width: 0;
 }
 
 .discoveryName {
   font-family: $font-mono;
   font-size: 12px;
-  word-break: break-all;
-}
-
-.discoveryNameGroup {
-  display: inline-flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .discoveryAlias {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  word-break: break-all;
-}
-
-.discoveryAddedTag {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  padding: 2px 8px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
+  font-size: 11.5px;
+  color: var(--text-tertiary);
 }
 
 .discoveryFooter {
@@ -872,420 +971,336 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
 }
 
 .discoveryApplyBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   height: 30px;
   padding: 0 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: var(--primary-color);
-  color: var(--primary-contrast);
+  font-size: 12.5px;
+}
+
+/* ---------- 合作方分组密钥 ---------- */
+
+.sponsorGroupTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
   font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color $transition-fast;
-
-  &:hover:not(:disabled) {
-    background: var(--primary-hover);
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.passwordField {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.passwordInput {
-  @extend .input;
-  padding-right: 36px;
-}
-
-.passwordToggle {
-  position: absolute;
-  right: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border: none;
-  background: transparent;
+  font-weight: 550;
   color: var(--text-tertiary);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: color $transition-fast;
 
-  &:hover:not(:disabled) {
+  strong {
+    font-size: 13.5px;
+    font-weight: 650;
     color: var(--text-primary);
   }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 }
 
-.entriesList {
+.sponsorGroupSummary {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.modelAliasRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 8px;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr auto;
-
-    input:first-child {
-      grid-column: 1 / -1;
-    }
-  }
-}
-
-.modelEntry {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 1px;
   min-width: 0;
+  margin-left: auto;
+  padding: 7px 0;
 }
 
-.modelEntryActions {
+.sponsorSummaryKey,
+.sponsorSummaryUrl {
+  max-width: 100%;
+  font-family: $font-mono;
+  line-height: 1.4;
+  @include text-ellipsis;
+}
+
+.sponsorSummaryKey {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-secondary);
+}
+
+.sponsorSummaryUrl {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+.sponsorUrlOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.sponsorUrlOption {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-hover) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong);
+
+  input {
+    margin: 3px 0 0;
+    accent-color: var(--text-primary);
+  }
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px var(--primary-10);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sponsorUrlOption:hover {
+    border-color: var(--border-hover);
+  }
+}
+
+.sponsorUrlOptionActive {
+  border-color: color-mix(in srgb, var(--text-primary) 45%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 4%, var(--bg-secondary));
+}
+
+.sponsorUrlOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+
+  small {
+    font-family: $font-mono;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    overflow-wrap: anywhere;
+  }
+
+  .sponsorUrlOptionDescription {
+    font-family: $font-family;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--text-secondary);
+  }
+}
+
+.sponsorProtocolGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.sponsorProtocolCard {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+.sponsorProtocolName {
+  font-family: $font-mono;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.sponsorProtocolUrl {
+  font-family: $font-mono;
+  font-size: 12px;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.sponsorUsageSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sponsorUsageResult {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--viz-success) 9%, transparent);
+}
+
+.sponsorUsageResultWarning {
+  background: var(--amber-10);
+}
+
+.sponsorUsageMain {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
-}
-
-.modelEntryDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-}
-
-.thinkingFieldset {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.thinkingLevelGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.thinkingLevelOption {
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--bg-primary);
-  box-sizing: border-box;
-}
-
-.thinkingLevelLabel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-
-  code {
-    color: var(--muted-foreground);
-    font-size: 10px;
-    font-weight: 400;
-  }
-}
-
-.thinkingLevelOptionSelected {
-  border-color: color-mix(in srgb, var(--primary-color) 50%, var(--border-color));
-  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-primary));
-
-  .thinkingLevelLabel {
-    color: var(--text-primary);
-  }
-}
-
-.entrySummary {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-}
-
-.entrySummaryKey {
-  display: inline-block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: $font-mono;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.entryBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-tertiary);
-  color: var(--muted-foreground);
-  font-size: 10px;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.showMoreBtn {
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border-color);
-  background: var(--bg-primary);
+.sponsorUsageMeta {
+  font-family: $font-mono;
+  font-size: 11px;
   color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-
-  &:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-  }
 }
 
-.removeBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--destructive-color);
-  cursor: pointer;
-  font-size: 12px;
-
-  &:hover {
-    background: var(--destructive-10);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.addBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  align-self: flex-start;
-
-  &:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-  }
-}
+/* ---------- 底部按钮（抽屉 / 快速开始） ---------- */
 
 .footerBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: var(--radius-md);
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: $radius-full;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color $transition-fast;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-primary);
+  transition:
+    transform var(--dur-press) var(--ease-out-strong),
+    background-color var(--dur-hover) var(--ease-out-strong),
+    color var(--dur-hover) var(--ease-out-strong),
+    opacity var(--dur-hover) var(--ease-out-strong);
 
   &:disabled {
-    opacity: 0.6;
     cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  svg {
+    flex-shrink: 0;
   }
 }
 
 .footerBtnGhost {
-  background: transparent;
-  border-color: transparent;
-
-  &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-  }
-}
-
-.footerBtnOutline {
-  border-color: var(--border-color);
-  background: var(--bg-primary);
-
-  &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-  }
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
 }
 
 .footerBtnPrimary {
-  background: var(--primary-color);
-  color: var(--primary-contrast);
+  border: 0;
+  background: var(--text-primary);
+  color: var(--bg-secondary);
+}
 
-  &:hover:not(:disabled) {
-    background: var(--primary-hover);
+
+@media (hover: hover) and (pointer: fine) {
+  .footerBtnGhost:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .footerBtnPrimary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--text-primary) 86%, var(--bg-secondary));
   }
 }
 
-.apiKeyEntriesSection {
-  margin-top: 16px;
-  min-width: 0;
-  max-width: 100%;
+.spin {
+  animation: provider-form-spin 0.8s linear infinite;
 }
 
-.apiKeyEntriesLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
+/* ---------- 响应式 ---------- */
 
-.apiKeyEntryList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
-}
+@media (max-width: 560px) {
+  .fieldRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-.apiKeyEntryCard {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  max-width: 100%;
-  padding: 8px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  border-radius: 8px;
-  font-size: 12px;
-}
+  .modelAliasRow {
+    grid-template-columns: minmax(0, 1fr) auto;
 
-.apiKeyEntryIndex {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: var(--primary-contrast);
-  font-size: 11px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
+    > :nth-child(2) {
+      grid-column: 1;
+      grid-row: 2;
+    }
 
-.apiKeyEntryKey {
-  font-family: 'Monaco', 'Menlo', 'Consolas', 'Ubuntu Mono', monospace;
-  font-weight: 600;
-  color: var(--text-primary);
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-all;
-}
+    > .modelEntryActions {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+    }
+  }
 
-.apiKeyEntryProxy {
-  color: var(--text-tertiary);
-  font-size: 11px;
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  .headerRow {
+    grid-template-columns: minmax(0, 1fr) auto;
 
-  &::before {
-    content: '| Proxy: ';
-    color: var(--text-quaternary);
+    > :nth-child(2) {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    > :last-child {
+      grid-row: 1 / span 2;
+      grid-column: 2;
+    }
   }
 }
 
-.apiKeyEntryStats {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-
-.apiKeyEntryStat {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 600;
-
-  svg {
-    display: block;
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .textarea,
+  .checkboxBox,
+  .checkboxBox::before,
+  .disclosureSummary,
+  .disclosureChevron,
+  .entryCardChevron,
+  .entryCardIconBtn,
+  .removeBtn,
+  .addBtn,
+  .connectivityBtn,
+  .connectivityBtnGhost,
+  .thinkingLevelOption,
+  .sponsorUrlOption,
+  .footerBtn {
+    transition: none;
   }
-}
 
-.apiKeyEntryStatSuccess {
-  background: var(--success-badge-bg);
-  color: var(--success-badge-text);
-}
+  .disclosure[open] > .disclosureBody {
+    animation: none;
+  }
 
-.apiKeyEntryStatFailure {
-  background: var(--failure-badge-bg);
-  color: var(--failure-badge-text);
+  .statusIconLoading,
+  .spin {
+    animation-duration: 2.4s;
+  }
+
+  .entryCardIconBtn:active:not(:disabled),
+  .removeBtn:active:not(:disabled),
+  .addBtn:active:not(:disabled),
+  .connectivityBtn:active:not(:disabled),
+  .connectivityBtnGhost:active:not(:disabled),
+  .footerBtn:active:not(:disabled) {
+    transform: none;
+  }
 }

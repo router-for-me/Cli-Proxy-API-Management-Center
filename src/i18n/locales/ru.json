@@ -2092,7 +2092,8 @@
       "save": "Сохранить",
       "create": "Создать",
       "enable": "Включить",
-      "disable": "Отключить"
+      "disable": "Отключить",
+      "newFor": "Добавить {{provider}}"
     },
     "categories": {
       "title": "Провайдеры",
@@ -2100,7 +2101,7 @@
       "activeCount": "{{active}}/{{total}} активных"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2115,12 +2116,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "Ключ",
-      "baseUrl": "Base URL",
-      "prefix": "Префикс",
-      "models": "Модели/Заголовки",
-      "status": "Статус",
-      "actions": "Действия",
       "metrics": {
         "models": "Модели",
         "keys": "Ключи",
@@ -2129,8 +2124,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI-профиль",
-      "empty": "Нет ресурсов, нажмите \"Создать\".",
-      "filterPlaceholder": "Поиск по ключам, URL, префиксам…"
+      "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
+      "emptyBrand": "Конфигураций {{provider}} пока нет",
+      "noMatch": "Нет ресурсов, подходящих под фильтры"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2161,8 +2157,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
-         "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
+        "aiCodeMirrorGlobal": "Глобальный маршрут с усиленной защитой",
+        "aiCodeMirrorDomestic": "Оптимизированный маршрут для материкового Китая",
         "standard": "Обычный URL",
         "direct": "Прямой URL",
         "domestic": "Маршрут для материкового Китая",
@@ -2171,8 +2167,8 @@
         "global": "Глобальный"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
-         "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
+        "aiCodeMirrorGlobal": "Маршрут с усиленной защитой для доступа по всему миру.",
+        "aiCodeMirrorDomestic": "Маршрут, оптимизированный для сетей материкового Китая.",
         "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
         "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели.",
         "mainlandChinaRecommended": "Рекомендуется для пользователей и нагрузок в сетях материкового Китая.",
@@ -2300,7 +2296,15 @@
         "baseUrlRequired": "Base URL обязателен",
         "weightInteger": "Вес планирования должен быть целым числом",
         "weightMax": "Вес планирования не может превышать {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "Подключение",
+        "connectivity": "Проверка связи",
+        "routing": "Маршрутизация",
+        "advanced": "Дополнительно"
+      },
+      "headerName": "Имя заголовка",
+      "headerValue": "Значение заголовка"
     },
     "delete": {
       "title": "Удалить ресурс",
@@ -2362,10 +2366,14 @@
         "selectAll": "Выбрать все",
         "clear": "Очистить",
         "empty": "Модели ещё не настроены"
-      }
+      },
+      "clearFilters": "Сбросить фильтры"
     },
     "modelCatalog": {
       "notLoaded": "Не загружено"
+    },
+    "card": {
+      "requests": "Запросы"
     }
   },
   "claude_reset": {

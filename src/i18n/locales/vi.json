@@ -1960,7 +1960,8 @@
       "save": "Lưu",
       "create": "Tạo",
       "enable": "Bật",
-      "disable": "Tắt"
+      "disable": "Tắt",
+      "newFor": "Thêm {{provider}}"
     },
     "categories": {
       "title": "Provider",
@@ -1968,7 +1969,7 @@
       "activeCount": "{{active}}/{{total}} đang hoạt động"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "gemini": "Gemini",
       "interactions": "Interactions API",
       "codex": "Codex",
@@ -1987,12 +1988,6 @@
       "meta": "Muse (Meta)"
     },
     "table": {
-      "key": "Key",
-      "baseUrl": "Base URL",
-      "prefix": "Tiền tố",
-      "models": "Model/Header",
-      "status": "Trạng thái",
-      "actions": "Hành động",
       "metrics": {
         "models": "Model",
         "keys": "Key",
@@ -2000,9 +1995,10 @@
       },
       "websocketsTag": "WebSocket",
       "cloakTag": "Cloak",
-      "empty": "Chưa có tài nguyên nào, nhấn \"Mới\" để thêm.",
       "filterPlaceholder": "Tìm key, URL, tiền tố…",
-      "cliProfileTag": "Hồ sơ CLI"
+      "cliProfileTag": "Hồ sơ CLI",
+      "emptyBrand": "Chưa có cấu hình {{provider}}",
+      "noMatch": "Không có tài nguyên phù hợp với bộ lọc"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2032,8 +2028,8 @@
       "urlMode": "URL {{provider}}",
       "urlHint": "Mọi URL dùng cùng quy ước API. Lưu chỉ ghi endpoint của giao thức được nhóm hiện tại.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Tuyến toàn cầu được bảo vệ cao",
-         "aiCodeMirrorDomestic": "Tuyến tối ưu cho Trung Quốc đại lục",
+        "aiCodeMirrorGlobal": "Tuyến toàn cầu được bảo vệ cao",
+        "aiCodeMirrorDomestic": "Tuyến tối ưu cho Trung Quốc đại lục",
         "standard": "URL chuẩn",
         "direct": "URL trực tiếp",
         "domestic": "Tuyến Trung Quốc đại lục",
@@ -2042,8 +2038,8 @@
         "global": "Toàn cầu"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "Tuyến có mức bảo vệ cao dành cho truy cập toàn cầu.",
-         "aiCodeMirrorDomestic": "Tuyến được tối ưu cho mạng tại Trung Quốc đại lục.",
+        "aiCodeMirrorGlobal": "Tuyến có mức bảo vệ cao dành cho truy cập toàn cầu.",
+        "aiCodeMirrorDomestic": "Tuyến được tối ưu cho mạng tại Trung Quốc đại lục.",
         "domestic": "Dành cho người dùng và khối lượng công việc tại Trung Quốc đại lục; thường có độ trễ thấp hơn trên mạng đại lục.",
         "overseas": "Dành cho triển khai nước ngoài, truy cập xuyên biên giới hoặc khối lượng công việc cần model nước ngoài.",
         "mainlandChinaRecommended": "Khuyến nghị cho người dùng và khối lượng công việc trên mạng Trung Quốc đại lục.",
@@ -2174,7 +2170,15 @@
       "fingerprintProfile": "Dấu vân tay yêu cầu",
       "fingerprintProfileDefault": "Mặc định (do phía gọi kiểm soát)",
       "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
-      "fingerprintProfileHint": "Mặc định giữ nguyên prompt và header của phía gọi, hoặc chọn sử dụng dấu vân tay yêu cầu của Claude Code CLI."
+      "fingerprintProfileHint": "Mặc định giữ nguyên prompt và header của phía gọi, hoặc chọn sử dụng dấu vân tay yêu cầu của Claude Code CLI.",
+      "sections": {
+        "connection": "Kết nối",
+        "connectivity": "Kiểm tra kết nối",
+        "routing": "Điều phối",
+        "advanced": "Nâng cao"
+      },
+      "headerName": "Tên header",
+      "headerValue": "Giá trị header"
     },
     "delete": {
       "title": "Xóa tài nguyên",
@@ -2236,7 +2240,8 @@
         "selectAll": "Chọn tất cả",
         "clear": "Xóa",
         "empty": "Chưa cấu hình model nào"
-      }
+      },
+      "clearFilters": "Xóa bộ lọc"
     },
     "modelCatalog": {
       "notLoaded": "Chưa tải"
@@ -2324,6 +2329,9 @@
         "continue": "Tiếp tục",
         "continue-and-cooldown": "Tiếp tục và cooldown"
       }
+    },
+    "card": {
+      "requests": "Yêu cầu"
     }
   },
   "devin_quota": {

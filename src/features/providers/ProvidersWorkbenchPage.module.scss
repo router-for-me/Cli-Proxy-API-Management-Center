@@ -1,30 +1,20 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/variables' as *;
+
+/* 页壳：纯布局，视觉细节在各组件的 colocated 模块里（与认证文件页同结构） */
 
 .page {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  padding: 24px;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
-.layout {
-  display: grid;
-  align-items: start;
-  gap: 16px;
-  grid-template-columns: minmax(0, 1fr);
-
-  @media (min-width: 1280px) {
-    grid-template-columns: 240px minmax(0, 1fr);
-  }
-}
-
-.layoutSingle {
-  @media (min-width: 1280px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.workbench {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
 }
 
 .quickStartStack {
@@ -32,15 +22,34 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  max-width: 880px;
 }
 
-.modelCatalogSlot {
-  margin-top: 4px;
+.errorBanner {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger-color);
+  background: var(--bg-error-light);
+  border: 1px solid var(--warning-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 768px) {
+.skeletonHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeletonGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+
+@include mobile {
   .page {
-    padding: 16px;
     gap: 16px;
   }
 }

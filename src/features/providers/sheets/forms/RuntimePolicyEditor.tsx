@@ -1,11 +1,11 @@
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Collapsible } from '@/components/ui/Collapsible';
 import { Select } from '@/components/ui/Select';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import type { RuntimePolicyDraft } from '../../runtimePolicy';
 import { ErrorRulesEditor } from './ErrorRulesEditor';
 import styles from './sharedForm.module.scss';
+import { FormDisclosure } from './FormSection';
 
 export interface RuntimePolicyEditorProps {
   value: RuntimePolicyDraft;
@@ -25,7 +25,7 @@ export function RuntimePolicyEditor({
   const key = 'providersPage.runtimePolicy';
 
   return (
-    <Collapsible label={t(`${key}.title`)}>
+    <FormDisclosure label={t(`${key}.title`)}>
       <div className={styles.section}>
         <div className={styles.field}>
           {/* The section's inherit/override explanation rides on its first field: an InfoTip
@@ -117,6 +117,6 @@ export function RuntimePolicyEditor({
           </>
         )}
       </div>
-    </Collapsible>
+    </FormDisclosure>
   );
 }

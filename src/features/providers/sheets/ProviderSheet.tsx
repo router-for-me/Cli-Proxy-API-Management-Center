@@ -11,7 +11,9 @@ import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { BaseProviderForm } from './forms/BaseProviderForm';
 import { ResourceDetailView } from './ResourceDetailView';
 import { SponsorProviderForm } from './forms/SponsorProviderForm';
-import styles from './forms/sharedForm.module.scss';
+import { BrandLogo } from '../components/BrandLogo';
+import formStyles from './forms/sharedForm.module.scss';
+import styles from './ProviderSheet.module.scss';
 
 type SheetMode = 'detail' | 'create' | 'edit';
 
@@ -96,16 +98,21 @@ export function ProviderSheet({
     });
   }, [confirmDiscardIfDirty, onClose]);
 
-  const titleText =
+  const modeLabel =
     state.mode === 'create'
-      ? `${t('providersPage.form.createEyebrow')} · ${t(
-          `providersPage.providerNames.${state.brand}`
-        )}`
+      ? t('providersPage.form.createEyebrow')
       : state.mode === 'edit'
-        ? `${t('providersPage.form.editEyebrow')} · ${t(
-            `providersPage.providerNames.${state.brand}`
-          )}`
-        : `${t('providersPage.detail.title')} · ${t(`providersPage.providerNames.${state.brand}`)}`;
+        ? t('providersPage.form.editEyebrow')
+        : t('providersPage.detail.title');
+  const titleText = (
+    <span className={styles.sheetTitle}>
+      <BrandLogo brand={state.brand} size={26} />
+      <span className={styles.sheetTitleText}>
+        <span className={styles.sheetTitleMode}>{modeLabel}</span>
+        <span>{t(`providersPage.providerNames.${state.brand}`)}</span>
+      </span>
+    </span>
+  );
 
   const handleCreate = useCallback(
     async (input: ProviderEntryFormInput) => {
@@ -173,39 +180,31 @@ export function ProviderSheet({
 
   const footer =
     state.mode === 'detail' ? (
-      state.resource ? (
-        <>
+      <>
+        <button
+          type="button"
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
+          onClick={onClose}
+        >
+          {t('common.close')}
+        </button>
+        {state.resource ? (
           <button
             type="button"
-            className={`${styles.footerBtn} ${styles.footerBtnGhost}`}
-            onClick={onClose}
-          >
-            {t('providersPage.actions.cancel')}
-          </button>
-          <button
-            type="button"
-            className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
+            className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
             onClick={onSwitchToEdit}
             disabled={formMutating}
           >
             <IconPencil size={14} />
             {t('providersPage.actions.edit')}
           </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
-          onClick={onClose}
-        >
-          {t('providersPage.actions.cancel')}
-        </button>
-      )
+        ) : null}
+      </>
     ) : (
       <>
         <button
           type="button"
-          className={`${styles.footerBtn} ${styles.footerBtnGhost}`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnGhost}`}
           onClick={handleCancelClick}
           disabled={submitting}
         >
@@ -214,10 +213,11 @@ export function ProviderSheet({
         <button
           type="submit"
           form={formId}
-          className={`${styles.footerBtn} ${styles.footerBtnPrimary}`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
           disabled={submitDisabled}
+          aria-busy={submitting || undefined}
         >
-          {submitting ? <IconLoader2 size={14} /> : null}
+          {submitting ? <IconLoader2 size={14} className={formStyles.spin} /> : null}
           {state.mode === 'create'
             ? t('providersPage.actions.create')
             : t('providersPage.actions.save')}
@@ -230,7 +230,7 @@ export function ProviderSheet({
       open={state.open}
       onClose={onClose}
       size={descriptor.sheetSize}
-      // The title already reads "<mode> · <provider>"; no eyebrow or route subtitle to repeat it.
+      // The title carries mode and provider together; no eyebrow or route subtitle repeats them.
       title={titleText}
       footer={footer}
       closeDisabled={submitting}
