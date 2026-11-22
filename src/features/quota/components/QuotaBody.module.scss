@@ -518,7 +518,7 @@
  * 玉之所以像玉，靠的是这些细节（背景自上而下 + ::after 纹理）：
  *   1. 抛光点：左上一粒很小的亮点 —— 玉面是抛过光的；
  *   2. 油脂光泽：上方一块宽而软的反光 —— 羊脂玉的光是蜡质的「润」，不是镜面的「亮」；
- *   3. 次表面透光：光像从玉肉里透出来，极缓游移（14s 往返）；
+ *   3. 次表面透光：光像从玉肉里透出来，柔光固定在中央；
  *   4. 底部聚光：光穿过玉肉在底缘聚出一汪亮色，是「透」的关键；
  *   5. 棉：两处白色絮点；
  *   6. 糖色：右下一抹极淡的赭色籽料皮，天然料的记号；
@@ -526,12 +526,6 @@
  *   8. 纹理（::after）：分形噪声的玉肉斑驳 + 一根发丝细的石纹，正片叠底压进玉面。
  * 金边：2px 斜面金（上亮下暗），金与玉之间一道细「口」线（inset），像镶嵌的包边。
  * 两主题玉体同为浅色 —— 暗卡上羊脂玉本身就是柔光源，只压暗一档免得刺眼。 */
-@property --jade-light-x {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 40%;
-}
-
 .elitePlanValue {
   --jade-ink: #33402b;
   --jade-ink-shadow: 0 1px 0 rgba(255, 255, 246, 0.7);
@@ -582,7 +576,7 @@
         transparent 72%
       )
       padding-box,
-    radial-gradient(48% 100% at var(--jade-light-x) 58%, var(--jade-glow) 0%, transparent 72%)
+    radial-gradient(48% 100% at 50% 58%, var(--jade-glow) 0%, transparent 72%)
       padding-box,
     radial-gradient(64% 46% at 50% 112%, var(--jade-caustic) 0%, transparent 80%) padding-box,
     radial-gradient(14% 34% at 72% 36%, var(--jade-cotton) 0%, transparent 100%) padding-box,
@@ -597,7 +591,6 @@
       padding-box,
     var(--jade-gold) border-box;
   background-repeat: no-repeat;
-  animation: jadeWarmth 14s ease-in-out infinite alternate;
   box-shadow:
     inset 0 0 0 0.5px var(--jade-seat),
     inset 0 1px 1px rgba(255, 255, 255, 0.85),
@@ -655,15 +648,6 @@
   }
 }
 
-@keyframes jadeWarmth {
-  from {
-    --jade-light-x: 30%;
-  }
-  to {
-    --jade-light-x: 70%;
-  }
-}
-
 /* 暗色：玉体压暗一档、光晕收敛；金边压暗避免在深底上刺眼。 */
 :global([data-theme='dark']) .elitePlanValue {
   --jade-ink: #2e3a26;
@@ -692,15 +676,6 @@
 
   &::before {
     opacity: 0.7;
-  }
-}
-
-/* 减动效：玉光停在居中的一帧 —— 静态也是完成品。 */
-@media (prefers-reduced-motion: reduce) {
-  .elitePlanValue,
-  :global([data-theme='dark']) .elitePlanValue {
-    animation: none;
-    --jade-light-x: 50%;
   }
 }
 
@@ -755,8 +730,7 @@
       0 0 10px rgba(255, 196, 44, 0.18);
   }
 
-  // 玉徽章移动端：与金卡同一刀 —— 砍模糊光晕层；
-  // 玉光游移只是一个渐变中心的重绘，~70×20px 成本可忽略，保留。
+  // 移动端隐藏玉徽章的模糊光晕。
   .elitePlanValue {
     overflow: hidden;
 

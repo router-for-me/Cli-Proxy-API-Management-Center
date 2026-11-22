@@ -337,6 +337,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -615,6 +616,17 @@
     "empty_title": "No Devin credentials",
     "empty_desc": "Upload a Devin credential file or sign in using the backend CLI to query quota."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot Quota",
+    "empty_title": "No GitHub Copilot credentials",
+    "empty_desc": "Sign in with GitHub Copilot OAuth or upload a GitHub Copilot credential file to query quota.",
+    "idle": "Click to query GitHub Copilot quota",
+    "loading": "Querying GitHub Copilot quota…",
+    "load_failed": "Failed to query quota: {{message}}",
+    "remaining": "{{percent}}% remaining",
+    "premium": "Premium interactions",
+    "unavailable": "Quota unavailable. Check the Copilot credential and try again."
+  },
   "meta_quota": {
     "title": "Muse (Meta) Quota",
     "empty_title": "No Muse credentials",
@@ -880,6 +892,15 @@
     "antigravity_oauth_status_error": "Authentication failed:",
     "antigravity_oauth_start_error": "Failed to start Antigravity OAuth:",
     "antigravity_oauth_polling_error": "Failed to check authentication status:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "Log in with GitHub Copilot",
+    "copilot_open_link": "Open Link",
+    "copilot_copy_link": "Copy Link",
+    "copilot_oauth_status_waiting": "Waiting for authentication...",
+    "copilot_oauth_status_success": "Authentication successful!",
+    "copilot_oauth_status_error": "Authentication failed:",
+    "copilot_oauth_start_error": "Failed to start GitHub Copilot OAuth:",
+    "copilot_oauth_polling_error": "Failed to check authentication status:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Log in with Muse",
     "meta_open_link": "Open Link",
@@ -2088,7 +2109,9 @@
       "save": "Save",
       "create": "Create",
       "enable": "Enable",
-      "disable": "Disable"
+      "disable": "Disable",
+      "newFor": "New {{provider}}",
+      "addProvider": "Add provider"
     },
     "categories": {
       "title": "Providers",
@@ -2096,7 +2119,7 @@
       "activeCount": "{{active}}/{{total}} active"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2111,12 +2134,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "Key",
-      "baseUrl": "Base URL",
-      "prefix": "Prefix",
-      "models": "Models/Headers",
-      "status": "Status",
-      "actions": "Actions",
       "metrics": {
         "models": "Models",
         "keys": "Keys",
@@ -2125,8 +2142,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI Profile",
-      "empty": "No resources yet, click \"New\" to add.",
-      "filterPlaceholder": "Search keys, URLs, prefixes…"
+      "filterPlaceholder": "Search keys, URLs, prefixes…",
+      "emptyBrand": "No {{provider}} configuration yet",
+      "noMatch": "No resources match the current filters"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2157,8 +2175,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "Global high-protection route",
-         "aiCodeMirrorDomestic": "Mainland China optimized route",
+        "aiCodeMirrorGlobal": "Global high-protection route",
+        "aiCodeMirrorDomestic": "Mainland China optimized route",
         "standard": "Standard URL",
         "direct": "Direct URL",
         "domestic": "China mainland route",
@@ -2167,8 +2185,8 @@
         "global": "Global"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "A high-protection route for global access.",
-         "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
+        "aiCodeMirrorGlobal": "A high-protection route for global access.",
+        "aiCodeMirrorDomestic": "A route optimized for mainland China networks.",
         "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
         "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
         "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
@@ -2296,7 +2314,15 @@
         "baseUrlRequired": "Base URL is required",
         "weightInteger": "Scheduling weight must be an integer",
         "weightMax": "Scheduling weight cannot exceed {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "Connection",
+        "connectivity": "Connectivity test",
+        "routing": "Routing",
+        "advanced": "Advanced"
+      },
+      "headerName": "Header name",
+      "headerValue": "Header value"
     },
     "delete": {
       "title": "Delete resource",
@@ -2358,10 +2384,26 @@
         "selectAll": "Select all",
         "clear": "Clear",
         "empty": "No models configured yet"
-      }
+      },
+      "clearFilters": "Clear filters"
     },
     "modelCatalog": {
       "notLoaded": "Not loaded"
+    },
+    "card": {
+      "requests": "Requests"
+    },
+    "picker": {
+      "featured": "Quick connect",
+      "featuredBadge": "Recommended",
+      "oneKey": "One key for {{count}} protocols",
+      "official": "Official APIs",
+      "custom": "Custom",
+      "connect": "Connect",
+      "connected": "{{count}} connected",
+      "offer": "Offer",
+      "onboardingTitle": "Connect your first AI provider",
+      "moreQuickConnect": "More quick-connect partners"
     }
   },
   "claude_reset": {

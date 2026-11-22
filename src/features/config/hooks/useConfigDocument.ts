@@ -76,8 +76,18 @@ export function buildConfigSaveDraft(
   applyVisualChanges: (yaml: string) => string
 ): string {
   if (sourceDirty) {
-    if (mode === 'source') return sourceDraftYaml;
-    throw new Error('Unsaved source edits must be saved or discarded before visual editing');
+    if (mode !== 'source') {
+      throw new Error('Unsaved source edits must be saved or discarded before visual editing');
+    }
+    // CodeMirror emits LF regardless of the loaded file's line endings. Restore CRLF
+    // before both preview and PUT, without parsing YAML or changing the final newline.
+    if (
+      latestServerYaml.includes('\r\n') &&
+      !/[\r\n]/.test(latestServerYaml.replace(/\r\n/g, ''))
+    ) {
+      return sourceDraftYaml.replace(/\r?\n/g, '\r\n');
+    }
+    return sourceDraftYaml;
   }
   return applyVisualChanges(latestServerYaml);
 }
@@ -364,8 +374,8 @@ export function useConfigDocument({
         }
       }
 
-      // Generated source still merges visual edits onto fresh YAML; a real source draft is
-      // preserved verbatim. The visible mode determines the wire protocol, not edit origin.
+      // Generated source merges visual edits onto fresh YAML; actual source edits bypass
+      // YAML serialization. The visible mode determines the wire protocol, not edit origin.
       const nextMergedYaml = recoveryRequired
         ? recoverVisualDraft(latestServerYaml)
         : buildConfigSaveDraft(

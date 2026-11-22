@@ -72,7 +72,7 @@ export function ErrorRulesEditor({
             role="group"
             aria-labelledby={`${id}-${rule.id}-title`}
             aria-describedby={error ? errorId : undefined}
-            className={form.entryCard}
+            className={`${form.entryCard} ${styles.rule}`}
             onBlur={() => setTouched((previous) => new Set(previous).add(rule.id))}
           >
             <div className={form.entryCardHeader}>

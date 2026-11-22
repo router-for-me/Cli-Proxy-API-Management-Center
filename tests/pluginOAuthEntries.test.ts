@@ -4,6 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { apiClient } from '@/services/api/client';
 import { pluginsApi } from '@/services/api/plugins';
 import { buildPluginOAuthProviderCards } from '@/features/oauth/providers';
+import { ProviderArtwork } from '@/components/common/ProviderArtwork';
+import { collectPluginProviderLogos, PluginProviderLogos } from '@/features/plugins/providerLogos';
 import { resolveQuotaPluginId } from '@/features/quota/providers/plugin/data';
 import type { PluginListEntry } from '@/types';
 
@@ -271,4 +273,38 @@ describe('plugin quota resolution for secondary portals', () => {
     expect(resolveQuotaPluginId(plugins, ' ZCode-BigModel ')).toBe('zcode');
     expect(resolveQuotaPluginId(plugins, 'unknown')).toBeNull();
   });
+});
+
+test('shared provider artwork resolves entry, OAuth and quota keys and preserves built-in icons', () => {
+  const dataLogo = 'data:image/png;base64,ZXhhbXBsZQ==';
+  const logos = collectPluginProviderLogos(
+    [
+      plugin({
+        logo: '/brand.svg',
+        oauthProvider: 'single',
+        oauthProviders: ['portal', 'secondary'],
+        oauthProviderEntries: [{ identifier: 'portal', name: 'Portal', logo: dataLogo }],
+        quotaProvider: 'example-quota',
+      }),
+      plugin({ effectiveEnabled: false, quotaProvider: 'disabled', logo: '/disabled.svg' }),
+    ],
+    'https://proxy.example'
+  );
+  expect([...logos.entries()]).toEqual([
+    ['portal', dataLogo],
+    ['secondary', 'https://proxy.example/brand.svg'],
+    ['single', 'https://proxy.example/brand.svg'],
+    ['example-quota', 'https://proxy.example/brand.svg'],
+  ]);
+  const artwork = (provider: string, src: string | null) =>
+    renderToStaticMarkup(
+      createElement(
+        PluginProviderLogos.Provider,
+        { value: logos },
+        createElement(ProviderArtwork, { provider, src, children: 'P' })
+      )
+    );
+  expect(artwork('PORTAL', null)).toContain(dataLogo);
+  expect(artwork('portal', '/builtin.svg')).toContain('src="/builtin.svg"');
+  expect(artwork('missing', null)).toBe('P');
 });

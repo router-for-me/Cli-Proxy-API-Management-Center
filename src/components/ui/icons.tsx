@@ -311,6 +311,30 @@ export function IconGrid3x3({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconArrowUpNarrowWide({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="m3 8 4-4 4 4" />
+      <path d="M7 4v16" />
+      <path d="M11 12h4" />
+      <path d="M11 16h7" />
+      <path d="M11 20h10" />
+    </svg>
+  );
+}
+
+export function IconArrowDownWideNarrow({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...baseSvgProps} width={size} height={size} {...props}>
+      <path d="m3 16 4 4 4-4" />
+      <path d="M7 20V4" />
+      <path d="M11 4h10" />
+      <path d="M11 8h7" />
+      <path d="M11 12h4" />
+    </svg>
+  );
+}
+
 export function IconChevronUp({ size = 20, ...props }: IconProps) {
   return (
     <svg {...baseSvgProps} width={size} height={size} {...props}>

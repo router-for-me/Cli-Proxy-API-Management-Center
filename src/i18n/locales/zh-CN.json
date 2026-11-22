@@ -335,6 +335,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -599,6 +600,17 @@
     "load_failed": "额度查询失败：{{message}}",
     "empty_title": "暂无 Devin 凭据",
     "empty_desc": "上传 Devin 凭据文件或通过后端 CLI 登录后，即可查询额度。"
+  },
+  "copilot_quota": {
+    "title": "GitHub Copilot 额度",
+    "empty_title": "暂无 GitHub Copilot 凭据",
+    "empty_desc": "使用 GitHub Copilot OAuth 登录或上传 GitHub Copilot 认证文件以查询额度。",
+    "idle": "点击查询 GitHub Copilot 额度",
+    "loading": "正在查询 GitHub Copilot 额度…",
+    "load_failed": "额度查询失败：{{message}}",
+    "remaining": "剩余 {{percent}}%",
+    "premium": "高级交互",
+    "unavailable": "额度不可用。请检查 Copilot 凭证后重试。"
   },
   "meta_quota": {
     "title": "Muse (Meta) 额度",
@@ -873,6 +885,15 @@
     "antigravity_oauth_status_error": "认证失败:",
     "antigravity_oauth_start_error": "启动 Antigravity OAuth 失败:",
     "antigravity_oauth_polling_error": "检查认证状态失败:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "使用 GitHub Copilot 登录",
+    "copilot_open_link": "打开链接",
+    "copilot_copy_link": "复制链接",
+    "copilot_oauth_status_waiting": "等待认证中...",
+    "copilot_oauth_status_success": "认证成功！",
+    "copilot_oauth_status_error": "认证失败:",
+    "copilot_oauth_start_error": "启动 GitHub Copilot OAuth 失败:",
+    "copilot_oauth_polling_error": "检查认证状态失败:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "使用 Muse 登录",
     "meta_open_link": "打开链接",
@@ -2081,7 +2102,9 @@
       "save": "保存",
       "create": "创建",
       "enable": "启用",
-      "disable": "停用"
+      "disable": "停用",
+      "newFor": "新建 {{provider}}",
+      "addProvider": "添加提供商"
     },
     "categories": {
       "title": "提供商",
@@ -2089,7 +2112,7 @@
       "activeCount": "{{active}}/{{total}} 活跃"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2104,12 +2127,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "密钥",
-      "baseUrl": "服务地址",
-      "prefix": "前缀",
-      "models": "模型/请求头",
-      "status": "状态",
-      "actions": "操作",
       "metrics": {
         "models": "模型",
         "keys": "密钥",
@@ -2118,8 +2135,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 指纹",
-      "empty": "尚未添加配置,点击右上角新建。",
-      "filterPlaceholder": "搜索密钥、地址、前缀…"
+      "filterPlaceholder": "搜索密钥、地址、前缀…",
+      "emptyBrand": "还没有 {{provider}} 配置",
+      "noMatch": "没有符合筛选条件的资源"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2150,8 +2168,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用规范一致,保存时只会写入当前分组协议对应地址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保线路",
-         "aiCodeMirrorDomestic": "国内优化线路",
+        "aiCodeMirrorGlobal": "全球高保线路",
+        "aiCodeMirrorDomestic": "国内优化线路",
         "standard": "普通 URL",
         "direct": "专线直连 URL",
         "domestic": "国内线路",
@@ -2160,8 +2178,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
-         "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
+        "aiCodeMirrorGlobal": "适用于全球访问的高防护线路。",
+        "aiCodeMirrorDomestic": "针对中国大陆网络优化的线路。",
         "domestic": "面向中国大陆用户和部署在中国大陆网络环境中的业务，通常可获得更低延迟。",
         "overseas": "面向海外部署、跨境访问或需要访问境外模型的业务。",
         "mainlandChinaRecommended": "推荐中国大陆用户和部署在中国大陆网络环境中的业务使用。",
@@ -2289,7 +2307,15 @@
         "baseUrlRequired": "服务地址必填",
         "weightInteger": "调度权重必须是整数",
         "weightMax": "调度权重不能超过 {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "连接",
+        "connectivity": "连通性测试",
+        "routing": "调度",
+        "advanced": "高级"
+      },
+      "headerName": "请求头名称",
+      "headerValue": "请求头值"
     },
     "delete": {
       "title": "删除资源",
@@ -2351,10 +2377,26 @@
         "selectAll": "全选",
         "clear": "清空",
         "empty": "暂无已配置模型"
-      }
+      },
+      "clearFilters": "清除筛选"
     },
     "modelCatalog": {
       "notLoaded": "未加载"
+    },
+    "card": {
+      "requests": "请求记录"
+    },
+    "picker": {
+      "featured": "快速接入",
+      "featuredBadge": "推荐",
+      "oneKey": "一个 Key 接入 {{count}} 种协议",
+      "official": "官方 API",
+      "custom": "自定义",
+      "connect": "接入",
+      "connected": "已接入 {{count}}",
+      "offer": "优惠",
+      "onboardingTitle": "接入第一个 AI 提供商",
+      "moreQuickConnect": "更多快速接入"
     }
   },
   "claude_reset": {

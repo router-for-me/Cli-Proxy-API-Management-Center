@@ -58,6 +58,18 @@ describe('config document concurrency policy', () => {
     ).toBe(source);
   });
 
+  test.each(['\n', '\r\n'])('source edits preserve server line endings (%j)', (eol) => {
+    const lines = Array.from({ length: 165 }, (_, i) => `key${i}: ${i}`);
+    const server = lines.join(eol);
+    const save = (draft: string) =>
+      buildConfigSaveDraft(server, draft, true, 'source', applyProxyEdit);
+
+    expect(save(lines.join('\n'))).toBe(server); // An edit followed by undo is a no-op.
+    lines.splice(103, 0, ...Array.from({ length: 13 }, (_, i) => `extra${i}: true`));
+    expect(save(lines.join('\n'))).toBe(lines.join(eol));
+    expect(save(lines.join('\n') + '\n')).toBe(lines.join(eol) + eol);
+  });
+
   test('viewing generated source still builds on latest server values before a full source save', () => {
     const result = buildConfigSaveDraft(
       'observability:\n  logs:\n    debug: true\n',

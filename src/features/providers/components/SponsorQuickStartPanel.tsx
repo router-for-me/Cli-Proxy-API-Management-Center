@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useNotificationStore } from '@/stores';
 import { IconCheckCircle2, IconExternalLink, IconLoader2, IconPlus } from '@/components/ui/icons';
-import { PROVIDER_LOGOS } from '../brandLogos';
 import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
 import { isSponsorPartialMutationError } from '../sponsorMutationRecovery';
 import type { ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
 import { SponsorProviderForm } from '../sheets/forms/SponsorProviderForm';
 import formStyles from '../sheets/forms/sharedForm.module.scss';
+import { BrandLogo } from './BrandLogo';
 import styles from './SponsorQuickStartPanel.module.scss';
 
 interface SponsorQuickStartPanelProps {
@@ -26,6 +26,7 @@ export function SponsorQuickStartPanel({
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const formId = useId();
+  const titleId = useId();
   const [submitting, setSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [formVersion, setFormVersion] = useState(0);
@@ -34,7 +35,6 @@ export function SponsorQuickStartPanel({
   const formMutating = submitting || mutationDisabled || workbench.mutating;
   const mode = resource ? 'edit' : 'create';
   const submitDisabled = formMutating || (mode === 'edit' && !isDirty);
-  const logo = PROVIDER_LOGOS.apikeyFun;
 
   useUnsavedChangesGuard({
     shouldBlock: isDirty && !submitting,
@@ -79,36 +79,31 @@ export function SponsorQuickStartPanel({
 
   if (!resource && !showCreateForm) {
     return (
-      <section className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.titleRow}>
-            <img src={logo.src} alt="" aria-hidden="true" className={styles.logo} />
-            <div className={styles.titleText}>
-              <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
-            </div>
-          </div>
-        </div>
-
+      <section className={styles.panel} aria-labelledby={titleId}>
         <div className={styles.empty}>
-          <div>{t('providersPage.sponsor.emptyRegisterHint')}</div>
+          <BrandLogo brand="apikeyFun" size={48} />
+          <h2 id={titleId} className={styles.emptyTitle}>
+            {t('providersPage.providerNames.apikeyFun')}
+          </h2>
+          <span className={styles.emptyText}>{t('providersPage.sponsor.emptyRegisterHint')}</span>
           <div className={styles.emptyActions}>
             <button
               type="button"
-              className={`${styles.emptyActionButton} ${styles.emptyActionButtonPrimary}`}
+              className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
               onClick={() => setShowCreateForm(true)}
               disabled={formMutating}
             >
-              <IconPlus size={16} />
+              <IconPlus size={15} />
               <span>{t('providersPage.actions.new')}</span>
             </button>
             <a
-              className={`${styles.emptyActionButton} ${styles.emptyActionButtonEmphasis}`}
+              className={styles.linkPill}
               href={APIKEY_FUN_AFFILIATE_URL}
               target="_blank"
               rel="noreferrer"
             >
-              <IconExternalLink size={16} />
               <span>{t('providersPage.sponsor.registerNow')}</span>
+              <IconExternalLink size={13} aria-hidden="true" />
             </a>
           </div>
         </div>
@@ -122,30 +117,30 @@ export function SponsorQuickStartPanel({
     : t('providersPage.sponsor.registerLink');
 
   return (
-    <section className={styles.panel}>
+    <section className={styles.panel} aria-labelledby={titleId}>
       <div className={styles.header}>
-        <div className={styles.titleRow}>
-          <img src={logo.src} alt="" aria-hidden="true" className={styles.logo} />
-          <div className={styles.titleText}>
-            <h2 className={styles.title}>{t('providersPage.providerNames.apikeyFun')}</h2>
-          </div>
-          <a className={styles.topLink} href={actionHref} target="_blank" rel="noreferrer">
-            <IconExternalLink size={14} />
-            <span>{actionLabel}</span>
-          </a>
-        </div>
+        <BrandLogo brand="apikeyFun" size={32} />
+        <h2 id={titleId} className={styles.title}>
+          {t('providersPage.providerNames.apikeyFun')}
+        </h2>
+        <a className={styles.linkPill} href={actionHref} target="_blank" rel="noreferrer">
+          <span>{actionLabel}</span>
+          <IconExternalLink size={13} aria-hidden="true" />
+        </a>
       </div>
 
-      <SponsorProviderForm
-        key={`${mode}:${resource?.id ?? 'new'}:${formVersion}`}
-        resource={resource}
-        mode={mode}
-        mutating={formMutating}
-        formId={formId}
-        variant="quickStart"
-        onSubmit={handleSubmit}
-        onDirtyChange={setIsDirty}
-      />
+      <div className={styles.body}>
+        <SponsorProviderForm
+          key={`${mode}:${resource?.id ?? 'new'}:${formVersion}`}
+          resource={resource}
+          mode={mode}
+          mutating={formMutating}
+          formId={formId}
+          variant="quickStart"
+          onSubmit={handleSubmit}
+          onDirtyChange={setIsDirty}
+        />
+      </div>
 
       <div className={styles.footer}>
         {!resource ? (
@@ -165,13 +160,12 @@ export function SponsorQuickStartPanel({
         <button
           type="submit"
           form={formId}
-          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary} ${
-            styles.primaryAction
-          }`}
+          className={`${formStyles.footerBtn} ${formStyles.footerBtnPrimary}`}
           disabled={submitDisabled}
+          aria-busy={submitting || undefined}
         >
           {submitting ? (
-            <IconLoader2 className={styles.spin} size={14} />
+            <IconLoader2 className={formStyles.spin} size={14} />
           ) : mode === 'create' ? (
             <IconPlus size={14} />
           ) : (

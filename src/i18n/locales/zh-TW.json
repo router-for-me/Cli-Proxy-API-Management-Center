@@ -335,6 +335,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -599,6 +600,17 @@
     "load_failed": "額度查詢失敗：{{message}}",
     "empty_title": "暫無 Devin 憑證",
     "empty_desc": "上傳 Devin 憑證檔案或透過後端 CLI 登入後，即可查詢額度。"
+  },
+  "copilot_quota": {
+    "title": "GitHub Copilot 額度",
+    "empty_title": "暫無 GitHub Copilot 憑證",
+    "empty_desc": "使用 GitHub Copilot OAuth 登入或上傳 GitHub Copilot 驗證檔案以查詢額度。",
+    "idle": "點擊查詢 GitHub Copilot 額度",
+    "loading": "正在查詢 GitHub Copilot 額度…",
+    "load_failed": "額度查詢失敗：{{message}}",
+    "remaining": "剩餘 {{percent}}%",
+    "premium": "進階互動",
+    "unavailable": "額度無法取得。請檢查 Copilot 憑證後重試。"
   },
   "meta_quota": {
     "title": "Muse (Meta) 額度",
@@ -873,6 +885,15 @@
     "antigravity_oauth_status_error": "驗證失敗:",
     "antigravity_oauth_start_error": "啟動 Antigravity OAuth 失敗:",
     "antigravity_oauth_polling_error": "檢查驗證狀態失敗:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "使用 GitHub Copilot 登入",
+    "copilot_open_link": "開啟連結",
+    "copilot_copy_link": "複製連結",
+    "copilot_oauth_status_waiting": "等待驗證中...",
+    "copilot_oauth_status_success": "驗證成功！",
+    "copilot_oauth_status_error": "驗證失敗:",
+    "copilot_oauth_start_error": "啟動 GitHub Copilot OAuth 失敗:",
+    "copilot_oauth_polling_error": "檢查驗證狀態失敗:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "使用 Muse 登入",
     "meta_open_link": "開啟連結",
@@ -2109,7 +2130,9 @@
       "save": "儲存",
       "create": "建立",
       "enable": "啟用",
-      "disable": "停用"
+      "disable": "停用",
+      "newFor": "新增 {{provider}}",
+      "addProvider": "新增提供商"
     },
     "categories": {
       "title": "提供商",
@@ -2117,7 +2140,7 @@
       "activeCount": "{{active}}/{{total}} 活躍"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2132,12 +2155,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "金鑰",
-      "baseUrl": "服務位址",
-      "prefix": "前綴",
-      "models": "模型/請求標頭",
-      "status": "狀態",
-      "actions": "操作",
       "metrics": {
         "models": "模型",
         "keys": "金鑰",
@@ -2146,8 +2163,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 指紋",
-      "empty": "尚未新增設定,點擊右上角新增。",
-      "filterPlaceholder": "搜尋金鑰、位址、前綴…"
+      "filterPlaceholder": "搜尋金鑰、位址、前綴…",
+      "emptyBrand": "尚未新增 {{provider}} 設定",
+      "noMatch": "沒有符合篩選條件的資源"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2178,8 +2196,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "不同 URL 的使用規範一致,儲存時只會寫入目前分組協議對應位址。",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "全球高保線路",
-         "aiCodeMirrorDomestic": "國內優化線路",
+        "aiCodeMirrorGlobal": "全球高保線路",
+        "aiCodeMirrorDomestic": "國內優化線路",
         "standard": "普通 URL",
         "direct": "專線直連 URL",
         "domestic": "中國大陸線路",
@@ -2188,8 +2206,8 @@
         "global": "全球"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
-         "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
+        "aiCodeMirrorGlobal": "適用於全球存取的高防護線路。",
+        "aiCodeMirrorDomestic": "針對中國大陸網路最佳化的線路。",
         "domestic": "面向中國大陸使用者和部署在中國大陸網路環境中的業務，通常可獲得更低延遲。",
         "overseas": "面向海外部署、跨境存取或需要存取境外模型的業務。",
         "mainlandChinaRecommended": "推薦中國大陸使用者和部署在中國大陸網路環境中的業務使用。",
@@ -2317,7 +2335,15 @@
         "baseUrlRequired": "服務位址必填",
         "weightInteger": "調度權重必須是整數",
         "weightMax": "調度權重不能超過 {{max}}"
-      }
+      },
+      "sections": {
+        "connection": "連線",
+        "connectivity": "連通性測試",
+        "routing": "排程",
+        "advanced": "進階"
+      },
+      "headerName": "請求標頭名稱",
+      "headerValue": "請求標頭值"
     },
     "delete": {
       "title": "刪除資源",
@@ -2379,10 +2405,26 @@
         "selectAll": "全選",
         "clear": "清空",
         "empty": "尚無已設定模型"
-      }
+      },
+      "clearFilters": "清除篩選"
     },
     "modelCatalog": {
       "notLoaded": "未載入"
+    },
+    "card": {
+      "requests": "請求記錄"
+    },
+    "picker": {
+      "featured": "快速接入",
+      "featuredBadge": "推薦",
+      "oneKey": "一個 Key 接入 {{count}} 種協定",
+      "official": "官方 API",
+      "custom": "自訂",
+      "connect": "接入",
+      "connected": "已接入 {{count}}",
+      "offer": "優惠",
+      "onboardingTitle": "接入第一個 AI 提供商",
+      "moreQuickConnect": "更多快速接入"
     }
   },
   "claude_reset": {

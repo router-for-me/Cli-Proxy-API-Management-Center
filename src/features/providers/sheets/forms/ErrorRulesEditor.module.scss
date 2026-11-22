@@ -1,39 +1,47 @@
 .editor {
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   input,
-  select,
   textarea {
     min-width: 0;
+  }
+}
+
+/* 规则卡：头部沿用条目卡，正文内容统一 12px 内缩 */
+.rule {
+  gap: 12px;
+
+  > :not(:first-child) {
+    margin-inline: 12px;
+  }
+
+  > :last-child {
+    margin-bottom: 12px;
   }
 }
 
 .ruleFields {
   display: grid;
   grid-template-columns: minmax(90px, 1fr) minmax(0, 2fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .matchRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
-  gap: 8px;
+  gap: 10px;
   align-items: start;
 }
 
-.matchInput {
+.editor .matchInput {
   height: auto;
-  min-height: 36px;
+  min-height: 40px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   resize: vertical;
   line-height: 1.4;
 }
 
-.removeMatch {
-  margin-top: 22px;
-  min-height: 32px;
+.editor .removeMatch {
+  margin-top: 30px;
 }
 
 @media (max-width: 520px) {

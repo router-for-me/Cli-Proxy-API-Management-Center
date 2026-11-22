@@ -337,6 +337,7 @@
     "filter_aistudio": "AIStudio",
     "filter_claude": "Claude",
     "filter_codex": "Codex",
+    "filter_copilot": "GitHub Copilot",
     "filter_meta": "Muse (Meta)",
     "filter_devin": "Devin",
     "filter_antigravity": "Antigravity",
@@ -615,6 +616,17 @@
     "empty_title": "Devin 자격 증명 없음",
     "empty_desc": "Devin 자격 증명 파일을 업로드하거나 백엔드 CLI로 로그인하여 할당량을 조회하세요."
   },
+  "copilot_quota": {
+    "title": "GitHub Copilot 할당량",
+    "empty_title": "GitHub Copilot 자격 증명 없음",
+    "empty_desc": "GitHub Copilot OAuth로 로그인하거나 GitHub Copilot 자격 증명 파일을 업로드하여 할당량을 조회하세요.",
+    "idle": "클릭하여 GitHub Copilot 할당량 조회",
+    "loading": "GitHub Copilot 할당량 조회 중…",
+    "load_failed": "할당량 조회 실패: {{message}}",
+    "remaining": "{{percent}}% 남음",
+    "premium": "프리미엄 상호작용",
+    "unavailable": "할당량을 확인할 수 없습니다. Copilot 자격 증명을 확인한 후 다시 시도하세요."
+  },
   "meta_quota": {
     "title": "Muse (Meta) 할당량",
     "empty_title": "Muse 자격 증명 없음",
@@ -880,6 +892,15 @@
     "antigravity_oauth_status_error": "인증 실패:",
     "antigravity_oauth_start_error": "Antigravity OAuth 시작 실패:",
     "antigravity_oauth_polling_error": "인증 상태 확인 실패:",
+    "copilot_oauth_title": "GitHub Copilot OAuth",
+    "copilot_oauth_button": "GitHub Copilot로 로그인",
+    "copilot_open_link": "링크 열기",
+    "copilot_copy_link": "링크 복사",
+    "copilot_oauth_status_waiting": "인증 대기 중...",
+    "copilot_oauth_status_success": "인증에 성공했습니다!",
+    "copilot_oauth_status_error": "인증 실패:",
+    "copilot_oauth_start_error": "GitHub Copilot OAuth 시작 실패:",
+    "copilot_oauth_polling_error": "인증 상태 확인 실패:",
     "meta_oauth_title": "Muse (Meta) OAuth",
     "meta_oauth_button": "Muse로 로그인",
     "meta_open_link": "링크 열기",
@@ -2088,7 +2109,9 @@
       "save": "저장",
       "create": "생성",
       "enable": "활성화",
-      "disable": "비활성화"
+      "disable": "비활성화",
+      "newFor": "{{provider}} 추가",
+      "addProvider": "제공자 추가"
     },
     "categories": {
       "title": "공급자",
@@ -2096,7 +2119,7 @@
       "activeCount": "활성 {{active}}/{{total}}"
     },
     "providerNames": {
-       "aiCodeMirror": "AIcodemirror",
+      "aiCodeMirror": "AIcodemirror",
       "meta": "Muse (Meta)",
       "gemini": "Gemini",
       "interactions": "Interactions API",
@@ -2111,12 +2134,6 @@
       "kimi": "Kimi"
     },
     "table": {
-      "key": "키",
-      "baseUrl": "기본 URL",
-      "prefix": "접두사",
-      "models": "모델/헤더",
-      "status": "상태",
-      "actions": "작업",
       "metrics": {
         "models": "모델",
         "keys": "키",
@@ -2125,8 +2142,9 @@
       "websocketsTag": "WebSockets",
       "cloakTag": "Cloak",
       "cliProfileTag": "CLI 프로필",
-      "empty": "아직 리소스가 없습니다. \"새로 만들기\"를 클릭하여 추가하세요.",
-      "filterPlaceholder": "키, URL, 접두사 검색…"
+      "filterPlaceholder": "키, URL, 접두사 검색…",
+      "emptyBrand": "아직 {{provider}} 구성이 없습니다",
+      "noMatch": "현재 필터와 일치하는 리소스가 없습니다"
     },
     "sponsor": {
       "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
@@ -2157,8 +2175,8 @@
       "urlMode": "{{provider}} URL",
       "urlHint": "모든 URL은 동일한 API 규칙을 사용합니다. 저장 시 현재 그룹화된 프로토콜의 엔드포인트만 기록됩니다.",
       "urlOptions": {
-         "aiCodeMirrorGlobal": "글로벌 고보호 경로",
-         "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
+        "aiCodeMirrorGlobal": "글로벌 고보호 경로",
+        "aiCodeMirrorDomestic": "중국 본토 최적화 경로",
         "standard": "표준 URL",
         "direct": "직접 연결 URL",
         "domestic": "중국 본토 경로",
@@ -2167,8 +2185,8 @@
         "global": "글로벌"
       },
       "urlOptionDescriptions": {
-         "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
-         "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
+        "aiCodeMirrorGlobal": "전 세계 접속을 위한 보호 수준이 높은 경로입니다.",
+        "aiCodeMirrorDomestic": "중국 본토 네트워크에 최적화된 경로입니다.",
         "domestic": "중국 본토의 사용자 및 워크로드용입니다. 본토 네트워크에서 일반적으로 대기 시간이 더 짧습니다.",
         "overseas": "해외 배포, 국경 간 액세스 또는 해외 모델이 필요한 워크로드용입니다.",
         "mainlandChinaRecommended": "중국 본토 네트워크의 사용자 및 워크로드에 권장됩니다.",
@@ -2296,7 +2314,15 @@
         "baseUrlRequired": "기본 URL은 필수입니다.",
         "weightInteger": "스케줄링 가중치는 정수여야 합니다.",
         "weightMax": "스케줄링 가중치는 {{max}}을(를) 초과할 수 없습니다."
-      }
+      },
+      "sections": {
+        "connection": "연결",
+        "connectivity": "연결 테스트",
+        "routing": "라우팅",
+        "advanced": "고급"
+      },
+      "headerName": "헤더 이름",
+      "headerValue": "헤더 값"
     },
     "delete": {
       "title": "리소스 삭제",
@@ -2358,10 +2384,26 @@
         "selectAll": "모두 선택",
         "clear": "선택 해제",
         "empty": "아직 설정된 모델이 없습니다."
-      }
+      },
+      "clearFilters": "필터 지우기"
     },
     "modelCatalog": {
       "notLoaded": "로드되지 않음"
+    },
+    "card": {
+      "requests": "요청 기록"
+    },
+    "picker": {
+      "featured": "빠른 연결",
+      "featuredBadge": "추천",
+      "oneKey": "키 하나로 {{count}}개 프로토콜",
+      "official": "공식 API",
+      "custom": "사용자 지정",
+      "connect": "연결",
+      "connected": "{{count}}개 연결됨",
+      "offer": "혜택",
+      "onboardingTitle": "첫 AI 제공자를 연결하세요",
+      "moreQuickConnect": "빠른 연결 파트너 더 보기"
     }
   },
   "claude_reset": {
