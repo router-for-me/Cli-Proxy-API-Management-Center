@@ -46,6 +46,26 @@ describe('v8 visual config contract', () => {
     expect(runVisualConfig('api-keys:\n  codex: []\n').visualValues.apiKeysText).toBe('');
   });
 
+  test('client key edits keep unchanged YAML lines and comments even when indices shift', () => {
+    const before = [
+      'access:',
+      '  api-keys:',
+      '    # client list',
+      '    - "fixture-a" # first',
+      "    - 'fixture-b' # second",
+      '    - "fixture-c" # third',
+      '',
+    ].join('\n');
+    const apply = (keys: string[]) =>
+      runVisualConfig(before, [{ apiKeysText: keys.join('\n') }]).applyVisualChangesToYaml(before);
+    expect(apply(['fixture-a', 'fixture-new', 'fixture-c'])).toBe(
+      before.replace('fixture-b', 'fixture-new')
+    );
+    expect(apply(['fixture-b', 'fixture-c', 'fixture-new'])).toBe(
+      before.replace('    - "fixture-a" # first\n', '') + '    - fixture-new\n'
+    );
+  });
+
   test('OAuth edits stay OAuth-only and preserve unmoved routing and plugin fields', () => {
     const config = runVisualConfig(fixture, [
       {

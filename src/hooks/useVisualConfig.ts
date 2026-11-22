@@ -158,6 +158,42 @@ function setStringListInDoc(doc: YamlDocument, path: YamlPath, values: string[])
   if (docHas(doc, path)) deletePathInDoc(doc, path);
 }
 
+function writeClientKeys(doc: YamlDocument, keys: string[]): void {
+  const path = ['access', 'api-keys'];
+  if (!keys.length) {
+    if (doc.hasIn(path)) doc.deleteIn(path);
+    return;
+  }
+  const seq = doc.getIn(path, true);
+  if (!isSeq(seq) || seq.anchor) {
+    doc.setIn(path, keys);
+    return;
+  }
+
+  // Reserve existing nodes by value first. A deletion can shift every later index;
+  // their quotes and comments belong to those keys, not to their old positions.
+  const indices = new Map<string, number[]>();
+  for (let i = seq.items.length - 1; i >= 0; i--) {
+    const item = seq.items[i];
+    if (!isScalar(item) || typeof item.value !== 'string') continue;
+    const bucket = indices.get(item.value);
+    if (bucket) bucket.push(i);
+    else indices.set(item.value, [i]);
+  }
+  const matches = keys.map((key) => indices.get(key)?.pop());
+  const reserved = new Set(matches);
+  seq.items = keys.map((key, index) => {
+    const match = matches[index];
+    if (match !== undefined) return seq.items[match];
+    const previous = seq.items[index];
+    if (!reserved.has(index) && isScalar(previous) && !previous.anchor) {
+      previous.value = key;
+      return previous;
+    }
+    return doc.createNode(key);
+  });
+}
+
 function setIntFromStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
   const safe = typeof value === 'string' ? value : '';
   const trimmed = safe.trim();
@@ -2101,11 +2137,7 @@ export function useVisualConfig() {
             .split('\n')
             .map((key) => key.trim())
             .filter(Boolean);
-          if (apiKeys.length > 0) {
-            doc.setIn(['access', 'api-keys'], apiKeys);
-          } else if (docHas(doc, ['access', 'api-keys'])) {
-            doc.deleteIn(['access', 'api-keys']);
-          }
+          writeClientKeys(doc, apiKeys);
         }
 
         const pluginsDirty =
