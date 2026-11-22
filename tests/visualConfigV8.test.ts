@@ -76,6 +76,26 @@ describe('v8 visual config contract', () => {
     expect(output).toContain('!!str keep # unchanged');
   });
 
+  test('reordering client keys with repeated anchors preserves external alias targets', () => {
+    const before = [
+      'access:',
+      '  api-keys:',
+      '    - &client fixture-a # first',
+      '    - *client',
+      '    - &client fixture-b # second',
+      'external: *client',
+      '',
+    ].join('\n');
+    const keys = ['fixture-b', 'fixture-a', 'fixture-a'];
+    const output = runVisualConfig(before, [
+      { apiKeysText: keys.join('\n') },
+    ]).applyVisualChangesToYaml(before);
+    expect(parseYaml(output)).toEqual({ access: { 'api-keys': keys }, external: 'fixture-b' });
+    expect(output).toContain('external: *client');
+    expect(output).toContain('# first');
+    expect(output).toContain('# second');
+  });
+
   test('OAuth edits stay OAuth-only and preserve unmoved routing and plugin fields', () => {
     const config = runVisualConfig(fixture, [
       {

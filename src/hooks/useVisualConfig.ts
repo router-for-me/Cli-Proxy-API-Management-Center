@@ -173,8 +173,12 @@ function writeClientKeys(doc: YamlDocument, keys: string[]): void {
   // Reserve existing nodes by value first. A deletion can shift every later index;
   // their quotes and comments belong to those keys, not to their old positions.
   const indices = new Map<string, number[]>();
+  const finalAnchorIndex = new Map<string, number>();
   for (let i = seq.items.length - 1; i >= 0; i--) {
     const item = seq.items[i];
+    if (isScalar(item) && item.anchor && !finalAnchorIndex.has(item.anchor)) {
+      finalAnchorIndex.set(item.anchor, i);
+    }
     if (!isScalar(item) || typeof item.value !== 'string') continue;
     if (item.tag && item.tag !== 'tag:yaml.org,2002:str') continue;
     const bucket = indices.get(item.value);
@@ -183,9 +187,20 @@ function writeClientKeys(doc: YamlDocument, keys: string[]): void {
   }
   const matches = keys.map((key) => indices.get(key)?.pop());
   const reserved = new Set(matches);
+  const seenFinalAnchors = new Set<string>();
   seq.items = keys.map((key, index) => {
     const match = matches[index];
-    if (match !== undefined) return seq.items[match];
+    if (match !== undefined) {
+      const item = seq.items[match];
+      if (isScalar(item) && item.anchor) {
+        // Aliases after the list resolve to the last definition, not the first.
+        // An earlier definition moved past it must not shadow it. In-list aliases
+        // are emitted as ordinary key strings, so they do not need the old name.
+        if (finalAnchorIndex.get(item.anchor) === match) seenFinalAnchors.add(item.anchor);
+        else if (seenFinalAnchors.has(item.anchor)) delete item.anchor;
+      }
+      return item;
+    }
     const previous = seq.items[index];
     if (!reserved.has(index) && isScalar(previous) && !previous.anchor) {
       // A non-string tag or numeric format would be serialized with the new key.
