@@ -5,35 +5,44 @@ import { captureQuotaCacheGeneration, commitIfQuotaCacheCurrent } from '@/stores
 import type { CopilotQuotaData, CopilotQuotaState } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 import { isRecord } from '@/utils/helpers';
-import { isDisabledAuthFile, resolveAuthProvider } from '@/utils/quota';
+import {
+  isDisabledAuthFile,
+  isPluginQuotaFile,
+  normalizeNumberValue,
+  resolveAuthProvider,
+} from '@/utils/quota';
 import type { QuotaProviderData } from '../types';
 
-const isAmount = (value: unknown): value is number =>
-  typeof value === 'number' && Number.isFinite(value) && value >= 0;
+function parseAmount(value: unknown): number | null {
+  const amount = normalizeNumberValue(value);
+  return amount !== null && amount >= 0 ? amount : null;
+}
 
 export function parseCopilotQuota(body: unknown): CopilotQuotaData | null {
   if (!isRecord(body) || !isRecord(body.quota_snapshots)) return null;
   const premium = body.quota_snapshots.premium_interactions;
-  if (!isRecord(premium) || premium.has_quota === false || premium.unlimited === true) return null;
-  const { quota_remaining: remaining, entitlement, percent_remaining: percentRemaining } = premium;
-  if (
-    !isAmount(remaining) ||
-    !isAmount(entitlement) ||
-    !isAmount(percentRemaining) ||
-    percentRemaining > 100
-  )
-    return null;
-  return { remaining, entitlement, percentRemaining };
+  if (!isRecord(premium) || premium.unlimited === true) return null;
+  const percentRemaining = parseAmount(premium.percent_remaining);
+  if (percentRemaining === null || percentRemaining > 100) return null;
+  return {
+    percentRemaining,
+    remaining: parseAmount(premium.quota_remaining),
+    entitlement: parseAmount(premium.entitlement),
+  };
 }
 
 export const COPILOT_CONFIG: QuotaProviderData<CopilotQuotaState, CopilotQuotaData> = {
   type: 'copilot',
   i18nPrefix: 'copilot_quota',
-  filterFn: (file) => resolveAuthProvider(file) === 'copilot' && !isDisabledAuthFile(file),
+  filterFn: (file) =>
+    resolveAuthProvider(file) === 'copilot' &&
+    !isDisabledAuthFile(file) &&
+    !isPluginQuotaFile(file),
   fetchQuota: async (file, t) => {
     const unavailable = () => new Error(t('copilot_quota.unavailable'));
     const authIndex = normalizeAuthIndex(file.authIndex ?? file.auth_index);
     if (
+      isPluginQuotaFile(file) ||
       !authIndex ||
       !file.name?.trim() ||
       String(file.runtimeOnly ?? file.runtime_only) === 'true'

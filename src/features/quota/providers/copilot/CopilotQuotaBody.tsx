@@ -27,9 +27,11 @@ export function CopilotQuotaBody({ quota, classes }: QuotaBodyProps<CopilotQuota
       >
         <QuotaMeter percent={percent} classes={classes} index={0} />
       </div>
-      <div className={classes.quotaAmount}>
-        {data.remaining} / {data.entitlement}
-      </div>
+      {data.remaining !== null && data.entitlement !== null && data.entitlement > 0 && (
+        <div className={classes.quotaAmount}>
+          {data.remaining} / {data.entitlement}
+        </div>
+      )}
     </div>
   );
 }

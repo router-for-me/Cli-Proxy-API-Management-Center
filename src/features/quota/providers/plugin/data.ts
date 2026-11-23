@@ -10,7 +10,12 @@ import type {
 import { apiClient } from '@/services/api/client';
 import { pluginsApi } from '@/services/api/plugins';
 import { normalizeAuthIndex } from '@/utils/authIndex';
-import { buildAntigravityQuotaGroups, isDisabledAuthFile, isPluginQuotaFile } from '@/utils/quota';
+import {
+  buildAntigravityQuotaGroups,
+  isDisabledAuthFile,
+  isPluginQuotaFile,
+  selectedQuotaPluginId,
+} from '@/utils/quota';
 import type { QuotaProviderData } from '../types';
 
 type PluginQuotaPayload = AntigravityQuotaSummaryPayload & {
@@ -124,7 +129,7 @@ export const fetchPluginQuota = async (
   const provider = String(file.quotaProvider ?? file['quota_provider'] ?? '').trim();
   // New v8 credentials carry the host's authoritative selection, including multi-provider
   // plugins and healthy alternatives. Do not re-resolve it against a stale plugin list.
-  let pluginId = file.quotaPluginId;
+  let pluginId = selectedQuotaPluginId(file);
   if (!pluginId) {
     // Older v8 servers may advertise declarative probes, which have no v8 quota route.
     if (!provider) throw new Error(t('plugin_quota.probe_unsupported'));

@@ -49,12 +49,17 @@ export const BUILT_IN_QUOTA_PROVIDERS: ReadonlySet<string> = new Set([
   'xai',
 ]);
 
-/**
- * Generic plugin quota card for providers without a built-in card. Built-in cards win even
- * when a plugin also advertises quota for the same provider.
- */
+/** v8 auth_files.go emits quota_plugin_id when the host selects a quota route. */
+export function selectedQuotaPluginId(file: AuthFileItem): string | undefined {
+  const id = file.quotaPluginId ?? file['quota_plugin_id'];
+  return typeof id === 'string' && id.trim() ? id.trim() : undefined;
+}
+
+/** Built-ins win except when Copilot has an explicit host-selected route. */
 export function isPluginQuotaFile(file: AuthFileItem): boolean {
-  if (BUILT_IN_QUOTA_PROVIDERS.has(resolveAuthProvider(file))) return false;
+  const provider = resolveAuthProvider(file);
+  if (provider === 'copilot' && selectedQuotaPluginId(file)) return true;
+  if (BUILT_IN_QUOTA_PROVIDERS.has(provider)) return false;
   const supported = file.supportsQuota ?? file['supports_quota'];
   return supported === true || supported === 'true' || supported === '1';
 }
