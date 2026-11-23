@@ -1,4 +1,3 @@
-export const DEFAULT_CREDENTIAL_WEIGHT = 1;
 export const MAX_CREDENTIAL_WEIGHT = 1_000_000;
 
 export type CredentialWeightError = 'integer' | 'max';

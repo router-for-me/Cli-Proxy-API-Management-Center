@@ -154,37 +154,6 @@
   align-items: center;
 }
 
-.infoGrid {
-  display: grid;
-  gap: $spacing-sm;
-
-  .infoRow {
-    display: flex;
-    justify-content: space-between;
-    padding: $spacing-sm $spacing-md;
-    background-color: var(--bg-secondary);
-    border-radius: $radius-md;
-
-    .label {
-      font-weight: 500;
-      color: var(--text-secondary);
-    }
-
-    .value {
-      color: var(--text-primary);
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    }
-  }
-}
-
-.modelsList {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
 .modelsActions {
   display: flex;
   flex-wrap: wrap;
@@ -204,18 +173,6 @@
 
   svg {
     flex-shrink: 0;
-  }
-}
-
-.modelItem {
-  padding: $spacing-sm $spacing-md;
-  background-color: var(--bg-secondary);
-  border-radius: $radius-md;
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-
-  &:hover {
-    background-color: var(--bg-hover);
   }
 }
 
@@ -259,37 +216,6 @@
 .modelAlias {
   color: var(--text-secondary);
   font-size: 12px;
-}
-
-.versionCheck {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-md;
-}
-
-.versionInfo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: $spacing-md;
-
-  .versionItem {
-    padding: $spacing-md;
-    background-color: var(--bg-secondary);
-    border-radius: $radius-md;
-
-    .label {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: $spacing-xs;
-    }
-
-    .version {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    }
-  }
 }
 
 .quickLinks {
