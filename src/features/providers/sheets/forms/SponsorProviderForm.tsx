@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { sponsorConflictMessage } from '../../sponsorBundle';
 import { Select } from '@/components/ui/Select';
 import {
   IconAlertTriangle,
@@ -52,7 +53,10 @@ import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 import { ProviderBehaviorEditor } from './ProviderBehaviorEditor';
 import { pickProviderBehavior } from '../../providerBehavior';
 
+const NO_CONFLICTS: SponsorProtocol[] = [];
+
 interface SponsorProviderFormProps {
+  ambiguousProtocols?: SponsorProtocol[];
   brand?: SponsorProviderBrand;
   resource: ProviderResource | null;
   mode: 'create' | 'edit';
@@ -751,6 +755,7 @@ const buildInitialForm = (
 
 export function SponsorProviderForm({
   brand = 'apikeyFun',
+  ambiguousProtocols = NO_CONFLICTS,
   resource,
   mode,
   mutating,
@@ -760,7 +765,22 @@ export function SponsorProviderForm({
   onDirtyChange,
 }: SponsorProviderFormProps) {
   const { t } = useTranslation();
-  const definition = useMemo(() => getSponsorProviderDefinition(brand), [brand]);
+  const definition = useMemo(() => {
+    const sponsor = getSponsorProviderDefinition(brand);
+    const protocols = sponsor.protocols.filter(
+      (protocol) => !ambiguousProtocols.includes(protocol)
+    );
+    return {
+      ...sponsor,
+      protocols,
+      defaultProtocol: protocols.includes(sponsor.defaultProtocol)
+        ? sponsor.defaultProtocol
+        : (protocols[0] ?? sponsor.defaultProtocol),
+    };
+  }, [ambiguousProtocols, brand]);
+  const conflictWarning = ambiguousProtocols.length
+    ? sponsorConflictMessage(t, ambiguousProtocols)
+    : null;
   const [form, setForm] = useState<ProviderEntryFormInput>(() =>
     buildInitialForm(definition, resource, mode)
   );
@@ -809,6 +829,8 @@ export function SponsorProviderForm({
   };
 
   const validateEntries = (): string | null => {
+    if (entries.some(({ protocol }) => ambiguousProtocols.includes(protocol)))
+      return conflictWarning;
     for (const entry of entries) {
       const modelError = validateModelOptions(entry.models);
       if (modelError) return t(modelError);
@@ -869,11 +891,11 @@ export function SponsorProviderForm({
       ? getSponsorAggregationConflict(getSponsorRaw(resource, definition.brand))
       : null;
 
-  if (aggregationConflict) {
+  if (aggregationConflict || !definition.protocols.length) {
     return (
       <form id={formId} className={formClassName} onSubmit={(event) => event.preventDefault()}>
         <div className={styles.errorBox} role="alert">
-          {t('providersPage.sponsor.aggregationConflict')}
+          {aggregationConflict ? t('providersPage.sponsor.aggregationConflict') : conflictWarning}
         </div>
       </form>
     );
@@ -881,6 +903,11 @@ export function SponsorProviderForm({
 
   return (
     <form id={formId} className={formClassName} onSubmit={handleSubmit} noValidate>
+      {conflictWarning && (
+        <div className={styles.errorBox} role="note">
+          {conflictWarning}
+        </div>
+      )}
       <FormSection title={t('providersPage.sponsor.groupedKeysTitle')}>
         <div className={styles.entriesList}>
           {entries.map((entry, index) => (

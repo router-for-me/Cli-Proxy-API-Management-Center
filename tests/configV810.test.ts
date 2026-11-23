@@ -144,10 +144,21 @@ describe('v8.1.0 configuration', () => {
   });
 
   test('OAuth scalar spellings survive source preview and the JSON Management API patch', () => {
-    const source = yaml.replace('[rate_limit]', '[429, 001, +400, 1e3, TRUE, rate_limit]');
+    const terms = [
+      '429',
+      '001',
+      '+400',
+      '1e3',
+      'TRUE',
+      '.Inf',
+      '+.INF',
+      '-.Inf',
+      '.NaN',
+      'rate_limit',
+    ];
+    const source = yaml.replace('[rate_limit]', `[${terms.join(', ')}]`);
     const groups = runVisualConfig(source).visualValues.oauthErrorRules;
     const rule = groups[0].rules[1];
-    const terms = ['429', '001', '+400', '1e3', 'TRUE', 'rate_limit'];
     expect(rule.matches.map((term) => term.value)).toEqual(terms);
     const update = {
       ...rule,
@@ -167,7 +178,7 @@ describe('v8.1.0 configuration', () => {
       'request-scoped-errors': { copilot: [expect.anything(), expect.objectContaining({ match })] },
     });
     const portOnly = runVisualConfig(source, [{ port: '9000' }]).applyVisualChangesToYaml(source);
-    expect(buildConfigPatch(source, portOnly).patch).not.toHaveProperty('oauth');
+    expect(buildConfigPatch(source, portOnly).patch).toEqual({ server: { port: 9000 } });
     expect(
       runVisualConfig(portOnly).visualValues.oauthErrorRules[0].rules[1].matches.map(
         (term) => term.value

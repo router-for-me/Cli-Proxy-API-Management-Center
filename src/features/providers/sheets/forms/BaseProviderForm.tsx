@@ -196,6 +196,7 @@ function buildInitialForm(
         ? cfg.apiKeyEntries.map((entry) => ({
             apiKey: '',
             existingApiKey: entry.apiKey,
+            savedProxyUrl: entry.proxyUrl,
             sourceIndex: entry.sourceIndex,
             proxyUrl: entry.proxyUrl ?? '',
             weight: entry.weight,
@@ -378,6 +379,7 @@ function ProviderFields({
       brand,
       baseUrl: probeBaseUrl ?? form.baseUrl,
       proxyUrl: probeProxyUrl ?? form.proxyUrl,
+      savedProxyUrl: resource?.proxyUrl ?? undefined,
       testModel: form.testModel,
       models: probeModels,
       formHeaders: probeHeaders ?? form.headers,
@@ -393,6 +395,7 @@ function ProviderFields({
     brand,
     baseUrl: probeBaseUrl ?? form.baseUrl,
     proxyUrl: probeProxyUrl ?? form.proxyUrl,
+    savedProxyUrl: resource?.proxyUrl ?? undefined,
     formHeaders: probeHeaders ?? form.headers,
     apiKeyEntries: form.apiKeyEntries,
     apiKey: probeApiKey ?? form.apiKey,

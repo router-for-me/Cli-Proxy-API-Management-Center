@@ -1573,6 +1573,7 @@
     "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",
     "precise_save_incomplete": "Quá trình lưu chính xác chưa hoàn tất; một số thay đổi có thể đã được áp dụng. Bản nháp của bạn được giữ lại. Hãy lưu lại để xem xét các khác biệt còn lại trên máy chủ.",
     "unsafe_yaml_structure": "Trình chỉnh sửa trực quan không thể thay đổi {{path}} mà không ảnh hưởng đến các thiết lập YAML khác. Bản nháp được giữ lại. Hãy thực hiện thay đổi này trong trình chỉnh sửa mã nguồn.",
+    "sensitive_word_comments": "Lưu {{path}} ở chế độ trực quan sẽ làm mất chú thích YAML. Bản nháp vẫn được giữ. Hãy chuyển sang trình chỉnh sửa mã nguồn để kiểm tra và lưu cả chú thích.",
     "concurrent_list_conflict": "Danh sách trên máy chủ {{path}} đã thay đổi sau mốc cơ sở bản nháp của bạn. Thao tác lưu bị chặn để tránh ghi đè các thay đổi đó. Bản nháp của bạn được giữ lại; hãy ghi lại các chỉnh sửa, sau đó tải lại cấu hình và hợp nhất.",
     "precise_save_recovery_required": "Không thể đọc lại kết quả lưu. Đã tạm dừng chỉnh sửa. Lưu lại để khôi phục mốc cơ sở của bản nháp, hoặc tải lại cấu hình."
   },
@@ -2074,6 +2075,7 @@
       "usageInvalid": "Key không hợp lệ",
       "usageEmpty": "Endpoint không trả về dữ liệu sử dụng nào.",
       "usageApiKeyRequired": "Cần có API key",
+      "ambiguousProtocols": "Có nhiều nhóm khớp với {{protocols}}. Hãy chỉnh sửa các nhóm này trong trình chỉnh sửa nhà cung cấp tương ứng.",
       "aggregationConflict": "Provider được nhóm này chứa nhiều cấu hình backend hoặc key OpenAI. Hãy chỉnh trong cấu hình nguồn để tránh mất dữ liệu.",
       "partialMutationWarning": "Thao tác thất bại sau khi một hoặc nhiều giao thức có thể đã được cập nhật. Cấu hình mới nhất đã được tải lại; hãy xem lại trước khi thử lại.",
       "groupedKeysTitle": "Key được nhóm",

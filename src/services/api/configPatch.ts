@@ -1,4 +1,4 @@
-import { isMap as isYamlMap, parseDocument } from 'yaml';
+import { isMap as isYamlMap, isSeq, parseDocument, visit } from 'yaml';
 import { oauthMatchTerms, oauthRulesPath, parseConfigDocument } from './configYaml';
 import { apiClient } from './client';
 
@@ -137,6 +137,7 @@ export function buildConfigPatch(beforeYaml: string, afterYaml: string): ConfigP
     return patch;
   }
   const patch = diff(before, after, []);
+  assertSensitiveWordCommentsPreserved(patch, afterYaml);
   return { patch, deletions, ...(emptyMaps.length ? { emptyMaps } : {}) };
 }
 
@@ -144,14 +145,40 @@ export class ConfigDraftConflictError extends Error {
   constructor(
     readonly path: readonly string[],
     readonly reason:
-      'concurrent_list_conflict' | 'unsafe_yaml_structure' = 'concurrent_list_conflict'
+      | 'concurrent_list_conflict'
+      | 'unsafe_yaml_structure'
+      | 'sensitive_word_comments' = 'concurrent_list_conflict'
   ) {
     super(
       reason === 'concurrent_list_conflict'
         ? `Configuration list changed concurrently: ${path.join('.')}`
-        : `Cannot safely edit YAML structure: ${path.join('.')}`
+        : reason === 'sensitive_word_comments'
+          ? `Saving this list as JSON would discard YAML comments: ${path.join('.')}`
+          : `Cannot safely edit YAML structure: ${path.join('.')}`
     );
     this.name = 'ConfigDraftConflictError';
+  }
+}
+
+/** A v8 JSON PATCH replaces the entire sequence. Only block comments that the draft retains. */
+function assertSensitiveWordCommentsPreserved(patch: Record<string, unknown>, yaml: string) {
+  const providers = isMap(patch.oauth) ? patch.oauth.providers : undefined;
+  if (!isMap(providers)) return;
+  let doc: ReturnType<typeof parseDocument> | undefined;
+  for (const provider of ['antigravity', 'devin']) {
+    const changes = providers[provider];
+    if (!isMap(changes) || !Array.isArray(changes['sensitive-words'])) continue;
+    const path = ['oauth', 'providers', provider, 'sensitive-words'];
+    doc ??= parseDocument(yaml);
+    const seq = doc.getIn(path, true);
+    if (!isSeq(seq)) continue;
+    visit(seq, {
+      Node: (_, node) => {
+        if (node.comment != null || node.commentBefore != null) {
+          throw new ConfigDraftConflictError(path, 'sensitive_word_comments');
+        }
+      },
+    });
   }
 }
 

@@ -10,7 +10,11 @@ import { CheckboxField } from '@/features/providers/sheets/forms/CheckboxField';
 import { ResourceDetailView } from '@/features/providers/sheets/ResourceDetailView';
 import { getSponsorProviderDefinition } from '@/features/providers/sponsorDefinitions';
 import type { NativeProviderFamily } from '@/services/api/providers';
-import type { ProviderResource, SponsorProviderBrand } from '@/features/providers/types';
+import type {
+  ProviderResource,
+  SponsorProviderBrand,
+  SponsorProtocol,
+} from '@/features/providers/types';
 
 const i18n = createInstance();
 await i18n.init({ lng: 'en', resources: { en: { translation: en } } });
@@ -43,10 +47,11 @@ const renderBase = (brand: NativeProviderFamily) =>
     })
   );
 
-const renderSponsor = (brand: SponsorProviderBrand) =>
+const renderSponsor = (brand: SponsorProviderBrand, ambiguousProtocols?: SponsorProtocol[]) =>
   render(
     createElement(SponsorProviderForm, {
       brand,
+      ambiguousProtocols,
       resource: null,
       mode: 'create',
       mutating: false,
@@ -203,4 +208,17 @@ describe('provider form notes', () => {
     expect(html).not.toContain('<p ');
     expectNote(html, 'Fenno', note);
   });
+});
+
+test('sponsor forms explain blocked protocols and default to an available alternative', () => {
+  const partial = renderSponsor('fennoAI', ['codex']);
+  expect(partial).toContain(
+    i18n.t('providersPage.sponsor.ambiguousProtocols', {
+      protocols: sponsor.protocols.codexResponses,
+    })
+  );
+  expect(partial).toContain(`<strong>${sponsor.protocols.anthropic}</strong>`);
+  const blocked = renderSponsor('fennoAI', ['codex', 'claude']);
+  expect(blocked).toContain('role="alert"');
+  expect(blocked).not.toContain('<input');
 });

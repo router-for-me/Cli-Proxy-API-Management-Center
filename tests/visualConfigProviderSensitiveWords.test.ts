@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { parse as parseYaml, stringify } from 'yaml';
+import { buildConfigPatch, ConfigDraftConflictError } from '@/services/api/configPatch';
 import { runVisualConfig } from './helpers/visualConfig';
 
 const providers = [
@@ -56,6 +57,37 @@ oauth:
       }
       expect(output).toContain('# retained item comment');
       expect(output).toContain('- old-word # inline item note');
+      // Source mode can save this YAML. The visual JSON operation cannot carry those comments.
+      expect(() => buildConfigPatch(yaml, output)).toThrow(
+        new ConfigDraftConflictError(
+          ['oauth', 'providers', provider, 'sensitive-words'],
+          'sensitive_word_comments'
+        )
+      );
+    });
+
+    test(`${provider}: blocks retained comments but not unrelated edits or removed comments`, () => {
+      const yaml = `server: {port: 8317}
+oauth:
+  providers:
+    ${provider}:
+      sensitive-words:
+        - ''
+        - apple # apple note
+        - pear # pear note
+`;
+      const draft = (words: string[]) =>
+        runVisualConfig(yaml, [{ [field]: words }]).applyVisualChangesToYaml(yaml);
+      const retained = draft(['pear', 'banana']);
+      expect(retained).toContain('- pear # pear note');
+      expect(retained).not.toContain('# apple note');
+      expect(() => buildConfigPatch(yaml, retained)).toThrow(ConfigDraftConflictError);
+      expect(buildConfigPatch(yaml, yaml.replace('8317', '9000')).patch).toEqual({
+        server: { port: 9000 },
+      });
+      expect(buildConfigPatch(yaml, draft(['banana'])).patch).toEqual({
+        oauth: { providers: { [provider]: { 'sensitive-words': ['banana'] } } },
+      });
     });
 
     test(`${provider}: clearing removes the key and an otherwise empty block`, () => {

@@ -136,6 +136,7 @@ export interface NativeSection {
 }
 
 export interface ProviderGroup {
+  ambiguousProtocols?: SponsorProtocol[];
   nativeSections?: NativeSection[];
   id: ProviderBrand;
   resources: ProviderResource[];
@@ -192,6 +193,7 @@ export interface ApiKeyEntryInput {
   sourceIndex?: number;
   apiKey: string;
   existingApiKey?: string;
+  savedProxyUrl?: string;
   proxyUrl: string;
   weight?: number;
   authIndex?: string;

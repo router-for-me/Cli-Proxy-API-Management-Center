@@ -220,6 +220,8 @@ const fetchAntigravityQuota = async (
     }
   }
 
+  if (validationError && collectedGroups.size === 0) throw validationError;
+
   if (hadSuccess) {
     return {
       groups: Array.from(collectedGroups.values()),
@@ -228,7 +230,6 @@ const fetchAntigravityQuota = async (
     };
   }
 
-  if (validationError) throw validationError;
   throw createStatusError(lastError || t('common.unknown_error'), priorityStatus ?? lastStatus);
 };
 

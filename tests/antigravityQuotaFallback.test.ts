@@ -146,6 +146,26 @@ describe('Antigravity partial quota fallback', () => {
     });
   });
 
+  test.each([true, false])(
+    'keeps verification without usable quota (challenge first: %s)',
+    async (challengeFirst) => {
+      const challenge = denied([{ metadata: { validationUrl: link } }]);
+      const unusable = [response([]), response([{ buckets: [{}] }])];
+      mockResponses(challengeFirst ? [challenge, ...unusable] : [...unusable, challenge]);
+      await expect(ANTIGRAVITY_CONFIG.fetchQuota(file, t)).rejects.toMatchObject({
+        status: 403,
+        message: 'Verify this account.',
+        url: link,
+      });
+    }
+  );
+
+  test('partial quota wins over a later verification challenge', async () => {
+    mockResponses([response([claude]), denied([{ reason: 'VALIDATION_REQUIRED' }]), response([])]);
+    const result = await ANTIGRAVITY_CONFIG.fetchQuota(file, t);
+    expect(result.groups.map((entry) => entry.label)).toEqual(['Claude and GPT models']);
+  });
+
   test('a successful fallback still wins over a verification challenge', async () => {
     mockResponses([denied([{ metadata: { validationUrl: link } }]), response([gemini])]);
     expect((await ANTIGRAVITY_CONFIG.fetchQuota(file, t)).groups).toHaveLength(1);

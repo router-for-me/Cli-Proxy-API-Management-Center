@@ -319,7 +319,7 @@ export function useConfigDocument({
           // Keep the primary mutation/readback error; the cache is already invalidated.
         }
       } else {
-        showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
+        showNotification(message, 'error');
       }
     } finally {
       if (operation.isCurrent()) setSaving(false);
@@ -413,8 +413,7 @@ export function useConfigDocument({
       setDiffModalOpen(true);
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message = configDraftErrorMessage(t, err);
-      showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
+      showNotification(configDraftErrorMessage(t, err), 'error');
     } finally {
       if (operation.isCurrent()) setSaving(false);
     }

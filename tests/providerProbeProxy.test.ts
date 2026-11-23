@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { useConfigStore } from '@/stores/useConfigStore';
+import { apiClient } from '../src/services/api/client';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import { normalizeProviderGroups } from '../src/services/api/transformers';
 import type { ProviderKeyConfig } from '../src/types/provider';
@@ -56,29 +56,88 @@ describe('provider probe proxy forwarding', () => {
     }
   );
 
-  test.each(['http://global.invalid:8080', ''])(
-    'empty indexed native probe uses the global fallback (%s), not the saved proxy',
-    async (globalProxy) => {
-      // SSR reads Zustand's initial snapshot.
-      const snapshot = useConfigStore.getInitialState();
-      const previousConfig = snapshot.config;
-      snapshot.config = { proxyUrl: globalProxy };
+  const liveProxy = 'http://live.invalid';
+  test.each([
+    { name: 'unchanged blank', savedProxyUrl: '', key: '', indexed: true },
+    { name: 'cleared with literal key', savedProxyUrl: 'direct', key: 'literal', indexed: false },
+    {
+      name: 'cleared with indexed token',
+      savedProxyUrl: 'direct',
+      key: '',
+      indexed: true,
+      expectedProxy: liveProxy,
+    },
+    {
+      name: 'cleared without global proxy',
+      savedProxyUrl: 'http://old.invalid',
+      key: '',
+      indexed: true,
+      expectedProxy: 'direct',
+    },
+    {
+      name: 'cleared with custom token header',
+      savedProxyUrl: 'direct',
+      key: 'literal',
+      indexed: true,
+      customToken: true,
+      expectedProxy: liveProxy,
+    },
+  ])(
+    '$name resolves transport at probe time',
+    async ({ savedProxyUrl, key, indexed, customToken, expectedProxy }) => {
+      const global = expectedProxy === 'direct' ? '' : liveProxy;
+      const get = spyOn(apiClient, 'get').mockResolvedValue(global);
       try {
         requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
-        const probe = { ...args, proxyUrl: '', apiKey: '', authIndex: 'fixture-index' };
+        const probe = {
+          ...args,
+          savedProxyUrl,
+          proxyUrl: ' ',
+          apiKey: key,
+          authIndex: 'fixture-index',
+          formHeaders: customToken ? [{ key: 'X-Probe', value: 'custom $TOKEN$' }] : [],
+        };
         await captureHook(() => useConnectivityTest(probe, messages)).runCodex();
         await captureHook(() => useModelDiscovery(probe)).fetch();
-        expect(requestSpy.mock.calls).toHaveLength(2);
+        const entry = { apiKey: key, proxyUrl: ' ', savedProxyUrl, authIndex: probe.authIndex };
+        const openai = { ...probe, brand: 'openaiCompatibility' as const, apiKeyEntries: [entry] };
+        await captureHook(() => useConnectivityTest(openai, messages)).runOpenAIKey(0);
+        await captureHook(() => useModelDiscovery(openai)).fetch();
+        expect(get.mock.calls.map(([path]) => path)).toEqual(
+          expectedProxy ? Array(4).fill('/config/requests/proxy-url') : []
+        );
+        expect(requestSpy.mock.calls).toHaveLength(4);
         for (const [request] of requestSpy.mock.calls) {
-          expect(request.proxy_url).toBe(globalProxy || 'direct');
-          expect(request.authIndex).toBe('fixture-index');
-          expect(request.header?.Authorization).toBe('Bearer $TOKEN$');
+          expect(request.proxy_url).toBe(expectedProxy);
+          expect(request.authIndex).toBe(indexed ? 'fixture-index' : undefined);
+          expect(request.header?.Authorization).toBe(`Bearer ${key || '$TOKEN$'}`);
         }
       } finally {
-        snapshot.config = previousConfig;
+        get.mockRestore();
       }
     }
   );
+
+  test('failed global proxy read never sends an indexed clear or retries it anonymously', async () => {
+    const get = spyOn(apiClient, 'get').mockRejectedValue(new Error('offline'));
+    try {
+      requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+      const probe = {
+        ...args,
+        brand: 'openaiCompatibility' as const,
+        apiKeyEntries: [
+          { apiKey: '', authIndex: 'fixture-index', proxyUrl: '', savedProxyUrl: 'direct' },
+        ],
+      };
+      expect(await captureHook(() => useConnectivityTest(probe, messages)).runOpenAIKey(0)).toBe(
+        false
+      );
+      await captureHook(() => useModelDiscovery(probe)).fetch();
+      expect(requestSpy).not.toHaveBeenCalled();
+    } finally {
+      get.mockRestore();
+    }
+  });
 
   test('OpenAI batch tests preserve each key proxy, including direct and blank', async () => {
     requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);

@@ -1097,7 +1097,6 @@ function syncStringSequence(
   doc: YamlDocument,
   map: YAMLMap,
   key: string,
-  baseline: string[] | undefined,
   desired: string[] | undefined,
   normalize = (value: string) => value.trim()
 ): void {
@@ -1108,7 +1107,11 @@ function syncStringSequence(
   }
 
   const seq = ensureSeqValue(doc, map, key);
-  const available = (baseline ?? []).map((value, index) => ({ value: normalize(value), index }));
+  // Match actual nodes: the visual baseline omits blank rows, so its indices need not align.
+  const available = seq.items.map((node, index) => {
+    const scalar = isAlias(node) ? node.resolve(doc) : node;
+    return { value: isScalar(scalar) ? normalize(String(scalar.value ?? '')) : '', index };
+  });
   const used = new Set<number>();
   const items = values.map((value) => {
     const match = available.find((item) => item.value === value && !used.has(item.index));
@@ -1276,8 +1279,8 @@ function syncPayloadModels(
 
     syncConditionSequence(doc, modelMap, 'match', prior?.match, model.match);
     syncConditionSequence(doc, modelMap, 'not-match', prior?.notMatch, model.notMatch);
-    syncStringSequence(doc, modelMap, 'exist', prior?.exist, model.exist);
-    syncStringSequence(doc, modelMap, 'not-exist', prior?.notExist, model.notExist);
+    syncStringSequence(doc, modelMap, 'exist', model.exist);
+    syncStringSequence(doc, modelMap, 'not-exist', model.notExist);
     return modelMap;
   });
   replaceSequenceItems(seq, items);
@@ -1347,7 +1350,7 @@ function syncPayloadReplaceSequence(
           !mapPair(target, 'paths') ||
           JSON.stringify(prior?.target.paths) !== JSON.stringify(paths)
         ) {
-          syncStringSequence(doc, target, 'paths', prior?.target.paths, paths, (path) => path);
+          syncStringSequence(doc, target, 'paths', paths, (path) => path);
         }
       } else {
         deleteMapValue(target, 'paths');
@@ -1408,7 +1411,7 @@ function syncPayloadFilterSequence(
     const ruleMap = isMap(existing) ? existing : (doc.createNode({}) as YAMLMap);
     const prior = baseline.find((candidate) => candidate.id === rule.id);
     syncPayloadModels(doc, ruleMap, prior?.models ?? [], rule.models);
-    syncStringSequence(doc, ruleMap, 'params', prior?.params, rule.params);
+    syncStringSequence(doc, ruleMap, 'params', rule.params);
     return ruleMap;
   });
   replaceSequenceItems(seq, items);
@@ -2351,7 +2354,6 @@ export function useVisualConfig() {
               doc,
               antigravity,
               'sensitive-words',
-              baselineValues.antigravitySensitiveWords,
               values.antigravitySensitiveWords
             );
           }
@@ -2361,13 +2363,7 @@ export function useVisualConfig() {
           ensureMapInDoc(doc, ['oauth', 'providers', 'devin']);
           const devin = doc.getIn(['oauth', 'providers', 'devin'], true);
           if (isMap(devin)) {
-            syncStringSequence(
-              doc,
-              devin,
-              'sensitive-words',
-              baselineValues.devinSensitiveWords,
-              values.devinSensitiveWords
-            );
+            syncStringSequence(doc, devin, 'sensitive-words', values.devinSensitiveWords);
           }
           deleteIfMapEmpty(doc, ['oauth', 'providers', 'devin']);
         }

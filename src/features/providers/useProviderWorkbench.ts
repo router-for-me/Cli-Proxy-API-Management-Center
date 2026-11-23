@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { guardConfigConnection } from '@/services/api/configValue';
 import { providersApi } from '@/services/api';
 import { getErrorMessage } from '@/utils/helpers';
@@ -46,7 +47,7 @@ import type {
   SponsorProviderBrand,
   SponsorProviderRaw,
 } from './types';
-import { buildSponsorBundle } from './sponsorBundle';
+import { resolveSponsorBundle, prepareSponsorWrite } from './sponsorBundle';
 import {
   getSponsorProviderDefinition,
   isMultiProtocolSponsorBrand,
@@ -469,11 +470,12 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
 };
 
 export const buildProviderGroups = (config: Config): ProviderGroup[] => {
-  const bundles = new Map<SponsorProviderBrand, SponsorProviderRaw>();
+  const bundles = new Map<SponsorProviderBrand, ReturnType<typeof resolveSponsorBundle>>();
   const claimed = new Set<ProviderKeyConfig | OpenAIProviderConfig>();
   for (const brand of PROVIDER_BRAND_ORDER.filter(isMultiProtocolSponsorBrand)) {
-    const bundle = buildSponsorBundle(brand, config);
-    bundles.set(brand, bundle);
+    const resolution = resolveSponsorBundle(brand, config);
+    bundles.set(brand, resolution);
+    const { bundle } = resolution;
     for (const protocol of [bundle.openai, bundle.gemini, bundle.codex, bundle.claude]) {
       for (const row of protocol) claimed.add(row.config);
     }
@@ -533,27 +535,27 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] => {
         );
         break;
       case 'apikeyFun': {
-        const sponsorResource = apiKeyFunToResource(bundles.get(brand)!);
+        const sponsorResource = apiKeyFunToResource(bundles.get(brand)!.bundle);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'fennoAI': {
-        const sponsorResource = fennoAIToResource(bundles.get(brand)!);
+        const sponsorResource = fennoAIToResource(bundles.get(brand)!.bundle);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'qiniuCloud': {
-        const sponsorResource = qiniuCloudToResource(bundles.get(brand)!);
+        const sponsorResource = qiniuCloudToResource(bundles.get(brand)!.bundle);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'aiCodeMirror': {
-        const sponsorResource = aiCodeMirrorToResource(bundles.get(brand)!);
+        const sponsorResource = aiCodeMirrorToResource(bundles.get(brand)!.bundle);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'kimi': {
-        const sponsorResource = kimiToResource(bundles.get(brand)!);
+        const sponsorResource = kimiToResource(bundles.get(brand)!.bundle);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
@@ -563,6 +565,9 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] => {
     groups.push({
       ...(isNativeFamily(brand)
         ? { nativeSections: buildNativeSections(config, brand, resources) }
+        : {}),
+      ...(isMultiProtocolSponsorBrand(brand)
+        ? { ambiguousProtocols: bundles.get(brand)!.ambiguousProtocols }
         : {}),
       id: brand,
       resources,
@@ -576,6 +581,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] => {
 /* -------------------------------------------------------------------------- */
 
 export function useProviderWorkbench(): UseProviderWorkbenchResult {
+  const { t } = useTranslation();
   const connectionStatus = useAuthStore((s) => s.connectionStatus);
   const config = useConfigStore((s) => s.config);
   const fetchConfig = useConfigStore((s) => s.fetchConfig);
@@ -633,116 +639,118 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
   const persistSponsorConfig = useCallback(
     async (brand: SponsorProviderBrand, input: ProviderEntryFormInput) => {
       const definition = getSponsorProviderDefinition(brand);
-      const raw = buildSponsorBundle(brand, config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
-      const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
-      const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
-      const codexEntry = entries.find((entry) => entry.protocol === 'codex');
-      const geminiEntry = entries.find((entry) => entry.protocol === 'gemini');
+      const raw = prepareSponsorWrite(brand, config, entries, t);
+      await runSponsorMutationWithRecovery(async () => {
+        const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
+        const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
+        const codexEntry = entries.find((entry) => entry.protocol === 'codex');
+        const geminiEntry = entries.find((entry) => entry.protocol === 'gemini');
 
-      if (definition.protocols.includes('gemini')) {
-        const current = raw.gemini[0];
-        if (geminiEntry) {
-          const next = buildSponsorGeminiConfig(
-            geminiEntry,
-            definition.getProtocolUrls,
-            current?.config
-          );
-          if (current) {
-            await providersApi.updateGeminiKey(current.config.apiKey, current.config.baseUrl, {
-              ...next,
-              source: current.config.source,
-            });
+        if (definition.protocols.includes('gemini')) {
+          const current = raw.gemini[0];
+          if (geminiEntry) {
+            const next = buildSponsorGeminiConfig(
+              geminiEntry,
+              definition.getProtocolUrls,
+              current?.config
+            );
+            if (current) {
+              await providersApi.updateGeminiKey(current.config.apiKey, current.config.baseUrl, {
+                ...next,
+                source: current.config.source,
+              });
+            } else {
+              await providersApi.createGeminiKey(next);
+            }
           } else {
-            await providersApi.createGeminiKey(next);
+            for (const item of raw.gemini) {
+              await providersApi.deleteGeminiKey(
+                item.config.apiKey,
+                item.config.baseUrl,
+                item.config.source
+              );
+            }
+          }
+        }
+
+        const currentCodex = raw.codex[0];
+        if (codexEntry) {
+          const next = buildSponsorProviderKeyConfig(
+            codexEntry,
+            'codex',
+            definition.getProtocolUrls,
+            currentCodex?.config
+          );
+          if (currentCodex) {
+            await providersApi.updateCodexConfig(
+              currentCodex.config.apiKey,
+              currentCodex.config.baseUrl,
+              { ...next, source: currentCodex.config.source }
+            );
+          } else {
+            await providersApi.createCodexConfig(next);
           }
         } else {
-          for (const item of raw.gemini) {
-            await providersApi.deleteGeminiKey(
+          for (const item of raw.codex) {
+            await providersApi.deleteCodexConfig(
               item.config.apiKey,
               item.config.baseUrl,
               item.config.source
             );
           }
         }
-      }
 
-      const currentCodex = raw.codex[0];
-      if (codexEntry) {
-        const next = buildSponsorProviderKeyConfig(
-          codexEntry,
-          'codex',
-          definition.getProtocolUrls,
-          currentCodex?.config
-        );
-        if (currentCodex) {
-          await providersApi.updateCodexConfig(
-            currentCodex.config.apiKey,
-            currentCodex.config.baseUrl,
-            { ...next, source: currentCodex.config.source }
+        const currentClaude = raw.claude[0];
+        if (claudeEntry) {
+          const next = buildSponsorProviderKeyConfig(
+            claudeEntry,
+            'claude',
+            definition.getProtocolUrls,
+            currentClaude?.config
           );
+          if (currentClaude) {
+            await providersApi.updateClaudeConfig(
+              currentClaude.config.apiKey,
+              currentClaude.config.baseUrl,
+              { ...next, source: currentClaude.config.source }
+            );
+          } else {
+            await providersApi.createClaudeConfig(next);
+          }
         } else {
-          await providersApi.createCodexConfig(next);
+          for (const item of raw.claude) {
+            await providersApi.deleteClaudeConfig(
+              item.config.apiKey,
+              item.config.baseUrl,
+              item.config.source
+            );
+          }
         }
-      } else {
-        for (const item of raw.codex) {
-          await providersApi.deleteCodexConfig(
-            item.config.apiKey,
-            item.config.baseUrl,
-            item.config.source
-          );
-        }
-      }
 
-      const currentClaude = raw.claude[0];
-      if (claudeEntry) {
-        const next = buildSponsorProviderKeyConfig(
-          claudeEntry,
-          'claude',
-          definition.getProtocolUrls,
-          currentClaude?.config
-        );
-        if (currentClaude) {
-          await providersApi.updateClaudeConfig(
-            currentClaude.config.apiKey,
-            currentClaude.config.baseUrl,
-            { ...next, source: currentClaude.config.source }
+        const currentOpenAI = raw.openai[0];
+        if (openaiEntry) {
+          const next = buildSponsorOpenAIConfig(
+            openaiEntry,
+            definition.providerName,
+            definition.getProtocolUrls,
+            currentOpenAI?.config
           );
-        } else {
-          await providersApi.createClaudeConfig(next);
+          if (currentOpenAI) {
+            await providersApi.updateOpenAIProvider(
+              currentOpenAI.config.name,
+              currentOpenAI.index,
+              next
+            );
+          } else {
+            await providersApi.createOpenAIProvider(next);
+          }
+        } else if (currentOpenAI) {
+          await providersApi.deleteOpenAIProvider(currentOpenAI.index, currentOpenAI.config.source);
         }
-      } else {
-        for (const item of raw.claude) {
-          await providersApi.deleteClaudeConfig(
-            item.config.apiKey,
-            item.config.baseUrl,
-            item.config.source
-          );
-        }
-      }
-
-      const currentOpenAI = raw.openai[0];
-      if (openaiEntry) {
-        const next = buildSponsorOpenAIConfig(
-          openaiEntry,
-          definition.providerName,
-          definition.getProtocolUrls,
-          currentOpenAI?.config
-        );
-        if (currentOpenAI) {
-          await providersApi.updateOpenAIProvider(
-            currentOpenAI.config.name,
-            currentOpenAI.index,
-            next
-          );
-        } else {
-          await providersApi.createOpenAIProvider(next);
-        }
-      } else if (currentOpenAI) {
-        await providersApi.deleteOpenAIProvider(currentOpenAI.index, currentOpenAI.config.source);
-      }
+      }, refetch);
     },
-    [config]
+    [config, refetch, t]
   );
 
   const createProvider = useCallback(
@@ -758,7 +766,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'qiniuCloud' ||
           brand === 'kimi'
         ) {
-          await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
+          await persistSponsorConfig(brand, input);
         }
         await refetch();
       } finally {
@@ -788,7 +796,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'qiniuCloud' ||
           brand === 'kimi'
         ) {
-          await runSponsorMutationWithRecovery(() => persistSponsorConfig(brand, input), refetch);
+          await persistSponsorConfig(brand, input);
         }
         assertConnection();
         await refetch();

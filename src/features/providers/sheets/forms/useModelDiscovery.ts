@@ -4,7 +4,8 @@ import { buildHeaderObject } from '@/utils/headers';
 import { getErrorMessage } from '@/utils/helpers';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyEntryInput, ProviderBrand } from '../../types';
-import { useProbeProxyUrl } from './useProbeProxyUrl';
+import { resolveProbeTransport } from './probeTransport';
+import { guardConfigConnection } from '@/services/api/configValue';
 
 export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'gemini',
@@ -23,6 +24,7 @@ export interface UseModelDiscoveryArgs {
   brand: ProviderBrand;
   baseUrl: string;
   proxyUrl?: string;
+  savedProxyUrl?: string;
   formHeaders: Array<{ key: string; value: string }>;
   apiKeyEntries?: ApiKeyEntryInput[];
   apiKey?: string;
@@ -44,14 +46,14 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
   const {
     brand,
     baseUrl,
-    proxyUrl: formProxyUrl,
+    proxyUrl,
+    savedProxyUrl,
     formHeaders,
     apiKeyEntries,
     apiKey,
     fallbackApiKey,
     authIndex,
   } = args;
-  const proxyUrl = useProbeProxyUrl(formProxyUrl, authIndex);
 
   const available = isModelDiscoveryBrand(brand);
   const [loading, setLoading] = useState(false);
@@ -65,62 +67,71 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
     setError(null);
     try {
       const baseHeaders = buildHeaderObject(formHeaders);
-      const resolvedAuthIndex = (authIndex ?? '').trim() || undefined;
+      const openai = brand === 'openaiCompatibility';
+      const firstEntry = openai
+        ? (apiKeyEntries ?? []).find(
+            (e) => e.apiKey?.trim() || e.existingApiKey?.trim() || e.authIndex?.trim()
+          )
+        : undefined;
+      const key = openai
+        ? firstEntry?.apiKey?.trim() || firstEntry?.existingApiKey?.trim()
+        : apiKey?.trim() || fallbackApiKey?.trim();
+      const checkConnection = guardConfigConnection();
+      const transport = await resolveProbeTransport(
+        openai ? firstEntry?.proxyUrl : proxyUrl,
+        openai ? firstEntry?.savedProxyUrl : savedProxyUrl,
+        firstEntry?.authIndex?.trim() || authIndex,
+        !key ||
+          key.includes('$TOKEN$') ||
+          Object.values(baseHeaders).some((v) => v.includes('$TOKEN$'))
+      );
+      checkConnection();
       let next: ModelInfo[] = [];
       if (brand === 'gemini' || brand === 'interactions') {
-        const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchGeminiModelsViaApiCall(
           baseUrl,
           key,
           baseHeaders,
-          resolvedAuthIndex,
-          proxyUrl
+          transport.authIndex,
+          transport.proxyUrl
         );
       } else if (brand === 'codex' || brand === 'meta' || brand === 'xai') {
-        const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchV1ModelsViaApiCall(
           baseUrl,
           key,
           baseHeaders,
-          resolvedAuthIndex,
-          proxyUrl
+          transport.authIndex,
+          transport.proxyUrl
         );
       } else if (brand === 'claude') {
-        const key = (apiKey ?? '').trim() || (fallbackApiKey ?? '').trim();
         next = await modelsApi.fetchClaudeModelsViaApiCall(
           baseUrl,
           key,
           baseHeaders,
-          resolvedAuthIndex,
-          proxyUrl
+          transport.authIndex,
+          transport.proxyUrl
         );
       } else if (brand === 'openaiCompatibility') {
-        const firstEntry = (apiKeyEntries ?? []).find(
-          (e) =>
-            (e.apiKey ?? '').trim() || (e.existingApiKey ?? '').trim() || (e.authIndex ?? '').trim()
-        );
-        const entryKey =
-          (firstEntry?.apiKey ?? '').trim() || (firstEntry?.existingApiKey ?? '').trim();
-        const entryAuthIndex = (firstEntry?.authIndex ?? '').trim() || resolvedAuthIndex;
         try {
           next = await modelsApi.fetchModelsViaApiCall(
             baseUrl,
-            entryKey,
+            key,
             baseHeaders,
-            entryAuthIndex,
-            firstEntry?.proxyUrl
+            transport.authIndex,
+            transport.proxyUrl
           );
         } catch (firstErr) {
           // Some OpenAI-compatible endpoints expose /models without auth, or
           // reject the configured key for the discovery route. Retry once
           // without any auth/headers before surfacing the original error.
           try {
+            checkConnection();
             next = await modelsApi.fetchModelsViaApiCall(
               baseUrl,
               undefined,
               undefined,
               undefined,
-              firstEntry?.proxyUrl
+              transport.proxyUrl
             );
           } catch {
             throw firstErr;
@@ -145,6 +156,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
     brand,
     fallbackApiKey,
     formHeaders,
+    savedProxyUrl,
     proxyUrl,
   ]);
 

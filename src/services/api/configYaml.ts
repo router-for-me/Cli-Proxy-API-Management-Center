@@ -1,5 +1,11 @@
 import { isAlias, isMap, isScalar, isSeq, parseDocument } from 'yaml';
 
+// JavaScript's Number() does not recognize YAML's dotted infinity literals.
+function sourceNumber(source: string): number {
+  if (/^[-+]?\.(?:inf|Inf|INF)$/.test(source)) return source.startsWith('-') ? -Infinity : Infinity;
+  return Number(source);
+}
+
 // A number's spelling may be data: Go decodes YAML scalars into []string using
 // the source value (e.g. 001, +400 or 1e3). Keep it through visual previews,
 // even for an alias whose anchor also has a non-string consumer elsewhere.
@@ -17,7 +23,11 @@ export function parseConfigDocument(yaml: string) {
         return {
           ...tag,
           stringify(node, ctx, onComment, onChompKeep) {
-            if (node.type === 'PLAIN' && node.source && Object.is(Number(node.source), node.value))
+            if (
+              node.type === 'PLAIN' &&
+              node.source &&
+              Object.is(sourceNumber(node.source), node.value)
+            )
               return node.source;
             return stringify(node, ctx, onComment, onChompKeep);
           },
