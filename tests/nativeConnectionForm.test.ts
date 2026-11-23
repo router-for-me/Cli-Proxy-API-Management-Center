@@ -9,6 +9,8 @@ import {
   buildSharedSettings,
   memberProbeSettings,
   readSharedForm,
+  readMemberForm,
+  setMemberMode,
 } from '@/features/providers/nativeConnectionForm';
 import { buildProviderGroups } from '@/features/providers/useProviderWorkbench';
 import { normalizeConfigResponse } from '@/services/api/transformers';
@@ -22,7 +24,7 @@ const group = {
   models: [{ name: 'upstream', alias: 'model', future: true }],
   'connection-pool': { enabled: false, future: true },
   keys: [
-    { 'api-key': 'fixture-one', priority: 9 },
+    { 'api-key': 'fixture-one', priority: 9, models: [{ name: 'first-key-model' }] },
     { 'api-key': 'fixture-two', 'proxy-url': 'direct' },
   ],
 };
@@ -48,6 +50,8 @@ test('all native credentials are blank password inputs within the same shared se
   );
   expect(html.match(/<form\b/g)).toHaveLength(1);
   expect(html.match(/type="password"/g)).toHaveLength(2);
+  expect(html).toContain('Auto · first-key-model');
+  expect(html).not.toContain('Auto · upstream');
   expect(html).toContain('value="Fixture connection"');
   expect(html).toContain('value="https://example.invalid"');
   expect(html).toContain(en.providersPage.form.addApiKeyEntry);
@@ -100,16 +104,30 @@ test('probing a key applies its direct proxy and explicit headers instead of sha
     models: [],
     headers: [],
   });
-  const initial = { ...shared, proxyUrl: '', headers: [] };
-  const input = { ...initial, proxyUrl: 'direct', headers: [{ key: 'X-Key', value: 'fixture' }] };
+  const initial = readMemberForm(shared, null);
+  const custom = setMemberMode(
+    setMemberMode(initial, 'proxyUrl', 'override'),
+    'headers',
+    'override'
+  );
+  const input = {
+    ...custom,
+    apiKey: 'fixture-new',
+    proxyUrl: 'direct',
+    headers: [{ key: 'X-Key', value: 'fixture' }],
+  };
   const connection = { ...shared, proxyUrl: 'http://proxy.invalid:8080' };
   expect(memberProbeSettings(connection, { resource: null, initial, input })).toEqual({
+    probeApiKey: 'fixture-new',
     probeProxyUrl: 'direct',
     probeHeaders: input.headers,
+    probeModels: shared.models,
   });
   expect(memberProbeSettings(connection, { resource: null, initial, input: initial })).toEqual({
+    probeApiKey: '',
     probeProxyUrl: connection.proxyUrl,
     probeHeaders: connection.headers,
+    probeModels: shared.models,
   });
 });
 
@@ -137,16 +155,25 @@ test('only missing/null unchanged member fields follow the edited group', () => 
     headers: [],
   });
   const edited = { ...shared, proxyUrl: 'direct', headers: [{ key: 'X-New', value: 'new' }] };
-  const blank = { ...shared, proxyUrl: '', headers: [{ key: '', value: '' }] };
-  const probe = (
-    resource: (typeof members)[number],
-    initial: typeof shared,
-    input: typeof shared
-  ) => memberProbeSettings(edited, { resource, initial, input });
-  for (const settings of [probe(members[0], blank, blank), probe(members[1], shared, blank)]) {
-    expect(settings).toEqual({ probeProxyUrl: '', probeHeaders: blank.headers });
+  for (const [index, resource] of members.entries()) {
+    const initial = readMemberForm(shared, resource);
+    const probe = (input: typeof shared) =>
+      memberProbeSettings(edited, { resource, initial, input });
+    const probeApiKey = fixture.keys[index]['api-key'];
+    const empty = { probeApiKey, probeProxyUrl: '', probeHeaders: [], probeModels: shared.models };
+    const inherited = {
+      probeApiKey,
+      probeProxyUrl: 'direct',
+      probeHeaders: edited.headers,
+      probeModels: shared.models,
+    };
+    expect(probe(initial)).toEqual(index === 0 ? empty : inherited);
+    for (const [mode, expected] of [
+      ['empty', empty],
+      ['inherit', inherited],
+    ] as const)
+      expect(
+        probe(setMemberMode(setMemberMode(initial, 'proxyUrl', mode), 'headers', mode))
+      ).toEqual(expected);
   }
-  expect(
-    probe(members[1], shared, { ...shared, headers: [...shared.headers, ...blank.headers] })
-  ).toEqual({ probeProxyUrl: edited.proxyUrl, probeHeaders: edited.headers });
 });

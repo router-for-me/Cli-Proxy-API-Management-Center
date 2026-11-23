@@ -2129,7 +2129,9 @@
       "timeout": "閒置逾時（例如 5m）",
       "maxIdle": "每個主機的最大閒置連線數",
       "invalidMaxIdle": "最大閒置連線數必須是安全整數。",
-      "inheritHint": "僅在此金鑰需要不同設定時填寫；留空的欄位會繼承連線設定。",
+      "empty": "空值",
+      "valueSource": "{{field}}：值來源",
+      "inheritHint": "繼承的欄位會沿用連線設定。選擇「空值」可清除此金鑰的值，選擇覆寫則可自訂。",
       "disableKey": "停用此金鑰",
       "disableShort": "停用"
     },

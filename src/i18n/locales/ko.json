@@ -2110,7 +2110,9 @@
       "timeout": "유휴 시간 제한(예: 5m)",
       "maxIdle": "호스트당 최대 유휴 연결 수",
       "invalidMaxIdle": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
-      "inheritHint": "이 키에만 다르게 적용할 값만 입력하세요. 비워 둔 필드는 연결 설정을 상속합니다.",
+      "empty": "빈 값",
+      "valueSource": "{{field}}: 값 출처",
+      "inheritHint": "상속된 필드는 연결 설정을 따릅니다. 이 키의 값을 비우려면 빈 값을, 직접 설정하려면 재정의를 선택하세요.",
       "disableKey": "이 키 비활성화",
       "disableShort": "끄기"
     },

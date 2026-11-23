@@ -49,7 +49,11 @@ export function applyNativeDisabled(
   if (intent.all !== undefined) {
     const all = intent.all;
     const shared = withRule(groupList(next), all);
-    if (shared.length) next['excluded-models'] = shared;
+    if (
+      shared.length ||
+      (Array.isArray(next['excluded-models']) && !next['excluded-models'].length)
+    )
+      next['excluded-models'] = shared;
     else delete next['excluded-models'];
     keys = keys.map((key) => {
       if (!isRecord(key)) return key;

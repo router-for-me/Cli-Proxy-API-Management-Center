@@ -2110,7 +2110,9 @@
       "timeout": "Idle timeout (e.g. 5m)",
       "maxIdle": "Maximum idle connections per host",
       "invalidMaxIdle": "Maximum idle connections must be a safe integer.",
-      "inheritHint": "Only fill in what this key does differently; blank fields inherit the connection settings.",
+      "empty": "Empty",
+      "valueSource": "{{field}}: value source",
+      "inheritHint": "Inherited fields follow the connection. Choose Empty to clear a value for this key, or Override to set your own.",
       "disableKey": "Disable this key",
       "disableShort": "Off"
     },

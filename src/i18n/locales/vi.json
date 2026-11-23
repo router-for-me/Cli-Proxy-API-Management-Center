@@ -2359,7 +2359,9 @@
       "timeout": "Thời gian chờ khi rảnh (ví dụ: 5m)",
       "maxIdle": "Số kết nối rảnh tối đa mỗi máy chủ",
       "invalidMaxIdle": "Số kết nối rảnh tối đa phải là số nguyên an toàn.",
-      "inheritHint": "Chỉ điền những gì khóa này khác biệt; trường để trống sẽ kế thừa cài đặt kết nối.",
+      "empty": "Để trống",
+      "valueSource": "{{field}}: nguồn giá trị",
+      "inheritHint": "Các trường kế thừa dùng cài đặt của kết nối. Chọn để trống hoặc ghi đè để đặt giá trị riêng cho khóa này.",
       "disableKey": "Tắt khóa này",
       "disableShort": "Tắt"
     },

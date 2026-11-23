@@ -2101,7 +2101,9 @@
       "timeout": "空闲超时（如 5m）",
       "maxIdle": "每个主机的最大空闲连接数",
       "invalidMaxIdle": "最大空闲连接数必须是安全整数。",
-      "inheritHint": "仅在此密钥需要不同设置时填写；留空的字段继承连接设置。",
+      "empty": "空值",
+      "valueSource": "{{field}}：值来源",
+      "inheritHint": "继承的字段跟随连接设置。选择“空值”可清空此密钥的值，选择“覆盖”可自定义。",
       "disableKey": "停用此密钥",
       "disableShort": "停用"
     },

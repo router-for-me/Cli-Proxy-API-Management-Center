@@ -5,12 +5,20 @@ import {
   providersApi,
   type NativeProviderFamily,
 } from '@/services/api/providers';
-import { buildSubmittedMember, readSharedForm } from '@/features/providers/nativeConnectionForm';
+import {
+  buildSubmittedMember,
+  memberFields,
+  readMemberForm,
+  readSharedForm,
+  setMemberMode,
+  nativeSwitchesDirty,
+} from '@/features/providers/nativeConnectionForm';
 import {
   buildNativeConnectionMembers,
   buildProviderGroups,
 } from '@/features/providers/useProviderWorkbench';
 import { normalizeConfigResponse, normalizeProviderGroups } from '@/services/api/transformers';
+import type { ProviderEntryFormInput } from '@/features/providers/types';
 import type { ProviderKeyConfig } from '@/types';
 
 const { get, getRaw, put, captureConnection } = apiClient;
@@ -82,6 +90,145 @@ test('saving new keys in a disabled group preserves the displayed state with per
       ],
     },
   ]);
+});
+
+test('member intent survives save and readback: pin, clear, restore, preserve untouched empty maps/lists', async () => {
+  const defaults = {
+    prefix: 'team',
+    priority: 7,
+    'proxy-url': 'direct',
+    models: [{ name: 'shared' }],
+    headers: { 'X-Fixture': 'yes' },
+    'excluded-models': ['old'],
+  };
+  const opaque = { 'connection-pool': {}, 'request-scoped-errors': [], future: {} };
+  const b = backend('codex', [
+    { ...defaults, keys: [{ 'api-key': 'fixture', ...opaque, headers: null }] },
+  ]);
+  const blank: ProviderEntryFormInput = {
+    apiKey: '',
+    name: '',
+    baseUrl: '',
+    prefix: '',
+    priority: undefined,
+    proxyUrl: '',
+    models: [],
+    headers: [],
+    excludedModelsText: '',
+    disabled: false,
+  };
+  const save = async (
+    edit: (initial: ProviderEntryFormInput) => ProviderEntryFormInput,
+    create = false
+  ) => {
+    const section = buildProviderGroups(
+      normalizeConfigResponse({ 'api-keys': { codex: b.groups() } })
+    ).find((f) => f.id === 'codex')!.nativeSections![0];
+    const saved = section.members[0];
+    const key = saved.raw as ProviderKeyConfig;
+    const resource = create ? null : saved;
+    const initial = readMemberForm(
+      {
+        ...blank,
+        prefix: key.prefix ?? '',
+        proxyUrl: key.proxyUrl ?? '',
+        priority: key.priority,
+        models: key.models ?? [],
+        excludedModelsText: key.excludedModels?.join('\n') ?? '',
+      },
+      resource
+    );
+    const input = edit(initial);
+    const rows = [
+      ...(create ? [{ resource: saved, input: blank, unchanged: true }] : []),
+      buildSubmittedMember({ resource, initial, input }, false, false),
+    ];
+    await providersApi.saveNativeConnection(
+      'codex',
+      section.source,
+      b.source().group,
+      buildNativeConnectionMembers('codex', section, rows)
+    );
+    return (b.groups()[0].keys as Group[]).at(-1)!;
+  };
+  const clear = (initial: ProviderEntryFormInput) =>
+    memberFields.reduce(
+      (form, field) => setMemberMode(form, field, field === 'priority' ? 'override' : 'empty'),
+      initial
+    );
+  const empty = {
+    prefix: '',
+    priority: 0,
+    'proxy-url': '',
+    headers: {},
+    models: [],
+    'excluded-models': [],
+  };
+  expect(
+    await save((initial) => {
+      expect(Object.values(initial.memberModes!)).toEqual(memberFields.map(() => 'inherit'));
+      return {
+        ...memberFields.reduce((form, field) => setMemberMode(form, field, 'override'), initial),
+        prefix: 'team',
+        priority: 7,
+        proxyUrl: 'direct',
+        headers: [{ key: 'X-Fixture', value: 'yes' }],
+        models: [{ name: 'shared' }],
+        excludedModelsText: 'old',
+      };
+    })
+  ).toEqual({ 'api-key': 'fixture', ...opaque, ...defaults });
+  expect(await save((initial) => ({ ...clear(initial), priority: 0 }))).toEqual({
+    'api-key': 'fixture',
+    ...opaque,
+    ...empty,
+  });
+  expect(await save((initial) => ({ ...initial, weight: 2 }))).toEqual({
+    'api-key': 'fixture',
+    ...opaque,
+    ...empty,
+    weight: 2,
+  });
+  expect(
+    await save((initial) =>
+      memberFields.reduce((form, field) => setMemberMode(form, field, 'inherit'), initial)
+    )
+  ).toEqual({ 'api-key': 'fixture', ...opaque, weight: 2 });
+  expect(await save((initial) => ({ ...clear(initial), apiKey: 'fixture-new' }), true)).toEqual({
+    'api-key': 'fixture-new',
+    ...empty,
+  });
+});
+
+test('enabling individually disabled members is dirty even when the group default is enabled', () => {
+  const group = {
+    keys: [
+      { 'api-key': 'fixture', 'excluded-models': ['*'] },
+      { 'api-key': 'fixture-2', 'excluded-models': ['*'] },
+    ],
+  };
+  const section = buildProviderGroups(
+    normalizeConfigResponse({ 'api-keys': { codex: [group] } })
+  ).find((f) => f.id === 'codex')!.nativeSections![0];
+  const rows = section.members.map((resource) => {
+    const initial = readMemberForm(
+      {
+        apiKey: '',
+        name: '',
+        baseUrl: '',
+        prefix: '',
+        proxyUrl: '',
+        models: [],
+        headers: [],
+        excludedModelsText: '',
+        disabled: true,
+      },
+      resource
+    );
+    return { resource, initial, input: initial };
+  });
+  expect(nativeSwitchesDirty(rows, false)).toBe(false);
+  expect(nativeSwitchesDirty(rows, false, false)).toBe(true);
 });
 
 for (const family of [

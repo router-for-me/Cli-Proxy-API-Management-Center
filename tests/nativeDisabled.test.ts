@@ -29,6 +29,14 @@ describe('native key on/off', () => {
     expect(states(on)).toEqual([false]);
   });
 
+  test('enabling keys leaves an explicit empty group exclusions list intact', () => {
+    const group = { 'excluded-models': [], keys: [{ 'excluded-models': ['*'] }] };
+    expect(applyNativeDisabled(group, { all: false })).toEqual({
+      'excluded-models': [],
+      keys: [{ 'excluded-models': [] }],
+    });
+  });
+
   test('a single key only gains its own list when it must differ from the group', () => {
     const group = { 'excluded-models': ['m'], keys: [{ 'api-key': 'a' }, { 'api-key': 'b' }] };
     const next = applyNativeDisabled(group, { keys: [true, false] });

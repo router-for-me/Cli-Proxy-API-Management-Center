@@ -5,6 +5,9 @@ import { isRecord } from '@/utils/helpers';
 import { normalizeApiKeyEntry, normalizeProviderGroups } from './transformers';
 import {
   normalizeNativeProviderGroup,
+  memberWireFields,
+  type MemberModes,
+  type MemberField,
   serializeNativeGroup,
   replaceNativeGroupSettings,
   type NativeProviderGroupConfig,
@@ -608,8 +611,28 @@ async function changeSingleNativeGroup(
 export interface NativeConnectionMember {
   originalKeyIndex?: number;
   config?: ProviderKeyConfig;
+  fieldModes?: Partial<MemberModes>;
   /** Desired on/off state; omitted keeps whatever the key resolves to. */
   disabled?: boolean;
+}
+
+function applyMemberModes(
+  key: Record<string, unknown>,
+  family: NativeProviderFamily,
+  config: ProviderKeyConfig,
+  modes?: Partial<MemberModes>
+) {
+  if (!modes) return key;
+  const serialized = keySerializer(family)(config);
+  for (const field of Object.keys(modes) as MemberField[]) {
+    const wire = memberWireFields[field];
+    if (modes[field] === 'inherit') delete key[wire];
+    else if (field === 'models' && serialized.models != null) {
+      // editNativeMember has already merged opaque metadata by model row identity.
+      key.models ??= serialized.models;
+    } else key[wire] = serialized[wire] ?? emptyOverride(wire);
+  }
+  return key;
 }
 
 async function saveNativeConnection(
@@ -631,10 +654,10 @@ async function saveNativeConnection(
       (normalizeProviderGroups([group]) as KeyConfig[]).map((row) => [row.source!.keyIndex, row])
     );
     const used = new Set<number>();
-    const keys = members.map(({ originalKeyIndex: index, config }) => {
+    const keys = members.map(({ originalKeyIndex: index, config, fieldModes }) => {
       if (index === undefined) {
         if (!config || config.source) throw conflict();
-        return createNativeMember(family, config);
+        return applyMemberModes(createNativeMember(family, config), family, config, fieldModes);
       }
       if (!Number.isSafeInteger(index) || index < 0 || index >= rawKeys.length || used.has(index))
         throw conflict();
@@ -645,7 +668,12 @@ async function saveNativeConnection(
       if (!original || !isRecord(raw)) throw conflict();
       if (config.source && (config.source.keyIndex !== index || !equal(config.source.group, group)))
         throw conflict();
-      return editNativeMember(family, group, raw, original, config);
+      return applyMemberModes(
+        editNativeMember(family, group, raw, original, config),
+        family,
+        config,
+        fieldModes
+      );
     });
     current[groupIndex] = applyNativeDisabled(
       { ...replaceNativeGroupSettings(group, settings), keys },

@@ -1,4 +1,10 @@
 import type { ProviderKeyConfig } from '@/types';
+import {
+  memberWireFields,
+  type MemberField,
+  type MemberMode,
+  type MemberModes,
+} from '@/services/api/nativeProviderGroups';
 import { isRecord } from '@/utils/helpers';
 import type { NativeProviderFamily } from '@/services/api/providers';
 import { normalizeConnectionPool } from '@/services/api/connectionPool';
@@ -27,7 +33,27 @@ type MemberRowDraft = {
 };
 
 export function memberDisabled(row: MemberRowDraft, groupDisabled: boolean, allDisabled?: boolean) {
-  return row.disabled ?? allDisabled ?? (row.resource ? row.initial.disabled : groupDisabled);
+  const inherits = row.input.memberModes?.excludedModelsText === 'inherit';
+  return (
+    row.disabled ??
+    allDisabled ??
+    (row.resource && !inherits ? row.initial.disabled : groupDisabled)
+  );
+}
+
+export function nativeSwitchesDirty(
+  rows: MemberRowDraft[],
+  groupDisabled: boolean,
+  allDisabled?: boolean
+) {
+  return (
+    (allDisabled !== undefined && allDisabled !== groupDisabled) ||
+    rows.some(
+      (row) =>
+        memberDisabled(row, groupDisabled, allDisabled) !==
+        (row.resource ? row.initial.disabled : groupDisabled)
+    )
+  );
 }
 
 export function buildSubmittedMember(
@@ -46,42 +72,65 @@ export function buildSubmittedMember(
   };
 }
 
-// Compare map values, not editor row identity: a blank placeholder or a reverted edit
-// must not detach an inherited field from the current group settings.
-function sameHeaderDraft(
-  a: ProviderEntryFormInput['headers'],
-  b: ProviderEntryFormInput['headers']
-) {
-  if (a === b) return true;
-  const toMap = (rows: typeof a) =>
-    new Map(rows.filter(({ key }) => key.trim()).map(({ key, value }) => [key.trim(), value]));
-  const left = toMap(a);
-  const right = toMap(b);
-  return left.size === right.size && [...left].every(([key, value]) => right.get(key) === value);
+const emptyMemberValues = {
+  proxyUrl: '',
+  prefix: '',
+  priority: undefined,
+  headers: [],
+  models: [],
+  excludedModelsText: '',
+};
+export const memberFields = Object.keys(memberWireFields) as MemberField[];
+
+export function readMemberForm(form: ProviderEntryFormInput, resource: ProviderResource | null) {
+  const source = (resource?.raw as ProviderKeyConfig | undefined)?.source;
+  const keys = source?.group.keys;
+  const raw = Array.isArray(keys) && source?.keyIndex !== undefined ? keys[source.keyIndex] : null;
+  const memberModes = {} as MemberModes;
+  const result = { ...form, memberModes };
+  for (const field of memberFields) {
+    const value = isRecord(raw) ? raw[memberWireFields[field]] : undefined;
+    const empty =
+      value === '' ||
+      (Array.isArray(value) &&
+        value.every((item) => field === 'excludedModelsText' && String(item).trim() === '*')) ||
+      (isRecord(value) && !Object.keys(value).length);
+    memberModes[field] = value == null ? 'inherit' : empty ? 'empty' : 'override';
+    if (field === 'headers' && isRecord(value))
+      result.headers = Object.entries(value).map(([key, v]) => ({ key, value: String(v) }));
+    if (memberModes[field] !== 'override')
+      Object.assign(result, { [field]: emptyMemberValues[field] });
+  }
+  return result;
 }
 
-/** Probes must follow the chosen credential's overrides, including an explicit direct proxy. */
-export function memberProbeSettings(
-  shared: ProviderEntryFormInput,
-  row?: {
-    resource: ProviderResource | null;
-    initial: ProviderEntryFormInput;
-    input: ProviderEntryFormInput;
-  }
-) {
-  if (!row) return { probeProxyUrl: shared.proxyUrl, probeHeaders: shared.headers };
-  const source = (row.resource?.raw as ProviderKeyConfig | undefined)?.source;
-  const keys = source?.group.keys;
-  const original =
-    Array.isArray(keys) && source?.keyIndex !== undefined ? keys[source.keyIndex] : undefined;
-  const raw = isRecord(original) ? original : {};
-  const proxyOverride =
-    row.input.proxyUrl.trim() !== row.initial.proxyUrl.trim() || raw['proxy-url'] != null;
-  const headersOverride =
-    !sameHeaderDraft(row.input.headers, row.initial.headers) || raw.headers != null;
+export function setMemberMode(
+  form: ProviderEntryFormInput,
+  field: MemberField,
+  mode: MemberMode
+): ProviderEntryFormInput {
+  if (!form.memberModes || form.memberModes[field] === mode) return form;
   return {
-    probeProxyUrl: proxyOverride ? row.input.proxyUrl : shared.proxyUrl,
-    probeHeaders: headersOverride ? row.input.headers : shared.headers,
+    ...form,
+    [field]: field === 'priority' && mode === 'override' ? 0 : emptyMemberValues[field],
+    memberModes: { ...form.memberModes, [field]: mode },
+  };
+}
+
+/** Both probe surfaces resolve the exact same member against the live group draft. */
+export function memberProbeSettings(shared: ProviderEntryFormInput, row?: MemberRowDraft) {
+  const effective = <K extends 'proxyUrl' | 'headers' | 'models'>(field: K) =>
+    row?.input.memberModes && row.input.memberModes[field] !== 'inherit'
+      ? row.input[field]
+      : shared[field];
+  return {
+    probeApiKey:
+      row?.input.apiKey.trim() ||
+      (row?.resource?.raw as ProviderKeyConfig | undefined)?.apiKey ||
+      '',
+    probeProxyUrl: effective('proxyUrl'),
+    probeHeaders: effective('headers'),
+    probeModels: effective('models'),
   };
 }
 
@@ -104,10 +153,10 @@ export function readSharedForm(
     models: shared.models,
     runtimePolicy: shared.policy,
     connectionPool: normalizeConnectionPool(group['connection-pool']),
-    disabled: shared.excludedModels.split('\n').includes('*'),
+    disabled: shared.excludedModels.split('\n').some((rule) => rule.trim() === '*'),
     excludedModelsText: shared.excludedModels
       .split('\n')
-      .filter((rule) => rule !== '*')
+      .filter((rule) => rule.trim() !== '*')
       .join('\n'),
   };
 }

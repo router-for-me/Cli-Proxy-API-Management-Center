@@ -2110,7 +2110,9 @@
       "timeout": "Boşta kalma süresi (ör. 5m)",
       "maxIdle": "Sunucu başına en fazla boşta bağlantı",
       "invalidMaxIdle": "Boşta bağlantı sınırı güvenli bir tam sayı olmalıdır.",
-      "inheritHint": "Yalnızca bu anahtar için farklı olan alanları doldurun; boş alanlar bağlantı ayarlarını devralır.",
+      "empty": "Boş",
+      "valueSource": "{{field}}: değer kaynağı",
+      "inheritHint": "Devralınan alanlar bağlantı ayarlarını izler. Bu anahtara boş bir değer vermek veya özel bir değer belirlemek için ilgili seçeneği seçin.",
       "disableKey": "Bu anahtarı devre dışı bırak",
       "disableShort": "Kapalı"
     },
