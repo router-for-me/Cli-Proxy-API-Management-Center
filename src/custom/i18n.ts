@@ -38,6 +38,7 @@ const en = {
     'Backend estimate for a new session across all models, using WebSocket for Codex and HTTP for other providers. Existing sessions and model-specific limits may use another account.',
   routing_age: 'quota observed {{seconds}}s ago',
   routing_refresh_error: 'Quota refresh failed; last observation retained',
+  routing_pool_gemini: 'Gemini models',
   routing_projection_hint: 'Forecasts are estimates based on your usage settings.',
   strategy_soonest_reset_first: 'Soonest reset first',
   strategy_soonest_reset_first_desc:

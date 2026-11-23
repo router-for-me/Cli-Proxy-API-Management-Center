@@ -415,6 +415,10 @@ export function LedgerRow({
           )}
           {credential.routing && (
             <span>
+              {credential.routing.pool &&
+                `${t(`pd_overview.routing_pool_${credential.routing.pool.key}`, {
+                  defaultValue: credential.routing.pool.label,
+                })}: `}
               {t(
                 routingReasonKey(credential.routing.skippedReason || credential.routing.quotaState)
               )}
