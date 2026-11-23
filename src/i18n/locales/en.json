@@ -2280,14 +2280,6 @@
         "openai": "OpenAI Compatible",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "Double 11 · Limited time",
-        "title": "{{provider}} Double 11 Top-up Bonus",
-        "description": "Top up on {{provider}} during the event and get an extra {{percent}}% of your top-up as bonus credit.",
-        "bonus": "Top-up bonus",
-        "cta": "Join now",
-        "ctaAria": "Join now: {{provider}} Double 11 top-up event (opens in a new tab)"
       }
     },
     "status": {

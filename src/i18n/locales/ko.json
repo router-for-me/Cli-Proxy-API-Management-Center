@@ -2280,14 +2280,6 @@
         "openai": "OpenAI 호환",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "11.11 한정 이벤트",
-        "title": "{{provider}} 11.11 충전 보너스",
-        "description": "이벤트 기간 동안 {{provider}}에서 충전하면 충전 금액의 {{percent}}%를 추가 크레딧으로 드립니다.",
-        "bonus": "충전 보너스",
-        "cta": "지금 참여하기",
-        "ctaAria": "지금 참여하기: {{provider}} 11.11 충전 이벤트 (새 탭에서 열림)"
       }
     },
     "status": {

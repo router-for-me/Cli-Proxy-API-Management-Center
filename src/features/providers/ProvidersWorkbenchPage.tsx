@@ -9,7 +9,6 @@ import { ProvidersHeader, type ProvidersHeaderSummary } from './components/Provi
 import { BrandTabs } from './components/BrandTabs';
 import { BrandPanel, type BrandPanelControls } from './components/BrandPanel';
 import { ProviderPicker } from './components/ProviderPicker';
-import { SponsorCampaignCard } from './components/SponsorCampaignCard';
 import { SponsorQuickStartPanel } from './components/SponsorQuickStartPanel';
 import {
   ProviderSheet,
@@ -465,7 +464,6 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
         {header}
         {errorBanner}
         <div className={styles.quickStartStack}>
-          <SponsorCampaignCard />
           <SponsorQuickStartPanel
             resource={quickStartResource}
             workbench={workbench}

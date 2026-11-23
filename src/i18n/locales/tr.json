@@ -2280,14 +2280,6 @@
         "openai": "OpenAI Uyumlu",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "11.11 · Sınırlı süre",
-        "title": "{{provider}} 11.11 Yükleme Bonusu",
-        "description": "Kampanya süresince {{provider}} hesabınıza yükleme yapın, yükleme tutarının %{{percent}} kadarını ek kredi olarak kazanın.",
-        "bonus": "Yükleme bonusu",
-        "cta": "Hemen katıl",
-        "ctaAria": "Hemen katıl: {{provider}} 11.11 yükleme kampanyası (yeni sekmede açılır)"
       }
     },
     "status": {

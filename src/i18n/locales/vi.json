@@ -2123,15 +2123,7 @@
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
       },
-      "kimiPromo": "Người dùng mới nạp tiền lần đầu thành công sẽ được tặng hạn mức API trị giá 10% số tiền nạp, tối đa ¥1000. Ưu đãi kết thúc vào ngày 30 tháng 9.",
-      "double11": {
-        "badge": "Ưu đãi 11.11 · Có hạn",
-        "title": "{{provider}} khuyến mãi nạp tiền 11.11",
-        "description": "Nạp tiền vào {{provider}} trong thời gian sự kiện để được tặng thêm {{percent}}% giá trị nạp.",
-        "bonus": "Tặng thêm khi nạp",
-        "cta": "Tham gia ngay",
-        "ctaAria": "Tham gia ngay sự kiện nạp tiền 11.11 của {{provider}} (mở trong thẻ mới)"
-      }
+      "kimiPromo": "Người dùng mới nạp tiền lần đầu thành công sẽ được tặng hạn mức API trị giá 10% số tiền nạp, tối đa ¥1000. Ưu đãi kết thúc vào ngày 30 tháng 9."
     },
     "status": {
       "active": "Đang hoạt động",

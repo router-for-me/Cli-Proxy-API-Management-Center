@@ -14,8 +14,6 @@ export {
   DISABLE_ALL_RULE,
   formatExcludedRulesText,
   getModelExclusionState,
-  hasExcludedRule,
-  isMatchedByWildcardRule,
   isModelExcluded,
   isWildcardRule,
   matchedModelsByRule,

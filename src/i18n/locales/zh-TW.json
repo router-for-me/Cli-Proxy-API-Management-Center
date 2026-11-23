@@ -2271,14 +2271,6 @@
         "openai": "OpenAI 相容",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "雙 11 限時",
-        "title": "{{provider}} 雙 11 儲值狂歡",
-        "description": "活動期間在 {{provider}} 儲值，額外贈送儲值金額 {{percent}}% 的額度，先到先得。",
-        "bonus": "儲值加贈",
-        "cta": "立即參與",
-        "ctaAria": "立即參與 {{provider}} 雙 11 儲值活動（在新分頁開啟）"
       }
     },
     "status": {

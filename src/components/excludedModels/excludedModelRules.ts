@@ -60,17 +60,6 @@ export function matchesExcludedRule(rule: string, modelId: string): boolean {
   return new RegExp(`^${escaped}$`, 'i').test(normalizedModel);
 }
 
-/** 该模型是否被某条**通配符**规则命中（精确规则不算）。 */
-export const isMatchedByWildcardRule = (rules: Iterable<string>, modelId: string): boolean =>
-  Array.from(rules).some((rule) => isWildcardRule(rule) && matchesExcludedRule(rule, modelId));
-
-/** 规则列表里是否存在与 candidate 字面相等（忽略大小写）的一条。不做通配符展开。 */
-export function hasExcludedRule(rules: Iterable<string>, candidate: string): boolean {
-  const candidateKey = ruleKey(candidate);
-  if (!candidateKey) return false;
-  return Array.from(rules).some((rule) => ruleKey(rule) === candidateKey);
-}
-
 /**
  * 增删一条字面规则。
  *

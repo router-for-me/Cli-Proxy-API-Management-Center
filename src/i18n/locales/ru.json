@@ -2298,14 +2298,6 @@
         "openai": "OpenAI-compatible",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "Акция 11.11 · Ограничено",
-        "title": "{{provider}}: бонус к пополнению на 11.11",
-        "description": "Пополните баланс {{provider}} во время акции и получите дополнительно {{percent}}% от суммы пополнения.",
-        "bonus": "Бонус к пополнению",
-        "cta": "Участвовать",
-        "ctaAria": "Участвовать в акции 11.11 от {{provider}} (откроется в новой вкладке)"
       }
     },
     "status": {
