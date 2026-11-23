@@ -1,15 +1,49 @@
-import { isMap, isSeq, parseDocument } from 'yaml';
+import { isAlias, isMap, isNode, isScalar, isSeq, parseDocument, visit } from 'yaml';
 import {
   buildErrorRules,
   readErrorRules,
   validateErrorRule,
 } from '@/features/providers/errorRules';
-import { assertConfigListsUnchanged } from '@/services/api/configPatch';
+import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
 import { normalizeErrorRule, serializeErrorRule } from '@/services/api/errorRules';
 import type { OAuthChannelRules } from '@/types/visualConfig';
 import { isRecord } from '@/utils/helpers';
 
 const root = ['oauth', 'request-scoped-errors'];
+
+// Copying anchored descendants would shadow their definitions. Moving an alias
+// could also bind it to a different anchor at its destination.
+function assertPortable(node: unknown, path: string[]) {
+  if (!isNode(node)) return;
+  visit(node, {
+    Node: (_, child) => {
+      if (isAlias(child) || child.anchor)
+        throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
+    },
+  });
+}
+
+function prepareParents(doc: ReturnType<typeof parseDocument>, create: boolean) {
+  for (let i = 1; i <= root.length; i++) {
+    const path = root.slice(0, i);
+    const node = doc.getIn(path, true);
+    if (isAlias(node)) {
+      const target = node.resolve(doc);
+      if (!isMap(target)) throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
+      const copy = target.clone();
+      delete copy.anchor;
+      assertPortable(copy, path);
+      doc.setIn(path, copy);
+    } else if (isMap(node)) {
+      if (node.anchor) throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
+    } else if (node === undefined || (isScalar(node) && node.value === null && !node.anchor)) {
+      if (!create) return;
+      doc.setIn(path, doc.createNode({}));
+    } else {
+      throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
+    }
+  }
+}
 
 export function readOAuthErrorRules(raw: unknown): OAuthChannelRules[] {
   if (!isRecord(raw)) return [];
@@ -48,13 +82,17 @@ export function writeOAuthErrorRules(
     if (JSON.stringify(before) === JSON.stringify(after)) continue;
     const path = [...root, channel];
     paths.push(path);
+    prepareParents(doc, Boolean(after));
+    assertPortable(doc.getIn(path, true), path);
     if (!after) {
-      doc.deleteIn(path);
+      if (doc.hasIn(path)) doc.deleteIn(path);
       continue;
     }
     // IDs refer to the retained source (the merged draft after recovery), not the latest list.
     // Move original nodes with their rules so reordering preserves extra fields and comments.
+    prepareParents(source, false);
     const old = source.getIn(path, true);
+    assertPortable(old, path);
     const seq = isSeq(old) ? old : source.createNode([]);
     const originals = [...seq.items];
     const built = buildErrorRules(after.rules);
@@ -70,10 +108,6 @@ export function writeOAuthErrorRules(
       }
       return node;
     });
-    for (let i = 1; i <= root.length; i++) {
-      const parent = root.slice(0, i);
-      if (!isMap(doc.getIn(parent, true))) doc.setIn(parent, doc.createNode({}));
-    }
     doc.setIn(path, seq);
   }
   if (guard && paths.length)

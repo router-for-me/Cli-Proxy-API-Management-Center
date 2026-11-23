@@ -12,6 +12,7 @@ import {
 import { buildHeaderObject, hasHeader } from '@/utils/headers';
 import { getErrorMessage } from '@/utils/helpers';
 import type { ApiKeyEntryInput, ModelEntryInput, ProviderBrand } from '../../types';
+import { useProbeProxyUrl } from './useProbeProxyUrl';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
@@ -114,7 +115,7 @@ export function useConnectivityTest(
   const {
     brand,
     baseUrl,
-    proxyUrl,
+    proxyUrl: formProxyUrl,
     testModel,
     models,
     formHeaders,
@@ -123,6 +124,7 @@ export function useConnectivityTest(
     fallbackApiKey,
     authIndex,
   } = args;
+  const proxyUrl = useProbeProxyUrl(formProxyUrl, authIndex);
 
   const entriesCount = apiKeyEntries?.length ?? 0;
 

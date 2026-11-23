@@ -130,8 +130,16 @@ export function buildConfigPatch(beforeYaml: string, afterYaml: string): ConfigP
 }
 
 export class ConfigDraftConflictError extends Error {
-  constructor(readonly path: readonly string[]) {
-    super(`Configuration list changed concurrently: ${path.join('.')}`);
+  constructor(
+    readonly path: readonly string[],
+    readonly reason:
+      'concurrent_list_conflict' | 'unsafe_yaml_structure' = 'concurrent_list_conflict'
+  ) {
+    super(
+      reason === 'concurrent_list_conflict'
+        ? `Configuration list changed concurrently: ${path.join('.')}`
+        : `Cannot safely edit YAML structure: ${path.join('.')}`
+    );
     this.name = 'ConfigDraftConflictError';
   }
 }

@@ -1571,6 +1571,7 @@
     },
     "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",
     "precise_save_incomplete": "Quá trình lưu chính xác chưa hoàn tất; một số thay đổi có thể đã được áp dụng. Bản nháp của bạn được giữ lại. Hãy lưu lại để xem xét các khác biệt còn lại trên máy chủ.",
+    "unsafe_yaml_structure": "Trình chỉnh sửa trực quan không thể thay đổi {{path}} mà không ảnh hưởng đến các thiết lập YAML khác. Bản nháp được giữ lại. Hãy thực hiện thay đổi này trong trình chỉnh sửa mã nguồn.",
     "concurrent_list_conflict": "Danh sách trên máy chủ {{path}} đã thay đổi sau mốc cơ sở bản nháp của bạn. Thao tác lưu bị chặn để tránh ghi đè các thay đổi đó. Bản nháp của bạn được giữ lại; hãy ghi lại các chỉnh sửa, sau đó tải lại cấu hình và hợp nhất.",
     "precise_save_recovery_required": "Không thể đọc lại kết quả lưu. Đã tạm dừng chỉnh sửa. Lưu lại để khôi phục mốc cơ sở của bản nháp, hoặc tải lại cấu hình."
   },

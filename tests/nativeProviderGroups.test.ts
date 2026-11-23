@@ -5,7 +5,12 @@ import {
   providersApi,
   type NativeProviderFamily,
 } from '@/services/api/providers';
-import { normalizeProviderGroups } from '@/services/api/transformers';
+import { buildSubmittedMember, readSharedForm } from '@/features/providers/nativeConnectionForm';
+import {
+  buildNativeConnectionMembers,
+  buildProviderGroups,
+} from '@/features/providers/useProviderWorkbench';
+import { normalizeConfigResponse, normalizeProviderGroups } from '@/services/api/transformers';
 import type { ProviderKeyConfig } from '@/types';
 
 const { get, getRaw, put, captureConnection } = apiClient;
@@ -31,6 +36,53 @@ function backend(family: NativeProviderFamily, initial: Group[] = []) {
   const source = (index = 0) => ({ groupIndex: index, groups, group: groups[index] });
   return { groups: () => groups, source, writes: () => version - 1 };
 }
+
+test('saving new keys in a disabled group preserves the displayed state with per-key exclusions', async () => {
+  const group = { 'excluded-models': ['*'], keys: [] };
+  const b = backend('gemini', [group]);
+  const section = buildProviderGroups(
+    normalizeConfigResponse({ 'api-keys': { gemini: [group] } })
+  ).find((family) => family.id === 'gemini')!.nativeSections![0];
+  const initial = {
+    apiKey: '',
+    name: '',
+    baseUrl: '',
+    prefix: '',
+    proxyUrl: '',
+    disabled: false,
+    models: [],
+    headers: [],
+    excludedModelsText: '',
+  };
+  const shared = readSharedForm(group, initial);
+  const rows = [
+    { apiKey: 'fixture-off', excludedModelsText: 'custom' },
+    { apiKey: 'fixture-inherit', excludedModelsText: '' },
+    { apiKey: 'fixture-on', excludedModelsText: 'custom', disabled: false },
+  ].map(({ apiKey, excludedModelsText, disabled }) =>
+    buildSubmittedMember(
+      { resource: null, initial, input: { ...initial, apiKey, excludedModelsText }, disabled },
+      false,
+      shared.disabled
+    )
+  );
+  await providersApi.saveNativeConnection(
+    'gemini',
+    section.source,
+    group,
+    buildNativeConnectionMembers('gemini', section, rows)
+  );
+  expect(b.groups()).toEqual([
+    {
+      ...group,
+      keys: [
+        { 'api-key': 'fixture-off', 'excluded-models': ['custom', '*'] },
+        { 'api-key': 'fixture-inherit' },
+        { 'api-key': 'fixture-on', 'excluded-models': ['custom'] },
+      ],
+    },
+  ]);
+});
 
 for (const family of [
   'codex',

@@ -67,6 +67,53 @@ describe('v8.1.0 configuration', () => {
     });
   });
 
+  for (const parent of ['oauth', 'request-scoped-errors']) {
+    test(`updates and deletes channels through a ${parent} alias without changing its source`, () => {
+      const source =
+        parent === 'oauth'
+          ? yaml.replace('oauth:', 'defaults: &defaults\n  sibling: keep') + 'oauth: *defaults\n'
+          : yaml.replace('oauth:\n  request-scoped-errors:', 'defaults: &defaults') +
+            'oauth: {sibling: keep, request-scoped-errors: *defaults}\n';
+      const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+      const latest = source.replace('unavailable', 'maintenance');
+      const original = parseDocument(latest).toJS();
+      for (const remove of [false, true]) {
+        const oauthErrorRules = remove
+          ? [groups[1]]
+          : [{ ...groups[0], rules: [{ ...groups[0].rules[0], status: '422' }] }, groups[1]];
+        const editor = runVisualConfig(source, [{ oauthErrorRules }]);
+        const output = parseDocument(editor.applyVisualChangesToYaml(latest)).toJS();
+        expect(output.defaults).toEqual(original.defaults);
+        expect(output.oauth.sibling).toBe('keep');
+        const channels = output.oauth['request-scoped-errors'];
+        expect(channels['acme-plugin']).toEqual(
+          original.oauth['request-scoped-errors']['acme-plugin']
+        );
+        if (remove) expect(channels).not.toHaveProperty('copilot');
+        else
+          expect(channels.copilot).toEqual([
+            { ...original.oauth['request-scoped-errors'].copilot[0], status: 422 },
+          ]);
+        expect(() =>
+          editor.applyVisualChangesToYaml(latest.replace('rate_limit', 'other'))
+        ).toThrow(ConfigDraftConflictError);
+      }
+    });
+  }
+
+  test('refuses to shadow nested anchors when detaching an OAuth alias', () => {
+    const source =
+      yaml.replace('oauth:', 'defaults: &defaults').replace('copilot:', 'copilot: &rules') +
+      'oauth: *defaults\nother: *rules\n';
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const editor = runVisualConfig(source, [{ oauthErrorRules: [groups[1]] }]);
+    for (const target of ['draft', 'server'] as const) {
+      expect(() => editor.applyVisualChangesToYaml(source, target)).toThrow(
+        new ConfigDraftConflictError(['oauth'], 'unsafe_yaml_structure')
+      );
+    }
+  });
+
   test('creates plugin channel below a null parent and rejects empty OAuth match conditions', () => {
     const source = 'oauth: null';
     const rule = { ...createErrorRule('new'), status: '429' };

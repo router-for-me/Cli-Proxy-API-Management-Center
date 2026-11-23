@@ -14,9 +14,50 @@ export interface NativeConnectionFormOutput {
     input: ProviderEntryFormInput;
     unchanged?: boolean;
     initialInput?: ProviderEntryFormInput;
-    /** Per-key on/off switch; omitted when the user did not touch it. */
+    /** Desired state for a new key, or an explicit switch change for an existing key. */
     disabled?: boolean;
   }>;
+}
+
+type MemberRowDraft = {
+  resource: ProviderResource | null;
+  initial: ProviderEntryFormInput;
+  input: ProviderEntryFormInput;
+  disabled?: boolean;
+};
+
+export function memberDisabled(row: MemberRowDraft, groupDisabled: boolean, allDisabled?: boolean) {
+  return row.disabled ?? allDisabled ?? (row.resource ? row.initial.disabled : groupDisabled);
+}
+
+export function buildSubmittedMember(
+  row: MemberRowDraft,
+  unchanged: boolean,
+  groupDisabled: boolean,
+  allDisabled?: boolean
+): NativeConnectionFormOutput['keys'][number] {
+  return {
+    resource: row.resource,
+    input: row.input,
+    initialInput: row.initial,
+    unchanged: !!row.resource && unchanged,
+    // A new key's own exclusions replace the group's list, including its disable rule.
+    disabled: row.resource ? row.disabled : memberDisabled(row, groupDisabled, allDisabled),
+  };
+}
+
+// Compare map values, not editor row identity: a blank placeholder or a reverted edit
+// must not detach an inherited field from the current group settings.
+function sameHeaderDraft(
+  a: ProviderEntryFormInput['headers'],
+  b: ProviderEntryFormInput['headers']
+) {
+  if (a === b) return true;
+  const toMap = (rows: typeof a) =>
+    new Map(rows.filter(({ key }) => key.trim()).map(({ key, value }) => [key.trim(), value]));
+  const left = toMap(a);
+  const right = toMap(b);
+  return left.size === right.size && [...left].every(([key, value]) => right.get(key) === value);
 }
 
 /** Probes must follow the chosen credential's overrides, including an explicit direct proxy. */
@@ -34,14 +75,13 @@ export function memberProbeSettings(
   const original =
     Array.isArray(keys) && source?.keyIndex !== undefined ? keys[source.keyIndex] : undefined;
   const raw = isRecord(original) ? original : {};
-  const proxyOverride = row.input.proxyUrl !== row.initial.proxyUrl || raw['proxy-url'] != null;
-  const headersOverride = row.input.headers !== row.initial.headers || raw.headers != null;
+  const proxyOverride =
+    row.input.proxyUrl.trim() !== row.initial.proxyUrl.trim() || raw['proxy-url'] != null;
+  const headersOverride =
+    !sameHeaderDraft(row.input.headers, row.initial.headers) || raw.headers != null;
   return {
-    probeProxyUrl: proxyOverride ? row.input.proxyUrl || shared.proxyUrl : shared.proxyUrl,
-    probeHeaders:
-      headersOverride && row.input.headers.some((h) => h.key.trim())
-        ? row.input.headers
-        : shared.headers,
+    probeProxyUrl: proxyOverride ? row.input.proxyUrl : shared.proxyUrl,
+    probeHeaders: headersOverride ? row.input.headers : shared.headers,
   };
 }
 

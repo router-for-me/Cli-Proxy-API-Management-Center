@@ -4,6 +4,7 @@ import { buildHeaderObject } from '@/utils/headers';
 import { getErrorMessage } from '@/utils/helpers';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyEntryInput, ProviderBrand } from '../../types';
+import { useProbeProxyUrl } from './useProbeProxyUrl';
 
 export const MODEL_DISCOVERY_BRANDS: ReadonlyArray<ProviderBrand> = [
   'gemini',
@@ -43,13 +44,14 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
   const {
     brand,
     baseUrl,
-    proxyUrl,
+    proxyUrl: formProxyUrl,
     formHeaders,
     apiKeyEntries,
     apiKey,
     fallbackApiKey,
     authIndex,
   } = args;
+  const proxyUrl = useProbeProxyUrl(formProxyUrl, authIndex);
 
   const available = isModelDiscoveryBrand(brand);
   const [loading, setLoading] = useState(false);

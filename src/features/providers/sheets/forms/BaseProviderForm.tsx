@@ -67,6 +67,8 @@ import { pickProviderBehavior } from '../../providerBehavior';
 import type { NativeProviderFamily } from '@/services/api/providers';
 import {
   buildSharedSettings,
+  buildSubmittedMember,
+  memberDisabled,
   memberProbeSettings,
   readSharedForm,
   type NativeConnectionFormOutput,
@@ -1278,7 +1280,7 @@ function NativeConnectionForm({
   const [allDisabled, setAllDisabled] = useState<boolean | undefined>();
   const savedDisabled = (row: NativeRow) =>
     row.resource ? row.initial.disabled : initial.disabled;
-  const rowDisabled = (row: NativeRow) => row.disabled ?? allDisabled ?? savedDisabled(row);
+  const rowDisabled = (row: NativeRow) => memberDisabled(row, initial.disabled, allDisabled);
   const groupDisabled = rows.length ? rows.every(rowDisabled) : (allDisabled ?? initial.disabled);
   const dirty =
     JSON.stringify(form) !== JSON.stringify(initial) ||
@@ -1361,13 +1363,7 @@ function NativeConnectionForm({
             setError(`${t('providersPage.form.apiKeyEntry', { index: i + 1 })}: ${error}`);
             return;
           }
-          keys.push({
-            resource: row.resource,
-            input: row.input,
-            initialInput: row.initial,
-            unchanged: !!row.resource && unchanged,
-            disabled: row.disabled,
-          });
+          keys.push(buildSubmittedMember(row, unchanged, initial.disabled, allDisabled));
         }
         try {
           setError('');

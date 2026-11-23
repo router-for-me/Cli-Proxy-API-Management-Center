@@ -2,6 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
+import { useConfigStore } from '@/stores/useConfigStore';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import { normalizeProviderGroups } from '../src/services/api/transformers';
 import type { ProviderKeyConfig } from '../src/types/provider';
@@ -53,6 +54,30 @@ describe('provider probe proxy forwarding', () => {
       else if (brand === 'gemini' || brand === 'interactions') await hook.runGemini();
       else await hook.runCodex();
       expect(requestSpy.mock.calls[0][0].proxy_url).toBe('socks5://proxy.example:1080');
+    }
+  );
+
+  test.each(['http://global.invalid:8080', ''])(
+    'empty indexed native probe uses the global fallback (%s), not the saved proxy',
+    async (globalProxy) => {
+      // SSR reads Zustand's initial snapshot.
+      const snapshot = useConfigStore.getInitialState();
+      const previousConfig = snapshot.config;
+      snapshot.config = { proxyUrl: globalProxy };
+      try {
+        requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+        const probe = { ...args, proxyUrl: '', apiKey: '', authIndex: 'fixture-index' };
+        await captureHook(() => useConnectivityTest(probe, messages)).runCodex();
+        await captureHook(() => useModelDiscovery(probe)).fetch();
+        expect(requestSpy.mock.calls).toHaveLength(2);
+        for (const [request] of requestSpy.mock.calls) {
+          expect(request.proxy_url).toBe(globalProxy || 'direct');
+          expect(request.authIndex).toBe('fixture-index');
+          expect(request.header?.Authorization).toBe('Bearer $TOKEN$');
+        }
+      } finally {
+        snapshot.config = previousConfig;
+      }
     }
   );
 

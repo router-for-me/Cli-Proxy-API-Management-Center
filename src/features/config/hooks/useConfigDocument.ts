@@ -279,7 +279,7 @@ export function useConfigDocument({
       if (!operation.isCurrent()) return;
       const message =
         err instanceof ConfigDraftConflictError
-          ? t('config_management.concurrent_list_conflict', { path: err.path.join('.') })
+          ? t(`config_management.${err.reason}`, { path: err.path.join('.') })
           : err instanceof Error
             ? err.message
             : '';
@@ -308,7 +308,7 @@ export function useConfigDocument({
           // recovery; reloading can explicitly replace the draft from the server.
           showNotification(
             recoveryError instanceof ConfigDraftConflictError
-              ? t('config_management.concurrent_list_conflict', {
+              ? t(`config_management.${recoveryError.reason}`, {
                   path: recoveryError.path.join('.'),
                 })
               : t('config_management.precise_save_recovery_required'),
@@ -418,7 +418,7 @@ export function useConfigDocument({
       if (!operation.isCurrent()) return;
       const message =
         err instanceof ConfigDraftConflictError
-          ? t('config_management.concurrent_list_conflict', { path: err.path.join('.') })
+          ? t(`config_management.${err.reason}`, { path: err.path.join('.') })
           : err instanceof Error
             ? err.message
             : '';

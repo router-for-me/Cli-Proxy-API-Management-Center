@@ -112,3 +112,41 @@ test('probing a key applies its direct proxy and explicit headers instead of sha
     probeHeaders: connection.headers,
   });
 });
+
+test('only missing/null unchanged member fields follow the edited group', () => {
+  const fixture = {
+    ...group,
+    'proxy-url': 'http://original.invalid',
+    keys: [
+      { 'api-key': 'fixture-clear', 'proxy-url': '', headers: {} },
+      { 'api-key': 'fixture-inherit', 'proxy-url': null, headers: null },
+    ],
+  };
+  const members = buildProviderGroups(
+    normalizeConfigResponse({ 'api-keys': { claude: [fixture] } })
+  ).find((g) => g.id === 'claude')!.nativeSections![0].members;
+  const shared = readSharedForm(fixture, {
+    apiKey: '',
+    name: '',
+    baseUrl: '',
+    prefix: '',
+    proxyUrl: '',
+    disabled: false,
+    excludedModelsText: '',
+    models: [],
+    headers: [],
+  });
+  const edited = { ...shared, proxyUrl: 'direct', headers: [{ key: 'X-New', value: 'new' }] };
+  const blank = { ...shared, proxyUrl: '', headers: [{ key: '', value: '' }] };
+  const probe = (
+    resource: (typeof members)[number],
+    initial: typeof shared,
+    input: typeof shared
+  ) => memberProbeSettings(edited, { resource, initial, input });
+  for (const settings of [probe(members[0], blank, blank), probe(members[1], shared, blank)]) {
+    expect(settings).toEqual({ probeProxyUrl: '', probeHeaders: blank.headers });
+  }
+  expect(
+    probe(members[1], shared, { ...shared, headers: [...shared.headers, ...blank.headers] })
+  ).toEqual({ probeProxyUrl: edited.proxyUrl, probeHeaders: edited.headers });
+});
