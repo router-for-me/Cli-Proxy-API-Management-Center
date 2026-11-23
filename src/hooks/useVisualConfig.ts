@@ -1,10 +1,10 @@
 import {
   readOAuthErrorRules,
   writeOAuthErrorRules,
-  invalidOAuthChannel,
+  invalidOAuthRule,
 } from '@/features/config/visualOAuthErrorRules';
 import { useCallback, useMemo, useReducer } from 'react';
-import { isAlias, isMap, isScalar, isSeq, parse as parseYaml, parseDocument } from 'yaml';
+import { isAlias, isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import type { Node, Pair, YAMLMap, YAMLSeq } from 'yaml';
 import type {
   DisableImageGenerationMode,
@@ -23,6 +23,7 @@ import type {
   PayloadParamValidationErrorCode,
 } from '@/types/visualConfig';
 import { DEFAULT_VISUAL_VALUES, isPayloadReplaceRole } from '@/types/visualConfig';
+import { parseConfigDocument } from '@/services/api/configYaml';
 import { assertConfigListsUnchanged, ConfigDraftConflictError } from '@/services/api/configPatch';
 import {
   ADDITION_FIELDS,
@@ -315,7 +316,7 @@ export function getVisualConfigValidationErrors(
   return {
     ...validateVisualAdditions(values, dirtyFields),
     ...validateVisualServer(values),
-    oauthErrorRules: invalidOAuthChannel(values.oauthErrorRules)
+    oauthErrorRules: invalidOAuthRule(values.oauthErrorRules)
       ? 'invalid_oauth_error_rules'
       : undefined,
     port: getPortError(values.port),
@@ -1830,7 +1831,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
     throw new Error(document.errors[0]?.message ?? 'Invalid YAML');
   }
 
-  const parsedRaw: unknown = parseYaml(yamlContent) || {};
+  const parsedRaw: unknown = document.toJS() || {};
   const parsed = asRecord(parsedRaw) ?? {};
   const v8Server = asRecord(parsed?.['server']);
   const v8Routing = asRecord(parsed?.['routing']);
@@ -1862,7 +1863,7 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
   const newValues: VisualConfigValues = {
     ...readVisualAdditions(document),
     ...readVisualServer(document),
-    oauthErrorRules: readOAuthErrorRules(v8Oauth?.['request-scoped-errors']),
+    oauthErrorRules: readOAuthErrorRules(v8Oauth?.['request-scoped-errors'], document),
     host: typeof v8Server?.['host'] === 'string' ? v8Server?.['host'] : '',
     port: String(v8Server?.['port'] ?? ''),
 
@@ -1982,6 +1983,17 @@ function parseVisualValuesFromYaml(yamlContent: string): VisualConfigValues {
   return newValues;
 }
 
+function editVisualDocument(yaml: string, edit: (doc: YamlDocument) => string) {
+  const doc = parseConfigDocument(yaml);
+  if (doc.errors.length) throw doc.errors[0];
+  if (doc.contents && !isMap(doc.contents))
+    throw new ConfigDraftConflictError([], 'unsafe_yaml_structure');
+  if (!isMap(doc.contents)) {
+    doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
+  }
+  return edit(doc);
+}
+
 export function useVisualConfig() {
   const [state, dispatch] = useReducer(
     visualConfigReducer,
@@ -2051,12 +2063,9 @@ export function useVisualConfig() {
       if (visualValues.payloadReplaceRules.some((rule) => getPayloadReplaceValidationError(rule))) {
         throw new Error('Invalid payload.replace rules');
       }
-      try {
-        const doc = parseDocument(currentYaml);
-        if (doc.errors.length > 0) return currentYaml;
-        if (!isMap(doc.contents)) {
-          doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
-        }
+      const invalidRule = invalidOAuthRule(visualValues.oauthErrorRules);
+      if (invalidRule) throw invalidRule;
+      return editVisualDocument(currentYaml, (doc) => {
         // YAML has no stable rule IDs. For rebased payload edits, retain the already
         // merged draft's AST as well as its ID snapshot. Inferring lineage solely
         // from server/draft contents is ambiguous (e.g. delete + rename + append),
@@ -2597,10 +2606,7 @@ export function useVisualConfig() {
           assertConfigListsUnchanged(rebasedPayload.serverYaml, draftYaml, currentYaml, paths);
         }
         return draftYaml;
-      } catch (error) {
-        if (error instanceof ConfigDraftConflictError) throw error;
-        return currentYaml;
-      }
+      });
     },
     [baselineValues, baselineYaml, dirtyFields, visualValues, rebasedPayload]
   );

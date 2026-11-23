@@ -1572,7 +1572,7 @@
       },
       "validation": {
         "invalid_server_id": "Tire içeren ve sıfır olmayan bir UUID girin.",
-        "invalid_oauth_error_rules": "{{channel}} için durum kodunu, eşleşmeleri ve eylemi kontrol edin.",
+        "invalid_oauth_error_rules": "“{{channel}}” kanalındaki {{number}} numaralı kuralın durum kodunu, eşleşmelerini ve eylemini kontrol edin.",
         "invalid_trusted_proxies": "Her Güvenilen Proxy Geçerli Bir IP Adresi veya CIDR Olmalıdır.",
         "invalid_discovery_service_type": "_name._tcp Kullan: Ad 1–15 Harf, Rakam veya Tire Olmalı. Başta veya Sonda Tire Olmamalı.",
         "validation_blocked": "Kaydetmeden Önce Doğrulama Hatalarını Düzelt",

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { parse as parseYaml, parseDocument } from 'yaml';
 import { useConfigStore, useNotificationStore } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
+import { parseConfigDocument } from '@/services/api/configYaml';
+import { configDraftErrorMessage } from '../configDraftError';
 import { apiClient } from '@/services/api/client';
 import {
   applyConfigPatch,
@@ -48,7 +50,7 @@ export function hasTrustedProxiesChange(beforeYaml: string, afterYaml: string): 
 
 function normalizeYamlForVisualDiff(yamlContent: string): string {
   try {
-    const doc = parseDocument(yamlContent);
+    const doc = parseConfigDocument(yamlContent);
     return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
   } catch {
     return yamlContent;
@@ -277,12 +279,7 @@ export function useConfigDocument({
       }
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message =
-        err instanceof ConfigDraftConflictError
-          ? t(`config_management.${err.reason}`, { path: err.path.join('.') })
-          : err instanceof Error
-            ? err.message
-            : '';
+      const message = configDraftErrorMessage(t, err);
       if (writeAttempted && previewMode === 'visual') {
         // v8 field mutations are not a transaction. Never roll back with a full document.
         // Re-read immediately so changing an already-applied value back remains a dirty edit.
@@ -416,12 +413,7 @@ export function useConfigDocument({
       setDiffModalOpen(true);
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message =
-        err instanceof ConfigDraftConflictError
-          ? t(`config_management.${err.reason}`, { path: err.path.join('.') })
-          : err instanceof Error
-            ? err.message
-            : '';
+      const message = configDraftErrorMessage(t, err);
       showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
     } finally {
       if (operation.isCurrent()) setSaving(false);

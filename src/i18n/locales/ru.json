@@ -1585,7 +1585,7 @@
       },
       "validation": {
         "invalid_server_id": "Введите ненулевой UUID с дефисами.",
-        "invalid_oauth_error_rules": "Проверьте код состояния, условия и действие для {{channel}}.",
+        "invalid_oauth_error_rules": "Проверьте код состояния, условия и действие в правиле № {{number}} канала «{{channel}}».",
         "invalid_trusted_proxies": "Каждый доверенный прокси должен быть корректным IP-адресом или CIDR.",
         "invalid_discovery_service_type": "Используйте _имя._tcp: имя — 1–15 латинских букв, цифр или дефисов, без дефиса в начале и конце.",
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",

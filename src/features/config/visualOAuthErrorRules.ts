@@ -9,7 +9,7 @@ import { normalizeErrorRule, serializeErrorRule } from '@/services/api/errorRule
 import type { OAuthChannelRules } from '@/types/visualConfig';
 import { isRecord } from '@/utils/helpers';
 
-const root = ['oauth', 'request-scoped-errors'];
+import { oauthMatchTerms, oauthRulesPath as root } from '@/services/api/configYaml';
 
 // Copying anchored descendants would shadow their definitions. Moving an alias
 // could also bind it to a different anchor at its destination.
@@ -45,7 +45,10 @@ function prepareParents(doc: ReturnType<typeof parseDocument>, create: boolean) 
   }
 }
 
-export function readOAuthErrorRules(raw: unknown): OAuthChannelRules[] {
+export function readOAuthErrorRules(
+  raw: unknown,
+  doc: ReturnType<typeof parseDocument>
+): OAuthChannelRules[] {
   if (!isRecord(raw)) return [];
   return Object.entries(raw).flatMap(([channel, list]) =>
     Array.isArray(list)
@@ -53,7 +56,14 @@ export function readOAuthErrorRules(raw: unknown): OAuthChannelRules[] {
           {
             channel,
             rules: readErrorRules(
-              list.map((rule) => normalizeErrorRule(isRecord(rule) ? rule : {}))
+              list.map((rule, index) => {
+                const fields = isRecord(rule) ? { ...rule } : {};
+                for (const key of ['match', 'match-regexr']) {
+                  if (Array.isArray(fields[key]))
+                    fields[key] = oauthMatchTerms(doc, [...root, channel, index, key], fields[key]);
+                }
+                return normalizeErrorRule(fields);
+              })
             ),
           },
         ]
@@ -61,8 +71,22 @@ export function readOAuthErrorRules(raw: unknown): OAuthChannelRules[] {
   );
 }
 
-export const invalidOAuthChannel = (groups: OAuthChannelRules[]) =>
-  groups.find(({ rules }) => rules.some((rule) => validateErrorRule(rule, true)))?.channel;
+export class InvalidOAuthRuleError extends Error {
+  constructor(
+    readonly channel: string,
+    readonly ruleNumber: number
+  ) {
+    super(`Invalid OAuth rule ${ruleNumber} for ${channel}`);
+    this.name = 'InvalidOAuthRuleError';
+  }
+}
+
+export function invalidOAuthRule(groups: OAuthChannelRules[]) {
+  for (const { channel, rules } of groups) {
+    const index = rules.findIndex((rule) => validateErrorRule(rule, true));
+    if (index !== -1) return new InvalidOAuthRuleError(channel, index + 1);
+  }
+}
 
 export function writeOAuthErrorRules(
   doc: ReturnType<typeof parseDocument>,
@@ -93,16 +117,33 @@ export function writeOAuthErrorRules(
     prepareParents(source, false);
     const old = source.getIn(path, true);
     assertPortable(old, path);
+    if (old !== undefined && !isSeq(old) && !(isScalar(old) && old.value === null))
+      throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
     const seq = isSeq(old) ? old : source.createNode([]);
     const originals = [...seq.items];
     const built = buildErrorRules(after.rules);
     seq.items = after.rules.map((rule, i) => {
       const node = rule.sourceIndex === undefined ? undefined : originals[rule.sourceIndex];
       const next = serializeErrorRule(built[i]);
-      if (!isMap(node) || !rule.original) return source.createNode(next);
+      if (!rule.original) return source.createNode(next);
+      if (!isMap(node)) {
+        if (
+          node !== undefined &&
+          JSON.stringify(next) === JSON.stringify(serializeErrorRule(rule.original))
+        )
+          return node;
+        throw new ConfigDraftConflictError(path, 'unsafe_yaml_structure');
+      }
       const previous = serializeErrorRule(rule.original);
       for (const key of Object.keys(next) as (keyof typeof next)[]) {
         if (JSON.stringify(previous[key]) !== JSON.stringify(next[key])) {
+          const prior = node.get(key, true);
+          if (
+            (key === 'match' || key === 'match-regexr') &&
+            prior !== undefined &&
+            (!isSeq(prior) || prior.items.some((item) => !isScalar(item) || item.value === null))
+          )
+            throw new ConfigDraftConflictError([...path, key], 'unsafe_yaml_structure');
           node.set(key, source.createNode(next[key]));
         }
       }

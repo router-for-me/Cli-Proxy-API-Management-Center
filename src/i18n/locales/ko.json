@@ -1572,7 +1572,7 @@
       },
       "validation": {
         "invalid_server_id": "하이픈이 포함된 0이 아닌 UUID를 입력하세요.",
-        "invalid_oauth_error_rules": "{{channel}}의 상태 코드, 일치 조건 및 동작을 확인하세요.",
+        "invalid_oauth_error_rules": "“{{channel}}” 채널의 {{number}}번째 규칙에서 상태 코드, 일치 조건 및 동작을 확인하세요.",
         "invalid_trusted_proxies": "각 신뢰할 수 있는 프록시는 유효한 IP 주소 또는 CIDR이어야 합니다.",
         "invalid_discovery_service_type": "_name._tcp 형식을 사용하세요: 이름은 1~15자의 영문자, 숫자 또는 하이픈이어야 하며, 시작이나 끝에 하이픈이 올 수 없습니다.",
         "validation_blocked": "저장하기 전에 유효성 검사 오류를 수정하세요",

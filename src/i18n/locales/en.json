@@ -1572,7 +1572,7 @@
       },
       "validation": {
         "invalid_server_id": "Enter a nonzero UUID with hyphens.",
-        "invalid_oauth_error_rules": "Check the status, matches and action for {{channel}}.",
+        "invalid_oauth_error_rules": "Check the status, matches and action for rule {{number}} in “{{channel}}”.",
         "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
         "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
         "validation_blocked": "Fix validation errors before saving",

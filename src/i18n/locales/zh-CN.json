@@ -1565,7 +1565,7 @@
       },
       "validation": {
         "invalid_server_id": "请输入带连字符的非零 UUID。",
-        "invalid_oauth_error_rules": "请检查 {{channel}} 的状态码、匹配条件和动作。",
+        "invalid_oauth_error_rules": "请检查“{{channel}}”第 {{number}} 条规则的状态码、匹配条件和动作。",
         "invalid_trusted_proxies": "每个可信代理必须是有效的 IP 地址或 CIDR。",
         "invalid_discovery_service_type": "请使用 _名称._tcp 格式：名称为 1–15 位英文字母、数字或连字符，首尾不能是连字符。",
         "validation_blocked": "请先修复表单校验错误再保存",

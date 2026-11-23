@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { parseDocument } from 'yaml';
 import { createErrorRule } from '@/features/providers/errorRules';
 import { normalizeConfigResponse } from '@/services/api/transformers';
-import { ConfigDraftConflictError } from '@/services/api/configPatch';
+import { buildConfigPatch, ConfigDraftConflictError } from '@/services/api/configPatch';
+import { InvalidOAuthRuleError } from '@/features/config/visualOAuthErrorRules';
 import { runVisualConfig } from './helpers/visualConfig';
 
 const yaml = `oauth:
@@ -112,6 +113,66 @@ describe('v8.1.0 configuration', () => {
         new ConfigDraftConflictError(['oauth'], 'unsafe_yaml_structure')
       );
     }
+  });
+
+  test('an unfinished rule blocks preview and save without replacing unrelated draft fields', () => {
+    const source = `server: {port: 8317}\n${yaml}`;
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const blank = createErrorRule('unfinished');
+    const edit = (rule: typeof blank) => ({
+      port: '9000',
+      oauthErrorRules: [{ ...groups[0], rules: [...groups[0].rules, rule] }, groups[1]],
+    });
+    const editor = runVisualConfig(source, [edit(blank)]);
+    for (const target of ['draft', 'server'] as const) {
+      expect(() => editor.applyVisualChangesToYaml(source, target)).toThrow(
+        new InvalidOAuthRuleError('copilot', 3)
+      );
+    }
+    expect(editor.visualValues.port).toBe('9000');
+    const completed = edit({
+      ...blank,
+      status: '429',
+      matches: [{ ...blank.matches[0], value: 'throttled' }],
+    });
+    const next = runVisualConfig(source, [edit(blank), completed]).applyVisualChangesToYaml(source);
+    const patch = buildConfigPatch(source, next).patch;
+    expect(patch.server).toEqual({ port: 9000 });
+    expect(
+      parseDocument(next).getIn(['oauth', 'request-scoped-errors', 'copilot', 2, 'status'])
+    ).toBe(429);
+  });
+
+  test('OAuth scalar spellings survive source preview and the JSON Management API patch', () => {
+    const source = yaml.replace('[rate_limit]', '[429, 001, +400, 1e3, TRUE, rate_limit]');
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const rule = groups[0].rules[1];
+    const terms = ['429', '001', '+400', '1e3', 'TRUE', 'rate_limit'];
+    expect(rule.matches.map((term) => term.value)).toEqual(terms);
+    const update = {
+      ...rule,
+      matches: rule.matches.map((term) =>
+        term.value === 'rate_limit' ? { ...term, value: 'quota' } : term
+      ),
+    };
+    const editor = runVisualConfig(source, [
+      { oauthErrorRules: [{ ...groups[0], rules: [groups[0].rules[0], update] }, groups[1]] },
+    ]);
+    const next = editor.applyVisualChangesToYaml(source);
+    const match = [...terms.slice(0, -1), 'quota'];
+    expect(parseDocument(next).toJS().oauth['request-scoped-errors'].copilot[1].match).toEqual(
+      match
+    );
+    expect(buildConfigPatch(source, next).patch.oauth).toMatchObject({
+      'request-scoped-errors': { copilot: [expect.anything(), expect.objectContaining({ match })] },
+    });
+    const portOnly = runVisualConfig(source, [{ port: '9000' }]).applyVisualChangesToYaml(source);
+    expect(buildConfigPatch(source, portOnly).patch).not.toHaveProperty('oauth');
+    expect(
+      runVisualConfig(portOnly).visualValues.oauthErrorRules[0].rules[1].matches.map(
+        (term) => term.value
+      )
+    ).toEqual(terms);
   });
 
   test('creates plugin channel below a null parent and rejects empty OAuth match conditions', () => {

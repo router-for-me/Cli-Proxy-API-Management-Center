@@ -1593,7 +1593,7 @@
       },
       "validation": {
         "invalid_server_id": "請輸入含連字號的非零 UUID。",
-        "invalid_oauth_error_rules": "請檢查 {{channel}} 的狀態碼、比對條件與動作。",
+        "invalid_oauth_error_rules": "請檢查「{{channel}}」第 {{number}} 條規則的狀態碼、比對條件與動作。",
         "invalid_trusted_proxies": "每個可信任代理必須是有效的 IP 位址或 CIDR。",
         "invalid_discovery_service_type": "請使用 _名稱._tcp 格式：名稱為 1–15 位英文字母、數字或連字號，首尾不能是連字號。",
         "validation_blocked": "請先修復表單驗證錯誤再儲存",

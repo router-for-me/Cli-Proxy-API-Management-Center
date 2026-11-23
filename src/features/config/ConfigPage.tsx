@@ -6,7 +6,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useRevealGroup } from '@/hooks/motion';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
-import { ConfigDraftConflictError } from '@/services/api/configPatch';
+import { configDraftErrorMessage } from './configDraftError';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import {
   CONFIG_MODE_STORAGE_KEY,
@@ -162,11 +162,7 @@ export function ConfigPage() {
             const nextContent = applyVisualChangesToYaml(doc.content, 'draft');
             if (nextContent !== doc.content) doc.syncContentFromVisual(nextContent);
           } catch (error) {
-            if (!(error instanceof ConfigDraftConflictError)) throw error;
-            showNotification(
-              t(`config_management.${error.reason}`, { path: error.path.join('.') }),
-              'error'
-            );
+            showNotification(configDraftErrorMessage(t, error), 'error');
             return;
           }
         }
