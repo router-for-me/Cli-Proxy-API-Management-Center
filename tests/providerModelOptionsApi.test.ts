@@ -145,7 +145,10 @@ test('OpenAI multimodal and token options round trip and can be cleared', async 
       },
     ],
   });
-  const config = normalizeProviderGroups([stored()], true)[0] as OpenAIProviderConfig;
+  const config = normalizeProviderGroups(
+    [stored()],
+    'openai-compatibility'
+  )[0] as OpenAIProviderConfig;
   expect(config.models![0]).toMatchObject({
     inputModalities: ['text', 'image'],
     outputModalities: ['text'],

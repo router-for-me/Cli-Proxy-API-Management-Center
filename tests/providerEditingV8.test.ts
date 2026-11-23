@@ -30,7 +30,7 @@ const row = (group: Record<string, unknown>) =>
   (normalizeProviderGroups([group]) as ProviderKeyConfig[])[0];
 const key = (group: Record<string, unknown>) => (group.keys as Record<string, unknown>[])[0];
 const openai = (group: Record<string, unknown>) =>
-  (normalizeProviderGroups([group], true) as OpenAIProviderConfig[])[0];
+  (normalizeProviderGroups([group], 'openai-compatibility') as OpenAIProviderConfig[])[0];
 
 const keyApis = [
   ['gemini', providersApi.updateGeminiKey],

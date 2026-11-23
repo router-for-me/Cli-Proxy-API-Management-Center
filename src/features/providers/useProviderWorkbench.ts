@@ -46,34 +46,12 @@ import type {
   SponsorProviderBrand,
   SponsorProviderRaw,
 } from './types';
+import { buildSponsorBundle } from './sponsorBundle';
 import {
-  buildApiKeyFunRaw,
-  isApiKeyFunClaudeProvider,
-  isApiKeyFunCodexProvider,
-  isApiKeyFunOpenAIProvider,
-} from './sponsor';
-import { buildFennoAIRaw, isFennoAIClaudeProvider, isFennoAICodexProvider } from './fennoAI';
-import {
-  buildQiniuCloudRaw,
-  isQiniuCloudClaudeProvider,
-  isQiniuCloudCodexProvider,
-  isQiniuCloudGeminiProvider,
-  isQiniuCloudOpenAIProvider,
-} from './qiniuCloud';
-import {
-  buildAiCodeMirrorRaw,
-  isAiCodeMirrorClaudeProvider,
-  isAiCodeMirrorCodexProvider,
-  isAiCodeMirrorGeminiProvider,
-  isAiCodeMirrorOpenAIProvider,
-} from './aiCodeMirror';
-import {
-  buildKimiRaw,
-  isKimiClaudeProvider,
-  isKimiCodexProvider,
-  isKimiOpenAIProvider,
-} from './kimi';
-import { getSponsorProviderDefinition, type SponsorProtocolUrls } from './sponsorDefinitions';
+  getSponsorProviderDefinition,
+  isMultiProtocolSponsorBrand,
+  type SponsorProtocolUrls,
+} from './sponsorDefinitions';
 import { runSponsorMutationWithRecovery } from './sponsorMutationRecovery';
 
 import { memberFields } from './nativeConnectionForm';
@@ -490,13 +468,22 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
   }
 };
 
-export const buildProviderGroups = (config: Config): ProviderGroup[] =>
-  PROVIDER_BRAND_ORDER.reduce<ProviderGroup[]>((groups, brand) => {
+export const buildProviderGroups = (config: Config): ProviderGroup[] => {
+  const bundles = new Map<SponsorProviderBrand, SponsorProviderRaw>();
+  const claimed = new Set<ProviderKeyConfig | OpenAIProviderConfig>();
+  for (const brand of PROVIDER_BRAND_ORDER.filter(isMultiProtocolSponsorBrand)) {
+    const bundle = buildSponsorBundle(brand, config);
+    bundles.set(brand, bundle);
+    for (const protocol of [bundle.openai, bundle.gemini, bundle.codex, bundle.claude]) {
+      for (const row of protocol) claimed.add(row.config);
+    }
+  }
+  return PROVIDER_BRAND_ORDER.reduce<ProviderGroup[]>((groups, brand) => {
     let resources: ProviderResource[];
     switch (brand) {
       case 'gemini':
         resources = (config.geminiApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-          if (!isQiniuCloudGeminiProvider(item) && !isAiCodeMirrorGeminiProvider(item)) {
+          if (!claimed.has(item)) {
             out.push(geminiToResource(item, index));
           }
           return out;
@@ -509,13 +496,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
         break;
       case 'codex':
         resources = (config.codexApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-          if (
-            !isApiKeyFunCodexProvider(item) &&
-            !isFennoAICodexProvider(item) &&
-            !isQiniuCloudCodexProvider(item) &&
-            !isAiCodeMirrorCodexProvider(item) &&
-            !isKimiCodexProvider(item)
-          ) {
+          if (!claimed.has(item)) {
             out.push(codexToResource(item, index));
           }
           return out;
@@ -529,13 +510,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
         break;
       case 'claude':
         resources = (config.claudeApiKeys ?? []).reduce<ProviderResource[]>((out, item, index) => {
-          if (
-            !isApiKeyFunClaudeProvider(item) &&
-            !isFennoAIClaudeProvider(item) &&
-            !isQiniuCloudClaudeProvider(item) &&
-            !isAiCodeMirrorClaudeProvider(item) &&
-            !isKimiClaudeProvider(item)
-          ) {
+          if (!claimed.has(item)) {
             out.push(claudeToResource(item, index));
           }
           return out;
@@ -549,12 +524,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
       case 'openaiCompatibility':
         resources = (config.openaiCompatibility ?? []).reduce<ProviderResource[]>(
           (out, item, index) => {
-            if (
-              !isApiKeyFunOpenAIProvider(item) &&
-              !isQiniuCloudOpenAIProvider(item) &&
-              !isAiCodeMirrorOpenAIProvider(item) &&
-              !isKimiOpenAIProvider(item)
-            ) {
+            if (!claimed.has(item)) {
               out.push(openaiToResource(item, index));
             }
             return out;
@@ -563,27 +533,27 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
         );
         break;
       case 'apikeyFun': {
-        const sponsorResource = apiKeyFunToResource(buildApiKeyFunRaw(config));
+        const sponsorResource = apiKeyFunToResource(bundles.get(brand)!);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'fennoAI': {
-        const sponsorResource = fennoAIToResource(buildFennoAIRaw(config));
+        const sponsorResource = fennoAIToResource(bundles.get(brand)!);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'qiniuCloud': {
-        const sponsorResource = qiniuCloudToResource(buildQiniuCloudRaw(config));
+        const sponsorResource = qiniuCloudToResource(bundles.get(brand)!);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'aiCodeMirror': {
-        const sponsorResource = aiCodeMirrorToResource(buildAiCodeMirrorRaw(config));
+        const sponsorResource = aiCodeMirrorToResource(bundles.get(brand)!);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
       case 'kimi': {
-        const sponsorResource = kimiToResource(buildKimiRaw(config));
+        const sponsorResource = kimiToResource(bundles.get(brand)!);
         resources = sponsorResource ? [sponsorResource] : [];
         break;
       }
@@ -599,6 +569,7 @@ export const buildProviderGroups = (config: Config): ProviderGroup[] =>
     });
     return groups;
   }, []);
+};
 
 /* -------------------------------------------------------------------------- */
 /* hook                                                                       */
@@ -662,16 +633,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
   const persistSponsorConfig = useCallback(
     async (brand: SponsorProviderBrand, input: ProviderEntryFormInput) => {
       const definition = getSponsorProviderDefinition(brand);
-      const raw =
-        brand === 'apikeyFun'
-          ? buildApiKeyFunRaw(config)
-          : brand === 'fennoAI'
-            ? buildFennoAIRaw(config)
-            : brand === 'qiniuCloud'
-              ? buildQiniuCloudRaw(config)
-              : brand === 'aiCodeMirror'
-                ? buildAiCodeMirrorRaw(config)
-                : buildKimiRaw(config);
+      const raw = buildSponsorBundle(brand, config);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
       const claudeEntry = entries.find((entry) => entry.protocol === 'claude');

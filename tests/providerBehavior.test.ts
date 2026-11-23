@@ -101,7 +101,10 @@ test('OpenAI prompt cache key can be enabled on create and explicitly disabled o
     apiKeyEntries: [{ apiKey: 'fixture-key' }],
     supportPromptCacheKey: true,
   });
-  const config = normalizeProviderGroups(groups(), true)[0] as OpenAIProviderConfig;
+  const config = normalizeProviderGroups(
+    groups(),
+    'openai-compatibility'
+  )[0] as OpenAIProviderConfig;
   expect(config.supportPromptCacheKey).toBe(true);
   await providersApi.updateOpenAIProvider(config.name, 0, {
     ...config,

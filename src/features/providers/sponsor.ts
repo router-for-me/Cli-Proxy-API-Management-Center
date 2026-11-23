@@ -198,8 +198,3 @@ export const buildApiKeyFunRaw = (config: Config | null | undefined): SponsorPro
     .filter((item) => isApiKeyFunCodexProvider(item.config)),
   gemini: [],
 });
-
-export const hasApiKeyFunConfig = (config: Config | null | undefined): boolean => {
-  const raw = buildApiKeyFunRaw(config);
-  return raw.openai.length > 0 || raw.claude.length > 0 || raw.codex.length > 0;
-};

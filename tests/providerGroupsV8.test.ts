@@ -204,7 +204,9 @@ describe('v8 provider groups', () => {
       keys: [{ 'api-key': 'fixture', 'proxy-url': null, custom: 'keep', weight: 2 }],
     };
     const b = backend('openai-compatibility', [group]);
-    const row = (normalizeProviderGroups([group], true) as OpenAIProviderConfig[])[0];
+    const row = (
+      normalizeProviderGroups([group], 'openai-compatibility') as OpenAIProviderConfig[]
+    )[0];
     await providersApi.updateOpenAIProvider(row.name, 0, {
       ...row,
       apiKeyEntries: [{ ...row.apiKeyEntries[0], weight: 4 }],

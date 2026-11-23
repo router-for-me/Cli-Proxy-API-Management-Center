@@ -176,7 +176,10 @@ describe('provider runtime policies', () => {
       'request-retry': 2,
       'disable-cooling': false,
     });
-    const config = normalizeProviderGroups([stored()], true)[0] as OpenAIProviderConfig;
+    const config = normalizeProviderGroups(
+      [stored()],
+      'openai-compatibility'
+    )[0] as OpenAIProviderConfig;
     await providersApi.updateOpenAIProvider(config.name, 0, {
       ...config,
       ...buildRuntimePolicy({ ...readRuntimePolicy(config), retry: '', cooling: 'inherit' }),
