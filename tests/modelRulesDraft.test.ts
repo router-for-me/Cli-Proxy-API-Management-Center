@@ -63,6 +63,9 @@ describe('alias draft', () => {
     draft = addAliasRow(draft, 'codex', makeId);
     expect(draft.gemini).toHaveLength(1);
     expect(getDirtyAliasProviders(baseline, draft)).toEqual([]);
+    // a partially filled placeholder is a real edit
+    const partial = updateAliasRow(draft, 'gemini', draft.gemini[0].id, { name: 'partial' });
+    expect(getDirtyAliasProviders(baseline, partial)).toEqual(['gemini']);
     // an existing group is left alone
     expect(ensureAliasRow(draft, 'codex', makeId)).toBe(draft);
   });

@@ -2,7 +2,6 @@
 // 静态渲染只覆盖关闭态结构与无障碍关联；悬停 / 聚焦 / 点按需在浏览器里核对。
 
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nextProvider } from 'react-i18next';
@@ -151,15 +150,20 @@ describe('auth file details sheet hints', () => {
     expect(input?.[0]).toContain('type="number"');
   });
 
+  test.each(['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr'])(
+    '%s: weight tooltips stay plain text and the strategy note keeps its link',
+    async (locale) => {
+      const { auth_files: messages } = (await Bun.file(
+        `src/i18n/locales/${locale}.json`
+      ).json()) as { auth_files: Record<string, string> };
+      expect(messages.weight_tooltip).not.toMatch(/<[^>]+>/);
+      expect(messages.weight_hint).not.toMatch(/<[^>]+>/);
+      expect(messages.weight_strategy_note).toMatch(/<settingsLink>[^<]+<\/settingsLink>/);
+    }
+  );
+
   test('removed copy: note "optional" hint and the headers format hint repeated by the placeholder', () => {
     const markup = renderSheet('codex');
-    // Source check (not locale text) so it survives the keys being deleted from the locales.
-    const source = readFileSync(
-      'src/features/authFiles/components/AuthFileDetailsSheet.tsx',
-      'utf8'
-    );
-    expect(source).not.toContain("'auth_files.note_hint'");
-    expect(source).not.toContain("'auth_files.headers_hint'");
     // The placeholders that make them redundant are still there.
     expect(markup).toContain(esc(copy.note_placeholder));
     expect(markup).toContain(esc(copy.headers_placeholder));
