@@ -614,7 +614,7 @@
     "loading": "Запрос квоты GitHub Copilot…",
     "load_failed": "Не удалось запросить квоту: {{message}}",
     "remaining": "Осталось {{percent}}%",
-    "premium": "Премиальные взаимодействия",
+    "premium": "Месячная квота",
     "unavailable": "Квота недоступна. Проверьте учётные данные Copilot и повторите попытку."
   },
   "meta_quota": {

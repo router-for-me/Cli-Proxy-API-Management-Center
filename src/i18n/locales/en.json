@@ -624,7 +624,7 @@
     "loading": "Querying GitHub Copilot quota…",
     "load_failed": "Failed to query quota: {{message}}",
     "remaining": "{{percent}}% remaining",
-    "premium": "Premium interactions",
+    "premium": "Monthly quota",
     "unavailable": "Quota unavailable. Check the Copilot credential and try again."
   },
   "meta_quota": {

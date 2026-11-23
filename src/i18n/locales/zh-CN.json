@@ -609,7 +609,7 @@
     "loading": "正在查询 GitHub Copilot 额度…",
     "load_failed": "额度查询失败：{{message}}",
     "remaining": "剩余 {{percent}}%",
-    "premium": "高级交互",
+    "premium": "月额度",
     "unavailable": "额度不可用。请检查 Copilot 凭证后重试。"
   },
   "meta_quota": {

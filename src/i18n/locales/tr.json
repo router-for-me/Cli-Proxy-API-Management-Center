@@ -624,7 +624,7 @@
     "loading": "GitHub Copilot Kotası Sorgulanıyor…",
     "load_failed": "Kota Sorgulanamadı: {{message}}",
     "remaining": "%{{percent}} Kaldı",
-    "premium": "Premium etkileşimler",
+    "premium": "Aylık kota",
     "unavailable": "Kota alınamadı. Copilot kimlik bilgilerini kontrol edip tekrar deneyin."
   },
   "meta_quota": {

@@ -2448,7 +2448,7 @@
     "loading": "Đang truy vấn quota GitHub Copilot…",
     "load_failed": "Truy vấn quota thất bại: {{message}}",
     "remaining": "Còn lại {{percent}}%",
-    "premium": "Tương tác cao cấp",
+    "premium": "Hạn mức hằng tháng",
     "unavailable": "Không thể lấy hạn mức. Hãy kiểm tra thông tin xác thực Copilot và thử lại."
   },
   "meta_quota": {

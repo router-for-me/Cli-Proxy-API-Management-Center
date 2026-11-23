@@ -609,7 +609,7 @@
     "loading": "正在查詢 GitHub Copilot 額度…",
     "load_failed": "額度查詢失敗：{{message}}",
     "remaining": "剩餘 {{percent}}%",
-    "premium": "進階互動",
+    "premium": "月額度",
     "unavailable": "額度無法取得。請檢查 Copilot 憑證後重試。"
   },
   "meta_quota": {

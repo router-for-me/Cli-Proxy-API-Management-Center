@@ -624,7 +624,7 @@
     "loading": "GitHub Copilot 할당량 조회 중…",
     "load_failed": "할당량 조회 실패: {{message}}",
     "remaining": "{{percent}}% 남음",
-    "premium": "프리미엄 상호작용",
+    "premium": "월간 할당량",
     "unavailable": "할당량을 확인할 수 없습니다. Copilot 자격 증명을 확인한 후 다시 시도하세요."
   },
   "meta_quota": {
