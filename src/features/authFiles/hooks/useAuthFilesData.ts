@@ -339,7 +339,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
     (name: string) => {
       showConfirmation({
         title: t('auth_files.delete_title', { defaultValue: 'Delete File' }),
-        message: `${t('auth_files.delete_confirm')} "${name}" ?`,
+        message: t('auth_files.delete_confirm', { name }),
         variant: 'danger',
         confirmText: t('common.confirm'),
         onConfirm: async () => {
