@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Verify your account to continue.",
     "title": "Antigravity Quota",
     "empty_title": "No Antigravity Auth Files",
     "empty_desc": "Upload an Antigravity credential to view remaining quota.",
@@ -1639,6 +1640,7 @@
     "hide_details": "Hide details"
   },
   "quota_management": {
+    "open_verification_link": "Open verification link",
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",
     "search_empty_title": "No matching accounts",

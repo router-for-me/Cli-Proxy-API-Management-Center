@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Hãy xác minh tài khoản để tiếp tục.",
     "title": "Quota Antigravity",
     "empty_title": "Không có File xác thực Antigravity",
     "empty_desc": "Tải lên credential Antigravity để xem quota còn lại.",
@@ -1584,6 +1585,7 @@
     "hide_details": "Ẩn chi tiết"
   },
   "quota_management": {
+    "open_verification_link": "Mở liên kết xác minh",
     "title": "Quản lý Quota",
     "refresh_all_credentials": "Làm mới mọi credential",
     "sort_label": "Sắp xếp",

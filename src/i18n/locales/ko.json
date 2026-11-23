@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "계속하려면 계정을 인증하세요.",
     "title": "Antigravity 할당량",
     "empty_title": "Antigravity 인증 파일 없음",
     "empty_desc": "남은 할당량을 확인하려면 Antigravity 자격 증명을 업로드하세요.",
@@ -1639,6 +1640,7 @@
     "hide_details": "세부 정보 숨기기"
   },
   "quota_management": {
+    "open_verification_link": "인증 링크 열기",
     "search_label": "계정 검색",
     "search_placeholder": "파일명 또는 이메일로 검색",
     "search_empty_title": "일치하는 계정 없음",

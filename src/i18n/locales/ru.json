@@ -446,6 +446,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Подтвердите аккаунт, чтобы продолжить.",
     "title": "Квота Antigravity",
     "empty_title": "Файлы авторизации Antigravity отсутствуют",
     "empty_desc": "Загрузите учётные данные Antigravity, чтобы увидеть оставшуюся квоту.",
@@ -1653,6 +1654,7 @@
     "hide_details": "Скрыть подробности"
   },
   "quota_management": {
+    "open_verification_link": "Открыть ссылку для подтверждения",
     "search_label": "Поиск аккаунтов",
     "search_placeholder": "Поиск по имени файла или электронной почте",
     "search_empty_title": "Аккаунты не найдены",

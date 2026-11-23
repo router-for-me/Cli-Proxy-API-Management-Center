@@ -260,6 +260,7 @@ export interface AntigravityQuotaBucket {
 }
 
 export interface AntigravityQuotaState {
+  validation?: { url?: string };
   status: 'idle' | 'loading' | 'success' | 'error';
   groups: AntigravityQuotaGroup[];
   subscription?: AntigravityQuotaSubscription | null;

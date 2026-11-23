@@ -440,6 +440,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "请验证账号以继续。",
     "title": "Antigravity 额度",
     "empty_title": "暂无 Antigravity 认证",
     "empty_desc": "上传 Antigravity 认证文件后即可查看额度。",
@@ -1632,6 +1633,7 @@
     "hide_details": "隐藏详情"
   },
   "quota_management": {
+    "open_verification_link": "打开验证链接",
     "search_label": "搜索账号",
     "search_placeholder": "按文件名或邮箱搜索",
     "search_empty_title": "没有匹配的账号",

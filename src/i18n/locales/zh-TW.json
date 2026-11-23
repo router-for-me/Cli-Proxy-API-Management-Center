@@ -440,6 +440,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "請驗證帳戶以繼續。",
     "title": "Antigravity 配額",
     "empty_title": "暫無 Antigravity 驗證",
     "empty_desc": "上傳 Antigravity 驗證檔案後即可查看配額。",
@@ -1632,6 +1633,7 @@
     "hide_details": "隱藏詳情"
   },
   "quota_management": {
+    "open_verification_link": "開啟驗證連結",
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",
     "search_empty_title": "沒有符合的帳號",

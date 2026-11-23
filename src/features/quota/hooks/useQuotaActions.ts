@@ -57,7 +57,7 @@ export function useQuotaActions(disableControls: boolean) {
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
           setQuota((prev) => ({
             ...prev,
-            [cacheKey]: adapter.buildErrorState(message, status),
+            [cacheKey]: adapter.buildErrorState(message, status, err),
           }));
           showNotification(
             t('auth_files.quota_refresh_failed', { name: file.name, message }),
