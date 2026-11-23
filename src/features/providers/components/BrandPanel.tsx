@@ -154,9 +154,6 @@ export function BrandPanel({
           <BrandLogo brand={group.id} size={28} />
           <div className={styles.noteText}>
             <span className={styles.noteTitle}>{providerName}</span>
-            {group.id === 'kimi' ? (
-              <span className={styles.noteBody}>{t('providersPage.sponsor.kimiPromo')}</span>
-            ) : null}
           </div>
           {registrationLink}
         </div>

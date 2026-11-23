@@ -2218,7 +2218,6 @@
       "detailHint": "{{provider}} Protokole Göre Eşleşen API Anahtarı Yapılandırmalarına Yazılır. Bu Görünüm Onları Birlikte Yönetir.",
       "registerLink": "Buradan Kaydol",
       "registerNow": "Hemen Kaydol",
-      "kimiPromo": "Yeni Kullanıcılar İlk Başarılı Yüklemelerinin %10'u Değerinde API Kredisi Alır. Üst Sınır ¥1000. Teklif 30 Eylül'de Biter.",
       "dashboardLink": "Pano",
       "emptyRegisterHint": "Henüz Yapılandırma Yok.",
       "apiKeyHint": "Bu Anahtar Yalnızca Seçilen Grup/Protokol Yapılandırmasına Yazılır.",
@@ -2460,7 +2459,6 @@
       "custom": "Özel",
       "connect": "Bağla",
       "connected": "{{count}} bağlı",
-      "offer": "Fırsat",
       "onboardingTitle": "İlk yapay zekâ sağlayıcınızı bağlayın",
       "moreQuickConnect": "Diğer hızlı bağlantı ortakları"
     }

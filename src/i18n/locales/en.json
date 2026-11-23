@@ -2218,7 +2218,6 @@
       "detailHint": "{{provider}} is persisted into the matching API key configs by protocol; this view manages them together.",
       "registerLink": "Register here",
       "registerNow": "Register now",
-      "kimiPromo": "New users get API credit worth 10% of their first successful top-up, up to ¥1000. Offer ends September 30.",
       "dashboardLink": "Dashboard",
       "emptyRegisterHint": "No configuration yet.",
       "apiKeyHint": "This key is only written to the selected group/protocol config.",
@@ -2460,7 +2459,6 @@
       "custom": "Custom",
       "connect": "Connect",
       "connected": "{{count}} connected",
-      "offer": "Offer",
       "onboardingTitle": "Connect your first AI provider",
       "moreQuickConnect": "More quick-connect partners"
     }

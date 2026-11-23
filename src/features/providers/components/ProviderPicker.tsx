@@ -138,10 +138,7 @@ export function ProviderPicker({ groups, variant = 'sheet', onPick }: ProviderPi
             <ul className={styles.features}>
               {featuredCard(
                 'kimi',
-                <span className={styles.offer}>
-                  <span className={styles.offerTag}>{t('providersPage.picker.offer')}</span>
-                  {t('providersPage.sponsor.kimiPromo')}
-                </span>,
+                null,
                 getKimiAffiliateUrl(i18n.resolvedLanguage ?? i18n.language ?? '')
               )}
             </ul>

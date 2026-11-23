@@ -2218,7 +2218,6 @@
       "detailHint": "{{provider}} 공급자는 프로토콜별로 일치하는 API 키 설정에 저장되며, 이 화면에서 통합 관리합니다.",
       "registerLink": "여기서 등록",
       "registerNow": "지금 등록",
-      "kimiPromo": "신규 사용자는 첫 충전 성공 시 충전 금액의 10%에 해당하는 API 크레딧(최대 ¥1000)을 받을 수 있습니다. 혜택은 9월 30일에 종료됩니다.",
       "dashboardLink": "대시보드",
       "emptyRegisterHint": "아직 설정이 없습니다.",
       "apiKeyHint": "이 키는 선택한 그룹/프로토콜 설정에만 저장됩니다.",
@@ -2460,7 +2459,6 @@
       "custom": "사용자 지정",
       "connect": "연결",
       "connected": "{{count}}개 연결됨",
-      "offer": "혜택",
       "onboardingTitle": "첫 AI 제공자를 연결하세요",
       "moreQuickConnect": "빠른 연결 파트너 더 보기"
     }

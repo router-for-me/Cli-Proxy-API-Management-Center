@@ -259,9 +259,8 @@ describe('provider picker', () => {
       expect(html.indexOf(name)).toBeLessThan(official);
     }
     const links = [...html.matchAll(/<a[^>]*target="_blank"[^>]*>/g)];
-    // Three partners plus the Kimi offer.
+    // Three partners plus the Kimi registration link.
     expect(links).toHaveLength(4);
-    expect(html).toContain(en.providersPage.sponsor.kimiPromo);
     expect(html).toContain(en.providersPage.picker.oneKey.replace('{{count}}', '2'));
   });
 

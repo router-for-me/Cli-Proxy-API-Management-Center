@@ -2122,8 +2122,7 @@
         "openai": "Tương thích OpenAI",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "kimiPromo": "Người dùng mới nạp tiền lần đầu thành công sẽ được tặng hạn mức API trị giá 10% số tiền nạp, tối đa ¥1000. Ưu đãi kết thúc vào ngày 30 tháng 9."
+      }
     },
     "status": {
       "active": "Đang hoạt động",
@@ -2405,7 +2404,6 @@
       "custom": "Tùy chỉnh",
       "connect": "Kết nối",
       "connected": "Đã kết nối {{count}}",
-      "offer": "Ưu đãi",
       "onboardingTitle": "Kết nối nhà cung cấp AI đầu tiên",
       "moreQuickConnect": "Thêm đối tác kết nối nhanh"
     }
