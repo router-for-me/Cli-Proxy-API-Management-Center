@@ -22,7 +22,6 @@ import { providerLabel } from '@/features/dashboard/utils';
 import { PROVIDER_LOGOS } from '@/features/providers/brandLogos';
 import { apiClient } from '@/services/api/client';
 import { oauthApi, type BuiltInOAuthProvider } from '@/services/api/oauth';
-import { classifyModels } from '@/utils/models';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
 
 const i18n = createInstance();
@@ -64,26 +63,11 @@ describe('Muse (Meta) provider and device OAuth', () => {
     expect([...QUOTA_PROVIDER_TYPES]).toContain('meta');
   });
 
-  test('classifies Muse models without changing Devin namespace precedence', () => {
-    const groups = classifyModels([
-      { name: 'muse-spark-1.3' },
-      { name: 'muse-latest' },
-      { name: 'devin/muse-spark-1.3' },
-      { name: 'gpt-5' },
-    ]);
-    expect(groups.find((group) => group.id === 'meta')?.items).toHaveLength(2);
-    expect(groups.find((group) => group.id === 'devin')?.items).toHaveLength(1);
-    expect(groups.find((group) => group.id === 'gpt')?.items).toHaveLength(1);
-  });
-
   test('registers device-code UI but not a manual OAuth callback', () => {
     const meta = OAUTH_PROVIDERS.find((provider) => provider.id === 'meta');
     expect(meta).toMatchObject({ flow: 'device', label: 'Muse (Meta)' });
     expect(CALLBACK_SUPPORTED.has('meta')).toBe(false);
     expect(meta && supportsManualCallback(meta)).toBe(false);
-    expect(readFileSync('src/features/oauth/hooks/useOAuthFlows.ts', 'utf8')).toContain(
-      'userCode: res.user_code'
-    );
 
     // 设备码步骤真实渲染：码本身 + 复制按钮，且没有回调步骤
     const markup = renderToStaticMarkup(
@@ -113,23 +97,8 @@ describe('Muse (Meta) provider and device OAuth', () => {
     expect(markup).not.toContain('auth_login.');
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
       const translations = JSON.parse(readFileSync(`src/i18n/locales/${locale}.json`, 'utf8'));
-      for (const suffix of [
-        'oauth_title',
-        'oauth_button',
-        'open_link',
-        'copy_link',
-        'oauth_status_waiting',
-        'oauth_status_success',
-        'oauth_status_error',
-        'oauth_start_error',
-        'oauth_polling_error',
-      ]) {
-        expect(translations.auth_login[`meta_${suffix}`]).toBeTruthy();
-      }
       expect(translations.auth_files.filter_meta).toBe('Muse (Meta)');
       expect(translations.providersPage.providerNames.meta).toBe('Muse (Meta)');
-      expect(translations.auth_login.device_code_label).toBeTruthy();
-      expect(translations.auth_login.device_code_copy).toBeTruthy();
     }
   });
 });

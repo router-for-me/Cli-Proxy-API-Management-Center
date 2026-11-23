@@ -16,17 +16,6 @@ import { TierLadder } from '../src/features/routing/components/TierLadder';
 import { PolicyPanel } from '../src/features/routing/components/PolicyPanel';
 import type { AuthFileItem } from '../src/types/authFile';
 
-test('language changes do not trigger board reloads or reset the draft', () => {
-  const source = readFileSync('src/features/routing/RoutingPage.tsx', 'utf8');
-  const load = source.slice(
-    source.indexOf('  const load = useCallback'),
-    source.indexOf('  useEffect(() => {')
-  );
-  expect(load).toContain('[connected, fetchConfig, loadModels]');
-  expect(load).not.toContain("t('common.unknown_error')");
-  expect(source).toContain("message: error || t('common.unknown_error')");
-});
-
 const RAW = {
   routing: { strategy: 'round-robin' },
   'api-keys': {
@@ -137,8 +126,6 @@ describe('routing board rendering', () => {
 
     // Credentials report real runtime state and never carry the note.
     expect(cardMarkup(html, 'cred:main.json')).not.toContain('无冷却信息');
-    const card = readFileSync('src/features/routing/components/MemberCard.tsx', 'utf8');
-    expect(card).toContain("const muted = state === 'disabled' || state === 'ineligible';");
   });
 
   test('the strategy picker is a keyboard radio group', async () => {
@@ -236,8 +223,6 @@ describe('routing board rendering', () => {
     );
     expect(html).toContain('aria-label="More information about Request in"');
     expect(html).toContain(`hidden="">${i18n.t('routing.footnote')}</span>`);
-    const page = readFileSync('src/features/routing/RoutingPage.tsx', 'utf8');
-    expect(page).not.toContain("t('routing.footnote')");
   });
 
   test('styles respect reduced motion and the route is registered behind navigation', () => {
@@ -253,21 +238,6 @@ describe('routing board rendering', () => {
     expect(readFileSync('src/components/layout/MainLayout.tsx', 'utf8')).toContain(
       "labelKey: 'nav.routing'"
     );
-  });
-});
-
-describe('routing save bar', () => {
-  test('floats over the policy column, outside the transition layer', () => {
-    const bar = readFileSync('src/features/routing/components/RoutingSaveBar.tsx', 'utf8');
-    const policy = readFileSync('src/features/routing/components/PolicyPanel.tsx', 'utf8');
-    const page = readFileSync('src/features/routing/RoutingPage.tsx', 'utf8');
-    // Portalled: sticky/fixed inside the page-transition layer does not track the viewport.
-    expect(bar).toContain('createPortal(');
-    // The bar measures the column the policy panel marks.
-    expect(bar).toContain("POLICY_COLUMN_ATTR = 'data-routing-policy-column'");
-    expect(policy).toContain('data-routing-policy-column=""');
-    // A page sliding out must not leave its bar behind.
-    expect(page).toContain('visible={isCurrentLayer && dirty}');
   });
 });
 

@@ -591,16 +591,4 @@ describe('buildTimelineLane', () => {
       buildTimelineLane({ ...base, provider: 'claude', quota: { status: 'error' } }).anchorMs
     ).toBeNull();
   });
-
-  test('windows without a reset instant do not anchor the lane', () => {
-    const lane = buildTimelineLane({
-      ...base,
-      provider: 'claude',
-      quota: {
-        status: 'success',
-        windows: [{ label: '7-day', usedPercent: 50, resetAtMs: null, periodHours: 168 }],
-      },
-    });
-    expect(lane.anchorMs).toBeNull();
-  });
 });

@@ -75,18 +75,10 @@ describe('Claude reset grant details', () => {
     expect(markup).not.toContain('<button');
   });
 
-  test.each(['en', 'zh-CN', 'zh-TW', 'ru', 'vi'])(
-    'translates fallback labels in %s',
-    async (lng) => {
-      await i18n.changeLanguage(lng);
-      try {
-        const markup = render([grant({ label: '', endsAt: null })]);
-        expect(markup).toContain(i18n.t('claude_reset.grant_number', { index: 1 }));
-        expect(markup).toContain(i18n.t('claude_reset.expiry_unknown'));
-        expect(markup).not.toContain('claude_reset.');
-      } finally {
-        await i18n.changeLanguage('en');
-      }
-    }
-  );
+  test('translates fallback labels', () => {
+    const markup = render([grant({ label: '', endsAt: null })]);
+    expect(markup).toContain(i18n.t('claude_reset.grant_number', { index: 1 }));
+    expect(markup).toContain(i18n.t('claude_reset.expiry_unknown'));
+    expect(markup).not.toContain('claude_reset.');
+  });
 });

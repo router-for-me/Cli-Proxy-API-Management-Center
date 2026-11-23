@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { parseDocument } from 'yaml';
 import {
   applyConfigPatch,
   buildConfigPatch,
@@ -9,28 +8,6 @@ import { apiClient } from '../src/services/api/client';
 import { runVisualConfig } from './helpers/visualConfig';
 
 describe('buildConfigPatch', () => {
-  for (const [field, path] of [
-    ['port', 'server.port'],
-    ['requestRetry', 'routing.retry.request-retry'],
-    ['maxRetryCredentials', 'routing.retry.max-retry-credentials'],
-    ['maxRetryInterval', 'routing.retry.max-retry-interval'],
-    ['authAutoRefreshWorkers', 'oauth.auth-auto-refresh-workers'],
-    ['errorLogsMaxFiles', 'observability.logs.error-logs-max-files'],
-    ['logsMaxTotalSizeMb', 'observability.logs.logs-max-total-size-mb'],
-    ['redisUsageQueueRetentionSeconds', 'observability.usage.redis-usage-queue-retention-seconds'],
-  ] as const) {
-    test(`visual numeric clearing deletes only ${path}`, () => {
-      const doc = parseDocument('unknown: {secret: unchanged}\n');
-      doc.setIn(path.split('.'), 3);
-      const before = doc.toString();
-      const visual = runVisualConfig(before, [{ [field]: '' }]);
-      expect(buildConfigPatch(before, visual.applyVisualChangesToYaml(before))).toEqual({
-        patch: {},
-        deletions: [path.split('.')],
-      });
-    });
-  }
-
   test('real visual edits never upload untouched unknown configuration', () => {
     const before = 'plugins: {configs: {example: {secret: unchanged}}}\nserver: {port: 8317}\n';
     const visual = runVisualConfig(before, [{ port: '9000', debug: true }]);

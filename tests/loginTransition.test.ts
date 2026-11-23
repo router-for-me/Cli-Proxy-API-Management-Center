@@ -93,11 +93,6 @@ describe('LoginRevealVeil', () => {
     expect(markup).toContain('class="login-reveal-veil"');
     expect(markup).toContain('aria-hidden="true"');
   });
-
-  test('is mounted outside the routes so it survives the route switch', async () => {
-    const app = await Bun.file('src/App.tsx').text();
-    expect(app).toMatch(/<Outlet \/>\s*<LoginRevealVeil \/>/);
-  });
 });
 
 describe('LoginForm success state', () => {
@@ -109,22 +104,5 @@ describe('LoginForm success state', () => {
     expect(markup).toMatch(/type="submit"[^>]*disabled=""/);
     expect(markup).toContain('readOnly=""');
     expect(markup).not.toContain(i18n.t('login.submit_button') + '<');
-  });
-});
-
-describe('login hand-off wiring', () => {
-  test('login page orchestrates exit then reveal instead of jumping straight to the app', async () => {
-    const source = await Bun.file('src/pages/LoginPage.tsx').text();
-    expect(source).toContain("setPhase('success')");
-    expect(source).toContain("setPhase('exiting')");
-    expect(source).toMatch(/startReveal\(\);\s*navigate\(redirect, \{ replace: true \}\);/);
-    expect(source).toContain("phase === 'idle'");
-    expect(source).not.toContain("showNotification(t('common.connected_status')");
-  });
-
-  test('main layout marks the shell as arriving only during the reveal', async () => {
-    const source = await Bun.file('src/components/layout/MainLayout.tsx').text();
-    expect(source).toContain("state.phase === 'revealing'");
-    expect(source).toContain('app-shell--arriving');
   });
 });

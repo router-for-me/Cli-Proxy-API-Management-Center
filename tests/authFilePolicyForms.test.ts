@@ -158,9 +158,7 @@ describe('credential policy structured forms', () => {
   test('all locales describe structured fields without asking users for JSON', () => {
     for (const messages of [en, zhCN, zhTW, ru]) {
       for (const [key, value] of Object.entries(messages.auth_files)) {
-        if (!key.startsWith('policy_')) continue;
-        expect(value.trim().length).toBeGreaterThan(0);
-        expect(value).not.toContain('JSON');
+        if (key.startsWith('policy_')) expect(value).not.toContain('JSON');
       }
     }
   });

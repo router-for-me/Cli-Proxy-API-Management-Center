@@ -16,7 +16,6 @@ import { CodexQuotaBody } from '@/features/quota/providers/codex/CodexQuotaBody'
 import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import type { ClaudeQuotaState, CodexQuotaState } from '@/types';
 
-const LOCALES = ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr'];
 const classes = bindQuotaClasses(
   Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, key])),
   'test-host'
@@ -251,18 +250,4 @@ describe('Compact status notices', () => {
       expect(rule[1]).not.toContain('.codexResetCreditsError');
     }
   });
-});
-
-describe('card layout strings', () => {
-  for (const locale of LOCALES) {
-    test(`${locale} has every card layout label`, async () => {
-      const messages = (await Bun.file(`src/i18n/locales/${locale}.json`).json()) as {
-        card_layout: Record<string, unknown>;
-      };
-      for (const key of ['label', 'even', 'stacked', 'compact', 'show_details', 'hide_details']) {
-        expect(typeof messages.card_layout[key]).toBe('string');
-        expect(String(messages.card_layout[key]).trim()).not.toBe('');
-      }
-    });
-  }
 });

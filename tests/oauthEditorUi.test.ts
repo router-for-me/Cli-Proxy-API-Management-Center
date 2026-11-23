@@ -3,7 +3,6 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nextProvider } from 'react-i18next';
 import { createInstance } from 'i18next';
-import { readFileSync } from 'node:fs';
 import { AliasLedgerRow } from '../src/features/authFiles/modelRules/AliasLedger';
 import {
   ModelRulesWorkspace,
@@ -11,12 +10,6 @@ import {
   type ModelRulesWorkspaceProps,
 } from '../src/features/authFiles/modelRules/ModelRulesWorkspace';
 import en from '../src/i18n/locales/en.json';
-import zhCN from '../src/i18n/locales/zh-CN.json';
-import zhTW from '../src/i18n/locales/zh-TW.json';
-import ru from '../src/i18n/locales/ru.json';
-import vi from '../src/i18n/locales/vi.json';
-import ko from '../src/i18n/locales/ko.json';
-import tr from '../src/i18n/locales/tr.json';
 
 const i18n = createInstance();
 await i18n.init({ lng: 'en', resources: { en: { translation: en } } });
@@ -146,52 +139,5 @@ describe('model rules workspace UI', () => {
     // The single paragraph left in the header is the mono telemetry line.
     expect(header.match(/<p\b/g)).toHaveLength(1);
     expect(header).toContain('5 mappings');
-  });
-
-  test('editor pages keep their explanations out of the layout', () => {
-    const read = (page: string) => readFileSync(`src/pages/${page}.tsx`, 'utf8');
-    const excluded = read('AuthFilesOAuthExcludedEditPage');
-    const alias = read('AuthFilesOAuthModelAliasEditPage');
-    for (const source of [excluded, alias]) {
-      expect(source).not.toContain('editor_description');
-      const workspaceProps = source.slice(
-        source.indexOf('<ModelRulesWorkspace'),
-        source.indexOf('onDiscard={handleDiscard}')
-      );
-      expect(workspaceProps).not.toMatch(/^\s+description=/m);
-      // Backend-upgrade notices stay visible.
-      expect(source).toContain('unsupportedDescription={t(');
-    }
-    expect(excluded).not.toContain('models_hint');
-    expect(excluded).not.toContain('fieldHint');
-    // Drag / right-click instructions move into an InfoTip after a visible graph title that
-    // also names the section; the empty-state explanation stays visible.
-    expect(alias).not.toContain('graphHint');
-    expect(alias).toContain('<section className={styles.graph} aria-labelledby={graphTitleId}>');
-    expect(alias).toMatch(
-      /<h2 id=\{graphTitleId\}[^>]*>\s*\{t\('oauth_model_alias\.chart_title'\)\}\s*<\/h2>\s*<InfoTip\s+content=\{t\('model_rules\.graph_hint'\)\}/
-    );
-    expect(alias).toContain("description={t('model_rules.graph_empty_hint')}");
-  });
-
-  test('all seven locales cover the workspace copy with matching placeholders', () => {
-    const base = en.model_rules as Record<string, string>;
-    for (const locale of [en, zhCN, zhTW, ru, vi, ko, tr]) {
-      const rules = locale.model_rules as Record<string, string>;
-      for (const [key, value] of Object.entries(rules)) {
-        expect(value.trim().length).toBeGreaterThan(0);
-        expect(value.includes('{{count}}')).toBe(/^(meta_(?!empty)|unsaved_count)/.test(key));
-      }
-      for (const key of Object.keys(base)) {
-        const stem = key.replace(/_(one|other)$/, '');
-        expect(
-          Object.keys(rules).some((name) => name === stem || name.startsWith(`${stem}_`))
-        ).toBe(true);
-      }
-      expect(locale.model_rules.graph_hint.trim().length).toBeGreaterThan(0);
-      expect(locale.oauth_model_alias.chart_title.trim().length).toBeGreaterThan(0);
-      expect(locale.oauth_model_alias.mapping_row).toContain('{{number}}');
-      expect(locale.oauth_model_alias.remove_mapping).toContain('{{number}}');
-    }
   });
 });

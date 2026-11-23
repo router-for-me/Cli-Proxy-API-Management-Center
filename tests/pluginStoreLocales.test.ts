@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { apiClient } from '@/services/api/client';
 import { pluginStoreApi } from '@/services/api/plugins';
 import { getStoreEntryDisplay } from '@/features/plugins/pluginStoreMetadata';
@@ -13,8 +12,6 @@ const mockGet = (value: unknown) => {
   return spy;
 };
 afterEach(() => spies.splice(0).forEach((spy) => spy.mockRestore()));
-
-const readSource = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const storeEntry = (overrides: Partial<PluginStoreEntry>): PluginStoreEntry => ({
   storeId: 'official/example',
@@ -205,49 +202,5 @@ describe('store entry display metadata', () => {
       tags: ['Interceptor'],
     });
     expect(getStoreEntryDisplay(entry, 'xx')).toEqual(getStoreEntryDisplay(storeEntry({}), 'en'));
-  });
-});
-
-// Source contract only: there is no browser DOM harness, so this pins that every
-// store surface reads the localized display fields instead of the root ones. The registry
-// search in `pluginSearch.ts` is the one deliberate exception and is tested directly above.
-describe('plugin store locale wiring', () => {
-  const ROOT_FIELD_READ = /\b(entry|plugin|item)\.(description|author|license|tags|name)\b/;
-
-  test('rows, the install flow and the gate resolve metadata through one selector', () => {
-    const selectorUsers = [
-      'src/features/plugins/components/StorePluginRow.tsx',
-      'src/features/plugins/components/PluginInstallGateModal.tsx',
-      'src/features/plugins/pluginStoreEntries.ts',
-    ];
-    const titleUsers = [
-      'src/features/plugins/components/PluginInstallOptionsModal.tsx',
-      'src/features/plugins/PluginsPage.tsx',
-    ];
-    const otherSurfaces = [
-      'src/features/plugins/components/PluginStoreView.tsx',
-      'src/features/plugins/hooks/usePluginStore.ts',
-    ];
-
-    for (const path of selectorUsers) {
-      expect(readSource(path)).toContain('getStoreEntryDisplay');
-    }
-    // getStoreEntryTitle is a thin wrapper over getStoreEntryDisplay in pluginStoreEntries.ts.
-    expect(readSource('src/features/plugins/pluginStoreEntries.ts')).toMatch(
-      /getStoreEntryTitle = [\s\S]*?getStoreEntryDisplay\(entry, language\)\.name/
-    );
-    for (const path of titleUsers) {
-      expect(readSource(path)).toContain('getStoreEntryTitle');
-    }
-
-    for (const path of [...selectorUsers, ...titleUsers, ...otherSurfaces]) {
-      const source = readSource(path);
-      expect(source).not.toMatch(/entry\.description/);
-      expect(source).not.toMatch(/entry\.author/);
-      expect(source).not.toMatch(/entry\.license/);
-      expect(source).not.toMatch(/entry\.tags/);
-      expect(source).not.toMatch(/entry\.name/);
-      expect(source).not.toMatch(ROOT_FIELD_READ);
-    }
   });
 });

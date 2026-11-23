@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createInstance } from 'i18next';
@@ -281,19 +280,6 @@ describe('provider picker', () => {
     expect(html).toContain(`aria-label="${en.providersPage.actions.edit} FennoAI"`);
   });
 
-  test('only the sheet catalogue requests a return to picker on cancel', () => {
-    const page = readFileSync(
-      new URL('../src/features/providers/ProvidersWorkbenchPage.tsx', import.meta.url),
-      'utf8'
-    );
-    expect(page).toMatch(
-      /<ProviderSheet\b[^]*?onPick=\{\(brand\) => openConnectionForm\(brand, true\)/
-    );
-    expect(page).toMatch(
-      /variant="page"\s+onPick=\{\(brand\) => openConnectionForm\(brand, false\)/
-    );
-  });
-
   test('marks connected brands and keeps the custom entry last', () => {
     const html = render(createElement(ProviderPicker, { groups: catalogue, onPick: () => {} }));
     expect(html).toContain(en.providersPage.picker.connected.replace('{{count}}', '1'));
@@ -317,44 +303,5 @@ describe('form disclosure', () => {
     expect(
       render(createElement(FormDisclosure, { label: 'Keys', defaultOpen: true }, 'x'))
     ).toContain(' open=""');
-  });
-});
-
-describe('workbench locales', () => {
-  const keys = [
-    ['actions', 'newFor'],
-    ['card', 'requests'],
-    ['table', 'emptyBrand'],
-    ['table', 'noMatch'],
-    ['toolbar', 'clearFilters'],
-    ['form', 'headerName'],
-    ['form', 'headerValue'],
-    ['actions', 'addProvider'],
-    ['picker', 'featured'],
-    ['picker', 'featuredBadge'],
-    ['picker', 'oneKey'],
-    ['picker', 'official'],
-    ['picker', 'custom'],
-    ['picker', 'connect'],
-    ['picker', 'connected'],
-    ['picker', 'offer'],
-    ['picker', 'onboardingTitle'],
-    ['picker', 'moreQuickConnect'],
-  ];
-  const sections = ['connection', 'connectivity', 'routing', 'advanced'];
-
-  test('every locale carries the redesigned workbench copy', () => {
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
-      const page = JSON.parse(
-        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
-      ).providersPage;
-      for (const [section, key] of keys) expect(page[section][key]).toBeString();
-      for (const key of sections) expect(page.form.sections[key]).toBeString();
-      expect(page.actions.newFor).toContain('{{provider}}');
-      expect(page.table.emptyBrand).toContain('{{provider}}');
-      // The table layout is gone; its column headings must not linger.
-      expect(page.table.key).toBeUndefined();
-      expect(page.table.actions).toBeUndefined();
-    }
   });
 });

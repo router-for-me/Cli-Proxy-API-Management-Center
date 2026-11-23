@@ -113,21 +113,3 @@ describe('native group settings', () => {
     expect(build(start, draft, 'vertex')['request-scoped-errors']).toBe(rules);
   });
 });
-
-test('each supported locale translates every group editor field and validation message', async () => {
-  const locales = ['en', 'zh-CN', 'zh-TW', 'ko', 'ru', 'tr', 'vi'];
-  const sections = await Promise.all(
-    locales.map(async (lang) => {
-      const locale = await Bun.file(
-        new URL(`../src/i18n/locales/${lang}.json`, import.meta.url)
-      ).json();
-      return locale.providersPage.nativeGroup;
-    })
-  );
-  for (const section of sections) {
-    expect(Object.keys(section).sort()).toEqual(Object.keys(sections[0]).sort());
-    expect(
-      Object.values(section).every((text) => typeof text === 'string' && text.trim().length > 0)
-    ).toBe(true);
-  }
-});

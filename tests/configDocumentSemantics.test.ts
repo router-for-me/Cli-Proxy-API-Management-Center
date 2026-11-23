@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 import { parse as parseYaml, parseDocument } from 'yaml';
-import { buildConfigSaveDraft } from '../src/features/config/hooks/useConfigDocument';
 import { DEFAULT_VISUAL_VALUES } from '../src/types/visualConfig';
 import { runVisualConfig } from './helpers/visualConfig';
 
@@ -106,7 +105,7 @@ observability:
     );
   });
 
-  test('preserves raw source drafts and keeps invalid raw Payload validation', () => {
+  test('leaves invalid raw Payload drafts untouched and keeps their validation', () => {
     const source = `requests:
   payload:
     default-raw:
@@ -118,10 +117,5 @@ observability:
     const config = runVisualConfig(source);
     expect(config.visualHasPayloadValidationErrors).toBe(true);
     expect(config.applyVisualChangesToYaml(source)).toBe(source);
-    expect(
-      buildConfigSaveDraft(source, source, true, 'source', () => {
-        throw new Error('A source draft must not be rebuilt from visual or runtime values');
-      })
-    ).toBe(source);
   });
 });

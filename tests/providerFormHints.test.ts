@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createInstance } from 'i18next';
@@ -203,15 +202,5 @@ describe('provider form notes', () => {
     );
     expect(html).not.toContain('<p ');
     expectNote(html, 'Fenno', note);
-  });
-
-  test('provider sheet header carries only the title', () => {
-    const source = readFileSync(
-      new URL('../src/features/providers/sheets/ProviderSheet.tsx', import.meta.url),
-      'utf8'
-    );
-    expect(source).not.toMatch(/\beyebrow=/);
-    expect(source).not.toMatch(/\bdescription=/);
-    expect(source).toContain('title={titleText}');
   });
 });

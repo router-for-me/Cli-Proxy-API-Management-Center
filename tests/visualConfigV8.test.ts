@@ -5,6 +5,10 @@ import { CONFIG_FIELD_SEARCH_INDEX } from '../src/features/config/searchIndex';
 import { FIELD_VALUE_KEYS } from '../src/features/config/constants';
 import { DEFAULT_VISUAL_VALUES, type VisualConfigValues } from '../src/types/visualConfig';
 import { readCommercialModeFromYaml } from '../src/features/config/hooks/useConfigDocument';
+import {
+  parseDisableImageGenerationMode,
+  parseRoutingStrategy,
+} from '../src/hooks/useVisualConfig';
 import { runVisualConfig } from './helpers/visualConfig';
 
 const fixture = readFileSync(new URL('./fixtures/visualConfig-v8.yaml', import.meta.url), 'utf8');
@@ -205,6 +209,43 @@ routing:
       'config-version': 8,
       server: { port: 9000 },
       routing: null,
+    });
+  });
+
+  test('server changes to untouched visual fields win over the loaded snapshot', () => {
+    const loaded =
+      'requests:\n  proxy-url: http://old.test\nobservability:\n  logs:\n    debug: false\n';
+    const config = runVisualConfig(loaded, [{ proxyUrl: 'http://localhost:8080' }]);
+    const latest = loaded.replace('debug: false', 'debug: true');
+    expect(parseYaml(config.applyVisualChangesToYaml(latest))).toEqual({
+      observability: { logs: { debug: true } },
+      requests: { 'proxy-url': 'http://localhost:8080' },
+    });
+  });
+
+  test('routing strategy aliases and weighted-round-robin writes', () => {
+    for (const [input, expected] of [
+      ['weightedroundrobin', 'weighted-round-robin'],
+      ['wrr', 'weighted-round-robin'],
+      ['fillfirst', 'fill-first'],
+      ['ff', 'fill-first'],
+      [undefined, 'round-robin'],
+    ] as const) {
+      expect(parseRoutingStrategy(input)).toBe(expected);
+    }
+    const yaml = 'routing:\n  strategy: round-robin\n';
+    const config = runVisualConfig(yaml, [{ routingStrategy: 'weighted-round-robin' }]);
+    expect(parseYaml(config.applyVisualChangesToYaml(yaml))).toEqual({
+      routing: { strategy: 'weighted-round-robin' },
+    });
+  });
+
+  test('disable-image-generation reads and writes passthrough', () => {
+    expect(parseDisableImageGenerationMode('passthrough')).toBe('passthrough');
+    const yaml = 'multimedia:\n  disable-image-generation: false\n';
+    const config = runVisualConfig(yaml, [{ disableImageGeneration: 'passthrough' }]);
+    expect(parseYaml(config.applyVisualChangesToYaml(yaml))).toEqual({
+      multimedia: { 'disable-image-generation': 'passthrough' },
     });
   });
 

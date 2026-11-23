@@ -150,38 +150,11 @@ describe('global model catalog sync', () => {
     }
   }
 
-  test('places secondary sync first and wires model-only cache refresh', () => {
-    const header = read('src/features/authFiles/components/VaultHeader.tsx');
-    const actions = header.slice(header.indexOf('<div className={styles.actions}'));
-    expect(actions.indexOf('onClick={onSyncModelCatalog}')).toBeLessThan(
-      actions.indexOf('onClick={onRefreshCredentials}')
-    );
-    expect(actions.slice(0, actions.indexOf('{onRefreshCredentials'))).toContain(
-      'styles.ghostAction'
-    );
-    expect(actions.slice(0, actions.indexOf('{onRefreshCredentials'))).not.toContain('title=');
-    const page = read('src/features/authFiles/AuthFilesPage.tsx');
-    const callback = page.slice(
-      page.indexOf('useModelCatalogSync(() =>'),
-      page.indexOf('const invalidateDerivedCaches')
-    );
-    expect(callback).toContain('invalidateModels()');
-    expect(callback).toContain('void showModels(');
-    expect(callback).not.toContain('invalidateDerivedCaches');
-    // The alias diagram left this page: the model rules workspace fetches provider catalogs
-    // fresh on mount, so the page no longer keeps a catalog version to re-trigger them.
-    expect(page).not.toContain('modelCatalogVersion');
+  test('system model description names both refresh buttons in every locale', () => {
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
-      const translations = JSON.parse(read(`src/i18n/locales/${locale}.json`));
-      const system = translations.system_info;
+      const system = JSON.parse(read(`src/i18n/locales/${locale}.json`)).system_info;
       expect(system.models_desc).toContain(system.models_refresh_button);
       expect(system.models_desc).toContain(system.models_catalog_refresh_button);
-      const messages = translations.auth_files;
-      expect(messages).not.toHaveProperty('sync_catalog_tooltip');
-      for (const key of ['button', 'success', 'unchanged', 'failed']) {
-        expect(messages[`sync_catalog_${key}`]).toBeTruthy();
-      }
-      expect(messages.sync_catalog_success).toContain('{{providers}}');
     }
   });
 });

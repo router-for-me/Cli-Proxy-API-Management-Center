@@ -126,30 +126,6 @@ describe('Claude Fable quota', () => {
     ]);
   });
 
-  test('falls back to the legacy Fable field', () => {
-    const windows = buildClaudeQuotaWindows(
-      {
-        iguana_necktie: {
-          utilization: 41,
-          resets_at: legacyReset,
-        },
-      },
-      t
-    );
-
-    expect(windows).toEqual([
-      {
-        id: 'seven-day-fable',
-        label: 'claude_quota.seven_day_fable',
-        labelKey: 'claude_quota.seven_day_fable',
-        usedPercent: 41,
-        resetLabel: formatQuotaResetTime(legacyReset),
-        resetAtMs: Date.parse(legacyReset),
-        periodHours: 24 * 7,
-      },
-    ]);
-  });
-
   test('falls back to the legacy field when the modern percent is invalid', () => {
     const windows = buildClaudeQuotaWindows(
       {

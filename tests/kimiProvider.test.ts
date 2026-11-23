@@ -20,8 +20,6 @@ import {
   isKimiOpenAIProvider,
   resolveKimiBaseUrl,
 } from '../src/features/providers/kimi';
-import { PROVIDER_LOGOS } from '../src/features/providers/brandLogos';
-import { PROVIDER_BRAND_ORDER } from '../src/features/providers/descriptors';
 import { getSponsorProviderDefinition } from '../src/features/providers/sponsorDefinitions';
 import { apiCallApi } from '../src/services/api/apiCall';
 import { modelsApi } from '../src/services/api/models';
@@ -52,11 +50,7 @@ describe('Kimi provider', () => {
     expect(buildCodexResponsesEndpoint(KIMI_OPENAI_BASE_URL)).toBe(
       'https://api.moonshot.ai/v1/responses'
     );
-    expect(getSponsorProviderDefinition('kimi').protocols).toEqual([
-      'openai',
-      'claude',
-      'codex',
-    ]);
+    expect(getSponsorProviderDefinition('kimi').protocols).toEqual(['openai', 'claude', 'codex']);
   });
 
   test('offers overseas and domestic URLs and maps the domestic protocol endpoints', () => {
@@ -100,14 +94,6 @@ describe('Kimi provider', () => {
     expect(getKimiAffiliateUrl('zh-TW')).toBe(KIMI_CHINESE_AFFILIATE_URL);
     expect(getKimiAffiliateUrl('en')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
     expect(getKimiAffiliateUrl('ru')).toBe(KIMI_INTERNATIONAL_AFFILIATE_URL);
-  });
-
-  test('uses the OAuth-style theme surface for its provider icon', () => {
-    expect(PROVIDER_LOGOS.kimi.themeSurface).toBeTrue();
-  });
-
-  test('is the first provider in the catalog', () => {
-    expect(PROVIDER_BRAND_ORDER[0]).toBe('kimi');
   });
 
   test('recognizes Kimi configs only by supported protocol endpoint', () => {

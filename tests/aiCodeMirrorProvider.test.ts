@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import {
-  AI_CODE_MIRROR_BASE_URL_OPTIONS,
   buildAiCodeMirrorRaw,
   getAiCodeMirrorProtocolUrls,
   resolveAiCodeMirrorBaseUrl,
@@ -59,16 +58,10 @@ describe('AIcodemirror sponsor', () => {
     expect(buildAiCodeMirrorRaw(null)).toEqual({ openai: [], claude: [], codex: [], gemini: [] });
   });
 
-  test('provides name and route translations in every locale', () => {
+  test('keeps the brand name untranslated in every locale', () => {
     for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
       const messages = JSON.parse(readFileSync(`src/i18n/locales/${locale}.json`, 'utf8'));
       expect(messages.providersPage.providerNames.aiCodeMirror).toBe('AIcodemirror');
-      for (const option of AI_CODE_MIRROR_BASE_URL_OPTIONS) {
-        expect(messages.providersPage.sponsor.urlOptions[option.id]).toBeTruthy();
-        expect(
-          messages.providersPage.sponsor.urlOptionDescriptions[option.descriptionKey]
-        ).toBeTruthy();
-      }
     }
   });
 });

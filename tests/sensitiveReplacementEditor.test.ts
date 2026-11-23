@@ -138,11 +138,6 @@ describe('sensitive replacement editor', () => {
     const add = tags(html, 'button').find((tag) => tag.includes('class="sheet-add"'));
     expect(add).toBeDefined();
     expect(html).toMatch(/class="sheet-add"[^>]*><svg/);
-
-    const defaults = renderLiteral({ a: '' });
-    expect(defaults).toMatch(/<textarea[^>]*class="input\b/);
-    expect(defaults).toContain('class="btn btn-secondary btn-sm"');
-    expect(defaults).not.toMatch(/class="btn btn-secondary btn-sm"[^>]*><svg/);
   });
 
   test('disables every input and action when disabled', () => {
@@ -153,18 +148,6 @@ describe('sensitive replacement editor', () => {
       const controls = html.match(/<(?:textarea|button)\b[^>]*>/g) ?? [];
       expect(controls.length).toBeGreaterThan(0);
       for (const control of controls) expect(control).toContain('disabled=""');
-    }
-  });
-
-  test('all seven locales provide the same translation keys and row placeholders', () => {
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
-      const messages = JSON.parse(readFileSync(`src/i18n/locales/${locale}.json`, 'utf8'));
-      const section = messages.sensitive_replacements;
-      expect(Object.keys(section).sort()).toEqual(Object.keys(en.sensitive_replacements).sort());
-      for (const [key, value] of Object.entries(en.sensitive_replacements)) {
-        expect(section[key].length).toBeGreaterThan(0);
-        if (value.includes('{{row}}')) expect(section[key]).toContain('{{row}}');
-      }
     }
   });
 

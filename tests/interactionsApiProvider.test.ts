@@ -5,83 +5,129 @@ import {
   getProviderUsageKey,
   INTERACTIONS_API_REVISION,
 } from '../src/components/providers/utils';
-import { interactionsToResource } from '../src/features/providers/adapters';
+import {
+  interactionsToResource,
+  metaToResource,
+  xaiToResource,
+} from '../src/features/providers/adapters';
 import { PROVIDER_BRAND_ORDER, PROVIDER_DESCRIPTORS } from '../src/features/providers/descriptors';
 import { MODEL_DISCOVERY_BRANDS } from '../src/features/providers/sheets/forms/useModelDiscovery';
+import { buildProviderGroups } from '../src/features/providers/useProviderWorkbench';
 import { normalizeConfigResponse } from '../src/services/api/transformers';
 
-describe('Interactions API key provider', () => {
-  test('normalizes the backend contract and exposes a dedicated workbench resource', () => {
-    const config = normalizeConfigResponse({
-      'api-keys': {
-        interactions: [
-          {
-            name: 'interactions-1',
-            'base-url': 'https://generativelanguage.googleapis.com',
-            keys: [
-              {
-                'api-key': 'interactions-secret',
-                priority: 8,
-                weight: 3,
-                prefix: 'native',
-                'proxy-url': 'direct',
-                headers: { 'X-Custom': 'value' },
-                models: [
-                  {
-                    name: 'gemini-3.1-flash-lite',
-                    alias: 'native-flash',
-                    thinking: { levels: ['low', 'medium', 'high'] },
-                  },
-                ],
-                'excluded-models': ['gemini-2.5-*'],
-                'disable-cooling': true,
-                'auth-index': 'gemini-interactions:apikey:1',
-              },
-            ],
-          },
-        ],
-      },
-    });
+const API_KEY_FAMILIES = [
+  {
+    brand: 'interactions',
+    configKey: 'interactionsApiKeys',
+    toResource: interactionsToResource,
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    model: {
+      name: 'gemini-3.1-flash-lite',
+      alias: 'native-flash',
+      thinking: { levels: ['low', 'medium', 'high'] },
+    },
+    websockets: false,
+    baseUrlRequired: false,
+    after: 'gemini',
+  },
+  {
+    brand: 'meta',
+    configKey: 'metaApiKeys',
+    toResource: metaToResource,
+    baseUrl: 'https://api.meta.ai/v1',
+    model: { name: 'muse-spark-1.3', alias: 'muse-latest' },
+    websockets: false,
+    baseUrlRequired: false,
+    after: 'codex',
+  },
+  {
+    brand: 'xai',
+    configKey: 'xaiApiKeys',
+    toResource: xaiToResource,
+    baseUrl: 'https://api.x.ai/v1',
+    model: { name: 'grok-4.5', alias: 'grok-latest' },
+    websockets: true,
+    baseUrlRequired: true,
+    after: 'meta',
+  },
+] as const;
 
-    expect(config.interactionsApiKeys).toMatchObject([
-      {
-        apiKey: 'interactions-secret',
-        priority: 8,
-        weight: 3,
-        prefix: 'native',
-        baseUrl: 'https://generativelanguage.googleapis.com',
-        proxyUrl: 'direct',
-        headers: { 'X-Custom': 'value' },
-        models: [
-          {
-            name: 'gemini-3.1-flash-lite',
-            alias: 'native-flash',
-            thinking: { levels: ['low', 'medium', 'high'] },
-          },
-        ],
-        excludedModels: ['gemini-2.5-*'],
-        disableCooling: true,
-        authIndex: 'gemini-interactions:apikey:1',
-      },
-    ]);
+describe('api-keys provider families', () => {
+  test.each(API_KEY_FAMILIES)(
+    '$brand normalizes the backend contract and exposes a workbench resource',
+    ({ brand, configKey, toResource, baseUrl, model, websockets, baseUrlRequired, after }) => {
+      const config = normalizeConfigResponse({
+        'api-keys': {
+          [brand]: [
+            {
+              name: `${brand}-1`,
+              'base-url': baseUrl,
+              keys: [
+                {
+                  'api-key': `${brand}-secret`,
+                  priority: 7,
+                  weight: 3,
+                  prefix: 'team',
+                  ...(websockets ? { websockets: true } : {}),
+                  'proxy-url': 'socks5://proxy.example:1080',
+                  headers: { 'X-Custom': 'value' },
+                  models: [model],
+                  'excluded-models': ['legacy-*'],
+                  'disable-cooling': true,
+                  'auth-index': `${brand}:apikey:1`,
+                },
+              ],
+            },
+          ],
+        },
+      });
 
-    const resource = interactionsToResource(config.interactionsApiKeys![0], 0);
-    expect(resource.brand).toBe('interactions');
-    expect(resource.models).toEqual(['gemini-3.1-flash-lite']);
-    expect(resource.selector).toEqual({
-      brand: 'interactions',
-      apiKey: 'interactions-secret',
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      index: 0,
-    });
-    expect(PROVIDER_DESCRIPTORS.interactions.baseUrlRequired).toBe(false);
-    expect(PROVIDER_DESCRIPTORS.interactions.supportsTestModel).toBe(true);
-    expect(PROVIDER_BRAND_ORDER.indexOf('interactions')).toBe(
-      PROVIDER_BRAND_ORDER.indexOf('gemini') + 1
-    );
-    expect(MODEL_DISCOVERY_BRANDS).toContain('interactions');
+      const entries = config[configKey]!;
+      expect(entries).toMatchObject([
+        {
+          apiKey: `${brand}-secret`,
+          priority: 7,
+          weight: 3,
+          prefix: 'team',
+          baseUrl,
+          proxyUrl: 'socks5://proxy.example:1080',
+          headers: { 'X-Custom': 'value' },
+          models: [model],
+          excludedModels: ['legacy-*'],
+          disableCooling: true,
+          authIndex: `${brand}:apikey:1`,
+          ...(websockets ? { websockets: true } : {}),
+        },
+      ]);
+
+      const resource = toResource(entries[0], 0);
+      expect(resource.brand).toBe(brand);
+      expect(resource.baseUrl).toBe(baseUrl);
+      expect(resource.models).toEqual([model.name]);
+      expect(Boolean(resource.flags.websockets)).toBe(websockets);
+      expect(resource.selector).toEqual({ brand, apiKey: `${brand}-secret`, baseUrl, index: 0 });
+      expect(
+        buildProviderGroups(config).find((group) => group.id === brand)?.resources
+      ).toHaveLength(1);
+
+      const descriptor = PROVIDER_DESCRIPTORS[brand];
+      expect(descriptor.baseUrlRequired).toBe(baseUrlRequired);
+      expect(descriptor.supportsWebsockets).toBe(websockets);
+      expect(descriptor.supportsTestModel).toBe(true);
+      expect(PROVIDER_BRAND_ORDER.indexOf(brand)).toBe(PROVIDER_BRAND_ORDER.indexOf(after) + 1);
+      expect(MODEL_DISCOVERY_BRANDS).toContain(brand);
+    }
+  );
+
+  test('every api-keys family the backend accepts gets a workbench tab', () => {
+    const visibleBrands = buildProviderGroups(normalizeConfigResponse({})).map((group) => group.id);
+    for (const family of ['gemini', 'interactions', 'codex', 'meta', 'xai', 'claude', 'vertex']) {
+      expect(visibleBrands).toContain(family);
+    }
   });
+});
 
+describe('Interactions API key provider', () => {
   test('builds the native interactions endpoint from supported base URL forms', () => {
     expect(buildInteractionsEndpoint('')).toBe(
       'https://generativelanguage.googleapis.com/v1beta/interactions'

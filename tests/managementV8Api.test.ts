@@ -68,18 +68,24 @@ describe('v8 management API contracts', () => {
 
   test('OAuth configuration reads direct maps and writes direct provider lists', async () => {
     const get = mock('get', {
-      codex: [{ name: 'source', alias: 'alias', 'force-mapping': false }],
+      codex: [
+        { name: 'source', alias: 'alias', 'force-mapping': false },
+        { name: 'camel', alias: 'camel-alias', forceMapping: true },
+      ],
     });
     const put = mock('put');
-    expect(await authFilesApi.getOauthModelAlias()).toEqual({
-      codex: [{ name: 'source', alias: 'alias', forceMapping: false }],
-    });
-    expect(get).toHaveBeenLastCalledWith('/config/oauth/model-alias');
-    await authFilesApi.saveOauthModelAlias('codex', [
+    const aliases = [
       { name: 'source', alias: 'alias', forceMapping: false },
-    ]);
+      { name: 'camel', alias: 'camel-alias', forceMapping: true },
+    ];
+    expect(await authFilesApi.getOauthModelAlias()).toEqual({ codex: aliases });
+    expect(get).toHaveBeenLastCalledWith('/config/oauth/model-alias');
+    await authFilesApi.saveOauthModelAlias('codex', aliases);
     expect(put).toHaveBeenLastCalledWith('/config/oauth/model-alias', {
-      codex: [{ name: 'source', alias: 'alias', 'force-mapping': false }],
+      codex: [
+        { name: 'source', alias: 'alias', 'force-mapping': false },
+        { name: 'camel', alias: 'camel-alias', 'force-mapping': true },
+      ],
     });
     get.mockResolvedValue({ codex: ['blocked'] });
     expect(await authFilesApi.getOauthExcludedModels()).toEqual({ codex: ['blocked'] });

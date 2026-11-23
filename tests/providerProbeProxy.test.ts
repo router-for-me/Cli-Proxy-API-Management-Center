@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
 import { useConfigStore } from '@/stores/useConfigStore';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import { normalizeProviderGroups } from '../src/services/api/transformers';
@@ -139,16 +138,6 @@ describe('provider probe proxy forwarding', () => {
     expect(requests[1].header).toBeUndefined();
     expect(requests[1].authIndex).toBeUndefined();
   });
-
-  test('base and sponsor forms pass their editable proxy to probe hooks', () => {
-    const base = readFileSync('src/features/providers/sheets/forms/BaseProviderForm.tsx', 'utf8');
-    const sponsor = readFileSync(
-      'src/features/providers/sheets/forms/SponsorProviderForm.tsx',
-      'utf8'
-    );
-    expect(base.match(/proxyUrl: probeProxyUrl \?\? form\.proxyUrl/g)).toHaveLength(2);
-    expect(sponsor).toContain('proxyUrl: entry.proxyUrl,\n    formHeaders: discoveryHeaders');
-  });
 });
 
 describe('OpenAI connectivity token limits (#572)', () => {
@@ -237,19 +226,5 @@ describe('OpenAI connectivity token limits (#572)', () => {
       expect(body.max_completion_tokens).toBe(5);
       expect(body).not.toHaveProperty('max_tokens');
     }
-  });
-
-  test('model token preference participates in the status reset signature', () => {
-    // SSR does not run effects; guard the reset dependency with a source contract check.
-    const source = readFileSync(
-      'src/features/providers/sheets/forms/useConnectivityTest.ts',
-      'utf8'
-    );
-    const signature = source.slice(
-      source.indexOf('const signature = useMemo'),
-      source.indexOf('const lastSignatureRef')
-    );
-    expect(signature).toContain('it.useMaxCompletionTokens === true');
-    expect(source).toContain('if (lastSignatureRef.current === signature) return;');
   });
 });

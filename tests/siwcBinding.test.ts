@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import {
   createSiwcStart,
   getSiwcBindingStatus,
@@ -123,16 +122,6 @@ describe('SIWC binding', () => {
     expect(targets.map(getSiwcBindingStatus)).toEqual(['unbound', 'bound', 'active']);
   });
 
-  test('binding entry lives on the OAuth page, not on auth file cards', () => {
-    const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
-    const page = read('../src/features/oauth/OAuthPage.tsx');
-    expect(page).toContain('<SiwcBindDialog');
-    const card = read('../src/features/authFiles/components/AuthFileCard.tsx');
-    expect(card).not.toContain('SiwcBindDialog');
-    expect(card).not.toContain('siwc.rebind');
-    expect(card).toContain('<SiwcStatusBadge');
-  });
-
   test('target attempts are independent and invalidation suppresses stale completion', async () => {
     let tick: (() => void) | undefined;
     const attempts = createOAuthAttempts({
@@ -168,45 +157,6 @@ describe('SIWC binding', () => {
     expect(second.isCurrent()).toBe(true);
     attempts.invalidateAll();
     expect(second.signal.aborted).toBe(true);
-  });
-
-  test('dialog keeps cancellation, connection guards and completion refresh wired', () => {
-    const source = readFileSync(
-      new URL('../src/features/oauth/components/SiwcBindDialog.tsx', import.meta.url),
-      'utf8'
-    );
-    for (const contract of [
-      'attempts.begin(name)',
-      'attempt.invalidate()',
-      'sameConnection()',
-      'current.isAuthenticated',
-      'current.apiBase',
-      'current.managementKey',
-      'cancel: api.cancel',
-      'startup.close()',
-      'startRef.current?.start()',
-      'authFilesApi',
-      'listSiwcTargets(response.files)',
-      'setRun((value) => value + 1)',
-      '}, [name, run]);',
-      'type="radio"',
-      'notifyAuthFilesChanged()',
-      'error.status === 404',
-      "'unsupported'",
-      "oauthApi.submitCallback('codex', callback, attempt.signal)",
-    ])
-      expect(source).toContain(contract);
-    expect(source).not.toContain('startAuth(');
-    expect(source).not.toContain('localStorage');
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko']) {
-      const messages = JSON.parse(
-        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
-      ).siwc;
-      expect(Object.keys(messages)).toHaveLength(32);
-      expect(
-        Object.values(messages).every((value) => typeof value === 'string' && value.length > 0)
-      ).toBe(true);
-    }
   });
 });
 

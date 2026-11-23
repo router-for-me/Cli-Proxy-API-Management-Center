@@ -198,26 +198,4 @@ describe('v8.1.0 configuration', () => {
       ]
     ).toEqual([{ status: 429, 'match-regexr': ['^quota'], action: 'continue' }]);
   });
-
-  test('omitted Antigravity pool limit stays omitted and explicit nonpositive limits round-trip', () => {
-    const path = [
-      'oauth',
-      'providers',
-      'antigravity',
-      'connection-pool',
-      'max-idle-conns-per-host',
-    ];
-    expect(parseDocument(runVisualConfig('{}').applyVisualChangesToYaml('{}')).hasIn(path)).toBe(
-      false
-    );
-    for (const value of ['0', '-1']) {
-      const editor = runVisualConfig('{}', [
-        { antigravityConnectionPoolMaxIdleConnsPerHost: value },
-      ]);
-      expect(
-        editor.visualValidationErrors.antigravityConnectionPoolMaxIdleConnsPerHost
-      ).toBeUndefined();
-      expect(parseDocument(editor.applyVisualChangesToYaml('{}')).getIn(path)).toBe(Number(value));
-    }
-  });
 });

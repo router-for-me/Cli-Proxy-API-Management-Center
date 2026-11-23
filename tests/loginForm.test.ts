@@ -93,23 +93,11 @@ describe('LoginForm', () => {
 });
 
 describe('login copy', () => {
-  test('every locale has the URL actions, key toggle labels and colon-free field labels', async () => {
+  test('every locale keeps field labels colon-free', async () => {
     for (const language of LANGUAGE_ORDER) {
       const { login } = await Bun.file(`src/i18n/locales/${language}.json`).json();
-      expect(login.connection_edit.length).toBeGreaterThan(0);
-      expect(login.show_key.length).toBeGreaterThan(0);
-      expect(login.hide_key.length).toBeGreaterThan(0);
-      expect(login.connection_done.length).toBeGreaterThan(0);
       expect(login.management_key_label).not.toMatch(/[:：]\s*$/);
       expect(login.custom_connection_label).not.toMatch(/[:：]\s*$/);
     }
-  });
-});
-
-describe('login brand mark', () => {
-  test('shows the full English product name in every language', async () => {
-    const source = await Bun.file('src/pages/LoginPage.tsx').text();
-    expect(source).toContain("LOGIN_BRAND_NAME = 'CLI Proxy API Management Center'");
-    expect(source).toMatch(/className=\{styles\.brandName\}[^>]*>\s*\{LOGIN_BRAND_NAME\}/);
   });
 });

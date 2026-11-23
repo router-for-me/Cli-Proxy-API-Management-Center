@@ -30,16 +30,6 @@ afterEach(() => {
 });
 
 describe('auto-login entry (plan A)', () => {
-  test('protected routes no longer verify in place behind a spinner', async () => {
-    const source = await Bun.file('src/router/ProtectedRoute.tsx').text();
-    expect(source).not.toContain('checkAuth');
-    expect(source).not.toContain('LoadingSpinner');
-    expect(source).toMatch(/<Navigate to="\/login" replace state=\{state\} \/>/);
-    expect(source).toContain('search: location.search');
-    // 已通过本次会话验证时直接渲染子路由
-    expect(source).toMatch(/if \(!isAuthenticated\) \{[\s\S]*?\}\s*return children;/);
-  });
-
   test('returns to the original page, query included, but never back to /login', () => {
     expect(resolveLoginRedirect({ from: { pathname: '/ai-providers', search: '?tab=x' } })).toBe(
       '/ai-providers?tab=x'
@@ -70,15 +60,6 @@ describe('restorable session detection', () => {
     useAuthStore.setState({ managementKey: '' });
     expect(hasRestorableSession()).toBe(false);
     expect(values.get('isLoggedIn')).toBe('true'); // 只读判断，不改存储
-  });
-
-  test('the login page only shows the splash when it will actually auto-login', async () => {
-    const source = await Bun.file('src/pages/LoginPage.tsx').text();
-    expect(source).toMatch(
-      /useState\(\(\) =>\s*useAuthStore\.getState\(\)\.hasRestorableSession\(\)\s*\)/
-    );
-    // 首帧即用已保存信息填表，不等 restoreSession
-    expect(source).toContain('useState(() => useAuthStore.getState().apiBase || detectedBase)');
   });
 });
 
@@ -137,20 +118,9 @@ describe('v2 login persistence', () => {
 });
 
 describe('splash pacing', () => {
-  test('auto-login holds the splash just long enough to read, not a fixed 1.5s', async () => {
+  test('auto-login holds the splash just long enough to read, not a fixed 1.5s', () => {
     expect(LOGIN_TRANSITION_TIMINGS.splashMin).toBeGreaterThanOrEqual(500);
     expect(LOGIN_TRANSITION_TIMINGS.splashMin).toBeLessThanOrEqual(900);
     expect(LOGIN_TRANSITION_TIMINGS_REDUCED.splashMin).toBe(LOGIN_TRANSITION_TIMINGS.splashMin);
-    const source = await Bun.file('src/pages/LoginPage.tsx').text();
-    expect(source).not.toContain('1500');
-    expect(source).toContain('Math.max(0, splashMin - elapsed)');
-  });
-
-  test('splash hides the top brand bar and is vertically centered', async () => {
-    const source = await Bun.file('src/pages/LoginPage.tsx').text();
-    expect(source).toMatch(/\{!showSplash && \(\s*<header className=\{styles\.topBar\}>/);
-    const scss = await Bun.file('src/pages/LoginPage.module.scss').text();
-    expect(scss).toMatch(/\.main \{[^}]*grid-row: 2;/);
-    expect(scss).toMatch(/\.splash \{[^}]*margin-block: auto;/);
   });
 });

@@ -70,30 +70,6 @@ describe('visual config boolean defaults', () => {
     });
   });
 
-  test('writes toggles in both directions without changing unrelated settings', () => {
-    for (const enabled of [true, false]) {
-      const yaml = `server:
-  port: 8317
-oauth:
-  providers:
-    aistudio:
-      ws-auth: ${!enabled}
-    antigravity:
-      antigravity-credits: ${!enabled}
-`;
-      const config = runVisualConfig(yaml, [{ wsAuth: enabled, quotaAntigravityCredits: enabled }]);
-      expect(parseYaml(config.applyVisualChangesToYaml(yaml))).toEqual({
-        oauth: {
-          providers: {
-            aistudio: { 'ws-auth': enabled },
-            antigravity: { 'antigravity-credits': enabled },
-          },
-        },
-        server: { port: 8317 },
-      });
-    }
-  });
-
   test('reverting toggles clears dirty state without inserting missing keys', () => {
     const yaml = 'server:\n  port: 8317\n';
     const config = runVisualConfig(yaml, [

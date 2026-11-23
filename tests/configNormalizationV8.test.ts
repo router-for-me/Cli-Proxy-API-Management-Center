@@ -33,6 +33,22 @@ describe('v8 persisted configuration normalization', () => {
     ).toEqual({ antigravityCredits: false });
   });
 
+  test('reads the Claude key fingerprint-profile as fingerprintProfile', () => {
+    const config = normalizeConfigResponse({
+      'api-keys': {
+        claude: [
+          {
+            'base-url': 'https://api.anthropic.com',
+            keys: [{ 'api-key': 'claude-secret', 'fingerprint-profile': 'claude-code-cli' }],
+          },
+        ],
+      },
+    });
+    expect(config.claudeApiKeys).toMatchObject([
+      { apiKey: 'claude-secret', fingerprintProfile: 'claude-code-cli' },
+    ]);
+  });
+
   test('does not interpret legacy root settings as v8 values', () => {
     const config = normalizeConfigResponse({
       'api-keys': ['legacy-client'],

@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { hasTrustedProxiesChange } from '@/features/config/hooks/useConfigDocument';
 import { findConfigFieldById } from '@/features/config/searchIndex';
 
@@ -41,55 +40,26 @@ describe('trusted proxy restart notification', () => {
     ).toBe(true);
     expect(hasTrustedProxiesChange('server: [', '{}')).toBe(false);
   });
-
-  test('warns on both successful save and readback after a partial visual write', () => {
-    const source = readFileSync('src/features/config/hooks/useConfigDocument.ts', 'utf8');
-    expect(source).toContain('hasTrustedProxiesChange(latestServerYaml, mergedYaml)');
-    expect(source).toContain('hasTrustedProxiesChange(previewServerYaml, latestYaml)');
-    expect(source.match(/notification\.trusted_proxies_restart_required/g)?.length).toBe(2);
-  });
 });
 
-describe('server configuration localization', () => {
-  for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
-    test(`${locale} has labels, hints, validation and restart text`, async () => {
-      const messages: unknown = await Bun.file(`src/i18n/locales/${locale}.json`).json();
-      const resolve = (key: string) =>
-        key.split('.').reduce<unknown>((node, part) => {
-          if (node && typeof node === 'object') return (node as Record<string, unknown>)[part];
-          return undefined;
-        }, messages);
-      for (const id of [
-        'trustedProxies',
-        'discoveryEnabled',
-        'discoveryServiceName',
-        'discoveryServiceType',
-        'discoverySubtypes',
-        'discoveryInterfacesInclude',
-        'discoveryInterfacesExclude',
-        'discoveryAuthRequired',
-        'discoveryAdvertiseManagement',
-      ]) {
-        const entry = findConfigFieldById(id);
-        expect(entry?.sectionId).toBe('connectivity');
-        expect(entry?.labelKey).toBe(`config_management.visual.serverExtras.${id}.label`);
-        expect(resolve(entry!.labelKey)).toBeString();
-        // The service type's default is its placeholder; it has no separate explanation.
-        if (id === 'discoveryServiceType') {
-          expect(entry?.hintKey).toBeUndefined();
-          continue;
-        }
-        expect(entry?.hintKey).toBe(`config_management.visual.serverExtras.${id}.hint`);
-        expect(resolve(entry!.hintKey!)).toBeString();
-      }
-      for (const key of [
-        'notification.trusted_proxies_restart_required',
-        'config_management.visual.serverExtras.discoveryTitle',
-        'config_management.visual.serverExtras.discoveryHint',
-        'config_management.visual.validation.invalid_trusted_proxies',
-        'config_management.visual.validation.invalid_discovery_service_type',
-      ])
-        expect(resolve(key)).toBeString();
-    });
-  }
+describe('server configuration search metadata', () => {
+  test.each([
+    'trustedProxies',
+    'discoveryEnabled',
+    'discoveryServiceName',
+    'discoveryServiceType',
+    'discoverySubtypes',
+    'discoveryInterfacesInclude',
+    'discoveryInterfacesExclude',
+    'discoveryAuthRequired',
+    'discoveryAdvertiseManagement',
+  ])('%s is a connectivity field with serverExtras copy', (id) => {
+    const entry = findConfigFieldById(id);
+    expect(entry?.sectionId).toBe('connectivity');
+    expect(entry?.labelKey).toBe(`config_management.visual.serverExtras.${id}.label`);
+    // The service type's default is its placeholder; it has no separate explanation.
+    expect(entry?.hintKey).toBe(
+      id === 'discoveryServiceType' ? undefined : `config_management.visual.serverExtras.${id}.hint`
+    );
+  });
 });

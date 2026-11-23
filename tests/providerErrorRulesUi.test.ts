@@ -138,23 +138,15 @@ describe('error-rule editor UI', () => {
     expect(html).toContain('>&lt;unknown&gt;</span>');
     expect(html).toContain('aria-label="Action"');
   });
-  test('every locale contains complete row labels, errors, actions and no stale JSON guidance', () => {
+  test('action labels cover exactly the backend actions and copy never mentions JSON', () => {
+    expect(Object.keys(en.providersPage.errorRules.actions).sort()).toEqual([
+      'continue',
+      'continue-and-cooldown',
+      'stop',
+      'stop-and-cooldown',
+    ]);
     for (const messages of [en, zhCN, zhTW, ru]) {
-      const section = messages.providersPage.errorRules;
-      expect(Object.keys(section).sort()).toEqual(Object.keys(en.providersPage.errorRules).sort());
-      expect(Object.keys(section.actions).sort()).toEqual([
-        'continue',
-        'continue-and-cooldown',
-        'stop',
-        'stop-and-cooldown',
-      ]);
-      for (const [key, value] of Object.entries(section)) {
-        if (key === 'actions') continue;
-        expect(typeof value === 'string' && value.trim().length > 0).toBe(true);
-      }
-      expect(Object.values(section.actions).every((value) => value.trim().length > 0)).toBe(true);
       expect(JSON.stringify(messages.providersPage.runtimePolicy)).not.toContain('JSON');
-      expect(messages.providersPage.runtimePolicy).not.toHaveProperty('errorsJson');
     }
   });
 });

@@ -622,30 +622,14 @@ test('read authentication refusals retain a safe diagnostic code', async () => {
   }
 });
 
-test('all grant messages and confirmation are translated in six locales', async () => {
-  const locales = await Promise.all(
-    ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko'].map(
-      async (locale) => (await Bun.file(`src/i18n/locales/${locale}.json`).json()).claude_reset
-    )
-  );
-  for (const locale of locales) {
-    expect(Object.keys(locale).sort()).toEqual(Object.keys(locales[0]).sort());
-    for (const stage of ['organization', 'status', 'eligibility', 'request_id', 'operation']) {
-      expect(locale[`failure_${stage}`]).toContain('{{code}}');
-    }
-    expect(locale.confirm_text).toContain('{{name}}');
-    expect(locale.retry_confirm).toContain('{{name}}');
-    expect(typeof locale.remaining).toBe('string');
-    expect(locale.count).toContain('{{left}}');
-    for (const key of [
-      ...ANTHROPIC_RESET_RESULTS,
-      'auth_error',
-      'rate_limited',
-      'unknown',
-      'expired',
-    ]) {
-      expect(typeof locale[key]).toBe('string');
-    }
+test('every dynamic reset outcome code has an en message', async () => {
+  // Codes are translated via `claude_reset.${code}`; localeParity covers the other locales.
+  const en = (await Bun.file('src/i18n/locales/en.json').json()).claude_reset;
+  for (const stage of ['organization', 'status', 'eligibility', 'request_id', 'operation']) {
+    expect(en[`failure_${stage}`]).toContain('{{code}}');
+  }
+  for (const key of [...ANTHROPIC_RESET_RESULTS, 'auth_error', 'rate_limited', 'unknown']) {
+    expect(typeof en[key]).toBe('string');
   }
 });
 
@@ -679,42 +663,6 @@ test('card requires an explicit usable grant without recommendation or fallback'
   expect(canChooseResetGrant(null, undefined, 'a', 0)).toBe(false);
   expect(canChooseResetGrant(null, 'a', 'a', 0)).toBe(true);
   expect(canChooseResetGrant(multiple, 'a', 'b', 0)).toBe(false);
-});
-
-test('card retains one dialog trigger with explicit selection and no second confirmation', async () => {
-  const card = await Bun.file('src/features/quota/components/QuotaCard.tsx').text();
-  const hook = await Bun.file('src/features/quota/providers/claude/ClaudeResetGrants.tsx').text();
-  const dialog = await Bun.file(
-    'src/features/quota/providers/claude/ClaudeResetGrantDialog.tsx'
-  ).text();
-  expect(card).toContain('quotaClasses.codexPlanValue}>{claudeReset.count');
-  expect(card.match(/onClick=\{claudeReset.openDialog\}/g)).toHaveLength(1);
-  expect(card).toContain('<ClaudeResetGrantDialog');
-  expect(card).not.toContain('onRedeem=');
-  expect(hook).not.toContain('showConfirmation');
-  expect(hook).not.toContain('selectResetGrant');
-  expect(hook).toContain('setDialog({ key, selected: null })');
-  expect(hook).toContain('if (!open || !selected || !canRedeemGrant(selected) || lock.current');
-  expect(hook).toContain(
-    "if (!current() || useAuthStore.getState().connectionStatus !== 'connected') return"
-  );
-  expect(dialog).toContain('<Modal');
-  expect(dialog).toContain('closeDisabled={props.busy}');
-  expect(dialog).toContain('!props.selected || !props.canRedeemGrant(props.selected)');
-});
-
-test('cooldown clear failures reuse existing messages without new locale keys', async () => {
-  const hook = await Bun.file('src/features/quota/providers/claude/ClaudeResetGrants.tsx').text();
-  expect(hook).toContain("answer.code === 'cooldown_clear_failed'");
-  expect(hook).toContain("t('auth_files.cooldown_reset_failed', {");
-  expect(hook).toContain("message: t('common.unknown_error')");
-  for (const language of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi', 'ko', 'tr']) {
-    const locale = await Bun.file(`src/i18n/locales/${language}.json`).json();
-    expect(locale.claude_reset.cooldown_clear_failed).toBeUndefined();
-    expect(locale.auth_files.cooldown_reset_failed).toContain('{{name}}');
-    expect(locale.auth_files.cooldown_reset_failed).toContain('{{message}}');
-    expect(typeof locale.common.unknown_error).toBe('string');
-  }
 });
 
 test('account reads map upstream 429 to a sanitized typed rate-limit failure', async () => {

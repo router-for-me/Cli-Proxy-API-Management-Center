@@ -43,6 +43,19 @@ describe('quota plan tier ladder', () => {
   });
 
   test.each([
+    ['  ProMax  ', 'flagship'],
+    ['pro-max', 'flagship'],
+    ['pro_max', 'flagship'],
+    ['  PRO  ', 'premium'],
+    ['Pro-Lite', 'premium'],
+    ['pro_lite', 'premium'],
+    ['  SELF_SERVE_BUSINESS_PROLITE  ', 'standard'],
+    ['   ', 'standard'],
+  ])('Codex plan spelling %p resolves to %s', (planType, tier) => {
+    expect(resolveCodexCardTier(planType)).toBe(tier);
+  });
+
+  test.each([
     ['Allegro', 'promax'],
     ['Allegretto', 'pro'],
     ['Moderato', 'plus'],

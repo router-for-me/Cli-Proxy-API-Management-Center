@@ -145,16 +145,6 @@ describe('server configuration UI', () => {
     expect(discovery).toContain(t('serverExtras.discoveryEnabled.hint'));
     expect(discovery).toContain(t('serverExtras.discoveryHint'));
     expect(visibleDescription(discovery)).toContain('visually-hidden-focusable');
-
-    // Restating descriptions are gone entirely.
-    for (const key of [
-      'sections.connectivity.description',
-      'sections.auth.auth_dir_hint',
-      'sections.tls.enable_desc',
-      'sections.remote.disable_panel_desc',
-      'serverExtras.discoveryServiceType.hint',
-    ])
-      expect(markup).not.toContain(t(key));
   });
 
   test('disables every input and list action in read-only mode', () => {
