@@ -2345,11 +2345,16 @@ export function useVisualConfig() {
         }
         if (dirtyFields.has('antigravitySensitiveWords')) {
           ensureMapInDoc(doc, ['oauth', 'providers', 'antigravity']);
-          setStringListInDoc(
-            doc,
-            ['oauth', 'providers', 'antigravity', 'sensitive-words'],
-            values.antigravitySensitiveWords
-          );
+          const antigravity = doc.getIn(['oauth', 'providers', 'antigravity'], true);
+          if (isMap(antigravity)) {
+            syncStringSequence(
+              doc,
+              antigravity,
+              'sensitive-words',
+              baselineValues.antigravitySensitiveWords,
+              values.antigravitySensitiveWords
+            );
+          }
           deleteIfMapEmpty(doc, ['oauth', 'providers', 'antigravity']);
         }
         if (dirtyFields.has('devinSensitiveWords')) {

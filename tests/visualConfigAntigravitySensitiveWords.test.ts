@@ -33,15 +33,20 @@ describe('visual config Antigravity sensitive words', () => {
     expect(unwrapPre(markup)).toBe('Hermes|Nous Research');
   });
 
-  test('writes trimmed values and preserves other Antigravity settings', () => {
+  test('appends trimmed values while preserving item comments and other Antigravity settings', () => {
+    const yaml = `oauth:
+  providers:
+    antigravity:
+      sensitive-words:
+        - Hermes # keep this note
+      future-option: true
+`;
     function Harness() {
       const visualConfig = useVisualConfig();
       const [phase, setPhase] = useState(0);
 
       if (phase === 0) {
-        visualConfig.loadVisualValuesFromYaml(
-          'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - old-word\n      future-option: true\n'
-        );
+        visualConfig.loadVisualValuesFromYaml(yaml);
         setPhase(1);
       } else if (phase === 1) {
         visualConfig.setVisualValues({
@@ -49,20 +54,16 @@ describe('visual config Antigravity sensitive words', () => {
         });
         setPhase(2);
       } else {
-        return createElement(
-          'pre',
-          null,
-          visualConfig.applyVisualChangesToYaml(
-            'oauth:\n  providers:\n    antigravity:\n      sensitive-words:\n        - old-word\n      future-option: true\n'
-          )
-        );
+        return createElement('pre', null, visualConfig.applyVisualChangesToYaml(yaml));
       }
 
       return null;
     }
 
     const markup = renderToStaticMarkup(createElement(Harness));
-    expect(parseYaml(unwrapPre(markup))).toEqual({
+    const output = unwrapPre(markup);
+    expect(output).toContain('- Hermes # keep this note');
+    expect(parseYaml(output)).toEqual({
       oauth: {
         providers: {
           antigravity: {
