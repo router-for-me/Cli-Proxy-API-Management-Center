@@ -44,6 +44,8 @@ export interface OverviewWindow {
   remaining: number | null;
   resetAtMs: number | null;
   periodHours: number | null;
+  /** Quota pool, for providers whose pools are exhausted independently (Antigravity). */
+  pool?: string;
 }
 
 export interface OverviewCredential {
@@ -127,6 +129,7 @@ const antigravityWindows = (groups: readonly AntigravityQuotaGroup[]): OverviewW
       remaining: clampPercent(bucket.remainingFraction * 100),
       resetAtMs: finiteOrNull(bucket.resetAtMs),
       periodHours: finiteOrNull(bucket.periodHours),
+      pool: group.id,
     }));
   });
 
@@ -293,13 +296,18 @@ export function buildOverviewCredential(
       ? passive.observedAtMs
       : liveAt;
   const windows = rollPastResets(observed, nowMs);
+  const primary = pickPrimaryWindow(windows);
+  // A spent pool blocks only its own models, so only the primary pool's limits block the account.
+  const blocking = primary?.pool
+    ? windows.filter((window) => window.pool === primary.pool)
+    : windows;
   return {
     entry,
     quota,
     windows,
-    primary: pickPrimaryWindow(windows),
+    primary,
     plan: readPlan(quota),
-    backAtMs: backAtMs(windows, nowMs),
+    backAtMs: backAtMs(blocking, nowMs),
     cooldownUntilMs: cooldownUntilMs(entry.file, nowMs),
     priority: typeof entry.file.priority === 'number' ? entry.file.priority : 0,
     source,

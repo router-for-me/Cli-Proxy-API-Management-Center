@@ -314,6 +314,48 @@ describe('Antigravity ledger windows', () => {
     ]);
     // The pool chart follows the Gemini weekly limit, not the 5-hour one.
     expect(credential.sample).toEqual([NOW, 90, NOW + 160 * HOUR]);
+    expect(credential.backAtMs).toBeNull();
     await i18n.changeLanguage(language);
+  });
+});
+
+describe('Antigravity pool blocking', () => {
+  const HOUR = 3_600_000;
+  const group = (id: string, remaining: number, resetIn: number) => ({
+    id,
+    label: id,
+    buckets: [
+      {
+        id: `${id}-weekly`,
+        label: 'Weekly Limit Remaining',
+        window: 'weekly',
+        remainingFraction: remaining,
+        resetAtMs: NOW + resetIn,
+        periodHours: 168,
+      },
+    ],
+  });
+  const credentialWith = (groups: unknown[]) =>
+    buildOverviewCredential(
+      { type: 'antigravity', file: { name: 'ag.json', type: 'antigravity', authIndex: 'ag' } },
+      { status: 'success', groups, subscription: null, serverTimeOffsetMs: null } as never,
+      NOW
+    );
+
+  test('a spent Claude and GPT pool does not block the Gemini forecast', () => {
+    const credential = credentialWith([
+      group('gemini-models', 0.8, 100 * HOUR),
+      group('claude-and-gpt-models', 0, 50 * HOUR),
+    ]);
+    expect(credential.primary?.pool).toBe('gemini-models');
+    expect(credential.backAtMs).toBeNull();
+  });
+
+  test('a spent Gemini pool blocks until its reset', () => {
+    const credential = credentialWith([
+      group('gemini-models', 0, 100 * HOUR),
+      group('claude-and-gpt-models', 1, 50 * HOUR),
+    ]);
+    expect(credential.backAtMs).toBe(NOW + 100 * HOUR);
   });
 });
