@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { OAUTH_PROVIDER_PRESETS } from '@/features/authFiles/constants';
 import { ErrorRulesEditor } from '@/features/providers/sheets/forms/ErrorRulesEditor';
 import type { OAuthChannelRules } from '@/types/visualConfig';
+import { FieldShell } from '../fields/FieldPrimitives';
+import styles from './Blocks.module.scss';
 
 export function OAuthErrorRulesEditor({
   value,
@@ -23,25 +25,27 @@ export function OAuthErrorRulesEditor({
   const channel = current?.channel ?? normalized;
   const options = new Set([...OAUTH_PROVIDER_PRESETS, ...value.map((group) => group.channel)]);
   return (
-    <>
-      <label htmlFor={listId + '-channel'}>
-        {t('config_management.visual.additions.oauthErrorRules.channel')}
-      </label>
-      <input
-        className="input"
-        id={listId + '-channel'}
-        list={listId}
-        value={selection}
-        onChange={(event) => setSelection(event.target.value)}
-        disabled={disabled}
-        spellCheck={false}
-        autoComplete="off"
-      />
-      <datalist id={listId}>
-        {Array.from(options, (name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
+    <div className={styles.blockStack}>
+      <FieldShell
+        label={t('config_management.visual.additions.oauthErrorRules.channel')}
+        htmlFor={listId + '-channel'}
+      >
+        <input
+          className="input"
+          id={listId + '-channel'}
+          list={listId}
+          value={selection}
+          onChange={(event) => setSelection(event.target.value)}
+          disabled={disabled}
+          spellCheck={false}
+          autoComplete="off"
+        />
+        <datalist id={listId}>
+          {Array.from(options, (name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+      </FieldShell>
       <ErrorRulesEditor
         trimMatches
         key={channel}
@@ -54,6 +58,6 @@ export function OAuthErrorRulesEditor({
           else onChange([...value, { channel, rules }]);
         }}
       />
-    </>
+    </div>
   );
 }
