@@ -34,7 +34,7 @@ interface MockAccount {
 }
 
 const THEMES: { value: Theme; label: string }[] = [
-  { value: 'light', label: '纸感' },
+  { value: 'light', label: '羊毛纸' },
   { value: 'white', label: '纯白' },
   { value: 'dark', label: '暗色' },
 ];

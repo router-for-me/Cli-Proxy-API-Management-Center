@@ -89,6 +89,7 @@ export function AuthFileExcludedModelsField({
     <div className="form-group">
       <label id={labelId}>{t('auth_files.excluded_models_label')}</label>
       <ExcludedModelsPicker
+        key={fileName}
         value={rules}
         onChange={(next) => onChange(formatExcludedRulesText(next))}
         candidates={candidates}
