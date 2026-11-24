@@ -72,6 +72,10 @@ function IconTicket({ size = 20, ...props }: IconProps) {
   );
 }
 
+/** The pool label already names the pool: "gemini-weekly" reads as "weekly". */
+const routingWindowKey = (key: string, pool: string | undefined) =>
+  pool && key.startsWith(`${pool}-`) ? key.slice(pool.length + 1) : key;
+
 function ResetWhen({ atMs, nowMs }: { atMs: number | null; nowMs: number }) {
   const { t, i18n } = useTranslation();
   if (atMs === null || atMs <= nowMs) {
@@ -425,7 +429,7 @@ export function LedgerRow({
               {credential.routing.ageSeconds !== null &&
                 ` · ${t('pd_overview.routing_age', { seconds: credential.routing.ageSeconds })}`}
               {credential.routing.window &&
-                ` · ${credential.routing.window.key} · ${formatInstantShort(credential.routing.window.resetsAtMs)}`}
+                ` · ${routingWindowKey(credential.routing.window.key, credential.routing.pool?.key)} · ${formatInstantShort(credential.routing.window.resetsAtMs)}`}
               {credential.routing.refreshError && ` · ${t('pd_overview.routing_refresh_error')}`}
             </span>
           )}
