@@ -5,6 +5,7 @@ import { IconLoader2, IconPencil } from '@/components/ui/icons';
 import type { ProviderRecentUsageMap } from '@/components/providers/utils';
 import { useNotificationStore } from '@/stores';
 import { PROVIDER_DESCRIPTORS } from '../descriptors';
+import { allSponsorProtocolsBlocked } from '../sponsorBundle';
 import { isMultiProtocolSponsorBrand } from '../sponsorDefinitions';
 import type {
   NativeSection,
@@ -93,7 +94,13 @@ export function ProviderSheet({
   const descriptor = PROVIDER_DESCRIPTORS[state.brand];
   const isEditingForm = state.mode !== 'pick' && state.mode !== 'detail';
   const formMutating = submitting || mutationDisabled;
-  const submitDisabled = formMutating || (state.mode === 'edit' && !isDirty);
+  const ambiguousProtocols = workbench.snapshot?.groups.find(
+    (group) => group.id === state.brand
+  )?.ambiguousProtocols;
+  const sponsorBlocked =
+    isMultiProtocolSponsorBrand(state.brand) &&
+    allSponsorProtocolsBlocked(state.brand, ambiguousProtocols);
+  const submitDisabled = sponsorBlocked || formMutating || (state.mode === 'edit' && !isDirty);
 
   const confirmDiscardIfDirty = useCallback((): Promise<boolean> => {
     if (!isEditingForm || !isDirty || submitting) {
@@ -217,6 +224,7 @@ export function ProviderSheet({
     if (isMultiProtocolSponsorBrand(state.brand)) {
       return (
         <SponsorProviderForm
+          ambiguousProtocols={ambiguousProtocols}
           key={viewKey}
           brand={state.brand}
           resource={state.resource}

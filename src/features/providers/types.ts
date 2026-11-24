@@ -8,6 +8,7 @@ import type {
   ProviderKeyConfig,
   ProviderSource,
 } from '@/types';
+import type { MemberModes } from '@/services/api/nativeProviderGroups';
 import type { ThinkingLevel } from './thinkingLevels';
 import type { RuntimePolicyDraft } from './runtimePolicy';
 import type { ModelOptionsInput } from './modelOptions';
@@ -135,6 +136,7 @@ export interface NativeSection {
 }
 
 export interface ProviderGroup {
+  ambiguousProtocols?: SponsorProtocol[];
   nativeSections?: NativeSection[];
   id: ProviderBrand;
   resources: ProviderResource[];
@@ -191,6 +193,7 @@ export interface ApiKeyEntryInput {
   sourceIndex?: number;
   apiKey: string;
   existingApiKey?: string;
+  savedProxyUrl?: string;
   proxyUrl: string;
   weight?: number;
   authIndex?: string;
@@ -206,6 +209,7 @@ export interface CloakInput {
 }
 
 export interface ProviderEntryFormInput extends ProviderBehaviorOptions, NativeKeyOptions {
+  memberModes?: MemberModes;
   /** OpenAI 创建时只在 apiKeyEntries 中传 */
   apiKey: string;
   /** OpenAI 必填,其余 brand 不展示 */

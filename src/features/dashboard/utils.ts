@@ -1,5 +1,3 @@
-import { TRAFFIC_BUCKET_MINUTES } from './types';
-
 /** 供应商展示名。均为专有名词，不进入 i18n。 */
 const PROVIDER_LABELS: Record<string, string> = {
   gemini: 'Gemini',
@@ -37,11 +35,6 @@ export interface WindowParts {
 export function splitWindowMinutes(totalMinutes: number): WindowParts {
   const safe = Math.max(0, Math.round(totalMinutes));
   return { hours: Math.floor(safe / 60), minutes: safe % 60 };
-}
-
-/** 桶数 → 覆盖分钟数 */
-export function bucketsToMinutes(bucketCount: number): number {
-  return bucketCount * TRAFFIC_BUCKET_MINUTES;
 }
 
 export type MeterTone = 'good' | 'warning' | 'critical' | 'idle';

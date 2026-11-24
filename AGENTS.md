@@ -2,16 +2,16 @@
 
 ## Project Scope & Structure
 
-This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, not the proxy itself. It exclusively uses the backend v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
+This is a React 19 + TypeScript + Vite management frontend for CLI Proxy API, not the proxy itself. For management operations, use the v8 Management API under `/v8/management` and the v8 configuration layout; do not add v0 fallbacks or legacy config adapters. The public model list (`/v1/models`) is not a Management API endpoint. Plugin resources and custom HTTP extensions are exceptions: preserve their backend-declared paths. The one sanctioned v0 touchpoint is `src/services/api/legacyBackendProbe.ts`: after a v8 login 404 it only detects an outdated backend to show a clearer error, and must never supply application data or act as a login fallback.
 
-- `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `providers`, `authFiles`, `oauth`, `quota`, `config`, `logs`, and `plugins`. Prefer this layout for new feature work.
-- `src/pages/`: remaining route pages outside the feature layout (login, system, and the auth-file OAuth excluded-model/model-alias editors); `LogsPage.tsx` there is only a re-export of the logs feature. Follow nearby conventions when modifying these; do not migrate unrelated code.
+- `src/features/`: feature-owned pages, components, hooks, types, and logic. Current features are `dashboard`, `providers`, `authFiles`, `oauth`, `quota`, `config`, `logs`, `plugins`, and `routing`. Prefer this layout for new feature work.
+- `src/pages/`: remaining route pages outside the feature layout (login, system, and the auth-file OAuth excluded-model/model-alias editors). Follow nearby conventions when modifying these; do not migrate unrelated code.
 - `src/components/`, `src/hooks/`, `src/utils/`: shared UI, hooks, and utilities. Keep feature-specific code within its feature rather than promoting it prematurely.
 - `src/services/api/`: API client, domain endpoints, and backend data normalization. `src/services/storage/`: browser persistence.
 - `src/stores/`: Zustand state. `src/types/`: shared types. `src/styles/`: global styles and theme tokens.
 - `src/App.tsx`: hash-router setup. `src/router/MainRoutes.tsx`: authenticated route table. `ProtectedRoute` and `MainLayout` guard and wrap the authenticated app.
 - `src/assets/`: bundled assets, including provider icons in `icons/`.
-- `src/i18n/locales/`: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`, `vi.json`, `ko.json`, and `tr.json`, registered in `src/i18n/index.ts`; fallback language is `zh-CN`. Update all seven files when adding or changing translation keys, including accessible labels.
+- `src/i18n/locales/`: `en.json`, `zh-CN.json`, `zh-TW.json`, `ru.json`, `vi.json`, `ko.json`, and `tr.json`, registered in `src/i18n/index.ts`; fallback language is `zh-CN`. Update all seven files when adding or changing translation keys, including accessible labels. Run `bun test tests/localeParity.test.ts` to check keys, interpolation tokens, and plural forms against English.
 
 ## Build, Test, and Development Commands
 
@@ -30,9 +30,9 @@ Use Bun; `package.json` pins `bun@1.4.3`, and CI uses Node.js 24. Keep dependenc
 
 ## Deployment Constraints
 
-The production artifact is a single `dist/index.html` with JS/CSS and bundled assets inlined by `vite-plugin-singlefile`. The release workflow renames it to `management.html` for backend hosting; `vX.Y.Z` tags trigger releases.
+The production artifact is a single `dist/index.html` with JS/CSS and bundled assets inlined by `vite-plugin-singlefile`. The release workflow renames it to `management.html` for backend hosting; pushing a tag matching `v*` triggers the release workflow.
 
-Preserve hash routing and single-file deployment. Changes to assets, imports, code splitting, or build configuration must not introduce required external build artifacts. Do not edit generated `dist/` files. App version is injected as `__APP_VERSION__` from `VERSION`, then git tags, then the package version, falling back to `dev`.
+Preserve hash routing and single-file deployment. Changes to assets, imports, code splitting, or build configuration must not introduce required external build artifacts. Do not edit generated `dist/` files. App version is injected as `__APP_VERSION__` from the `VERSION` environment variable, then `git describe`, then the package version (unless `0.0.0`), falling back to `dev`.
 
 ## API Contracts & State
 
@@ -42,6 +42,8 @@ Preserve hash routing and single-file deployment. Changes to assets, imports, co
 - Normalize backend fields on read and serialize on write in the API layer; consult `transformers.ts` and the relevant domain module. Keep raw backend field-name handling out of ordinary UI components.
 - `useConfigStore.fetchConfig(forceRefresh?: boolean)` uses a full-config TTL cache and in-flight request deduplication, not section-based fetching. Reuse it where appropriate and invalidate/update caches after mutations using existing store actions.
 - Preserve stale-request guards and cache cleanup when switching connections or logging out. Old asynchronous responses must not overwrite the new session's state.
+- In `src/features/authFiles/`, keep credential status changes in `statusActions.ts` and credential refreshes in `refreshActions.ts`. Global model catalog sync belongs in `modelCatalogSync.ts`; it is not a credential refresh.
+- Use `routingApi.applyPlan` in `src/services/api/routing.ts` for routing board saves. It writes credentials individually, then builds a single config patch against a fresh document. A save is not atomic: distinguish applied, failed, and unattempted changes.
 - Provider UI capabilities live in `src/features/providers/descriptors.ts`; `adapters.ts` maps provider configs to the shared resource model. Extend these existing abstractions rather than scattering provider-specific conditionals across components.
 
 ## Coding Style & UI Conventions
@@ -54,7 +56,7 @@ Keep user-facing text in i18n. Preserve keyboard interaction, accessible names, 
 
 ## Testing & Verification
 
-Tests are centralized under `tests/` as `*.test.ts` and use `bun:test`; shared fixtures live in `tests/fixtures/` and helpers in `tests/helpers/`. Existing suites cover pure logic, React server-side static rendering via `renderToStaticMarkup`, and source/contract checks. There is no configured browser DOM test harness; static markup tests do not verify browser interactions. Prefer extracting testable logic and following nearby test patterns rather than introducing a new framework by default.
+Tests are centralized under `tests/` as `*.test.ts` and use `bun:test`; shared fixtures live in `tests/fixtures/` and helpers in `tests/helpers/`. Existing suites cover pure logic, React server-side static rendering via `renderToStaticMarkup`, and source/contract checks. There is no configured browser DOM test harness; static markup tests do not verify browser interactions. Test observable behavior rather than matching implementation text. For example, `tests/authFileRefreshActions.test.ts` exercises refresh actions without mounting a component. Extend a nearby suite before adding overlapping coverage.
 
 For code changes, add or update relevant regression tests, run focused tests while iterating, and run `bun run verify` before handoff. For UI changes, also verify the affected route in a browser and include screenshots or notes. Report commands actually run, failures, and anything not verified; if a backend or browser is unavailable, state the limitation explicitly. Documentation-only changes can be checked with diff/content validation instead of a full build.
 

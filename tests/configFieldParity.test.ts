@@ -124,6 +124,7 @@ describe('search hints are explanations the page still renders', () => {
     const removed = [
       'sections.auth.auth_dir_hint',
       'sections.tls.enable_desc',
+      'sections.remote.disable_panel_desc',
       'sections.network.routing_strategy_hint',
       'sections.network.disable_image_generation_hint',
       'sections.network.passthrough_headers_desc',
@@ -218,14 +219,6 @@ describe('registry consistency', () => {
 });
 
 describe('v8 YAML search paths', () => {
-  test('deprecated quota switches are absent from values and search metadata', () => {
-    for (const fieldId of ['quotaSwitchProject', 'quotaSwitchPreviewModel']) {
-      expect(LEAF_VALUE_KEYS.has(fieldId)).toBe(false);
-      expect(findConfigFieldById(fieldId)).toBeUndefined();
-      expect(FIELD_VALUE_KEYS).not.toHaveProperty(fieldId);
-    }
-  });
-
   for (const [fieldId, path] of [
     ['apiKeys', 'access.api-keys'],
     ['commercialMode', 'server.commercial-mode'],

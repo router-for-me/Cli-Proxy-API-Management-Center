@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import {
   errorLogViewerReducer,
   type ErrorLogViewerState,
@@ -89,20 +88,4 @@ describe('error log viewer state machine', () => {
     await completion;
     expect(state).toEqual(closed);
   });
-});
-
-test('viewer UI derives controls and content from a single discriminated state', () => {
-  const source = readFileSync(
-    new URL('../src/features/logs/LogsPage.tsx', import.meta.url),
-    'utf8'
-  );
-  expect(source).toContain('useReducer(errorLogViewerReducer');
-  expect(source).not.toContain('setSelectedErrorLog');
-  expect(source).toContain("open={errorLogViewer.status !== 'closed'}");
-  expect(source).toContain("disabled={errorLogViewer.status !== 'ready' || !errorLogViewer.text}");
-  expect(source).toContain(
-    "disabled={errorLogViewer.status === 'closed' || errorLogViewer.status === 'loading'}"
-  );
-  expect(source).toContain("errorLogViewer.status === 'ready'");
-  expect(source).toContain("errorLogViewer.status === 'error'");
 });

@@ -260,6 +260,7 @@ export interface AntigravityQuotaBucket {
 }
 
 export interface AntigravityQuotaState {
+  validation?: { url?: string };
   status: 'idle' | 'loading' | 'success' | 'error';
   groups: AntigravityQuotaGroup[];
   subscription?: AntigravityQuotaSubscription | null;
@@ -349,8 +350,8 @@ export interface DevinQuotaState extends DevinQuotaData {
 
 /** Premium-request quota observation, never the credential-bearing response. */
 export interface CopilotQuotaData {
-  remaining: number;
-  entitlement: number;
+  remaining: number | null;
+  entitlement: number | null;
   percentRemaining: number;
 }
 

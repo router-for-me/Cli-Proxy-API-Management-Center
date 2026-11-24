@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { PluginStoreView } from '@/features/plugins/components/PluginStoreView';
@@ -9,6 +8,8 @@ import {
   getStoreEntryKey,
   pluginVersionMatches,
 } from '@/features/plugins/pluginStoreEntries';
+import { supportsPluginVersionSelection } from '@/features/plugins/pluginReleaseVersions';
+import { isOfficialPlugin } from '@/features/plugins/pluginResources';
 import { filterInstalledPlugins } from '@/features/plugins/pluginSearch';
 import { parsePluginsView, parseStoreLayout } from '@/features/plugins/pluginsView';
 import type { PluginListEntry, PluginStoreEntry } from '@/types';
@@ -101,20 +102,6 @@ describe('shared plugin mutation lock', () => {
       expect(render(false)).not.toMatch(/<button[^>]*disabled=""[^>]*>/);
     });
   }
-
-  test('the page shares its lock with the store UI and all install entry points', () => {
-    const page = readFileSync('src/features/plugins/PluginsPage.tsx', 'utf8');
-    const hook = readFileSync('src/features/plugins/hooks/usePluginStore.ts', 'utf8');
-    expect(page).toContain('actionBusy: installed.actionBusy');
-    expect(page).toContain('actionBusy={installed.actionBusy}');
-    expect(hook).toContain(
-      'const installBlocked = !connected || actionBusy || Boolean(installingKey)'
-    );
-    expect(hook).toMatch(/async \(entry:[\s\S]*?if \(installBlocked\) return;/);
-    expect(hook).toMatch(/const openInstall[\s\S]*?if \(installBlocked\) return;/);
-    expect(hook).toContain('if (installBlocked || !installOptionsEntry) return;');
-    expect(hook).toContain('if (installBlocked || !gateEntry) return;');
-  });
 });
 
 describe('installed plugin to registry update match', () => {
@@ -194,6 +181,19 @@ describe('store entry helpers', () => {
   test('entries are keyed per source, falling back to the plugin ID', () => {
     expect(getStoreEntryKey(storeEntry())).toBe('official/gemini-bridge');
     expect(getStoreEntryKey(storeEntry({ storeId: '' }))).toBe('gemini-bridge');
+  });
+
+  test('trusts only the official source with an official repository', () => {
+    expect(isOfficialPlugin(storeEntry())).toBe(true);
+    expect(isOfficialPlugin(storeEntry({ sourceId: 'third-party' }))).toBe(false);
+    expect(isOfficialPlugin(storeEntry({ repository: 'someone-else/gemini-bridge' }))).toBe(false);
+  });
+
+  test('allows custom versions only for GitHub release installs', () => {
+    expect(supportsPluginVersionSelection('github-release')).toBe(true);
+    expect(supportsPluginVersionSelection(' GitHub-Release ')).toBe(true);
+    expect(supportsPluginVersionSelection('direct')).toBe(false);
+    expect(supportsPluginVersionSelection('')).toBe(false);
   });
 
   test('the view parameter only recognises the store view', () => {

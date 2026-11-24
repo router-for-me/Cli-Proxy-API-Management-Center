@@ -440,6 +440,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "請驗證帳戶以繼續。",
     "title": "Antigravity 配額",
     "empty_title": "暫無 Antigravity 驗證",
     "empty_desc": "上傳 Antigravity 驗證檔案後即可查看配額。",
@@ -609,7 +610,7 @@
     "loading": "正在查詢 GitHub Copilot 額度…",
     "load_failed": "額度查詢失敗：{{message}}",
     "remaining": "剩餘 {{percent}}%",
-    "premium": "進階互動",
+    "premium": "月額度",
     "unavailable": "額度無法取得。請檢查 Copilot 憑證後重試。"
   },
   "meta_quota": {
@@ -948,17 +949,6 @@
     "xai_callback_hint": "Grok 有時只在頁面顯示 code。可直接貼上 code，系統會自動拼接為 http://127.0.0.1:56121/callback?... 後提交。",
     "xai_callback_required": "請先貼上 Grok 頁面顯示的 code 或完整回調 URL。",
     "xai_callback_state_missing": "缺少本次 xAI 登入的 state，請重新開始 xAI 登入後再提交 code。",
-    "qwen_oauth_title": "Qwen OAuth",
-    "qwen_oauth_button": "開始 Qwen 登入",
-    "qwen_oauth_hint": "透過裝置授權流程登入 Qwen 服務，自動取得並儲存驗證檔案。",
-    "qwen_oauth_url_label": "授權連結:",
-    "qwen_open_link": "開啟連結",
-    "qwen_copy_link": "複製連結",
-    "qwen_oauth_status_waiting": "等待驗證中...",
-    "qwen_oauth_status_success": "驗證成功！",
-    "qwen_oauth_status_error": "驗證失敗:",
-    "qwen_oauth_start_error": "啟動 Qwen OAuth 失敗:",
-    "qwen_oauth_polling_error": "檢查驗證狀態失敗:",
     "oauth_callback_label": "回調 URL",
     "oauth_callback_placeholder": "http://localhost:1455/auth/callback?code=...&state=...",
     "oauth_callback_hint": "遠端瀏覽器模式：當授權跳轉到 http://localhost:... 後，複製完整 URL 並提交到這裡。",
@@ -980,23 +970,6 @@
     "iflow_oauth_status_error": "驗證失敗:",
     "iflow_oauth_start_error": "啟動 iFlow OAuth 失敗:",
     "iflow_oauth_polling_error": "檢查驗證狀態失敗:",
-    "iflow_cookie_title": "iFlow Cookie 登入",
-    "iflow_cookie_label": "Cookie 內容:",
-    "iflow_cookie_placeholder": "填入 BXAuth 值，以 BXAuth= 開頭",
-    "iflow_cookie_hint": "直接提交 Cookie 以完成登入（無需開啟授權連結），伺服器端將自動儲存憑證。",
-    "iflow_cookie_key_hint": "提示：需在平台上先建立 Key。",
-    "iflow_cookie_button": "提交 Cookie 登入",
-    "iflow_cookie_status_success": "Cookie 登入成功，憑證已儲存。",
-    "iflow_cookie_status_error": "Cookie 登入失敗:",
-    "iflow_cookie_status_duplicate": "設定檔重複:",
-    "iflow_cookie_start_error": "提交 Cookie 登入失敗:",
-    "iflow_cookie_config_duplicate": "偵測到設定檔已存在（重複），如需重新儲存請先刪除原檔案後重試。",
-    "iflow_cookie_required": "請先填寫 Cookie 內容",
-    "iflow_cookie_result_title": "Cookie 登入結果",
-    "iflow_cookie_result_email": "帳號",
-    "iflow_cookie_result_expired": "到期時間",
-    "iflow_cookie_result_path": "儲存路徑",
-    "iflow_cookie_result_type": "類型",
     "remote_access_disabled": "遠端存取不支援此登入方式，請從本地（localhost）存取",
     "kimi_oauth_name": "Kimi 中國站",
     "kimi_ai_oauth_name": "Kimi 國際站",
@@ -1167,6 +1140,8 @@
     "visual_mode_save_blocked": "請先修復 YAML 語法錯誤，再從視覺化模式儲存",
     "source_changes_before_visual": "原始碼有未儲存的修改，請先儲存或放棄修改，再切換到視覺化模式。",
     "precise_save_incomplete": "精準儲存未完成，部分修改可能已生效。草稿已保留，請再次儲存以重新核對伺服器差異。",
+    "unsafe_yaml_structure": "視覺化編輯器無法在不影響其他 YAML 設定的情況下修改 {{path}}。草稿已保留，請改用原始碼編輯器完成這項修改。",
+    "sensitive_word_comments": "在視覺化模式儲存 {{path}} 會遺失 YAML 註解。草稿已保留，請切換到原始碼編輯器，核對後儲存以保留註解。",
     "concurrent_list_conflict": "伺服器清單 {{path}} 已在草稿基準之後發生變更。為避免覆蓋這些修改，已阻止儲存。草稿仍保留；請記下本機修改，再重新載入設定並核對合併。",
     "precise_save_recovery_required": "無法回讀儲存結果，已暫停編輯。請再次儲存以恢復草稿基準，或重新載入設定。",
     "visual_mode_latest_yaml_invalid": "伺服器最新設定包含無效 YAML，請先切回原始碼模式檢查後再儲存視覺化修改：{{message}}",
@@ -1592,7 +1567,7 @@
       },
       "validation": {
         "invalid_server_id": "請輸入含連字號的非零 UUID。",
-        "invalid_oauth_error_rules": "請檢查 {{channel}} 的狀態碼、比對條件與動作。",
+        "invalid_oauth_error_rules": "請檢查「{{channel}}」第 {{number}} 條規則的狀態碼、比對條件與動作。",
         "invalid_trusted_proxies": "每個可信任代理必須是有效的 IP 位址或 CIDR。",
         "invalid_discovery_service_type": "請使用 _名稱._tcp 格式：名稱為 1–15 位英文字母、數字或連字號，首尾不能是連字號。",
         "validation_blocked": "請先修復表單驗證錯誤再儲存",
@@ -1659,6 +1634,7 @@
     "hide_details": "隱藏詳情"
   },
   "quota_management": {
+    "open_verification_link": "開啟驗證連結",
     "search_label": "搜尋帳號",
     "search_placeholder": "依檔案名稱或電子郵件搜尋",
     "search_empty_title": "沒有符合的帳號",
@@ -2128,7 +2104,9 @@
       "timeout": "閒置逾時（例如 5m）",
       "maxIdle": "每個主機的最大閒置連線數",
       "invalidMaxIdle": "最大閒置連線數必須是安全整數。",
-      "inheritHint": "僅在此金鑰需要不同設定時填寫；留空的欄位會繼承連線設定。",
+      "empty": "空值",
+      "valueSource": "{{field}}：值來源",
+      "inheritHint": "繼承的欄位會沿用連線設定。選擇「空值」可清除此金鑰的值，選擇覆寫則可自訂。",
       "disableKey": "停用此金鑰",
       "disableShort": "停用"
     },
@@ -2234,7 +2212,6 @@
       "detailHint": "{{provider}} 會按協議分別寫入對應的 API Key 設定,此處只做聚合管理。",
       "registerLink": "點此註冊",
       "registerNow": "立即註冊",
-      "kimiPromo": "新用戶首次成功儲值，贈送儲值金額 10% 的 API 額度，最高贈送 ¥1000，優惠截至 9 月 30 日",
       "dashboardLink": "控制面板",
       "emptyRegisterHint": "尚未新增設定",
       "apiKeyHint": "此金鑰只會寫入目前選擇的分組/協議設定。",
@@ -2246,6 +2223,7 @@
       "usageInvalid": "Key 無效",
       "usageEmpty": "端點未回傳額度資料",
       "usageApiKeyRequired": "API 金鑰必填",
+      "ambiguousProtocols": "多個群組符合以下通訊協定：{{protocols}}。請在對應的供應商編輯器中編輯這些群組。",
       "aggregationConflict": "此聚合提供商包含多筆後端設定或多個 OpenAI 金鑰。為避免資料遺失，請在原始碼設定中編輯。",
       "partialMutationWarning": "操作失敗，但一個或多個協議可能已更新。已重新讀取最新設定，請檢查後再重試。",
       "groupedKeysTitle": "分組金鑰",
@@ -2296,14 +2274,6 @@
         "openai": "OpenAI 相容",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "雙 11 限時",
-        "title": "{{provider}} 雙 11 儲值狂歡",
-        "description": "活動期間在 {{provider}} 儲值，額外贈送儲值金額 {{percent}}% 的額度，先到先得。",
-        "bonus": "儲值加贈",
-        "cta": "立即參與",
-        "ctaAria": "立即參與 {{provider}} 雙 11 儲值活動（在新分頁開啟）"
       }
     },
     "status": {
@@ -2484,7 +2454,6 @@
       "custom": "自訂",
       "connect": "接入",
       "connected": "已接入 {{count}}",
-      "offer": "優惠",
       "onboardingTitle": "接入第一個 AI 提供商",
       "moreQuickConnect": "更多快速接入"
     }

@@ -1,5 +1,9 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test';
 import { COPILOT_CONFIG, parseCopilotQuota } from '@/features/quota/providers/copilot/data';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { CopilotQuotaBody } from '@/features/quota/providers/copilot/CopilotQuotaBody';
+import { QUOTA_CLASS_KEYS, bindQuotaClasses } from '@/features/quota/types';
 import i18n from '@/i18n';
 import { authFilesApi } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
@@ -64,6 +68,41 @@ test('zero is valid but missing, unlimited and invalid windows are not exhausted
     { ...snapshot, percent_remaining: null },
   ]) {
     expect(parseCopilotQuota(payload(premium))).toBeNull();
+  }
+});
+
+test('renders reported percentages independently of has_quota and optional counts', () => {
+  const classes = bindQuotaClasses(Object.fromEntries(QUOTA_CLASS_KEYS.map((k) => [k, k])), 'test');
+  const render = (premium: unknown) => {
+    const data = parseCopilotQuota(payload(premium));
+    return renderToStaticMarkup(
+      createElement(CopilotQuotaBody, {
+        quota: { status: 'success', data: data ?? undefined },
+        classes,
+      })
+    );
+  };
+  for (const counts of [
+    {},
+    { entitlement: '100' },
+    { quota_remaining: null },
+    { quota_remaining: '0', entitlement: '0' },
+  ]) {
+    const markup = render({ percent_remaining: ' 0 ', has_quota: false, ...counts });
+    expect(markup).toContain('aria-valuenow="0"');
+    expect(markup).not.toContain('quotaAmount');
+  }
+  const markup = render({ percent_remaining: '0.5', entitlement: '100', quota_remaining: '0' });
+  expect(markup).toContain('aria-valuenow="0.5"');
+  expect(markup).toContain('0 / 100');
+  for (const premium of [
+    {},
+    { ...snapshot, unlimited: true },
+    ...[' ', false, 'NaN', -1, 101].map((percent_remaining) => ({ percent_remaining })),
+  ]) {
+    const unavailable = render(premium);
+    expect(unavailable).not.toContain('role="meter"');
+    expect(unavailable).not.toContain('quotaAmount');
   }
 });
 

@@ -24,18 +24,6 @@ const readHost = (path: string) => Bun.file(new URL(`../${path}`, import.meta.ur
 
 describe('quota class contract', () => {
   for (const [host, path] of Object.entries(HOSTS)) {
-    test(`${host} gives standalone amounts the same size as quota metadata`, async () => {
-      const css = await readHost(path);
-      const amount = css.match(/\.quotaAmount\s*\{([^}]+)\}/)?.[1] ?? '';
-      const meta = css.match(/\.quotaMeta\s*\{([^}]+)\}/)?.[1] ?? '';
-      const size = amount.match(/font-size:\s*([^;]+);/)?.[1];
-      expect(size).toBeDefined();
-      expect(size).toBe(meta.match(/font-size:\s*([^;]+);/)?.[1]);
-      expect(amount).toContain('font-family: $font-mono;');
-      expect(amount).toContain('font-weight: 500;');
-      expect(amount).toContain('font-variant-numeric: tabular-nums;');
-    });
-
     test(`${host} defines every QuotaClassMap key`, async () => {
       const css = await readHost(path);
       const missing = QUOTA_CLASS_KEYS.filter(
@@ -44,13 +32,6 @@ describe('quota class contract', () => {
       expect(missing).toEqual([]);
     });
   }
-
-  test('the flagship quota badge has a static highlight', async () => {
-    const css = await readHost(HOSTS['QuotaBody.module.scss']);
-    const badge = css.match(/^\.elitePlanValue\s*\{([\s\S]*?)^\}/m)?.[1];
-    expect(badge).toContain('at 50% 58%, var(--jade-glow)');
-    expect(badge).not.toMatch(/\banimation(?:-name)?:/);
-  });
 
   test('bindQuotaClasses reports every missing key rather than the first', () => {
     const partial = Object.fromEntries(QUOTA_CLASS_KEYS.map((key) => [key, `_${key}`]));

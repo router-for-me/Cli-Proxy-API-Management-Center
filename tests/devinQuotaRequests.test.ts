@@ -1,10 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
+import i18n from '@/i18n';
+import { DEVIN_CONFIG } from '@/features/quota/providers/devin/data';
 import {
   createDevinQuotaFetcher,
   DevinQuotaError,
   type DevinRequestGeneration,
 } from '@/features/quota/providers/devin/requests';
 import type { ApiCallRequest, ApiCallResult } from '@/services/api/apiCall';
+import { authFilesApi } from '@/services/api/authFiles';
+import { apiClient } from '@/services/api/client';
 import type { AuthFileItem, DevinQuotaData } from '@/types';
 
 type Deferred<T> = {
@@ -342,5 +346,37 @@ describe('createDevinQuotaFetcher', () => {
     gate.resolve(result());
 
     await expect(request).resolves.toMatchObject({ plan: 'pro' });
+  });
+});
+
+describe('DEVIN_CONFIG wiring', () => {
+  test('queries only api-call, not auth-file refresh or list', async () => {
+    const post = spyOn(apiClient, 'post').mockResolvedValue({
+      status_code: 200,
+      header: {},
+      body: JSON.stringify({
+        userStatus: {
+          planStatus: { dailyQuotaRemainingPercent: 54, weeklyQuotaRemainingPercent: 77 },
+        },
+      }),
+    });
+    const refresh = spyOn(authFilesApi, 'requestManualRefresh');
+    const list = spyOn(authFilesApi, 'list');
+    try {
+      const quota = await DEVIN_CONFIG.fetchQuota(
+        { name: 'live.json', type: 'devin', auth_index: ' 42 ' },
+        i18n.t
+      );
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post.mock.calls[0][0]).toBe('/requests/api-call');
+      expect(post.mock.calls[0][1]).toMatchObject({ authIndex: '42', method: 'POST' });
+      expect(refresh).not.toHaveBeenCalled();
+      expect(list).not.toHaveBeenCalled();
+      expect(quota.windows.map((window) => window.remainingPercent)).toEqual([54, 77]);
+    } finally {
+      post.mockRestore();
+      refresh.mockRestore();
+      list.mockRestore();
+    }
   });
 });

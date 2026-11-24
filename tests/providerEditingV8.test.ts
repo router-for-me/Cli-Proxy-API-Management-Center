@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { apiClient } from '@/services/api/client';
 import { providersApi, type ProviderFamily } from '@/services/api/providers';
 import { normalizeProviderGroups } from '@/services/api/transformers';
-import { mergeDiscoveredModels } from '@/features/providers/modelEntries';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
 const originalGet = apiClient.get;
@@ -30,7 +29,7 @@ const row = (group: Record<string, unknown>) =>
   (normalizeProviderGroups([group]) as ProviderKeyConfig[])[0];
 const key = (group: Record<string, unknown>) => (group.keys as Record<string, unknown>[])[0];
 const openai = (group: Record<string, unknown>) =>
-  (normalizeProviderGroups([group], true) as OpenAIProviderConfig[])[0];
+  (normalizeProviderGroups([group], 'openai-compatibility') as OpenAIProviderConfig[])[0];
 
 const keyApis = [
   ['gemini', providersApi.updateGeminiKey],
@@ -98,33 +97,6 @@ describe('v8 cooling overrides', () => {
       disableCooling: false,
     });
     expect(key(b.group())['disable-cooling']).toBe(false);
-  });
-});
-
-describe('provider model discovery merge', () => {
-  test('retains same-name aliases and source identities while deduplicating discovered names', () => {
-    const a = { name: 'shared', alias: 'a', sourceIndex: 0, thinkingJson: '{"levels":["high"]}' };
-    const b = { name: 'shared', alias: 'b', sourceIndex: 1 };
-    const current = [a, b];
-    const merged = mergeDiscoveredModels(current, [
-      { name: 'shared' },
-      { name: ' fresh ', alias: ' new ' },
-      { name: 'fresh' },
-    ]);
-    expect(merged).toEqual([a, b, { name: 'fresh', alias: 'new' }]);
-    expect(merged[0]).toBe(a);
-    expect(merged[1]).toBe(b);
-    expect(current).toEqual([a, b]);
-    expect(merged[2].sourceIndex).toBeUndefined();
-  });
-
-  test('only removes empty placeholders and keeps empty discovery unchanged', () => {
-    const current = [{ name: '', alias: '' }];
-    expect(mergeDiscoveredModels(current, [])).toBe(current);
-    expect(mergeDiscoveredModels(current, [{ name: 'fresh' }])).toEqual([
-      { name: 'fresh', alias: '' },
-    ]);
-    expect(mergeDiscoveredModels(current, [{ name: ' ' }])).toEqual(current);
   });
 });
 

@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import {
   createLogRequestGuard,
   createLogRequestQueue,
@@ -165,62 +164,5 @@ describe('log request ownership', () => {
     const session = guard.capture();
     guard.invalidate();
     expect(guard.isCurrent(session)).toBe(false);
-  });
-});
-
-describe('logs controller lifecycle wiring', () => {
-  const page = readFileSync(new URL('../src/features/logs/LogsPage.tsx', import.meta.url), 'utf8');
-  const source = readFileSync(
-    new URL('../src/features/logs/hooks/useLogStream.ts', import.meta.url),
-    'utf8'
-  );
-
-  test('invalidates synchronously on connection identity/config changes and unmount', () => {
-    for (const owner of [page, source]) {
-      expect(owner).toContain('useAuthStore.subscribe');
-      expect(owner).toContain('next.apiBase === previous.apiBase');
-      expect(owner).toContain('next.managementKey === previous.managementKey');
-      expect(owner).toContain('next.connectionStatus === previous.connectionStatus');
-      expect(owner).toContain('next.isAuthenticated === previous.isAuthenticated');
-      expect(owner).toContain(
-        'unsubscribeAuth();\n      unsubscribeConfig();\n      invalidateSession();'
-      );
-    }
-    expect(source).toContain('next.config?.loggingToFile !== previous.config?.loggingToFile');
-    expect(page).toContain('next.config?.requestLog !== previous.config?.requestLog');
-  });
-
-  test('queued reloads read current stores and delayed confirmations check their session', () => {
-    expect(source).toContain("useAuthStore.getState().connectionStatus !== 'connected'");
-    expect(source).toContain('!useConfigStore.getState().config?.loggingToFile');
-    expect(source).toContain('if (!requests.session.isCurrent(session)) return;');
-    expect(source).toContain('requests.logs.startClear()');
-    expect(source).toContain('requests.logs.finish(request, clearFailed)');
-  });
-
-  test('delegates buffer semantics to the model after ownership checks and preserves scrolling', () => {
-    expect(page).toContain('useLogStream({');
-    expect(page).toContain('useLogScroller({');
-    expect(page).not.toContain('logsApi.fetchLogs(');
-    expect(source).toContain('const cursor = logBufferRef.current.cursor;');
-    expect(source).toContain('logsApi.fetchLogs(buildLogsQuery(cursor))');
-    const checked = source.indexOf('if (!requests.logs.isCurrent(request)) return;');
-    const applied = source.indexOf('applyLogPage(logBufferRef.current, data, cursor)');
-    expect(checked).toBeGreaterThan(0);
-    expect(applied).toBeGreaterThan(checked);
-    expect(source).toContain('logBufferRef.current = next;');
-    expect(source).toContain('if (data.cursorReset)');
-    expect(source).toContain('setVisibleCount(INITIAL_DISPLAY_LINES)');
-    expect(source).toContain('if (stickToBottom) onFollow();');
-    expect(source).not.toContain('mergeIncrementalLines');
-  });
-
-  test('bounds catch-up work and backs off polling while hidden or paused', () => {
-    expect(source).toContain('page < 3');
-    expect(source).toContain('shouldCatchUp(data, cursor)');
-    expect(source).toContain('incremental && !autoRefreshRef.current');
-    expect(source).toContain("document.visibilityState === 'hidden'");
-    expect(source).toContain('Date.now() < nextReadAtRef.current');
-    expect(source).toContain('Math.min(retryDelayRef.current * 2, 60000)');
   });
 });

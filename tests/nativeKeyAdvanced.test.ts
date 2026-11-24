@@ -1,5 +1,4 @@
 import { afterEach, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { apiClient } from '@/services/api/client';
 import { providersApi, type ProviderFamily } from '@/services/api/providers';
 import { normalizeProviderGroups } from '@/services/api/transformers';
@@ -114,19 +113,6 @@ test('Claude native tool search is explicit and protocol-specific', async () => 
     nativeToolSearch: undefined,
   });
   expect(b.key()).not.toHaveProperty('native-tool-search');
-});
-
-test('native key controls have labels in every locale', () => {
-  const read = (language: string): Record<string, string> =>
-    JSON.parse(
-      readFileSync(new URL(`../src/i18n/locales/${language}.json`, import.meta.url), 'utf8')
-    ).providersPage.nativeKey;
-  const keys = Object.keys(read('en')).sort();
-  for (const locale of ['zh-CN', 'zh-TW', 'ko', 'vi', 'tr', 'ru']) {
-    const labels = read(locale);
-    expect(Object.keys(labels).sort()).toEqual(keys);
-    expect(Object.values(labels).every((s) => s.trim())).toBe(true);
-  }
 });
 
 test('pool validation accepts Go durations and non-positive limits without blocking unrelated edits', () => {

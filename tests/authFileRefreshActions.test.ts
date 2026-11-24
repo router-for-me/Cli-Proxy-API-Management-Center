@@ -1,9 +1,13 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
-import ts from 'typescript';
-import { getAuthFileRefreshKey } from '../src/features/authFiles/manualRefresh';
+import type { TFunction } from 'i18next';
+import {
+  createAuthFileRefreshPending,
+  refreshAllAuthFiles,
+  refreshAuthFile,
+  type AuthFileRefreshDeps,
+} from '@/features/authFiles/refreshActions';
+import type { AuthFileItem } from '@/types';
 
-const source = readFileSync('src/features/authFiles/hooks/useAuthFilesData.ts', 'utf8');
 function harness() {
   let revision = 1;
   let confirmation: (() => Promise<void>) | undefined;
@@ -11,30 +15,31 @@ function harness() {
   let loads = 0;
   let notifications = 0;
   let invalidations = 0;
+  let mutations = 0;
+  let refreshing: Record<string, boolean> = {};
   const calls: unknown[][] = [];
   let resolve!: (value: unknown) => void;
   let reject!: (error: Error) => void;
-  const request = (...args: unknown[]) => {
+  const request = <T>(...args: unknown[]) => {
     calls.push(args);
-    return new Promise((res, rej) => {
-      resolve = res;
+    return new Promise<T>((res, rej) => {
+      resolve = res as (value: unknown) => void;
       reject = rej;
     });
   };
-  const env = {
-    apiClient: { getConnectionRevision: () => revision },
-    authFilesApi: { requestManualRefresh: request, requestAllManualRefresh: request },
-    getAuthFileRefreshKey,
-    isRuntimeOnlyAuthFile: () => false,
-    supportsAuthFileManualRefresh: () => true,
-    refreshAllPendingRef: { current: false },
-    manualRefreshPendingRef: { current: new Set<string>() },
-    setManualRefreshing: () => {},
+  const pending = createAuthFileRefreshPending();
+  const deps: AuthFileRefreshDeps = {
+    requestManualRefresh: (...args) => request(...args),
+    requestAllManualRefresh: () => request(),
+    getConnectionRevision: () => revision,
+    setManualRefreshing: (update) => {
+      refreshing = typeof update === 'function' ? update(refreshing) : update;
+    },
     setRefreshingAllCredentials: () => {},
-    setRefreshResults: (value: unknown) => {
+    setRefreshResults: (value) => {
       results = value;
     },
-    showConfirmation: (options: { onConfirm: () => Promise<void> }) => {
+    showConfirmation: (options) => {
       confirmation = options.onConfirm;
     },
     showNotification: () => {
@@ -44,26 +49,17 @@ function harness() {
       invalidations++;
     },
     notifyAuthFilesChanged: () => {},
-    onFilesMutatedRef: { current: () => {} },
-    loadFiles: async () => {
+    onFilesMutated: () => {
+      mutations++;
+    },
+    reloadFiles: async () => {
       loads++;
     },
-    t: (key: string) => key,
-    useCallback: (fn: unknown) => fn,
+    t: ((key: string) => key) as TFunction,
   };
-  const block = source.slice(
-    source.indexOf('  const handleManualRefresh = useCallback('),
-    source.indexOf('  const handleCooldownReset = useCallback(')
-  );
-  const js = ts.transpileModule(
-    `${block}\nreturn {single: handleManualRefresh, all: handleRefreshAllCredentials};`,
-    {
-      compilerOptions: { target: ts.ScriptTarget.ES2022 },
-    }
-  ).outputText;
-  const callbacks = new Function(...Object.keys(env), js)(...Object.values(env));
   return {
-    ...callbacks,
+    single: (item: AuthFileItem) => refreshAuthFile(deps, pending, item),
+    all: () => refreshAllAuthFiles(deps, pending),
     confirm: () => confirmation?.(),
     switchConnection: () => {
       revision++;
@@ -83,8 +79,20 @@ function harness() {
     get invalidations() {
       return invalidations;
     },
+    get mutations() {
+      return mutations;
+    },
+    get refreshing() {
+      return refreshing;
+    },
   };
 }
+
+const credential = (authIndex: string): AuthFileItem => ({
+  name: 'one.json',
+  type: 'codex',
+  authIndex,
+});
 
 describe('credential refresh action lifecycle', () => {
   test('requires confirmation, prevents overlap, and exposes individual results', async () => {
@@ -93,7 +101,7 @@ describe('credential refresh action lifecycle', () => {
     expect(h.calls).toHaveLength(0);
     const pending = h.confirm();
     await h.confirm();
-    await h.single({ name: 'one.json', authIndex: 'one' });
+    await h.single(credential('one'));
     expect(h.calls).toHaveLength(1);
     const results = [{ id: 'one.json', success: false, error: 'fixture' }];
     h.resolve(results);
@@ -101,6 +109,7 @@ describe('credential refresh action lifecycle', () => {
     expect(h.results).toEqual(results);
     expect(h.loads).toBe(1);
     expect(h.invalidations).toBe(1);
+    expect(h.mutations).toBe(1);
   });
 
   test('a failed all-refresh still reloads potentially changed backend state', async () => {
@@ -126,7 +135,7 @@ describe('credential refresh action lifecycle', () => {
     test(`stale ${all ? 'all' : 'single'} refresh cannot publish results or invalidate new caches`, async () => {
       const h = harness();
       if (all) h.all();
-      const pending = all ? h.confirm() : h.single({ name: 'one.json', authIndex: 'one' });
+      const pending = all ? h.confirm() : h.single(credential('one'));
       h.switchConnection();
       h.resolve([{ id: 'one.json', success: true }]);
       await pending;
@@ -134,12 +143,13 @@ describe('credential refresh action lifecycle', () => {
       expect(h.notifications).toBe(0);
       expect(h.loads).toBe(0);
       expect(h.invalidations).toBe(0);
+      expect(h.mutations).toBe(0);
     });
   }
 
   test('single refresh forwards the selected identity and blocks a duplicate', async () => {
     const h = harness();
-    const item = { name: 'one.json', authIndex: 'two' };
+    const item = credential('two');
     const pending = h.single(item);
     await h.single(item);
     h.all();
@@ -148,5 +158,30 @@ describe('credential refresh action lifecycle', () => {
     h.resolve(undefined);
     await pending;
     expect(h.loads).toBe(1);
+    expect(h.mutations).toBe(1);
+  });
+
+  test('a failed single refresh reports the error without reloading', async () => {
+    const h = harness();
+    const pending = h.single(credential('one'));
+    expect(Object.values(h.refreshing)).toEqual([true]);
+    h.reject(new Error('expired'));
+    await pending;
+    expect(h.notifications).toBe(1);
+    expect(h.loads).toBe(0);
+    expect(h.refreshing).toEqual({});
+    // The identity is released, so a retry is sent.
+    void h.single(credential('one'));
+    expect(h.calls).toHaveLength(2);
+  });
+
+  test.each([
+    ['disabled', { ...credential('x'), disabled: true }],
+    ['unsupported provider', { ...credential('x'), type: 'gemini-cli' }],
+    ['blank name', { ...credential('x'), name: '  ' }],
+  ])('ignores a %s credential', async (_, item) => {
+    const h = harness();
+    await h.single(item);
+    expect(h.calls).toEqual([]);
   });
 });

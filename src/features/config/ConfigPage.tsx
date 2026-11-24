@@ -6,6 +6,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useRevealGroup } from '@/hooks/motion';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useVisualConfig } from '@/hooks/useVisualConfig';
+import { configDraftErrorMessage } from './configDraftError';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
 import {
   CONFIG_MODE_STORAGE_KEY,
@@ -157,9 +158,12 @@ export function ConfigPage() {
       if (nextMode === 'source') {
         if (visualDirty) {
           // content may be an earlier local source preview, not a server readback.
-          const nextContent = applyVisualChangesToYaml(doc.content, 'draft');
-          if (nextContent !== doc.content) {
-            doc.syncContentFromVisual(nextContent);
+          try {
+            const nextContent = applyVisualChangesToYaml(doc.content, 'draft');
+            if (nextContent !== doc.content) doc.syncContentFromVisual(nextContent);
+          } catch (error) {
+            showNotification(configDraftErrorMessage(t, error), 'error');
+            return;
           }
         }
       } else if (shouldReloadVisualDraft(doc.sourceDirty, visualParseError)) {

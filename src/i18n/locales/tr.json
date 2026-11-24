@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Devam etmek için hesabınızı doğrulayın.",
     "title": "Antigravity Kotası",
     "empty_title": "Antigravity Kimlik Dosyası Yok",
     "empty_desc": "Kalan Kotayı Görmek için Bir Antigravity Kimlik Bilgisi Yükle.",
@@ -624,7 +625,7 @@
     "loading": "GitHub Copilot Kotası Sorgulanıyor…",
     "load_failed": "Kota Sorgulanamadı: {{message}}",
     "remaining": "%{{percent}} Kaldı",
-    "premium": "Premium etkileşimler",
+    "premium": "Aylık kota",
     "unavailable": "Kota alınamadı. Copilot kimlik bilgilerini kontrol edip tekrar deneyin."
   },
   "meta_quota": {
@@ -1146,6 +1147,8 @@
     "visual_mode_save_blocked": "YAML Sözdizimi Düzeltilene Kadar Görsel Moddan Kaydedilemez",
     "source_changes_before_visual": "Görsel Moda Geçmeden Önce Kaydedilmemiş Kaynak Düzenlemelerini Kaydet veya At.",
     "precise_save_incomplete": "Kesin Kayıt Bitmedi. Bazı Değişiklikler Uygulanmış Olabilir. Taslağın Korundu. Kalan Sunucu Farklarını Görmek için Yeniden Kaydet.",
+    "unsafe_yaml_structure": "Görsel düzenleyici, diğer YAML ayarlarını etkilemeden {{path}} alanını değiştiremiyor. Taslağınız korundu. Bu değişikliği kaynak düzenleyicide yapın.",
+    "sensitive_word_comments": "{{path}} görsel modda kaydedilirse YAML yorumları silinir. Taslağınız korundu. Yorumları kaybetmeden gözden geçirip kaydetmek için kaynak düzenleyicisine geçin.",
     "concurrent_list_conflict": "Taslak Tabanından Sonra Sunucu Listesi {{path}} Değişti. Bu Değişikliklerin Üzerine Yazmamak için Kayıt Engellendi. Taslağın Korundu. Düzenlemelerini Not Et, Sonra Yapılandırmayı Yeniden Yükle ve Uzlaştır.",
     "precise_save_recovery_required": "Kayıt Sonucu Geri Okunamadı. Düzenleme Duraklatıldı. Taslak Tabanını Kurtarmak için Yeniden Kaydet veya Yapılandırmayı Yeniden Yükle.",
     "visual_mode_latest_yaml_invalid": "En Son Sunucu Yapılandırması Geçersiz YAML İçeriyor. Görsel Değişiklikleri Kaydetmeden Önce Kaynak Modda İncele: {{message}}",
@@ -1571,7 +1574,7 @@
       },
       "validation": {
         "invalid_server_id": "Tire içeren ve sıfır olmayan bir UUID girin.",
-        "invalid_oauth_error_rules": "{{channel}} için durum kodunu, eşleşmeleri ve eylemi kontrol edin.",
+        "invalid_oauth_error_rules": "“{{channel}}” kanalındaki {{number}} numaralı kuralın durum kodunu, eşleşmelerini ve eylemini kontrol edin.",
         "invalid_trusted_proxies": "Her Güvenilen Proxy Geçerli Bir IP Adresi veya CIDR Olmalıdır.",
         "invalid_discovery_service_type": "_name._tcp Kullan: Ad 1–15 Harf, Rakam veya Tire Olmalı. Başta veya Sonda Tire Olmamalı.",
         "validation_blocked": "Kaydetmeden Önce Doğrulama Hatalarını Düzelt",
@@ -1638,6 +1641,7 @@
     "hide_details": "Ayrıntıları Gizle"
   },
   "quota_management": {
+    "open_verification_link": "Doğrulama bağlantısını aç",
     "search_label": "Hesap Ara",
     "search_placeholder": "Dosya Adına veya E-postaya Göre Ara",
     "search_empty_title": "Eşleşen Hesap Yok",
@@ -2109,7 +2113,9 @@
       "timeout": "Boşta kalma süresi (ör. 5m)",
       "maxIdle": "Sunucu başına en fazla boşta bağlantı",
       "invalidMaxIdle": "Boşta bağlantı sınırı güvenli bir tam sayı olmalıdır.",
-      "inheritHint": "Yalnızca bu anahtar için farklı olan alanları doldurun; boş alanlar bağlantı ayarlarını devralır.",
+      "empty": "Boş",
+      "valueSource": "{{field}}: değer kaynağı",
+      "inheritHint": "Devralınan alanlar bağlantı ayarlarını izler. Bu anahtara boş bir değer vermek veya özel bir değer belirlemek için ilgili seçeneği seçin.",
       "disableKey": "Bu anahtarı devre dışı bırak",
       "disableShort": "Kapalı"
     },
@@ -2215,7 +2221,6 @@
       "detailHint": "{{provider}} Protokole Göre Eşleşen API Anahtarı Yapılandırmalarına Yazılır. Bu Görünüm Onları Birlikte Yönetir.",
       "registerLink": "Buradan Kaydol",
       "registerNow": "Hemen Kaydol",
-      "kimiPromo": "Yeni Kullanıcılar İlk Başarılı Yüklemelerinin %10'u Değerinde API Kredisi Alır. Üst Sınır ¥1000. Teklif 30 Eylül'de Biter.",
       "dashboardLink": "Pano",
       "emptyRegisterHint": "Henüz Yapılandırma Yok.",
       "apiKeyHint": "Bu Anahtar Yalnızca Seçilen Grup/Protokol Yapılandırmasına Yazılır.",
@@ -2227,6 +2232,7 @@
       "usageInvalid": "Geçersiz Anahtar",
       "usageEmpty": "Uç Nokta Kullanım Verisi Döndürmedi.",
       "usageApiKeyRequired": "API Anahtarı Gerekli",
+      "ambiguousProtocols": "{{protocols}} için birden fazla grup eşleşiyor. Bu grupları ilgili sağlayıcı düzenleyicisinde düzenleyin.",
       "aggregationConflict": "Bu Gruplanmış Sağlayıcı Birden Fazla Arka Uç Yapılandırması veya OpenAI Anahtarı İçeriyor. Veri Kaybını Önlemek için Kaynak Yapılandırmada Düzenle.",
       "partialMutationWarning": "Bir veya Daha Fazla Protokol Güncellenmiş Olabilecekken İşlem Başarısız Oldu. En Son Yapılandırma Yeniden Yüklendi. Yeniden Denemeden Önce İncele.",
       "groupedKeysTitle": "Gruplanmış Anahtarlar",
@@ -2277,14 +2283,6 @@
         "openai": "OpenAI Uyumlu",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "11.11 · Sınırlı süre",
-        "title": "{{provider}} 11.11 Yükleme Bonusu",
-        "description": "Kampanya süresince {{provider}} hesabınıza yükleme yapın, yükleme tutarının %{{percent}} kadarını ek kredi olarak kazanın.",
-        "bonus": "Yükleme bonusu",
-        "cta": "Hemen katıl",
-        "ctaAria": "Hemen katıl: {{provider}} 11.11 yükleme kampanyası (yeni sekmede açılır)"
       }
     },
     "status": {
@@ -2465,7 +2463,6 @@
       "custom": "Özel",
       "connect": "Bağla",
       "connected": "{{count}} bağlı",
-      "offer": "Fırsat",
       "onboardingTitle": "İlk yapay zekâ sağlayıcınızı bağlayın",
       "moreQuickConnect": "Diğer hızlı bağlantı ortakları"
     }

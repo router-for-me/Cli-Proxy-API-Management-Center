@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { readFileSync } from 'node:fs';
+import { apiClient } from '../src/services/api/client';
 import { apiCallApi, type ApiCallRequest } from '../src/services/api/apiCall';
 import { normalizeProviderGroups } from '../src/services/api/transformers';
 import type { ProviderKeyConfig } from '../src/types/provider';
@@ -55,6 +55,89 @@ describe('provider probe proxy forwarding', () => {
       expect(requestSpy.mock.calls[0][0].proxy_url).toBe('socks5://proxy.example:1080');
     }
   );
+
+  const liveProxy = 'http://live.invalid';
+  test.each([
+    { name: 'unchanged blank', savedProxyUrl: '', key: '', indexed: true },
+    { name: 'cleared with literal key', savedProxyUrl: 'direct', key: 'literal', indexed: false },
+    {
+      name: 'cleared with indexed token',
+      savedProxyUrl: 'direct',
+      key: '',
+      indexed: true,
+      expectedProxy: liveProxy,
+    },
+    {
+      name: 'cleared without global proxy',
+      savedProxyUrl: 'http://old.invalid',
+      key: '',
+      indexed: true,
+      expectedProxy: 'direct',
+    },
+    {
+      name: 'cleared with custom token header',
+      savedProxyUrl: 'direct',
+      key: 'literal',
+      indexed: true,
+      customToken: true,
+      expectedProxy: liveProxy,
+    },
+  ])(
+    '$name resolves transport at probe time',
+    async ({ savedProxyUrl, key, indexed, customToken, expectedProxy }) => {
+      const global = expectedProxy === 'direct' ? '' : liveProxy;
+      const get = spyOn(apiClient, 'get').mockResolvedValue(global);
+      try {
+        requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+        const probe = {
+          ...args,
+          savedProxyUrl,
+          proxyUrl: ' ',
+          apiKey: key,
+          authIndex: 'fixture-index',
+          formHeaders: customToken ? [{ key: 'X-Probe', value: 'custom $TOKEN$' }] : [],
+        };
+        await captureHook(() => useConnectivityTest(probe, messages)).runCodex();
+        await captureHook(() => useModelDiscovery(probe)).fetch();
+        const entry = { apiKey: key, proxyUrl: ' ', savedProxyUrl, authIndex: probe.authIndex };
+        const openai = { ...probe, brand: 'openaiCompatibility' as const, apiKeyEntries: [entry] };
+        await captureHook(() => useConnectivityTest(openai, messages)).runOpenAIKey(0);
+        await captureHook(() => useModelDiscovery(openai)).fetch();
+        expect(get.mock.calls.map(([path]) => path)).toEqual(
+          expectedProxy ? Array(4).fill('/config/requests/proxy-url') : []
+        );
+        expect(requestSpy.mock.calls).toHaveLength(4);
+        for (const [request] of requestSpy.mock.calls) {
+          expect(request.proxy_url).toBe(expectedProxy);
+          expect(request.authIndex).toBe(indexed ? 'fixture-index' : undefined);
+          expect(request.header?.Authorization).toBe(`Bearer ${key || '$TOKEN$'}`);
+        }
+      } finally {
+        get.mockRestore();
+      }
+    }
+  );
+
+  test('failed global proxy read never sends an indexed clear or retries it anonymously', async () => {
+    const get = spyOn(apiClient, 'get').mockRejectedValue(new Error('offline'));
+    try {
+      requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
+      const probe = {
+        ...args,
+        brand: 'openaiCompatibility' as const,
+        apiKeyEntries: [
+          { apiKey: '', authIndex: 'fixture-index', proxyUrl: '', savedProxyUrl: 'direct' },
+        ],
+      };
+      expect(await captureHook(() => useConnectivityTest(probe, messages)).runOpenAIKey(0)).toBe(
+        false
+      );
+      await captureHook(() => useModelDiscovery(probe)).fetch();
+      expect(requestSpy).not.toHaveBeenCalled();
+    } finally {
+      get.mockRestore();
+    }
+  });
 
   test('OpenAI batch tests preserve each key proxy, including direct and blank', async () => {
     requestSpy = spyOn(apiCallApi, 'request').mockResolvedValue(success);
@@ -113,16 +196,6 @@ describe('provider probe proxy forwarding', () => {
     expect(requests[0].header?.Authorization).toBe('Bearer fixture-key');
     expect(requests[1].header).toBeUndefined();
     expect(requests[1].authIndex).toBeUndefined();
-  });
-
-  test('base and sponsor forms pass their editable proxy to probe hooks', () => {
-    const base = readFileSync('src/features/providers/sheets/forms/BaseProviderForm.tsx', 'utf8');
-    const sponsor = readFileSync(
-      'src/features/providers/sheets/forms/SponsorProviderForm.tsx',
-      'utf8'
-    );
-    expect(base.match(/proxyUrl: probeProxyUrl \?\? form\.proxyUrl/g)).toHaveLength(2);
-    expect(sponsor).toContain('proxyUrl: entry.proxyUrl,\n    formHeaders: discoveryHeaders');
   });
 });
 
@@ -212,19 +285,5 @@ describe('OpenAI connectivity token limits (#572)', () => {
       expect(body.max_completion_tokens).toBe(5);
       expect(body).not.toHaveProperty('max_tokens');
     }
-  });
-
-  test('model token preference participates in the status reset signature', () => {
-    // SSR does not run effects; guard the reset dependency with a source contract check.
-    const source = readFileSync(
-      'src/features/providers/sheets/forms/useConnectivityTest.ts',
-      'utf8'
-    );
-    const signature = source.slice(
-      source.indexOf('const signature = useMemo'),
-      source.indexOf('const lastSignatureRef')
-    );
-    expect(signature).toContain('it.useMaxCompletionTokens === true');
-    expect(source).toContain('if (lastSignatureRef.current === signature) return;');
   });
 });

@@ -1,6 +1,4 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { apiClient } from '@/services/api/client';
 import { providersApi, type ProviderFamily } from '@/services/api/providers';
 import { normalizeProviderGroups } from '@/services/api/transformers';
@@ -9,7 +7,6 @@ import {
   readRuntimePolicy,
   validateRuntimePolicy,
 } from '@/features/providers/runtimePolicy';
-import { RuntimePolicyEditor } from '@/features/providers/sheets/forms/RuntimePolicyEditor';
 import { createErrorRule, moveErrorRule, readErrorRules } from '@/features/providers/errorRules';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
@@ -176,7 +173,10 @@ describe('provider runtime policies', () => {
       'request-retry': 2,
       'disable-cooling': false,
     });
-    const config = normalizeProviderGroups([stored()], true)[0] as OpenAIProviderConfig;
+    const config = normalizeProviderGroups(
+      [stored()],
+      'openai-compatibility'
+    )[0] as OpenAIProviderConfig;
     await providersApi.updateOpenAIProvider(config.name, 0, {
       ...config,
       ...buildRuntimePolicy({ ...readRuntimePolicy(config), retry: '', cooling: 'inherit' }),
@@ -295,17 +295,5 @@ describe('provider runtime policies', () => {
         ],
       })
     ).toBeNull();
-  });
-  test('renders associated labels and disabled controls', () => {
-    const markup = renderToStaticMarkup(
-      createElement(RuntimePolicyEditor, {
-        value: { ...readRuntimePolicy(), errorsMode: 'override' },
-        onChange: () => {},
-        disabled: true,
-      })
-    );
-    expect(markup).toContain('aria-describedby');
-    expect(markup).toContain('for=');
-    expect(markup).toContain('disabled=""');
   });
 });

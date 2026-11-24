@@ -1,4 +1,5 @@
-import { isMap as isYamlMap, parseDocument } from 'yaml';
+import { isMap as isYamlMap, isSeq, parseDocument, visit } from 'yaml';
+import { oauthMatchTerms, oauthRulesPath, parseConfigDocument } from './configYaml';
 import { apiClient } from './client';
 
 export interface ConfigPatchPlan {
@@ -23,7 +24,7 @@ function parseConfig(source: string): Record<string, unknown> {
     throw new Error(`Invalid configuration YAML: ${[...doc.errors, ...doc.warnings][0].message}`);
   }
   const active = new Set<object>();
-  function convert(value: unknown): unknown {
+  function convert(value: unknown, path: (string | number)[]): unknown {
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
     if (typeof value === 'bigint') {
       const number = Number(value);
@@ -36,12 +37,22 @@ function parseConfig(source: string): Record<string, unknown> {
     }
     active.add(value);
     try {
-      if (Array.isArray(value)) return value.map(convert);
+      if (Array.isArray(value)) {
+        const terms =
+          path.length === 5 &&
+          path[0] === oauthRulesPath[0] &&
+          path[1] === oauthRulesPath[1] &&
+          typeof path[3] === 'number' &&
+          (path[4] === 'match' || path[4] === 'match-regexr');
+        return (terms ? oauthMatchTerms(doc, path, value) : value).map((item, i) =>
+          convert(item, [...path, i])
+        );
+      }
       if (value instanceof Map) {
         const result = record();
         for (const [key, child] of value) {
           if (typeof key !== 'string') throw new Error('Configuration map keys must be strings');
-          result[key] = convert(child);
+          result[key] = convert(child, [...path, key]);
         }
         return result;
       }
@@ -50,7 +61,7 @@ function parseConfig(source: string): Record<string, unknown> {
       active.delete(value);
     }
   }
-  const result = convert(doc.toJS({ mapAsMap: true, maxAliasCount: 100 }));
+  const result = convert(doc.toJS({ mapAsMap: true, maxAliasCount: 100 }), []);
   if (!isMap(result)) throw new Error('Configuration root must be a map');
   return result;
 }
@@ -126,13 +137,48 @@ export function buildConfigPatch(beforeYaml: string, afterYaml: string): ConfigP
     return patch;
   }
   const patch = diff(before, after, []);
+  assertSensitiveWordCommentsPreserved(patch, afterYaml);
   return { patch, deletions, ...(emptyMaps.length ? { emptyMaps } : {}) };
 }
 
 export class ConfigDraftConflictError extends Error {
-  constructor(readonly path: readonly string[]) {
-    super(`Configuration list changed concurrently: ${path.join('.')}`);
+  constructor(
+    readonly path: readonly string[],
+    readonly reason:
+      | 'concurrent_list_conflict'
+      | 'unsafe_yaml_structure'
+      | 'sensitive_word_comments' = 'concurrent_list_conflict'
+  ) {
+    super(
+      reason === 'concurrent_list_conflict'
+        ? `Configuration list changed concurrently: ${path.join('.')}`
+        : reason === 'sensitive_word_comments'
+          ? `Saving this list as JSON would discard YAML comments: ${path.join('.')}`
+          : `Cannot safely edit YAML structure: ${path.join('.')}`
+    );
     this.name = 'ConfigDraftConflictError';
+  }
+}
+
+/** A v8 JSON PATCH replaces the entire sequence. Only block comments that the draft retains. */
+function assertSensitiveWordCommentsPreserved(patch: Record<string, unknown>, yaml: string) {
+  const providers = isMap(patch.oauth) ? patch.oauth.providers : undefined;
+  if (!isMap(providers)) return;
+  let doc: ReturnType<typeof parseDocument> | undefined;
+  for (const provider of ['antigravity', 'devin']) {
+    const changes = providers[provider];
+    if (!isMap(changes) || !Array.isArray(changes['sensitive-words'])) continue;
+    const path = ['oauth', 'providers', provider, 'sensitive-words'];
+    doc ??= parseDocument(yaml);
+    const seq = doc.getIn(path, true);
+    if (!isSeq(seq)) continue;
+    visit(seq, {
+      Node: (_, node) => {
+        if (node.comment != null || node.commentBefore != null) {
+          throw new ConfigDraftConflictError(path, 'sensitive_word_comments');
+        }
+      },
+    });
   }
 }
 
@@ -189,7 +235,7 @@ export function rebaseConfigDraft(
   const plan = buildConfigPatch(beforeYaml, draftYaml);
   // Validate readback and reject ambiguous list mutations before advancing the baseline.
   assertConfigListsUnchanged(beforeYaml, draftYaml, latestYaml);
-  const doc = parseDocument(latestYaml);
+  const doc = parseConfigDocument(latestYaml);
 
   const ensureParents = (path: string[]) => {
     for (let length = 1; length < path.length; length += 1) {

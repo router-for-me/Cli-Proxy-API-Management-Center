@@ -5,7 +5,20 @@ import {
   providersApi,
   type NativeProviderFamily,
 } from '@/services/api/providers';
-import { normalizeProviderGroups } from '@/services/api/transformers';
+import {
+  buildSubmittedMember,
+  memberFields,
+  readMemberForm,
+  readSharedForm,
+  setMemberMode,
+  nativeSwitchesDirty,
+} from '@/features/providers/nativeConnectionForm';
+import {
+  buildNativeConnectionMembers,
+  buildProviderGroups,
+} from '@/features/providers/useProviderWorkbench';
+import { normalizeConfigResponse, normalizeProviderGroups } from '@/services/api/transformers';
+import type { ProviderEntryFormInput } from '@/features/providers/types';
 import type { ProviderKeyConfig } from '@/types';
 
 const { get, getRaw, put, captureConnection } = apiClient;
@@ -31,6 +44,192 @@ function backend(family: NativeProviderFamily, initial: Group[] = []) {
   const source = (index = 0) => ({ groupIndex: index, groups, group: groups[index] });
   return { groups: () => groups, source, writes: () => version - 1 };
 }
+
+test('saving new keys in a disabled group preserves the displayed state with per-key exclusions', async () => {
+  const group = { 'excluded-models': ['*'], keys: [] };
+  const b = backend('gemini', [group]);
+  const section = buildProviderGroups(
+    normalizeConfigResponse({ 'api-keys': { gemini: [group] } })
+  ).find((family) => family.id === 'gemini')!.nativeSections![0];
+  const initial = {
+    apiKey: '',
+    name: '',
+    baseUrl: '',
+    prefix: '',
+    proxyUrl: '',
+    disabled: false,
+    models: [],
+    headers: [],
+    excludedModelsText: '',
+  };
+  const shared = readSharedForm(group, initial);
+  const rows = [
+    { apiKey: 'fixture-off', excludedModelsText: 'custom' },
+    { apiKey: 'fixture-inherit', excludedModelsText: '' },
+    { apiKey: 'fixture-on', excludedModelsText: 'custom', disabled: false },
+  ].map(({ apiKey, excludedModelsText, disabled }) =>
+    buildSubmittedMember(
+      { resource: null, initial, input: { ...initial, apiKey, excludedModelsText }, disabled },
+      false,
+      shared.disabled
+    )
+  );
+  await providersApi.saveNativeConnection(
+    'gemini',
+    section.source,
+    group,
+    buildNativeConnectionMembers('gemini', section, rows)
+  );
+  expect(b.groups()).toEqual([
+    {
+      ...group,
+      keys: [
+        { 'api-key': 'fixture-off', 'excluded-models': ['custom', '*'] },
+        { 'api-key': 'fixture-inherit' },
+        { 'api-key': 'fixture-on', 'excluded-models': ['custom'] },
+      ],
+    },
+  ]);
+});
+
+test('member intent survives save and readback: pin, clear, restore, preserve untouched empty maps/lists', async () => {
+  const defaults = {
+    prefix: 'team',
+    priority: 7,
+    'proxy-url': 'direct',
+    models: [{ name: 'shared' }],
+    headers: { 'X-Fixture': 'yes' },
+    'excluded-models': ['old'],
+  };
+  const opaque = { 'connection-pool': {}, 'request-scoped-errors': [], future: {} };
+  const b = backend('codex', [
+    { ...defaults, keys: [{ 'api-key': 'fixture', ...opaque, headers: null }] },
+  ]);
+  const blank: ProviderEntryFormInput = {
+    apiKey: '',
+    name: '',
+    baseUrl: '',
+    prefix: '',
+    priority: undefined,
+    proxyUrl: '',
+    models: [],
+    headers: [],
+    excludedModelsText: '',
+    disabled: false,
+  };
+  const save = async (
+    edit: (initial: ProviderEntryFormInput) => ProviderEntryFormInput,
+    create = false
+  ) => {
+    const section = buildProviderGroups(
+      normalizeConfigResponse({ 'api-keys': { codex: b.groups() } })
+    ).find((f) => f.id === 'codex')!.nativeSections![0];
+    const saved = section.members[0];
+    const key = saved.raw as ProviderKeyConfig;
+    const resource = create ? null : saved;
+    const initial = readMemberForm(
+      {
+        ...blank,
+        prefix: key.prefix ?? '',
+        proxyUrl: key.proxyUrl ?? '',
+        priority: key.priority,
+        models: key.models ?? [],
+        excludedModelsText: key.excludedModels?.join('\n') ?? '',
+      },
+      resource
+    );
+    const input = edit(initial);
+    const rows = [
+      ...(create ? [{ resource: saved, input: blank, unchanged: true }] : []),
+      buildSubmittedMember({ resource, initial, input }, false, false),
+    ];
+    await providersApi.saveNativeConnection(
+      'codex',
+      section.source,
+      b.source().group,
+      buildNativeConnectionMembers('codex', section, rows)
+    );
+    return (b.groups()[0].keys as Group[]).at(-1)!;
+  };
+  const clear = (initial: ProviderEntryFormInput) =>
+    memberFields.reduce(
+      (form, field) => setMemberMode(form, field, field === 'priority' ? 'override' : 'empty'),
+      initial
+    );
+  const empty = {
+    prefix: '',
+    priority: 0,
+    'proxy-url': '',
+    headers: {},
+    models: [],
+    'excluded-models': [],
+  };
+  expect(
+    await save((initial) => {
+      expect(Object.values(initial.memberModes!)).toEqual(memberFields.map(() => 'inherit'));
+      return {
+        ...memberFields.reduce((form, field) => setMemberMode(form, field, 'override'), initial),
+        prefix: 'team',
+        priority: 7,
+        proxyUrl: 'direct',
+        headers: [{ key: 'X-Fixture', value: 'yes' }],
+        models: [{ name: 'shared' }],
+        excludedModelsText: 'old',
+      };
+    })
+  ).toEqual({ 'api-key': 'fixture', ...opaque, ...defaults });
+  expect(await save((initial) => ({ ...clear(initial), priority: 0 }))).toEqual({
+    'api-key': 'fixture',
+    ...opaque,
+    ...empty,
+  });
+  expect(await save((initial) => ({ ...initial, weight: 2 }))).toEqual({
+    'api-key': 'fixture',
+    ...opaque,
+    ...empty,
+    weight: 2,
+  });
+  expect(
+    await save((initial) =>
+      memberFields.reduce((form, field) => setMemberMode(form, field, 'inherit'), initial)
+    )
+  ).toEqual({ 'api-key': 'fixture', ...opaque, weight: 2 });
+  expect(await save((initial) => ({ ...clear(initial), apiKey: 'fixture-new' }), true)).toEqual({
+    'api-key': 'fixture-new',
+    ...empty,
+  });
+});
+
+test('enabling individually disabled members is dirty even when the group default is enabled', () => {
+  const group = {
+    keys: [
+      { 'api-key': 'fixture', 'excluded-models': ['*'] },
+      { 'api-key': 'fixture-2', 'excluded-models': ['*'] },
+    ],
+  };
+  const section = buildProviderGroups(
+    normalizeConfigResponse({ 'api-keys': { codex: [group] } })
+  ).find((f) => f.id === 'codex')!.nativeSections![0];
+  const rows = section.members.map((resource) => {
+    const initial = readMemberForm(
+      {
+        apiKey: '',
+        name: '',
+        baseUrl: '',
+        prefix: '',
+        proxyUrl: '',
+        models: [],
+        headers: [],
+        excludedModelsText: '',
+        disabled: true,
+      },
+      resource
+    );
+    return { resource, initial, input: initial };
+  });
+  expect(nativeSwitchesDirty(rows, false)).toBe(false);
+  expect(nativeSwitchesDirty(rows, false, false)).toBe(true);
+});
 
 for (const family of [
   'codex',
@@ -102,10 +301,10 @@ test('group edits preserve member overrides, raw policy and model row metadata a
   const row = (normalizeProviderGroups(b.groups()) as ProviderKeyConfig[])[0];
   await providersApi.updateCodexConfig(row.apiKey, row.baseUrl, {
     ...row,
-    baseUrl: 'ignored',
+    baseUrl: 'updated-endpoint',
     priority: 3,
   });
-  expect(b.groups()[1]['base-url']).toBe('new');
+  expect(b.groups()[1]['base-url']).toBe('updated-endpoint');
   expect(b.groups()[1].keys).toEqual([{ ...target.keys[0], priority: 3 }]);
 });
 
@@ -363,4 +562,126 @@ test('atomic connection save never publishes or replays a late write on a new se
   } finally {
     apiClient.setConfig({ apiBase: '', managementKey: '' });
   }
+});
+
+test('moving a partner endpoint persists on the group without rerouting sibling credentials', async () => {
+  const group = {
+    name: 'combined',
+    'base-url': 'https://api.moonshot.cn/v1',
+    priority: 5,
+    headers: { Shared: 'fixture' },
+    keys: [{ 'api-key': 'fixture-a', priority: null }, { 'api-key': 'fixture-b' }],
+  };
+  const b = backend('codex', [group]);
+  const read = () => normalizeConfigResponse({ 'api-keys': { codex: b.groups() } }).codexApiKeys!;
+  const move = async (row: ProviderKeyConfig, baseUrl: string) =>
+    providersApi.updateCodexConfig(row.apiKey, row.baseUrl, { ...row, baseUrl });
+  const target = 'https://api.moonshot.ai/v1';
+  await move(read()[0], target);
+  expect(b.groups()).toEqual([
+    { ...group, keys: [group.keys[1]] },
+    { ...group, name: 'codex-2', 'base-url': target, keys: [group.keys[0]] },
+  ]);
+  expect(read().map((row) => row.baseUrl)).toEqual([group['base-url'], target]);
+  await move(read()[1], 'https://elsewhere.invalid');
+  expect(read().map((row) => row.baseUrl)).toEqual([
+    group['base-url'],
+    'https://elsewhere.invalid',
+  ]);
+  expect(b.groups()).toHaveLength(2);
+});
+
+test('a native multi-key Kimi connection remains native and editable after save and reload', async () => {
+  const b = backend('codex');
+  const settings = { name: 'Kimi pool', 'base-url': 'https://api.moonshot.ai/v1' };
+  const reload = () =>
+    buildProviderGroups(normalizeConfigResponse({ 'api-keys': { codex: b.groups() } }));
+  await providersApi.saveNativeConnection(
+    'codex',
+    undefined,
+    settings,
+    ['fixture-a', 'fixture-b'].map((apiKey) => ({ config: { apiKey } }))
+  );
+  let view = reload();
+  const section = view.find((g) => g.id === 'codex')!.nativeSections![0];
+  expect(section.members).toHaveLength(2);
+  expect(view.find((g) => g.id === 'kimi')!.resources).toHaveLength(0);
+  await providersApi.saveNativeConnection('codex', section.source, settings, [
+    { originalKeyIndex: 0 },
+    { originalKeyIndex: 1, config: { apiKey: 'fixture-rotated' } },
+  ]);
+  view = reload();
+  expect(view.find((g) => g.id === 'codex')!.resources.map((r) => r.apiKey)).toEqual([
+    'fixture-a',
+    'fixture-rotated',
+  ]);
+  expect(view.find((g) => g.id === 'kimi')!.resources).toEqual([]);
+});
+
+for (const family of ['gemini', 'interactions', 'claude', 'codex', 'xai'] as const) {
+  test(`${family}: edit an endpoint-only member and delete it without confusing [{}] with []`, async () => {
+    const settings = { name: 'external', 'base-url': 'https://api.qnaigc.com' };
+    const b = backend(family, [
+      { ...settings, keys: [{}] },
+      { name: 'empty', keys: [] },
+    ]);
+    const reload = () =>
+      buildProviderGroups(normalizeConfigResponse({ 'api-keys': { [family]: b.groups() } })).find(
+        (g) => g.id === family
+      )!.nativeSections!;
+    const [section, empty] = reload();
+    expect(section.members).toHaveLength(1);
+    expect(empty.members).toEqual([]);
+    const row = section.members[0].raw as ProviderKeyConfig;
+    expect(row.apiKey).toBe('');
+    await expect(
+      providersApi.saveNativeConnection(family, section.source, { name: 'external' }, [
+        { originalKeyIndex: 0 },
+      ])
+    ).rejects.toThrow('baseUrlRequired');
+    await providersApi.saveNativeConnection(family, section.source, settings, [
+      { originalKeyIndex: 0, config: { ...row, priority: 3 } },
+    ]);
+    expect(b.groups()[0].keys).toEqual([{ priority: 3 }]);
+    expect(reload()[0].members[0].priority).toBe(3);
+    await providersApi.saveNativeConnection(family, reload()[0].source, settings, []);
+    expect(reload().map((s) => s.members.length)).toEqual([0, 0]);
+    expect(b.groups()[0].keys).toEqual([]);
+  });
+}
+
+test('Meta and Vertex do not expose blank API-key members', () => {
+  const groups = [{ 'base-url': 'https://external.invalid', keys: [{}] }];
+  const config = normalizeConfigResponse({
+    'api-keys': { meta: groups, vertex: groups, gemini: [{ keys: [{}] }] },
+  });
+  expect(config.metaApiKeys).toEqual([]);
+  expect(config.vertexApiKeys).toEqual([]);
+  expect(config.geminiApiKeys).toEqual([]);
+});
+
+test('a partner bundle claims only representable protocols across native and compatibility views', () => {
+  const group = {
+    name: 'Kimi',
+    'base-url': 'https://api.moonshot.ai/v1',
+    keys: [{ 'api-key': 'fixture-a' }],
+  };
+  const config = normalizeConfigResponse({
+    'api-keys': {
+      codex: [group, { ...group, keys: [{ 'api-key': 'fixture-b' }] }],
+      'openai-compatibility': [{ ...group, keys: [...group.keys, { 'api-key': 'fixture-c' }] }],
+      claude: [{ ...group, 'base-url': 'https://api.moonshot.ai/anthropic' }],
+    },
+  });
+  const view = buildProviderGroups(config);
+  expect(view.find((g) => g.id === 'codex')!.nativeSections).toHaveLength(2);
+  expect(view.find((g) => g.id === 'openaiCompatibility')!.resources).toHaveLength(1);
+  expect(view.find((g) => g.id === 'claude')!.nativeSections).toHaveLength(0);
+  const bundle = view.find((g) => g.id === 'kimi')!.resources;
+  expect(bundle).toHaveLength(1);
+  expect(bundle[0].raw).toMatchObject({
+    codex: [],
+    openai: [],
+    claude: [{ config: config.claudeApiKeys![0] }],
+  });
 });

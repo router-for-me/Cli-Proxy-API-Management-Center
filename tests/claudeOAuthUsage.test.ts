@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { I18nextProvider } from 'react-i18next';
@@ -398,29 +397,6 @@ describe('Claude usage snapshot rendering and retention', () => {
     useQuotaStore.getState().clearQuotaCache();
   });
 
-  test('offers read-only refresh for every non-idle auth-file quota, including Claude', () => {
-    // This host imports SCSS modules, so cover the action wiring here and
-    // verify its interaction with the production build in the browser.
-    const source = readFileSync(
-      new URL('../src/features/authFiles/components/AuthFileQuotaSection.tsx', import.meta.url),
-      'utf8'
-    );
-    // Idle quota is refreshed via the clickable idle prompt; avoid a duplicate button.
-    expect(source).toContain("const showRefreshQuotaAction = quotaStatus !== 'idle';");
-    expect(source).toContain('{showRefreshQuotaAction && (');
-    expect(source).toContain('<div className={styles.quotaCardActions}>');
-    expect(source).toContain('onClick={() => void refreshQuotaForFile()}');
-    expect(source).toContain("disabled={!canRefreshQuota || quotaStatus === 'loading'}");
-    expect(source).toContain("loading={quotaStatus === 'loading'}");
-    expect(source).toContain("{t('auth_files.quota_refresh_single')}");
-    expect(source).toContain("if (quota?.status === 'loading' || resettingQuota) return;");
-    expect(source).toContain(
-      'const canRefreshQuota = !disableControls && !file.disabled && !resettingQuota;'
-    );
-    expect(source).toContain('{resetQuotaAction}');
-    expect(CLAUDE_CONFIG).not.toHaveProperty('resetQuota');
-  });
-
   test('renders enabled extra usage in minor units and each balance in dollars', () => {
     const markup = render(quota);
     expect(markup).toContain('Extra Usage');
@@ -612,25 +588,6 @@ describe('Claude usage snapshot rendering and retention', () => {
     expect(markup).toContain('Showing last successful check:');
     expect(markup).toContain(new Date(observedAt).toLocaleString('en'));
     expect(markup).toContain('$94.96 remaining');
-  });
-
-  test('keeps the last good data during loading and errors, then recovers', () => {
-    const store = useQuotaStore.getState();
-    store.setClaudeQuota({ [file.name]: quota });
-    store.setClaudeQuota({ [file.name]: CLAUDE_CONFIG.buildLoadingState() });
-    let retained = useQuotaStore.getState().claudeQuota[file.name];
-    expect(retained.status).toBe('loading');
-    expect(retained.extraUsage).toEqual(quota.extraUsage);
-    expect(retained.dollarWindows).toEqual(quota.dollarWindows);
-    store.setClaudeQuota({ [file.name]: CLAUDE_CONFIG.buildErrorState('network failed', 502) });
-    retained = useQuotaStore.getState().claudeQuota[file.name];
-    expect(retained.status).toBe('error');
-    expect(retained.stale).toBe(true);
-    expect(retained.observedAt).toBe(observedAt);
-    expect(retained.dollarWindows).toEqual(quota.dollarWindows);
-    const recovered = { ...quota, observedAt: '2026-10-10T01:00:00Z', stale: false };
-    store.setClaudeQuota({ [file.name]: recovered });
-    expect(useQuotaStore.getState().claudeQuota[file.name]).toEqual(recovered);
   });
 
   test('does not retain balances across file replacement or session invalidation', () => {

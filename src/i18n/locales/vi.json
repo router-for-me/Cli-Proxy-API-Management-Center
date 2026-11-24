@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Hãy xác minh tài khoản để tiếp tục.",
     "title": "Quota Antigravity",
     "empty_title": "Không có File xác thực Antigravity",
     "empty_desc": "Tải lên credential Antigravity để xem quota còn lại.",
@@ -1352,7 +1353,7 @@
         "payload_invalid_boolean": "Chọn true hoặc false",
         "payload_invalid_json": "Nhập JSON hợp lệ",
         "invalid_server_id": "Nhập UUID khác không có dấu gạch nối.",
-        "invalid_oauth_error_rules": "Kiểm tra mã trạng thái, điều kiện khớp và hành động của {{channel}}.",
+        "invalid_oauth_error_rules": "Kiểm tra mã trạng thái, điều kiện khớp và hành động của quy tắc {{number}} trong kênh “{{channel}}”.",
         "invalid_trusted_proxies": "Mỗi proxy đáng tin cậy phải là một địa chỉ IP hoặc CIDR hợp lệ.",
         "invalid_discovery_service_type": "Sử dụng định dạng _tên._tcp: tên phải gồm 1–15 chữ cái, chữ số hoặc dấu gạch nối, không bắt đầu hoặc kết thúc bằng dấu gạch nối.",
         "invalid_duration": "Nhập khoảng thời gian hợp lệ, chẳng hạn như 30s hoặc 3h",
@@ -1571,6 +1572,8 @@
     },
     "source_changes_before_visual": "Lưu hoặc hủy các chỉnh sửa mã nguồn chưa lưu trước khi chuyển sang chế độ trực quan.",
     "precise_save_incomplete": "Quá trình lưu chính xác chưa hoàn tất; một số thay đổi có thể đã được áp dụng. Bản nháp của bạn được giữ lại. Hãy lưu lại để xem xét các khác biệt còn lại trên máy chủ.",
+    "unsafe_yaml_structure": "Trình chỉnh sửa trực quan không thể thay đổi {{path}} mà không ảnh hưởng đến các thiết lập YAML khác. Bản nháp được giữ lại. Hãy thực hiện thay đổi này trong trình chỉnh sửa mã nguồn.",
+    "sensitive_word_comments": "Lưu {{path}} ở chế độ trực quan sẽ làm mất chú thích YAML. Bản nháp vẫn được giữ. Hãy chuyển sang trình chỉnh sửa mã nguồn để kiểm tra và lưu cả chú thích.",
     "concurrent_list_conflict": "Danh sách trên máy chủ {{path}} đã thay đổi sau mốc cơ sở bản nháp của bạn. Thao tác lưu bị chặn để tránh ghi đè các thay đổi đó. Bản nháp của bạn được giữ lại; hãy ghi lại các chỉnh sửa, sau đó tải lại cấu hình và hợp nhất.",
     "precise_save_recovery_required": "Không thể đọc lại kết quả lưu. Đã tạm dừng chỉnh sửa. Lưu lại để khôi phục mốc cơ sở của bản nháp, hoặc tải lại cấu hình."
   },
@@ -1583,6 +1586,7 @@
     "hide_details": "Ẩn chi tiết"
   },
   "quota_management": {
+    "open_verification_link": "Mở liên kết xác minh",
     "title": "Quản lý Quota",
     "refresh_all_credentials": "Làm mới mọi credential",
     "sort_label": "Sắp xếp",
@@ -2034,15 +2038,11 @@
       "codex": "Codex",
       "xai": "xAI",
       "claude": "Claude",
-      "claudeApi": "ClaudeAPI",
       "vertex": "Vertex",
       "openaiCompatibility": "Tương thích OpenAI",
       "apikeyFun": "APIKEY.FUN",
-      "code0": "Code0",
       "fennoAI": "FennoAI",
       "qiniuCloud": "Qiniu Cloud",
-      "lmuAI": "LMU AI (Linhmou AI)",
-      "infistar": "Infistar",
       "kimi": "Kimi",
       "meta": "Muse (Meta)"
     },
@@ -2075,6 +2075,7 @@
       "usageInvalid": "Key không hợp lệ",
       "usageEmpty": "Endpoint không trả về dữ liệu sử dụng nào.",
       "usageApiKeyRequired": "Cần có API key",
+      "ambiguousProtocols": "Có nhiều nhóm khớp với {{protocols}}. Hãy chỉnh sửa các nhóm này trong trình chỉnh sửa nhà cung cấp tương ứng.",
       "aggregationConflict": "Provider được nhóm này chứa nhiều cấu hình backend hoặc key OpenAI. Hãy chỉnh trong cấu hình nguồn để tránh mất dữ liệu.",
       "partialMutationWarning": "Thao tác thất bại sau khi một hoặc nhiều giao thức có thể đã được cập nhật. Cấu hình mới nhất đã được tải lại; hãy xem lại trước khi thử lại.",
       "groupedKeysTitle": "Key được nhóm",
@@ -2125,15 +2126,6 @@
         "openai": "Tương thích OpenAI",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "kimiPromo": "Người dùng mới nạp tiền lần đầu thành công sẽ được tặng hạn mức API trị giá 10% số tiền nạp, tối đa ¥1000. Ưu đãi kết thúc vào ngày 30 tháng 9.",
-      "double11": {
-        "badge": "Ưu đãi 11.11 · Có hạn",
-        "title": "{{provider}} khuyến mãi nạp tiền 11.11",
-        "description": "Nạp tiền vào {{provider}} trong thời gian sự kiện để được tặng thêm {{percent}}% giá trị nạp.",
-        "bonus": "Tặng thêm khi nạp",
-        "cta": "Tham gia ngay",
-        "ctaAria": "Tham gia ngay sự kiện nạp tiền 11.11 của {{provider}} (mở trong thẻ mới)"
       }
     },
     "status": {
@@ -2217,8 +2209,6 @@
       },
       "cloakCacheUserId": "Cache user_id",
       "cloakCacheUserIdHint": "Dùng lại user_id Claude cloak theo từng API key",
-      "experimentalCchSigning": "Ký CCH thử nghiệm",
-      "experimentalCchSigningHint": "Ký body /v1/messages Claude đã cloak cuối cùng bằng CCH",
       "validation": {
         "nameRequired": "Tên là bắt buộc",
         "apiKeyRequired": "Cần ít nhất một API key",
@@ -2358,7 +2348,9 @@
       "timeout": "Thời gian chờ khi rảnh (ví dụ: 5m)",
       "maxIdle": "Số kết nối rảnh tối đa mỗi máy chủ",
       "invalidMaxIdle": "Số kết nối rảnh tối đa phải là số nguyên an toàn.",
-      "inheritHint": "Chỉ điền những gì khóa này khác biệt; trường để trống sẽ kế thừa cài đặt kết nối.",
+      "empty": "Để trống",
+      "valueSource": "{{field}}: nguồn giá trị",
+      "inheritHint": "Các trường kế thừa dùng cài đặt của kết nối. Chọn để trống hoặc ghi đè để đặt giá trị riêng cho khóa này.",
       "disableKey": "Tắt khóa này",
       "disableShort": "Tắt"
     },
@@ -2416,7 +2408,6 @@
       "custom": "Tùy chỉnh",
       "connect": "Kết nối",
       "connected": "Đã kết nối {{count}}",
-      "offer": "Ưu đãi",
       "onboardingTitle": "Kết nối nhà cung cấp AI đầu tiên",
       "moreQuickConnect": "Thêm đối tác kết nối nhanh"
     }
@@ -2447,7 +2438,7 @@
     "loading": "Đang truy vấn quota GitHub Copilot…",
     "load_failed": "Truy vấn quota thất bại: {{message}}",
     "remaining": "Còn lại {{percent}}%",
-    "premium": "Tương tác cao cấp",
+    "premium": "Hạn mức hằng tháng",
     "unavailable": "Không thể lấy hạn mức. Hãy kiểm tra thông tin xác thực Copilot và thử lại."
   },
   "meta_quota": {

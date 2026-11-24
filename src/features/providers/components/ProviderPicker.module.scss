@@ -140,25 +140,6 @@
   white-space: nowrap;
 }
 
-.offer {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-}
-
-.offerTag {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 0 6px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 650;
-  line-height: 1.6;
-  color: var(--amber-text);
-  background: var(--amber-10);
-  vertical-align: 1px;
-}
-
 .featureActions {
   display: flex;
   flex-direction: column;

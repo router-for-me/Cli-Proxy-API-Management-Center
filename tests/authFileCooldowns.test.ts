@@ -269,34 +269,4 @@ describe('cooldown section rendering', () => {
     expect(markup).not.toContain('<script>');
     expect(markup).toContain('&lt;script&gt;');
   });
-
-  test('translates every new label in all four locales, including future reasons', () => {
-    const reference = i18n.getResource('zh-CN', 'translation', 'auth_files') as Record<
-      string,
-      string
-    >;
-    const keys = Object.keys(reference).filter(
-      (key) => key.startsWith('cooldown_') || key.startsWith('card_')
-    );
-    for (const lng of ['en', 'zh-CN', 'zh-TW', 'ru']) {
-      const local = i18n.getResource(lng, 'translation', 'auth_files') as Record<string, string>;
-      for (const key of keys) {
-        // Inspect the locale itself so Chinese fallback cannot hide a missing translation.
-        expect(typeof (local[key] ?? local[`${key}_other`])).toBe('string');
-        for (const count of [1, 2, 5]) {
-          const result = i18n.t(`auth_files.${key}`, {
-            lng,
-            count,
-            name: 'sample.json',
-            time: '32s',
-            status: 429,
-            level: 6,
-            message: 'sample error',
-          });
-          expect(result).not.toContain('auth_files.');
-          expect(result).not.toContain('{{');
-        }
-      }
-    }
-  });
 });

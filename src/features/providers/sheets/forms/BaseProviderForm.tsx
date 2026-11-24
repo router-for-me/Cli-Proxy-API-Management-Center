@@ -64,9 +64,15 @@ import { RuntimePolicyEditor } from './RuntimePolicyEditor';
 import { ProviderBehaviorEditor } from './ProviderBehaviorEditor';
 import { pickProviderBehavior } from '../../providerBehavior';
 
+import type { MemberField, MemberMode } from '@/services/api/nativeProviderGroups';
 import type { NativeProviderFamily } from '@/services/api/providers';
 import {
+  readMemberForm,
+  setMemberMode,
   buildSharedSettings,
+  buildSubmittedMember,
+  memberDisabled,
+  nativeSwitchesDirty,
   memberProbeSettings,
   readSharedForm,
   type NativeConnectionFormOutput,
@@ -190,6 +196,7 @@ function buildInitialForm(
         ? cfg.apiKeyEntries.map((entry) => ({
             apiKey: '',
             existingApiKey: entry.apiKey,
+            savedProxyUrl: entry.proxyUrl,
             sourceIndex: entry.sourceIndex,
             proxyUrl: entry.proxyUrl ?? '',
             weight: entry.weight,
@@ -276,6 +283,7 @@ interface ProviderFieldsProps {
   setForm: Dispatch<SetStateAction<ProviderEntryFormInput>>;
   scope: Scope;
   keyList?: ReactNode;
+  probeModels?: ProviderEntryFormInput['models'];
   probeApiKey?: string;
   probeBaseUrl?: string;
   probeProxyUrl?: string;
@@ -334,6 +342,7 @@ function ProviderFields({
   setForm,
   scope,
   keyList,
+  probeModels = form.models,
   probeApiKey,
   probeBaseUrl,
   probeProxyUrl,
@@ -370,8 +379,9 @@ function ProviderFields({
       brand,
       baseUrl: probeBaseUrl ?? form.baseUrl,
       proxyUrl: probeProxyUrl ?? form.proxyUrl,
+      savedProxyUrl: resource?.proxyUrl ?? undefined,
       testModel: form.testModel,
-      models: form.models,
+      models: probeModels,
       formHeaders: probeHeaders ?? form.headers,
       apiKeyEntries: form.apiKeyEntries,
       apiKey: probeApiKey ?? form.apiKey,
@@ -385,6 +395,7 @@ function ProviderFields({
     brand,
     baseUrl: probeBaseUrl ?? form.baseUrl,
     proxyUrl: probeProxyUrl ?? form.proxyUrl,
+    savedProxyUrl: resource?.proxyUrl ?? undefined,
     formHeaders: probeHeaders ?? form.headers,
     apiKeyEntries: form.apiKeyEntries,
     apiKey: probeApiKey ?? form.apiKey,
@@ -405,7 +416,7 @@ function ProviderFields({
   const testModelOptions = useMemo(() => {
     const seen = new Set<string>();
     const names: string[] = [];
-    form.models.forEach((m) => {
+    probeModels.forEach((m) => {
       const name = (m.name ?? '').trim();
       if (!name || seen.has(name)) return;
       seen.add(name);
@@ -425,7 +436,7 @@ function ProviderFields({
       });
     }
     return opts;
-  }, [form.models, form.testModel, t]);
+  }, [probeModels, form.testModel, t]);
 
   const openDiscovery = () => {
     setDiscoveryOpen(true);
@@ -543,6 +554,32 @@ function ProviderFields({
     (e) => e.apiKey.trim() || e.existingApiKey?.trim()
   ).length;
 
+  const memberField = (field: MemberField, label: string, editor: ReactNode, inputId?: string) => {
+    const mode = form.memberModes?.[field];
+    if (!mode) return editor;
+    const modes: MemberMode[] =
+      field === 'priority' ? ['inherit', 'override'] : ['inherit', 'empty', 'override'];
+    return (
+      <div className={styles.field}>
+        <Select
+          id={mode === 'override' ? undefined : inputId}
+          ariaLabel={t('providersPage.nativeKey.valueSource', { field: label })}
+          disabled={mutating}
+          value={mode}
+          options={modes.map((value) => ({
+            value,
+            label:
+              value === 'empty'
+                ? t('providersPage.nativeKey.empty')
+                : t(`providersPage.runtimePolicy.${value}`),
+          }))}
+          onChange={(value) => setForm((prev) => setMemberMode(prev, field, value as MemberMode))}
+        />
+        {mode === 'override' && editor}
+      </div>
+    );
+  };
+
   return (
     <>
       <FormSection title={t('providersPage.form.sections.connection')}>
@@ -583,14 +620,19 @@ function ProviderFields({
             <label className={styles.label} htmlFor={`${fid}-proxy`}>
               {t('providersPage.form.proxyUrl')}
             </label>
-            <input
-              id={`${fid}-proxy`}
-              className={styles.input}
-              value={form.proxyUrl}
-              onChange={(e) => updateField('proxyUrl', e.target.value)}
-              placeholder="http://127.0.0.1:7890"
-              disabled={mutating}
-            />
+            {memberField(
+              'proxyUrl',
+              t('providersPage.form.proxyUrl'),
+              <input
+                id={`${fid}-proxy`}
+                className={styles.input}
+                value={form.proxyUrl}
+                onChange={(e) => updateField('proxyUrl', e.target.value)}
+                placeholder="http://127.0.0.1:7890"
+                disabled={mutating}
+              />,
+              `${fid}-proxy`
+            )}
           </div>
         ) : null}
       </FormSection>
@@ -690,32 +732,42 @@ function ProviderFields({
               <label className={styles.label} htmlFor={`${fid}-prefix`}>
                 {t('providersPage.form.prefix')}
               </label>
-              <input
-                id={`${fid}-prefix`}
-                className={styles.input}
-                value={form.prefix}
-                onChange={(e) => updateField('prefix', e.target.value)}
-                disabled={mutating}
-              />
+              {memberField(
+                'prefix',
+                t('providersPage.form.prefix'),
+                <input
+                  id={`${fid}-prefix`}
+                  className={styles.input}
+                  value={form.prefix}
+                  onChange={(e) => updateField('prefix', e.target.value)}
+                  disabled={mutating}
+                />,
+                `${fid}-prefix`
+              )}
             </div>
             {descriptor.supportsPriority ? (
               <div className={styles.field}>
                 <label className={styles.label} htmlFor={`${fid}-prio`}>
                   {t('providersPage.form.priority')}
                 </label>
-                <input
-                  id={`${fid}-prio`}
-                  type="number"
-                  className={styles.input}
-                  value={form.priority ?? ''}
-                  onChange={(e) =>
-                    updateField(
-                      'priority',
-                      e.target.value === '' ? undefined : Number(e.target.value)
-                    )
-                  }
-                  disabled={mutating}
-                />
+                {memberField(
+                  'priority',
+                  t('providersPage.form.priority'),
+                  <input
+                    id={`${fid}-prio`}
+                    type="number"
+                    className={styles.input}
+                    value={form.priority ?? ''}
+                    onChange={(e) =>
+                      updateField(
+                        'priority',
+                        e.target.value === '' ? undefined : Number(e.target.value)
+                      )
+                    }
+                    disabled={mutating}
+                  />,
+                  `${fid}-prio`
+                )}
               </div>
             ) : null}
           </div>
@@ -817,45 +869,49 @@ function ProviderFields({
               label={t('providersPage.form.modelsSection')}
               count={existingModelNames.size}
             >
-              <div className={styles.entriesList}>
-                {discovery.available ? (
-                  <div className={styles.entriesToolbar}>
-                    <button
-                      type="button"
-                      className={styles.connectivityBtn}
-                      onClick={openDiscovery}
-                      disabled={mutating}
-                    >
-                      <IconDownload size={13} />
-                      <span>{t('providersPage.discovery.openButton')}</span>
-                    </button>
-                  </div>
-                ) : null}
-                {discovery.available && discoveryOpen ? (
-                  <ModelDiscoveryPanel
-                    loading={discovery.loading}
-                    error={discovery.error}
-                    models={discovery.models}
-                    hasFetched={discovery.hasFetched}
-                    existingNames={existingModelNames}
+              {memberField(
+                'models',
+                t('providersPage.form.modelsSection'),
+                <div className={styles.entriesList}>
+                  {discovery.available ? (
+                    <div className={styles.entriesToolbar}>
+                      <button
+                        type="button"
+                        className={styles.connectivityBtn}
+                        onClick={openDiscovery}
+                        disabled={mutating}
+                      >
+                        <IconDownload size={13} />
+                        <span>{t('providersPage.discovery.openButton')}</span>
+                      </button>
+                    </div>
+                  ) : null}
+                  {discovery.available && discoveryOpen ? (
+                    <ModelDiscoveryPanel
+                      loading={discovery.loading}
+                      error={discovery.error}
+                      models={discovery.models}
+                      hasFetched={discovery.hasFetched}
+                      existingNames={existingModelNames}
+                      mutating={mutating}
+                      onApply={applyDiscoveredModels}
+                      onReload={() => void discovery.fetch()}
+                      onClose={closeDiscovery}
+                    />
+                  ) : null}
+                  <ModelEntriesEditor
+                    providerBrand={brand}
+                    models={modelsList}
+                    supportsImage={supportsModelImage}
+                    supportsThinking
                     mutating={mutating}
-                    onApply={applyDiscoveredModels}
-                    onReload={() => void discovery.fetch()}
-                    onClose={closeDiscovery}
+                    removeDisabled={false}
+                    onUpdate={updateModelEntry}
+                    onAdd={() => updateField('models', [...modelsList, emptyModel()])}
+                    onRemove={removeModelEntry}
                   />
-                ) : null}
-                <ModelEntriesEditor
-                  providerBrand={brand}
-                  models={modelsList}
-                  supportsImage={supportsModelImage}
-                  supportsThinking
-                  mutating={mutating}
-                  removeDisabled={false}
-                  onUpdate={updateModelEntry}
-                  onAdd={() => updateField('models', [...modelsList, emptyModel()])}
-                  onRemove={removeModelEntry}
-                />
-              </div>
+                </div>
+              )}
             </FormDisclosure>
           ) : null}
 
@@ -864,66 +920,70 @@ function ProviderFields({
               label={t('providersPage.form.headersSection')}
               count={headersList.filter((entry) => entry.key.trim()).length || undefined}
             >
-              <div className={styles.entriesList}>
-                {headersList.map((entry, idx) => (
-                  <div key={idx} className={styles.headerRow}>
-                    <input
-                      className={`${styles.input} ${styles.mono}`}
-                      placeholder="X-Custom-Header"
-                      aria-label={t('providersPage.form.headerName')}
-                      value={entry.key}
-                      onChange={(e) =>
-                        updateField(
-                          'headers',
-                          headersList.map((it, i) =>
-                            i === idx ? { ...it, key: e.target.value } : it
+              {memberField(
+                'headers',
+                t('providersPage.form.headersSection'),
+                <div className={styles.entriesList}>
+                  {headersList.map((entry, idx) => (
+                    <div key={idx} className={styles.headerRow}>
+                      <input
+                        className={`${styles.input} ${styles.mono}`}
+                        placeholder="X-Custom-Header"
+                        aria-label={t('providersPage.form.headerName')}
+                        value={entry.key}
+                        onChange={(e) =>
+                          updateField(
+                            'headers',
+                            headersList.map((it, i) =>
+                              i === idx ? { ...it, key: e.target.value } : it
+                            )
                           )
-                        )
-                      }
-                      disabled={mutating}
-                    />
-                    <input
-                      className={styles.input}
-                      placeholder="value"
-                      aria-label={t('providersPage.form.headerValue')}
-                      value={entry.value}
-                      onChange={(e) =>
-                        updateField(
-                          'headers',
-                          headersList.map((it, i) =>
-                            i === idx ? { ...it, value: e.target.value } : it
+                        }
+                        disabled={mutating}
+                      />
+                      <input
+                        className={styles.input}
+                        placeholder="value"
+                        aria-label={t('providersPage.form.headerValue')}
+                        value={entry.value}
+                        onChange={(e) =>
+                          updateField(
+                            'headers',
+                            headersList.map((it, i) =>
+                              i === idx ? { ...it, value: e.target.value } : it
+                            )
                           )
-                        )
-                      }
-                      disabled={mutating}
-                    />
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      disabled={mutating || headersList.length <= 1}
-                      aria-label={t('providersPage.actions.delete')}
-                      title={t('providersPage.actions.delete')}
-                      onClick={() =>
-                        updateField(
-                          'headers',
-                          headersList.filter((_, i) => i !== idx)
-                        )
-                      }
-                    >
-                      <IconX size={14} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className={styles.addBtn}
-                  disabled={mutating}
-                  onClick={() => updateField('headers', [...headersList, emptyHeader()])}
-                >
-                  <IconPlus size={13} />
-                  <span>{t('providersPage.form.addHeader')}</span>
-                </button>
-              </div>
+                        }
+                        disabled={mutating}
+                      />
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        disabled={mutating || headersList.length <= 1}
+                        aria-label={t('providersPage.actions.delete')}
+                        title={t('providersPage.actions.delete')}
+                        onClick={() =>
+                          updateField(
+                            'headers',
+                            headersList.filter((_, i) => i !== idx)
+                          )
+                        }
+                      >
+                        <IconX size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.addBtn}
+                    disabled={mutating}
+                    onClick={() => updateField('headers', [...headersList, emptyHeader()])}
+                  >
+                    <IconPlus size={13} />
+                    <span>{t('providersPage.form.addHeader')}</span>
+                  </button>
+                </div>
+              )}
             </FormDisclosure>
           ) : null}
 
@@ -932,22 +992,26 @@ function ProviderFields({
               label={t('providersPage.form.excludedSection')}
               count={excludedRules.length || undefined}
             >
-              <div className={styles.field}>
-                <ExcludedModelsPicker
-                  value={excludedRules}
-                  onChange={(next) =>
-                    updateField('excludedModelsText', formatExcludedRulesText(next))
-                  }
-                  candidates={excludedCandidates}
-                  catalogState={excludedCatalogState}
-                  onRetryCatalog={discovery.available ? () => void discovery.fetch() : undefined}
-                  disabled={mutating}
-                  // `'*'` = 该 provider 已停用，唯一所有者是上面的停用开关。
-                  // 传进来后 picker 双向过滤它，用户手打 `*` 也会被拦下并解释原因。
-                  reservedRules={DISABLE_ALL_RULES}
-                  reservedRuleMessage={t('providersPage.form.excludedDisabledNote')}
-                />
-              </div>
+              {memberField(
+                'excludedModelsText',
+                t('providersPage.form.excludedSection'),
+                <div className={styles.field}>
+                  <ExcludedModelsPicker
+                    value={excludedRules}
+                    onChange={(next) =>
+                      updateField('excludedModelsText', formatExcludedRulesText(next))
+                    }
+                    candidates={excludedCandidates}
+                    catalogState={excludedCatalogState}
+                    onRetryCatalog={discovery.available ? () => void discovery.fetch() : undefined}
+                    disabled={mutating}
+                    // `'*'` = 该 provider 已停用，唯一所有者是上面的停用开关。
+                    // 传进来后 picker 双向过滤它，用户手打 `*` 也会被拦下并解释原因。
+                    reservedRules={DISABLE_ALL_RULES}
+                    reservedRuleMessage={t('providersPage.form.excludedDisabledNote')}
+                  />
+                </div>
+              )}
             </FormDisclosure>
           ) : null}
 
@@ -1118,7 +1182,10 @@ function createRow(
   resource: ProviderResource | null,
   id: number
 ): NativeRow {
-  const initial = buildInitialForm(brand, resource, resource ? 'edit' : 'create');
+  const initial = readMemberForm(
+    buildInitialForm(brand, resource, resource ? 'edit' : 'create'),
+    resource
+  );
   return { id, resource, initial, input: initial };
 }
 function untouched(row: NativeRow) {
@@ -1276,20 +1343,13 @@ function NativeConnectionForm({
   const [error, setError] = useState('');
   // Group switch intent; undefined until touched. Per-key intents live on the rows.
   const [allDisabled, setAllDisabled] = useState<boolean | undefined>();
-  const savedDisabled = (row: NativeRow) =>
-    row.resource ? row.initial.disabled : initial.disabled;
-  const rowDisabled = (row: NativeRow) => row.disabled ?? allDisabled ?? savedDisabled(row);
+  const rowDisabled = (row: NativeRow) => memberDisabled(row, initial.disabled, allDisabled);
   const groupDisabled = rows.length ? rows.every(rowDisabled) : (allDisabled ?? initial.disabled);
   const dirty =
     JSON.stringify(form) !== JSON.stringify(initial) ||
     rows.length !== initialRows.length ||
-    (allDisabled !== undefined && allDisabled !== initial.disabled) ||
-    rows.some(
-      (r, i) =>
-        r.id !== initialRows[i]?.id ||
-        !untouched(r) ||
-        (r.disabled !== undefined && r.disabled !== savedDisabled(r))
-    );
+    nativeSwitchesDirty(rows, initial.disabled, allDisabled) ||
+    rows.some((r, i) => r.id !== initialRows[i]?.id || !untouched(r));
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
@@ -1313,11 +1373,14 @@ function NativeConnectionForm({
             remove={() => setRows((current) => current.filter((r) => r.id !== row.id))}
             update={(action) =>
               setRows((current) =>
-                current.map((r) =>
-                  r.id !== row.id
-                    ? r
-                    : { ...r, input: typeof action === 'function' ? action(r.input) : action }
-                )
+                current.map((r) => {
+                  if (r.id !== row.id) return r;
+                  const input = typeof action === 'function' ? action(r.input) : action;
+                  const restoringExclusions =
+                    input.memberModes?.excludedModelsText === 'inherit' &&
+                    r.input.memberModes?.excludedModelsText !== 'inherit';
+                  return { ...r, input, disabled: restoringExclusions ? undefined : r.disabled };
+                })
               )
             }
           />
@@ -1361,13 +1424,7 @@ function NativeConnectionForm({
             setError(`${t('providersPage.form.apiKeyEntry', { index: i + 1 })}: ${error}`);
             return;
           }
-          keys.push({
-            resource: row.resource,
-            input: row.input,
-            initialInput: row.initial,
-            unchanged: !!row.resource && unchanged,
-            disabled: row.disabled,
-          });
+          keys.push(buildSubmittedMember(row, unchanged, initial.disabled, allDisabled));
         }
         try {
           setError('');
@@ -1410,7 +1467,6 @@ function NativeConnectionForm({
         resource={rows[0]?.resource ?? null}
         mode={mode}
         form={form}
-        probeApiKey={rows[0]?.input.apiKey}
         {...memberProbeSettings(form, rows[0])}
         setForm={setForm}
         mutating={mutating}

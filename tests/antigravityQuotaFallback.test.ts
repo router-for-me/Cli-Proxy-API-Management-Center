@@ -2,7 +2,8 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import type { TFunction } from 'i18next';
 import { ANTIGRAVITY_CONFIG } from '@/features/quota/providers/antigravity/data';
 import { antigravitySubscriptionApi, apiCallApi, type ApiCallResult } from '@/services/api';
-import { ANTIGRAVITY_QUOTA_URLS } from '@/utils/quota';
+import { getAntigravityValidationError } from '@/services/api/antigravityValidation';
+import { ANTIGRAVITY_QUOTA_URLS, getStatusFromError } from '@/utils/quota';
 
 const originalRequest = apiCallApi.request;
 const originalSubscription = antigravitySubscriptionApi.get;
@@ -113,6 +114,84 @@ describe('Antigravity partial quota fallback', () => {
     const result = await ANTIGRAVITY_CONFIG.fetchQuota(file, t);
     expect(result.groups).toEqual([]);
     expect(result.serverTimeOffsetMs).toBeNull();
+  });
+
+  const link = 'https://accounts.google.com/signin/continue?test=1';
+  const denied = (details: unknown[], statusCode = 403): ApiCallResult => ({
+    ...response([]),
+    statusCode,
+    body: { error: { message: 'Verify this account.', details } },
+  });
+
+  test('retains verification across fallback failures and prefers an actionable response', async () => {
+    mockResponses([
+      denied([{ reason: 'VALIDATION_REQUIRED' }]),
+      denied([null, { metadata: { validation_url: link } }]),
+      denied([], 404),
+    ]);
+    const error = await ANTIGRAVITY_CONFIG.fetchQuota(file, t).then(
+      () => null,
+      (err: unknown) => err
+    );
+    expect(error).toBeInstanceOf(Error);
+    const state = ANTIGRAVITY_CONFIG.buildErrorState(
+      (error as Error).message,
+      getStatusFromError(error),
+      error
+    );
+    expect(state).toMatchObject({
+      error: 'Verify this account.',
+      errorStatus: 403,
+      validation: { url: link },
+    });
+  });
+
+  test.each([true, false])(
+    'keeps verification without usable quota (challenge first: %s)',
+    async (challengeFirst) => {
+      const challenge = denied([{ metadata: { validationUrl: link } }]);
+      const unusable = [response([]), response([{ buckets: [{}] }])];
+      mockResponses(challengeFirst ? [challenge, ...unusable] : [...unusable, challenge]);
+      await expect(ANTIGRAVITY_CONFIG.fetchQuota(file, t)).rejects.toMatchObject({
+        status: 403,
+        message: 'Verify this account.',
+        url: link,
+      });
+    }
+  );
+
+  test('partial quota wins over a later verification challenge', async () => {
+    mockResponses([response([claude]), denied([{ reason: 'VALIDATION_REQUIRED' }]), response([])]);
+    const result = await ANTIGRAVITY_CONFIG.fetchQuota(file, t);
+    expect(result.groups.map((entry) => entry.label)).toEqual(['Claude and GPT models']);
+  });
+
+  test('a successful fallback still wins over a verification challenge', async () => {
+    mockResponses([denied([{ metadata: { validationUrl: link } }]), response([gemini])]);
+    expect((await ANTIGRAVITY_CONFIG.fetchQuota(file, t)).groups).toHaveLength(1);
+  });
+
+  test('accepts camelCase metadata only on 403 and ignores unrelated errors', () => {
+    const details = [{ metadata: { validationUrl: link } }];
+    expect(getAntigravityValidationError(denied(details), '')?.url).toBe(link);
+    expect(getAntigravityValidationError(denied(details, 404), '')).toBeUndefined();
+    expect(getAntigravityValidationError(denied([{ reason: 'OTHER' }]), '')).toBeUndefined();
+  });
+
+  test.each([
+    'javascript:alert(1)',
+    'not a URL',
+    'http://accounts.google.com/',
+    'https://accounts.google.com.example.org/',
+    'https://elsewhere.test@accounts.google.com/',
+    'https://accounts.google.com:8080/',
+  ])('preserves the challenge without exposing unsafe URL %s', (url) => {
+    const result = getAntigravityValidationError(
+      denied([{ reason: 'VALIDATION_REQUIRED', metadata: { validation_url: url } }]),
+      'fallback'
+    );
+    expect(result?.message).toBe('Verify this account.');
+    expect(result?.url).toBeUndefined();
   });
 
   test('preserves the existing error when every endpoint fails', async () => {

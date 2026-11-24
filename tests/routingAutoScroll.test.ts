@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import {
   AUTO_SCROLL_EDGE,
   AUTO_SCROLL_MAX_SPEED,
@@ -31,11 +30,5 @@ describe('routing drag auto-scroll', () => {
   test('short viewports shrink the zones so they never overlap', () => {
     expect(edgeScrollVelocity(60, 0, 120)).toBe(0);
     expect(edgeScrollVelocity(0, 0, 0)).toBe(0);
-  });
-
-  test('the tier ladder drives auto-scroll while a card is dragged', () => {
-    const ladder = readFileSync('src/features/routing/components/TierLadder.tsx', 'utf8');
-    expect(ladder).toContain('useDragAutoScroll(dragKey !== null, ladderRef);');
-    expect(ladder).toContain('<ol ref={ladderRef}');
   });
 });

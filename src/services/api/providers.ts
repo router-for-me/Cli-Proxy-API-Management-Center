@@ -2,9 +2,16 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { apiClient } from './client';
 import { guardConfigConnection } from './configValue';
 import { isRecord } from '@/utils/helpers';
-import { normalizeApiKeyEntry, normalizeProviderGroups } from './transformers';
+import {
+  normalizeApiKeyEntry,
+  normalizeProviderGroups,
+  supportsEndpointOnlyKey,
+} from './transformers';
 import {
   normalizeNativeProviderGroup,
+  memberWireFields,
+  type MemberModes,
+  type MemberField,
   serializeNativeGroup,
   replaceNativeGroupSettings,
   type NativeProviderGroupConfig,
@@ -453,27 +460,35 @@ const preserveModelMetadata = (
 };
 
 const findKeySource = (
+  family: ProviderFamily,
   groups: Record<string, unknown>[],
   apiKey: string,
   baseUrl?: string
 ): ProviderSource => {
-  const matches = (normalizeProviderGroups(groups) as KeyConfig[]).filter(
+  const matches = (normalizeProviderGroups(groups, family) as KeyConfig[]).filter(
     (c) => c.apiKey === apiKey && (c.baseUrl ?? '') === (baseUrl ?? '')
   );
   if (matches.length !== 1 || !matches[0].source) throw conflict();
   return matches[0].source;
+};
+const nextGroupName = (groups: Record<string, unknown>[], family: ProviderFamily) => {
+  const names = new Set(groups.map((g) => g.name));
+  let number = groups.length + 1;
+  while (names.has(`${family}-${number}`)) number++;
+  return `${family}-${number}`;
 };
 const createKey = async (family: ProviderFamily, config: KeyConfig) => {
   const groups = await getGroups(family);
   const payload = keySerializer(family)(config);
   const baseUrl = payload['base-url'];
   delete payload['base-url'];
-  const names = new Set(groups.map((g) => g.name));
-  let number = groups.length + 1;
-  while (names.has(`${family}-${number}`)) number++;
   await putGroups(family, [
     ...groups,
-    { name: `${family}-${number}`, ...(baseUrl ? { 'base-url': baseUrl } : {}), keys: [payload] },
+    {
+      name: nextGroupName(groups, family),
+      ...(baseUrl ? { 'base-url': baseUrl } : {}),
+      keys: [payload],
+    },
   ]);
 };
 function editNativeMember(
@@ -519,7 +534,7 @@ const updateKey = async (
   config: KeyConfig
 ) => {
   const groups = await getGroups(family);
-  const source = config.source ?? findKeySource(groups, apiKey, baseUrl);
+  const source = config.source ?? findKeySource(family, groups, apiKey, baseUrl);
   const index = locateProviderGroup(groups, source);
   const group = groups[index];
   const keys = [...(group.keys as Record<string, unknown>[])];
@@ -530,14 +545,27 @@ const updateKey = async (
     : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
   if (matches.length !== 1) throw conflict();
   const keyIndex = matches[0];
-  const original = (normalizeProviderGroups([group]) as KeyConfig[]).find(
+  const original = (normalizeProviderGroups([group], family) as KeyConfig[]).find(
     (c) => c.source?.keyIndex === keyIndex
   );
   if (!original) throw conflict();
   keys[keyIndex] = editNativeMember(family, group, keys[keyIndex], original, config);
-  groups[index] = { ...group, keys };
+  let groupIndex = index;
+  const next: Record<string, unknown> = { ...group, keys };
+  if ((original.baseUrl ?? '') !== (config.baseUrl ?? '')) {
+    if (config.baseUrl) next['base-url'] = config.baseUrl;
+    else delete next['base-url'];
+    if (keys.length > 1) {
+      // Endpoints belong to groups. Move only the edited credential, with its shared defaults.
+      next.name = nextGroupName(groups, family);
+      next.keys = [keys[keyIndex]];
+      groups[index] = { ...group, keys: keys.filter((_, i) => i !== keyIndex) };
+      groupIndex = groups.length;
+    }
+  }
+  groups[groupIndex] = next;
   await putGroups(family, groups);
-  return { groups, groupIndex: index, group: groups[index] };
+  return { groups, groupIndex, group: next };
 };
 const deleteKey = async (
   family: ProviderFamily,
@@ -546,7 +574,7 @@ const deleteKey = async (
   expected?: ProviderSource
 ) => {
   const groups = await getGroups(family);
-  const source = expected ?? findKeySource(groups, apiKey, baseUrl);
+  const source = expected ?? findKeySource(family, groups, apiKey, baseUrl);
   const index = locateProviderGroup(groups, source);
   const originalKeys = source.group.keys;
   if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
@@ -608,8 +636,28 @@ async function changeSingleNativeGroup(
 export interface NativeConnectionMember {
   originalKeyIndex?: number;
   config?: ProviderKeyConfig;
+  fieldModes?: Partial<MemberModes>;
   /** Desired on/off state; omitted keeps whatever the key resolves to. */
   disabled?: boolean;
+}
+
+function applyMemberModes(
+  key: Record<string, unknown>,
+  family: NativeProviderFamily,
+  config: ProviderKeyConfig,
+  modes?: Partial<MemberModes>
+) {
+  if (!modes) return key;
+  const serialized = keySerializer(family)(config);
+  for (const field of Object.keys(modes) as MemberField[]) {
+    const wire = memberWireFields[field];
+    if (modes[field] === 'inherit') delete key[wire];
+    else if (field === 'models' && serialized.models != null) {
+      // editNativeMember has already merged opaque metadata by model row identity.
+      key.models ??= serialized.models;
+    } else key[wire] = serialized[wire] ?? emptyOverride(wire);
+  }
+  return key;
 }
 
 async function saveNativeConnection(
@@ -628,13 +676,25 @@ async function saveNativeConnection(
     // Compare with the *old* group defaults. Diffing against the edited defaults
     // would accidentally pin inherited values onto every unchanged credential.
     const originals = new Map(
-      (normalizeProviderGroups([group]) as KeyConfig[]).map((row) => [row.source!.keyIndex, row])
+      (normalizeProviderGroups([group], family) as KeyConfig[]).map((row) => [
+        row.source!.keyIndex,
+        row,
+      ])
     );
     const used = new Set<number>();
-    const keys = members.map(({ originalKeyIndex: index, config }) => {
+    const next = replaceNativeGroupSettings(group, settings);
+    const keys = members.map(({ originalKeyIndex: index, config, fieldModes }) => {
+      // Don't let a valid external-auth member disappear on reload when clearing its endpoint.
+      const member = config ?? (index !== undefined ? originals.get(index) : undefined);
+      if (member && !member.apiKey.trim()) {
+        if (!supportsEndpointOnlyKey(family))
+          throw new Error('providersPage.form.validation.apiKeyRequired');
+        if (typeof next['base-url'] !== 'string' || !next['base-url'].trim())
+          throw new Error('providersPage.form.validation.baseUrlRequired');
+      }
       if (index === undefined) {
         if (!config || config.source) throw conflict();
-        return createNativeMember(family, config);
+        return applyMemberModes(createNativeMember(family, config), family, config, fieldModes);
       }
       if (!Number.isSafeInteger(index) || index < 0 || index >= rawKeys.length || used.has(index))
         throw conflict();
@@ -645,10 +705,15 @@ async function saveNativeConnection(
       if (!original || !isRecord(raw)) throw conflict();
       if (config.source && (config.source.keyIndex !== index || !equal(config.source.group, group)))
         throw conflict();
-      return editNativeMember(family, group, raw, original, config);
+      return applyMemberModes(
+        editNativeMember(family, group, raw, original, config),
+        family,
+        config,
+        fieldModes
+      );
     });
     current[groupIndex] = applyNativeDisabled(
-      { ...replaceNativeGroupSettings(group, settings), keys },
+      { ...next, keys },
       { all: allDisabled, keys: members.map((member) => member.disabled) }
     );
     return current;
@@ -774,7 +839,7 @@ export const providersApi = {
   async getOpenAIProviders() {
     return normalizeProviderGroups(
       await getGroups('openai-compatibility'),
-      true
+      'openai-compatibility'
     ) as OpenAIProviderConfig[];
   },
   async createOpenAIProvider(config: OpenAIProviderConfig) {
@@ -784,7 +849,9 @@ export const providersApi = {
   async updateOpenAIProvider(_name: string, _index: number, config: OpenAIProviderConfig) {
     const groups = await getGroups('openai-compatibility');
     const index = findOpenAISource(groups, config.source);
-    const original = (normalizeProviderGroups([groups[index]], true) as OpenAIProviderConfig[])[0];
+    const original = (
+      normalizeProviderGroups([groups[index]], 'openai-compatibility') as OpenAIProviderConfig[]
+    )[0];
     const before = serializeOpenAIGroup(original);
     const after = serializeOpenAIGroup(config);
     const next = applyProviderChanges(groups[index], before, after);

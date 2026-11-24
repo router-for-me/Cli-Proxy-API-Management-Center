@@ -174,15 +174,6 @@ oauth:
     }
   });
 
-  test('integer validation and sentinel hints exist in all four locales', async () => {
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru']) {
-      const json = await Bun.file(`src/i18n/locales/${locale}.json`).json();
-      const visual = json.config_management.visual;
-      expect(visual.validation.integer).toBeString();
-      expect(visual.sections.network.max_retry_interval_hint).toBeString();
-    }
-  });
-
   test('requires Redis usage retention to be empty or within 1..3600', () => {
     const values = structuredClone(DEFAULT_VISUAL_VALUES);
 

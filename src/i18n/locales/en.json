@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "Verify your account to continue.",
     "title": "Antigravity Quota",
     "empty_title": "No Antigravity Auth Files",
     "empty_desc": "Upload an Antigravity credential to view remaining quota.",
@@ -624,7 +625,7 @@
     "loading": "Querying GitHub Copilot quota…",
     "load_failed": "Failed to query quota: {{message}}",
     "remaining": "{{percent}}% remaining",
-    "premium": "Premium interactions",
+    "premium": "Monthly quota",
     "unavailable": "Quota unavailable. Check the Copilot credential and try again."
   },
   "meta_quota": {
@@ -1146,6 +1147,8 @@
     "visual_mode_save_blocked": "Cannot save from visual mode until the YAML syntax is fixed",
     "source_changes_before_visual": "Save or discard your unsaved source edits before switching to visual mode.",
     "precise_save_incomplete": "The precise save did not finish; some changes may already be applied. Your draft is retained. Save again to review the remaining server differences.",
+    "unsafe_yaml_structure": "The visual editor cannot safely change {{path}} without altering other YAML settings. Your draft is retained. Make this change in the source editor instead.",
+    "sensitive_word_comments": "Saving {{path}} in visual mode would remove YAML comments. Your draft is retained. Switch to the source editor to review and save it with the comments intact.",
     "concurrent_list_conflict": "The server list {{path}} changed after your draft baseline. Saving was blocked to avoid overwriting those changes. Your draft is retained; note your edits, then reload the configuration and reconcile them.",
     "precise_save_recovery_required": "Could not read back the save result. Editing is paused. Save again to recover the draft baseline, or reload the configuration.",
     "visual_mode_latest_yaml_invalid": "The latest server configuration contains invalid YAML. Review it in source mode before saving visual changes: {{message}}",
@@ -1571,7 +1574,7 @@
       },
       "validation": {
         "invalid_server_id": "Enter a nonzero UUID with hyphens.",
-        "invalid_oauth_error_rules": "Check the status, matches and action for {{channel}}.",
+        "invalid_oauth_error_rules": "Check the status, matches and action for rule {{number}} in “{{channel}}”.",
         "invalid_trusted_proxies": "Each trusted proxy must be a valid IP address or CIDR.",
         "invalid_discovery_service_type": "Use _name._tcp: name must be 1–15 letters, digits or hyphens, with no leading or trailing hyphen.",
         "validation_blocked": "Fix validation errors before saving",
@@ -1638,6 +1641,7 @@
     "hide_details": "Hide details"
   },
   "quota_management": {
+    "open_verification_link": "Open verification link",
     "search_label": "Search accounts",
     "search_placeholder": "Search by filename or email",
     "search_empty_title": "No matching accounts",
@@ -2109,7 +2113,9 @@
       "timeout": "Idle timeout (e.g. 5m)",
       "maxIdle": "Maximum idle connections per host",
       "invalidMaxIdle": "Maximum idle connections must be a safe integer.",
-      "inheritHint": "Only fill in what this key does differently; blank fields inherit the connection settings.",
+      "empty": "Empty",
+      "valueSource": "{{field}}: value source",
+      "inheritHint": "Inherited fields follow the connection. Choose Empty to clear a value for this key, or Override to set your own.",
       "disableKey": "Disable this key",
       "disableShort": "Off"
     },
@@ -2215,7 +2221,6 @@
       "detailHint": "{{provider}} is persisted into the matching API key configs by protocol; this view manages them together.",
       "registerLink": "Register here",
       "registerNow": "Register now",
-      "kimiPromo": "New users get API credit worth 10% of their first successful top-up, up to ¥1000. Offer ends September 30.",
       "dashboardLink": "Dashboard",
       "emptyRegisterHint": "No configuration yet.",
       "apiKeyHint": "This key is only written to the selected group/protocol config.",
@@ -2227,6 +2232,7 @@
       "usageInvalid": "Invalid key",
       "usageEmpty": "The endpoint returned no usage data.",
       "usageApiKeyRequired": "API key is required",
+      "ambiguousProtocols": "Multiple groups match {{protocols}}. Edit those groups in the corresponding provider editor instead.",
       "aggregationConflict": "This grouped provider contains multiple backend configs or OpenAI keys. Edit it in the source configuration to avoid data loss.",
       "partialMutationWarning": "The operation failed after one or more protocols may have been updated. The latest configuration was reloaded; review it before retrying.",
       "groupedKeysTitle": "Grouped keys",
@@ -2277,14 +2283,6 @@
         "openai": "OpenAI Compatible",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "Double 11 · Limited time",
-        "title": "{{provider}} Double 11 Top-up Bonus",
-        "description": "Top up on {{provider}} during the event and get an extra {{percent}}% of your top-up as bonus credit.",
-        "bonus": "Top-up bonus",
-        "cta": "Join now",
-        "ctaAria": "Join now: {{provider}} Double 11 top-up event (opens in a new tab)"
       }
     },
     "status": {
@@ -2465,7 +2463,6 @@
       "custom": "Custom",
       "connect": "Connect",
       "connected": "{{count}} connected",
-      "offer": "Offer",
       "onboardingTitle": "Connect your first AI provider",
       "moreQuickConnect": "More quick-connect partners"
     }

@@ -43,13 +43,6 @@ describe('login palette', () => {
     expect(Object.keys(light).sort()).toEqual(Object.keys(dark).sort());
   });
 
-  test('white theme only swaps the background to pure white', () => {
-    expect(palette).toMatch(
-      /html\[data-theme='white'\]\) & \{\s*--login-bg: #ffffff;\s*--bg-primary: #ffffff;\s*\}/
-    );
-    expect(palette).toMatch(/html\[data-theme='dark'\]\) & \{\s*@include login-tokens-dark;/);
-  });
-
   for (const [name, set, bgs] of [
     ['light', light, backgrounds.light],
     ['dark', dark, backgrounds.dark],
@@ -93,11 +86,5 @@ describe('login palette', () => {
       expect(css).not.toMatch(/rgba\(255, 255, 255/);
       expect(css).not.toMatch(/#(?:000000|ffffff|f5f5f4|0a0a0a|111111)\b/i);
     }
-  });
-
-  test('the dot canvas takes its color from the theme and repaints on theme change', async () => {
-    const hero = await Bun.file('src/pages/login/DotMatrixHero.tsx').text();
-    expect(hero).toContain("getPropertyValue('--login-dot-color')");
-    expect(hero).toContain("attributeFilter: ['data-theme']");
   });
 });

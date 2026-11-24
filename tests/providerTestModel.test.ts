@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { apiClient } from '../src/services/api/client';
 import { providersApi } from '../src/services/api/providers';
 import { normalizeProviderGroups } from '../src/services/api/transformers';
@@ -113,23 +112,5 @@ describe('connectivity test models are not backend configuration', () => {
         ],
       },
     ]);
-  });
-
-  test('form keeps the test selection and shows the non-persistence hint for all brands', () => {
-    const source = readFileSync(
-      new URL('../src/features/providers/sheets/forms/BaseProviderForm.tsx', import.meta.url),
-      'utf8'
-    );
-    expect(source).toContain('testModel: form.testModel');
-    expect(source).toContain("onChange={(value) => updateField('testModel', value)}");
-    expect(source).not.toContain('cfg.testModel');
-    expect(source).toContain("t('providersPage.form.testModelHint')");
-    expect(source).not.toContain('testModelClaudeHint');
-    for (const locale of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi']) {
-      const messages = JSON.parse(
-        readFileSync(new URL(`../src/i18n/locales/${locale}.json`, import.meta.url), 'utf8')
-      );
-      expect(messages.providersPage.form.testModelHint).toBeString();
-    }
   });
 });

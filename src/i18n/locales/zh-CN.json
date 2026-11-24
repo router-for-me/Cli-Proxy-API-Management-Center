@@ -440,6 +440,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "请验证账号以继续。",
     "title": "Antigravity 额度",
     "empty_title": "暂无 Antigravity 认证",
     "empty_desc": "上传 Antigravity 认证文件后即可查看额度。",
@@ -609,7 +610,7 @@
     "loading": "正在查询 GitHub Copilot 额度…",
     "load_failed": "额度查询失败：{{message}}",
     "remaining": "剩余 {{percent}}%",
-    "premium": "高级交互",
+    "premium": "月额度",
     "unavailable": "额度不可用。请检查 Copilot 凭证后重试。"
   },
   "meta_quota": {
@@ -1139,6 +1140,8 @@
     "visual_mode_save_blocked": "请先修复 YAML 语法错误，再从可视化模式保存",
     "source_changes_before_visual": "源码有未保存的修改，请先保存或放弃修改，再切换到可视化模式。",
     "precise_save_incomplete": "精准保存未完成，部分修改可能已生效。草稿已保留，请再次保存以重新核对服务端差异。",
+    "unsafe_yaml_structure": "可视化编辑器无法在不影响其他 YAML 设置的情况下修改 {{path}}。草稿已保留，请改用源码编辑器完成此项修改。",
+    "sensitive_word_comments": "在可视化模式保存 {{path}} 会丢失 YAML 注释。草稿已保留，请切换到源码编辑器，核对后保存以保留注释。",
     "concurrent_list_conflict": "服务端列表 {{path}} 已在草稿基线之后发生变更。为避免覆盖这些修改，已阻止保存。草稿仍保留；请记下本地修改，再重新加载配置并核对合并。",
     "precise_save_recovery_required": "无法回读保存结果，已暂停编辑。请再次保存以恢复草稿基线，或重新加载配置。",
     "visual_mode_latest_yaml_invalid": "服务端最新配置包含无效 YAML，请先切回源码模式检查后再保存可视化修改：{{message}}",
@@ -1564,7 +1567,7 @@
       },
       "validation": {
         "invalid_server_id": "请输入带连字符的非零 UUID。",
-        "invalid_oauth_error_rules": "请检查 {{channel}} 的状态码、匹配条件和动作。",
+        "invalid_oauth_error_rules": "请检查“{{channel}}”第 {{number}} 条规则的状态码、匹配条件和动作。",
         "invalid_trusted_proxies": "每个可信代理必须是有效的 IP 地址或 CIDR。",
         "invalid_discovery_service_type": "请使用 _名称._tcp 格式：名称为 1–15 位英文字母、数字或连字符，首尾不能是连字符。",
         "validation_blocked": "请先修复表单校验错误再保存",
@@ -1631,6 +1634,7 @@
     "hide_details": "隐藏详情"
   },
   "quota_management": {
+    "open_verification_link": "打开验证链接",
     "search_label": "搜索账号",
     "search_placeholder": "按文件名或邮箱搜索",
     "search_empty_title": "没有匹配的账号",
@@ -2100,7 +2104,9 @@
       "timeout": "空闲超时（如 5m）",
       "maxIdle": "每个主机的最大空闲连接数",
       "invalidMaxIdle": "最大空闲连接数必须是安全整数。",
-      "inheritHint": "仅在此密钥需要不同设置时填写；留空的字段继承连接设置。",
+      "empty": "空值",
+      "valueSource": "{{field}}：值来源",
+      "inheritHint": "继承的字段跟随连接设置。选择“空值”可清空此密钥的值，选择“覆盖”可自定义。",
       "disableKey": "停用此密钥",
       "disableShort": "停用"
     },
@@ -2206,7 +2212,6 @@
       "detailHint": "{{provider}} 会按协议分别写入对应的 API Key 配置,这里只做聚合管理。",
       "registerLink": "点此注册",
       "registerNow": "立即注册",
-      "kimiPromo": "新用户首次成功充值，赠送充值金额 10% 的 API 额度，最高赠送 ¥1000，优惠截至 9 月 30 日",
       "dashboardLink": "控制面板",
       "emptyRegisterHint": "尚未添加配置",
       "apiKeyHint": "此 Key 只会写入当前选择的分组/协议配置。",
@@ -2218,6 +2223,7 @@
       "usageInvalid": "Key 无效",
       "usageEmpty": "端点未返回额度数据",
       "usageApiKeyRequired": "API 密钥必填",
+      "ambiguousProtocols": "多个分组匹配以下协议：{{protocols}}。请在对应的提供商编辑器中编辑这些分组。",
       "aggregationConflict": "此聚合提供商包含多条后端配置或多个 OpenAI 密钥。为避免数据丢失，请在源码配置中编辑。",
       "partialMutationWarning": "操作失败，但一个或多个协议可能已更新。已重新读取最新配置，请检查后再重试。",
       "groupedKeysTitle": "分组 Key",
@@ -2268,14 +2274,6 @@
         "openai": "OpenAI 兼容",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "双 11 限时",
-        "title": "{{provider}} 双 11 充值狂欢",
-        "description": "活动期间在 {{provider}} 充值，额外赠送充值金额 {{percent}}% 的额度，先到先得。",
-        "bonus": "充值加赠",
-        "cta": "立即参与",
-        "ctaAria": "立即参与 {{provider}} 双 11 充值活动（在新标签页打开）"
       }
     },
     "status": {
@@ -2456,7 +2454,6 @@
       "custom": "自定义",
       "connect": "接入",
       "connected": "已接入 {{count}}",
-      "offer": "优惠",
       "onboardingTitle": "接入第一个 AI 提供商",
       "moreQuickConnect": "更多快速接入"
     }

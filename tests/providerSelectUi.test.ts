@@ -1,26 +1,7 @@
 import { expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Select } from '@/components/ui/Select';
-
-test('Provider advanced editors consistently use the shared Select instead of native menus', () => {
-  for (const file of [
-    'RuntimePolicyEditor',
-    'ProviderBehaviorEditor',
-    'ModelAdvancedFields',
-    'ErrorRulesEditor',
-  ]) {
-    const source = readFileSync(
-      new URL(`../src/features/providers/sheets/forms/${file}.tsx`, import.meta.url),
-      'utf8'
-    );
-    expect(source).toContain("import { Select } from '@/components/ui/Select'");
-    expect(source).toContain('<Select');
-    expect(source).not.toMatch(/<select[\s>]/);
-    expect(source).not.toMatch(/<option[\s>]/);
-  }
-});
 
 test('shared Select forwards validation, labels and disabled state to its trigger', () => {
   const markup = renderToStaticMarkup(

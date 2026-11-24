@@ -1,6 +1,18 @@
 import type { ProviderKeyConfig } from '@/types';
 import { normalizeProviderKeyConfig } from './transformers';
 
+export const memberWireFields = {
+  proxyUrl: 'proxy-url',
+  prefix: 'prefix',
+  priority: 'priority',
+  headers: 'headers',
+  models: 'models',
+  excludedModelsText: 'excluded-models',
+} as const;
+export type MemberField = keyof typeof memberWireFields;
+export type MemberMode = 'inherit' | 'empty' | 'override';
+export type MemberModes = Record<MemberField, MemberMode>;
+
 // Mirrors sharedKeyFields in config_v8.go. Weight and provider behavior flags are member-only.
 const groupFields = [
   'name',

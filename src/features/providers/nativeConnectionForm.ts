@@ -1,4 +1,10 @@
 import type { ProviderKeyConfig } from '@/types';
+import {
+  memberWireFields,
+  type MemberField,
+  type MemberMode,
+  type MemberModes,
+} from '@/services/api/nativeProviderGroups';
 import { isRecord } from '@/utils/helpers';
 import type { NativeProviderFamily } from '@/services/api/providers';
 import { normalizeConnectionPool } from '@/services/api/connectionPool';
@@ -14,34 +20,117 @@ export interface NativeConnectionFormOutput {
     input: ProviderEntryFormInput;
     unchanged?: boolean;
     initialInput?: ProviderEntryFormInput;
-    /** Per-key on/off switch; omitted when the user did not touch it. */
+    /** Desired state for a new key, or an explicit switch change for an existing key. */
     disabled?: boolean;
   }>;
 }
 
-/** Probes must follow the chosen credential's overrides, including an explicit direct proxy. */
-export function memberProbeSettings(
-  shared: ProviderEntryFormInput,
-  row?: {
-    resource: ProviderResource | null;
-    initial: ProviderEntryFormInput;
-    input: ProviderEntryFormInput;
-  }
+type MemberRowDraft = {
+  resource: ProviderResource | null;
+  initial: ProviderEntryFormInput;
+  input: ProviderEntryFormInput;
+  disabled?: boolean;
+};
+
+export function memberDisabled(row: MemberRowDraft, groupDisabled: boolean, allDisabled?: boolean) {
+  const inherits = row.input.memberModes?.excludedModelsText === 'inherit';
+  return (
+    row.disabled ??
+    allDisabled ??
+    (row.resource && !inherits ? row.initial.disabled : groupDisabled)
+  );
+}
+
+export function nativeSwitchesDirty(
+  rows: MemberRowDraft[],
+  groupDisabled: boolean,
+  allDisabled?: boolean
 ) {
-  if (!row) return { probeProxyUrl: shared.proxyUrl, probeHeaders: shared.headers };
-  const source = (row.resource?.raw as ProviderKeyConfig | undefined)?.source;
-  const keys = source?.group.keys;
-  const original =
-    Array.isArray(keys) && source?.keyIndex !== undefined ? keys[source.keyIndex] : undefined;
-  const raw = isRecord(original) ? original : {};
-  const proxyOverride = row.input.proxyUrl !== row.initial.proxyUrl || raw['proxy-url'] != null;
-  const headersOverride = row.input.headers !== row.initial.headers || raw.headers != null;
+  return (
+    (allDisabled !== undefined && allDisabled !== groupDisabled) ||
+    rows.some(
+      (row) =>
+        memberDisabled(row, groupDisabled, allDisabled) !==
+        (row.resource ? row.initial.disabled : groupDisabled)
+    )
+  );
+}
+
+export function buildSubmittedMember(
+  row: MemberRowDraft,
+  unchanged: boolean,
+  groupDisabled: boolean,
+  allDisabled?: boolean
+): NativeConnectionFormOutput['keys'][number] {
   return {
-    probeProxyUrl: proxyOverride ? row.input.proxyUrl || shared.proxyUrl : shared.proxyUrl,
-    probeHeaders:
-      headersOverride && row.input.headers.some((h) => h.key.trim())
-        ? row.input.headers
-        : shared.headers,
+    resource: row.resource,
+    input: row.input,
+    initialInput: row.initial,
+    unchanged: !!row.resource && unchanged,
+    // A new key's own exclusions replace the group's list, including its disable rule.
+    disabled: row.resource ? row.disabled : memberDisabled(row, groupDisabled, allDisabled),
+  };
+}
+
+const emptyMemberValues = {
+  proxyUrl: '',
+  prefix: '',
+  priority: undefined,
+  headers: [],
+  models: [],
+  excludedModelsText: '',
+};
+export const memberFields = Object.keys(memberWireFields) as MemberField[];
+
+export function readMemberForm(form: ProviderEntryFormInput, resource: ProviderResource | null) {
+  const source = (resource?.raw as ProviderKeyConfig | undefined)?.source;
+  const keys = source?.group.keys;
+  const raw = Array.isArray(keys) && source?.keyIndex !== undefined ? keys[source.keyIndex] : null;
+  const memberModes = {} as MemberModes;
+  const result = { ...form, memberModes };
+  for (const field of memberFields) {
+    const value = isRecord(raw) ? raw[memberWireFields[field]] : undefined;
+    const empty =
+      value === '' ||
+      (Array.isArray(value) &&
+        value.every((item) => field === 'excludedModelsText' && String(item).trim() === '*')) ||
+      (isRecord(value) && !Object.keys(value).length);
+    memberModes[field] = value == null ? 'inherit' : empty ? 'empty' : 'override';
+    if (field === 'headers' && isRecord(value))
+      result.headers = Object.entries(value).map(([key, v]) => ({ key, value: String(v) }));
+    if (memberModes[field] !== 'override')
+      Object.assign(result, { [field]: emptyMemberValues[field] });
+  }
+  return result;
+}
+
+export function setMemberMode(
+  form: ProviderEntryFormInput,
+  field: MemberField,
+  mode: MemberMode
+): ProviderEntryFormInput {
+  if (!form.memberModes || form.memberModes[field] === mode) return form;
+  return {
+    ...form,
+    [field]: field === 'priority' && mode === 'override' ? 0 : emptyMemberValues[field],
+    memberModes: { ...form.memberModes, [field]: mode },
+  };
+}
+
+/** Both probe surfaces resolve the exact same member against the live group draft. */
+export function memberProbeSettings(shared: ProviderEntryFormInput, row?: MemberRowDraft) {
+  const effective = <K extends 'proxyUrl' | 'headers' | 'models'>(field: K) =>
+    row?.input.memberModes && row.input.memberModes[field] !== 'inherit'
+      ? row.input[field]
+      : shared[field];
+  return {
+    probeApiKey:
+      row?.input.apiKey.trim() ||
+      (row?.resource?.raw as ProviderKeyConfig | undefined)?.apiKey ||
+      '',
+    probeProxyUrl: effective('proxyUrl'),
+    probeHeaders: effective('headers'),
+    probeModels: effective('models'),
   };
 }
 
@@ -64,10 +153,10 @@ export function readSharedForm(
     models: shared.models,
     runtimePolicy: shared.policy,
     connectionPool: normalizeConnectionPool(group['connection-pool']),
-    disabled: shared.excludedModels.split('\n').includes('*'),
+    disabled: shared.excludedModels.split('\n').some((rule) => rule.trim() === '*'),
     excludedModelsText: shared.excludedModels
       .split('\n')
-      .filter((rule) => rule !== '*')
+      .filter((rule) => rule.trim() !== '*')
       .join('\n'),
   };
 }

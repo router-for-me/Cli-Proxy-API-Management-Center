@@ -442,6 +442,7 @@
     "plan_ultra_lite": "Ultra Lite"
   },
   "antigravity_quota": {
+    "verify_account": "계속하려면 계정을 인증하세요.",
     "title": "Antigravity 할당량",
     "empty_title": "Antigravity 인증 파일 없음",
     "empty_desc": "남은 할당량을 확인하려면 Antigravity 자격 증명을 업로드하세요.",
@@ -624,7 +625,7 @@
     "loading": "GitHub Copilot 할당량 조회 중…",
     "load_failed": "할당량 조회 실패: {{message}}",
     "remaining": "{{percent}}% 남음",
-    "premium": "프리미엄 상호작용",
+    "premium": "월간 할당량",
     "unavailable": "할당량을 확인할 수 없습니다. Copilot 자격 증명을 확인한 후 다시 시도하세요."
   },
   "meta_quota": {
@@ -1146,6 +1147,8 @@
     "visual_mode_save_blocked": "YAML 구문 오류를 수정하기 전에는 시각 모드에서 저장할 수 없습니다",
     "source_changes_before_visual": "시각 모드로 전환하기 전에 저장되지 않은 소스 수정 사항을 저장하거나 취소하세요.",
     "precise_save_incomplete": "정밀 저장이 완료되지 않았습니다. 일부 변경 사항이 이미 적용되었을 수 있습니다. 초안은 유지됩니다. 다시 저장하여 남은 서버 차이점을 검토하세요.",
+    "unsafe_yaml_structure": "다른 YAML 설정에 영향을 주지 않고는 시각적 편집기에서 {{path}}을(를) 변경할 수 없습니다. 초안은 유지됩니다. 소스 편집기에서 변경하세요.",
+    "sensitive_word_comments": "시각 모드에서 {{path}}을(를) 저장하면 YAML 주석이 삭제됩니다. 초안은 유지됩니다. 소스 편집기로 전환해 주석을 확인하고 함께 저장하세요.",
     "concurrent_list_conflict": "서버 목록 {{path}}이(가) 초안 기준점 이후에 변경되었습니다. 해당 변경 사항을 덮어쓰지 않도록 저장이 차단되었습니다. 초안은 유지됩니다. 수정한 내용을 메모한 후 설정을 다시 로드하여 조정하세요.",
     "precise_save_recovery_required": "저장 결과를 다시 읽어오지 못했습니다. 편집이 일시 중지되었습니다. 다시 저장하여 초안 기준점을 복구하거나 설정을 다시 로드하세요.",
     "visual_mode_latest_yaml_invalid": "서버의 최신 설정에 잘못된 YAML이 포함되어 있습니다. 시각적 변경 사항을 저장하기 전에 소스 모드에서 검토하세요: {{message}}",
@@ -1571,7 +1574,7 @@
       },
       "validation": {
         "invalid_server_id": "하이픈이 포함된 0이 아닌 UUID를 입력하세요.",
-        "invalid_oauth_error_rules": "{{channel}}의 상태 코드, 일치 조건 및 동작을 확인하세요.",
+        "invalid_oauth_error_rules": "“{{channel}}” 채널의 {{number}}번째 규칙에서 상태 코드, 일치 조건 및 동작을 확인하세요.",
         "invalid_trusted_proxies": "각 신뢰할 수 있는 프록시는 유효한 IP 주소 또는 CIDR이어야 합니다.",
         "invalid_discovery_service_type": "_name._tcp 형식을 사용하세요: 이름은 1~15자의 영문자, 숫자 또는 하이픈이어야 하며, 시작이나 끝에 하이픈이 올 수 없습니다.",
         "validation_blocked": "저장하기 전에 유효성 검사 오류를 수정하세요",
@@ -1638,6 +1641,7 @@
     "hide_details": "세부 정보 숨기기"
   },
   "quota_management": {
+    "open_verification_link": "인증 링크 열기",
     "search_label": "계정 검색",
     "search_placeholder": "파일명 또는 이메일로 검색",
     "search_empty_title": "일치하는 계정 없음",
@@ -2109,7 +2113,9 @@
       "timeout": "유휴 시간 제한(예: 5m)",
       "maxIdle": "호스트당 최대 유휴 연결 수",
       "invalidMaxIdle": "최대 유휴 연결 수는 안전한 정수여야 합니다.",
-      "inheritHint": "이 키에만 다르게 적용할 값만 입력하세요. 비워 둔 필드는 연결 설정을 상속합니다.",
+      "empty": "빈 값",
+      "valueSource": "{{field}}: 값 출처",
+      "inheritHint": "상속된 필드는 연결 설정을 따릅니다. 이 키의 값을 비우려면 빈 값을, 직접 설정하려면 재정의를 선택하세요.",
       "disableKey": "이 키 비활성화",
       "disableShort": "끄기"
     },
@@ -2215,7 +2221,6 @@
       "detailHint": "{{provider}} 공급자는 프로토콜별로 일치하는 API 키 설정에 저장되며, 이 화면에서 통합 관리합니다.",
       "registerLink": "여기서 등록",
       "registerNow": "지금 등록",
-      "kimiPromo": "신규 사용자는 첫 충전 성공 시 충전 금액의 10%에 해당하는 API 크레딧(최대 ¥1000)을 받을 수 있습니다. 혜택은 9월 30일에 종료됩니다.",
       "dashboardLink": "대시보드",
       "emptyRegisterHint": "아직 설정이 없습니다.",
       "apiKeyHint": "이 키는 선택한 그룹/프로토콜 설정에만 저장됩니다.",
@@ -2227,6 +2232,7 @@
       "usageInvalid": "유효하지 않은 키",
       "usageEmpty": "엔드포인트에서 사용량 데이터를 반환하지 않았습니다.",
       "usageApiKeyRequired": "API 키가 필요합니다.",
+      "ambiguousProtocols": "{{protocols}}에 해당하는 그룹이 여러 개 있습니다. 해당 제공업체 편집기에서 이 그룹들을 수정하세요.",
       "aggregationConflict": "이 그룹화된 공급자에는 여러 백엔드 설정 또는 OpenAI 키가 포함되어 있습니다. 데이터 손실을 방지하려면 소스 설정에서 편집하세요.",
       "partialMutationWarning": "하나 이상의 프로토콜이 업데이트된 후 작업이 실패했을 수 있습니다. 최신 설정을 다시 불러왔으니 다시 시도하기 전에 검토하세요.",
       "groupedKeysTitle": "그룹 키",
@@ -2277,14 +2283,6 @@
         "openai": "OpenAI 호환",
         "gemini": "Gemini",
         "codexResponses": "Codex API (Responses)"
-      },
-      "double11": {
-        "badge": "11.11 한정 이벤트",
-        "title": "{{provider}} 11.11 충전 보너스",
-        "description": "이벤트 기간 동안 {{provider}}에서 충전하면 충전 금액의 {{percent}}%를 추가 크레딧으로 드립니다.",
-        "bonus": "충전 보너스",
-        "cta": "지금 참여하기",
-        "ctaAria": "지금 참여하기: {{provider}} 11.11 충전 이벤트 (새 탭에서 열림)"
       }
     },
     "status": {
@@ -2465,7 +2463,6 @@
       "custom": "사용자 지정",
       "connect": "연결",
       "connected": "{{count}}개 연결됨",
-      "offer": "혜택",
       "onboardingTitle": "첫 AI 제공자를 연결하세요",
       "moreQuickConnect": "빠른 연결 파트너 더 보기"
     }

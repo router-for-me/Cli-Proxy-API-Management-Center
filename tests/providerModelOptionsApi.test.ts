@@ -118,7 +118,7 @@ test('Vertex serializes only supported model attributes with canonical thinking 
         forceMapping: true,
         maxContextLength: 100,
         isCompat: true,
-        thinking: { zero_allowed: true, dynamic_allowed: false },
+        thinking: { min: 128, max: 32768, zero_allowed: true, dynamic_allowed: false },
       },
     ],
   });
@@ -127,7 +127,7 @@ test('Vertex serializes only supported model attributes with canonical thinking 
     alias: 'alias',
     'display-name': 'Vertex',
     'force-mapping': true,
-    thinking: { 'zero-allowed': true, 'dynamic-allowed': false },
+    thinking: { min: 128, max: 32768, 'zero-allowed': true, 'dynamic-allowed': false },
   });
 });
 test('OpenAI multimodal and token options round trip and can be cleared', async () => {
@@ -145,7 +145,10 @@ test('OpenAI multimodal and token options round trip and can be cleared', async 
       },
     ],
   });
-  const config = normalizeProviderGroups([stored()], true)[0] as OpenAIProviderConfig;
+  const config = normalizeProviderGroups(
+    [stored()],
+    'openai-compatibility'
+  )[0] as OpenAIProviderConfig;
   expect(config.models![0]).toMatchObject({
     inputModalities: ['text', 'image'],
     outputModalities: ['text'],

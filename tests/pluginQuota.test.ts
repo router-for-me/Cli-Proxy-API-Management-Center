@@ -3,7 +3,7 @@ import type { Mock } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18n from '@/i18n';
-import { normalizeAuthFilesResponse } from '@/services/api/authFiles';
+import { authFilesApi, normalizeAuthFilesResponse } from '@/services/api/authFiles';
 import { resolveAuthFileQuotaType } from '@/features/authFiles/logic';
 import { classifyQuotaFiles, resolveQuotaProviderType } from '@/features/quota/logic';
 import { QUOTA_ADAPTERS } from '@/features/quota/providers';
@@ -189,6 +189,47 @@ describe('generic plugin quota', () => {
       );
     } finally {
       post.mockRestore();
+    }
+  });
+
+  test('Copilot uses exactly the selected plugin across both hosts, even on failure', async () => {
+    const raw = {
+      name: 'copilot.json',
+      type: 'copilot',
+      auth_index: '7',
+      supports_quota: true,
+      quota_provider: 'copilot',
+      quota_plugin_id: 'selected',
+    };
+    const file = normalizeAuthFilesResponse({ files: [raw] }).files[0];
+    const post = spyOn(apiClient, 'post').mockRejectedValue(new Error('plugin unavailable'));
+    const download = spyOn(authFilesApi, 'downloadText').mockRejectedValue(new Error('unexpected'));
+    try {
+      for (const entry of [file, raw]) {
+        const classified = classifyQuotaFiles([entry]);
+        expect(classified).toEqual([{ file: entry, type: 'plugin' }]);
+        expect(resolveAuthFileQuotaType(entry, 'all')).toBe('plugin');
+        expect(resolveAuthFileQuotaType(entry, 'copilot')).toBe('plugin');
+        expect(
+          Object.values(QUOTA_ADAPTERS)
+            .filter((a) => a.filterFn(entry))
+            .map((a) => a.type)
+        ).toEqual(['plugin']);
+        await expect(QUOTA_ADAPTERS[classified[0].type].fetchQuota(entry, i18n.t)).rejects.toThrow(
+          'plugin unavailable'
+        );
+        await expect(QUOTA_ADAPTERS.copilot.fetchQuota(entry, i18n.t)).rejects.toThrow(
+          i18n.t('copilot_quota.unavailable')
+        );
+      }
+      expect(post.mock.calls).toEqual(
+        Array(2).fill(['/plugins/selected/quota', { auth_index: '7' }])
+      );
+      expect(list).not.toHaveBeenCalled();
+      expect(download).not.toHaveBeenCalled();
+    } finally {
+      post.mockRestore();
+      download.mockRestore();
     }
   });
 

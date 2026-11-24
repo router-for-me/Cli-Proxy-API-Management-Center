@@ -139,11 +139,7 @@ export function PageTransition({
 
     const shouldSkipExitLayer = (() => {
       if (nextVariant !== 'ios' || nextDirection !== 'backward') return false;
-      const normalizeSegments = (pathname: string) =>
-        pathname
-          .split('/')
-          .filter(Boolean)
-          .filter((segment) => segment.length > 0);
+      const normalizeSegments = (pathname: string) => pathname.split('/').filter(Boolean);
       const fromSegments = normalizeSegments(currentLayerPathname ?? '');
       const toSegments = normalizeSegments(location.pathname);
       if (!fromSegments.length || !toSegments.length) return false;

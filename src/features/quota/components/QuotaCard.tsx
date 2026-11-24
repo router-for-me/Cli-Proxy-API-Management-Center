@@ -1,3 +1,4 @@
+import { QuotaErrorMessage } from '@/features/quota/components/QuotaErrorMessage';
 import { ProviderArtwork } from '@/components/common/ProviderArtwork';
 /**
  * Provider quota card: identity, loading/error state, quota body, and actions.
@@ -8,7 +9,6 @@ import { useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconChevronDown, IconRefreshCw } from '@/components/ui/icons';
 import type { ClaudeQuotaState, CodexQuotaState, ResolvedTheme } from '@/types';
-import { resolveQuotaErrorMessage } from '@/utils/quota';
 import { getQuotaDisplayName } from '@/utils/quota/identity';
 import {
   getAuthFileIcon,
@@ -97,11 +97,6 @@ export function QuotaCard(props: QuotaCardProps) {
       : entry.type;
   const iconSrc = getAuthFileIcon(providerType, resolvedTheme);
   const typeLabel = getTypeLabel(t, providerType);
-  const errorMessage = resolveQuotaErrorMessage(
-    t,
-    quota?.errorStatus,
-    quota?.error || t('common.unknown_error')
-  );
   // Claude banked resets join the plan chip row; their expiry list follows it.
   const showClaudeReset = entry.type === 'claude' && status === 'success';
   const claudePlanItems = showClaudeReset ? (
@@ -200,9 +195,9 @@ export function QuotaCard(props: QuotaCardProps) {
               </div>
             ))}
           </div>
-        ) : status === 'error' ? (
+        ) : status === 'error' && quota ? (
           <div className={styles.errorStrip} role="alert">
-            {t(`${adapter.i18nPrefix}.load_failed`, { message: errorMessage })}
+            <QuotaErrorMessage quota={quota} i18nPrefix={adapter.i18nPrefix} />
           </div>
         ) : quota && !retainedClaudeUsage ? (
           <adapter.Body

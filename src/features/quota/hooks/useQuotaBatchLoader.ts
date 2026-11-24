@@ -18,14 +18,10 @@ import { QUOTA_ADAPTERS, getQuotaSetter, type QuotaCardState } from '../provider
 import { enrichQuotaInBackground } from '../quotaEnrichment';
 import type { QuotaProviderType } from '../providers/types';
 
-interface BatchFetchResult {
+type BatchFetchResult = {
   name: string;
   cacheKey: string;
-  status: 'success' | 'error';
-  data?: unknown;
-  error?: string;
-  errorStatus?: number;
-}
+} & ({ status: 'success'; data: unknown } | { status: 'error'; errorState: QuotaCardState });
 
 export function useQuotaBatchLoader() {
   const { t } = useTranslation();
@@ -77,8 +73,7 @@ export function useQuotaBatchLoader() {
                     name: file.name,
                     cacheKey,
                     status: 'error',
-                    error: message,
-                    errorStatus: getStatusFromError(err),
+                    errorState: adapter.buildErrorState(message, getStatusFromError(err), err),
                   };
                 }
               })
@@ -96,10 +91,7 @@ export function useQuotaBatchLoader() {
                     nextState[result.cacheKey] =
                       result.status === 'success'
                         ? adapter.buildSuccessState(result.data)
-                        : adapter.buildErrorState(
-                            result.error || t('common.unknown_error'),
-                            result.errorStatus
-                          );
+                        : result.errorState;
                     committedStates.set(result.cacheKey, nextState[result.cacheKey]);
                   },
                   result.name

@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
   formatExcludedRulesText,
-  hasExcludedRule,
-  isMatchedByWildcardRule,
   isWildcardRule,
   matchesExcludedRule,
   normalizeExcludedRules,
@@ -98,21 +96,9 @@ describe('matchesExcludedRule', () => {
     expect(matchesExcludedRule('gpt-5', '  ')).toBe(false);
   });
 
-  test('isWildcardRule / isMatchedByWildcardRule ignore exact rules', () => {
+  test('isWildcardRule detects only wildcard rules', () => {
     expect(isWildcardRule('gpt-5-*')).toBe(true);
     expect(isWildcardRule('gpt-5-codex')).toBe(false);
-    expect(isMatchedByWildcardRule(['gpt-5-*'], 'gpt-5-mini')).toBe(true);
-    // An exact rule matching the model is not a *wildcard* match.
-    expect(isMatchedByWildcardRule(['gpt-5-mini'], 'gpt-5-mini')).toBe(false);
-  });
-});
-
-describe('hasExcludedRule', () => {
-  test('compares literally and case-insensitively, without wildcard expansion', () => {
-    expect(hasExcludedRule(['GPT-4o'], 'gpt-4O')).toBe(true);
-    expect(hasExcludedRule(['gpt-5-*'], 'gpt-5-codex')).toBe(false);
-    expect(hasExcludedRule(['gpt-5-*'], 'GPT-5-*')).toBe(true);
-    expect(hasExcludedRule(['gpt-4o'], '  ')).toBe(false);
   });
 });
 

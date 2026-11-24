@@ -135,7 +135,6 @@ describe('payload rule groups', () => {
       'filter_rules',
     ]) {
       expect(markup).toContain(t(`sections.payload.${key}`));
-      expect(markup).not.toContain(t(`sections.payload.${key}_desc`));
     }
   });
 });

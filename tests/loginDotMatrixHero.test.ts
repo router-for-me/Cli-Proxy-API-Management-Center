@@ -204,24 +204,4 @@ describe('login dot-matrix on mobile', () => {
     const explicit = createDotGrid(390, 320, { origin: 'bottom-right' });
     expect(desktop.revealAt).toEqual(explicit.revealAt);
   });
-
-  test('the hero picks the top-right origin on mobile widths', async () => {
-    const source = await Bun.file('src/pages/login/DotMatrixHero.tsx').text();
-    expect(source).toContain("const COMPACT_QUERY = '(max-width: 768px)'");
-    expect(source).toContain("origin: compact ? 'top-right' : 'bottom-right'");
-  });
-
-  test('mobile shows the dots as a top banner instead of hiding them', async () => {
-    const page = await Bun.file('src/pages/LoginPage.module.scss').text();
-    const hero = await Bun.file('src/pages/login/DotMatrixHero.module.scss').text();
-    const brandPanel = page.slice(page.indexOf('.brandPanel {'), page.indexOf('.formPanel {'));
-    expect(brandPanel).not.toContain('display: none');
-    expect(brandPanel).toContain('height: var(--hero-band)');
-    expect(brandPanel).toContain('pointer-events: none');
-    expect(page).toMatch(/--hero-band: clamp\(/);
-    // 横幅向下淡出；标语在移动端让位给表单标题
-    const mobileHero = hero.slice(hero.indexOf('@media (max-width: $breakpoint-mobile)'));
-    expect(mobileHero).toMatch(/mask-image: linear-gradient\(\s*to bottom/);
-    expect(mobileHero).toMatch(/\.title \{\s*display: none;/);
-  });
 });

@@ -1,5 +1,4 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 import { apiClient } from '../src/services/api/client';
 import { runSavePlan } from '../src/features/authFiles/modelRules/useModelRulesData';
 
@@ -61,25 +60,4 @@ describe('model rules save connection isolation', () => {
       revisionSpy.mockRestore();
     }
   });
-});
-
-describe('model rules unsaved guard after reload failure', () => {
-  for (const page of ['AuthFilesOAuthExcludedEditPage', 'AuthFilesOAuthModelAliasEditPage']) {
-    test(`${page} retains dirty state independently of reload status`, () => {
-      const source = readFileSync(`src/pages/${page}.tsx`, 'utf8');
-      const expression = source.match(/const isDirty = (.*);/)?.[1];
-      expect(expression).toBeDefined();
-      const isDirty = new Function('data', 'dirtyProviders', `return ${expression};`);
-      for (const status of ['loading', 'ready', 'error', 'unsupported']) {
-        expect(isDirty({ revision: 0, status }, ['codex'])).toBe(false);
-        expect(isDirty({ revision: 1, status }, ['codex'])).toBe(true);
-        expect(isDirty({ revision: 1, status }, [])).toBe(false);
-      }
-      expect(source).toContain("useModelRulesRoute('");
-      expect(source).toContain(', isDirty)');
-      expect(source).toContain("canSave={data.status === 'ready' && isDirty && !disabled}");
-      // A stale batch must not initiate a reload against the new connection.
-      expect(source).toContain('if (!outcome) return;\n      setKeepProviders(outcome.failed);');
-    });
-  }
 });

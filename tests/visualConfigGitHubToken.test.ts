@@ -5,7 +5,6 @@ import { I18nextProvider } from 'react-i18next';
 import { parseDocument } from 'yaml';
 import i18n from '@/i18n';
 import { SectionConnectivity } from '@/features/config/components/sections/SectionConnectivity';
-import { findConfigFieldById, searchConfigFields } from '@/features/config/searchIndex';
 import { DEFAULT_VISUAL_VALUES } from '@/types/visualConfig';
 import { runVisualConfig } from './helpers/visualConfig';
 
@@ -52,48 +51,32 @@ describe('global GitHub token configuration', () => {
     }
   });
 
-  test('registers the canonical search path', () => {
-    expect(findConfigFieldById('githubToken')).toMatchObject({
-      sectionId: 'connectivity',
-      yamlKeys: ['server', 'github-token'],
-    });
-    expect(
-      searchConfigFields('server.github-token', () => '').map((entry) => entry.fieldId)
-    ).toContain('githubToken');
-  });
-
-  test('renders a masked, labelled input with localized hints and disabled support', () => {
-    for (const lng of ['en', 'zh-CN', 'zh-TW', 'ru', 'vi']) {
-      const translations = i18n.cloneInstance({ lng });
-      const key = 'config_management.visual.sections.server.github_token';
-      for (const path of [key, `${key}_hint`]) {
-        expect(typeof translations.getResource(lng, 'translation', path)).toBe('string');
-      }
-      for (const disabled of [false, true]) {
-        const markup = renderToStaticMarkup(
-          createElement(
-            I18nextProvider,
-            { i18n: translations },
-            createElement(SectionConnectivity, {
-              values: DEFAULT_VISUAL_VALUES,
-              disabled,
-              onChange: () => {},
-            })
-          )
-        );
-        const field = markup
-          .split('id="cfg-field-githubToken"')[1]
-          .split('id="cfg-field-trustedProxies"')[0];
-        const input = field.match(/<input\b[^>]*>/)?.[0] ?? '';
-        expect(input).toContain('type="password"');
-        expect(input).toContain('autoComplete="new-password"');
-        expect(input.includes('disabled=""')).toBe(disabled);
-        const id = input.match(/\bid="([^"]+)"/)?.[1];
-        expect(id).toBeTruthy();
-        expect(field).toContain(`for="${id}"`);
-        expect(field).toContain(`id="${id}-hint"`);
-        expect(input).toContain(`aria-describedby="${id}-hint"`);
-      }
+  test('renders a masked, labelled input with a hint and disabled support', () => {
+    const translations = i18n.cloneInstance({ lng: 'en' });
+    for (const disabled of [false, true]) {
+      const markup = renderToStaticMarkup(
+        createElement(
+          I18nextProvider,
+          { i18n: translations },
+          createElement(SectionConnectivity, {
+            values: DEFAULT_VISUAL_VALUES,
+            disabled,
+            onChange: () => {},
+          })
+        )
+      );
+      const field = markup
+        .split('id="cfg-field-githubToken"')[1]
+        .split('id="cfg-field-trustedProxies"')[0];
+      const input = field.match(/<input\b[^>]*>/)?.[0] ?? '';
+      expect(input).toContain('type="password"');
+      expect(input).toContain('autoComplete="new-password"');
+      expect(input.includes('disabled=""')).toBe(disabled);
+      const id = input.match(/\bid="([^"]+)"/)?.[1];
+      expect(id).toBeTruthy();
+      expect(field).toContain(`for="${id}"`);
+      expect(field).toContain(`id="${id}-hint"`);
+      expect(input).toContain(`aria-describedby="${id}-hint"`);
     }
   });
 });

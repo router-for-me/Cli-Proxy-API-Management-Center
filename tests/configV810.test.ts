@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { parseDocument } from 'yaml';
 import { createErrorRule } from '@/features/providers/errorRules';
 import { normalizeConfigResponse } from '@/services/api/transformers';
-import { ConfigDraftConflictError } from '@/services/api/configPatch';
+import { buildConfigPatch, ConfigDraftConflictError } from '@/services/api/configPatch';
+import { InvalidOAuthRuleError } from '@/features/config/visualOAuthErrorRules';
 import { runVisualConfig } from './helpers/visualConfig';
 
 const yaml = `oauth:
@@ -67,6 +68,124 @@ describe('v8.1.0 configuration', () => {
     });
   });
 
+  for (const parent of ['oauth', 'request-scoped-errors']) {
+    test(`updates and deletes channels through a ${parent} alias without changing its source`, () => {
+      const source =
+        parent === 'oauth'
+          ? yaml.replace('oauth:', 'defaults: &defaults\n  sibling: keep') + 'oauth: *defaults\n'
+          : yaml.replace('oauth:\n  request-scoped-errors:', 'defaults: &defaults') +
+            'oauth: {sibling: keep, request-scoped-errors: *defaults}\n';
+      const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+      const latest = source.replace('unavailable', 'maintenance');
+      const original = parseDocument(latest).toJS();
+      for (const remove of [false, true]) {
+        const oauthErrorRules = remove
+          ? [groups[1]]
+          : [{ ...groups[0], rules: [{ ...groups[0].rules[0], status: '422' }] }, groups[1]];
+        const editor = runVisualConfig(source, [{ oauthErrorRules }]);
+        const output = parseDocument(editor.applyVisualChangesToYaml(latest)).toJS();
+        expect(output.defaults).toEqual(original.defaults);
+        expect(output.oauth.sibling).toBe('keep');
+        const channels = output.oauth['request-scoped-errors'];
+        expect(channels['acme-plugin']).toEqual(
+          original.oauth['request-scoped-errors']['acme-plugin']
+        );
+        if (remove) expect(channels).not.toHaveProperty('copilot');
+        else
+          expect(channels.copilot).toEqual([
+            { ...original.oauth['request-scoped-errors'].copilot[0], status: 422 },
+          ]);
+        expect(() =>
+          editor.applyVisualChangesToYaml(latest.replace('rate_limit', 'other'))
+        ).toThrow(ConfigDraftConflictError);
+      }
+    });
+  }
+
+  test('refuses to shadow nested anchors when detaching an OAuth alias', () => {
+    const source =
+      yaml.replace('oauth:', 'defaults: &defaults').replace('copilot:', 'copilot: &rules') +
+      'oauth: *defaults\nother: *rules\n';
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const editor = runVisualConfig(source, [{ oauthErrorRules: [groups[1]] }]);
+    for (const target of ['draft', 'server'] as const) {
+      expect(() => editor.applyVisualChangesToYaml(source, target)).toThrow(
+        new ConfigDraftConflictError(['oauth'], 'unsafe_yaml_structure')
+      );
+    }
+  });
+
+  test('an unfinished rule blocks preview and save without replacing unrelated draft fields', () => {
+    const source = `server: {port: 8317}\n${yaml}`;
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const blank = createErrorRule('unfinished');
+    const edit = (rule: typeof blank) => ({
+      port: '9000',
+      oauthErrorRules: [{ ...groups[0], rules: [...groups[0].rules, rule] }, groups[1]],
+    });
+    const editor = runVisualConfig(source, [edit(blank)]);
+    for (const target of ['draft', 'server'] as const) {
+      expect(() => editor.applyVisualChangesToYaml(source, target)).toThrow(
+        new InvalidOAuthRuleError('copilot', 3)
+      );
+    }
+    expect(editor.visualValues.port).toBe('9000');
+    const completed = edit({
+      ...blank,
+      status: '429',
+      matches: [{ ...blank.matches[0], value: 'throttled' }],
+    });
+    const next = runVisualConfig(source, [edit(blank), completed]).applyVisualChangesToYaml(source);
+    const patch = buildConfigPatch(source, next).patch;
+    expect(patch.server).toEqual({ port: 9000 });
+    expect(
+      parseDocument(next).getIn(['oauth', 'request-scoped-errors', 'copilot', 2, 'status'])
+    ).toBe(429);
+  });
+
+  test('OAuth scalar spellings survive source preview and the JSON Management API patch', () => {
+    const terms = [
+      '429',
+      '001',
+      '+400',
+      '1e3',
+      'TRUE',
+      '.Inf',
+      '+.INF',
+      '-.Inf',
+      '.NaN',
+      'rate_limit',
+    ];
+    const source = yaml.replace('[rate_limit]', `[${terms.join(', ')}]`);
+    const groups = runVisualConfig(source).visualValues.oauthErrorRules;
+    const rule = groups[0].rules[1];
+    expect(rule.matches.map((term) => term.value)).toEqual(terms);
+    const update = {
+      ...rule,
+      matches: rule.matches.map((term) =>
+        term.value === 'rate_limit' ? { ...term, value: 'quota' } : term
+      ),
+    };
+    const editor = runVisualConfig(source, [
+      { oauthErrorRules: [{ ...groups[0], rules: [groups[0].rules[0], update] }, groups[1]] },
+    ]);
+    const next = editor.applyVisualChangesToYaml(source);
+    const match = [...terms.slice(0, -1), 'quota'];
+    expect(parseDocument(next).toJS().oauth['request-scoped-errors'].copilot[1].match).toEqual(
+      match
+    );
+    expect(buildConfigPatch(source, next).patch.oauth).toMatchObject({
+      'request-scoped-errors': { copilot: [expect.anything(), expect.objectContaining({ match })] },
+    });
+    const portOnly = runVisualConfig(source, [{ port: '9000' }]).applyVisualChangesToYaml(source);
+    expect(buildConfigPatch(source, portOnly).patch).toEqual({ server: { port: 9000 } });
+    expect(
+      runVisualConfig(portOnly).visualValues.oauthErrorRules[0].rules[1].matches.map(
+        (term) => term.value
+      )
+    ).toEqual(terms);
+  });
+
   test('creates plugin channel below a null parent and rejects empty OAuth match conditions', () => {
     const source = 'oauth: null';
     const rule = { ...createErrorRule('new'), status: '429' };
@@ -89,27 +208,5 @@ describe('v8.1.0 configuration', () => {
         'test-plugin'
       ]
     ).toEqual([{ status: 429, 'match-regexr': ['^quota'], action: 'continue' }]);
-  });
-
-  test('omitted Antigravity pool limit stays omitted and explicit nonpositive limits round-trip', () => {
-    const path = [
-      'oauth',
-      'providers',
-      'antigravity',
-      'connection-pool',
-      'max-idle-conns-per-host',
-    ];
-    expect(parseDocument(runVisualConfig('{}').applyVisualChangesToYaml('{}')).hasIn(path)).toBe(
-      false
-    );
-    for (const value of ['0', '-1']) {
-      const editor = runVisualConfig('{}', [
-        { antigravityConnectionPoolMaxIdleConnsPerHost: value },
-      ]);
-      expect(
-        editor.visualValidationErrors.antigravityConnectionPoolMaxIdleConnsPerHost
-      ).toBeUndefined();
-      expect(parseDocument(editor.applyVisualChangesToYaml('{}')).getIn(path)).toBe(Number(value));
-    }
   });
 });

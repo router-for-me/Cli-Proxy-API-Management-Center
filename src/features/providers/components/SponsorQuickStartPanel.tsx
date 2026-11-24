@@ -4,6 +4,7 @@ import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useNotificationStore } from '@/stores';
 import { IconCheckCircle2, IconExternalLink, IconLoader2, IconPlus } from '@/components/ui/icons';
 import { APIKEY_FUN_AFFILIATE_URL, APIKEY_FUN_DASHBOARD_URL } from '../sponsor';
+import { allSponsorProtocolsBlocked } from '../sponsorBundle';
 import { isSponsorPartialMutationError } from '../sponsorMutationRecovery';
 import type { ProviderEntryFormInput, ProviderResource } from '../types';
 import type { UseProviderWorkbenchResult } from '../useProviderWorkbench';
@@ -34,7 +35,11 @@ export function SponsorQuickStartPanel({
 
   const formMutating = submitting || mutationDisabled || workbench.mutating;
   const mode = resource ? 'edit' : 'create';
-  const submitDisabled = formMutating || (mode === 'edit' && !isDirty);
+  const ambiguousProtocols = workbench.snapshot?.groups.find(
+    (group) => group.id === 'apikeyFun'
+  )?.ambiguousProtocols;
+  const sponsorBlocked = allSponsorProtocolsBlocked('apikeyFun', ambiguousProtocols);
+  const submitDisabled = sponsorBlocked || formMutating || (mode === 'edit' && !isDirty);
 
   useUnsavedChangesGuard({
     shouldBlock: isDirty && !submitting,
@@ -131,6 +136,7 @@ export function SponsorQuickStartPanel({
 
       <div className={styles.body}>
         <SponsorProviderForm
+          ambiguousProtocols={ambiguousProtocols}
           key={`${mode}:${resource?.id ?? 'new'}:${formVersion}`}
           resource={resource}
           mode={mode}
