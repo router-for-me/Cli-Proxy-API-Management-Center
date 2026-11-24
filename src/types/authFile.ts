@@ -58,6 +58,8 @@ export interface AuthFileItem {
   projectId?: string;
   size?: number;
   authIndex?: string | number | null;
+  /** Claude credential explicitly marked as a setup token by the backend. */
+  claudeSetupToken?: boolean;
   /** Generic plugin quota capability advertised by CPA's auth-files API. */
   supportsQuota?: boolean;
   quotaProvider?: string;

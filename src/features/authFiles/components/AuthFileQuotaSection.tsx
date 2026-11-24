@@ -78,7 +78,7 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     }));
 
     try {
-      const data = await adapter.fetchQuota(file, t);
+      const data = await (adapter.refreshQuota ?? adapter.fetchQuota)(file, t);
       commitIfQuotaCacheCurrent(cacheGeneration, () => {
         updateQuotaState((prev) => ({
           ...prev,

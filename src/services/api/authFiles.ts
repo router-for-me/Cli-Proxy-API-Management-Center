@@ -295,6 +295,7 @@ const normalizeAuthFileEntry = (
     cooldownSnapshot: normalizeAuthFileCooldowns(entry.cooldowns, observedAt, receivedAtMs),
     runtimeOnly: readRuntimeOnlyField(entry),
     authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+    claudeSetupToken: entry.claude_setup_token === true,
     ...(supportsQuota !== undefined ? { supportsQuota } : {}),
     ...(quotaProvider ? { quotaProvider } : {}),
     quotaPluginId: quotaPluginId || undefined,

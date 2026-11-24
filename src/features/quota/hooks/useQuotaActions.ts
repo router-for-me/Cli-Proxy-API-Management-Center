@@ -41,7 +41,7 @@ export function useQuotaActions(disableControls: boolean) {
       }));
 
       try {
-        const data = await adapter.fetchQuota(file, t);
+        const data = await (adapter.refreshQuota ?? adapter.fetchQuota)(file, t);
         commitIfQuotaCacheCurrent(cacheGeneration, () => {
           const successState = adapter.buildSuccessState(data);
           setQuota((prev) => ({
