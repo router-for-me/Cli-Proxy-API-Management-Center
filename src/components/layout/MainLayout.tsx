@@ -998,8 +998,10 @@ export function MainLayout() {
   return (
     <div
       className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''} ${
-        isPluginResourcePage ? 'plugin-resource-shell' : ''
-      } ${arrivingFromLogin ? 'app-shell--arriving' : ''}`}
+        sidebarOpen ? 'sidebar-is-open' : ''
+      } ${isPluginResourcePage ? 'plugin-resource-shell' : ''} ${
+        arrivingFromLogin ? 'app-shell--arriving' : ''
+      }`}
     >
       <div className="top-gradient-blur" aria-hidden="true" />
 
