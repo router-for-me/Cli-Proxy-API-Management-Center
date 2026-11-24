@@ -235,6 +235,7 @@ export function AuthFilesOAuthExcludedEditPage() {
               {t('oauth_excluded.models_label')}
             </p>
             <ExcludedModelsPicker
+              key={selected}
               value={draft[selected] ?? []}
               onChange={(next) => setDraft((current) => setExcludedRules(current, selected, next))}
               candidates={candidates}

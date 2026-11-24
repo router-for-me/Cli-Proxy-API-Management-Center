@@ -38,12 +38,20 @@ export const parseExcludedRulesText = (text: string): string[] =>
 
 export const formatExcludedRulesText = (rules: readonly string[]): string => rules.join('\n');
 
-/** Keep editing whitespace while the parent still represents the same custom rules. */
-export function ruleEditorText(draft: string | null, customRules: readonly string[]): string {
-  const formatted = formatExcludedRulesText(customRules);
-  return draft !== null && formatExcludedRulesText(parseExcludedRulesText(draft)) === formatted
+export interface RuleEditorDraft {
+  text: string;
+  baseRules: readonly string[];
+  baseCandidates: readonly string[];
+  published: readonly string[];
+}
+
+/** Keep raw input across our own updates, but never overwrite an external reset. */
+export function currentRuleEditorDraft(draft: RuleEditorDraft | null, rules: readonly string[]) {
+  return draft &&
+    draft.published.length === rules.length &&
+    draft.published.every((rule, i) => rule === rules[i])
     ? draft
-    : formatted;
+    : null;
 }
 
 export function matchesExcludedRule(rule: string, modelId: string): boolean {

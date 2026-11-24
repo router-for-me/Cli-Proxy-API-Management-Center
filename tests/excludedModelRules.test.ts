@@ -6,17 +6,18 @@ import {
   normalizeExcludedRules,
   parseExcludedRulesText,
   replaceCustomExcludedRules,
-  ruleEditorText,
+  currentRuleEditorDraft,
   splitExcludedRules,
   toggleExcludedRule,
 } from '../src/components/excludedModels/excludedModelRules';
 
 test('rule editor retains Enter after normalized feedback, but follows external changes', () => {
-  const firstLine = ruleEditorText('gpt-*\n', ['gpt-*']);
+  const draft = { text: 'gpt-*\n', baseRules: [], baseCandidates: [], published: ['gpt-*'] };
+  const firstLine = currentRuleEditorDraft(draft, ['gpt-*'])?.text;
   expect(firstLine).toBe('gpt-*\n');
   expect(replaceCustomExcludedRules([], [], firstLine + 'claude-*')).toEqual(['gpt-*', 'claude-*']);
-  expect(ruleEditorText(firstLine, ['other-*'])).toBe('other-*');
-  expect(ruleEditorText(null, ['gpt-*'])).toBe('gpt-*');
+  expect(currentRuleEditorDraft(draft, ['other-*'])).toBeNull();
+  expect(currentRuleEditorDraft(null, ['gpt-*'])).toBeNull();
 });
 
 describe('normalizeExcludedRules / parseExcludedRulesText', () => {
