@@ -6,17 +6,22 @@
  * upstream Quota page stores, so provider fetching and parsing stay upstream's.
  */
 
+import i18n from '@/i18n';
 import { buildTimelineLane } from '@/features/quota/quotaTimelineModel';
+import {
+  resolveAntigravityBucketLabelKey,
+  resolveAntigravityGroupLabelKey,
+} from '@/features/quota/providers/antigravity/labels';
 import { nextRecoveryMs } from '@/features/quota/resetSchedule';
 import type { QuotaFileEntry } from '@/features/quota/logic';
 import type { QuotaCardState } from '@/features/quota/providers';
 import type { QuotaProviderType } from '@/features/quota/providers/types';
-import type { AuthFileItem } from '@/types';
+import type { AntigravityQuotaGroup, AuthFileItem } from '@/types';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
 import type { HistorySample, QuotaHistory } from './history';
 import { readPassiveQuota } from './passiveQuota';
 import type { PoolAccount } from './poolForecast';
-import type { RoutingAccount } from './routing';
+import type { RoutingAccount, RoutingPool } from './routing';
 import type { AnthropicResetGrant } from '@/services/api/claudeResetGrants';
 
 export const FABLE_WINDOW_ID = 'seven-day-fable';
@@ -39,6 +44,8 @@ export interface OverviewWindow {
   remaining: number | null;
   resetAtMs: number | null;
   periodHours: number | null;
+  /** Quota pool, for providers whose pools are exhausted independently (Antigravity). */
+  pool?: string;
 }
 
 export interface OverviewCredential {
@@ -66,7 +73,7 @@ export interface OverviewCredential {
   fableSample: HistorySample | null;
   fableObservedAtMs: number | null;
   /** Backend decision for the selected new-session request context, when available. */
-  routing?: RoutingAccount & { next: boolean };
+  routing?: RoutingAccount & { next: boolean; pool: RoutingPool | null };
 }
 
 export interface OverviewProviderPool {
@@ -106,10 +113,30 @@ const fromUsedWindows = (windows: readonly UsedWindowLike[] | undefined): Overvi
     };
   });
 
+const antigravityLabel = (label: string, key: string | null) =>
+  key ? i18n.t(`antigravity_quota.${key}`, { defaultValue: label }) : label;
+
+/** Each Antigravity bucket is its own window, named by its pool. */
+const antigravityWindows = (groups: readonly AntigravityQuotaGroup[]): OverviewWindow[] =>
+  groups.flatMap((group) => {
+    const pool = antigravityLabel(group.label, resolveAntigravityGroupLabelKey(group.label));
+    return group.buckets.map((bucket) => ({
+      id: `${group.id}:${bucket.id}`,
+      label: `${pool} · ${antigravityLabel(
+        bucket.label,
+        resolveAntigravityBucketLabelKey(bucket.label, bucket.window)
+      )}`,
+      remaining: clampPercent(bucket.remainingFraction * 100),
+      resetAtMs: finiteOrNull(bucket.resetAtMs),
+      periodHours: finiteOrNull(bucket.periodHours),
+      pool: group.id,
+    }));
+  });
+
 /**
- * Every limit on a credential. Claude and Codex keep per-window reset instants;
- * other providers fall back to the upstream timeline lane, which carries labels
- * and remaining percentages but a single reset anchor.
+ * Every limit on a credential. Claude, Codex and Antigravity keep per-window
+ * reset instants; other providers fall back to the upstream timeline lane,
+ * which carries labels and remaining percentages but a single reset anchor.
  */
 export function overviewWindows(
   provider: QuotaProviderType,
@@ -119,6 +146,9 @@ export function overviewWindows(
   if (!quota || quota.status !== 'success') return [];
   if (provider === 'claude' || provider === 'codex') {
     return fromUsedWindows((quota as { windows?: UsedWindowLike[] }).windows);
+  }
+  if (provider === 'antigravity') {
+    return antigravityWindows((quota as { groups?: AntigravityQuotaGroup[] }).groups ?? []);
   }
   const lane = buildTimelineLane({ name, displayName: name, provider, quota });
   return lane.limits.map((limit, index) => ({
@@ -266,13 +296,18 @@ export function buildOverviewCredential(
       ? passive.observedAtMs
       : liveAt;
   const windows = rollPastResets(observed, nowMs);
+  const primary = pickPrimaryWindow(windows);
+  // A spent pool blocks only its own models, so only the primary pool's limits block the account.
+  const blocking = primary?.pool
+    ? windows.filter((window) => window.pool === primary.pool)
+    : windows;
   return {
     entry,
     quota,
     windows,
-    primary: pickPrimaryWindow(windows),
+    primary,
     plan: readPlan(quota),
-    backAtMs: backAtMs(windows, nowMs),
+    backAtMs: backAtMs(blocking, nowMs),
     cooldownUntilMs: cooldownUntilMs(entry.file, nowMs),
     priority: typeof entry.file.priority === 'number' ? entry.file.priority : 0,
     source,

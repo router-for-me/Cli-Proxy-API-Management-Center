@@ -24,6 +24,12 @@ export interface RoutingAccount {
   refreshError: string;
 }
 
+/** A provider quota pool, for providers that meter model families separately. */
+export interface RoutingPool {
+  key: string;
+  label: string;
+}
+
 export interface RoutingSnapshot extends RoutingQuery {
   strategy: string;
   generatedAtMs: number;
@@ -31,6 +37,8 @@ export interface RoutingSnapshot extends RoutingQuery {
   nextAuthIndex: string | null;
   fallbackReason: string;
   sessionAffinity: boolean;
+  /** The pool the backend ranked, chosen by the backend when the query names none. */
+  pool: RoutingPool | null;
   accounts: RoutingAccount[];
 }
 
@@ -70,6 +78,16 @@ const instant = (value: unknown): number => {
   if (!Number.isFinite(at)) throw new Error('Invalid routing instant');
   return at;
 };
+
+/** Older backends send neither field; a pool without a listed label shows its key. */
+function routingPool(data: Record<string, unknown>): RoutingPool | null {
+  if (data.pool == null || data.pool === '') return null;
+  const key = text(data.pool);
+  const listed = Array.isArray(data.pools)
+    ? data.pools.map(record).find((pool) => pool.key === key)
+    : undefined;
+  return { key, label: listed && typeof listed.label === 'string' ? listed.label : key };
+}
 
 /** Reject mismatched contexts or invalid next-account claims instead of guessing. */
 export function normalizeRoutingSnapshot(
@@ -140,6 +158,7 @@ export function normalizeRoutingSnapshot(
   }
   return {
     ...query,
+    pool: routingPool(data),
     strategy: text(data.strategy),
     generatedAtMs: instant(data.generated_at),
     receivedAtMs,
@@ -170,7 +189,7 @@ export function routingAccountFor(
   provider: string,
   loads: RoutingLoads,
   nowMs: number
-): (RoutingAccount & { next: boolean }) | undefined {
+): (RoutingAccount & { next: boolean; pool: RoutingPool | null }) | undefined {
   const snapshot = currentRoutingSnapshot(loads[provider], nowMs);
   if (!snapshot || !hasRoutingPrediction(snapshot)) return undefined;
   const index = normalizeAuthIndex(file.authIndex ?? file.auth_index);
@@ -183,6 +202,7 @@ export function routingAccountFor(
             ? null
             : account.ageSeconds + Math.floor(Math.max(0, nowMs - snapshot.receivedAtMs) / 1000),
         next: account.authIndex === snapshot.nextAuthIndex,
+        pool: snapshot.pool,
       }
     : undefined;
 }

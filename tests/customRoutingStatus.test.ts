@@ -3,6 +3,7 @@ import { createElement, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parse as parseYaml } from 'yaml';
 import '@/custom/i18n';
+import i18n from '@/i18n';
 import {
   currentRoutingSnapshot,
   defaultRoutingQuery,
@@ -215,5 +216,146 @@ api-keys:
       ...original,
       routing: { ...original.routing, strategy: 'soonest-reset-first' },
     });
+  });
+});
+
+describe('backend-chosen quota pool', () => {
+  const agQuery = defaultRoutingQuery('antigravity');
+  const agStatus = (extra: Record<string, unknown>) => ({
+    ...rawStatus(),
+    provider: 'antigravity',
+    model: '',
+    transport: 'http',
+    ...extra,
+  });
+  const agFile: AuthFileItem = { name: 'a.json', type: 'antigravity', authIndex: 'second' };
+  const accountFor = (extra: Record<string, unknown>) =>
+    routingAccountFor(
+      agFile,
+      'antigravity',
+      {
+        antigravity: {
+          state: 'ready',
+          snapshot: normalizeRoutingSnapshot(agStatus(extra), agQuery, NOW),
+        },
+      },
+      NOW
+    );
+
+  test('labels the row with the pool the backend ranked', () => {
+    const pools = [
+      { key: 'gemini', label: 'Gemini models' },
+      { key: 'claude-gpt', label: 'Claude and GPT models' },
+    ];
+    expect(accountFor({ pool: 'gemini', pools })?.pool).toEqual(pools[0]);
+    expect(accountFor({ pool: 'claude-gpt', pools })?.pool).toEqual(pools[1]);
+    // A pool missing from the list still names itself.
+    expect(accountFor({ pool: 'gemini' })?.pool).toEqual({ key: 'gemini', label: 'gemini' });
+  });
+
+  test('keeps provider-wide snapshots unlabelled and rejects invalid pools', () => {
+    expect(accountFor({})?.pool).toBeNull();
+    expect(routingAccountFor(file('a.json', 'second'), 'codex', loads(), NOW)?.pool).toBeNull();
+    expect(() => normalizeRoutingSnapshot(agStatus({ pool: 7 }), agQuery, NOW)).toThrow();
+  });
+});
+
+describe('Antigravity ledger windows', () => {
+  const HOUR = 3_600_000;
+  const bucket = (
+    id: string,
+    label: string,
+    window: string,
+    remaining: number,
+    resetIn: number
+  ) => ({
+    id,
+    label,
+    window,
+    remainingFraction: remaining,
+    resetAtMs: NOW + resetIn,
+    periodHours: window === '5h' ? 5 : 168,
+  });
+  const quota = {
+    status: 'success',
+    groups: [
+      {
+        id: 'gemini-models',
+        label: 'Gemini Models',
+        buckets: [
+          bucket('gemini-5h', 'Five Hour Limit Remaining', '5h', 0.6, 4 * HOUR),
+          bucket('gemini-weekly', 'Weekly Limit Remaining', 'weekly', 0.9, 160 * HOUR),
+        ],
+      },
+      {
+        id: 'claude-and-gpt-models',
+        label: 'Claude and GPT models',
+        buckets: [bucket('3p-weekly', 'Weekly Limit Remaining', 'weekly', 1, 168 * HOUR)],
+      },
+    ],
+    subscription: null,
+    serverTimeOffsetMs: null,
+  };
+
+  test('keeps every bucket reset and names its pool', async () => {
+    const language = i18n.language;
+    await i18n.changeLanguage('en');
+    const credential = buildOverviewCredential(
+      { type: 'antigravity', file: { name: 'ag.json', type: 'antigravity', authIndex: 'ag' } },
+      quota as never,
+      NOW
+    );
+    expect(
+      credential.windows.map((window) => [window.label, window.remaining, window.resetAtMs])
+    ).toEqual([
+      ['Gemini models · 5-hour limit', 60, NOW + 4 * HOUR],
+      ['Gemini models · Weekly limit', 90, NOW + 160 * HOUR],
+      ['Claude and GPT models · Weekly limit', 100, NOW + 168 * HOUR],
+    ]);
+    // The pool chart follows the Gemini weekly limit, not the 5-hour one.
+    expect(credential.sample).toEqual([NOW, 90, NOW + 160 * HOUR]);
+    expect(credential.backAtMs).toBeNull();
+    await i18n.changeLanguage(language);
+  });
+});
+
+describe('Antigravity pool blocking', () => {
+  const HOUR = 3_600_000;
+  const group = (id: string, remaining: number, resetIn: number) => ({
+    id,
+    label: id,
+    buckets: [
+      {
+        id: `${id}-weekly`,
+        label: 'Weekly Limit Remaining',
+        window: 'weekly',
+        remainingFraction: remaining,
+        resetAtMs: NOW + resetIn,
+        periodHours: 168,
+      },
+    ],
+  });
+  const credentialWith = (groups: unknown[]) =>
+    buildOverviewCredential(
+      { type: 'antigravity', file: { name: 'ag.json', type: 'antigravity', authIndex: 'ag' } },
+      { status: 'success', groups, subscription: null, serverTimeOffsetMs: null } as never,
+      NOW
+    );
+
+  test('a spent Claude and GPT pool does not block the Gemini forecast', () => {
+    const credential = credentialWith([
+      group('gemini-models', 0.8, 100 * HOUR),
+      group('claude-and-gpt-models', 0, 50 * HOUR),
+    ]);
+    expect(credential.primary?.pool).toBe('gemini-models');
+    expect(credential.backAtMs).toBeNull();
+  });
+
+  test('a spent Gemini pool blocks until its reset', () => {
+    const credential = credentialWith([
+      group('gemini-models', 0, 100 * HOUR),
+      group('claude-and-gpt-models', 1, 50 * HOUR),
+    ]);
+    expect(credential.backAtMs).toBe(NOW + 100 * HOUR);
   });
 });
