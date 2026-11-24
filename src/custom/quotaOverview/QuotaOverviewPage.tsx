@@ -45,6 +45,7 @@ import { recordSample, useQuotaHistory } from './history';
 import {
   OVERVIEW_SORT_MODES,
   buildOverviewCredential,
+  chartQuota,
   buildProviderPools,
   credentialLabel,
   maskEmails,
@@ -254,6 +255,12 @@ export function QuotaOverviewPage() {
     (entry: QuotaFileEntry): QuotaCardState | undefined =>
       quotaByType[entry.type][getQuotaCacheKey(entry.file)],
     [quotaByType]
+  );
+
+  // Charts follow the Gemini pool for Antigravity; the ledger lists every pool.
+  const getChartQuota = useCallback(
+    (entry: QuotaFileEntry): QuotaCardState | undefined => chartQuota(entry.type, getQuota(entry)),
+    [getQuota]
   );
 
   const entries = useMemo(() => classifyQuotaFiles(files), [files]);
@@ -694,7 +701,7 @@ export function QuotaOverviewPage() {
 
           <QuotaTimeline
             entries={visibleEntries}
-            quotaFor={getQuota}
+            quotaFor={getChartQuota}
             displayNameFor={displayNameFor}
             resolvedTheme={resolvedTheme}
             accentFor={(provider) => providerChartColor(provider, resolvedTheme)}

@@ -15,6 +15,7 @@ import { PolicyPanel } from '@/features/routing/components/PolicyPanel';
 import { ROUTING_STRATEGIES } from '@/types/routing';
 import {
   buildOverviewCredential,
+  chartQuota,
   firstInLine,
   sortCredentials,
 } from '@/custom/quotaOverview/model';
@@ -308,9 +309,9 @@ describe('Antigravity ledger windows', () => {
     expect(
       credential.windows.map((window) => [window.label, window.remaining, window.resetAtMs])
     ).toEqual([
-      ['Gemini models · 5-hour limit', 60, NOW + 4 * HOUR],
-      ['Gemini models · Weekly limit', 90, NOW + 160 * HOUR],
-      ['Claude and GPT models · Weekly limit', 100, NOW + 168 * HOUR],
+      ['Gemini 5-hour', 60, NOW + 4 * HOUR],
+      ['Gemini weekly', 90, NOW + 160 * HOUR],
+      ['Other weekly', 100, NOW + 168 * HOUR],
     ]);
     // The pool chart follows the Gemini weekly limit, not the 5-hour one.
     expect(credential.sample).toEqual([NOW, 90, NOW + 160 * HOUR]);
@@ -357,5 +358,68 @@ describe('Antigravity pool blocking', () => {
       group('claude-and-gpt-models', 1, 50 * HOUR),
     ]);
     expect(credential.backAtMs).toBe(NOW + 100 * HOUR);
+  });
+});
+
+describe('Antigravity charts follow Gemini', () => {
+  const HOUR = 3_600_000;
+  const group = (id: string, label: string) => ({
+    id,
+    label,
+    buckets: [
+      {
+        id: `${id}-5h`,
+        label: 'Five Hour Limit Remaining',
+        window: '5h',
+        remainingFraction: 0.5,
+        resetAtMs: NOW + 4 * HOUR,
+        periodHours: 5,
+      },
+      {
+        id: `${id}-weekly`,
+        label: 'Weekly Limit Remaining',
+        window: 'weekly',
+        remainingFraction: 0.7,
+        resetAtMs: NOW + 100 * HOUR,
+        periodHours: 168,
+      },
+    ],
+  });
+  // A partial daily summary can list the Claude and GPT pool first.
+  const quota = {
+    status: 'success',
+    groups: [
+      group('claude-and-gpt-models', 'Claude and GPT models'),
+      group('gemini-models', 'Gemini Models'),
+    ],
+    subscription: null,
+    serverTimeOffsetMs: null,
+  };
+
+  test('lists Gemini first with short labels and charts it', async () => {
+    const language = i18n.language;
+    await i18n.changeLanguage('en');
+    const credential = buildOverviewCredential(
+      { type: 'antigravity', file: { name: 'ag.json', type: 'antigravity', authIndex: 'ag' } },
+      quota as never,
+      NOW
+    );
+    expect(credential.windows.map((window) => window.label)).toEqual([
+      'Gemini 5-hour',
+      'Gemini weekly',
+      'Other 5-hour',
+      'Other weekly',
+    ]);
+    expect(credential.primary?.pool).toBe('gemini-models');
+    const chart = chartQuota('antigravity', quota as never) as unknown as typeof quota;
+    expect(chart.groups.map((item) => item.label)).toEqual(['Gemini']);
+    expect(chart.groups[0].buckets.map((bucket) => bucket.label)).toEqual(['5-hour', 'weekly']);
+    await i18n.changeLanguage(language);
+  });
+
+  test('leaves other providers and Gemini-less summaries unchanged', () => {
+    const other = { ...quota, groups: [quota.groups[0]] };
+    expect(chartQuota('antigravity', other as never)).toBe(other as never);
+    expect(chartQuota('codex', quota as never)).toBe(quota as never);
   });
 });

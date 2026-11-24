@@ -113,25 +113,73 @@ const fromUsedWindows = (windows: readonly UsedWindowLike[] | undefined): Overvi
     };
   });
 
-const antigravityLabel = (label: string, key: string | null) =>
-  key ? i18n.t(`antigravity_quota.${key}`, { defaultValue: label }) : label;
+/** Short pool names: Gemini, and Other for the shared Claude and GPT pool. */
+const ANTIGRAVITY_POOL_KEYS: Record<string, string> = {
+  group_gemini_models: 'pd_overview.pool_gemini',
+  group_claude_gpt_models: 'pd_overview.pool_other',
+};
+const ANTIGRAVITY_WINDOW_KEYS: Record<string, string> = {
+  five_hour_limit: 'pd_overview.window_five_hour',
+  daily_limit: 'pd_overview.window_daily',
+  weekly_limit: 'pd_overview.window_weekly',
+  monthly_limit: 'pd_overview.window_monthly',
+};
 
-/** Each Antigravity bucket is its own window, named by its pool. */
+const isGeminiGroup = (group: AntigravityQuotaGroup) =>
+  resolveAntigravityGroupLabelKey(group.label) === 'group_gemini_models';
+
+/** Gemini first: it drives the charts, and partial summaries can list it last. */
+export const geminiFirst = (groups: readonly AntigravityQuotaGroup[]): AntigravityQuotaGroup[] => [
+  ...groups.filter(isGeminiGroup),
+  ...groups.filter((group) => !isGeminiGroup(group)),
+];
+
+const antigravityPoolName = (group: AntigravityQuotaGroup) => {
+  const key = ANTIGRAVITY_POOL_KEYS[resolveAntigravityGroupLabelKey(group.label) ?? ''];
+  return key ? i18n.t(key) : group.label;
+};
+
+const antigravityWindowName = (bucket: AntigravityQuotaGroup['buckets'][number]) => {
+  const key =
+    ANTIGRAVITY_WINDOW_KEYS[resolveAntigravityBucketLabelKey(bucket.label, bucket.window) ?? ''];
+  return key ? i18n.t(key) : bucket.label;
+};
+
+/** Each Antigravity bucket is its own window, named by its pool: "Gemini 5-hour". */
 const antigravityWindows = (groups: readonly AntigravityQuotaGroup[]): OverviewWindow[] =>
-  groups.flatMap((group) => {
-    const pool = antigravityLabel(group.label, resolveAntigravityGroupLabelKey(group.label));
+  geminiFirst(groups).flatMap((group) => {
+    const pool = antigravityPoolName(group);
     return group.buckets.map((bucket) => ({
       id: `${group.id}:${bucket.id}`,
-      label: `${pool} · ${antigravityLabel(
-        bucket.label,
-        resolveAntigravityBucketLabelKey(bucket.label, bucket.window)
-      )}`,
+      label: i18n.t('pd_overview.pool_window', { pool, window: antigravityWindowName(bucket) }),
       remaining: clampPercent(bucket.remainingFraction * 100),
       resetAtMs: finiteOrNull(bucket.resetAtMs),
       periodHours: finiteOrNull(bucket.periodHours),
       pool: group.id,
     }));
   });
+
+/**
+ * The quota the Quota Overview charts read. Antigravity keeps only its Gemini
+ * pool, with short labels; the ledger still lists every pool.
+ */
+export function chartQuota(
+  provider: QuotaProviderType,
+  quota: QuotaCardState | undefined
+): QuotaCardState | undefined {
+  if (provider !== 'antigravity' || quota?.status !== 'success') return quota;
+  const groups = (quota as { groups?: AntigravityQuotaGroup[] }).groups ?? [];
+  const gemini = groups.filter(isGeminiGroup);
+  if (gemini.length === 0) return quota;
+  return {
+    ...quota,
+    groups: gemini.map((group) => ({
+      ...group,
+      label: antigravityPoolName(group),
+      buckets: group.buckets.map((bucket) => ({ ...bucket, label: antigravityWindowName(bucket) })),
+    })),
+  } as QuotaCardState;
+}
 
 /**
  * Every limit on a credential. Claude, Codex and Antigravity keep per-window
