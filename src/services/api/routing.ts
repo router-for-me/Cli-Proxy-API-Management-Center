@@ -192,7 +192,15 @@ function compatMembers(raw: unknown): RoutingMember[] {
       modelSource: models.length > 0 ? { type: 'list', models } : { type: 'none' },
       unavailable: false,
       cooldowns: null,
-      location: { kind: 'compat', groupIndex, name },
+      location: {
+        kind: 'compat',
+        groupIndex,
+        name,
+        keys: keys.map((key) => ({
+          apiKey: readText(key['api-key']),
+          proxyUrl: readText(key['proxy-url']),
+        })),
+      },
     });
   });
   return members;
@@ -259,7 +267,8 @@ export function credentialWrites(board: RoutingBoard, plan: RoutingPlan): Creden
     if (member.location.kind !== 'credential') return [];
     const fields: CredentialWrite['fields'] = {};
     if (plan.priorities[member.key] !== undefined) fields.priority = plan.priorities[member.key];
-    if (plan.weights[member.key]) fields.weight = plan.weights[member.key][0] ?? null;
+    const weight = plan.weights[member.key]?.[0];
+    if (weight !== undefined) fields.weight = weight;
     return Object.keys(fields).length
       ? [{ key: member.key, name: member.location.name, fields }]
       : [];
@@ -331,7 +340,7 @@ export function buildRoutingConfigPatch(
       }
       // A key-level priority overrides the group's shared one for this key only.
       if (priority !== undefined) key.priority = priority;
-      if (weights) setWeight(key, weights[0] ?? null);
+      if (weights?.[0] !== undefined) setWeight(key, weights[0]);
     } else if (location.kind === 'compat') {
       const group = familyGroups(ROUTING_COMPAT_FAMILY)[location.groupIndex];
       if (!isRecord(group) || readText(group.name) !== location.name) {
@@ -340,8 +349,19 @@ export function buildRoutingConfigPatch(
       if (priority !== undefined) group.priority = priority;
       if (weights) {
         const keys = (Array.isArray(group.keys) ? group.keys : []).filter(isRecord);
-        if (keys.length !== member.weights.length) throw new RoutingConflictError();
-        keys.forEach((key, index) => setWeight(key, weights[index] ?? null));
+        for (const [index, weight] of Object.entries(weights)) {
+          const key = keys[Number(index)];
+          const original = location.keys[Number(index)];
+          if (
+            !key ||
+            !original ||
+            readText(key['api-key']) !== original.apiKey ||
+            readText(key['proxy-url']) !== original.proxyUrl
+          ) {
+            throw new RoutingConflictError();
+          }
+          if (weight !== undefined) setWeight(key, weight);
+        }
       }
     }
   }

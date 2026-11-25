@@ -221,7 +221,7 @@ describe('arranging tiers', () => {
     draft.settings = { ...draft.settings, strategy: 'fill-first' };
     const plan = buildRoutingPlan(current, draft);
     expect(plan.priorities).toEqual({ 'cred:main.json': 30 });
-    expect(plan.weights).toEqual({ 'compat:0': [5, 2] });
+    expect(plan.weights).toEqual({ 'compat:0': { 0: 5 } });
     expect(plan.settings).toEqual({ strategy: 'fill-first' });
     expect(plan.priorities['cred:runtime']).toBeUndefined();
   });
@@ -257,6 +257,23 @@ describe('writing a plan', () => {
     // Untouched families are not sent; the source document is not mutated.
     expect(patch['api-keys'].claude).toBeUndefined();
     expect(RAW['api-keys'].codex[0].keys[1].priority).toBe(10);
+  });
+
+  test('clears only the edited compat slot against fresh weights and rejects a reordered key', () => {
+    const current = board();
+    const draft = draftFromBoard(current);
+    draft.weights['compat:0'][1] = null;
+    const plan = buildRoutingPlan(current, draft);
+    const latest = structuredClone(RAW);
+    const group = latest['api-keys']['openai-compatibility'][0];
+    group.keys[0].weight = 9;
+    expect(buildRoutingConfigPatch(latest, current, plan)).toEqual({
+      'api-keys': {
+        'openai-compatibility': [{ ...group, keys: [group.keys[0], { 'api-key': 'sk-or-2222' }] }],
+      },
+    });
+    group.keys.reverse();
+    expect(() => buildRoutingConfigPatch(latest, current, plan)).toThrow(RoutingConflictError);
   });
 
   test('refuses to write when a key moved since the board was read', () => {

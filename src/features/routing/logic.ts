@@ -292,11 +292,10 @@ export function buildRoutingPlan(board: RoutingBoard, draft: RoutingDraft): Rout
       changes.push({ kind: 'priority', memberKey: member.key, from: member.priority, to: next });
     }
     const draftWeights = draft.weights[member.key] ?? [];
-    let weightChanged = false;
     member.weights.forEach((slot, index) => {
       const to = draftWeights[index] ?? null;
       if (to !== slot.weight) {
-        weightChanged = true;
+        (weights[member.key] ??= {})[index] = to;
         changes.push({
           kind: 'weight',
           memberKey: member.key,
@@ -306,9 +305,6 @@ export function buildRoutingPlan(board: RoutingBoard, draft: RoutingDraft): Rout
         });
       }
     });
-    if (weightChanged) {
-      weights[member.key] = member.weights.map((_, index) => draftWeights[index] ?? null);
-    }
   }
   const settings: Partial<RoutingSettings> = {};
   for (const field of SETTING_FIELDS) {

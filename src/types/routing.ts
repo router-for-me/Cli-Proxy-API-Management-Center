@@ -43,7 +43,12 @@ export type RoutingMemberLocation =
       /** Identity check before writing: positions are only valid for the document they came from. */
       apiKey: string;
     }
-  | { kind: 'compat'; groupIndex: number; name: string }
+  | {
+      kind: 'compat';
+      groupIndex: number;
+      name: string;
+      keys: { apiKey: string; proxyUrl: string }[];
+    }
   | { kind: 'credential'; name: string };
 
 /** Where a member's callable models come from. */
@@ -139,7 +144,7 @@ export type RoutingChange =
 export interface RoutingPlan {
   changes: RoutingChange[];
   priorities: Record<string, number>;
-  weights: Record<string, (number | null)[]>;
+  weights: Record<string, Partial<Record<number, number | null>>>;
   settings: Partial<RoutingSettings>;
 }
 
