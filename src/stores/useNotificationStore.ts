@@ -20,6 +20,8 @@ interface ConfirmationOptions {
 }
 
 interface NotificationState {
+  sessionRevision: number;
+  clearSession: () => void;
   notifications: Notification[];
   confirmation: {
     isOpen: boolean;
@@ -34,6 +36,13 @@ interface NotificationState {
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
+  sessionRevision: 0,
+  clearSession: () =>
+    set((state) => ({
+      sessionRevision: state.sessionRevision + 1,
+      notifications: [],
+      confirmation: { isOpen: false, isLoading: false, options: null },
+    })),
   notifications: [],
   confirmation: {
     isOpen: false,

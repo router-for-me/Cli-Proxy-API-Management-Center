@@ -11,6 +11,7 @@ import { isCurrentObfuscated } from '@/utils/encryption';
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { LegacyBackendError, probeLegacyBackend } from '@/services/api/legacyBackendProbe';
+import { useNotificationStore } from './useNotificationStore';
 import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { useQuotaStore } from './useQuotaStore';
@@ -172,6 +173,7 @@ export const useAuthStore = create<AuthStoreState>()(
       // 登出
       logout: () => {
         restoreSessionPromise = null;
+        useNotificationStore.getState().clearSession();
         apiClient.setConfig({ apiBase: '', managementKey: '' }, { newSession: true });
         useConfigStore.getState().clearCache();
         useModelsStore.getState().clearCache();

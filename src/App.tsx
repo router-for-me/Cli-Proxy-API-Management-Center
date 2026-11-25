@@ -6,12 +6,14 @@ import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { LoginRevealVeil } from '@/components/common/LoginRevealVeil';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
-import { useLanguageStore, useThemeStore } from '@/stores';
+import { useLanguageStore, useNotificationStore, useThemeStore } from '@/stores';
 
 function RootShell() {
+  // Discard notification exit animations together with their session.
+  const sessionRevision = useNotificationStore((state) => state.sessionRevision);
   return (
     <>
-      <NotificationContainer />
+      <NotificationContainer key={sessionRevision} />
       <ConfirmationModal />
       <Outlet />
       <LoginRevealVeil />
