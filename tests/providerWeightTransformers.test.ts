@@ -7,6 +7,10 @@ import {
   normalizeProviderKeyConfig,
 } from '../src/services/api/transformers';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 

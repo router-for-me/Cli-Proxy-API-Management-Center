@@ -4,6 +4,10 @@ import { providersApi, type ProviderFamily } from '@/services/api/providers';
 import { normalizeProviderGroups } from '@/services/api/transformers';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 afterEach(() => {

@@ -5,6 +5,10 @@ import { normalizeProviderGroups } from '@/services/api/transformers';
 import { serializeModelOptions } from '@/services/api/providerModels';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 afterEach(() => {

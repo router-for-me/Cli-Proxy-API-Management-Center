@@ -5,6 +5,10 @@ import { normalizeConfigResponse, normalizeProviderGroups } from '../src/service
 import type { ProviderKeyConfig, OpenAIProviderConfig } from '../src/types';
 import { useAuthStore } from '../src/stores/useAuthStore';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 afterEach(() => {
@@ -466,3 +470,29 @@ test('OpenAI group headers retain auth-index while edited credentials drop respo
     keys: [{ 'api-key': 'fixture', custom: 'keep', weight: 2 }],
   });
 });
+
+test.each(['create', 'edit', 'disable', 'delete'] as const)(
+  'OpenAI %s does not overwrite a concurrent family edit',
+  async (operation) => {
+    const group = { name: 'compat', 'base-url': 'https://example.invalid', keys: [] };
+    const b = backend('openai-compatibility', [group]);
+    const [config] = await providersApi.getOpenAIProviders();
+    const put = apiClient.put;
+    let attempts = 0;
+    apiClient.put = (async (url, data, options) => {
+      attempts++;
+      // The config changed after the read. An unconditional PUT would replace it.
+      if (options?.headers?.['If-Match'] === '"fixture"') throw new Error('412');
+      return put(url, data, options);
+    }) as typeof put;
+    const mutations = {
+      create: () => providersApi.createOpenAIProvider(config),
+      edit: () => providersApi.updateOpenAIProvider(config.name, 0, { ...config, priority: 1 }),
+      disable: () => providersApi.updateOpenAIProviderDisabled(0, true, config.source),
+      delete: () => providersApi.deleteOpenAIProvider(0, config.source),
+    };
+    await expect(mutations[operation]()).rejects.toThrow('412');
+    expect(attempts).toBe(1);
+    expect(b.writes).toEqual([]);
+  }
+);

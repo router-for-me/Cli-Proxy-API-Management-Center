@@ -9,6 +9,10 @@ import { ProviderBehaviorEditor } from '@/features/providers/sheets/forms/Provid
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import type { ProviderBrand } from '@/features/providers/types';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 afterEach(() => {

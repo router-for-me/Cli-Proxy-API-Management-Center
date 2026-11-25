@@ -595,8 +595,8 @@ const findOpenAISource = (groups: Record<string, unknown>[], source?: ProviderSo
 
 // All group editor operations replace a family list, never an array index path. Bind the
 // write to the exact config bytes just read so even a change after snapshot matching is safe.
-const mutateNativeGroups = async (
-  family: NativeProviderFamily,
+const mutateProviderGroups = async (
+  family: ProviderFamily,
   change: (groups: Record<string, unknown>[]) => Record<string, unknown>[]
 ) => {
   const assertConnection = guardProviderConnection();
@@ -624,7 +624,7 @@ async function changeSingleNativeGroup(
   update: (group: Record<string, unknown>) => Record<string, unknown>
 ) {
   let groupIndex = -1;
-  const groups = await mutateNativeGroups(family, (current) => {
+  const groups = await mutateProviderGroups(family, (current) => {
     groupIndex = nativeGroupIndex(current, source);
     current[groupIndex] = update(current[groupIndex]);
     return current;
@@ -669,7 +669,7 @@ async function saveNativeConnection(
   allDisabled?: boolean
 ) {
   let groupIndex = -1;
-  const groups = await mutateNativeGroups(family, (current) => {
+  const groups = await mutateProviderGroups(family, (current) => {
     groupIndex = source ? nativeGroupIndex(current, source) : current.length;
     const group = source ? current[groupIndex] : { keys: [] };
     const rawKeys = group.keys as unknown[];
@@ -729,7 +729,7 @@ export const providersApi = {
     firstApiKey?: string
   ) => {
     const keys = firstApiKey?.trim() ? [{ 'api-key': firstApiKey.trim() }] : [];
-    const groups = await mutateNativeGroups(family, (current) => [
+    const groups = await mutateProviderGroups(family, (current) => [
       ...current,
       replaceNativeGroupSettings({ keys }, settings),
     ]);
@@ -743,7 +743,7 @@ export const providersApi = {
   ) =>
     changeSingleNativeGroup(family, source, (group) => replaceNativeGroupSettings(group, settings)),
   createNativeGroup: (family: NativeProviderFamily, config: NativeProviderGroupConfig) =>
-    mutateNativeGroups(family, (groups) => [
+    mutateProviderGroups(family, (groups) => [
       ...groups,
       { ...serializeNativeGroup(config, keySerializer(family)), keys: [] },
     ]),
@@ -752,7 +752,7 @@ export const providersApi = {
     source: ProviderSource,
     config: NativeProviderGroupConfig
   ) =>
-    mutateNativeGroups(family, (groups) => {
+    mutateProviderGroups(family, (groups) => {
       const index = nativeGroupIndex(groups, source);
       const group = groups[index];
       const original = normalizeNativeProviderGroup(group);
@@ -782,7 +782,7 @@ export const providersApi = {
       applyNativeDisabled(group, { all: disabled })
     ),
   deleteNativeGroup: (family: NativeProviderFamily, source: ProviderSource) =>
-    mutateNativeGroups(family, (groups) => {
+    mutateProviderGroups(family, (groups) => {
       const index = nativeGroupIndex(groups, source);
       return groups.filter((_, i) => i !== index);
     }),
@@ -843,64 +843,66 @@ export const providersApi = {
     ) as OpenAIProviderConfig[];
   },
   async createOpenAIProvider(config: OpenAIProviderConfig) {
-    const groups = await getGroups('openai-compatibility');
-    await putGroups('openai-compatibility', [...groups, serializeOpenAIGroup(config)]);
+    await mutateProviderGroups('openai-compatibility', (groups) => [
+      ...groups,
+      serializeOpenAIGroup(config),
+    ]);
   },
   async updateOpenAIProvider(_name: string, _index: number, config: OpenAIProviderConfig) {
-    const groups = await getGroups('openai-compatibility');
-    const index = findOpenAISource(groups, config.source);
-    const original = (
-      normalizeProviderGroups([groups[index]], 'openai-compatibility') as OpenAIProviderConfig[]
-    )[0];
-    const before = serializeOpenAIGroup(original);
-    const after = serializeOpenAIGroup(config);
-    const next = applyProviderChanges(groups[index], before, after);
-    applyPolicyIntent(next, groups[index], config, after);
-    preserveModelMetadata(
-      next,
-      groups[index].models,
-      before.models,
-      after.models,
-      original.models,
-      config.models,
-      (models) => serializeModelAliases(models, true)
-    );
-    if (!equal(before.keys, after.keys)) {
-      const rawKeys = groups[index].keys as Record<string, unknown>[];
-      const used = new Set<number>();
-      next.keys = config.apiKeyEntries.map((entry) => {
-        // Existing form entries retain their source index; its absence means a new credential.
-        // API keys alone are not identities: the same key can use different proxies.
-        const keyIndex = entry.sourceIndex;
-        if (keyIndex === undefined) return serializeApiKeyEntry(entry);
-        if (used.has(keyIndex) || !isRecord(rawKeys[keyIndex])) throw conflict();
-        used.add(keyIndex);
-        const old = normalizeApiKeyEntry(rawKeys[keyIndex]);
-        if (!old) throw conflict();
-        const key = applyProviderChanges(
-          rawKeys[keyIndex],
-          serializeApiKeyEntry(old),
-          serializeApiKeyEntry(entry)
-        );
-        delete key['auth-index'];
-        return key;
-      });
-    }
-    groups[index] = next;
-    await putGroups('openai-compatibility', groups);
+    await mutateProviderGroups('openai-compatibility', (groups) => {
+      const index = findOpenAISource(groups, config.source);
+      const original = (
+        normalizeProviderGroups([groups[index]], 'openai-compatibility') as OpenAIProviderConfig[]
+      )[0];
+      const before = serializeOpenAIGroup(original);
+      const after = serializeOpenAIGroup(config);
+      const next = applyProviderChanges(groups[index], before, after);
+      applyPolicyIntent(next, groups[index], config, after);
+      preserveModelMetadata(
+        next,
+        groups[index].models,
+        before.models,
+        after.models,
+        original.models,
+        config.models,
+        (models) => serializeModelAliases(models, true)
+      );
+      if (!equal(before.keys, after.keys)) {
+        const rawKeys = groups[index].keys as Record<string, unknown>[];
+        const used = new Set<number>();
+        next.keys = config.apiKeyEntries.map((entry) => {
+          // Existing form entries retain their source index; its absence means a new credential.
+          // API keys alone are not identities: the same key can use different proxies.
+          const keyIndex = entry.sourceIndex;
+          if (keyIndex === undefined) return serializeApiKeyEntry(entry);
+          if (used.has(keyIndex) || !isRecord(rawKeys[keyIndex])) throw conflict();
+          used.add(keyIndex);
+          const old = normalizeApiKeyEntry(rawKeys[keyIndex]);
+          if (!old) throw conflict();
+          const key = applyProviderChanges(
+            rawKeys[keyIndex],
+            serializeApiKeyEntry(old),
+            serializeApiKeyEntry(entry)
+          );
+          delete key['auth-index'];
+          return key;
+        });
+      }
+      groups[index] = next;
+      return groups;
+    });
   },
   async updateOpenAIProviderDisabled(_index: number, disabled: boolean, source?: ProviderSource) {
-    const groups = await getGroups('openai-compatibility');
-    const index = findOpenAISource(groups, source);
-    groups[index] = { ...groups[index], disabled };
-    await putGroups('openai-compatibility', groups);
+    await mutateProviderGroups('openai-compatibility', (groups) => {
+      const index = findOpenAISource(groups, source);
+      groups[index] = { ...groups[index], disabled };
+      return groups;
+    });
   },
   async deleteOpenAIProvider(_index: number, source?: ProviderSource) {
-    const groups = await getGroups('openai-compatibility');
-    const index = findOpenAISource(groups, source);
-    await putGroups(
-      'openai-compatibility',
-      groups.filter((_, i) => i !== index)
-    );
+    await mutateProviderGroups('openai-compatibility', (groups) => {
+      const index = findOpenAISource(groups, source);
+      return groups.filter((_, i) => i !== index);
+    });
   },
 };

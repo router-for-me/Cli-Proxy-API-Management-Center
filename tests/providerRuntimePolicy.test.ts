@@ -10,6 +10,10 @@ import {
 import { createErrorRule, moveErrorRule, readErrorRules } from '@/features/providers/errorRules';
 import type { OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
+
 const originalGet = apiClient.get;
 const originalPut = apiClient.put;
 afterEach(() => {
