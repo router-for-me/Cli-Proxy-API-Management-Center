@@ -88,13 +88,17 @@ export function useQuotaActions(disableControls: boolean) {
           const setQuota = getQuotaSetter(adapter);
           setResettingQuotaName(cacheKey);
           try {
-            const data = await resetQuotaFn(file, t);
+            const state = await resetQuotaFn(file, t);
             commitIfQuotaCacheCurrent(cacheGeneration, () => {
               setQuota((prev) => ({
                 ...prev,
-                [cacheKey]: adapter.buildSuccessState(data),
+                [cacheKey]: state,
               }));
-              showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+              if (state.status === 'error') {
+                showNotification(state.error ?? t('common.unknown_error'), 'warning');
+              } else {
+                showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+              }
             });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : t('common.unknown_error');

@@ -521,7 +521,7 @@ const consumeCodexRateLimitResetCredit = async (
   return authIndex;
 };
 
-const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaData> => {
+const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQuotaState> => {
   const assertConnection = guardConfigConnection();
   const authIndex = await consumeCodexRateLimitResetCredit(file, t);
   try {
@@ -534,9 +534,15 @@ const resetCodexQuota = async (file: AuthFileItem, t: TFunction): Promise<CodexQ
     }
   } catch {
     // Redemption already succeeded: direct the operator to the existing clear action.
-    throw new Error(t('codex_quota.reset_cooldown_failed'));
+    return CODEX_CONFIG.buildErrorState(t('codex_quota.reset_cooldown_failed'));
   }
-  return fetchCodexQuota(file, t);
+  try {
+    const data = await fetchCodexQuota(file, t);
+    if (!data.rateLimitResetCreditsError) return CODEX_CONFIG.buildSuccessState(data);
+  } catch {
+    // The credit was spent; only the read should be retried.
+  }
+  return CODEX_CONFIG.buildErrorState(t('codex_quota.reset_refresh_failed'));
 };
 
 export const CODEX_CONFIG: QuotaProviderData<CodexQuotaState, CodexQuotaData> = {

@@ -131,13 +131,17 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
         const cacheGeneration = captureQuotaCacheGeneration(file.name);
         setResettingQuota(true);
         try {
-          const data = await resetQuota(file, t);
+          const state = await resetQuota(file, t);
           commitIfQuotaCacheCurrent(cacheGeneration, () => {
             updateQuotaState((prev) => ({
               ...prev,
-              [cacheKey]: adapter.buildSuccessState(data),
+              [cacheKey]: state,
             }));
-            showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            if (state.status === 'error') {
+              showNotification(state.error ?? t('common.unknown_error'), 'warning');
+            } else {
+              showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+            }
           });
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : t('common.unknown_error');

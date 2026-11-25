@@ -54,7 +54,7 @@ export interface QuotaProviderData<TState, TData> {
   fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<TData>;
   /** Optional details loaded only after the primary quota has been committed. */
   enrichQuota?: (file: AuthFileItem, data: TData, t: TFunction) => Promise<TData>;
-  resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<TData>;
+  resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<TState>;
   canResetQuota?: (quota: TState) => boolean;
   storeSelector: (state: QuotaStore) => Record<string, TState>;
   storeSetter: keyof QuotaStore;
