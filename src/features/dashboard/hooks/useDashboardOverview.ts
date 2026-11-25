@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authFilesApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
-import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
+import { useApiKeyForModels } from '@/hooks/useApiKeysForModels';
 import { useProviderRecentRequests } from '@/components/providers/hooks/useProviderRecentRequests';
 import {
   mergeRecentRequestBucketGroups,
@@ -121,7 +121,7 @@ export function useDashboardOverview() {
   const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
 
   const connected = connectionStatus === 'connected';
-  const resolveApiKeysForModels = useApiKeysForModels();
+  const resolveApiKey = useApiKeyForModels();
 
   const { usageByProvider, refreshRecentRequests } = useProviderRecentRequests({
     enabled: connected,
@@ -142,12 +142,11 @@ export function useDashboardOverview() {
   const loadModels = useCallback(async () => {
     if (!connected || !apiBase) return;
     try {
-      const apiKeys = await resolveApiKeysForModels();
-      await fetchModelsFromStore(apiBase, apiKeys[0]);
+      await fetchModelsFromStore(apiBase, resolveApiKey);
     } catch {
       // 模型列表失败不应影响仪表盘其余部分
     }
-  }, [connected, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
+  }, [connected, apiBase, resolveApiKey, fetchModelsFromStore]);
 
   useEffect(() => {
     if (!connected) return;

@@ -21,7 +21,7 @@ import {
   useThemeStore,
 } from '@/stores';
 import { apiClient, configApi, modelsApi, versionApi } from '@/services/api';
-import { useApiKeysForModels } from '@/hooks/useApiKeysForModels';
+import { useApiKeyForModels } from '@/hooks/useApiKeysForModels';
 import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
@@ -143,7 +143,7 @@ export function SystemPage() {
     return resolvedTheme === 'dark' ? iconEntry.dark : iconEntry.light;
   };
 
-  const resolveApiKeysForModels = useApiKeysForModels();
+  const resolveApiKey = useApiKeyForModels();
 
   const fetchModels = async ({
     forceRefresh = false,
@@ -169,10 +169,7 @@ export function SystemPage() {
     setModelStatus(undefined);
     setModelsRequestLoading(true);
     try {
-      const apiKeys = await resolveApiKeysForModels({ force: forceRefresh });
-      if (!isCurrent()) return;
-      const primaryKey = apiKeys[0];
-      const list = await fetchModelsFromStore(auth.apiBase, primaryKey, forceRefresh);
+      const list = await fetchModelsFromStore(auth.apiBase, resolveApiKey, forceRefresh);
       if (!isCurrent()) return;
       if (notify) {
         showNotification(

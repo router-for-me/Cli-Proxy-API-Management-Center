@@ -14,13 +14,15 @@ interface ModelsCache {
   apiKey: string;
 }
 
+type PublicApiKey = string | (() => Promise<string | undefined>);
+
 interface ModelsState {
   models: ModelInfo[];
   loading: boolean;
   error: string | null;
   cache: ModelsCache | null;
 
-  fetchModels: (apiBase: string, apiKey?: string, forceRefresh?: boolean) => Promise<ModelInfo[]>;
+  fetchModels: (apiBase: string, apiKey?: PublicApiKey, forceRefresh?: boolean) => Promise<ModelInfo[]>;
   clearCache: () => void;
   isCacheValid: (apiBase: string, apiKey?: string) => boolean;
 }
@@ -35,18 +37,20 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
   fetchModels: async (apiBase, apiKey, forceRefresh = false) => {
     const requestId = (modelsRequestToken += 1);
-    const { cache, isCacheValid } = get();
-    const apiKeyScope = apiKey?.trim() || '';
-
-    // 检查缓存
-    if (!forceRefresh && isCacheValid(apiBase, apiKeyScope) && cache) {
-      set({ models: cache.data, loading: false, error: null });
-      return cache.data;
-    }
-
     set({ loading: true, error: null });
 
     try {
+      const key = typeof apiKey === 'function' ? await apiKey() : apiKey;
+      if (requestId !== modelsRequestToken) {
+        throw new DOMException('The model request was superseded.', 'AbortError');
+      }
+      const apiKeyScope = key?.trim() || '';
+      const { cache, isCacheValid } = get();
+      if (!forceRefresh && cache && isCacheValid(apiBase, apiKeyScope)) {
+        set({ models: cache.data, loading: false, error: null });
+        return cache.data;
+      }
+
       const list = await modelsApi.fetchModels(apiBase, apiKeyScope || undefined);
       // 清空缓存或后续加载已接管状态时，旧请求仅向调用方返回，不再写入 store。
       if (requestId !== modelsRequestToken) return list;

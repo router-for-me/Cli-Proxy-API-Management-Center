@@ -84,6 +84,34 @@ describe('models cache request isolation', () => {
     expect(useModelsStore.getState().models).toEqual([{ name: 'cached' }]);
   });
 
+  it('does not start a public request when key lookup outlives its session', async () => {
+    let release!: (key: string) => void;
+    const lookup = new Promise<string>((resolve) => {
+      release = resolve;
+    });
+    const fetch = spyOn(modelsApi, 'fetchModels').mockResolvedValue([{ name: 'current' }]);
+    const old = useModelsStore.getState().fetchModels('https://old.invalid', () => lookup);
+    useModelsStore.getState().clearCache();
+    await useModelsStore.getState().fetchModels('https://new.invalid', 'fixture');
+    release('old-fixture');
+    await expect(old).rejects.toHaveProperty('name', 'AbortError');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(useModelsStore.getState().cache?.apiBase).toBe('https://new.invalid');
+  });
+
+  it('does not probe anonymously or cache success when key lookup fails', async () => {
+    const fetch = spyOn(modelsApi, 'fetchModels');
+    const lookup = () => Promise.reject(new Error('access keys unavailable'));
+    await expect(
+      useModelsStore.getState().fetchModels('https://proxy.invalid', lookup)
+    ).rejects.toThrow();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(useModelsStore.getState()).toMatchObject({
+      error: 'access keys unavailable',
+      loading: false,
+    });
+  });
+
   it('reports active failures, then clears error and loading on invalidation', async () => {
     spyOn(modelsApi, 'fetchModels').mockRejectedValue(new Error('active failure'));
     await expect(useModelsStore.getState().fetchModels('https://test.invalid')).rejects.toThrow();
