@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, spyOn } from 'bun:test';
+import axios from 'axios';
 import { apiClient } from '../src/services/api/client';
+import { REQUEST_TIMEOUT_MS } from '../src/utils/constants';
 import { modelsApi } from '../src/services/api/models';
 
 const originalPost = apiClient.post;
@@ -7,6 +9,21 @@ afterEach(() => {
   apiClient.post = originalPost;
 });
 const response = { status_code: 200, body: { data: [{ id: 'test-model' }] } };
+
+describe('public model list', () => {
+  it('bounds the wait even when the public endpoint never completes the body', async () => {
+    const get = spyOn(axios, 'get').mockResolvedValue({ data: { data: [] } });
+    try {
+      await modelsApi.fetchModels('https://proxy.invalid');
+      expect(get).toHaveBeenCalledWith(
+        'https://proxy.invalid/v1/models',
+        expect.objectContaining({ timeout: REQUEST_TIMEOUT_MS })
+      );
+    } finally {
+      get.mockRestore();
+    }
+  });
+});
 
 describe('model discovery explicit proxy', () => {
   for (const method of [

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { apiClient } from './client';
 import { normalizeModelList } from '@/utils/models';
 import { normalizeApiBase } from '@/utils/connection';
+import { REQUEST_TIMEOUT_MS } from '@/utils/constants';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 import { isRecord } from '@/utils/helpers';
 
@@ -112,6 +113,7 @@ export const modelsApi = {
     }
 
     const response = await axios.get(endpoint, {
+      timeout: REQUEST_TIMEOUT_MS,
       headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
