@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { modelsApi } from '@/services/api';
 import { buildHeaderObject } from '@/utils/headers';
 import { getErrorMessage } from '@/utils/helpers';
@@ -42,6 +42,28 @@ export interface UseModelDiscoveryResult {
   reset: () => void;
 }
 
+type DiscoveryState = Pick<UseModelDiscoveryResult, 'loading' | 'error' | 'models' | 'hasFetched'>;
+const idle: DiscoveryState = { loading: false, error: null, models: [], hasFetched: false };
+
+export async function settleModelDiscovery(
+  load: () => Promise<ModelInfo[]>,
+  isCurrent: () => boolean,
+  publish: (state: DiscoveryState) => void
+) {
+  try {
+    const models = await load();
+    if (isCurrent()) publish({ loading: false, error: null, models, hasFetched: true });
+  } catch (err) {
+    if (isCurrent()) {
+      publish({
+        ...idle,
+        hasFetched: true,
+        error: getErrorMessage(err) || 'Failed to fetch models',
+      });
+    }
+  }
+}
+
 export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscoveryResult {
   const {
     brand,
@@ -56,97 +78,95 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
   } = args;
 
   const available = isModelDiscoveryBrand(brand);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [hasFetched, setHasFetched] = useState(false);
+  const [state, setState] = useState(idle);
+  const revision = useRef(0);
 
   const fetch = useCallback(async () => {
     if (!available) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const baseHeaders = buildHeaderObject(formHeaders);
-      const openai = brand === 'openaiCompatibility';
-      const firstEntry = openai
-        ? (apiKeyEntries ?? []).find(
-            (e) => e.apiKey?.trim() || e.existingApiKey?.trim() || e.authIndex?.trim()
-          )
-        : undefined;
-      const key = openai
-        ? firstEntry?.apiKey?.trim() || firstEntry?.existingApiKey?.trim()
-        : apiKey?.trim() || fallbackApiKey?.trim();
-      const checkConnection = guardConfigConnection();
-      const transport = await resolveProbeTransport(
-        openai ? firstEntry?.proxyUrl : proxyUrl,
-        openai ? firstEntry?.savedProxyUrl : savedProxyUrl,
-        firstEntry?.authIndex?.trim() || authIndex,
-        !key ||
-          key.includes('$TOKEN$') ||
-          Object.values(baseHeaders).some((v) => v.includes('$TOKEN$'))
-      );
-      checkConnection();
-      let next: ModelInfo[] = [];
-      if (brand === 'gemini' || brand === 'interactions') {
-        next = await modelsApi.fetchGeminiModelsViaApiCall(
-          baseUrl,
-          key,
-          baseHeaders,
-          transport.authIndex,
-          transport.proxyUrl
+    const request = ++revision.current;
+    const isCurrent = () => request === revision.current;
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+    await settleModelDiscovery(
+      async () => {
+        const baseHeaders = buildHeaderObject(formHeaders);
+        const openai = brand === 'openaiCompatibility';
+        const firstEntry = openai
+          ? (apiKeyEntries ?? []).find(
+              (e) => e.apiKey?.trim() || e.existingApiKey?.trim() || e.authIndex?.trim()
+            )
+          : undefined;
+        const key = openai
+          ? firstEntry?.apiKey?.trim() || firstEntry?.existingApiKey?.trim()
+          : apiKey?.trim() || fallbackApiKey?.trim();
+        const checkConnection = guardConfigConnection();
+        const transport = await resolveProbeTransport(
+          openai ? firstEntry?.proxyUrl : proxyUrl,
+          openai ? firstEntry?.savedProxyUrl : savedProxyUrl,
+          firstEntry?.authIndex?.trim() || authIndex,
+          !key ||
+            key.includes('$TOKEN$') ||
+            Object.values(baseHeaders).some((v) => v.includes('$TOKEN$'))
         );
-      } else if (brand === 'codex' || brand === 'meta' || brand === 'xai') {
-        next = await modelsApi.fetchV1ModelsViaApiCall(
-          baseUrl,
-          key,
-          baseHeaders,
-          transport.authIndex,
-          transport.proxyUrl
-        );
-      } else if (brand === 'claude') {
-        next = await modelsApi.fetchClaudeModelsViaApiCall(
-          baseUrl,
-          key,
-          baseHeaders,
-          transport.authIndex,
-          transport.proxyUrl
-        );
-      } else if (brand === 'openaiCompatibility') {
-        try {
-          next = await modelsApi.fetchModelsViaApiCall(
+        if (!isCurrent()) return [];
+        checkConnection();
+        let next: ModelInfo[] = [];
+        if (brand === 'gemini' || brand === 'interactions') {
+          next = await modelsApi.fetchGeminiModelsViaApiCall(
             baseUrl,
             key,
             baseHeaders,
             transport.authIndex,
             transport.proxyUrl
           );
-        } catch (firstErr) {
-          // Some OpenAI-compatible endpoints expose /models without auth, or
-          // reject the configured key for the discovery route. Retry once
-          // without any auth/headers before surfacing the original error.
+        } else if (brand === 'codex' || brand === 'meta' || brand === 'xai') {
+          next = await modelsApi.fetchV1ModelsViaApiCall(
+            baseUrl,
+            key,
+            baseHeaders,
+            transport.authIndex,
+            transport.proxyUrl
+          );
+        } else if (brand === 'claude') {
+          next = await modelsApi.fetchClaudeModelsViaApiCall(
+            baseUrl,
+            key,
+            baseHeaders,
+            transport.authIndex,
+            transport.proxyUrl
+          );
+        } else if (brand === 'openaiCompatibility') {
           try {
-            checkConnection();
             next = await modelsApi.fetchModelsViaApiCall(
               baseUrl,
-              undefined,
-              undefined,
-              undefined,
+              key,
+              baseHeaders,
+              transport.authIndex,
               transport.proxyUrl
             );
-          } catch {
-            throw firstErr;
+          } catch (firstErr) {
+            if (!isCurrent()) throw firstErr;
+            // Some OpenAI-compatible endpoints expose /models without auth, or
+            // reject the configured key for the discovery route. Retry once
+            // without any auth/headers before surfacing the original error.
+            try {
+              checkConnection();
+              next = await modelsApi.fetchModelsViaApiCall(
+                baseUrl,
+                undefined,
+                undefined,
+                undefined,
+                transport.proxyUrl
+              );
+            } catch {
+              throw firstErr;
+            }
           }
         }
-      }
-      setModels(next ?? []);
-      setHasFetched(true);
-    } catch (err) {
-      setModels([]);
-      setError(getErrorMessage(err) || 'Failed to fetch models');
-      setHasFetched(true);
-    } finally {
-      setLoading(false);
-    }
+        return next ?? [];
+      },
+      isCurrent,
+      setState
+    );
   }, [
     available,
     apiKey,
@@ -161,37 +181,48 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
   ]);
 
   const reset = useCallback(() => {
-    setModels([]);
-    setError(null);
-    setLoading(false);
-    setHasFetched(false);
+    revision.current++;
+    setState(idle);
   }, []);
 
-  const inputSignature = useMemo(() => {
-    const headerSig = formHeaders.map((h) => `${h.key}:${h.value}`).join('|');
-    const entriesSig = (apiKeyEntries ?? [])
-      .map(
-        (e) =>
-          `${e.apiKey ?? ''}::${e.existingApiKey ?? ''}::${e.authIndex ?? ''}::${e.proxyUrl ?? ''}`
-      )
-      .join('|');
-    return [
+  const inputSignature = useMemo(
+    () =>
+      JSON.stringify([
+        brand,
+        baseUrl,
+        proxyUrl,
+        savedProxyUrl,
+        apiKey,
+        fallbackApiKey,
+        authIndex,
+        formHeaders.map(({ key, value }) => [key, value]),
+        apiKeyEntries?.map((e) => [
+          e.apiKey,
+          e.existingApiKey,
+          e.authIndex,
+          e.proxyUrl,
+          e.savedProxyUrl,
+        ]),
+      ]),
+    [
+      brand,
       baseUrl,
-      proxyUrl ?? '',
-      apiKey ?? '',
-      fallbackApiKey ?? '',
-      authIndex ?? '',
-      headerSig,
-      entriesSig,
-    ].join('||');
-  }, [apiKey, apiKeyEntries, authIndex, baseUrl, fallbackApiKey, formHeaders, proxyUrl]);
+      proxyUrl,
+      savedProxyUrl,
+      apiKey,
+      fallbackApiKey,
+      authIndex,
+      formHeaders,
+      apiKeyEntries,
+    ]
+  );
 
-  const lastSignatureRef = useRef(inputSignature);
-  useEffect(() => {
-    if (lastSignatureRef.current === inputSignature) return;
-    lastSignatureRef.current = inputSignature;
+  useLayoutEffect(() => {
     reset();
+    return () => {
+      revision.current++;
+    };
   }, [inputSignature, reset]);
 
-  return { available, loading, error, models, hasFetched, fetch, reset };
+  return { available, ...state, fetch, reset };
 }
