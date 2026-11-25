@@ -510,13 +510,27 @@ function queueOauthMapWrite(path: string, write: () => Promise<void>): Promise<v
   return pending;
 }
 
-async function updateOauthProviderMap(path: string, provider: string, value?: unknown) {
+async function updateOauthProviderMap(
+  field: 'model-alias' | 'excluded-models',
+  provider: string,
+  value?: unknown
+) {
+  const path = `/config/oauth/${field}`;
   const key = normalizeOAuthProviderKey(provider);
   if (!key) throw new Error('Invalid OAuth provider');
   return queueOauthMapWrite(path, async () => {
     const assertConnection = guardConfigConnection();
-    const current = await getConfigValue<unknown>(path, {});
+    // A missing subpath returns 404 without an ETag. Read both the map and the
+    // version from the same root snapshot, including when creating the first entry.
+    const client = apiClient.captureConnection();
+    const { data, headers } = await client.getRaw('/config');
     assertConnection();
+    const etag: unknown = headers.etag;
+    if (typeof etag !== 'string' || !etag.trim()) throw new Error('Missing config ETag');
+    if (!isRecord(data) || (data.oauth != null && !isRecord(data.oauth))) {
+      throw new Error('Invalid OAuth configuration');
+    }
+    const current: unknown = data.oauth?.[field];
     if (current != null && !isRecord(current)) throw new Error('Invalid OAuth configuration map');
     // v8 reads preserve YAML key spelling. The UI groups normalized providers, so
     // remove every spelling of this provider, preserving unrelated entries verbatim.
@@ -531,7 +545,8 @@ async function updateOauthProviderMap(path: string, provider: string, value?: un
         writable: true,
       });
     }
-    await apiClient.put(path, next);
+    await client.put(path, next, { headers: { 'If-Match': etag } });
+    assertConnection();
   });
 }
 
@@ -660,10 +675,10 @@ export const authFilesApi = {
   },
 
   saveOauthExcludedModels: (provider: string, models: string[]) =>
-    updateOauthProviderMap(OAUTH_EXCLUDED_MODELS_ENDPOINT, provider, models),
+    updateOauthProviderMap('excluded-models', provider, models),
 
   deleteOauthExcludedEntry: (provider: string) =>
-    updateOauthProviderMap(OAUTH_EXCLUDED_MODELS_ENDPOINT, provider),
+    updateOauthProviderMap('excluded-models', provider),
 
   replaceOauthExcludedModels: (map: Record<string, string[]>) =>
     queueOauthMapWrite(OAUTH_EXCLUDED_MODELS_ENDPOINT, async () => {
@@ -681,14 +696,14 @@ export const authFilesApi = {
     const normalizedAliases =
       normalizeOauthModelAlias({ [normalizedChannel]: aliases })[normalizedChannel] ?? [];
     await updateOauthProviderMap(
-      OAUTH_MODEL_ALIAS_ENDPOINT,
+      'model-alias',
       normalizedChannel,
       serializeOauthModelAliases(normalizedAliases)
     );
   },
 
   deleteOauthModelAlias: (channel: string) =>
-    updateOauthProviderMap(OAUTH_MODEL_ALIAS_ENDPOINT, channel),
+    updateOauthProviderMap('model-alias', channel),
 
   // Get models supported by the credential
   async getModelsForAuthFile(
