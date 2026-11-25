@@ -9,4 +9,6 @@ export interface OAuthModelAliasEntry {
   alias: string;
   fork?: boolean;
   forceMapping?: boolean;
+  displayName?: string;
+  openapi?: boolean;
 }

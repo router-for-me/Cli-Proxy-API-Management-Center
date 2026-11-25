@@ -447,6 +447,9 @@ export const normalizeOauthModelAlias = (
         const forceMappingValue = entry['force-mapping'] ?? entry.forceMapping;
         const normalizedEntry: OAuthModelAliasEntry = { name, alias };
         if (fork) normalizedEntry.fork = true;
+        const displayName = entry['display-name'] ?? entry.displayName;
+        if (typeof displayName === 'string') normalizedEntry.displayName = displayName;
+        if (typeof entry.openapi === 'boolean') normalizedEntry.openapi = entry.openapi;
         if (typeof forceMappingValue === 'boolean') {
           normalizedEntry.forceMapping = forceMappingValue;
         }
@@ -478,6 +481,8 @@ export const serializeOauthModelAliases = (
       alias: entry.alias,
     };
     if (entry.fork) payload.fork = true;
+    if (entry.displayName !== undefined) payload['display-name'] = entry.displayName;
+    if (entry.openapi !== undefined) payload.openapi = entry.openapi;
     if (typeof entry.forceMapping === 'boolean') {
       payload['force-mapping'] = entry.forceMapping;
     }

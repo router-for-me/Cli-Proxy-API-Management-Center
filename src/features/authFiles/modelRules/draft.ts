@@ -51,6 +51,8 @@ export const buildAliasDraft = (
         alias: entry.alias ?? '',
         fork: entry.fork === true,
         forceMapping: entry.forceMapping,
+        displayName: entry.displayName,
+        openapi: entry.openapi,
       })),
     ];
   });
@@ -65,6 +67,8 @@ export const toAliasEntries = (entries: readonly OAuthModelAliasEntry[]): OAuthM
     if (!name || !alias) return [];
     const next: OAuthModelAliasEntry = { name, alias };
     if (entry.fork) next.fork = true;
+    if (entry.displayName !== undefined) next.displayName = entry.displayName;
+    if (entry.openapi !== undefined) next.openapi = entry.openapi;
     if (typeof entry.forceMapping === 'boolean') next.forceMapping = entry.forceMapping;
     return [next];
   });

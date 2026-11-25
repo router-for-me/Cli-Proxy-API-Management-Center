@@ -26,6 +26,8 @@ import {
 } from '../src/features/authFiles/modelRules/draft';
 import { runSavePlan } from '../src/features/authFiles/modelRules/useModelRulesData';
 
+import { normalizeOauthModelAlias, serializeOauthModelAliases } from '../src/services/api/authFiles';
+
 const ids = () => {
   let next = 0;
   return () => `id-${++next}`;
@@ -45,6 +47,16 @@ describe('alias draft', () => {
     expect(getDirtyAliasProviders(baseline, draft)).toEqual([]);
     expect(buildAliasSavePlan(baseline, draft)).toEqual([]);
     expect(toAliasMap(draft)).toEqual(baseline);
+  });
+
+  test('editing an alias preserves its Vertex endpoint override and catalog label', () => {
+    const row = { name: 'model', alias: 'before', openapi: false, 'display-name': 'Friendly' };
+    const base = normalizeOauthModelAlias({ vertex: [row] });
+    const draft = buildAliasDraft(base, ids());
+    const edited = updateAliasRow(draft, 'vertex', draft.vertex[0].id, { alias: 'after' });
+    const [{ value }] = buildAliasSavePlan(base, edited);
+    const normalized = normalizeOauthModelAlias({ vertex: value });
+    expect(serializeOauthModelAliases(normalized.vertex)).toEqual([{ ...row, alias: 'after' }]);
   });
 
   test('merges provider spellings into one normalized group', () => {
