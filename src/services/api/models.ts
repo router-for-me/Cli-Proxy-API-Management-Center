@@ -117,6 +117,9 @@ export const modelsApi = {
       headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
+    if (!Array.isArray(payload)) {
+      throw new TypeError('Expected a model list from /v1/models');
+    }
     return normalizeModelList(payload, { dedupe: true });
   },
 

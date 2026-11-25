@@ -11,6 +11,17 @@ afterEach(() => {
 const response = { status_code: 200, body: { data: [{ id: 'test-model' }] } };
 
 describe('public model list', () => {
+  it('rejects a proxy login page instead of caching it as an empty model list', async () => {
+    const get = spyOn(axios, 'get').mockResolvedValue({ data: '<html>Sign in</html>' });
+    try {
+      await expect(modelsApi.fetchModels('https://proxy.invalid')).rejects.toThrow('/v1/models');
+      get.mockResolvedValue({ data: { data: [] } });
+      expect(await modelsApi.fetchModels('https://proxy.invalid')).toEqual([]);
+    } finally {
+      get.mockRestore();
+    }
+  });
+
   it('bounds the wait even when the public endpoint never completes the body', async () => {
     const get = spyOn(axios, 'get').mockResolvedValue({ data: { data: [] } });
     try {
