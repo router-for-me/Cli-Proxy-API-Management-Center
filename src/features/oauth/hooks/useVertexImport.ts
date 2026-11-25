@@ -36,7 +36,12 @@ export function useVertexImport(options: {
   const pickFile = (file: File | undefined) => {
     if (!file) return;
     if (!isJsonFile(file)) {
-      setVertex((prev) => ({ ...prev, error: t('vertex_import.file_required') }));
+      setVertex((prev) => ({
+        ...prev,
+        file: undefined,
+        result: undefined,
+        error: t('vertex_import.file_required'),
+      }));
       return;
     }
     setVertex((prev) => ({ ...prev, file, error: undefined, result: undefined }));
