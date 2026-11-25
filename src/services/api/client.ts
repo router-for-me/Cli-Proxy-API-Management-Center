@@ -38,9 +38,9 @@ class ApiClient {
   /**
    * Set API configuration
    */
-  setConfig(config: ApiClientConfig): void {
+  setConfig(config: ApiClientConfig, { newSession = false } = {}): void {
     const apiBase = computeApiUrl(config.apiBase);
-    if (apiBase !== this.apiBase || config.managementKey !== this.managementKey) {
+    if (newSession || apiBase !== this.apiBase || config.managementKey !== this.managementKey) {
       this.connectionRevision += 1;
     }
     this.apiBase = apiBase;

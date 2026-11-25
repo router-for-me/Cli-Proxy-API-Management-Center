@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test';
 import axios from 'axios';
+import type { Config } from '@/types';
 import { apiClient } from '@/services/api/client';
 import { LegacyBackendError } from '@/services/api/legacyBackendProbe';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -91,4 +92,90 @@ describe('legacy backend login diagnostic', () => {
     spies.push(probe);
     await expect(useAuthStore.getState().login(credentials)).rejects.toBe(error);
   });
+});
+
+describe('login attempt ownership', () => {
+  test('logout while config is pending cannot restore the login or its remember flag', async () => {
+    const pending = Promise.withResolvers<Config>();
+    spies.push(spyOn(useConfigStore.getState(), 'fetchConfig').mockReturnValue(pending.promise));
+    const login = useAuthStore.getState().login({ ...credentials, rememberPassword: true });
+    useAuthStore.getState().logout();
+    pending.resolve({});
+    await expect(login).rejects.toThrow();
+    expect(useAuthStore.getState()).toMatchObject({
+      isAuthenticated: false,
+      connectionStatus: 'disconnected',
+      managementKey: '',
+    });
+    expect(memory.has('isLoggedIn')).toBe(false);
+  });
+
+  test.each(['before', 'during'] as const)(
+    'same-credential retry %s a legacy probe owns the result',
+    async (timing) => {
+      const missing = Object.assign(new Error('not found'), { status: 404 });
+      const config = Promise.withResolvers<Config>();
+      const started = Promise.withResolvers<void>();
+      const diagnosis = Promise.withResolvers<{ data: object }>();
+      spies.push(
+        spyOn(useConfigStore.getState(), 'fetchConfig')
+          .mockReturnValueOnce(config.promise)
+          .mockResolvedValue({})
+      );
+      const probe = spyOn(axios, 'get').mockImplementation(() => {
+        started.resolve();
+        return diagnosis.promise;
+      });
+      spies.push(probe);
+      const old = useAuthStore.getState().login(credentials);
+      if (timing === 'during') {
+        config.reject(missing);
+        await started.promise;
+      }
+      await useAuthStore.getState().login(credentials);
+      config.reject(missing);
+      diagnosis.resolve({ data: {} });
+      await expect(old).rejects.toBe(missing);
+      expect(probe).toHaveBeenCalledTimes(timing === 'before' ? 0 : 1);
+      expect(useAuthStore.getState().connectionStatus).toBe('connected');
+    }
+  );
+
+  test.each([false, true])(
+    '401 keeps its error without logging out a newer login (retry=%s)',
+    async (retry) => {
+      const release = Promise.withResolvers<void>();
+      const events: string[] = [];
+      Object.assign(window, {
+        dispatchEvent(event: Event) {
+          events.push(event.type);
+          if (event.type === 'unauthorized') useAuthStore.getState().logout();
+          return true;
+        },
+      });
+      spies.push(
+        spyOn(useConfigStore.getState(), 'fetchConfig')
+          .mockImplementationOnce(() =>
+            apiClient.get('/config', {
+              adapter: async (config) => {
+                await release.promise;
+                throw {
+                  isAxiosError: true,
+                  message: 'Key rejected',
+                  config,
+                  response: { status: 401 },
+                };
+              },
+            })
+          )
+          .mockResolvedValue({})
+      );
+      const old = useAuthStore.getState().login(credentials);
+      if (retry) await useAuthStore.getState().login(credentials);
+      release.resolve();
+      await expect(old).rejects.toMatchObject({ status: 401, message: 'Key rejected' });
+      expect(events).toEqual(retry ? [] : ['unauthorized']);
+      expect(useAuthStore.getState().connectionStatus).toBe(retry ? 'connected' : 'disconnected');
+    }
+  );
 });

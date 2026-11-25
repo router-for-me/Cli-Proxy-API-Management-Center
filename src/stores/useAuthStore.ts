@@ -113,6 +113,11 @@ export const useAuthStore = create<AuthStoreState>()(
         const managementKey = credentials.managementKey.trim();
         const rememberPassword = credentials.rememberPassword ?? get().rememberPassword ?? false;
 
+        // A retry with identical credentials still owns a new attempt (and new response events).
+        apiClient.setConfig({ apiBase, managementKey }, { newSession: true });
+        const attempt = apiClient.getConnectionRevision();
+        const isCurrentAttempt = () => attempt === apiClient.getConnectionRevision();
+
         try {
           set({
             connectionStatus: 'connecting',
@@ -125,26 +130,23 @@ export const useAuthStore = create<AuthStoreState>()(
           useQuotaStore.getState().clearQuotaCache();
           useQuotaStore.getState().clearCodexCreditOverageOperations();
 
-          // 配置 API 客户端
-          apiClient.setConfig({
-            apiBase,
-            managementKey,
-          });
-
           // 测试连接 - 获取配置。只在 v8 路由不存在时诊断旧版后端。
-          const revision = apiClient.getConnectionRevision();
           try {
             await useConfigStore.getState().fetchConfig(true);
           } catch (error) {
             if (
               (error as { status?: number })?.status === 404 &&
-              revision === apiClient.getConnectionRevision() &&
+              isCurrentAttempt() &&
               (await probeLegacyBackend(apiBase, managementKey)) &&
-              revision === apiClient.getConnectionRevision()
+              isCurrentAttempt()
             ) {
               throw new LegacyBackendError();
             }
             throw error;
+          }
+
+          if (!isCurrentAttempt()) {
+            throw new DOMException('The management connection changed.', 'AbortError');
           }
 
           // 登录成功
@@ -161,7 +163,8 @@ export const useAuthStore = create<AuthStoreState>()(
             localStorage.removeItem('isLoggedIn');
           }
         } catch (error: unknown) {
-          set({ connectionStatus: 'error' });
+          // A current 401 may have synchronously logged out. Preserve its original error.
+          if (isCurrentAttempt()) set({ connectionStatus: 'error' });
           throw error;
         }
       },
@@ -169,7 +172,7 @@ export const useAuthStore = create<AuthStoreState>()(
       // 登出
       logout: () => {
         restoreSessionPromise = null;
-        apiClient.setConfig({ apiBase: '', managementKey: '' });
+        apiClient.setConfig({ apiBase: '', managementKey: '' }, { newSession: true });
         useConfigStore.getState().clearCache();
         useModelsStore.getState().clearCache();
         useQuotaStore.getState().clearQuotaCache();
