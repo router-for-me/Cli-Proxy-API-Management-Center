@@ -1,11 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, spyOn, test } from 'bun:test';
 import { parse as parseYaml, parseDocument } from 'yaml';
 import {
   blockingVisualParseError,
+  confirmSourceDraft,
   buildConfigSaveDraft,
   shouldReloadVisualDraft,
 } from '../src/features/config/hooks/useConfigDocument';
 import { buildConfigPatch } from '../src/services/api/configPatch';
+
+import { apiClient } from '../src/services/api/client';
 
 function applyProxyEdit(yaml: string): string {
   const document = parseDocument(yaml);
@@ -101,4 +104,33 @@ describe('config document concurrency policy', () => {
   test('retries parsing after a YAML error even without a source edit', () => {
     expect(shouldReloadVisualDraft(false, 'Invalid YAML')).toBe(true);
   });
+});
+
+test('a racing source PUT invalidates the preview and only writes the draft after new confirmation', async () => {
+  const read = spyOn(apiClient, 'getRaw');
+  const put = spyOn(apiClient, 'put');
+  const snapshot = (data: string, etag: string) =>
+    ({ data, headers: { etag } }) as Awaited<ReturnType<typeof apiClient.getRaw>>;
+  const invalidate = mock(() => {});
+  const draft = '# keep my formatting\nport: 3\n';
+  try {
+    read
+      .mockResolvedValueOnce(snapshot('port: 1', '"first"'))
+      .mockResolvedValueOnce(snapshot('port: 2', '"racing"'))
+      .mockResolvedValueOnce(snapshot('port: 2', '"final"'));
+    put
+      .mockRejectedValueOnce(Object.assign(new Error('precondition_failed'), { status: 412 }))
+      .mockResolvedValueOnce({});
+    const confirm = (preview: string) => confirmSourceDraft(preview, draft, () => true, invalidate);
+    expect(await confirm('port: 1')).toEqual({ yaml: 'port: 2', review: true });
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(put.mock.calls[0]?.[2]?.headers?.['If-Match']).toBe('"first"');
+    expect(await confirm('port: 2')).toEqual({ yaml: 'port: 2', review: false });
+    expect(put.mock.calls[1]?.[1]).toBe(draft);
+    expect(put.mock.calls[1]?.[2]?.headers?.['If-Match']).toBe('"final"');
+  } finally {
+    read.mockRestore();
+    put.mockRestore();
+  }
 });

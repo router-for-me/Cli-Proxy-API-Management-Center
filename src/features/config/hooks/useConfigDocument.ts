@@ -113,6 +113,30 @@ export function shouldReloadVisualDraft(sourceDirty: boolean, visualParseError: 
   return sourceDirty || visualParseError !== null;
 }
 
+/** Confirm against the last read, never retry a rejected full-document write. */
+export async function confirmSourceDraft(
+  previewYaml: string,
+  draft: string,
+  isCurrent: () => boolean,
+  invalidatePreview: () => void
+) {
+  const { yaml, etag } = await configFileApi.fetchConfigYamlSnapshot();
+  if (!isCurrent()) return null;
+  if (yaml !== previewYaml) return { yaml, review: true };
+  try {
+    await configFileApi.saveConfigYaml(draft, etag);
+    return { yaml, review: false };
+  } catch (error) {
+    if (!error || typeof error !== 'object' || !('status' in error) || error.status !== 412) {
+      throw error;
+    }
+    if (!isCurrent()) return null;
+    // If readback fails, the next Save must start a new preview, not reuse this one.
+    invalidatePreview();
+    return { yaml: await configFileApi.fetchConfigYaml(), review: true };
+  }
+}
+
 export function useConfigDocument({
   mode,
   visualDirty,
@@ -208,12 +232,18 @@ export function useConfigDocument({
     if (!diffModalOpen || saving) return;
     const operation = beginOperation();
     if (previewRevision.current !== operation.revision) return;
-    let writeAttempted = false;
+    let visualWriteAttempted = false;
     setSaving(true);
     try {
-      const latestServerYaml = await configFileApi.fetchConfigYaml();
-      if (!operation.isCurrent()) return;
-      if (latestServerYaml !== previewServerYaml) {
+      const confirmed =
+        previewMode === 'source'
+          ? await confirmSourceDraft(previewServerYaml, mergedYaml, operation.isCurrent, () =>
+              setDiffModalOpen(false)
+            )
+          : { yaml: await configFileApi.fetchConfigYaml(), review: false };
+      if (!confirmed || !operation.isCurrent()) return;
+      const latestServerYaml = confirmed.yaml;
+      if (confirmed.review || latestServerYaml !== previewServerYaml) {
         const nextMergedYaml = !sourceDirty
           ? applyVisualChangesToYaml(latestServerYaml)
           : mergedYaml;
@@ -234,6 +264,8 @@ export function useConfigDocument({
           setContent(latestServerYaml);
           loadVisualValuesFromYaml(latestServerYaml);
           showNotification(t('config_management.diff.no_changes'), 'info');
+        } else {
+          setDiffModalOpen(true);
         }
         return;
       }
@@ -243,12 +275,10 @@ export function useConfigDocument({
       const commercialModeChanged = previousCommercialMode !== nextCommercialMode;
       const trustedProxiesChanged = hasTrustedProxiesChange(latestServerYaml, mergedYaml);
 
-      if (previewMode === 'visual' && !previewPlan) return;
-      writeAttempted = true;
-      if (previewMode === 'visual' && previewPlan) {
+      if (previewMode === 'visual') {
+        if (!previewPlan) return;
+        visualWriteAttempted = true;
         await applyConfigPatch(previewPlan, operation.revision);
-      } else {
-        await configFileApi.saveConfigYaml(mergedYaml);
       }
       if (!operation.isCurrent()) return;
       useConfigStore.getState().clearCache();
@@ -292,7 +322,7 @@ export function useConfigDocument({
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
       const message = configDraftErrorMessage(t, err);
-      if (writeAttempted && previewMode === 'visual') {
+      if (visualWriteAttempted) {
         // v8 field mutations are not a transaction. Never roll back with a full document.
         // Re-read immediately so changing an already-applied value back remains a dirty edit.
         setDiffModalOpen(false);

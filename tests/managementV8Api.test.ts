@@ -373,11 +373,20 @@ describe('v8 management API contracts', () => {
     });
   });
 
+  test.each([null, '', '*', 'W/"weak"'])(
+    'YAML replacement refuses unsafe validator %j',
+    async (etag) => {
+      const put = mock('put');
+      await expect(configFileApi.saveConfigYaml('port: 3', etag)).rejects.toThrow('ETag');
+      expect(put).not.toHaveBeenCalled();
+    }
+  );
+
   test('operational routes and YAML retain business payloads, config booleans are unwrapped', async () => {
     const get = mock('get');
     const put = mock('put');
     const post = mock('post');
-    const raw = mock('getRaw', { data: 'config: yaml' });
+    const raw = mock('getRaw', { data: 'config: yaml', headers: { etag } });
     const form = mock('postForm');
     await configApi.updateRequestLog(false);
     expect(put).toHaveBeenLastCalledWith('/config/observability/logs/request-log', false);
@@ -401,7 +410,15 @@ describe('v8 management API contracts', () => {
     expect(form.mock.calls.at(-1)?.[0]).toBe('/oauth/import?provider=vertex');
     expect(await configFileApi.fetchConfigYaml()).toBe('config: yaml');
     expect(raw.mock.calls.at(-1)?.[0]).toBe('/config.yaml');
-    await configFileApi.saveConfigYaml('config: yaml');
-    expect(put.mock.calls.at(-1)?.slice(0, 2)).toEqual(['/config.yaml', 'config: yaml']);
+    const snapshot = await configFileApi.fetchConfigYamlSnapshot();
+    expect(snapshot).toEqual({ yaml: 'config: yaml', etag });
+    await configFileApi.saveConfigYaml(snapshot.yaml, snapshot.etag);
+    expect(put).toHaveBeenLastCalledWith('/config.yaml', 'config: yaml', {
+      headers: {
+        ...conditional.headers,
+        'Content-Type': 'application/yaml',
+        Accept: 'application/json, text/plain, */*',
+      },
+    });
   });
 });
