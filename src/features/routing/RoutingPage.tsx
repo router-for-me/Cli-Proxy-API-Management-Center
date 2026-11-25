@@ -100,8 +100,9 @@ export function RoutingPage() {
   const loadModels = useCallback((next: RoutingBoard, requestId: number) => {
     const isCurrent = () => requestId === requestRef.current;
     const known = catalogRef.current;
-    const channels = neededChannels(next).filter((channel) => !(channel in known.channels));
-    const credentials = neededCredentialModels(next).filter((name) => !(name in known.credentials));
+    // Each board load retries failed lookups (null), but keeps successful empty lists.
+    const channels = neededChannels(next).filter((channel) => known.channels[channel] == null);
+    const credentials = neededCredentialModels(next).filter((name) => known.credentials[name] == null);
     const total = channels.length + credentials.length;
     if (total === 0) {
       setModelProgress(null);

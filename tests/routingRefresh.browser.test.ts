@@ -14,11 +14,13 @@ test.skipIf(!origin || !playwright)(
     try {
       const page = await browser.newPage({ locale: 'en-US', reducedMotion: 'reduce' });
       let refreshing = false;
+      let modelRequests = 0;
+      let cachedRequests = 0;
       await page.route(
         '**/v8/management/**',
         async (route: {
           request(): { url(): string };
-          fulfill(response: { json: unknown }): Promise<void>;
+          fulfill(response: { json: unknown; status?: number }): Promise<void>;
         }) => {
           const path = new URL(route.request().url()).pathname;
           if (path.endsWith('/config')) {
@@ -27,9 +29,19 @@ test.skipIf(!origin || !playwright)(
               json: { routing: { retry: { 'request-retry': refreshing ? 4 : 1 } } },
             });
           }
+          if (path.endsWith('/credentials/models')) {
+            if (new URL(route.request().url()).searchParams.get('name') === 'empty.json') {
+              cachedRequests++;
+              return route.fulfill({ json: { models: [] } });
+            }
+            modelRequests++;
+            return refreshing
+              ? route.fulfill({ json: { models: [{ id: 'recovered-model' }] } })
+              : route.fulfill({ status: 503, json: { error: 'unavailable' } });
+          }
           return route.fulfill({
             json: path.endsWith('/credentials')
-              ? { files: [{ name: 'fixture.json', type: 'codex' }] }
+              ? { files: ['fixture.json', 'empty.json'].map((name) => ({ name, type: 'codex' })) }
               : {},
           });
         }
@@ -39,6 +51,8 @@ test.skipIf(!origin || !playwright)(
       await page.getByRole('button', { name: /^Login$/i }).click();
       const retry = page.getByRole('spinbutton', { name: 'Retry rounds' });
       await retry.fill('3');
+      await page.getByText(/^Loading models /).waitFor({ state: 'hidden' });
+      expect(modelRequests).toBe(1);
       refreshing = true;
       await page.getByTitle('Refresh All', { exact: true }).click();
       await page.getByRole('button', { name: 'Refresh', exact: true }).click();
@@ -51,6 +65,10 @@ test.skipIf(!origin || !playwright)(
       gate.resolve();
       await retry.waitFor();
       expect(await retry.inputValue()).toBe('4');
+      await page.locator('#routing-model-preview').click();
+      await page.getByRole('option', { name: 'recovered-model' }).waitFor();
+      expect(modelRequests).toBe(2);
+      expect(cachedRequests).toBe(1);
       await retry.fill('2');
       await page.getByRole('region', { name: 'Unsaved routing changes' }).waitFor();
     } finally {
