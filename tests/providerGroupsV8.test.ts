@@ -496,3 +496,26 @@ test.each(['create', 'edit', 'disable', 'delete'] as const)(
     expect(b.writes).toEqual([]);
   }
 );
+
+test.each(['create', 'update', 'delete'] as const)(
+  'native key %s does not overwrite a concurrent family edit',
+  async (operation) => {
+    const group = { name: 'team', keys: [{ 'api-key': 'fixture' }] };
+    const b = backend('codex', [group]);
+    const [config] = rows([group]);
+    const put = apiClient.put;
+    apiClient.put = (async (url, data, options) => {
+      // Simulate another writer committing between the GET and this PUT.
+      if (options?.headers?.['If-Match'] === '"fixture"') throw new Error('412');
+      return put(url, data, options);
+    }) as typeof put;
+    const mutations = {
+      create: () => providersApi.createCodexConfig({ apiKey: 'fixture-new' }),
+      update: () =>
+        providersApi.updateCodexConfig(config.apiKey, undefined, { ...config, weight: 2 }),
+      delete: () => providersApi.deleteCodexConfig(config.apiKey, undefined, config.source),
+    };
+    await expect(mutations[operation]()).rejects.toThrow('412');
+    expect(b.writes).toEqual([]);
+  }
+);

@@ -313,8 +313,8 @@ const cleanModelTestFields = (value: Record<string, unknown>) => {
 const putGroups = (
   family: ProviderFamily,
   groups: Record<string, unknown>[],
-  etag?: string,
-  client = apiClient
+  etag: string,
+  client: typeof apiClient
 ) =>
   client.put(
     `/config/api-keys/${family}`,
@@ -324,7 +324,7 @@ const putGroups = (
         isRecord(key) ? cleanModelTestFields(key) : key
       ),
     })),
-    etag ? { headers: { 'If-Match': etag } } : undefined
+    { headers: { 'If-Match': etag } }
   );
 
 /** Locate by persisted snapshot, never by flattened row index. Refuse ambiguous duplicates. */
@@ -478,11 +478,10 @@ const nextGroupName = (groups: Record<string, unknown>[], family: ProviderFamily
   return `${family}-${number}`;
 };
 const createKey = async (family: ProviderFamily, config: KeyConfig) => {
-  const groups = await getGroups(family);
   const payload = keySerializer(family)(config);
   const baseUrl = payload['base-url'];
   delete payload['base-url'];
-  await putGroups(family, [
+  await mutateProviderGroups(family, (groups) => [
     ...groups,
     {
       name: nextGroupName(groups, family),
@@ -533,39 +532,41 @@ const updateKey = async (
   baseUrl: string | undefined,
   config: KeyConfig
 ) => {
-  const groups = await getGroups(family);
-  const source = config.source ?? findKeySource(family, groups, apiKey, baseUrl);
-  const index = locateProviderGroup(groups, source);
-  const group = groups[index];
-  const keys = [...(group.keys as Record<string, unknown>[])];
-  const originalKeys = source.group.keys;
-  if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
-  const matches = equal(group, source.group)
-    ? [source.keyIndex]
-    : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
-  if (matches.length !== 1) throw conflict();
-  const keyIndex = matches[0];
-  const original = (normalizeProviderGroups([group], family) as KeyConfig[]).find(
-    (c) => c.source?.keyIndex === keyIndex
-  );
-  if (!original) throw conflict();
-  keys[keyIndex] = editNativeMember(family, group, keys[keyIndex], original, config);
-  let groupIndex = index;
-  const next: Record<string, unknown> = { ...group, keys };
-  if ((original.baseUrl ?? '') !== (config.baseUrl ?? '')) {
-    if (config.baseUrl) next['base-url'] = config.baseUrl;
-    else delete next['base-url'];
-    if (keys.length > 1) {
-      // Endpoints belong to groups. Move only the edited credential, with its shared defaults.
-      next.name = nextGroupName(groups, family);
-      next.keys = [keys[keyIndex]];
-      groups[index] = { ...group, keys: keys.filter((_, i) => i !== keyIndex) };
-      groupIndex = groups.length;
+  let groupIndex = -1;
+  const groups = await mutateProviderGroups(family, (current) => {
+    const source = config.source ?? findKeySource(family, current, apiKey, baseUrl);
+    const index = locateProviderGroup(current, source);
+    const group = current[index];
+    const keys = [...(group.keys as Record<string, unknown>[])];
+    const originalKeys = source.group.keys;
+    if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
+    const matches = equal(group, source.group)
+      ? [source.keyIndex]
+      : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
+    if (matches.length !== 1) throw conflict();
+    const keyIndex = matches[0];
+    const original = (normalizeProviderGroups([group], family) as KeyConfig[]).find(
+      (c) => c.source?.keyIndex === keyIndex
+    );
+    if (!original) throw conflict();
+    keys[keyIndex] = editNativeMember(family, group, keys[keyIndex], original, config);
+    groupIndex = index;
+    const next: Record<string, unknown> = { ...group, keys };
+    if ((original.baseUrl ?? '') !== (config.baseUrl ?? '')) {
+      if (config.baseUrl) next['base-url'] = config.baseUrl;
+      else delete next['base-url'];
+      if (keys.length > 1) {
+        // Endpoints belong to groups. Move only the edited credential, with its shared defaults.
+        next.name = nextGroupName(current, family);
+        next.keys = [keys[keyIndex]];
+        current[index] = { ...group, keys: keys.filter((_, i) => i !== keyIndex) };
+        groupIndex = current.length;
+      }
     }
-  }
-  groups[groupIndex] = next;
-  await putGroups(family, groups);
-  return { groups, groupIndex, group: next };
+    current[groupIndex] = next;
+    return current;
+  });
+  return { groups, groupIndex, group: groups[groupIndex] };
 };
 const deleteKey = async (
   family: ProviderFamily,
@@ -573,19 +574,22 @@ const deleteKey = async (
   baseUrl?: string,
   expected?: ProviderSource
 ) => {
-  const groups = await getGroups(family);
-  const source = expected ?? findKeySource(family, groups, apiKey, baseUrl);
-  const index = locateProviderGroup(groups, source);
-  const originalKeys = source.group.keys;
-  if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
-  const keys = groups[index].keys as unknown[];
-  const matches = equal(groups[index], source.group)
-    ? [source.keyIndex]
-    : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
-  if (matches.length !== 1) throw conflict();
-  groups[index] = { ...groups[index], keys: keys.filter((_, i) => i !== matches[0]) };
-  await putGroups(family, groups);
-  return { groups, groupIndex: index, group: groups[index] };
+  let groupIndex = -1;
+  const groups = await mutateProviderGroups(family, (current) => {
+    const source = expected ?? findKeySource(family, current, apiKey, baseUrl);
+    const index = locateProviderGroup(current, source);
+    const originalKeys = source.group.keys;
+    if (source.keyIndex === undefined || !Array.isArray(originalKeys)) throw conflict();
+    const keys = current[index].keys as unknown[];
+    const matches = equal(current[index], source.group)
+      ? [source.keyIndex]
+      : keys.flatMap((key, i) => (equal(key, originalKeys[source.keyIndex!]) ? [i] : []));
+    if (matches.length !== 1) throw conflict();
+    current[index] = { ...current[index], keys: keys.filter((_, i) => i !== matches[0]) };
+    groupIndex = index;
+    return current;
+  });
+  return { groups, groupIndex, group: groups[groupIndex] };
 };
 const serializeOpenAIGroup = serializeOpenAIProvider;
 const findOpenAISource = (groups: Record<string, unknown>[], source?: ProviderSource): number => {
