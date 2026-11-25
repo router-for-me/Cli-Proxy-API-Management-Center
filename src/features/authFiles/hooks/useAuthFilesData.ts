@@ -285,10 +285,12 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
         return;
       }
 
+      const revision = apiClient.getConnectionRevision();
       uploadPendingRef.current = true;
       setUploading(true);
       try {
         const result = await authFilesApi.uploadFiles(validFiles);
+        if (revision !== apiClient.getConnectionRevision()) return;
         const successCount = result.uploaded;
 
         if (successCount > 0) {
@@ -300,6 +302,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
           notifyAuthFilesChanged();
           onFilesMutatedRef.current?.(result.files.length > 0 ? result.files : undefined);
           await loadFiles({ background: true });
+          if (revision !== apiClient.getConnectionRevision()) return;
         }
 
         if (result.failed.length > 0) {
@@ -307,6 +310,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
           showNotification(`${t('notification.upload_failed')}: ${details}`, 'error');
         }
       } catch (err: unknown) {
+        if (revision !== apiClient.getConnectionRevision()) return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         showNotification(`${t('notification.upload_failed')}: ${errorMessage}`, 'error');
       } finally {
@@ -320,15 +324,18 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
   const handleDelete = useCallback(
     (name: string) => {
+      const revision = apiClient.getConnectionRevision();
       showConfirmation({
         title: t('auth_files.delete_title', { defaultValue: 'Delete File' }),
         message: t('auth_files.delete_confirm', { name }),
         variant: 'danger',
         confirmText: t('common.confirm'),
         onConfirm: async () => {
+          if (revision !== apiClient.getConnectionRevision()) return;
           setDeleting(name);
           try {
             const result = await authFilesApi.deleteFile(name);
+            if (revision !== apiClient.getConnectionRevision()) return;
             if (!result.files.length) {
               showNotification(t('notification.delete_failed'), 'error');
               return;
@@ -337,6 +344,7 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
             notifyAuthFilesChanged();
             showNotification(t('auth_files.delete_success'), 'success');
           } catch (err: unknown) {
+            if (revision !== apiClient.getConnectionRevision()) return;
             const errorMessage = err instanceof Error ? err.message : '';
             showNotification(`${t('notification.delete_failed')}: ${errorMessage}`, 'error');
           } finally {
