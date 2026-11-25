@@ -121,9 +121,35 @@ const readGroups = (raw: unknown, family: string): unknown[] => {
   return Array.isArray(groups) ? groups : [];
 };
 
+/** A position only identifies a native key when its group and key identity are unique. */
+function uniqueKeyIdentities(groups: readonly unknown[]): Map<unknown, string> {
+  const owners = new Map<string, Record<string, unknown>>();
+  const unique = new Map<unknown, string>();
+  for (const group of groups) {
+    if (!isRecord(group) || !Array.isArray(group.keys)) continue;
+    for (const key of group.keys) {
+      if (!isRecord(key)) continue;
+      const id = JSON.stringify([
+        readText(group.name),
+        readText(group['base-url']),
+        readText(key['api-key']),
+      ]);
+      const first = owners.get(id);
+      if (first) unique.delete(first);
+      else {
+        owners.set(id, key);
+        unique.set(key, id);
+      }
+    }
+  }
+  return unique;
+}
+
 function keyMembers(raw: unknown, family: RoutingKeyFamily): RoutingMember[] {
   const members: RoutingMember[] = [];
-  readGroups(raw, family).forEach((group, groupIndex) => {
+  const groups = readGroups(raw, family);
+  const identities = uniqueKeyIdentities(groups);
+  groups.forEach((group, groupIndex) => {
     if (!isRecord(group) || !Array.isArray(group.keys)) return;
     group.keys.forEach((key, keyIndex) => {
       if (!isRecord(key)) return;
@@ -157,7 +183,13 @@ function keyMembers(raw: unknown, family: RoutingKeyFamily): RoutingMember[] {
             : { type: 'channel', channel: KEY_FAMILY_CHANNELS[family] },
         unavailable: false,
         cooldowns: null,
-        location: { kind: 'apiKey', family, groupIndex, keyIndex, apiKey },
+        location: {
+          kind: 'apiKey',
+          family,
+          groupIndex,
+          keyIndex,
+          identity: identities.get(key) ?? null,
+        },
       });
     });
   });
@@ -315,6 +347,7 @@ export function buildRoutingConfigPatch(
   if (Object.keys(routing).length) patch.routing = routing;
 
   const families = new Map<string, Record<string, unknown>[]>();
+  const identities = new Map<string, Map<unknown, string>>();
   const familyGroups = (family: string): Record<string, unknown>[] => {
     let groups = families.get(family);
     if (!groups) {
@@ -332,10 +365,14 @@ export function buildRoutingConfigPatch(
     if (priority === undefined && !weights) continue;
     const location = member.location;
     if (location.kind === 'apiKey') {
-      const group = familyGroups(location.family)[location.groupIndex];
+      const groups = familyGroups(location.family);
+      if (!identities.has(location.family)) {
+        identities.set(location.family, uniqueKeyIdentities(groups));
+      }
+      const group = groups[location.groupIndex];
       const keys = isRecord(group) && Array.isArray(group.keys) ? group.keys : null;
       const key = keys?.[location.keyIndex];
-      if (!isRecord(key) || readText(key['api-key']) !== location.apiKey) {
+      if (!isRecord(key) || identities.get(location.family)?.get(key) !== location.identity) {
         throw new RoutingConflictError();
       }
       // A key-level priority overrides the group's shared one for this key only.

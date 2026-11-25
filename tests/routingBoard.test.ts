@@ -286,6 +286,29 @@ describe('writing a plan', () => {
     expect(() => buildRoutingConfigPatch(changed, current, plan)).toThrow(RoutingConflictError);
   });
 
+  test('same native key at different endpoint paths cannot silently swap or become ambiguous', () => {
+    const group = (path: string) => ({
+      name: 'pool',
+      'base-url': `https://example.invalid/${path}`,
+      keys: [{ 'api-key': 'shared' }],
+    });
+    const raw = (...paths: string[]) => ({ 'api-keys': { codex: paths.map(group) } });
+    const patch = (before: string[], after: string[]) => {
+      const current = buildRoutingBoard(raw(...before), []);
+      const draft = draftFromBoard(current);
+      draft.weights['key:codex:0:0'] = [3];
+      return buildRoutingConfigPatch(raw(...after), current, buildRoutingPlan(current, draft));
+    };
+    expect(patch(['a', 'b'], ['a', 'b'])).toEqual({
+      'api-keys': {
+        codex: [{ ...group('a'), keys: [{ 'api-key': 'shared', weight: 3 }] }, group('b')],
+      },
+    });
+    expect(() => patch(['a', 'b'], ['b', 'a'])).toThrow(RoutingConflictError);
+    expect(() => patch(['a', 'b'], ['a', 'a'])).toThrow(RoutingConflictError);
+    expect(() => patch(['a', 'a'], ['a'])).toThrow(RoutingConflictError);
+  });
+
   test('a settings-only plan touches no provider list', () => {
     const current = board();
     const draft = draftFromBoard(current);
