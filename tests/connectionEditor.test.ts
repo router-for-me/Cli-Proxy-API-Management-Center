@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import {
   buildNativeConnectionMembers,
+  buildOpenAIConfig,
   buildProviderGroups,
 } from '@/features/providers/useProviderWorkbench';
 import type { ProviderEntryFormInput } from '@/features/providers/types';
@@ -103,4 +104,20 @@ test('on/off switches travel with their key without marking it edited', () => {
     { resource: section.members[1], input, unchanged: true },
   ]);
   expect(members).toEqual([{ originalKeyIndex: 0, disabled: true }, { originalKeyIndex: 1 }]);
+});
+
+test('blank OpenAI rows do not restore removed credentials at the same position', () => {
+  const existing = {
+    name: 'fixture',
+    baseUrl: 'https://example.invalid',
+    apiKeyEntries: ['fixture-a', 'fixture-b'].map((apiKey) => ({ apiKey })),
+  };
+  const config = buildOpenAIConfig({
+    ...input,
+    apiKeyEntries: [
+      { apiKey: '', existingApiKey: 'fixture-a', sourceIndex: 0, proxyUrl: '' },
+      { apiKey: ' ', proxyUrl: '' },
+    ],
+  }, existing);
+  expect(config.apiKeyEntries).toEqual([{ apiKey: 'fixture-a', sourceIndex: 0 }]);
 });

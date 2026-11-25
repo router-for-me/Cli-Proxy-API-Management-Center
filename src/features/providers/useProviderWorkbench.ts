@@ -300,7 +300,7 @@ export function buildNativeConnectionMembers(
   return members;
 }
 
-const buildOpenAIConfig = (
+export const buildOpenAIConfig = (
   input: ProviderEntryFormInput,
   existing?: OpenAIProviderConfig | null
 ): OpenAIProviderConfig => {
@@ -308,17 +308,13 @@ const buildOpenAIConfig = (
   const models = buildModelAliases(input.models, true);
   const apiKeyEntries =
     input.apiKeyEntries
-      ?.map((entry, index) => {
-        const fallbackApiKey =
-          entry.existingApiKey?.trim() || existing?.apiKeyEntries?.[index]?.apiKey?.trim() || '';
-        return {
-          apiKey: entry.apiKey.trim() || fallbackApiKey,
-          sourceIndex: entry.sourceIndex,
-          proxyUrl: entry.proxyUrl.trim() || undefined,
-          weight: entry.weight,
-          authIndex: entry.authIndex?.trim() || undefined,
-        };
-      })
+      ?.map((entry) => ({
+        apiKey: entry.apiKey.trim() || entry.existingApiKey?.trim() || '',
+        sourceIndex: entry.sourceIndex,
+        proxyUrl: entry.proxyUrl.trim() || undefined,
+        weight: entry.weight,
+        authIndex: entry.authIndex?.trim() || undefined,
+      }))
       .filter((entry) => entry.apiKey) ?? [];
 
   return {
