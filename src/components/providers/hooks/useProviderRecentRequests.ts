@@ -184,6 +184,7 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
 
   return {
     usageByProvider: enabled ? usageByProvider : EMPTY_USAGE_BY_PROVIDER,
+    sampledAt: usageState.cache === cache ? usageState.sampledAt : cache.cachedAt,
     isLoading: enabled ? isLoading : false,
     loadRecentRequests,
     refreshRecentRequests,
