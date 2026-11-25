@@ -37,6 +37,50 @@ describe('model discovery explicit proxy', () => {
     }
   }
 
+  for (const method of ['fetchClaudeModelsViaApiCall', 'fetchGeminiModelsViaApiCall'] as const) {
+    it(`${method} never reuses an old management connection's discovery`, async () => {
+      let release!: (value: typeof response) => void;
+      const post = spyOn(apiClient, 'post')
+        .mockReturnValueOnce(
+          new Promise<typeof response>((resolve) => {
+            release = resolve;
+          })
+        )
+        .mockResolvedValue(response);
+      const old = modelsApi[method]('https://upstream.invalid');
+      try {
+        apiClient.setConfig({ apiBase: 'https://second.invalid', managementKey: 'fixture' });
+        const current = modelsApi[method]('https://upstream.invalid');
+        expect(post).toHaveBeenCalledTimes(2);
+        await current;
+      } finally {
+        release(response);
+        await old.catch(() => undefined);
+        apiClient.setConfig({ apiBase: '', managementKey: '' });
+      }
+    });
+  }
+
+  it('stops Gemini pagination before sending upstream headers to a different backend', async () => {
+    let release!: (value: unknown) => void;
+    const post = spyOn(apiClient, 'post')
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = resolve;
+        })
+      )
+      .mockResolvedValue(response);
+    const pending = modelsApi.fetchGeminiModelsViaApiCall('https://upstream.invalid', 'fixture');
+    apiClient.setConfig({ apiBase: 'https://second.invalid', managementKey: 'fixture' });
+    try {
+      release({ status_code: 200, body: { models: [], nextPageToken: 'more' } });
+      await expect(pending).rejects.toHaveProperty('name', 'AbortError');
+      expect(post).toHaveBeenCalledTimes(1);
+    } finally {
+      apiClient.setConfig({ apiBase: '', managementKey: '' });
+    }
+  });
+
   it('preserves proxy across Gemini pagination', async () => {
     const post = spyOn(apiClient, 'post')
       .mockResolvedValueOnce({

@@ -25,7 +25,13 @@ const buildRequestSignature = (
     .sort(([a], [b]) => a.toLowerCase().localeCompare(b.toLowerCase()))
     .map(([key, value]) => `${key}:${value}`)
     .join('|');
-  return JSON.stringify([url, headerSignature, authIndex ?? '', proxyUrl ?? '']);
+  return JSON.stringify([
+    apiClient.getConnectionRevision(),
+    url,
+    headerSignature,
+    authIndex,
+    proxyUrl,
+  ]);
 };
 
 const buildModelsEndpoint = (baseUrl: string): string => {
@@ -288,6 +294,7 @@ export const modelsApi = {
       trimmedAuthIndex,
       proxyUrl?.trim() || undefined
     );
+    const revision = apiClient.getConnectionRevision();
     const existing = GEMINI_MODELS_IN_FLIGHT.get(signature);
     if (existing) return existing;
 
@@ -309,6 +316,9 @@ export const modelsApi = {
           url: url.toString(),
           header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
         });
+        if (revision !== apiClient.getConnectionRevision()) {
+          throw new DOMException('The management connection changed.', 'AbortError');
+        }
 
         if (result.statusCode < 200 || result.statusCode >= 300) {
           throw new Error(getApiCallErrorMessage(result));
