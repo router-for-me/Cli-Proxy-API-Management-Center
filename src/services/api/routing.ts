@@ -441,9 +441,11 @@ async function forEachWithConcurrency<T>(
   task: (item: string) => Promise<T>,
   onResult: (item: string, result: T | null) => void
 ): Promise<void> {
+  const revision = apiClient.getConnectionRevision();
+  const isCurrent = () => revision === apiClient.getConnectionRevision();
   let next = 0;
   const worker = async () => {
-    while (next < items.length) {
+    while (next < items.length && isCurrent()) {
       const item = items[next];
       next += 1;
       let result: T | null;
@@ -452,7 +454,7 @@ async function forEachWithConcurrency<T>(
       } catch {
         result = null;
       }
-      onResult(item, result);
+      if (isCurrent()) onResult(item, result);
     }
   };
   await Promise.all(
