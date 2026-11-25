@@ -133,6 +133,8 @@ export function RoutingPage() {
       return;
     }
     setLoading(true);
+    setWeightOpen(false);
+    setReviewOpen(false);
     setError(null);
     try {
       const [config, files] = await Promise.all([fetchConfig(true), routingApi.listCredentials()]);
@@ -329,7 +331,7 @@ export function RoutingPage() {
   );
 
   const renderBody = () => {
-    if (loading && !board) {
+    if (loading) {
       return (
         <div className={styles.skeletons} aria-busy="true" aria-label={t('routing.loading')}>
           {[0, 1, 2].map((index) => (
@@ -389,7 +391,7 @@ export function RoutingPage() {
       {renderBody()}
 
       <RoutingSaveBar
-        visible={isCurrentLayer && dirty}
+        visible={isCurrentLayer && !loading && dirty}
         count={plan?.changes.length ?? 0}
         saving={saving}
         saveDisabled={!connected}
@@ -398,7 +400,7 @@ export function RoutingPage() {
         layoutRef={layoutRef}
       />
 
-      {plan ? (
+      {!loading && plan ? (
         <ChangeReviewDialog
           open={reviewOpen}
           changes={plan.changes}
@@ -409,7 +411,7 @@ export function RoutingPage() {
         />
       ) : null}
 
-      {weightEdit && draft ? (
+      {!loading && weightEdit && draft ? (
         <WeightDialog
           key={weightEdit.session}
           open={weightOpen}
