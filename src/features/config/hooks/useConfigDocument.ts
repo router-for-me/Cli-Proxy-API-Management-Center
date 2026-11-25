@@ -70,6 +70,15 @@ export type UseConfigDocumentArgs = {
   applyVisualChangesToYaml: (yaml: string) => string;
 };
 
+/** A user-edited source document replaces the failed visual baseline; validate it at preview. */
+export function blockingVisualParseError(
+  mode: ConfigEditorMode,
+  sourceDirty: boolean,
+  visualParseError: string | null
+) {
+  return mode === 'source' && sourceDirty ? null : visualParseError;
+}
+
 export function buildConfigSaveDraft(
   latestServerYaml: string,
   sourceDraftYaml: string,
@@ -81,8 +90,10 @@ export function buildConfigSaveDraft(
     if (mode !== 'source') {
       throw new Error('Unsaved source edits must be saved or discarded before visual editing');
     }
+    // Validate the text being previewed (and later PUT), not the possibly broken server file.
+    parseYaml(sourceDraftYaml);
     // CodeMirror emits LF regardless of the loaded file's line endings. Restore CRLF
-    // before both preview and PUT, without parsing YAML or changing the final newline.
+    // before both preview and PUT, without reserializing YAML or changing the final newline.
     if (
       latestServerYaml.includes('\r\n') &&
       !/[\r\n]/.test(latestServerYaml.replace(/\r\n/g, ''))
@@ -347,7 +358,7 @@ export function useConfigDocument({
       showNotification(t('config_management.source_changes_before_visual'), 'warning');
       return;
     }
-    if (mode === 'visual' && visualParseError) {
+    if (blockingVisualParseError(mode, sourceDirty, visualParseError)) {
       showNotification(t('config_management.visual_mode_save_blocked'), 'error');
       return;
     }

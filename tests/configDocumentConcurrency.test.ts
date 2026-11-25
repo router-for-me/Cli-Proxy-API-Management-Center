@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { parse as parseYaml, parseDocument } from 'yaml';
 import {
+  blockingVisualParseError,
   buildConfigSaveDraft,
   shouldReloadVisualDraft,
 } from '../src/features/config/hooks/useConfigDocument';
@@ -56,6 +57,19 @@ describe('config document concurrency policy', () => {
         throw new Error('Do not apply visual values to a source draft');
       })
     ).toBe(source);
+  });
+
+  test('a source repair previews the corrected text despite an invalid visual baseline', () => {
+    const broken = 'server: [\n';
+    const fixed = '# repaired\nserver: {port: 8317}\n';
+    const parseError = 'Invalid YAML';
+    expect(blockingVisualParseError('visual', true, parseError)).toBe(parseError);
+    expect(blockingVisualParseError('source', false, parseError)).toBe(parseError);
+    expect(blockingVisualParseError('source', true, parseError)).toBeNull();
+    const preview = (draft: string) =>
+      buildConfigSaveDraft(broken, draft, true, 'source', applyProxyEdit);
+    expect(() => preview('server: {')).toThrow();
+    expect(preview(fixed)).toBe(fixed);
   });
 
   test.each(['\n', '\r\n'])('source edits preserve server line endings (%j)', (eol) => {

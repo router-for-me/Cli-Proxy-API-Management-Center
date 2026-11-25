@@ -28,7 +28,11 @@ import {
   resolveStatus,
 } from './uiState';
 import { findConfigFieldById } from './searchIndex';
-import { shouldReloadVisualDraft, useConfigDocument } from './hooks/useConfigDocument';
+import {
+  blockingVisualParseError,
+  shouldReloadVisualDraft,
+  useConfigDocument,
+} from './hooks/useConfigDocument';
 import { useFieldJump } from './hooks/useFieldJump';
 import { useSourceSearch } from './hooks/useSourceSearch';
 import { ConfigHeader } from './components/ConfigHeader';
@@ -111,7 +115,7 @@ export function ConfigPage() {
   const sourceSearch = useSourceSearch();
 
   const disableControls = connectionStatus !== 'connected';
-  const hasVisualModeError = !!visualParseError;
+  const blockingParseError = blockingVisualParseError(mode, doc.sourceDirty, visualParseError);
   const hasVisualValidationErrors =
     mode === 'visual' &&
     (Object.values(visualValidationErrors).some(Boolean) || visualHasPayloadValidationErrors);
@@ -245,7 +249,7 @@ export function ConfigPage() {
     disconnected: disableControls,
     loading: doc.loading,
     loadFailed: Boolean(doc.error),
-    yamlError: hasVisualModeError,
+    yamlError: Boolean(blockingParseError),
     validationBlocked: hasVisualValidationErrors,
     saving: doc.saving,
     dirty: doc.isDirty,
@@ -264,7 +268,7 @@ export function ConfigPage() {
     doc.saving ||
     !doc.isDirty ||
     doc.diffModalOpen ||
-    hasVisualModeError ||
+    Boolean(blockingParseError) ||
     hasVisualValidationErrors;
 
   const sectionProps = {
@@ -309,9 +313,9 @@ export function ConfigPage() {
           {doc.error}
         </div>
       )}
-      {!doc.error && visualParseError && (
+      {!doc.error && blockingParseError && (
         <div className="error-box" role="alert">
-          {t('config_management.visual_mode_unavailable_detail', { message: visualParseError })}
+          {t('config_management.visual_mode_unavailable_detail', { message: blockingParseError })}
         </div>
       )}
 
