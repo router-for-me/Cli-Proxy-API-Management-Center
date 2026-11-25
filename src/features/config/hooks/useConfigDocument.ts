@@ -118,7 +118,9 @@ export function useConfigDocument({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [recoveryRequired, setRecoveryRequired] = useState(false);
-  const [error, setError] = useState('');
+  // Localize a generic read failure at render time, not inside the load effect.
+  const [loadError, setLoadError] = useState<Error | null>(null);
+  const error = loadError ? loadError.message || t('notification.refresh_failed') : '';
   // 仅表示用户在源码编辑器中改过草稿；可视化字段同步到 content 不得修改它。
   const [sourceDirty, setSourceDirty] = useState(false);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
@@ -145,7 +147,7 @@ export function useConfigDocument({
   const loadConfig = useCallback(async () => {
     const operation = beginOperation();
     setLoading(true);
-    setError('');
+    setLoadError(null);
     try {
       const data = await configFileApi.fetchConfigYaml();
       if (!operation.isCurrent()) return;
@@ -159,12 +161,11 @@ export function useConfigDocument({
       loadVisualValuesFromYaml(data);
     } catch (err: unknown) {
       if (!operation.isCurrent()) return;
-      const message = err instanceof Error ? err.message : t('notification.refresh_failed');
-      setError(message);
+      setLoadError(err instanceof Error ? err : new Error());
     } finally {
       if (operation.isCurrent()) setLoading(false);
     }
-  }, [beginOperation, loadVisualValuesFromYaml, t]);
+  }, [beginOperation, loadVisualValuesFromYaml]);
 
   useEffect(() => {
     void loadConfig();
