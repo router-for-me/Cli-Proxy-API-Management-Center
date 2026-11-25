@@ -27,7 +27,7 @@ import { useNotificationStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
 import { formatFileSize } from '@/utils/format';
 import { MAX_AUTH_FILE_SIZE } from '@/utils/constants';
-import { downloadBlob } from '@/utils/download';
+import { downloadAuthFiles } from '../downloadActions';
 import { isRuntimeOnlyAuthFile } from '@/features/authFiles/constants';
 
 export type LoadFilesOptions = {
@@ -350,13 +350,14 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
   const handleDownload = useCallback(
     async (name: string) => {
-      try {
-        const blob = await authFilesApi.download(name);
-        downloadBlob({ filename: name, blob });
+      const result = await downloadAuthFiles([name]);
+      if (!result) return;
+      if (result.success) {
         showNotification(t('auth_files.download_success'), 'success');
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : '';
-        showNotification(`${t('notification.download_failed')}: ${errorMessage}`, 'error');
+      } else {
+        const [error] = result.failures;
+        const detail = error instanceof Error ? `: ${error.message}` : '';
+        showNotification(`${t('notification.download_failed')}${detail}`, 'error');
       }
     },
     [showNotification, t]
@@ -497,21 +498,11 @@ export function useAuthFilesData(options?: UseAuthFilesDataOptions): UseAuthFile
 
   const batchDownload = useCallback(
     async (names: string[]) => {
-      const uniqueNames = Array.from(new Set(names));
-      if (uniqueNames.length === 0) return;
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const name of uniqueNames) {
-        try {
-          const blob = await authFilesApi.download(name);
-          downloadBlob({ filename: name, blob });
-          successCount++;
-        } catch {
-          failCount++;
-        }
-      }
+      if (!names.length) return;
+      const result = await downloadAuthFiles(names);
+      if (!result) return;
+      const successCount = result.success;
+      const failCount = result.failures.length;
 
       if (failCount === 0) {
         showNotification(
