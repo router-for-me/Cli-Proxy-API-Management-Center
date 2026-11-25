@@ -341,19 +341,20 @@ export const normalizeAuthFilesResponse = (
   payload: AuthFilesResponse,
   receivedAtMs = Date.now()
 ): AuthFilesResponse => {
-  const observedAt = normalizeCooldownTimestamp(payload?.observed_at);
-  const files = Array.isArray(payload?.files) ? payload.files : [];
+  if (!Array.isArray(payload?.files)) throw new TypeError('Invalid credential list response');
+  const observedAt = normalizeCooldownTimestamp(payload.observed_at);
+  const files = payload.files;
   const grouped = new Map<string, AuthFileEntry[]>();
 
   files.forEach((entry) => {
-    const name = readTextField(entry, 'name');
-    const key = name
-      ? getQuotaCacheKey({
-          ...entry,
-          name,
-          authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
-        })
-      : JSON.stringify(entry);
+    if (!isRecord(entry) || typeof entry.name !== 'string' || !entry.name.trim()) {
+      throw new TypeError('Invalid credential list entry');
+    }
+    const key = getQuotaCacheKey({
+      ...entry,
+      name: entry.name.trim(),
+      authIndex: normalizeRecentRequestAuthIndex(entry['auth_index'] ?? entry.authIndex),
+    });
     const bucket = grouped.get(key);
     if (bucket) {
       bucket.push(entry);

@@ -6,6 +6,13 @@ const responseWithRawFiles = (files: Array<Record<string, unknown>>): AuthFilesR
   ({ files }) as unknown as AuthFilesResponse;
 
 describe('auth-files response normalization', () => {
+  test('rejects malformed lists rather than reporting an empty credential inventory', () => {
+    for (const invalid of ['<html></html>', {}, { files: null }, { files: [{}] }]) {
+      expect(() => normalizeAuthFilesResponse(invalid as AuthFilesResponse)).toThrow(TypeError);
+    }
+    expect(normalizeAuthFilesResponse({ files: [] }).files).toEqual([]);
+  });
+
   test('normalizes WRR weights while preserving zero and negative values', () => {
     const result = normalizeAuthFilesResponse(
       responseWithRawFiles([
