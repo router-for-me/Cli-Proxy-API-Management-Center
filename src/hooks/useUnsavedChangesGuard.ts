@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { BlockerFunction } from 'react-router';
-import { useBlocker, useLocation } from 'react-router';
-import { useNotificationStore } from '@/stores';
+import type { BlockerFunction, Location } from 'react-router';
+import { NavigationType, useBlocker, useLocation } from 'react-router';
+import { useNotificationStore } from '@/stores/useNotificationStore';
 
 type ConfirmationVariant = 'danger' | 'primary' | 'secondary';
 
@@ -19,6 +19,34 @@ export type UseUnsavedChangesGuardOptions = {
   dialog: UnsavedChangesDialog;
 };
 
+export function guardDocumentExit(
+  target: EventTarget,
+  enabled: boolean,
+  shouldBlock: UseUnsavedChangesGuardOptions['shouldBlock'],
+  currentLocation: Location
+) {
+  if (!enabled) return;
+  // A document exit leaves every app route, even when reloading the same URL.
+  // An empty pathname represents no in-app destination for route-aware predicates.
+  const dirty =
+    typeof shouldBlock === 'function'
+      ? shouldBlock({
+          currentLocation,
+          nextLocation: { pathname: '', search: '', hash: '', state: null, key: '' },
+          historyAction: NavigationType.Pop,
+        })
+      : shouldBlock;
+  if (!dirty) return;
+
+  const confirmExit = (event: Event) => {
+    event.preventDefault();
+    // Legacy browsers also require a non-empty returnValue on BeforeUnloadEvent.
+    (event as BeforeUnloadEvent).returnValue = '1';
+  };
+  target.addEventListener('beforeunload', confirmExit);
+  return () => target.removeEventListener('beforeunload', confirmExit);
+}
+
 export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   const { enabled = true, shouldBlock, dialog } = options;
   const { showConfirmation } = useNotificationStore();
@@ -26,6 +54,11 @@ export function useUnsavedChangesGuard(options: UseUnsavedChangesGuardOptions) {
   const allowNextNavigationUntilRef = useRef(0);
   const allowNextNavigationKeyRef = useRef('');
   const location = useLocation();
+
+  useEffect(
+    () => guardDocumentExit(window, enabled, shouldBlock, location),
+    [enabled, shouldBlock, location]
+  );
 
   const allowNextNavigation = useCallback(() => {
     // Allow one programmatic navigation after successful save.
