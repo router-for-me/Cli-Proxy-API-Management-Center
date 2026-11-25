@@ -524,10 +524,15 @@ export const routingApi = {
     if (configTargets.length === 0) return result;
     try {
       assertConnection();
-      const latest = await routingApi.getRawConfig();
+      const client = apiClient.captureConnection();
+      const { data: latest, headers } = await client.getRaw('/config');
       assertConnection();
       const patch = buildRoutingConfigPatch(latest, board, plan);
-      if (patch) await apiClient.patch('/config', patch);
+      if (patch) {
+        const etag: unknown = headers.etag;
+        if (typeof etag !== 'string' || !etag.trim()) throw new RoutingConflictError();
+        await client.patch('/config', patch, { headers: { 'If-Match': etag } });
+      }
       result.applied.push(...configTargets);
     } catch (error) {
       result.failed = { key: 'config', error };

@@ -252,7 +252,14 @@ describe('applying a routing plan', () => {
     return { board, plan: buildRoutingPlan(board, draft) };
   };
 
+  const capturedClient = () => {
+    const client = apiClient.captureConnection();
+    restores.push(spyOn(apiClient, 'captureConnection').mockReturnValue(client));
+    return client;
+  };
+
   test('writes credentials first, then the configuration once against a fresh read', async () => {
+    const client = capturedClient();
     const calls: string[] = [];
     const patchFields = mock(async (name: string) => {
       calls.push(`fields:${name}`);
@@ -260,16 +267,16 @@ describe('applying a routing plan', () => {
     });
     restores.push(spyOn(authFilesApi, 'patchFields').mockImplementation(patchFields));
     restores.push(
-      spyOn(apiClient, 'get').mockImplementation((async (url: string) => {
+      spyOn(client, 'getRaw').mockImplementation((async (url: string) => {
         calls.push(`get:${url}`);
-        return RAW;
-      }) as typeof apiClient.get)
+        return { data: RAW, headers: { etag: '"fresh"' } };
+      }) as typeof client.getRaw)
     );
     const patch = mock(async (url: string, body: unknown) => {
       calls.push(`patch:${url}`);
       return body;
     });
-    restores.push(spyOn(apiClient, 'patch').mockImplementation(patch as typeof apiClient.patch));
+    restores.push(spyOn(client, 'patch').mockImplementation(patch as typeof client.patch));
 
     const { board, plan } = planFor();
     const result = await routingApi.applyPlan(board, plan);
@@ -278,10 +285,39 @@ describe('applying a routing plan', () => {
     expect(result.failed).toBeNull();
     expect(result.applied).toEqual(['cred:main.json', 'key:codex:0:0', 'settings']);
     const body = patch.mock.calls[0][1] as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    expect(patch).toHaveBeenCalledWith('/config', body, { headers: { 'If-Match': '"fresh"' } });
     expect(body.routing).toEqual({ 'session-affinity': true });
     expect(plan.priorities).toEqual({ 'cred:main.json': 10, 'key:codex:0:0': 0 });
     expect(body['api-keys'].codex[0].keys[0].priority).toBe(0);
   });
+
+  for (const etag of [undefined, '"stale"']) {
+    test(`keeps applied credentials when config ETag is ${etag ?? 'missing'}`, async () => {
+      const client = capturedClient();
+      restores.push(spyOn(authFilesApi, 'patchFields').mockResolvedValue({}));
+      restores.push(
+        spyOn(client, 'getRaw').mockImplementation((async () => ({
+          data: RAW,
+          headers: { etag },
+        })) as typeof client.getRaw)
+      );
+      const preconditionFailed = Object.assign(new Error('Precondition failed'), { status: 412 });
+      const patch = spyOn(client, 'patch').mockRejectedValue(preconditionFailed);
+      restores.push(patch);
+      const { board, plan } = planFor();
+      const result = await routingApi.applyPlan(board, plan);
+      expect(result.applied).toEqual(['cred:main.json']);
+      expect(result.failed?.key).toBe('config');
+      expect(result.notAttempted).toEqual(['key:codex:0:0', 'settings']);
+      if (etag) {
+        expect(patch).toHaveBeenCalledTimes(1);
+        expect(patch.mock.calls[0][2]).toEqual({ headers: { 'If-Match': etag } });
+        expect(result.failed?.error).toBe(preconditionFailed);
+      } else {
+        expect(patch).not.toHaveBeenCalled();
+      }
+    });
+  }
 
   test('stops at the first failed credential and reports what was not attempted', async () => {
     restores.push(
