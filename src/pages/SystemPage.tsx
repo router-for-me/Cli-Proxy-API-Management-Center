@@ -97,7 +97,6 @@ export function SystemPage() {
   const auth = useAuthStore();
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
-  const clearCache = useConfigStore((state) => state.clearCache);
   const updateConfigValue = useConfigStore((state) => state.updateConfigValue);
 
   const models = useModelsStore((state) => state.models);
@@ -267,19 +266,19 @@ export function SystemPage() {
       return;
     }
 
-    const previous = requestLogEnabled;
+    const revision = apiClient.getConnectionRevision();
     setRequestLogSaving(true);
-    updateConfigValue('request-log', requestLogDraft);
 
     try {
       await configApi.updateRequestLog(requestLogDraft);
-      clearCache('request-log');
+      if (revision !== apiClient.getConnectionRevision()) return;
+      updateConfigValue('request-log', requestLogDraft);
       showNotification(t('notification.request_log_updated'), 'success');
       setRequestLogModalOpen(false);
     } catch (error: unknown) {
+      if (revision !== apiClient.getConnectionRevision()) return;
       const message =
         error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      updateConfigValue('request-log', previous);
       showNotification(
         `${t('notification.update_failed')}${message ? `: ${message}` : ''}`,
         'error'
