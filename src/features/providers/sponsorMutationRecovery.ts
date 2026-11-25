@@ -1,3 +1,5 @@
+import { guardConfigConnection } from '@/services/api/configValue';
+
 export class SponsorPartialMutationError extends Error {
   readonly cause: unknown;
 
@@ -13,12 +15,14 @@ export const isSponsorPartialMutationError = (
 ): error is SponsorPartialMutationError => error instanceof SponsorPartialMutationError;
 
 export async function runSponsorMutationWithRecovery<T>(
-  action: () => Promise<T>,
+  action: (assertConnection: () => void) => Promise<T>,
   refresh: () => Promise<unknown>
 ): Promise<T> {
+  const assertConnection = guardConfigConnection();
   try {
-    return await action();
+    return await action(assertConnection);
   } catch (error: unknown) {
+    assertConnection();
     try {
       await refresh();
     } catch {

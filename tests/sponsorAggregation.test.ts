@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { createInstance } from 'i18next';
 import en from '@/i18n/locales/en.json';
 import { normalizeConfigResponse } from '@/services/api/transformers';
@@ -6,7 +6,14 @@ import {
   APIKEY_FUN_CODEX_BASE_URL,
   APIKEY_FUN_ANTHROPIC_BASE_URL,
 } from '@/features/providers/sponsor';
-import { buildProviderGroups } from '@/features/providers/useProviderWorkbench';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { apiClient } from '@/services/api/client';
+import { providersApi } from '@/services/api/providers';
+import {
+  buildProviderGroups,
+  useProviderWorkbench,
+} from '@/features/providers/useProviderWorkbench';
 import { prepareSponsorWrite } from '@/features/providers/sponsorBundle';
 
 import { getSponsorAggregationConflict } from '../src/features/providers/sponsorDefinitions';
@@ -124,3 +131,64 @@ describe('sponsor write preflight', () => {
     expect(raw.codex.map(({ config }) => config.apiKey)).toEqual(['singleton']);
   });
 });
+
+test.each(['save', 'delete', 'toggle'] as const)(
+  'sponsor %s stops before the next protocol when the connection revision changes',
+  async (operation) => {
+    let workbench!: ReturnType<typeof useProviderWorkbench>;
+    function Harness() {
+      workbench = useProviderWorkbench();
+      return null;
+    }
+    renderToStaticMarkup(createElement(Harness));
+    const resource = buildProviderGroups(sponsorConfig([['codex-fixture']])).find(
+      (group) => group.id === 'apikeyFun'
+    )!.resources[0];
+    const form = {
+      apiKey: 'fixture',
+      name: '',
+      baseUrl: '',
+      prefix: '',
+      proxyUrl: '',
+      disabled: false,
+      models: [],
+      headers: [],
+      excludedModelsText: '',
+    };
+    let revision = 1;
+    const session = spyOn(apiClient, 'getConnectionRevision').mockImplementation(() => revision);
+    const [first, second] = (
+      {
+        save: ['createCodexConfig', 'createClaudeConfig'],
+        delete: ['deleteCodexConfig', 'deleteClaudeConfig'],
+        toggle: ['updateCodexConfig', 'updateClaudeConfig'],
+      } as const
+    )[operation];
+    const firstWrite = spyOn(providersApi, first).mockImplementation(async () => {
+      revision++;
+      return { groups: [], groupIndex: 0, group: {} };
+    });
+    const nextWrite = spyOn(providersApi, second).mockRejectedValue(new Error('unexpected write'));
+    try {
+      const action =
+        operation === 'save'
+          ? workbench.createProvider('apikeyFun', {
+              ...form,
+              sponsorKeyEntries: [
+                { ...form, protocol: 'codex' },
+                { ...form, protocol: 'claude' },
+              ],
+            })
+          : operation === 'delete'
+            ? workbench.deleteProvider(resource)
+            : workbench.toggleDisabled(resource, true);
+      await expect(action).rejects.toMatchObject({ name: 'AbortError' });
+      expect(firstWrite).toHaveBeenCalledTimes(1);
+      expect(nextWrite).not.toHaveBeenCalled();
+    } finally {
+      session.mockRestore();
+      firstWrite.mockRestore();
+      nextWrite.mockRestore();
+    }
+  }
+);

@@ -432,11 +432,16 @@ const normalizeSponsorKeyEntries = (
   entries: SponsorKeyEntryInput[] | undefined
 ): SponsorKeyEntryInput[] => (entries ?? []).filter((entry) => sponsorEntryApiKey(entry));
 
-const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) => {
+const toggleSponsorConfig = async (
+  raw: SponsorProviderRaw,
+  disabled: boolean,
+  assertConnection: () => void
+) => {
   for (const item of raw.gemini) {
     const excludedModels = disabled
       ? withDisableAllModelsRule(item.config.excludedModels)
       : withoutDisableAllModelsRule(item.config.excludedModels);
+    assertConnection();
     await providersApi.updateGeminiKey(item.config.apiKey, item.config.baseUrl, {
       ...item.config,
       excludedModels,
@@ -446,6 +451,7 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
     const excludedModels = disabled
       ? withDisableAllModelsRule(item.config.excludedModels)
       : withoutDisableAllModelsRule(item.config.excludedModels);
+    assertConnection();
     await providersApi.updateCodexConfig(item.config.apiKey, item.config.baseUrl, {
       ...item.config,
       excludedModels,
@@ -455,12 +461,14 @@ const toggleSponsorConfig = async (raw: SponsorProviderRaw, disabled: boolean) =
     const excludedModels = disabled
       ? withDisableAllModelsRule(item.config.excludedModels)
       : withoutDisableAllModelsRule(item.config.excludedModels);
+    assertConnection();
     await providersApi.updateClaudeConfig(item.config.apiKey, item.config.baseUrl, {
       ...item.config,
       excludedModels,
     });
   }
   for (const item of raw.openai) {
+    assertConnection();
     await providersApi.updateOpenAIProviderDisabled(item.index, disabled, item.config.source);
   }
 };
@@ -637,7 +645,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
       const definition = getSponsorProviderDefinition(brand);
       const entries = normalizeSponsorKeyEntries(input.sponsorKeyEntries);
       const raw = prepareSponsorWrite(brand, config, entries, t);
-      await runSponsorMutationWithRecovery(async () => {
+      await runSponsorMutationWithRecovery(async (assertConnection) => {
         const openaiEntry = entries.find((entry) => entry.protocol === 'openai');
         const claudeEntry = entries.find((entry) => entry.protocol === 'claude');
         const codexEntry = entries.find((entry) => entry.protocol === 'codex');
@@ -652,15 +660,18 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               current?.config
             );
             if (current) {
+              assertConnection();
               await providersApi.updateGeminiKey(current.config.apiKey, current.config.baseUrl, {
                 ...next,
                 source: current.config.source,
               });
             } else {
+              assertConnection();
               await providersApi.createGeminiKey(next);
             }
           } else {
             for (const item of raw.gemini) {
+              assertConnection();
               await providersApi.deleteGeminiKey(
                 item.config.apiKey,
                 item.config.baseUrl,
@@ -679,16 +690,19 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             currentCodex?.config
           );
           if (currentCodex) {
+            assertConnection();
             await providersApi.updateCodexConfig(
               currentCodex.config.apiKey,
               currentCodex.config.baseUrl,
               { ...next, source: currentCodex.config.source }
             );
           } else {
+            assertConnection();
             await providersApi.createCodexConfig(next);
           }
         } else {
           for (const item of raw.codex) {
+            assertConnection();
             await providersApi.deleteCodexConfig(
               item.config.apiKey,
               item.config.baseUrl,
@@ -706,16 +720,19 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             currentClaude?.config
           );
           if (currentClaude) {
+            assertConnection();
             await providersApi.updateClaudeConfig(
               currentClaude.config.apiKey,
               currentClaude.config.baseUrl,
               { ...next, source: currentClaude.config.source }
             );
           } else {
+            assertConnection();
             await providersApi.createClaudeConfig(next);
           }
         } else {
           for (const item of raw.claude) {
+            assertConnection();
             await providersApi.deleteClaudeConfig(
               item.config.apiKey,
               item.config.baseUrl,
@@ -733,15 +750,18 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
             currentOpenAI?.config
           );
           if (currentOpenAI) {
+            assertConnection();
             await providersApi.updateOpenAIProvider(
               currentOpenAI.config.name,
               currentOpenAI.index,
               next
             );
           } else {
+            assertConnection();
             await providersApi.createOpenAIProvider(next);
           }
         } else if (currentOpenAI) {
+          assertConnection();
           await providersApi.deleteOpenAIProvider(currentOpenAI.index, currentOpenAI.config.source);
         }
       }, refetch);
@@ -751,6 +771,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
 
   const createProvider = useCallback(
     async (brand: ProviderBrand, input: ProviderEntryFormInput) => {
+      const assertConnection = guardConfigConnection();
       setMutating(true);
       try {
         if (brand === 'openaiCompatibility') {
@@ -764,7 +785,9 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
         ) {
           await persistSponsorConfig(brand, input);
         }
+        assertConnection();
         await refetch();
+        assertConnection();
       } finally {
         setMutating(false);
       }
@@ -826,9 +849,10 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           sel.brand === 'aiCodeMirror' ||
           sel.brand === 'kimi'
         ) {
-          await runSponsorMutationWithRecovery(async () => {
+          await runSponsorMutationWithRecovery(async (assertConnection) => {
             const raw = resource.raw as SponsorProviderRaw;
             for (const item of raw.gemini) {
+              assertConnection();
               await providersApi.deleteGeminiKey(
                 item.config.apiKey,
                 item.config.baseUrl,
@@ -836,6 +860,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               );
             }
             for (const item of raw.codex) {
+              assertConnection();
               await providersApi.deleteCodexConfig(
                 item.config.apiKey,
                 item.config.baseUrl,
@@ -843,6 +868,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               );
             }
             for (const item of raw.claude) {
+              assertConnection();
               await providersApi.deleteClaudeConfig(
                 item.config.apiKey,
                 item.config.baseUrl,
@@ -853,6 +879,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
               .map((item) => item.index)
               .sort((left, right) => right - left);
             for (const index of openAIIndices) {
+              assertConnection();
               await providersApi.deleteOpenAIProvider(
                 index,
                 raw.openai.find((item) => item.index === index)?.config.source
@@ -872,6 +899,7 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
 
   const toggleDisabled = useCallback(
     async (resource: ProviderResource, disabled: boolean) => {
+      const assertConnection = guardConfigConnection();
       setMutating(true);
       try {
         const brand = resource.brand;
@@ -890,11 +918,13 @@ export function useProviderWorkbench(): UseProviderWorkbenchResult {
           brand === 'kimi'
         ) {
           await runSponsorMutationWithRecovery(
-            () => toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled),
+            (check) => toggleSponsorConfig(resource.raw as SponsorProviderRaw, disabled, check),
             refetch
           );
         }
+        assertConnection();
         await refetch();
+        assertConnection();
       } finally {
         setMutating(false);
       }
