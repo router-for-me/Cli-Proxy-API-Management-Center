@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { AxiosError, AxiosHeaders, type AxiosInstance } from 'axios';
 import { apiClient } from '@/services/api/client';
-import { logsApi, responseDataToText } from '@/services/api/logs';
+import { logsApi, LogPreviewTooLargeError, responseDataToText } from '@/services/api/logs';
 import type { ApiError } from '@/types';
 import { LOGS_TIMEOUT_MS } from '@/utils/constants';
 
@@ -84,6 +84,64 @@ describe('logs domain response normalization', () => {
       }
     } finally {
       get.mockRestore();
+    }
+  });
+});
+
+describe('bounded log previews', () => {
+  const limit = 2 * 1024 * 1024;
+  const item = { name: 'fixture.log' };
+  const signal = new AbortController().signal;
+
+  test('rejects known oversize before requesting or consuming the response', async () => {
+    let canceled = false;
+    const raw = spyOn(apiClient, 'getRaw').mockResolvedValue({
+      headers: { 'content-length': String(limit + 1) },
+      data: new ReadableStream({
+        cancel() {
+          canceled = true;
+        },
+      }),
+    } as never);
+    try {
+      await expect(
+        logsApi.previewLog({ ...item, size: limit + 1 }, undefined, signal)
+      ).rejects.toBeInstanceOf(LogPreviewTooLargeError);
+      expect(raw).not.toHaveBeenCalled();
+      await expect(logsApi.previewLog(item, 'a/b', signal)).rejects.toBeInstanceOf(
+        LogPreviewTooLargeError
+      );
+      expect(raw.mock.calls[0][0]).toBe('/observability/logs/requests/a%2Fb');
+      expect(canceled).toBe(true);
+    } finally {
+      raw.mockRestore();
+    }
+  });
+
+  test('accepts exactly 2 MiB with a UTF-8 character split between chunks', async () => {
+    const text = 'x'.repeat(limit - 3) + '志';
+    const bytes = new TextEncoder().encode(text);
+    const raw = spyOn(apiClient, 'getRaw').mockResolvedValue({
+      headers: {},
+      data: new ReadableStream({
+        start(controller) {
+          controller.enqueue(bytes.subarray(0, -1));
+          controller.enqueue(bytes.subarray(-1));
+          controller.close();
+        },
+      }),
+    } as never);
+    try {
+      expect(await logsApi.previewLog(item, undefined, signal)).toBe(text);
+      const error = Object.assign(new Error('fallback'), {
+        status: 404,
+        data: new Response('{"message":"Log missing"}').body,
+      });
+      raw.mockRejectedValue(error);
+      await expect(logsApi.previewLog(item, 'missing', signal)).rejects.toBe(error);
+      expect(error.message).toBe('Log missing');
+    } finally {
+      raw.mockRestore();
     }
   });
 });

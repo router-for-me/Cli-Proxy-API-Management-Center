@@ -103,11 +103,39 @@ export const responseDataToText = async (data: unknown): Promise<string> => {
   }
 };
 
-const downloadLog = async (path: string, options: LogsRequestOptions) => {
+const PREVIEW_LIMIT = 2 * 1024 * 1024;
+export class LogPreviewTooLargeError extends Error {}
+
+const requestPath = (id: string) => `/observability/logs/requests/${encodeURIComponent(id)}`;
+const errorPath = (name: string) => `/observability/logs/errors/${encodeURIComponent(name)}`;
+
+async function readPreview(stream: ReadableStream<Uint8Array>, length?: unknown): Promise<string> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = '';
+  try {
+    if (Number(length) > PREVIEW_LIMIT) throw new LogPreviewTooLargeError();
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) return text + decoder.decode();
+      bytes += value.byteLength;
+      if (bytes > PREVIEW_LIMIT) throw new LogPreviewTooLargeError();
+      text += decoder.decode(value, { stream: true });
+    }
+  } catch (error) {
+    void reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+const downloadLog = async (path: string, options: LogsRequestOptions, preview = false) => {
   try {
     return await apiClient.getRaw(path, {
       ...options,
-      responseType: 'blob',
+      ...(preview ? { adapter: 'fetch', responseType: 'stream' } : { responseType: 'blob' }),
       timeout: LOGS_TIMEOUT_MS,
     });
   } catch (error: unknown) {
@@ -116,10 +144,10 @@ const downloadLog = async (path: string, options: LogsRequestOptions) => {
     // status, transport code and body while enriching the human-readable error.
     if (error instanceof Error) {
       const apiError = error as ApiError;
-      const body = apiError.data instanceof Blob ? apiError.data : apiError.details;
-      if (body instanceof Blob) {
+      const body = apiError.data ?? apiError.details;
+      if (body instanceof Blob || (preview && body instanceof ReadableStream)) {
         try {
-          const text = await responseDataToText(body);
+          const text = body instanceof Blob ? await body.text() : await readPreview(body);
           const parsed = parseApiErrorResponse(JSON.parse(text), apiError.message);
           apiError.message = parsed.message;
           if (parsed.apiCode !== undefined) apiError.apiCode = parsed.apiCode;
@@ -152,9 +180,16 @@ export const logsApi = {
     return normalizeErrorLogsResponse(data);
   },
 
+  async previewLog(item: ErrorLogFile, requestId: string | undefined, signal: AbortSignal) {
+    if ((item.size ?? 0) > PREVIEW_LIMIT) throw new LogPreviewTooLargeError();
+    const path = requestId ? requestPath(requestId) : errorPath(item.name);
+    const response = await downloadLog(path, { signal }, true);
+    return readPreview(response.data, response.headers['content-length']);
+  },
+
   downloadErrorLog: (filename: string, options: LogsRequestOptions = {}) =>
-    downloadLog(`/observability/logs/errors/${encodeURIComponent(filename)}`, options),
+    downloadLog(errorPath(filename), options),
 
   downloadRequestLogById: (id: string, options: LogsRequestOptions = {}) =>
-    downloadLog(`/observability/logs/requests/${encodeURIComponent(id)}`, options),
+    downloadLog(requestPath(id), options),
 };

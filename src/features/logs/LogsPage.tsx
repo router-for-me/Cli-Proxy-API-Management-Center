@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useReducer, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
@@ -27,7 +27,7 @@ import {
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useAuthStore, useConfigStore, useNotificationStore } from '@/stores';
-import { logsApi, responseDataToText, type ErrorLogFile } from '@/services/api/logs';
+import { logsApi, LogPreviewTooLargeError, type ErrorLogFile } from '@/services/api/logs';
 import { INITIAL_VISIBLE_LINES } from './model/logBuffer';
 import { useLogStream } from './hooks/useLogStream';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -83,10 +83,10 @@ export function LogsPage() {
   const [requestLogDownloading, setRequestLogDownloading] = useState(false);
   const [fullscreenLogs, setFullscreenLogs] = useState(false);
 
+  const viewerController = useRef<AbortController | null>(null);
   const [requests] = useState(() => ({
     session: createLogRequestGuard(),
     errors: createLogRequestGuard(),
-    viewer: createLogRequestGuard(),
   }));
 
   const {
@@ -169,22 +169,17 @@ export function LogsPage() {
 
   const openErrorLog = async (item: ErrorLogFile, byRequestId?: string) => {
     setViewerRequestId(byRequestId ?? null);
-    const requestId = requests.viewer.invalidate();
+    viewerController.current?.abort();
+    const controller = new AbortController();
+    viewerController.current = controller;
     dispatchErrorLogViewer({ type: 'open', item });
 
     try {
-      if (item.size && item.size > 2 * 1024 * 1024) throw new Error(t('logs.preview_too_large'));
-      const response = byRequestId
-        ? await logsApi.downloadRequestLogById(byRequestId)
-        : await logsApi.downloadErrorLog(item.name);
-      if (response.data instanceof Blob && response.data.size > 2 * 1024 * 1024) {
-        throw new Error(t('logs.preview_too_large'));
-      }
-      const text = await responseDataToText(response.data);
-      if (!requests.viewer.isCurrent(requestId)) return;
+      const text = await logsApi.previewLog(item, byRequestId, controller.signal);
+      if (controller.signal.aborted) return;
       dispatchErrorLogViewer({ type: 'ready', text });
     } catch (err: unknown) {
-      if (!requests.viewer.isCurrent(requestId)) return;
+      if (controller.signal.aborted) return;
       const message =
         byRequestId &&
         typeof err === 'object' &&
@@ -192,7 +187,9 @@ export function LogsPage() {
         'status' in err &&
         err.status === 404
           ? `${t('logs.request_log_missing')} ${getErrorMessage(err)}`
-          : getErrorMessage(err);
+          : err instanceof LogPreviewTooLargeError
+            ? t('logs.preview_too_large')
+            : getErrorMessage(err);
       dispatchErrorLogViewer({
         type: 'error',
         message: message
@@ -203,7 +200,7 @@ export function LogsPage() {
   };
 
   const closeErrorLogViewer = () => {
-    requests.viewer.invalidate();
+    viewerController.current?.abort();
     dispatchErrorLogViewer({ type: 'close' });
   };
 
@@ -230,7 +227,7 @@ export function LogsPage() {
     const invalidateSession = () => {
       requests.session.invalidate();
       requests.errors.invalidate();
-      requests.viewer.invalidate();
+      viewerController.current?.abort();
     };
 
     // Store subscriptions invalidate synchronously, before a response can beat effect cleanup.
