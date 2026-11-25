@@ -113,7 +113,7 @@ describe('alias draft', () => {
     draft = addAliasRow(draft, 'codex', makeId);
     draft = updateAliasRow(draft, 'codex', draft.codex[2].id, { name: 'half' });
     draft = addAliasRow(draft, 'codex', makeId);
-    draft = updateAliasRow(draft, 'codex', draft.codex[3].id, { name: 'same', alias: 'SAME' });
+    draft = updateAliasRow(draft, 'codex', draft.codex[3].id, { name: 'same', alias: ' same' });
     draft = addAliasRow(draft, 'codex', makeId);
 
     const [, duplicate, incomplete, same, blank] = draft.codex;
@@ -128,6 +128,14 @@ describe('alias draft', () => {
       issue: 'duplicate',
     });
     expect(findAliasDraftIssue(draft, ['claude'])).toBeNull();
+  });
+
+  test('a case-only alias does not block other edits to the provider', () => {
+    const makeId = ids();
+    const base = { vertex: [{ name: 'original', alias: 'Original' }] };
+    const draft = addAliasLink(buildAliasDraft(base, makeId), 'vertex', 'second', 'other', makeId);
+    expect(findAliasDraftIssue(draft, getDirtyAliasProviders(base, draft))).toBeNull();
+    expect(buildAliasSavePlan(base, draft)[0].value?.[0]).toEqual(base.vertex[0]);
   });
 
   test('diagram operations address links case-insensitively and stay idempotent', () => {
