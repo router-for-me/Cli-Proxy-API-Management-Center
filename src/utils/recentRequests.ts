@@ -41,7 +41,7 @@ export type ApiKeyUsageResponse = Record<
   >
 >;
 
-const RECENT_REQUEST_BLOCK_COUNT = 20;
+export const RECENT_REQUEST_BLOCK_COUNT = 20;
 const RECENT_REQUEST_BLOCK_DURATION_MS = 10 * 60 * 1000;
 
 const toFiniteNumber = (value: unknown): number => {

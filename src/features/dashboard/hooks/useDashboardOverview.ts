@@ -3,11 +3,8 @@ import { authFilesApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
 import { useApiKeyForModels } from '@/hooks/useApiKeysForModels';
 import { useProviderRecentRequests } from '@/components/providers/hooks/useProviderRecentRequests';
-import {
-  mergeRecentRequestBucketGroups,
-  normalizeRecentRequestUsageEntry,
-  type RecentRequestBucket,
-} from '@/utils/recentRequests';
+import { normalizeRecentRequestUsageEntry } from '@/utils/recentRequests';
+import { mergeTrafficSamples, type TrafficSample } from '../trafficBuckets';
 import type { Config } from '@/types';
 import type { AuthFileItem } from '@/types/authFile';
 import {
@@ -42,8 +39,8 @@ const providerIdOfAuthFile = (file: AuthFileItem): string => {
   return candidate && candidate !== 'empty' ? candidate : 'unknown';
 };
 
-const buildTrafficWindow = (bucketGroups: RecentRequestBucket[][]): TrafficWindow => {
-  const buckets = mergeRecentRequestBucketGroups(bucketGroups);
+const buildTrafficWindow = (bucketGroups: TrafficSample[]): TrafficWindow => {
+  const buckets = mergeTrafficSamples(bucketGroups);
   if (buckets.length === 0) {
     return EMPTY_TRAFFIC;
   }
@@ -81,7 +78,7 @@ interface ProviderAccumulator {
   credentials: number;
   success: number;
   failure: number;
-  bucketGroups: RecentRequestBucket[][];
+  bucketGroups: TrafficSample[];
 }
 
 const createAccumulator = (): ProviderAccumulator => ({
@@ -125,19 +122,26 @@ export function useDashboardOverview() {
   const connected = connectionStatus === 'connected';
   const resolveApiKey = useApiKeyForModels();
 
-  const { usageByProvider, refreshRecentRequests } = useProviderRecentRequests({
+  const {
+    usageByProvider,
+    sampledAt: usageSampledAt,
+    refreshRecentRequests,
+  } = useProviderRecentRequests({
     enabled: connected,
   });
 
-  const [authFiles, setAuthFiles] = useState<AuthFileItem[] | null>(null);
+  const [authSample, setAuthSample] = useState<{ files: AuthFileItem[]; sampledAt: number } | null>(
+    null
+  );
+  const authFiles = authSample?.files ?? null;
 
   const loadAuthFiles = useCallback(async () => {
     if (!connected) return;
     try {
       const response = await authFilesApi.list();
-      setAuthFiles(response.files);
+      setAuthSample({ files: response.files, sampledAt: Date.now() });
     } catch {
-      setAuthFiles(null);
+      setAuthSample(null);
     }
   }, [connected]);
 
@@ -171,7 +175,7 @@ export function useDashboardOverview() {
 
   const { traffic, providers } = useMemo(() => {
     const accumulators = new Map<string, ProviderAccumulator>();
-    const allBucketGroups: RecentRequestBucket[][] = [];
+    const allBucketGroups: TrafficSample[] = [];
     const apiKeysFromUsage = new Set<string>();
 
     const accumulatorFor = (providerId: string): ProviderAccumulator => {
@@ -193,13 +197,14 @@ export function useDashboardOverview() {
         accumulator.success += entry.success;
         accumulator.failure += entry.failed;
         if (entry.recentRequests.length > 0) {
-          accumulator.bucketGroups.push(entry.recentRequests);
-          allBucketGroups.push(entry.recentRequests);
+          const sample = { buckets: entry.recentRequests, sampledAt: usageSampledAt };
+          accumulator.bucketGroups.push(sample);
+          allBucketGroups.push(sample);
         }
       });
     });
 
-    (authFiles ?? []).forEach((file) => {
+    authSample?.files.forEach((file) => {
       const accountType = String(file.account_type ?? '')
         .trim()
         .toLowerCase();
@@ -215,8 +220,9 @@ export function useDashboardOverview() {
       accumulator.success += entry.success;
       accumulator.failure += entry.failed;
       if (entry.recentRequests.length > 0) {
-        accumulator.bucketGroups.push(entry.recentRequests);
-        allBucketGroups.push(entry.recentRequests);
+        const sample = { buckets: entry.recentRequests, sampledAt: authSample.sampledAt };
+        accumulator.bucketGroups.push(sample);
+        allBucketGroups.push(sample);
       }
     });
 
@@ -230,7 +236,7 @@ export function useDashboardOverview() {
           failure: accumulator.failure,
           total,
           successRate: total > 0 ? (accumulator.success / total) * 100 : null,
-          buckets: mergeRecentRequestBucketGroups(accumulator.bucketGroups),
+          buckets: mergeTrafficSamples(accumulator.bucketGroups),
         };
       })
       .sort(
@@ -241,7 +247,7 @@ export function useDashboardOverview() {
       traffic: buildTrafficWindow(allBucketGroups),
       providers: providerRows,
     };
-  }, [usageByProvider, authFiles]);
+  }, [usageByProvider, usageSampledAt, authSample]);
 
   const credentials = useMemo<CredentialHealth | null>(() => {
     if (!authFiles) return null;

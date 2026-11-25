@@ -112,11 +112,12 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
   const [usageState, setUsageState] = useState(() => ({
     cache,
     value: cache.cachedUsageByProvider,
+    sampledAt: cache.cachedAt,
   }));
   const [loadingState, setLoadingState] = useState(() => ({ cache, value: false }));
 
   const setUsageForCurrentScope = useCallback(
-    (value: ProviderRecentRequests) => setUsageState({ cache, value }),
+    (value: ProviderRecentRequests) => setUsageState({ cache, value, sampledAt: cache.cachedAt }),
     [cache]
   );
 
@@ -132,8 +133,7 @@ export function useProviderRecentRequests(options: UseProviderRecentRequestsOpti
       }
 
       const hasFreshCache =
-        cache.cachedAt > 0 &&
-        Date.now() - cache.cachedAt < PROVIDER_RECENT_REQUESTS_STALE_TIME_MS;
+        cache.cachedAt > 0 && Date.now() - cache.cachedAt < PROVIDER_RECENT_REQUESTS_STALE_TIME_MS;
 
       if (!loadOptions.force && hasFreshCache) {
         setUsageForCurrentScope(cache.cachedUsageByProvider);
