@@ -135,3 +135,35 @@ test('captured SIWC transport keeps original credentials and suppresses stale ev
   await expect(captured.delete('/oauth/session', { adapter: unauthorized })).rejects.toThrow();
   expect(events).toEqual([]);
 });
+
+test('late default-client responses keep their result but emit no events after ABA', async () => {
+  const events: string[] = [];
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: { dispatchEvent: (event: Event) => events.push(event.type) },
+  });
+  const original = { apiBase: 'https://original.invalid', managementKey: 'fixture' };
+  apiClient.setConfig(original);
+  const release = Promise.withResolvers<void>();
+  const adapter: AxiosAdapter = async (config) => {
+    await release.promise;
+    if (config.url === '/unauthorized') {
+      throw { isAxiosError: true, message: 'Unauthorized', config, response: { status: 401 } };
+    }
+    return {
+      data: 'original',
+      status: 200,
+      statusText: 'OK',
+      config,
+      headers: { 'x-cpa-version': 'old', 'x-cpa-support-plugin': 'true' },
+    };
+  };
+  const success = apiClient.get('/config', { adapter });
+  const failure = apiClient.get('/unauthorized', { adapter });
+  apiClient.setConfig({ ...original, managementKey: 'other' });
+  apiClient.setConfig(original);
+  release.resolve();
+  expect(await success).toBe('original');
+  await expect(failure).rejects.toMatchObject({ status: 401 });
+  expect(events).toEqual([]);
+});

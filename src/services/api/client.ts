@@ -22,6 +22,8 @@ class ApiClient {
   private managementKey: string = '';
   private connectionRevision = 0;
 
+  private readonly requestRevisions = new WeakMap<AxiosRequestConfig, number>();
+
   constructor(private readonly emitEvents: () => boolean = () => true) {
     this.instance = axios.create({
       timeout: REQUEST_TIMEOUT_MS,
@@ -64,6 +66,12 @@ class ApiClient {
     client.managementKey = this.managementKey;
     client.instance.defaults.timeout = this.instance.defaults.timeout;
     return client;
+  }
+
+  private canEmit(config?: AxiosRequestConfig): boolean {
+    return (
+      !!config && this.requestRevisions.get(config) === this.connectionRevision && this.emitEvents()
+    );
   }
 
   private readHeader(headers: Record<string, unknown> | undefined, keys: string[]): string | null {
@@ -124,6 +132,7 @@ class ApiClient {
     // Request interceptor
     this.instance.interceptors.request.use(
       (config) => {
+        this.requestRevisions.set(config, this.connectionRevision);
         // Set baseURL
         config.baseURL = this.apiBase;
 
@@ -134,7 +143,10 @@ class ApiClient {
 
         return config;
       },
-      (error) => Promise.reject(this.handleError(error))
+      (error) => {
+        throw this.handleError(error);
+      },
+      { synchronous: true }
     );
 
     // Response interceptor
@@ -148,14 +160,14 @@ class ApiClient {
         const supportsPlugin = this.readBooleanHeader(headers, CPA_SUPPORT_PLUGIN_HEADER_KEYS);
 
         // Dispatch version updates for store consumers
-        if (this.emitEvents() && (version || buildDate)) {
+        if (this.canEmit(response.config) && (version || buildDate)) {
           window.dispatchEvent(
             new CustomEvent('server-version-update', {
               detail: { version: version || null, buildDate: buildDate || null },
             })
           );
         }
-        if (this.emitEvents() && supportsPlugin !== null) {
+        if (this.canEmit(response.config) && supportsPlugin !== null) {
           window.dispatchEvent(
             new CustomEvent('server-plugin-support-update', {
               detail: { supportsPlugin },
@@ -185,7 +197,7 @@ class ApiClient {
       apiError.data = responseData;
 
       // Dispatch logout for unauthorized responses
-      if (this.emitEvents() && error.response?.status === 401) {
+      if (error.response?.status === 401 && this.canEmit(error.config ?? error.response.config)) {
         window.dispatchEvent(new Event('unauthorized'));
       }
 
