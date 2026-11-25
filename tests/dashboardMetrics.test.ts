@@ -110,6 +110,18 @@ describe('provider key counts', () => {
     expect(getProviderKeyCounts({ metaApiKeys: [{ apiKey: 'fixture-meta-key' }] }).meta).toBe(1);
     expect(getProviderKeyCounts({}).meta).toBe(0);
   });
+  test('counts keys, not channels, for OpenAI-compatible providers', () => {
+    const counts = getProviderKeyCounts({
+      codexApiKeys: [{ apiKey: 'native' }],
+      openaiCompatibility: [
+        { name: 'one', baseUrl: '', apiKeyEntries: ['a', 'b', 'c'].map((apiKey) => ({ apiKey })) },
+        { name: 'two', baseUrl: '', apiKeyEntries: [] },
+      ],
+    });
+    expect(counts.openai).toBe(3);
+    expect(Object.values(counts).reduce((sum, count) => sum + count, 0)).toBe(4);
+  });
+
   test('includes native Interactions API keys in the dashboard total inputs', () => {
     const counts = getProviderKeyCounts({
       geminiApiKeys: [{ apiKey: 'gemini-key' }],
