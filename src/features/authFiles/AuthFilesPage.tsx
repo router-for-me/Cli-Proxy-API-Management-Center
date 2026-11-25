@@ -15,7 +15,6 @@ import { getQuotaCacheKey } from '@/utils/quota/identity';
 import {
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
-  getTypeLabel,
   isProblemAuthFile,
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
@@ -35,11 +34,7 @@ import { ProviderTabs } from '@/features/authFiles/components/ProviderTabs';
 import { VaultHeader } from '@/features/authFiles/components/VaultHeader';
 import { VaultPulse } from '@/features/authFiles/components/VaultPulse';
 import { invalidateAuthFileDerivedCaches } from '@/features/authFiles/cacheInvalidation';
-import {
-  buildWildcardSearch,
-  matchesAuthFileSearch,
-  sortAuthFiles,
-} from '@/features/authFiles/logic';
+import { getAuthFileListResults } from '@/features/authFiles/logic';
 import { useAuthFilesData } from '@/features/authFiles/hooks/useAuthFilesData';
 import { useModelCatalogSync } from '@/features/authFiles/hooks/useModelCatalogSync';
 import { useAuthFilesModels } from '@/features/authFiles/hooks/useAuthFilesModels';
@@ -155,7 +150,6 @@ export function AuthFilesPage() {
     handleUploadClick,
     handleFileChange,
     handleDelete,
-    handleDeleteAll,
     handleDownload,
     handleManualRefresh,
     handleCooldownReset,
@@ -442,19 +436,16 @@ export function AuthFilesPage() {
   }, [filesMatchingStatusFilters]);
 
   const normalizedSearch = search.trim();
-  const wildcardSearch = useMemo(() => buildWildcardSearch(normalizedSearch), [normalizedSearch]);
-
-  const filtered = useMemo(
+  const { sorted, selectableNames } = useMemo(
     () =>
-      filesMatchingStatusFilters.filter((item) => {
-        const type = normalizeProviderKey(String(item.type ?? item.provider ?? ''));
-        const matchType = normalizedFilter === 'all' || type === normalizedFilter;
-        return matchType && matchesAuthFileSearch(item, normalizedSearch, wildcardSearch);
-      }),
-    [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, wildcardSearch]
+      getAuthFileListResults(
+        filesMatchingStatusFilters,
+        normalizedFilter,
+        normalizedSearch,
+        sortMode
+      ),
+    [filesMatchingStatusFilters, normalizedFilter, normalizedSearch, sortMode]
   );
-
-  const sorted = useMemo(() => sortAuthFiles(filtered, sortMode), [filtered, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -463,10 +454,6 @@ export function AuthFilesPage() {
   const selectablePageItems = useMemo(
     () => pageItems.filter((file) => !isRuntimeOnlyAuthFile(file)),
     [pageItems]
-  );
-  const selectableFilteredItems = useMemo(
-    () => sorted.filter((file) => !isRuntimeOnlyAuthFile(file)),
-    [sorted]
   );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
   const selectedHasStatusUpdating = useMemo(
@@ -535,21 +522,10 @@ export function AuthFilesPage() {
     setPage(1);
   }, []);
 
-  const deleteAllButtonLabel = (() => {
-    if (enabledOnly || disabledOnly) {
-      return t('auth_files.delete_filtered_result_button');
-    }
-    if (problemOnly) {
-      return normalizedFilter === 'all'
-        ? t('auth_files.delete_problem_button')
-        : t('auth_files.delete_problem_button_with_type', {
-            type: getTypeLabel(t, normalizedFilter),
-          });
-    }
-    return normalizedFilter === 'all'
-      ? t('auth_files.delete_all_button')
-      : `${t('common.delete')} ${getTypeLabel(t, normalizedFilter)}`;
-  })();
+  const deleteAllButtonLabel =
+    normalizedSearch || normalizedFilter !== 'all' || statusFilterMode !== 'all'
+      ? t('auth_files.delete_filtered_result_button')
+      : t('auth_files.delete_all_button');
 
   const oauthSectionRef = useRevealOnScroll<HTMLDivElement>();
 
@@ -664,20 +640,9 @@ export function AuthFilesPage() {
           layout={layout}
           onLayoutChange={setLayout}
           deleteLabel={deleteAllButtonLabel}
-          deleteDisabled={disableControls || loading || deletingAll || files.length === 0}
+          deleteDisabled={disableControls || loading || deletingAll || selectableNames.length === 0}
           deleteLoading={deletingAll}
-          onDelete={() =>
-            handleDeleteAll({
-              filter,
-              problemOnly,
-              disabledOnly,
-              enabledOnly,
-              onResetFilterToAll: () => setFilter('all'),
-              onResetProblemOnly: () => setStatusFilterMode('all'),
-              onResetDisabledOnly: () => setStatusFilterMode('all'),
-              onResetEnabledOnly: () => setStatusFilterMode('all'),
-            })
-          }
+          onDelete={() => batchDelete(selectableNames)}
         />
 
         {error && (
@@ -806,8 +771,8 @@ export function AuthFilesPage() {
       <BatchActionBar
         selectionCount={selectionCount}
         selectablePageCount={selectablePageItems.length}
-        selectableFilteredCount={selectableFilteredItems.length}
-        disableControls={disableControls}
+        selectableFilteredCount={selectableNames.length}
+        disableControls={disableControls || deletingAll}
         batchStatusDisabled={batchStatusButtonsDisabled}
         onSelectPage={() => selectAllVisible(pageItems)}
         onSelectFiltered={() => selectAllVisible(sorted)}

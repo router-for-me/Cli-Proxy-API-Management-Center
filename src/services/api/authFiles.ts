@@ -138,12 +138,27 @@ const normalizeBatchDeleteResponse = (
 ): AuthFileBatchDeleteResult => {
   const failed = normalizeBatchFailures(payload?.failed);
   const filesFromPayload = normalizeBatchFileNames(payload?.files);
-  // Backend single-name delete returns only {status:"ok"} (auth_files.go:794).
-  const inferFromRequest = payload?.deleted === undefined && failed.length === 0;
+  // Only the single-name endpoint confirms success without returning names or a count.
+  const singleOk =
+    requestedNames.length === 1 &&
+    payload?.status === 'ok' &&
+    payload.deleted === undefined &&
+    payload.files === undefined &&
+    failed.length === 0;
+  const requested = new Set(requestedNames);
+  const failedNames = new Set(failed.map((item) => item.name));
+  const confirmed = filesFromPayload.filter(
+    (name) => requested.has(name) && !failedNames.has(name)
+  );
+  const files = singleOk
+    ? [...requestedNames]
+    : payload?.deleted === filesFromPayload.length
+      ? confirmed
+      : [];
   return {
     status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
-    deleted: payload?.deleted ?? (inferFromRequest ? requestedNames.length : 0),
-    files: filesFromPayload.length ? filesFromPayload : inferFromRequest ? [...requestedNames] : [],
+    deleted: files.length,
+    files,
     failed,
   };
 };
@@ -610,8 +625,6 @@ export const authFilesApi = {
   },
 
   deleteFile: (name: string) => authFilesApi.deleteFiles([name]),
-
-  deleteAll: () => apiClient.delete('/credentials', { params: { all: true } }),
 
   download: async (name: string): Promise<Blob> => {
     const response = await apiClient.getRaw(

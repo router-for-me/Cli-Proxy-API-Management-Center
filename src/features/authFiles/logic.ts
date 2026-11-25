@@ -8,6 +8,7 @@ import { isPluginQuotaFile, resolveAuthProvider } from '@/utils/quota';
 import {
   QUOTA_PROVIDER_TYPES,
   getAuthFileStatusMessage,
+  isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   type AuthFileQuotaFilter,
   type QuotaProviderType,
@@ -95,3 +96,23 @@ export const sortAuthFiles = (files: AuthFileItem[], mode: AuthFilesSortMode): A
   }
   return copy;
 };
+
+export function getAuthFileListResults(
+  statusMatches: AuthFileItem[],
+  provider: string,
+  search: string,
+  sortMode: AuthFilesSortMode
+) {
+  const wildcard = buildWildcardSearch(search);
+  const matches = statusMatches.filter((file) => {
+    const type = normalizeProviderKey(String(file.type ?? file.provider ?? ''));
+    return (
+      (provider === 'all' || type === provider) && matchesAuthFileSearch(file, search, wildcard)
+    );
+  });
+  const sorted = sortAuthFiles(matches, sortMode);
+  const selectableNames = sorted
+    .filter((file) => !isRuntimeOnlyAuthFile(file))
+    .map((file) => file.name);
+  return { sorted, selectableNames };
+}
