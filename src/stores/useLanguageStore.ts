@@ -4,7 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { optionalLocalStorage } from '@/services/storage/optionalLocalStorage';
 import type { Language } from '@/types';
 import { STORAGE_KEY_LANGUAGE } from '@/utils/constants';
 import i18n from '@/i18n';
@@ -30,6 +31,7 @@ export const useLanguageStore = create<LanguageState>()(
       },
     }),
     {
+      storage: createJSONStorage(() => optionalLocalStorage),
       name: STORAGE_KEY_LANGUAGE,
       merge: (persistedState, currentState) => {
         const nextLanguage = (persistedState as Partial<LanguageState>)?.language;

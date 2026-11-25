@@ -49,3 +49,44 @@ for (const trigger of ['logout', '401']) {
     }
   });
 }
+
+for (const denied of ['getter', 'methods']) {
+  test.skipIf(!origin || !playwright)(
+    `manual login works with denied localStorage ${denied}`,
+    async () => {
+      const { chromium } = await import(playwright!);
+      const browser = await chromium.launch({ channel: 'chrome' });
+      try {
+        const page = await browser.newPage({ locale: 'en-US', reducedMotion: 'reduce' });
+        const errors: string[] = [];
+        page.on('pageerror', (error: Error) => errors.push(error.message));
+        await page.addInitScript((denied: string) => {
+          const fail = () => {
+            throw new DOMException('Storage denied', 'SecurityError');
+          };
+          if (denied === 'getter') Object.defineProperty(window, 'localStorage', { get: fail });
+          else Object.assign(Storage.prototype, { getItem: fail, setItem: fail, removeItem: fail });
+        }, denied);
+        let status = 403;
+        await page.route('**/v8/management/**', (route: { fulfill(o: object): Promise<void> }) =>
+          route.fulfill({ status, json: status === 403 ? { error: 'fixture refusal' } : {} })
+        );
+        await page.goto(`${origin}/#/system`);
+        await page.locator('input[type=password]').fill('fixture-only');
+        expect(await page.getByRole('checkbox').isChecked()).toBe(false);
+        const submit = page.getByRole('button', { name: 'Login', exact: true });
+        await submit.click();
+        await page
+          .getByText(/HTTP 403.*fixture refusal/)
+          .first()
+          .waitFor();
+        status = 200;
+        await submit.click();
+        await page.waitForURL('**/#/system');
+        expect(errors).toEqual([]);
+      } finally {
+        await browser.close();
+      }
+    }
+  );
+}

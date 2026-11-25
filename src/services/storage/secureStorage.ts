@@ -16,7 +16,11 @@ interface StorageOptions {
   encrypt?: boolean;
 }
 
-class ObfuscatedStorageService {
+type StorageAccess = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+export class ObfuscatedStorageService {
+  constructor(private readonly getStorage: () => StorageAccess = () => localStorage) {}
+
   /**
    * 存储数据
    */
@@ -31,7 +35,7 @@ class ObfuscatedStorageService {
     const stringValue = JSON.stringify(value);
     const storedValue = obfuscate ? obfuscateData(stringValue) : stringValue;
 
-    localStorage.setItem(key, storedValue);
+    this.getStorage().setItem(key, storedValue);
   }
 
   /**
@@ -40,7 +44,7 @@ class ObfuscatedStorageService {
   getItem<T = unknown>(key: string, options: StorageOptions = {}): T | null {
     const obfuscate = options.obfuscate ?? options.encrypt ?? true;
 
-    const raw = localStorage.getItem(key);
+    const raw = this.getStorage().getItem(key);
     if (raw === null) return null;
 
     try {
@@ -68,7 +72,7 @@ class ObfuscatedStorageService {
    * 删除数据
    */
   removeItem(key: string): void {
-    localStorage.removeItem(key);
+    this.getStorage().removeItem(key);
   }
 }
 

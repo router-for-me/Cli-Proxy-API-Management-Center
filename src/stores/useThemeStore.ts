@@ -4,7 +4,8 @@
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { optionalLocalStorage } from '@/services/storage/optionalLocalStorage';
 import type { Theme } from '@/types';
 import { STORAGE_KEY_THEME } from '@/utils/constants';
 
@@ -99,6 +100,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
+      storage: createJSONStorage(() => optionalLocalStorage),
       name: STORAGE_KEY_THEME,
     }
   )

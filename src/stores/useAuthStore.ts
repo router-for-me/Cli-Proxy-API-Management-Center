@@ -8,7 +8,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AuthState, LoginCredentials, ConnectionStatus } from '@/types';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { isCurrentObfuscated } from '@/utils/encryption';
-import { obfuscatedStorage } from '@/services/storage/secureStorage';
+import { optionalLocalStorage } from '@/services/storage/optionalLocalStorage';
+import { ObfuscatedStorageService } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { LegacyBackendError, probeLegacyBackend } from '@/services/api/legacyBackendProbe';
 import { useNotificationStore } from './useNotificationStore';
@@ -16,6 +17,8 @@ import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { useQuotaStore } from './useQuotaStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
+
+const authStorage = new ObfuscatedStorageService(() => optionalLocalStorage);
 
 interface AuthStoreState extends AuthState {
   connectionStatus: ConnectionStatus;
@@ -61,10 +64,10 @@ export const useAuthStore = create<AuthStoreState>()(
         if (restoreSessionPromise) return restoreSessionPromise;
 
         restoreSessionPromise = (async () => {
-          const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+          const wasLoggedIn = optionalLocalStorage.getItem('isLoggedIn') === 'true';
           const legacyBase =
-            obfuscatedStorage.getItem<string>('apiBase') ||
-            obfuscatedStorage.getItem<string>('apiUrl', { encrypt: true });
+            authStorage.getItem<string>('apiBase') ||
+            authStorage.getItem<string>('apiUrl', { encrypt: true });
           const { apiBase, managementKey, rememberPassword } = get();
           const resolvedBase = normalizeApiBase(
             apiBase || legacyBase || detectApiBaseFromLocation()
@@ -100,8 +103,7 @@ export const useAuthStore = create<AuthStoreState>()(
       },
 
       hasRestorableSession: () => {
-        if (typeof localStorage === 'undefined') return false;
-        const wasLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const wasLoggedIn = optionalLocalStorage.getItem('isLoggedIn') === 'true';
         const { apiBase, managementKey } = get();
         // 与 restoreSession 相同：地址总能回退到当前访问地址，因此只需地址非空的占位判断
         const base = apiBase || detectApiBaseFromLocation();
@@ -159,9 +161,9 @@ export const useAuthStore = create<AuthStoreState>()(
             connectionStatus: 'connected',
           });
           if (rememberPassword) {
-            localStorage.setItem('isLoggedIn', 'true');
+            optionalLocalStorage.setItem('isLoggedIn', 'true');
           } else {
-            localStorage.removeItem('isLoggedIn');
+            optionalLocalStorage.removeItem('isLoggedIn');
           }
         } catch (error: unknown) {
           // A current 401 may have synchronously logged out. Preserve its original error.
@@ -188,7 +190,7 @@ export const useAuthStore = create<AuthStoreState>()(
           supportsPlugin: false,
           connectionStatus: 'disconnected',
         });
-        localStorage.removeItem('isLoggedIn');
+        optionalLocalStorage.removeItem('isLoggedIn');
       },
 
       // 检查认证状态
@@ -240,21 +242,21 @@ export const useAuthStore = create<AuthStoreState>()(
       storage: createJSONStorage(() => ({
         getItem: (name) => {
           // Retire all pre-v2 login credentials without decoding or migrating them.
-          localStorage.removeItem('managementKey');
-          const raw = localStorage.getItem(name);
+          optionalLocalStorage.removeItem('managementKey');
+          const raw = optionalLocalStorage.getItem(name);
           if (!raw || !isCurrentObfuscated(raw)) {
-            localStorage.removeItem(name);
-            localStorage.removeItem('isLoggedIn');
+            optionalLocalStorage.removeItem(name);
+            optionalLocalStorage.removeItem('isLoggedIn');
             return null;
           }
-          const data = obfuscatedStorage.getItem<AuthStoreState>(name);
+          const data = authStorage.getItem<AuthStoreState>(name);
           return data ? JSON.stringify(data) : null;
         },
         setItem: (name, value) => {
-          obfuscatedStorage.setItem(name, JSON.parse(value));
+          authStorage.setItem(name, JSON.parse(value));
         },
         removeItem: (name) => {
-          obfuscatedStorage.removeItem(name);
+          authStorage.removeItem(name);
         },
       })),
       partialize: (state) => ({

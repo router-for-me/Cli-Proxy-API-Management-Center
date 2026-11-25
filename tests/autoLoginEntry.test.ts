@@ -49,6 +49,17 @@ describe('restorable session detection', () => {
     expect(shouldAttemptAutoLogin(true, '', 'k')).toBe(false);
   });
 
+  test('unexpected storage failures remain visible', () => {
+    const error = new TypeError('storage implementation failure');
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw error;
+      },
+    });
+    expect(() => useAuthStore.getState().hasRestorableSession()).toThrow(error);
+  });
+
   test('hasRestorableSession mirrors restoreSession without side effects', () => {
     const { hasRestorableSession } = useAuthStore.getState();
     useAuthStore.setState({ apiBase: 'http://proxy.example.com', managementKey: 'sk-demo' });
