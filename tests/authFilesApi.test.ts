@@ -4,6 +4,27 @@ import { apiClient } from '@/services/api/client';
 
 // auth_index forwarding and token discarding are covered in authFileRefreshAll.test.ts.
 describe('auth files API boundaries', () => {
+  test('requires an upload receipt for the submitted batch, not merely a successful HTTP status', async () => {
+    const files = ['a.json', 'b.json'].map((name) => new File(['{}'], name));
+    const post = spyOn(apiClient, 'postForm').mockResolvedValue('<html>Sign in</html>');
+    try {
+      await expect(authFilesApi.uploadFiles(files)).rejects.toThrow();
+      post.mockResolvedValue({ status: 'ok' });
+      await expect(authFilesApi.uploadFiles(files)).rejects.toThrow();
+      expect((await authFilesApi.uploadFiles([files[0]])).files).toEqual(['a.json']);
+      const partial = {
+        status: 'partial',
+        uploaded: 1,
+        files: ['a.json'],
+        failed: [{ name: 'b.json', error: 'busy' }],
+      };
+      post.mockResolvedValue(partial);
+      expect(await authFilesApi.uploadFiles(files)).toEqual(partial);
+    } finally {
+      post.mockRestore();
+    }
+  });
+
   test('refreshing by filename posts only the name and never edits metadata', async () => {
     const post = spyOn(apiClient, 'post').mockResolvedValue({ access_token: 'secret' });
     const patch = spyOn(apiClient, 'patch').mockResolvedValue({});

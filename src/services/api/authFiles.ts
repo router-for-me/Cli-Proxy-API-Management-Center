@@ -119,17 +119,28 @@ const normalizeBatchUploadResponse = (
   payload: AuthFileBatchUploadResponse | undefined,
   requestedNames: string[]
 ): AuthFileBatchUploadResult => {
+  // The v8 single-file handler acknowledges success without a file list.
+  if (
+    requestedNames.length === 1 &&
+    payload?.status === 'ok' &&
+    payload.uploaded === undefined &&
+    payload.files === undefined &&
+    payload.failed === undefined
+  ) {
+    return { status: 'ok', uploaded: 1, files: requestedNames, failed: [] };
+  }
   const failed = normalizeBatchFailures(payload?.failed);
-  const filesFromPayload = normalizeBatchFileNames(payload?.files);
-  // Backend single-file success path returns only {status:"ok"} (auth_files.go:680).
-  // Derive count + names from the request when no failures and counts are absent.
-  const inferFromRequest = payload?.uploaded === undefined && failed.length === 0;
-  return {
-    status: payload?.status ?? (failed.length > 0 ? 'partial' : 'ok'),
-    uploaded: payload?.uploaded ?? (inferFromRequest ? requestedNames.length : 0),
-    files: filesFromPayload.length ? filesFromPayload : inferFromRequest ? [...requestedNames] : [],
-    failed,
-  };
+  if (
+    !payload ||
+    payload.status !== (failed.length ? 'partial' : 'ok') ||
+    !Array.isArray(payload.files) ||
+    !payload.files.every((name) => typeof name === 'string') ||
+    payload.uploaded !== payload.files.length ||
+    payload.uploaded + failed.length !== requestedNames.length
+  ) {
+    throw new TypeError('Invalid credential upload receipt');
+  }
+  return { status: payload.status, uploaded: payload.uploaded, files: payload.files, failed };
 };
 
 const normalizeBatchDeleteResponse = (
