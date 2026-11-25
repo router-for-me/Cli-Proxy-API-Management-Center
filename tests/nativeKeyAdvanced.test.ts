@@ -5,6 +5,9 @@ import { normalizeProviderGroups } from '@/services/api/transformers';
 import { validateConnectionPool } from '@/features/providers/validateConnectionPool';
 import { readModelOptions, buildModelOptions } from '@/features/providers/modelOptions';
 import type { ProviderKeyConfig } from '@/types';
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
 
 const { get, put } = apiClient;
 afterEach(() => {

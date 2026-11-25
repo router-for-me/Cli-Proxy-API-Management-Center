@@ -5,6 +5,9 @@ import { normalizeProviderGroups } from '@/services/api/transformers';
 import { buildProviderKeyConfig } from '@/features/providers/useProviderWorkbench';
 import type { ProviderEntryFormInput } from '@/features/providers/types';
 import type { ProviderKeyConfig } from '@/types';
+import { mockConditionalProviderWrites } from './helpers/conditionalProviderWrites';
+
+mockConditionalProviderWrites();
 
 const words = { ' target ': '', ' ': '  ', literal: '$1' };
 const patterns = [
