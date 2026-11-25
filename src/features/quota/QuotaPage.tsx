@@ -184,7 +184,7 @@ export function QuotaPage() {
   /* ---------- 归类 / 过滤 / 排序 / 分页 ---------- */
 
   // 只在「最快恢复优先」下订阅分钟时钟。默认序下不门控的话，pageItems 每分钟
-  // 换一次身份，会反复空转下面那个「刷新全部」的 loading 下降沿 effect。
+  // 换一次身份，会反复空转下面那个「刷新本页额度」的 loading 下降沿 effect。
   const tick = useNow(sortMode !== 'default');
   const sortNow = sortMode === 'default' ? 0 : tick;
 
@@ -293,8 +293,8 @@ export function QuotaPage() {
   const pendingRefreshRef = useRef<number | null>(null);
   const prevLoadingRef = useRef(loading);
 
-  // 刷新全部：先重取文件列表，待其落定（loading 下降沿）再批量拉当前页额度
-  const handleRefreshAll = useCallback(() => {
+  // 刷新本页额度：先重取文件列表，待其落定（loading 下降沿）再批量拉当前页额度
+  const handleRefreshPage = useCallback(() => {
     if (disableControls) return;
     pendingRefreshRef.current = sessionGeneration;
     void loadFiles();
@@ -393,7 +393,7 @@ export function QuotaPage() {
         attentionCount={attentionCount}
         refreshing={loading || batchLoading}
         disableControls={disableControls}
-        onRefreshAll={handleRefreshAll}
+        onRefreshPage={handleRefreshPage}
       />
 
       <section className={styles.workbench}>

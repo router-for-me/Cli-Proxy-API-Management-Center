@@ -1650,7 +1650,7 @@
     "search_empty_desc": "다른 파일명이나 이메일을 입력하거나 검색을 초기화하세요.",
     "search_clear": "검색 초기화",
     "title": "할당량 관리",
-    "refresh_all_credentials": "모든 할당량 새로 고침",
+    "refresh_page_quotas": "이 페이지의 할당량 새로 고침",
     "sort_label": "정렬",
     "sort_default": "기본값",
     "sort_soonest": "가장 빠른 복구순",

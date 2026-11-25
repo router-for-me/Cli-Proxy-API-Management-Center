@@ -1650,7 +1650,7 @@
     "search_empty_desc": "Başka Bir Dosya Adı veya E-posta Dene ya da Aramayı Temizle.",
     "search_clear": "Aramayı Temizle",
     "title": "Kota Yönetimi",
-    "refresh_all_credentials": "Tüm Kotaları Yenile",
+    "refresh_page_quotas": "Bu Sayfadaki Kotaları Yenile",
     "sort_label": "Sırala",
     "sort_default": "Varsayılan",
     "sort_soonest": "En Yakın Toparlanma",

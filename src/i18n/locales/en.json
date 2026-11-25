@@ -1650,7 +1650,7 @@
     "search_empty_desc": "Try another filename or email, or clear the search.",
     "search_clear": "Clear search",
     "title": "Quota Management",
-    "refresh_all_credentials": "Refresh all quotas",
+    "refresh_page_quotas": "Refresh quotas on this page",
     "sort_label": "Sort",
     "sort_default": "Default",
     "sort_soonest": "Soonest recovery",

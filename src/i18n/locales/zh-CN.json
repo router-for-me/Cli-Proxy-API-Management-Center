@@ -1643,7 +1643,7 @@
     "search_empty_desc": "请尝试其他文件名或邮箱，或清空搜索。",
     "search_clear": "清空搜索",
     "title": "额度管理",
-    "refresh_all_credentials": "刷新全部额度",
+    "refresh_page_quotas": "刷新本页额度",
     "sort_label": "排序",
     "sort_default": "默认",
     "sort_soonest": "最快恢复优先",
