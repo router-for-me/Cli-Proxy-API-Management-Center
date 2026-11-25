@@ -11,6 +11,7 @@ import {
   commitIfQuotaCacheCurrent,
   useNotificationStore,
 } from '@/stores';
+import { apiClient } from '@/services/api/client';
 import type { AuthFileItem } from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import { getQuotaCacheKey } from '@/utils/quota/identity';
@@ -78,12 +79,14 @@ export function useQuotaActions(disableControls: boolean) {
       if (getQuotaState(adapter, file)?.status === 'loading') return;
       if (resettingQuotaName === cacheKey) return;
 
+      const revision = apiClient.getConnectionRevision();
       showConfirmation({
         title: t('codex_quota.reset_confirm_title'),
         message: t('codex_quota.reset_confirm_message', { name: file.name }),
         confirmText: t('codex_quota.reset_confirm_button'),
         variant: 'primary',
         onConfirm: async () => {
+          if (revision !== apiClient.getConnectionRevision()) return;
           const cacheGeneration = captureQuotaCacheGeneration(file.name);
           const setQuota = getQuotaSetter(adapter);
           setResettingQuotaName(cacheKey);

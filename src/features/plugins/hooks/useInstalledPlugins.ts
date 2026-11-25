@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { pluginsApi } from '@/services/api';
+import { apiClient, pluginsApi } from '@/services/api';
 import { useConfigStore, useNotificationStore } from '@/stores';
 import { getErrorMessage, isRecord } from '@/utils/helpers';
 import type { PluginListEntry, PluginListResponse } from '@/types';
@@ -178,6 +178,7 @@ export function useInstalledPlugins({ connected, onMutated }: UseInstalledPlugin
   const deletePlugin = (plugin: PluginListEntry) => {
     if (!connected || mutatingID || openingConfigID || deletingID) return;
 
+    const revision = apiClient.getConnectionRevision();
     const name = getPluginTitle(plugin);
     showConfirmation({
       title: t('plugin_management.delete_confirm_title'),
@@ -185,6 +186,7 @@ export function useInstalledPlugins({ connected, onMutated }: UseInstalledPlugin
       variant: 'danger',
       confirmText: t('plugin_management.delete_plugin'),
       onConfirm: async () => {
+        if (revision !== apiClient.getConnectionRevision()) return;
         setDeletingID(plugin.id);
         setMutatingID(plugin.id);
         try {
