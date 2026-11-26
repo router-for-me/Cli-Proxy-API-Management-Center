@@ -177,6 +177,22 @@ describe('XaiQuotaBody unavailable weekly usage', () => {
     expect(render(quota)).toContain('Monthly credits');
   });
 
+  test('ignores the legacy monthly endpoint for a unified billing account', () => {
+    // Observed on a GrokPro account: requests still succeed with used > limit
+    // and no on-demand cap, so the legacy figures are not the active budget.
+    const legacyMonthly = monthlyConfig({ monthlyLimit: { val: 599 }, used: { val: 689 } });
+    const quota = quotaFor(weeklyConfig({ isUnifiedBillingUser: true }), legacyMonthly);
+
+    expect(quota.billing?.monthlyLimitCents).toBeNull();
+    const markup = render(quota);
+    expect(markup).toContain('Usage unavailable from xAI');
+    expect(markup).not.toContain('Monthly credits');
+    expect(markup).not.toContain('$5.99');
+
+    // Without the flag the legacy row still renders, as before.
+    expect(render(quotaFor(weeklyConfig(), legacyMonthly))).toContain('Monthly credits');
+  });
+
   test('shows the monthly row when the limit is zero but usage is nonzero', () => {
     const markup = render(quotaFor(weeklyConfig(), monthlyConfig({ used: { val: 100 } })));
 

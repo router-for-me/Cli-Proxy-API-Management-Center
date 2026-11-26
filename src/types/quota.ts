@@ -498,6 +498,8 @@ export interface XaiBillingConfig {
   billing_period_start?: string;
   billingPeriodEnd?: string;
   billing_period_end?: string;
+  isUnifiedBillingUser?: boolean | null;
+  is_unified_billing_user?: boolean | null;
 }
 
 export interface XaiBillingPayload {
@@ -530,6 +532,8 @@ export interface XaiBillingSummary {
   onDemandUsedCents: number | null;
   onDemandUsedPercent: number | null;
   prepaidBalanceCents?: number | null;
+  /** The credits endpoint reported `isUnifiedBillingUser: true`. */
+  unifiedBilling?: boolean;
   /** Display name from Grok settings, for example "SuperGrok Heavy". */
   planLabel?: string;
   planTier?: 'elite' | 'premium' | 'standard';

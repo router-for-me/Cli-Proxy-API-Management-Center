@@ -562,6 +562,9 @@ export function buildXaiBillingSummary(
   summary.billingPeriodStart = hasMonthlyData ? billingPeriodStart : undefined;
   summary.billingPeriodEnd = hasMonthlyData ? billingPeriodEnd : undefined;
   summary.usedPercent = usedPercent;
+  if ((config.isUnifiedBillingUser ?? config.is_unified_billing_user) === true) {
+    summary.unifiedBilling = true;
+  }
 
   const periodInstants = xaiPeriodInstants(summary.periodStart, summary.periodEnd);
   summary.resetAtMs = periodInstants.resetAtMs;
@@ -576,6 +579,11 @@ export function mergeXaiBillingSummaries(
 ): XaiBillingSummary | null {
   if (!primary) return fallback;
   if (!fallback) return primary;
+  // A unified billing account is metered by the credits endpoint alone; the
+  // Grok Build CLI never calls the plain /billing endpoint. Its deprecated
+  // monthly limit/used are left over from before the switch and no longer
+  // gate requests, so they must not render as an exhausted monthly budget.
+  if (primary.unifiedBilling) return primary;
 
   // Keep the active period atomic. The primary (weekly endpoint) and fallback
   // (monthly endpoint) describe different clocks, so borrowing one endpoint's
