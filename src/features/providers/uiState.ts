@@ -9,7 +9,6 @@ import {
 } from './types';
 
 const PROVIDERS_UI_STATE_KEY = 'providersPage.uiState';
-const DEFAULT_ACTIVE_BRAND: ProviderBrand = 'gemini';
 const DEFAULT_PROVIDER_FILTER_STATE: ProviderFilterState = {
   filter: '',
   sortBy: 'name',
@@ -29,7 +28,8 @@ export interface ProviderFilterState {
 }
 
 export interface ProvidersWorkbenchUiState {
-  activeBrand: ProviderBrand;
+  /** The brand the user picked last, or null when they have not picked one. */
+  activeBrand: ProviderBrand | null;
   filtersByBrand: Partial<Record<ProviderBrand, ProviderFilterState>>;
 }
 
@@ -65,7 +65,7 @@ const normalizeProviderFilterState = (value: unknown): ProviderFilterState => {
 };
 
 const createDefaultProvidersWorkbenchUiState = (): ProvidersWorkbenchUiState => ({
-  activeBrand: DEFAULT_ACTIVE_BRAND,
+  activeBrand: null,
   filtersByBrand: {},
 });
 
@@ -94,7 +94,7 @@ export const readProvidersWorkbenchUiState = (): ProvidersWorkbenchUiState => {
     });
 
     return {
-      activeBrand: isProviderBrand(parsed.activeBrand) ? parsed.activeBrand : DEFAULT_ACTIVE_BRAND,
+      activeBrand: isProviderBrand(parsed.activeBrand) ? parsed.activeBrand : null,
       filtersByBrand,
     };
   } catch {
