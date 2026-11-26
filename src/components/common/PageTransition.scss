@@ -7,6 +7,11 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  // The clip edge can fall on a fractional pixel and hide the last pixel
+  // column of a right border. Move the clip 1px out on each side and keep
+  // the content box where it was.
+  margin-inline: -1px;
+  padding-inline: 1px;
 
   &__layer {
     display: flex;
@@ -21,7 +26,7 @@
     // During animation, exit layer uses absolute positioning
     &--exit {
       position: absolute;
-      inset: 0;
+      inset: 0 1px;
       overflow: hidden;
       pointer-events: none;
       will-change: transform, opacity;
@@ -35,7 +40,7 @@
       &.page-transition__layer--stacked-keep {
         display: flex;
         position: absolute;
-        inset: 0;
+        inset: 0 1px;
         overflow: hidden;
         pointer-events: none;
         opacity: 0;
