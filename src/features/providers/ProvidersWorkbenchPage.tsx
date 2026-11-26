@@ -124,7 +124,7 @@ export function ProvidersWorkbenchPage({ fixedBrand }: ProvidersWorkbenchPagePro
   );
   const activeBrand: ProviderBrand =
     fixedBrand ??
-    (groups.some((group) => group.id === uiState.activeBrand)
+    (uiState.activeBrand && groups.some((group) => group.id === uiState.activeBrand)
       ? uiState.activeBrand
       : (connectedGroups[0]?.id ?? stripGroups[0]?.id ?? 'gemini'));
   const activeGroup = groups.find((group) => group.id === activeBrand) ?? groups[0] ?? null;
