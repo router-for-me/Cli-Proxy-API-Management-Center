@@ -11,8 +11,8 @@ import type { QuotaFileEntry } from '../logic';
 import type { ForecastAccountInput, PoolForecast } from './model';
 import { planWeightKey } from './prefs';
 
-/** Providers whose quota the backend collector records. */
-export const FORECAST_PROVIDERS = ['claude', 'codex'] as const;
+/** Providers whose quota the backend collector records; Antigravity is its Gemini pool. */
+export const FORECAST_PROVIDERS = ['claude', 'codex', 'antigravity'] as const;
 export type ForecastProvider = (typeof FORECAST_PROVIDERS)[number];
 
 /** The pool tracks each account's weekly window. */

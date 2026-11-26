@@ -1,7 +1,7 @@
 /**
  * Quota history recorded by the backend collector (`GET /quota/history`).
  *
- * The backend samples Claude/Codex usage windows in the background, so the
+ * The backend samples Claude/Codex usage windows and the Antigravity Gemini pool in the background, so the
  * forecast charts have history even for periods when no dashboard was open.
  * Raw snake_case fields are normalized here; UI code only sees the camelCase shape.
  */

@@ -34,11 +34,14 @@ export type ForecastChartProps = {
   locale: string;
   ariaLabel: string;
   labels: { now: string; pool: string; projected: string };
+  /** Plot area height in px; compact pools use a shorter plot. */
+  plotHeight?: number;
 };
 
-const HEIGHT = 276;
 const PLOT_TOP = 24;
-const PLOT_HEIGHT = 224;
+export const DEFAULT_PLOT_HEIGHT = 224;
+/** Room under the plot for the day labels. */
+const PLOT_BOTTOM_GAP = 28;
 const PLOT_LEFT = 58;
 const PLOT_RIGHT_GAP = 13;
 const ANNOTATION_GAP = 8;
@@ -50,6 +53,8 @@ const pathOf = (points: { x: number; y: number }[]) =>
 export function ForecastChart(props: ForecastChartProps) {
   const { from, to, now, yMax, yTicks, formatValue, color, pool, bands, annotations } = props;
   const { emptyMarker, dayTicks, locale, ariaLabel, labels } = props;
+  const plotHeight = props.plotHeight ?? DEFAULT_PLOT_HEIGHT;
+  const height = PLOT_TOP + plotHeight + PLOT_BOTTOM_GAP;
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [hoverT, setHoverT] = useState<number | null>(null);
@@ -68,9 +73,9 @@ export function ForecastChart(props: ForecastChartProps) {
 
   const plotRight = Math.max(PLOT_LEFT + 1, width - PLOT_RIGHT_GAP);
   const plotWidth = plotRight - PLOT_LEFT;
-  const plotBottom = PLOT_TOP + PLOT_HEIGHT;
+  const plotBottom = PLOT_TOP + plotHeight;
   const x = (t: number) => PLOT_LEFT + ((t - from) / (to - from)) * plotWidth;
-  const y = (v: number) => PLOT_TOP + (1 - Math.min(Math.max(v / yMax, 0), 1)) * PLOT_HEIGHT;
+  const y = (v: number) => PLOT_TOP + (1 - Math.min(Math.max(v / yMax, 0), 1)) * plotHeight;
   // Label every day when there is room, otherwise every second or third day.
   const dayLabelStep = Math.max(
     1,
@@ -109,7 +114,7 @@ export function ForecastChart(props: ForecastChartProps) {
       .sort((a, b) => a.t - b.t)
       .forEach((annotation) => {
         let ax = PLOT_LEFT + ((annotation.t - from) / (to - from)) * plotWidth;
-        let ay = PLOT_TOP + (1 - Math.min(Math.max(annotation.v / yMax, 0), 1)) * PLOT_HEIGHT;
+        let ay = PLOT_TOP + (1 - Math.min(Math.max(annotation.v / yMax, 0), 1)) * plotHeight;
         ay -= ANNOTATION_GAP;
         let anchor: 'middle' | 'end' = 'middle';
         if (nowVisible && Math.abs(ax - nowX) < 40 && ay < PLOT_TOP + 2) {
@@ -126,7 +131,7 @@ export function ForecastChart(props: ForecastChartProps) {
         placed.push({ x: ax, y: ay, label: annotation.label, anchor });
       });
     return placed;
-  }, [annotations, from, now, nowVisible, to, plotWidth, yMax]);
+  }, [annotations, from, now, nowVisible, to, plotWidth, yMax, plotHeight]);
 
   const nowValue = pool.recorded.length > 0 ? pool.recorded[pool.recorded.length - 1].v : null;
 
@@ -157,12 +162,12 @@ export function ForecastChart(props: ForecastChartProps) {
   }, [bands, hoverT, now, pool]);
 
   return (
-    <div className={styles.chart} ref={containerRef} style={{ height: HEIGHT }}>
+    <div className={styles.chart} ref={containerRef} style={{ height }}>
       {width > 0 && (
         <svg
           className={styles.svg}
           width={width}
-          height={HEIGHT}
+          height={height}
           role="img"
           aria-label={ariaLabel}
           style={{ '--series-color': color } as CSSProperties}
@@ -277,7 +282,7 @@ export function ForecastChart(props: ForecastChartProps) {
                 x1={x(now)}
                 x2={x(now)}
                 y1={PLOT_TOP - 9}
-                y2={HEIGHT - 2}
+                y2={height - 2}
               />
               <text className={styles.nowLabel} x={x(now)} y={PLOT_TOP - 15} textAnchor="middle">
                 {labels.now}
@@ -320,7 +325,7 @@ export function ForecastChart(props: ForecastChartProps) {
             x={PLOT_LEFT}
             y={PLOT_TOP}
             width={plotWidth}
-            height={PLOT_HEIGHT}
+            height={plotHeight}
             onPointerMove={handlePointerMove}
             onPointerLeave={() => setHoverT(null)}
           />

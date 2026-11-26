@@ -21,7 +21,11 @@ import styles from './PoolForecastCard.module.scss';
 const SERIES_COLORS: Record<string, { dark: string; light: string }> = {
   claude: { dark: '#e2987f', light: '#c2603d' },
   codex: { dark: '#90aadb', light: '#3f68b5' },
+  antigravity: { dark: '#6cc9bd', light: '#00796b' },
 };
+
+/** Plot height of a compact (single-account) pool, against the full card's default. */
+const COMPACT_PLOT_HEIGHT = 112;
 
 /** Smallest reset (pool percent) that gets a "+N%" label. */
 const MIN_LABELED_RESET = 5;
@@ -51,11 +55,16 @@ export type PoolForecastCardProps = {
   horizon: number;
   resolvedTheme: ResolvedTheme;
   planLabel: (plan: string) => string;
+  /**
+   * Shorter card for single-account pools: a smaller headline and plot, and no
+   * "First empty" stat, which would repeat "Pool empty".
+   */
+  compact?: boolean;
 };
 
 export function PoolForecastCard(props: PoolForecastCardProps) {
   const { pool, forecast, view, burnWindowHours, showAccounts, from, to, now, horizon } = props;
-  const { resolvedTheme, planLabel } = props;
+  const { resolvedTheme, planLabel, compact = false } = props;
   const { t, i18n } = useTranslation();
   const locale = i18n.language || 'en';
   const provider = pool.provider;
@@ -151,7 +160,10 @@ export function PoolForecastCard(props: PoolForecastCardProps) {
   }, [forecast, from, locale, now, showAccounts, t, to, view]);
 
   return (
-    <article className={styles.card} aria-label={providerName}>
+    <article
+      className={compact ? `${styles.card} ${styles.compact}` : styles.card}
+      aria-label={providerName}
+    >
       <header className={styles.header}>
         <div className={styles.identity}>
           <div className={styles.titleRow}>
@@ -179,12 +191,14 @@ export function PoolForecastCard(props: PoolForecastCardProps) {
               {poolEmpty}
             </dd>
           </div>
-          <div className={styles.stat}>
-            <dt>{t('quota_forecast.first_empty')}</dt>
-            <dd className={forecast.firstEmpty === null ? styles.statQuiet : undefined}>
-              {firstEmpty}
-            </dd>
-          </div>
+          {!compact && (
+            <div className={styles.stat}>
+              <dt>{t('quota_forecast.first_empty')}</dt>
+              <dd className={forecast.firstEmpty === null ? styles.statQuiet : undefined}>
+                {firstEmpty}
+              </dd>
+            </div>
+          )}
           <div className={styles.stat}>
             <dt>{t('quota_forecast.next_reset')}</dt>
             <dd>
@@ -230,6 +244,7 @@ export function PoolForecastCard(props: PoolForecastCardProps) {
         annotations={chart.annotations}
         emptyMarker={chart.emptyMarker}
         dayTicks={chart.dayTicks}
+        plotHeight={compact ? COMPACT_PLOT_HEIGHT : undefined}
         locale={locale}
         ariaLabel={t('quota_forecast.chart_label', {
           provider: providerName,

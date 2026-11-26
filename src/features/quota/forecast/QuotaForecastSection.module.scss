@@ -20,3 +20,11 @@
   font-size: 14px;
   line-height: 1.5;
 }
+
+/* Single-account pools sit side by side when there is room. */
+.compactGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+  gap: 17px;
+  min-width: 0;
+}

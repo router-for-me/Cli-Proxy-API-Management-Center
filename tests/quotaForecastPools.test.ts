@@ -150,6 +150,23 @@ describe('forecast pools', () => {
     expect(pool.plans.map((plan) => plan.plan).sort()).toEqual(['max20', 'max5']);
   });
 
+  test('chart the recorded Antigravity Gemini pool after Claude and Codex', () => {
+    const pools = buildForecastPools(
+      history([account('antigravity-a.json', 'antigravity', { plan: 'pro' })]),
+      [
+        ...entries,
+        entry('antigravity-a.json', 'antigravity'),
+        entry('antigravity-b.json', 'antigravity'),
+      ],
+      { planWeights: {}, showEmails: false }
+    );
+    expect(pools.map((pool) => pool.provider)).toEqual(['claude', 'codex', 'antigravity']);
+    const antigravity = pools[2];
+    expect(antigravity.accounts.map((input) => input.key)).toEqual(['antigravity-a.json']);
+    expect(antigravity.accounts[0].weight).toBe(1);
+    expect(antigravity.unrecordedCount).toBe(1);
+  });
+
   test('mask emails until shown and keep non-email labels', () => {
     const recorded = history([
       account('claude-a@x.com.json', 'claude', { email: 'a@x.com' }),

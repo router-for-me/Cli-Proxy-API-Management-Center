@@ -136,6 +136,30 @@
   gap: 7px;
 }
 
+/* Single-account pool: headline and stats share one short band above a low plot. */
+.compact {
+  padding: 14px 18px 12px;
+
+  .header {
+    align-items: flex-end;
+    min-height: 0;
+    gap: 8px 28px;
+  }
+
+  .identity {
+    gap: 2px;
+  }
+
+  .bigValue {
+    font-size: 28px;
+  }
+
+  .stats {
+    gap: 6px 28px;
+    margin: 0;
+  }
+}
+
 .swatchSolid,
 .swatchDashed {
   width: 15px;

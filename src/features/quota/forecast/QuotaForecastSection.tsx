@@ -1,6 +1,6 @@
 /**
  * Pool forecast section of the quota page: controls plus one chart card per
- * provider whose quota the backend records (Claude, Codex).
+ * provider whose quota the backend records (Claude, Codex, Antigravity Gemini).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +24,7 @@ import {
   FORECAST_PROVIDERS,
   buildForecastPools,
   summarizePools,
+  type ForecastPool,
   type ForecastProvider,
   type PoolSummary,
 } from './pools';
@@ -163,6 +164,36 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
   else if (error) notice = t('quota_forecast.load_failed', { message: error });
   else if (history && !history.enabled) notice = t('quota_forecast.disabled');
 
+  // Multi-account pools keep the full chart; single-account pools and pool notices
+  // share a grid of shorter cards so one account does not take a full-size chart.
+  const isCompact = (pool: ForecastPool) => pool.accounts.length <= 1;
+  const fullPools = forecasts.filter(({ pool }) => !isCompact(pool));
+  const compactPools = forecasts.filter(({ pool }) => isCompact(pool));
+  const renderPool = ({ pool, forecast }: (typeof forecasts)[number]) =>
+    pool.accounts.length > 0 ? (
+      <PoolForecastCard
+        key={pool.provider}
+        pool={pool}
+        forecast={forecast}
+        view={prefs.view}
+        burnWindowHours={prefs.burnWindowHours}
+        showAccounts={prefs.showAccounts}
+        from={range.from}
+        to={range.to}
+        now={now}
+        horizon={horizon}
+        resolvedTheme={resolvedTheme}
+        planLabel={(plan) => planLabel(pool.provider, plan)}
+        compact={isCompact(pool)}
+      />
+    ) : (
+      <div key={pool.provider} className={styles.notice} role="status">
+        {loading && !history
+          ? t('quota_forecast.loading', { provider: providerLabel(pool.provider) })
+          : t('quota_forecast.collecting', { provider: providerLabel(pool.provider) })}
+      </div>
+    );
+
   return (
     <section className={styles.section} aria-label={t('quota_forecast.section_label')}>
       <ForecastToolbar
@@ -181,30 +212,12 @@ export function QuotaForecastSection(props: QuotaForecastSectionProps) {
             {notice}
           </div>
         ) : (
-          forecasts.map(({ pool, forecast }) =>
-            pool.accounts.length > 0 ? (
-              <PoolForecastCard
-                key={pool.provider}
-                pool={pool}
-                forecast={forecast}
-                view={prefs.view}
-                burnWindowHours={prefs.burnWindowHours}
-                showAccounts={prefs.showAccounts}
-                from={range.from}
-                to={range.to}
-                now={now}
-                horizon={horizon}
-                resolvedTheme={resolvedTheme}
-                planLabel={(plan) => planLabel(pool.provider, plan)}
-              />
-            ) : (
-              <div key={pool.provider} className={styles.notice} role="status">
-                {loading && !history
-                  ? t('quota_forecast.loading', { provider: providerLabel(pool.provider) })
-                  : t('quota_forecast.collecting', { provider: providerLabel(pool.provider) })}
-              </div>
-            )
-          )
+          <>
+            {fullPools.map(renderPool)}
+            {compactPools.length > 0 && (
+              <div className={styles.compactGrid}>{compactPools.map(renderPool)}</div>
+            )}
+          </>
         )}
       </div>
     </section>
