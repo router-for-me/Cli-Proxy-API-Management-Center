@@ -25,6 +25,8 @@ import {
   type ResetUrgency,
   type OverviewCredential,
 } from './model';
+import { resolvePlanBadge } from './planBadge';
+import { providerChartColor } from './PoolChart';
 import { ProviderIcon } from './ProviderIcon';
 import styles from './QuotaOverviewPage.module.scss';
 import { routingReasonKey } from './routing';
@@ -306,7 +308,7 @@ export function LedgerRow({
   onRename,
 }: LedgerRowProps) {
   const [editing, setEditing] = useState(false);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { entry, quota } = credential;
   const file = entry.file;
   const status = quota?.status ?? 'idle';
@@ -361,16 +363,7 @@ export function LedgerRow({
   }
 
   const name = credentialLabel(file);
-  const planLabel = tier
-    ? tier
-    : credential.plan
-      ? ([
-          `${adapter.i18nPrefix}.${credential.plan}`,
-          `${adapter.i18nPrefix}.plan_${credential.plan}`,
-        ]
-          .filter((key) => i18n.exists(key))
-          .map((key) => t(key))[0] ?? credential.plan)
-      : null;
+  const plan = resolvePlanBadge(entry, quota, tier, t);
   const refreshLabel = status === 'idle' ? t('pd_overview.load') : t('pd_overview.refresh');
 
   return (
@@ -391,6 +384,19 @@ export function LedgerRow({
           ) : (
             <>
               <Private text={name} hide={hideEmails} className={styles.mono} />
+              {plan && (
+                <span
+                  className={styles.planBadge}
+                  data-tier={plan.tier}
+                  style={
+                    {
+                      '--plan-color': providerChartColor(entry.type, resolvedTheme),
+                    } as CSSProperties
+                  }
+                >
+                  {plan.label}
+                </span>
+              )}
               <button
                 type="button"
                 className={styles.renameButton}
@@ -411,7 +417,6 @@ export function LedgerRow({
           >
             {t('pd_overview.priority', { value: credential.priority })}
           </span>
-          {planLabel && <span>{planLabel}</span>}
           {firstInLine && (
             <span className={styles.badgeActive} title={t('pd_overview.first_in_line_hint')}>
               {t('pd_overview.first_in_line')}

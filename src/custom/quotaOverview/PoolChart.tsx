@@ -1,5 +1,10 @@
 /**
- * Pool chart: one provider's pooled weekly quota, recorded and projected.
+ * Pool chart: every provider's pooled weekly quota on one chart, recorded and
+ * projected, with each pool's headline numbers in a strip of tiles above it.
+ * The tiles double as the legend and toggle their line.
+ *
+ * Lines show a share of each pool's capacity by default, so pools of different
+ * sizes share one axis; the pooled scale plots summed percent instead.
  *
  * Hand-drawn SVG in pixel space (measured width), so text and strokes keep
  * their size at any card width. All numbers come from poolForecast.ts.
@@ -18,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { getTypeLabel } from '@/features/authFiles/constants';
 import type { QuotaProviderType } from '@/features/quota/providers/types';
 import type { ResolvedTheme } from '@/types';
-import { fableColor, formatCountdown } from './model';
+import { fableColor, formatCountdown, type OverviewProviderPool } from './model';
 import {
   burnRate,
   drainAt,
@@ -28,8 +33,9 @@ import {
   seriesValuesAt,
   sumValues,
   type DrainStep,
-  type JumpMark,
   type PoolAccount,
+  type Projection,
+  type RecordedSeries,
   type RoutingMode,
   type SeriesPoint,
 } from './poolForecast';
@@ -44,14 +50,18 @@ export const FORECAST_HORIZON_MS = 14 * DAY_MS;
 
 export const CHART_MODES = ['remaining', 'drain'] as const;
 export type ChartMode = (typeof CHART_MODES)[number];
+export const CHART_SCALES = ['share', 'pooled'] as const;
+export type ChartScale = (typeof CHART_SCALES)[number];
 export const BURN_WINDOWS = [1, 3, 6] as const;
 export type BurnWindow = (typeof BURN_WINDOWS)[number];
 export const FUTURE_USAGE = ['current', 'week', 'half', 'double', 'none'] as const;
 export type FutureUsage = (typeof FUTURE_USAGE)[number];
 
 const HEIGHT = 270;
-const MARGIN = { top: 34, right: 14, bottom: 32, left: 56 };
+const MARGIN = { top: 30, right: 14, bottom: 32, left: 56 };
 const MIN_JUMP_LABEL = 3;
+/** Reset labels only fit when few lines are drawn; the tooltip covers the rest. */
+const MAX_LABELLED_SERIES = 2;
 
 /** Matching line and headline colors, with light and dark steps. */
 const PROVIDER_COLORS: Partial<Record<QuotaProviderType, [string, string]>> = {
@@ -72,10 +82,16 @@ const pick = ([light, dark]: [string, string], theme: ResolvedTheme) =>
 export const providerChartColor = (provider: QuotaProviderType, theme: ResolvedTheme) =>
   pick(PROVIDER_COLORS[provider] ?? FALLBACK_COLOR, theme);
 
+/** Series id for a pool's Fable allowance; the main series uses the provider id. */
+const fableSeriesId = (provider: QuotaProviderType) => `${provider}:fable`;
+
 const formatWhen = (ms: number, locale: string) =>
   new Date(ms).toLocaleString(locale, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
 
 const formatRate = (rate: number) => (rate < 10 ? rate.toFixed(1) : String(Math.round(rate)));
+
+const usageFactor = (futureUsage: FutureUsage) =>
+  futureUsage === 'half' ? 0.5 : futureUsage === 'double' ? 2 : 1;
 
 function useElementWidth<T extends HTMLElement>() {
   const [width, setWidth] = useState(0);
@@ -91,152 +107,189 @@ function useElementWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
-export interface PoolChartProps {
+interface Series {
+  id: string;
   provider: QuotaProviderType;
-  /** Loaded credentials in routing order. */
-  accounts: PoolAccount[];
-  fableAccounts?: PoolAccount[];
-  credentialCount: number;
+  label: string;
+  color: string;
+  fable: boolean;
+  accountCount: number;
+  total: number;
+  remaining: number;
+  recorded: RecordedSeries;
+  drain: DrainStep[];
+  projection: Projection;
+}
+
+interface Tile {
+  key: string;
+  provider: QuotaProviderType;
+  label: string;
+  notLoaded: number;
+  series: Series | null;
+}
+
+export interface PoolChartProps {
+  /** Pools in display order; accounts in routing order. */
+  pools: OverviewProviderPool[];
   nowMs: number;
   rangeStartMs: number;
   rangeEndMs: number;
   mode: ChartMode;
+  scale: ChartScale;
   burnHours: BurnWindow;
   futureUsage: FutureUsage;
   routing: RoutingMode;
   resolvedTheme: ResolvedTheme;
+  /** Series ids whose line is hidden. */
+  hidden?: readonly string[];
+  onToggleSeries?: (id: string) => void;
 }
 
 export function PoolChart({
-  provider,
-  accounts,
-  fableAccounts = [],
-  credentialCount,
+  pools,
   nowMs,
   rangeStartMs,
   rangeEndMs,
   mode,
+  scale,
   burnHours,
   futureUsage,
   routing,
   resolvedTheme,
+  hidden = [],
+  onToggleSeries,
 }: PoolChartProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
-  const providerLabel = getTypeLabel(t, provider);
-  const notLoaded = credentialCount - accounts.length;
-
-  const total = accounts.length * 100;
-  const poolRemaining = sumValues(accounts.map((account) => account.remaining));
-
-  const recorded = useMemo(() => recordedSeries(accounts, nowMs), [accounts, nowMs]);
-  const burn = useMemo(() => burnRate(accounts, nowMs, burnHours), [accounts, nowMs, burnHours]);
-  const weekBurn = useMemo(
-    () => (futureUsage === 'week' ? burnRate(accounts, nowMs, 168) : null),
-    [accounts, nowMs, futureUsage]
-  );
-  const projectedBurn =
-    futureUsage === 'none'
-      ? 0
-      : futureUsage === 'week'
-        ? (weekBurn ?? 0)
-        : (burn ?? 0) * (futureUsage === 'half' ? 0.5 : futureUsage === 'double' ? 2 : 1);
   const horizonMs = nowMs + FORECAST_HORIZON_MS;
-  const projection = useMemo(
-    () =>
-      projectPool({
-        accounts,
-        nowMs,
-        untilMs: Math.max(horizonMs, rangeEndMs),
-        burnPerHour: projectedBurn,
-        mode: routing,
-      }),
-    [accounts, nowMs, horizonMs, rangeEndMs, projectedBurn, routing]
-  );
-  const drainRecorded = useMemo(
-    () => (mode === 'drain' ? recordedDrain(accounts, nowMs) : []),
-    [accounts, mode, nowMs]
-  );
-  const hasFable = provider === 'claude' && fableAccounts.length > 0;
-  const fable = useMemo(() => {
-    const burn = burnRate(fableAccounts, nowMs, futureUsage === 'week' ? 168 : burnHours);
-    const rate =
-      futureUsage === 'none'
-        ? 0
-        : (burn ?? 0) * (futureUsage === 'half' ? 0.5 : futureUsage === 'double' ? 2 : 1);
-    return {
-      remaining: sumValues(fableAccounts.map((account) => account.remaining)),
-      total: fableAccounts.length * 100,
-      recorded: recordedSeries(fableAccounts, nowMs),
-      drain: mode === 'drain' ? recordedDrain(fableAccounts, nowMs) : [],
-      projection: projectPool({
-        accounts: fableAccounts,
-        nowMs,
-        untilMs: Math.max(horizonMs, rangeEndMs),
-        burnPerHour: rate,
-        mode: routing,
-      }),
-    };
-  }, [fableAccounts, nowMs, futureUsage, burnHours, mode, horizonMs, rangeEndMs, routing]);
+  const untilMs = Math.max(horizonMs, rangeEndMs);
 
-  const nextReset =
-    projection.nextReset && projection.nextReset.t <= horizonMs ? projection.nextReset : null;
+  const tiles = useMemo(() => {
+    const build = (
+      id: string,
+      provider: QuotaProviderType,
+      label: string,
+      color: string,
+      accounts: PoolAccount[],
+      fable: boolean
+    ): Series => {
+      const burn =
+        futureUsage === 'none'
+          ? 0
+          : (burnRate(accounts, nowMs, futureUsage === 'week' ? 168 : burnHours) ?? 0) *
+            usageFactor(futureUsage);
+      return {
+        id,
+        provider,
+        label,
+        color,
+        fable,
+        accountCount: accounts.length,
+        total: accounts.length * 100,
+        remaining: sumValues(accounts.map((account) => account.remaining)),
+        recorded: recordedSeries(accounts, nowMs),
+        drain: mode === 'drain' ? recordedDrain(accounts, nowMs) : [],
+        projection: projectPool({ accounts, nowMs, untilMs, burnPerHour: burn, mode: routing }),
+      };
+    };
+    return pools.flatMap((pool): Tile[] => {
+      const label = getTypeLabel(t, pool.provider);
+      const notLoaded = pool.credentialCount - pool.accounts.length;
+      const main: Tile = {
+        key: pool.provider,
+        provider: pool.provider,
+        label,
+        notLoaded,
+        series:
+          pool.accounts.length > 0
+            ? build(
+                pool.provider,
+                pool.provider,
+                label,
+                providerChartColor(pool.provider, resolvedTheme),
+                pool.accounts,
+                false
+              )
+            : null,
+      };
+      if (pool.provider !== 'claude' || pool.fableAccounts.length === 0) return [main];
+      const fableId = fableSeriesId(pool.provider);
+      return [
+        main,
+        {
+          key: fableId,
+          provider: pool.provider,
+          label: t('pd_overview.fable'),
+          notLoaded: 0,
+          series: build(
+            fableId,
+            pool.provider,
+            t('pd_overview.fable'),
+            fableColor(resolvedTheme),
+            pool.fableAccounts,
+            true
+          ),
+        },
+      ];
+    });
+  }, [pools, nowMs, untilMs, burnHours, futureUsage, mode, routing, resolvedTheme, t]);
+
+  const series = tiles.flatMap((tile) => (tile.series ? [tile.series] : []));
+  const shown = series.filter((item) => !hidden.includes(item.id));
 
   /* ---------- geometry ---------- */
 
   const [wrapRef, width] = useElementWidth<HTMLDivElement>();
   const plotW = Math.max(0, width - MARGIN.left - MARGIN.right);
   const plotH = HEIGHT - MARGIN.top - MARGIN.bottom;
+  const baseline = MARGIN.top + plotH;
   const span = rangeEndMs - rangeStartMs;
   const x = (ms: number) => MARGIN.left + ((ms - rangeStartMs) / span) * plotW;
   const timeAt = (px: number) => rangeStartMs + ((px - MARGIN.left) / plotW) * span;
 
+  /** Pooled percent (or %/h) to what the axis shows for this series. */
+  const norm = (item: Series, pooled: number) =>
+    scale === 'share' ? (pooled / Math.max(1, item.total)) * 100 : pooled;
+
   const drainMax = useMemo(() => {
     if (mode !== 'drain') return 1;
-    const visible = (steps: DrainStep[]) => steps.map((step) => step.rate);
-    return niceCeil(
-      Math.max(
-        0,
-        ...visible(drainRecorded),
-        ...visible(projection.drain),
-        ...(hasFable ? [...visible(fable.drain), ...visible(fable.projection.drain)] : [])
-      ) * 1.15
+    const rates = shown.flatMap((item) =>
+      [...item.drain, ...item.projection.drain].map((step) => norm(item, step.rate))
     );
-  }, [drainRecorded, mode, projection.drain, hasFable, fable]);
-  const yMax = mode === 'drain' ? drainMax : Math.max(total, hasFable ? fable.total : 0, 100);
+    return niceCeil(Math.max(0, ...rates) * 1.15);
+    // norm closes over scale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, shown, scale]);
+  const capacity = Math.max(100, ...series.map((item) => item.total));
+  const yMax = mode === 'drain' ? drainMax : scale === 'share' ? 100 : capacity;
   const y = (value: number) => MARGIN.top + plotH - (value / yMax) * plotH;
-  const baseline = MARGIN.top + plotH;
 
-  const color = providerChartColor(provider, resolvedTheme);
-  const uid = useId().replace(/:/g, '');
-
-  /** The pooled line: accounts summed at each point. */
-  const linePath = (points: readonly SeriesPoint[]) =>
+  const linePath = (item: Series, points: readonly SeriesPoint[]) =>
     points
       .map(
         (point, index) =>
-          `${index === 0 ? 'M' : 'L'}${x(point.t).toFixed(1)},${y(sumValues(point.values)).toFixed(1)}`
+          `${index === 0 ? 'M' : 'L'}${x(point.t).toFixed(1)},${y(norm(item, sumValues(point.values))).toFixed(1)}`
       )
       .join('');
 
-  const stepPath = (steps: readonly DrainStep[], endMs: number) =>
+  const stepPath = (item: Series, steps: readonly DrainStep[], endMs: number) =>
     steps
       .map((step, index) => {
         const nextT = steps[index + 1]?.t ?? endMs;
-        const yy = y(step.rate).toFixed(1);
+        const yy = y(norm(item, step.rate)).toFixed(1);
         return `${index === 0 ? 'M' : 'L'}${x(step.t).toFixed(1)},${yy}L${x(nextT).toFixed(1)},${yy}`;
       })
       .join('');
 
-  const areaUnder = (line: string, startMs: number, endMs: number) =>
-    line ? `${line}L${x(endMs).toFixed(1)},${baseline}L${x(startMs).toFixed(1)},${baseline}Z` : '';
-
   /* ---------- ticks and labels ---------- */
 
   const yTicks =
-    mode === 'remaining'
-      ? remainingQuotaTicks(yMax)
-      : [0, yMax / 2, yMax].map((value) => ({ value, label: true }));
+    mode === 'drain'
+      ? [0, yMax / 2, yMax].map((value) => ({ value, label: true }))
+      : scale === 'share'
+        ? [0, 25, 50, 75, 100].map((value) => ({ value, label: true }))
+        : remainingQuotaTicks(yMax);
   const days = useMemo(() => {
     const out: number[] = [];
     const d = new Date(rangeStartMs);
@@ -252,7 +305,7 @@ export function PoolChart({
   const nowVisible = nowMs >= rangeStartMs && nowMs <= rangeEndMs;
 
   const jumpLabels = useMemo(() => {
-    if (mode !== 'remaining' || plotW <= 0) return [];
+    if (mode !== 'remaining' || plotW <= 0 || shown.length > MAX_LABELLED_SERIES) return [];
     const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
     if (nowVisible) {
       const nx = x(nowMs);
@@ -260,63 +313,35 @@ export function PoolChart({
     }
     const overlaps = (box: (typeof placed)[number]) =>
       placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0);
-    const marks: { key: string; x: number; y: number; text: string; fable: boolean }[] = [];
-    const candidates: { jump: JumpMark; points: readonly SeriesPoint[]; fable: boolean }[] = [
-      ...recorded.jumps.map((jump) => ({ jump, points: recorded.points, fable: false })),
-      ...projection.jumps.map((jump) => ({ jump, points: projection.points, fable: false })),
-      ...(hasFable
-        ? [
-            ...fable.recorded.jumps.map((jump) => ({
-              jump,
-              points: fable.recorded.points,
-              fable: true,
-            })),
-            ...fable.projection.jumps.map((jump) => ({
-              jump,
-              points: fable.projection.points,
-              fable: true,
-            })),
-          ]
-        : []),
-    ];
-    for (const { jump, points, fable: isFable } of candidates) {
-      if (jump.gain < MIN_JUMP_LABEL || jump.t < rangeStartMs || jump.t > rangeEndMs) continue;
-      const after = seriesValuesAt(points, jump.t);
-      if (!after) continue;
-      const jx = x(jump.t);
-      const top = y(sumValues(after));
-      const text = hasFable
-        ? t('pd_overview.reset_jump', {
-            scope: t(isFable ? 'pd_overview.fable' : 'pd_overview.shared_weekly'),
-            gain: Math.round(jump.gain),
-          })
-        : `+${Math.round(jump.gain)}%`;
-      const w = text.length * 7 + 4;
-      for (const ty of [top - 8, top + 20]) {
-        const box = { x0: jx - w / 2, x1: jx + w / 2, y0: ty - 12, y1: ty + 2 };
-        if (ty < 14 || ty > baseline - 4 || overlaps(box)) continue;
-        placed.push(box);
-        marks.push({ key: `${isFable}:${jump.t}`, x: jx, y: ty, text, fable: isFable });
-        break;
+    const marks: { key: string; x: number; y: number; text: string; color: string }[] = [];
+    for (const item of shown) {
+      const candidates = [
+        ...item.recorded.jumps.map((jump) => ({ jump, points: item.recorded.points })),
+        ...item.projection.jumps.map((jump) => ({ jump, points: item.projection.points })),
+      ];
+      for (const { jump, points } of candidates) {
+        if (jump.gain < MIN_JUMP_LABEL || jump.t < rangeStartMs || jump.t > rangeEndMs) continue;
+        const after = seriesValuesAt(points, jump.t);
+        if (!after) continue;
+        const gain = Math.round(norm(item, jump.gain));
+        const text =
+          shown.length > 1 ? t('pd_overview.reset_jump', { scope: item.label, gain }) : `+${gain}%`;
+        const jx = x(jump.t);
+        const top = y(norm(item, sumValues(after)));
+        const w = text.length * 7 + 4;
+        for (const ty of [top - 8, top + 20]) {
+          const box = { x0: jx - w / 2, x1: jx + w / 2, y0: ty - 12, y1: ty + 2 };
+          if (ty < 14 || ty > baseline - 4 || overlaps(box)) continue;
+          placed.push(box);
+          marks.push({ key: `${item.id}:${jump.t}`, x: jx, y: ty, text, color: item.color });
+          break;
+        }
       }
     }
     return marks;
-    // x and y close over the values listed here.
+    // x, y and norm close over the values listed here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    mode,
-    plotW,
-    nowVisible,
-    nowMs,
-    recorded,
-    projection,
-    rangeStartMs,
-    rangeEndMs,
-    yMax,
-    hasFable,
-    fable,
-    t,
-  ]);
+  }, [mode, plotW, nowVisible, nowMs, shown, rangeStartMs, rangeEndMs, yMax, scale, t]);
 
   /* ---------- hover ---------- */
 
@@ -324,8 +349,7 @@ export function PoolChart({
   const clampToRange = (ms: number) => Math.min(rangeEndMs, Math.max(rangeStartMs, ms));
   const onPointerMove = (event: PointerEvent<SVGRectElement>) => {
     const rect = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
-    if (!rect) return;
-    setHoverMs(clampToRange(timeAt(event.clientX - rect.left)));
+    if (rect) setHoverMs(clampToRange(timeAt(event.clientX - rect.left)));
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const step = event.shiftKey ? DAY_MS : HOUR_MS;
@@ -341,106 +365,122 @@ export function PoolChart({
     }
   };
 
-  const hover = useMemo(() => {
+  /** Axis value for each shown series at the hovered time, or null before its history. */
+  const hoverValues = useMemo(() => {
     if (hoverMs === null) return null;
     const future = hoverMs > nowMs;
-    if (mode === 'drain') {
-      const rate = drainAt(future ? projection.drain : drainRecorded, hoverMs);
-      return rate === null
-        ? { ms: hoverMs, total: null, values: null }
-        : { ms: hoverMs, total: rate, values: null };
-    }
-    const values = seriesValuesAt(future ? projection.points : recorded.points, hoverMs);
-    return { ms: hoverMs, total: values ? sumValues(values) : null, values };
-  }, [drainRecorded, hoverMs, mode, nowMs, projection, recorded.points]);
-  const fableHover = useMemo(() => {
-    if (hoverMs === null || !hasFable) return null;
-    const future = hoverMs > nowMs;
-    if (mode === 'drain') return drainAt(future ? fable.projection.drain : fable.drain, hoverMs);
-    const values = seriesValuesAt(
-      future ? fable.projection.points : fable.recorded.points,
-      hoverMs
-    );
-    return values ? sumValues(values) : null;
-  }, [hoverMs, hasFable, nowMs, mode, fable]);
+    return shown.map((item) => {
+      if (mode === 'drain') {
+        const rate = drainAt(future ? item.projection.drain : item.drain, hoverMs);
+        return { item, value: rate === null ? null : norm(item, rate) };
+      }
+      const values = seriesValuesAt(
+        future ? item.projection.points : item.recorded.points,
+        hoverMs
+      );
+      return { item, value: values ? norm(item, sumValues(values)) : null };
+    });
+    // norm closes over scale.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoverMs, nowMs, shown, mode, scale]);
 
+  const uid = useId().replace(/:/g, '');
+  const hasHistory = series.some((item) => item.recorded.points.length > 0);
   const chartLabel = t('pd_overview.chart_label', {
-    provider: providerLabel,
-    remaining: Math.round(poolRemaining),
-    total,
+    summary: series
+      .map((item) =>
+        t('pd_overview.series_summary', {
+          name: item.label,
+          remaining: Math.round(item.remaining),
+          total: item.total,
+        })
+      )
+      .join(', '),
   });
+  const formatAxis = (value: number) =>
+    mode === 'drain'
+      ? t('pd_overview.rate_value', { value: formatRate(value) })
+      : `${Math.round(value)}%`;
 
   /* ---------- render ---------- */
 
-  const recordedLine = mode === 'remaining' ? linePath(recorded.points) : '';
-  const projectedLine = mode === 'remaining' ? linePath(projection.points) : '';
-  const recordedStart = recorded.points[0]?.t ?? nowMs;
-
   return (
-    <section
-      className={styles.card}
-      style={{ '--pool-color': color, '--fable-color': fableColor(resolvedTheme) } as CSSProperties}
-    >
-      <header className={styles.head}>
-        <ProviderIcon provider={provider} resolvedTheme={resolvedTheme} />
-        <h2 className={styles.name}>{providerLabel}</h2>
-        {notLoaded > 0 && (
-          <span className={styles.muted}>{t('pd_overview.not_loaded', { count: notLoaded })}</span>
-        )}
-        {nextReset && (
-          <span
-            className={styles.nextReset}
-            title={`+${Math.round(nextReset.gain)}% · ${formatWhen(nextReset.t, locale)}`}
-          >
-            {t('pd_overview.next_reset')}
-            <strong>{formatCountdown(nextReset.t, nowMs)}</strong>
-          </span>
-        )}
-      </header>
-
-      {accounts.length === 0 && !hasFable ? (
-        <p className={styles.muted}>{t('pd_overview.not_loaded_row')}</p>
-      ) : (
-        <>
-          <div className={styles.hero}>
-            <span
-              className={`${styles.heroValue} ${hasFable || provider === 'codex' ? styles.providerText : ''}`}
+    <section className={styles.card}>
+      <div className={styles.stats}>
+        {tiles.map((tile) => {
+          const item = tile.series;
+          const style = {
+            '--series-color': item?.color ?? providerChartColor(tile.provider, resolvedTheme),
+          } as CSSProperties;
+          const head = (
+            <span className={styles.statHead}>
+              {item?.fable ? (
+                <span className={styles.swatch} aria-hidden="true" />
+              ) : (
+                <ProviderIcon provider={tile.provider} resolvedTheme={resolvedTheme} />
+              )}
+              <span className={styles.statName}>{tile.label}</span>
+              {item && <span className={styles.swatchLine} aria-hidden="true" />}
+            </span>
+          );
+          if (!item) {
+            return (
+              <div key={tile.key} className={`${styles.stat} ${styles.statEmpty}`} style={style}>
+                {head}
+                <span className={styles.statMeta}>{t('pd_overview.not_loaded_row')}</span>
+              </div>
+            );
+          }
+          const reset =
+            item.projection.nextReset && item.projection.nextReset.t <= horizonMs
+              ? item.projection.nextReset
+              : null;
+          const pooled = Math.round(item.remaining);
+          return (
+            <button
+              key={tile.key}
+              type="button"
+              className={`${styles.stat} ${item.fable ? styles.statSub : ''}`}
+              style={style}
+              aria-pressed={!hidden.includes(item.id)}
+              title={
+                item.fable
+                  ? t('pd_overview.fable_hint', { count: item.accountCount })
+                  : t('pd_overview.series_toggle')
+              }
+              onClick={() => onToggleSeries?.(item.id)}
             >
-              {Math.round(poolRemaining)}%
-            </span>
-            {hasFable && fable.total !== total && (
-              <span className={styles.muted}>{t('pd_overview.of_total', { total })}</span>
-            )}
-            {hasFable && (
-              <>
-                <span className={styles.heroSeparator} aria-hidden="true">
-                  /
+              {head}
+              <span className={styles.statValue}>{Math.round(norm(item, item.remaining))}%</span>
+              <span className={styles.statMeta}>
+                {scale === 'share'
+                  ? t('pd_overview.pooled_of_total', { remaining: pooled, total: item.total })
+                  : t('pd_overview.of_total', { total: item.total })}
+                {tile.notLoaded > 0 && (
+                  <> · {t('pd_overview.not_loaded', { count: tile.notLoaded })}</>
+                )}
+              </span>
+              {reset && (
+                <span
+                  className={styles.statMeta}
+                  title={`+${Math.round(reset.gain)}% · ${formatWhen(reset.t, locale)}`}
+                >
+                  {t('pd_overview.next_reset')} <strong>{formatCountdown(reset.t, nowMs)}</strong>
                 </span>
-                <span className={`${styles.heroValue} ${styles.fableText}`}>
-                  {Math.round(fable.remaining)}%
-                </span>
-              </>
-            )}
-            <span className={styles.muted}>
-              {t('pd_overview.of_total', { total: hasFable ? fable.total : total })}
-            </span>
-          </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
+      {series.length > 0 && (
+        <>
           <div
             ref={wrapRef}
             className={styles.plot}
             tabIndex={0}
             role="group"
-            aria-label={
-              chartLabel +
-              (hasFable
-                ? ' ' +
-                  t('pd_overview.fable_summary', {
-                    remaining: Math.round(fable.remaining),
-                    total: fable.total,
-                  })
-                : '')
-            }
+            aria-label={chartLabel}
             onKeyDown={onKeyDown}
             onFocus={() => setHoverMs((value) => value ?? clampToRange(nowMs))}
             onBlur={() => setHoverMs(null)}
@@ -451,11 +491,26 @@ export function PoolChart({
                   <clipPath id={`${uid}-clip`}>
                     <rect x={MARGIN.left} y={0} width={plotW} height={baseline} />
                   </clipPath>
-                  <linearGradient id={`${uid}-fill`} x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.09} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
+                  <pattern
+                    id={`${uid}-future`}
+                    width="6"
+                    height="6"
+                    patternUnits="userSpaceOnUse"
+                    patternTransform="rotate(45)"
+                  >
+                    <line x1="0" y1="0" x2="0" y2="6" className={styles.hatch} />
+                  </pattern>
                 </defs>
+
+                {nowVisible && (
+                  <rect
+                    x={x(nowMs)}
+                    y={MARGIN.top}
+                    width={Math.max(0, MARGIN.left + plotW - x(nowMs))}
+                    height={plotH}
+                    fill={`url(#${uid}-future)`}
+                  />
+                )}
 
                 {yTicks.map(({ value: tick, label }) => (
                   <g key={tick}>
@@ -473,96 +528,57 @@ export function PoolChart({
                         y={y(tick) + 4}
                         textAnchor="end"
                       >
-                        {tick === 0
-                          ? '0'
-                          : mode === 'drain'
-                            ? `${Number.isInteger(tick) ? tick : tick.toFixed(1)}%/h`
-                            : `${Math.round(tick)}%`}
+                        {tick === 0 ? '0' : formatAxis(tick)}
                       </text>
                     )}
                   </g>
                 ))}
 
-                {days.map((day, index) => (
-                  <g key={day}>
-                    {index % dayStep === 0 && x(day + DAY_MS / 2) < MARGIN.left + plotW && (
-                      <text
-                        className={styles.tick}
-                        x={x(day + DAY_MS / 2)}
-                        y={baseline + 18}
-                        textAnchor="middle"
-                      >
-                        {new Date(day).toLocaleDateString(locale, {
-                          weekday: 'short',
-                          day: 'numeric',
-                        })}
-                      </text>
-                    )}
-                  </g>
-                ))}
+                {days.map((day, index) =>
+                  index % dayStep === 0 && x(day + DAY_MS / 2) < MARGIN.left + plotW ? (
+                    <text
+                      key={day}
+                      className={styles.tick}
+                      x={x(day + DAY_MS / 2)}
+                      y={baseline + 18}
+                      textAnchor="middle"
+                    >
+                      {new Date(day).toLocaleDateString(locale, {
+                        weekday: 'short',
+                        day: 'numeric',
+                      })}
+                    </text>
+                  ) : null
+                )}
 
                 <g clipPath={`url(#${uid}-clip)`}>
-                  {mode === 'drain' ? (
-                    <>
+                  {shown.map((item) => (
+                    <g key={item.id} style={{ '--series-color': item.color } as CSSProperties}>
                       <path
-                        d={areaUnder(
-                          stepPath(drainRecorded, nowMs),
-                          drainRecorded[0]?.t ?? nowMs,
-                          nowMs
-                        )}
-                        fill={`url(#${uid}-fill)`}
-                      />
-                      <path className={styles.line} d={stepPath(drainRecorded, nowMs)} />
-                      <path
-                        className={`${styles.line} ${styles.dashed}`}
-                        d={stepPath(projection.drain, Math.max(horizonMs, rangeEndMs))}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <path
-                        d={areaUnder(recordedLine, recordedStart, nowMs)}
-                        fill={`url(#${uid}-fill)`}
-                      />
-                      <path
-                        d={areaUnder(
-                          projectedLine,
-                          nowMs,
-                          projection.points[projection.points.length - 1]?.t ?? nowMs
-                        )}
-                        fill={`url(#${uid}-fill)`}
-                        opacity={0.55}
-                      />
-                      <path className={styles.line} d={recordedLine} />
-                      <path className={`${styles.line} ${styles.dashed}`} d={projectedLine} />
-                    </>
-                  )}
-                  {hasFable && (
-                    <>
-                      <path
-                        className={`${styles.line} ${styles.fableLine}`}
+                        className={`${styles.line} ${item.fable ? styles.thin : ''}`}
                         d={
-                          mode === 'remaining'
-                            ? linePath(fable.recorded.points)
-                            : stepPath(fable.drain, nowMs)
+                          mode === 'drain'
+                            ? stepPath(item, item.drain, nowMs)
+                            : linePath(item, item.recorded.points)
                         }
                       />
                       <path
-                        className={`${styles.line} ${styles.fableLine} ${styles.dashed}`}
+                        className={`${styles.line} ${styles.dashed} ${item.fable ? styles.thin : ''}`}
                         d={
-                          mode === 'remaining'
-                            ? linePath(fable.projection.points)
-                            : stepPath(fable.projection.drain, rangeEndMs)
+                          mode === 'drain'
+                            ? stepPath(item, item.projection.drain, untilMs)
+                            : linePath(item, item.projection.points)
                         }
                       />
-                    </>
-                  )}
+                    </g>
+                  ))}
                 </g>
 
                 {jumpLabels.map((mark) => (
                   <text
                     key={mark.key}
-                    className={`${styles.jump} ${mark.fable ? styles.fableJump : ''}`}
+                    className={styles.jump}
+                    style={{ '--series-color': mark.color } as CSSProperties}
                     x={mark.x}
                     y={mark.y}
                     textAnchor="middle"
@@ -578,44 +594,45 @@ export function PoolChart({
                       x1={x(nowMs)}
                       x2={x(nowMs)}
                       y1={MARGIN.top - 8}
-                      y2={baseline + 32}
+                      y2={baseline}
                     />
                     <text className={styles.tick} x={x(nowMs)} y={14} textAnchor="middle">
                       {t('pd_overview.now')}
                     </text>
-                    {mode === 'remaining' && (
-                      <circle className={styles.dot} cx={x(nowMs)} cy={y(poolRemaining)} r={4.5} />
-                    )}
-                    {mode === 'remaining' && hasFable && (
-                      <circle
-                        className={`${styles.dot} ${styles.fableDot}`}
-                        cx={x(nowMs)}
-                        cy={y(fable.remaining)}
-                        r={4.5}
-                      />
-                    )}
+                    {mode === 'remaining' &&
+                      shown.map((item) => (
+                        <circle
+                          key={item.id}
+                          className={styles.dot}
+                          style={{ '--series-color': item.color } as CSSProperties}
+                          cx={x(nowMs)}
+                          cy={y(norm(item, item.remaining))}
+                          r={item.fable ? 3.5 : 4.5}
+                        />
+                      ))}
                   </g>
                 )}
 
-                {hover && (
+                {hoverMs !== null && hoverValues && (
                   <g>
                     <line
                       className={styles.hoverLine}
-                      x1={x(hover.ms)}
-                      x2={x(hover.ms)}
+                      x1={x(hoverMs)}
+                      x2={x(hoverMs)}
                       y1={MARGIN.top}
                       y2={baseline}
                     />
-                    {hover.total !== null && (
-                      <circle className={styles.dot} cx={x(hover.ms)} cy={y(hover.total)} r={4.5} />
-                    )}
-                    {fableHover !== null && (
-                      <circle
-                        className={`${styles.dot} ${styles.fableDot}`}
-                        cx={x(hover.ms)}
-                        cy={y(fableHover)}
-                        r={4.5}
-                      />
+                    {hoverValues.map(({ item, value }) =>
+                      value === null ? null : (
+                        <circle
+                          key={item.id}
+                          className={styles.dot}
+                          style={{ '--series-color': item.color } as CSSProperties}
+                          cx={x(hoverMs)}
+                          cy={y(value)}
+                          r={4}
+                        />
+                      )
                     )}
                   </g>
                 )}
@@ -632,43 +649,32 @@ export function PoolChart({
               </svg>
             )}
 
-            {hover && (
+            {hoverMs !== null && hoverValues && hoverValues.length > 0 && (
               <div
                 className={styles.tooltip}
                 style={
-                  x(hover.ms) > width * 0.6
-                    ? { right: width - x(hover.ms) + 12 }
-                    : { left: x(hover.ms) + 12 }
+                  x(hoverMs) > width * 0.6
+                    ? { right: width - x(hoverMs) + 12 }
+                    : { left: x(hoverMs) + 12 }
                 }
                 role="status"
               >
-                <div>
-                  <span className={styles.muted}>{formatWhen(hover.ms, locale)}</span>
-                  {' · '}
-                  {hasFable && `${t('pd_overview.shared_weekly')} · `}
-                  {hover.total === null ? (
-                    <span className={styles.muted}>{t('pd_overview.no_history')}</span>
-                  ) : mode === 'drain' ? (
-                    <strong>
-                      {t('pd_overview.rate_value', { value: formatRate(hover.total) })}
-                    </strong>
-                  ) : (
-                    <strong>
-                      {t('pd_overview.left_value', { value: Math.round(hover.total) })}
-                    </strong>
-                  )}
-                </div>
-                {hasFable && (
-                  <div className={styles.fableText}>
-                    {t('pd_overview.fable')}
-                    {' · '}
-                    {fableHover === null
-                      ? t('pd_overview.no_history')
-                      : mode === 'drain'
-                        ? t('pd_overview.rate_value', { value: formatRate(fableHover) })
-                        : t('pd_overview.left_value', { value: Math.round(fableHover) })}
+                <div className={styles.muted}>{formatWhen(hoverMs, locale)}</div>
+                {hoverValues.map(({ item, value }) => (
+                  <div
+                    key={item.id}
+                    className={styles.tooltipRow}
+                    style={{ '--series-color': item.color } as CSSProperties}
+                  >
+                    <span className={styles.swatch} aria-hidden="true" />
+                    <span>{item.label}</span>
+                    {value === null ? (
+                      <span className={styles.muted}>{t('pd_overview.no_history')}</span>
+                    ) : (
+                      <strong>{formatAxis(value)}</strong>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
@@ -676,20 +682,18 @@ export function PoolChart({
           <footer className={styles.legend}>
             <span className={styles.legendItem}>
               <span className={styles.legendLine} aria-hidden="true" />
-              {providerLabel}
+              {t('pd_overview.recorded')}
             </span>
-            {hasFable && (
-              <span
-                className={styles.legendItem}
-                title={t('pd_overview.fable_hint', { count: fableAccounts.length })}
-              >
-                <span className={`${styles.legendLine} ${styles.fableLegend}`} aria-hidden="true" />
-                {t('pd_overview.fable')}
-              </span>
+            <span className={styles.legendItem}>
+              <span className={`${styles.legendLine} ${styles.legendDashed}`} aria-hidden="true" />
+              {t('pd_overview.projected')}
+            </span>
+            {!hasHistory && (
+              <span className={styles.legendHint}>{t('pd_overview.history_hint')}</span>
             )}
-            {recorded.points.length === 0 && (
-              <span className={styles.legendNote}>{t('pd_overview.history_hint')}</span>
-            )}
+            <span className={styles.legendNote}>
+              {t(`pd_overview.scale_note_${scale}_${mode}`)}
+            </span>
           </footer>
         </>
       )}

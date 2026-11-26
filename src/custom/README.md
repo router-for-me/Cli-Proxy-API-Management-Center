@@ -36,8 +36,10 @@ The upstream sync workflow merges and verifies both sets of changes before relea
 
 ## Pages
 
-- **Quota Overview** (`#/quota-overview`): a pool chart per provider (weekly capacity
-  recorded and projected, with a compact next-reset summary), a ledger of
+- **Quota Overview** (`#/quota-overview`): one pool chart with every provider's weekly
+  capacity, recorded and projected. A row of tiles above it gives each pool's remaining
+  quota and next reset, and toggles its line. Lines show a share of each pool by default,
+  or pooled percent. Below it sits a ledger of
   credentials in backend routing order with its next new-session choice marked, and
   upstream's cards and quota-window timeline. It shares the quota cache with the official
   Quota Management page, loads unloaded credentials on open and refreshes every 15 minutes

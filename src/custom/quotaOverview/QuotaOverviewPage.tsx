@@ -58,11 +58,13 @@ import {
 import {
   BURN_WINDOWS,
   CHART_MODES,
+  CHART_SCALES,
   FUTURE_USAGE,
   PoolChart,
   providerChartColor,
   type BurnWindow,
   type ChartMode,
+  type ChartScale,
   type FutureUsage,
 } from './PoolChart';
 import { useClaudeTiers } from './useClaudeTiers';
@@ -92,6 +94,9 @@ interface UiState {
   view: ViewMode;
   hideEmails: boolean;
   chartMode: ChartMode;
+  chartScale: ChartScale;
+  /** Series ids whose line is hidden on the pool chart. */
+  hiddenSeries: string[];
   burnHours: BurnWindow;
   futureUsage: FutureUsage;
 }
@@ -106,6 +111,8 @@ const readUiState = (): UiState => {
     view: 'ledger',
     hideEmails: true,
     chartMode: 'remaining',
+    chartScale: 'share',
+    hiddenSeries: [],
     burnHours: 3,
     futureUsage: 'current',
   };
@@ -121,6 +128,10 @@ const readUiState = (): UiState => {
         : fallback.view,
       hideEmails: typeof parsed.hideEmails === 'boolean' ? parsed.hideEmails : fallback.hideEmails,
       chartMode: oneOf(CHART_MODES, parsed.chartMode, fallback.chartMode),
+      chartScale: oneOf(CHART_SCALES, parsed.chartScale, fallback.chartScale),
+      hiddenSeries: Array.isArray(parsed.hiddenSeries)
+        ? parsed.hiddenSeries.filter((id): id is string => typeof id === 'string')
+        : fallback.hiddenSeries,
       burnHours: oneOf(BURN_WINDOWS, parsed.burnHours, fallback.burnHours),
       futureUsage: oneOf(FUTURE_USAGE, parsed.futureUsage, fallback.futureUsage),
     };
@@ -463,9 +474,7 @@ export function QuotaOverviewPage() {
 
       {loading && entries.length === 0 ? (
         <div className={styles.poolList} aria-hidden="true">
-          {Array.from({ length: 2 }, (_, index) => (
-            <Skeleton key={index} height={420} rounded={14} />
-          ))}
+          <Skeleton height={440} rounded={14} />
         </div>
       ) : entries.length === 0 ? (
         <EmptyState
@@ -492,6 +501,22 @@ export function QuotaOverviewPage() {
                   onClick={() => updateUi({ chartMode: mode })}
                 >
                   {t(`pd_overview.mode_${mode}`)}
+                </button>
+              ))}
+            </div>
+            <div
+              className={styles.segmented}
+              role="group"
+              aria-label={t('pd_overview.scale_label')}
+            >
+              {CHART_SCALES.map((scale) => (
+                <button
+                  key={scale}
+                  type="button"
+                  aria-pressed={ui.chartScale === scale}
+                  onClick={() => updateUi({ chartScale: scale })}
+                >
+                  {t(`pd_overview.scale_${scale}`)}
                 </button>
               ))}
             </div>
@@ -566,23 +591,28 @@ export function QuotaOverviewPage() {
             {routingStrategy === QUOTA_STRATEGY && (
               <p className={styles.forecastHint}>{t('pd_overview.routing_projection_hint')}</p>
             )}
-            {visiblePools.map((pool) => (
+            {visiblePools.length > 0 && (
               <PoolChart
-                key={pool.provider}
-                provider={pool.provider}
-                accounts={pool.accounts}
-                fableAccounts={pool.fableAccounts}
-                credentialCount={pool.credentialCount}
+                pools={visiblePools}
                 nowMs={nowMs}
                 rangeStartMs={rangeStartMs}
                 rangeEndMs={rangeEndMs}
                 mode={ui.chartMode}
+                scale={ui.chartScale}
                 burnHours={ui.burnHours}
                 futureUsage={ui.futureUsage}
                 routing={routingMode}
                 resolvedTheme={resolvedTheme}
+                hidden={ui.hiddenSeries}
+                onToggleSeries={(id) =>
+                  updateUi({
+                    hiddenSeries: ui.hiddenSeries.includes(id)
+                      ? ui.hiddenSeries.filter((hiddenId) => hiddenId !== id)
+                      : [...ui.hiddenSeries, id],
+                  })
+                }
               />
-            ))}
+            )}
           </div>
 
           <div className={styles.toolbar}>

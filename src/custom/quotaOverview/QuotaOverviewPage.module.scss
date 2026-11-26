@@ -721,3 +721,43 @@
     outline-offset: 2px;
   }
 }
+
+/* ---------- plan badge ---------- */
+
+// Solid in the provider's chart color (set inline as --plan-color), white text.
+// The fill is darkened a touch so white text reads on the lighter greens and oranges.
+.planBadge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--plan-color) 88%, #000);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%);
+
+  // Entry and team plans: tinted rather than solid, so paid tiers stand out.
+  &[data-tier='standard'] {
+    background: color-mix(in srgb, var(--plan-color) 14%, transparent);
+    color: color-mix(in srgb, var(--plan-color) 80%, var(--text-primary));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--plan-color) 30%, transparent);
+  }
+
+  // Each provider's top plan gets a soft sheen over the solid fill.
+  &[data-tier='flagship'] {
+    background:
+      linear-gradient(
+        135deg,
+        rgb(255 255 255 / 22%) 0%,
+        rgb(255 255 255 / 0%) 45%,
+        rgb(0 0 0 / 10%) 100%
+      ),
+      color-mix(in srgb, var(--plan-color) 88%, #000);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 28%),
+      0 1px 3px color-mix(in srgb, var(--plan-color) 35%, transparent);
+  }
+}
